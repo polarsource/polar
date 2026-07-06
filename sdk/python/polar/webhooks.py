@@ -22,6 +22,7 @@ from polar.literals import (
 from polar.outputs import (
     ListResourceWebhookDelivery,
     ListResourceWebhookEndpoint,
+    WebhookDelivery,
     WebhookEndpoint,
 )
 
@@ -47,6 +48,7 @@ class WebhooksSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -65,6 +67,43 @@ class WebhooksSync(SyncServiceBase):
         }
         return parse_response_json(response, ListResourceWebhookEndpoint, method_errors)
 
+    def iter_list_webhook_endpoints(
+        self,
+        *,
+        organization_id: str | list[str] | None = None,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.Generator[WebhookEndpoint, None, None]:
+        """
+        List webhook endpoints.
+
+        **Scopes**: `webhooks:read` `webhooks:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            A generator that yields items of type WebhookEndpoint.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list_webhook_endpoints(
+                organization_id=organization_id,
+                page=page,
+                limit=limit,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     def create_webhook_endpoint(
         self,
         **kwargs: typing.Unpack[WebhookEndpointCreate],
@@ -80,6 +119,7 @@ class WebhooksSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -111,6 +151,7 @@ class WebhooksSync(SyncServiceBase):
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -144,6 +185,7 @@ class WebhooksSync(SyncServiceBase):
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -179,6 +221,7 @@ class WebhooksSync(SyncServiceBase):
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -213,6 +256,7 @@ class WebhooksSync(SyncServiceBase):
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -268,6 +312,7 @@ class WebhooksSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -292,6 +337,67 @@ class WebhooksSync(SyncServiceBase):
         }
         return parse_response_json(response, ListResourceWebhookDelivery, method_errors)
 
+    def iter_list_webhook_deliveries(
+        self,
+        *,
+        endpoint_id: str | list[str] | None = None,
+        start_timestamp: str | None = None,
+        end_timestamp: str | None = None,
+        succeeded: bool | None = None,
+        query: str | None = None,
+        http_code_class: typing.Literal["2xx"]
+        | typing.Literal["3xx"]
+        | typing.Literal["4xx"]
+        | typing.Literal["5xx"]
+        | None = None,
+        event_type: WebhookEventType | list[WebhookEventType] | None = None,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.Generator[WebhookDelivery, None, None]:
+        """
+        List webhook deliveries.
+
+        Deliveries are all the attempts to deliver a webhook event to an endpoint.
+
+        **Scopes**: `webhooks:read` `webhooks:write`
+
+        Args:
+            endpoint_id: Filter by webhook endpoint ID.
+            start_timestamp: Filter deliveries after this timestamp.
+            end_timestamp: Filter deliveries before this timestamp.
+            succeeded: Filter by delivery success status.
+            query: Query to filter webhook deliveries.
+            http_code_class: Filter by HTTP response code class (2xx, 3xx, 4xx, 5xx).
+            event_type: Filter by webhook event type.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            A generator that yields items of type WebhookDelivery.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list_webhook_deliveries(
+                endpoint_id=endpoint_id,
+                start_timestamp=start_timestamp,
+                end_timestamp=end_timestamp,
+                succeeded=succeeded,
+                query=query,
+                http_code_class=http_code_class,
+                event_type=event_type,
+                page=page,
+                limit=limit,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     def redeliver_webhook_event(
         self,
         id: str,
@@ -308,6 +414,7 @@ class WebhooksSync(SyncServiceBase):
             ResourceNotFound: Webhook event not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -347,6 +454,7 @@ class WebhooksAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -365,6 +473,44 @@ class WebhooksAsync(AsyncServiceBase):
         }
         return parse_response_json(response, ListResourceWebhookEndpoint, method_errors)
 
+    async def iter_list_webhook_endpoints(
+        self,
+        *,
+        organization_id: str | list[str] | None = None,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.AsyncGenerator[WebhookEndpoint, None]:
+        """
+        List webhook endpoints.
+
+        **Scopes**: `webhooks:read` `webhooks:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            An async generator that yields items of type WebhookEndpoint.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list_webhook_endpoints(
+                organization_id=organization_id,
+                page=page,
+                limit=limit,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     async def create_webhook_endpoint(
         self,
         **kwargs: typing.Unpack[WebhookEndpointCreate],
@@ -380,6 +526,7 @@ class WebhooksAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -411,6 +558,7 @@ class WebhooksAsync(AsyncServiceBase):
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -444,6 +592,7 @@ class WebhooksAsync(AsyncServiceBase):
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -479,6 +628,7 @@ class WebhooksAsync(AsyncServiceBase):
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -513,6 +663,7 @@ class WebhooksAsync(AsyncServiceBase):
             ResourceNotFound: Webhook endpoint not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -568,6 +719,7 @@ class WebhooksAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -592,6 +744,68 @@ class WebhooksAsync(AsyncServiceBase):
         }
         return parse_response_json(response, ListResourceWebhookDelivery, method_errors)
 
+    async def iter_list_webhook_deliveries(
+        self,
+        *,
+        endpoint_id: str | list[str] | None = None,
+        start_timestamp: str | None = None,
+        end_timestamp: str | None = None,
+        succeeded: bool | None = None,
+        query: str | None = None,
+        http_code_class: typing.Literal["2xx"]
+        | typing.Literal["3xx"]
+        | typing.Literal["4xx"]
+        | typing.Literal["5xx"]
+        | None = None,
+        event_type: WebhookEventType | list[WebhookEventType] | None = None,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.AsyncGenerator[WebhookDelivery, None]:
+        """
+        List webhook deliveries.
+
+        Deliveries are all the attempts to deliver a webhook event to an endpoint.
+
+        **Scopes**: `webhooks:read` `webhooks:write`
+
+        Args:
+            endpoint_id: Filter by webhook endpoint ID.
+            start_timestamp: Filter deliveries after this timestamp.
+            end_timestamp: Filter deliveries before this timestamp.
+            succeeded: Filter by delivery success status.
+            query: Query to filter webhook deliveries.
+            http_code_class: Filter by HTTP response code class (2xx, 3xx, 4xx, 5xx).
+            event_type: Filter by webhook event type.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            An async generator that yields items of type WebhookDelivery.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list_webhook_deliveries(
+                endpoint_id=endpoint_id,
+                start_timestamp=start_timestamp,
+                end_timestamp=end_timestamp,
+                succeeded=succeeded,
+                query=query,
+                http_code_class=http_code_class,
+                event_type=event_type,
+                page=page,
+                limit=limit,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     async def redeliver_webhook_event(
         self,
         id: str,
@@ -608,6 +822,7 @@ class WebhooksAsync(AsyncServiceBase):
             ResourceNotFound: Webhook event not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(

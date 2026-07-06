@@ -1,8 +1,15 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { OrganizationCreate, OrganizationUpdate } from "../models/inputs";
-import type { ListResourceOrganization, Organization } from "../models/outputs";
 import type { OrganizationSortProperty } from "../models/literals";
-import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../errors";
+import type { ListResourceOrganization, Organization } from "../models/outputs";
+
+import {
+  CannotCreateOrganizationError,
+  HTTPValidationError,
+  NotPermitted,
+  ResourceNotFound,
+  SSOEnforcementRequiresConnection,
+} from "../errors";
 
 export const listOrganizations = (client: ClientBase) => {
   /**
@@ -13,6 +20,7 @@ export const listOrganizations = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceOrganization}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -42,6 +50,42 @@ export const listOrganizations = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List organizations.
+ *
+ * **Scopes**: `organizations:read` `organizations:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<Organization>} A generator that yields items of type Organization.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistOrganizations = (client: ClientBase) => {
+  return async function* (query?: {
+    slug?: string | null;
+    page?: number;
+    limit?: number;
+    sorting?: OrganizationSortProperty[] | null;
+  }): AsyncGenerator<Organization> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listOrganizations(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const createOrganizations = (client: ClientBase) => {
   /**
    * Create an organization.
@@ -51,7 +95,9 @@ export const createOrganizations = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Organization}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
+   * @throws {CannotCreateOrganizationError} Forbidden
    * @throws {HTTPValidationError} Validation Error
    */
   return async (body: OrganizationCreate): Promise<Organization> => {
@@ -66,6 +112,7 @@ export const createOrganizations = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request);
     return client.parseResponse<Organization>(response, "json", {
+      403: CannotCreateOrganizationError,
       422: HTTPValidationError,
     });
   };
@@ -79,6 +126,7 @@ export const getOrganizations = (client: ClientBase) => {
    * @param id
    * @returns {Organization}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Organization not found.
    * @throws {HTTPValidationError} Validation Error
@@ -112,9 +160,11 @@ export const updateOrganizations = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Organization}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} You don't have the permission to update this organization.
    * @throws {ResourceNotFound} Organization not found.
+   * @throws {SSOEnforcementRequiresConnection} Cannot enforce SSO without an enabled connection.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (id: string, body: OrganizationUpdate): Promise<Organization> => {
@@ -133,6 +183,7 @@ export const updateOrganizations = (client: ClientBase) => {
     return client.parseResponse<Organization>(response, "json", {
       403: NotPermitted,
       404: ResourceNotFound,
+      409: SSOEnforcementRequiresConnection,
       422: HTTPValidationError,
     });
   };
@@ -144,6 +195,7 @@ export function createOrganizationsService(client: ClientBase) {
     create: createOrganizations(client),
     get: getOrganizations(client),
     update: updateOrganizations(client),
+    iterlist: iterlistOrganizations(client),
   };
 }
 

@@ -57,6 +57,7 @@ class CustomerSeatsSync(SyncServiceBase):
             ListSeats404Error: Subscription or order not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -94,6 +95,7 @@ class CustomerSeatsSync(SyncServiceBase):
             AssignSeat404Error: Subscription, order, or customer not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -129,6 +131,7 @@ class CustomerSeatsSync(SyncServiceBase):
             RevokeSeat404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -165,6 +168,7 @@ class CustomerSeatsSync(SyncServiceBase):
             ResendInvitation404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -199,6 +203,7 @@ class CustomerSeatsSync(SyncServiceBase):
             GetClaimInfo404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -231,6 +236,7 @@ class CustomerSeatsSync(SyncServiceBase):
             ClaimSeat403Error: Seat-based pricing not enabled for organization
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -269,6 +275,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
             ListSeats404Error: Subscription or order not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -306,6 +313,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
             AssignSeat404Error: Subscription, order, or customer not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -341,6 +349,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
             RevokeSeat404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -377,6 +386,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
             ResendInvitation404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -411,6 +421,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
             GetClaimInfo404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -443,6 +454,7 @@ class CustomerSeatsAsync(AsyncServiceBase):
             ClaimSeat403Error: Seat-based pricing not enabled for organization
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(

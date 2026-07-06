@@ -1,17 +1,19 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type {
   CustomerCreate,
   CustomerUpdate,
   CustomerUpdateExternalID,
   MetadataQuery,
 } from "../../models/inputs";
+import type { CustomerSortProperty } from "../../models/literals";
 import type {
   Customer,
   CustomerState,
   ListResourceCustomer,
   ListResourcePaymentMethod,
+  PaymentMethod,
 } from "../../models/outputs";
-import type { CustomerSortProperty } from "../../models/literals";
+
 import { HTTPValidationError, ResourceNotFound } from "../../errors";
 import { createMembersService } from "./members";
 
@@ -24,6 +26,7 @@ export const listCustomers = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceCustomer}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -61,6 +64,46 @@ export const listCustomers = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List customers.
+ *
+ * **Scopes**: `customers:read` `customers:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<Customer>} A generator that yields items of type Customer.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistCustomers = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    email?: string | null;
+    query?: string | null;
+    active?: boolean | null;
+    page?: number;
+    limit?: number;
+    sorting?: CustomerSortProperty[] | null;
+    metadata?: MetadataQuery;
+  }): AsyncGenerator<Customer> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listCustomers(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const createCustomers = (client: ClientBase) => {
   /**
    * Create a customer.
@@ -70,6 +113,7 @@ export const createCustomers = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Customer}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -92,6 +136,7 @@ export const exportCustomers = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {string}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -122,6 +167,7 @@ export const getCustomers = (client: ClientBase) => {
    * @param id - The customer ID.
    * @returns {Customer}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Customer not found.
    * @throws {HTTPValidationError} Validation Error
@@ -169,6 +215,7 @@ export const deleteCustomers = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Customer not found.
    * @throws {HTTPValidationError} Validation Error
@@ -209,6 +256,7 @@ export const updateCustomers = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Customer}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Customer not found.
    * @throws {HTTPValidationError} Validation Error
@@ -241,6 +289,7 @@ export const getExternalCustomers = (client: ClientBase) => {
    * @param external_id - The customer external ID.
    * @returns {Customer}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Customer not found.
    * @throws {HTTPValidationError} Validation Error
@@ -278,6 +327,7 @@ export const deleteExternalCustomers = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Customer not found.
    * @throws {HTTPValidationError} Validation Error
@@ -318,6 +368,7 @@ export const updateExternalCustomers = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Customer}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Customer not found.
    * @throws {HTTPValidationError} Validation Error
@@ -356,6 +407,7 @@ export const getStateCustomers = (client: ClientBase) => {
    * @param id - The customer ID.
    * @returns {CustomerState}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Customer not found.
    * @throws {HTTPValidationError} Validation Error
@@ -394,6 +446,7 @@ export const getStateExternalCustomers = (client: ClientBase) => {
    * @param external_id - The customer external ID.
    * @returns {CustomerState}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Customer not found.
    * @throws {HTTPValidationError} Validation Error
@@ -427,6 +480,7 @@ export const listPaymentMethodsCustomers = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourcePaymentMethod}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Customer not found.
    * @throws {HTTPValidationError} Validation Error
@@ -459,6 +513,45 @@ export const listPaymentMethodsCustomers = (client: ClientBase) => {
     });
   };
 };
+/**
+ * Get saved payment methods of a customer.
+ *
+ * **Scopes**: `customers:read` `customers:write`
+ *
+ * @param id - The customer ID.
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<PaymentMethod>} A generator that yields items of type PaymentMethod.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {ResourceNotFound} Customer not found.
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistPaymentMethodsCustomers = (client: ClientBase) => {
+  return async function* (
+    id: string,
+    query?: {
+      page?: number;
+      limit?: number;
+    },
+  ): AsyncGenerator<PaymentMethod> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listPaymentMethodsCustomers(client)(id, { ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const listPaymentMethodsExternalCustomers = (client: ClientBase) => {
   /**
    * Get saved payment methods of a customer by external ID.
@@ -469,6 +562,7 @@ export const listPaymentMethodsExternalCustomers = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourcePaymentMethod}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Customer not found.
    * @throws {HTTPValidationError} Validation Error
@@ -501,6 +595,49 @@ export const listPaymentMethodsExternalCustomers = (client: ClientBase) => {
     });
   };
 };
+/**
+ * Get saved payment methods of a customer by external ID.
+ *
+ * **Scopes**: `customers:read` `customers:write`
+ *
+ * @param external_id - The customer external ID.
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<PaymentMethod>} A generator that yields items of type PaymentMethod.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {ResourceNotFound} Customer not found.
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistPaymentMethodsExternalCustomers = (client: ClientBase) => {
+  return async function* (
+    external_id: string,
+    query?: {
+      page?: number;
+      limit?: number;
+    },
+  ): AsyncGenerator<PaymentMethod> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listPaymentMethodsExternalCustomers(client)(external_id, {
+        ...query,
+        page,
+        limit,
+      });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 
 export function createCustomersService(client: ClientBase) {
   return {
@@ -517,6 +654,9 @@ export function createCustomersService(client: ClientBase) {
     getStateExternal: getStateExternalCustomers(client),
     listPaymentMethods: listPaymentMethodsCustomers(client),
     listPaymentMethodsExternal: listPaymentMethodsExternalCustomers(client),
+    iterlist: iterlistCustomers(client),
+    iterlistPaymentMethods: iterlistPaymentMethodsCustomers(client),
+    iterlistPaymentMethodsExternal: iterlistPaymentMethodsExternalCustomers(client),
     members: createMembersService(client),
   };
 }

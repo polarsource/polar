@@ -1,7 +1,8 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { DiscountCreate, DiscountUpdate } from "../models/inputs";
-import type { Discount, ListResourceDiscount } from "../models/outputs";
 import type { DiscountSortProperty } from "../models/literals";
+import type { Discount, ListResourceDiscount } from "../models/outputs";
+
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listDiscounts = (client: ClientBase) => {
@@ -13,6 +14,7 @@ export const listDiscounts = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceDiscount}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -44,6 +46,43 @@ export const listDiscounts = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List discounts.
+ *
+ * **Scopes**: `discounts:read` `discounts:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<Discount>} A generator that yields items of type Discount.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistDiscounts = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    query?: string | null;
+    page?: number;
+    limit?: number;
+    sorting?: DiscountSortProperty[] | null;
+  }): AsyncGenerator<Discount> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listDiscounts(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const createDiscounts = (client: ClientBase) => {
   /**
    * Create a discount.
@@ -53,6 +92,7 @@ export const createDiscounts = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Discount}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -75,6 +115,7 @@ export const getDiscounts = (client: ClientBase) => {
    * @param id - The discount ID.
    * @returns {Discount}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Discount not found.
    * @throws {HTTPValidationError} Validation Error
@@ -107,6 +148,7 @@ export const deleteDiscounts = (client: ClientBase) => {
    * @param id - The discount ID.
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Discount not found.
    * @throws {HTTPValidationError} Validation Error
@@ -140,6 +182,7 @@ export const updateDiscounts = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Discount}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Discount not found.
    * @throws {HTTPValidationError} Validation Error
@@ -171,6 +214,7 @@ export function createDiscountsService(client: ClientBase) {
     get: getDiscounts(client),
     delete: deleteDiscounts(client),
     update: updateDiscounts(client),
+    iterlist: iterlistDiscounts(client),
   };
 }
 

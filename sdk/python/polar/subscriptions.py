@@ -85,6 +85,7 @@ class SubscriptionsSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -114,6 +115,81 @@ class SubscriptionsSync(SyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourceSubscription, method_errors)
+
+    def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        product_id: str | builtins.list[str] | None = None,
+        customer_id: str | builtins.list[str] | None = None,
+        external_customer_id: str | builtins.list[str] | None = None,
+        discount_id: str | builtins.list[str] | None = None,
+        active: bool | None = None,
+        status: SubscriptionStatus | builtins.list[SubscriptionStatus] | None = None,
+        cancel_at_period_end: bool | None = None,
+        customer_cancellation_reason: CustomerCancellationReason
+        | builtins.list[CustomerCancellationReason]
+        | None = None,
+        canceled_at_after: str | None = None,
+        canceled_at_before: str | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[SubscriptionSortProperty] | None = ["-started_at"],
+        metadata: MetadataQuery = None,
+    ) -> typing.Generator[Subscription, None, None]:
+        """
+        List subscriptions.
+
+        **Scopes**: `subscriptions:read` `subscriptions:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            product_id: Filter by product ID.
+            customer_id: Filter by customer ID.
+            external_customer_id: Filter by customer external ID.
+            discount_id: Filter by discount ID.
+            active: Filter by active or inactive subscription.
+            status: Filter by subscription status.
+            cancel_at_period_end: Filter by subscriptions that are set to cancel at period end.
+            customer_cancellation_reason: Filter by customer cancellation reason.
+            canceled_at_after: Filter by cancellation date (after or equal to).
+            canceled_at_before: Filter by cancellation date (before or equal to).
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+
+        Returns:
+            A generator that yields items of type Subscription.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                organization_id=organization_id,
+                product_id=product_id,
+                customer_id=customer_id,
+                external_customer_id=external_customer_id,
+                discount_id=discount_id,
+                active=active,
+                status=status,
+                cancel_at_period_end=cancel_at_period_end,
+                customer_cancellation_reason=customer_cancellation_reason,
+                canceled_at_after=canceled_at_after,
+                canceled_at_before=canceled_at_before,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                metadata=metadata,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     @typing.overload
     def create(
@@ -147,6 +223,7 @@ class SubscriptionsSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -178,6 +255,7 @@ class SubscriptionsSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -210,6 +288,7 @@ class SubscriptionsSync(SyncServiceBase):
             ResourceNotFound: Subscription not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -245,6 +324,7 @@ class SubscriptionsSync(SyncServiceBase):
             SubscriptionLocked: Subscription is pending an update.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -327,6 +407,7 @@ class SubscriptionsSync(SyncServiceBase):
             SubscriptionLocked: Subscription is pending an update.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -396,6 +477,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -425,6 +507,82 @@ class SubscriptionsAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourceSubscription, method_errors)
+
+    async def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        product_id: str | builtins.list[str] | None = None,
+        customer_id: str | builtins.list[str] | None = None,
+        external_customer_id: str | builtins.list[str] | None = None,
+        discount_id: str | builtins.list[str] | None = None,
+        active: bool | None = None,
+        status: SubscriptionStatus | builtins.list[SubscriptionStatus] | None = None,
+        cancel_at_period_end: bool | None = None,
+        customer_cancellation_reason: CustomerCancellationReason
+        | builtins.list[CustomerCancellationReason]
+        | None = None,
+        canceled_at_after: str | None = None,
+        canceled_at_before: str | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[SubscriptionSortProperty] | None = ["-started_at"],
+        metadata: MetadataQuery = None,
+    ) -> typing.AsyncGenerator[Subscription, None]:
+        """
+        List subscriptions.
+
+        **Scopes**: `subscriptions:read` `subscriptions:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            product_id: Filter by product ID.
+            customer_id: Filter by customer ID.
+            external_customer_id: Filter by customer external ID.
+            discount_id: Filter by discount ID.
+            active: Filter by active or inactive subscription.
+            status: Filter by subscription status.
+            cancel_at_period_end: Filter by subscriptions that are set to cancel at period end.
+            customer_cancellation_reason: Filter by customer cancellation reason.
+            canceled_at_after: Filter by cancellation date (after or equal to).
+            canceled_at_before: Filter by cancellation date (before or equal to).
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+
+        Returns:
+            An async generator that yields items of type Subscription.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                organization_id=organization_id,
+                product_id=product_id,
+                customer_id=customer_id,
+                external_customer_id=external_customer_id,
+                discount_id=discount_id,
+                active=active,
+                status=status,
+                cancel_at_period_end=cancel_at_period_end,
+                customer_cancellation_reason=customer_cancellation_reason,
+                canceled_at_after=canceled_at_after,
+                canceled_at_before=canceled_at_before,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                metadata=metadata,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     @typing.overload
     async def create(
@@ -458,6 +616,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -489,6 +648,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -521,6 +681,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             ResourceNotFound: Subscription not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -556,6 +717,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             SubscriptionLocked: Subscription is pending an update.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -638,6 +800,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             SubscriptionLocked: Subscription is pending an update.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(

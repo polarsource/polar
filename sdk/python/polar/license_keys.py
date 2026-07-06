@@ -60,6 +60,7 @@ class LicenseKeysSync(SyncServiceBase):
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -82,6 +83,51 @@ class LicenseKeysSync(SyncServiceBase):
         }
         return parse_response_json(response, ListResourceLicenseKeyRead, method_errors)
 
+    def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        benefit_id: str | builtins.list[str] | None = None,
+        status: LicenseKeyStatus | builtins.list[LicenseKeyStatus] | None = None,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.Generator[LicenseKeyRead, None, None]:
+        """
+        Get license keys connected to the given organization & filters.
+
+        **Scopes**: `license_keys:read` `license_keys:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            benefit_id: Filter by benefit ID.
+            status: Filter by license key status.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            A generator that yields items of type LicenseKeyRead.
+
+        Raises:
+            Unauthorized: Not authorized to manage license key.
+            ResourceNotFound: License key not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                organization_id=organization_id,
+                benefit_id=benefit_id,
+                status=status,
+                page=page,
+                limit=limit,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     def get(
         self,
         id: str,
@@ -99,6 +145,7 @@ class LicenseKeysSync(SyncServiceBase):
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -136,6 +183,7 @@ class LicenseKeysSync(SyncServiceBase):
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -174,6 +222,7 @@ class LicenseKeysSync(SyncServiceBase):
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -209,6 +258,7 @@ class LicenseKeysSync(SyncServiceBase):
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -242,6 +292,7 @@ class LicenseKeysSync(SyncServiceBase):
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -275,6 +326,7 @@ class LicenseKeysSync(SyncServiceBase):
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -319,6 +371,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -341,6 +394,52 @@ class LicenseKeysAsync(AsyncServiceBase):
         }
         return parse_response_json(response, ListResourceLicenseKeyRead, method_errors)
 
+    async def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        benefit_id: str | builtins.list[str] | None = None,
+        status: LicenseKeyStatus | builtins.list[LicenseKeyStatus] | None = None,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.AsyncGenerator[LicenseKeyRead, None]:
+        """
+        Get license keys connected to the given organization & filters.
+
+        **Scopes**: `license_keys:read` `license_keys:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            benefit_id: Filter by benefit ID.
+            status: Filter by license key status.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            An async generator that yields items of type LicenseKeyRead.
+
+        Raises:
+            Unauthorized: Not authorized to manage license key.
+            ResourceNotFound: License key not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                organization_id=organization_id,
+                benefit_id=benefit_id,
+                status=status,
+                page=page,
+                limit=limit,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     async def get(
         self,
         id: str,
@@ -358,6 +457,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -395,6 +495,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -433,6 +534,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -468,6 +570,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -501,6 +604,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -534,6 +638,7 @@ class LicenseKeysAsync(AsyncServiceBase):
             ResourceNotFound: License key not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(

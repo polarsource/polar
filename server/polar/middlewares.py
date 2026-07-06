@@ -1,5 +1,6 @@
 import contextlib
 import functools
+import json
 import re
 
 import dramatiq
@@ -164,6 +165,62 @@ class CacheControlMiddleware:
             await send(message)
 
         await self.app(scope, receive, send_wrapper)
+
+
+class MaxBodySizeMiddleware:
+    def __init__(self, app: ASGIApp, limit: int) -> None:
+        self.app = app
+        self.limit = limit
+
+    async def __call__(self, scope: Scope, receive: Receive, send: Send) -> None:
+        if scope["type"] != "http":
+            await self.app(scope, receive, send)
+            return
+
+        headers = Headers(scope=scope)
+        content_length = headers.get("content-length")
+        if content_length is None:
+            if scope["method"] in ("POST", "PUT", "PATCH"):
+                await self._send_error(
+                    send,
+                    status=411,
+                    error="LengthRequired",
+                    detail="A Content-Length header is required.",
+                )
+                return
+        else:
+            try:
+                if int(content_length) > self.limit:
+                    await self._send_error(
+                        send,
+                        status=413,
+                        error="RequestBodyTooLarge",
+                        detail=(
+                            "Request body exceeded the maximum allowed size "
+                            f"of {self.limit} bytes."
+                        ),
+                    )
+                    return
+            except ValueError:
+                pass
+
+        await self.app(scope, receive, send)
+
+    async def _send_error(
+        self, send: Send, *, status: int, error: str, detail: str
+    ) -> None:
+        body = json.dumps({"error": error, "detail": detail}).encode("utf-8")
+        await send(
+            {
+                "type": "http.response.start",
+                "status": status,
+                "headers": [
+                    (b"content-type", b"application/json"),
+                    (b"content-length", str(len(body)).encode("latin-1")),
+                ],
+            }
+        )
+        await send({"type": "http.response.body", "body": body})
 
 
 class OperationalErrorMiddleware:

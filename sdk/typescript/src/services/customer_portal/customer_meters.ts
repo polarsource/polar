@@ -1,9 +1,10 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
+import type { CustomerCustomerMeterSortProperty } from "../../models/literals";
 import type {
   CustomerCustomerMeter,
   ListResourceCustomerCustomerMeter,
 } from "../../models/outputs";
-import type { CustomerCustomerMeterSortProperty } from "../../models/literals";
+
 import { HTTPValidationError, ResourceNotFound } from "../../errors";
 
 export const listCustomerMeters = (client: ClientBase) => {
@@ -15,6 +16,7 @@ export const listCustomerMeters = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceCustomerCustomerMeter}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -46,6 +48,43 @@ export const listCustomerMeters = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List meters of the authenticated customer.
+ *
+ * **Scopes**: `customer_portal:read` `customer_portal:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<CustomerCustomerMeter>} A generator that yields items of type CustomerCustomerMeter.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistCustomerMeters = (client: ClientBase) => {
+  return async function* (query?: {
+    meter_id?: string | string[] | null;
+    query?: string | null;
+    page?: number;
+    limit?: number;
+    sorting?: CustomerCustomerMeterSortProperty[] | null;
+  }): AsyncGenerator<CustomerCustomerMeter> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listCustomerMeters(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const getCustomerMeters = (client: ClientBase) => {
   /**
    * Get a meter by ID for the authenticated customer.
@@ -55,6 +94,7 @@ export const getCustomerMeters = (client: ClientBase) => {
    * @param id - The customer meter ID.
    * @returns {CustomerCustomerMeter}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Customer meter not found.
    * @throws {HTTPValidationError} Validation Error
@@ -83,6 +123,7 @@ export function createCustomerMetersService(client: ClientBase) {
   return {
     list: listCustomerMeters(client),
     get: getCustomerMeters(client),
+    iterlist: iterlistCustomerMeters(client),
   };
 }
 

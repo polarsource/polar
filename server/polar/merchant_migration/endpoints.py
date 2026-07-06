@@ -7,6 +7,7 @@ from pydantic import UUID4
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import MerchantMigration
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -15,7 +16,7 @@ from polar.routing import APIRouter
 
 from .auth import MerchantMigrationRead, MerchantMigrationWrite
 from .schemas import MerchantMigration as MerchantMigrationSchema
-from .schemas import PrecheckReport
+from .schemas import MerchantMigrationCreate, PrecheckReport
 from .service import (
     MerchantMigrationNotFound,
     SourceNotConnected,
@@ -31,9 +32,49 @@ router = APIRouter(
 STRIPE_CALLBACK_ROUTE_NAME = "merchant_migrations.stripe.callback"
 
 
+@router.get(
+    "/",
+    response_model=ListResource[MerchantMigrationSchema],
+    summary="List Merchant Migrations",
+)
+async def list(
+    auth_subject: MerchantMigrationRead,
+    pagination: PaginationParamsQuery,
+    organization_id: Annotated[OrganizationID, Query()],
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ListResource[MerchantMigrationSchema]:
+    results, count = await merchant_migration_service.list(
+        session,
+        auth_subject,
+        organization_id=organization_id,
+        pagination=pagination,
+    )
+    return ListResource.from_paginated_results(
+        [MerchantMigrationSchema.model_validate(result) for result in results],
+        count,
+        pagination,
+    )
+
+
+@router.post(
+    "/",
+    response_model=MerchantMigrationSchema,
+    status_code=201,
+    summary="Create Merchant Migration",
+)
+async def create(
+    migration_create: MerchantMigrationCreate,
+    auth_subject: MerchantMigrationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigration:
+    return await merchant_migration_service.create(
+        session, auth_subject, migration_create
+    )
+
+
 @router.get("/stripe/authorize", include_in_schema=False)
 async def stripe_authorize(
-    organization_id: Annotated[OrganizationID, Query()],
+    migration_id: Annotated[UUID4, Query()],
     return_to: ReturnTo,
     auth_subject: MerchantMigrationWrite,
     request: Request,
@@ -43,7 +84,7 @@ async def stripe_authorize(
     authorize_url = await merchant_migration_service.create_stripe_authorization_url(
         session,
         auth_subject,
-        organization_id=organization_id,
+        migration_id=migration_id,
         redirect_uri=redirect_uri,
         return_to=return_to,
     )

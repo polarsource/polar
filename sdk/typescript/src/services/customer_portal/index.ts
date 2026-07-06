@@ -1,14 +1,15 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
+
 import { createBenefitGrantsService } from "./benefit_grants";
-import { createCustomersService } from "./customers";
 import { createCustomerMetersService } from "./customer_meters";
-import { createSeatsService } from "./seats";
 import { createCustomerSessionService } from "./customer_session";
+import { createCustomersService } from "./customers";
 import { createDownloadablesService } from "./downloadables";
 import { createLicenseKeysService } from "./license_keys";
 import { createMembersService } from "./members";
 import { createOrdersService } from "./orders";
 import { createOrganizationsService } from "./organizations";
+import { createSeatsService } from "./seats";
 import { createSubscriptionsService } from "./subscriptions";
 import { createWalletsService } from "./wallets";
 

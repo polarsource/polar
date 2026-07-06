@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import builtins
+import typing
 
 from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.errors import (
@@ -35,6 +36,7 @@ class WalletsSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -53,6 +55,41 @@ class WalletsSync(SyncServiceBase):
         }
         return parse_response_json(response, ListResourceCustomerWallet, method_errors)
 
+    def iter_list(
+        self,
+        *,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[CustomerWalletSortProperty] | None = ["-created_at"],
+    ) -> typing.Generator[CustomerWallet, None, None]:
+        """
+        List wallets of the authenticated customer.
+
+        Args:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Returns:
+            A generator that yields items of type CustomerWallet.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                page=page,
+                limit=limit,
+                sorting=sorting,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     def get(
         self,
         id: str,
@@ -67,6 +104,7 @@ class WalletsSync(SyncServiceBase):
             ResourceNotFound: Wallet not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -104,6 +142,7 @@ class WalletsAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -122,6 +161,42 @@ class WalletsAsync(AsyncServiceBase):
         }
         return parse_response_json(response, ListResourceCustomerWallet, method_errors)
 
+    async def iter_list(
+        self,
+        *,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[CustomerWalletSortProperty] | None = ["-created_at"],
+    ) -> typing.AsyncGenerator[CustomerWallet, None]:
+        """
+        List wallets of the authenticated customer.
+
+        Args:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Returns:
+            An async generator that yields items of type CustomerWallet.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                page=page,
+                limit=limit,
+                sorting=sorting,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     async def get(
         self,
         id: str,
@@ -136,6 +211,7 @@ class WalletsAsync(AsyncServiceBase):
             ResourceNotFound: Wallet not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(

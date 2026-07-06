@@ -1,12 +1,13 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type {
   MetadataQuery,
   ProductBenefitsUpdate,
   ProductCreate,
   ProductUpdate,
 } from "../models/inputs";
-import type { ListResourceProduct, Product } from "../models/outputs";
 import type { ProductSortProperty, ProductVisibility } from "../models/literals";
+import type { ListResourceProduct, Product } from "../models/outputs";
+
 import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../errors";
 
 export const listProducts = (client: ClientBase) => {
@@ -18,6 +19,7 @@ export const listProducts = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceProduct}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -55,6 +57,49 @@ export const listProducts = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List products.
+ *
+ * **Scopes**: `products:read` `products:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<Product>} A generator that yields items of type Product.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistProducts = (client: ClientBase) => {
+  return async function* (query?: {
+    id?: string | string[] | null;
+    organization_id?: string | string[] | null;
+    query?: string | null;
+    is_archived?: boolean | null;
+    is_recurring?: boolean | null;
+    benefit_id?: string | string[] | null;
+    visibility?: ProductVisibility[] | null;
+    page?: number;
+    limit?: number;
+    sorting?: ProductSortProperty[] | null;
+    metadata?: MetadataQuery;
+  }): AsyncGenerator<Product> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listProducts(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const createProducts = (client: ClientBase) => {
   /**
    * Create a product.
@@ -64,6 +109,7 @@ export const createProducts = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Product}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -86,6 +132,7 @@ export const getProducts = (client: ClientBase) => {
    * @param id
    * @returns {Product}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Product not found.
    * @throws {HTTPValidationError} Validation Error
@@ -119,6 +166,7 @@ export const updateProducts = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Product}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} You don't have the permission to update this product.
    * @throws {ResourceNotFound} Product not found.
@@ -154,6 +202,7 @@ export const updateBenefitsProducts = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Product}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} You don't have the permission to update this product.
    * @throws {ResourceNotFound} Product not found.
@@ -187,6 +236,7 @@ export function createProductsService(client: ClientBase) {
     get: getProducts(client),
     update: updateProducts(client),
     updateBenefits: updateBenefitsProducts(client),
+    iterlist: iterlistProducts(client),
   };
 }
 

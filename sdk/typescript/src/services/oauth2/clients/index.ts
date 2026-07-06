@@ -1,4 +1,5 @@
-import { ClientBase } from "../../../base";
+import type { ClientBase } from "../../../base";
+
 import { createOauth2Service } from "./oauth2";
 
 export function createClientsService(client: ClientBase) {

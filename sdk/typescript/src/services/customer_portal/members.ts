@@ -1,6 +1,7 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type { CustomerPortalMemberCreate, CustomerPortalMemberUpdate } from "../../models/inputs";
 import type { CustomerPortalMember, ListResourceCustomerPortalMember } from "../../models/outputs";
+
 import {
   AddMember400Error,
   AddMember401Error,
@@ -27,6 +28,7 @@ export const listMembersMembers = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceCustomerPortalMember}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ListMembers401Error} Authentication required
    * @throws {ListMembers403Error} Not permitted - requires owner or billing manager role
@@ -56,6 +58,42 @@ export const listMembersMembers = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List all members of the customer's team.
+ *
+ * Only available to owners and billing managers of team customers.
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<CustomerPortalMember>} A generator that yields items of type CustomerPortalMember.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {ListMembers401Error} Authentication required
+ * @throws {ListMembers403Error} Not permitted - requires owner or billing manager role
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistMembersMembers = (client: ClientBase) => {
+  return async function* (query?: {
+    page?: number;
+    limit?: number;
+  }): AsyncGenerator<CustomerPortalMember> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listMembersMembers(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const addMemberMembers = (client: ClientBase) => {
   /**
    * Add a new member to the customer's team.
@@ -69,6 +107,7 @@ export const addMemberMembers = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomerPortalMember}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {AddMember400Error} Invalid request or member already exists.
    * @throws {AddMember401Error} Authentication required
@@ -107,6 +146,7 @@ export const removeMemberMembers = (client: ClientBase) => {
    * @param id
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {RemoveMember400Error} Cannot remove the only owner.
    * @throws {RemoveMember401Error} Authentication required
@@ -150,6 +190,7 @@ export const updateMemberMembers = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomerPortalMember}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {UpdateMember400Error} Invalid role change.
    * @throws {UpdateMember401Error} Authentication required
@@ -186,6 +227,7 @@ export function createMembersService(client: ClientBase) {
     addMember: addMemberMembers(client),
     removeMember: removeMemberMembers(client),
     updateMember: updateMemberMembers(client),
+    iterlistMembers: iterlistMembersMembers(client),
   };
 }
 

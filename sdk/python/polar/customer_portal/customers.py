@@ -27,6 +27,7 @@ from polar.inputs import (
 )
 from polar.outputs import (
     CustomerEmailUpdateVerifyResponse,
+    CustomerPaymentMethod,
     CustomerPaymentMethodCreateResponse,
     CustomerPortalCustomer,
     ListResourceCustomerPaymentMethod,
@@ -46,6 +47,7 @@ class CustomersSync(SyncServiceBase):
 
         Raises:
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -70,6 +72,7 @@ class CustomersSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -101,6 +104,7 @@ class CustomersSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -120,6 +124,38 @@ class CustomersSync(SyncServiceBase):
             response, ListResourceCustomerPaymentMethod, method_errors
         )
 
+    def iter_list_payment_methods(
+        self,
+        *,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.Generator[CustomerPaymentMethod, None, None]:
+        """
+        Get saved payment methods of the authenticated customer.
+
+        Args:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            A generator that yields items of type CustomerPaymentMethod.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list_payment_methods(
+                page=page,
+                limit=limit,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     def add_payment_method(
         self,
         **kwargs: typing.Unpack[CustomerPaymentMethodCreate],
@@ -134,6 +170,7 @@ class CustomersSync(SyncServiceBase):
             PaymentMethodSetupFailed: The card was declined while setting up the payment method.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -166,6 +203,7 @@ class CustomersSync(SyncServiceBase):
             CustomerNotReady: Customer is not ready to confirm a payment method.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -199,6 +237,7 @@ class CustomersSync(SyncServiceBase):
             ResourceNotFound: Payment method not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -230,6 +269,7 @@ class CustomersSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -260,6 +300,7 @@ class CustomersSync(SyncServiceBase):
             CheckEmailUpdate401Error: Invalid or expired verification token.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -291,6 +332,7 @@ class CustomersSync(SyncServiceBase):
             VerifyEmailUpdate401Error: Invalid or expired verification token.
             VerifyEmailUpdate422Error: Email address is already in use.
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -323,6 +365,7 @@ class CustomersAsync(AsyncServiceBase):
 
         Raises:
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -347,6 +390,7 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -378,6 +422,7 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -397,6 +442,39 @@ class CustomersAsync(AsyncServiceBase):
             response, ListResourceCustomerPaymentMethod, method_errors
         )
 
+    async def iter_list_payment_methods(
+        self,
+        *,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.AsyncGenerator[CustomerPaymentMethod, None]:
+        """
+        Get saved payment methods of the authenticated customer.
+
+        Args:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            An async generator that yields items of type CustomerPaymentMethod.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list_payment_methods(
+                page=page,
+                limit=limit,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     async def add_payment_method(
         self,
         **kwargs: typing.Unpack[CustomerPaymentMethodCreate],
@@ -411,6 +489,7 @@ class CustomersAsync(AsyncServiceBase):
             PaymentMethodSetupFailed: The card was declined while setting up the payment method.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -443,6 +522,7 @@ class CustomersAsync(AsyncServiceBase):
             CustomerNotReady: Customer is not ready to confirm a payment method.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -476,6 +556,7 @@ class CustomersAsync(AsyncServiceBase):
             ResourceNotFound: Payment method not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -507,6 +588,7 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -537,6 +619,7 @@ class CustomersAsync(AsyncServiceBase):
             CheckEmailUpdate401Error: Invalid or expired verification token.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -568,6 +651,7 @@ class CustomersAsync(AsyncServiceBase):
             VerifyEmailUpdate401Error: Invalid or expired verification token.
             VerifyEmailUpdate422Error: Email address is already in use.
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(

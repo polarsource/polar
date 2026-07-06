@@ -63,6 +63,7 @@ class ProductsSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -88,6 +89,67 @@ class ProductsSync(SyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourceProduct, method_errors)
+
+    def iter_list(
+        self,
+        *,
+        id: str | builtins.list[str] | None = None,
+        organization_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
+        is_archived: bool | None = None,
+        is_recurring: bool | None = None,
+        benefit_id: str | builtins.list[str] | None = None,
+        visibility: builtins.list[ProductVisibility] | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[ProductSortProperty] | None = ["-created_at"],
+        metadata: MetadataQuery = None,
+    ) -> typing.Generator[Product, None, None]:
+        """
+        List products.
+
+        **Scopes**: `products:read` `products:write`
+
+        Args:
+            id: Filter by product ID.
+            organization_id: Filter by organization ID.
+            query: Filter by product name.
+            is_archived: Filter on archived products.
+            is_recurring: Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned.
+            benefit_id: Filter products granting specific benefit.
+            visibility: Filter by visibility.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+
+        Returns:
+            A generator that yields items of type Product.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                id=id,
+                organization_id=organization_id,
+                query=query,
+                is_archived=is_archived,
+                is_recurring=is_recurring,
+                benefit_id=benefit_id,
+                visibility=visibility,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                metadata=metadata,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     @typing.overload
     def create(
@@ -116,6 +178,7 @@ class ProductsSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -147,6 +210,7 @@ class ProductsSync(SyncServiceBase):
             ResourceNotFound: Product not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -183,6 +247,7 @@ class ProductsSync(SyncServiceBase):
             ResourceNotFound: Product not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -221,6 +286,7 @@ class ProductsSync(SyncServiceBase):
             ResourceNotFound: Product not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -278,6 +344,7 @@ class ProductsAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -303,6 +370,68 @@ class ProductsAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourceProduct, method_errors)
+
+    async def iter_list(
+        self,
+        *,
+        id: str | builtins.list[str] | None = None,
+        organization_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
+        is_archived: bool | None = None,
+        is_recurring: bool | None = None,
+        benefit_id: str | builtins.list[str] | None = None,
+        visibility: builtins.list[ProductVisibility] | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[ProductSortProperty] | None = ["-created_at"],
+        metadata: MetadataQuery = None,
+    ) -> typing.AsyncGenerator[Product, None]:
+        """
+        List products.
+
+        **Scopes**: `products:read` `products:write`
+
+        Args:
+            id: Filter by product ID.
+            organization_id: Filter by organization ID.
+            query: Filter by product name.
+            is_archived: Filter on archived products.
+            is_recurring: Filter on recurring products. If `true`, only subscriptions tiers are returned. If `false`, only one-time purchase products are returned.
+            benefit_id: Filter products granting specific benefit.
+            visibility: Filter by visibility.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+
+        Returns:
+            An async generator that yields items of type Product.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                id=id,
+                organization_id=organization_id,
+                query=query,
+                is_archived=is_archived,
+                is_recurring=is_recurring,
+                benefit_id=benefit_id,
+                visibility=visibility,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                metadata=metadata,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     @typing.overload
     async def create(
@@ -331,6 +460,7 @@ class ProductsAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -362,6 +492,7 @@ class ProductsAsync(AsyncServiceBase):
             ResourceNotFound: Product not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -398,6 +529,7 @@ class ProductsAsync(AsyncServiceBase):
             ResourceNotFound: Product not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -436,6 +568,7 @@ class ProductsAsync(AsyncServiceBase):
             ResourceNotFound: Product not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(

@@ -1,11 +1,13 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { WebhookEndpointCreate, WebhookEndpointUpdate } from "../models/inputs";
+import type { WebhookEventType } from "../models/literals";
 import type {
   ListResourceWebhookDelivery,
   ListResourceWebhookEndpoint,
+  WebhookDelivery,
   WebhookEndpoint,
 } from "../models/outputs";
-import type { WebhookEventType } from "../models/literals";
+
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listWebhookEndpointsWebhooks = (client: ClientBase) => {
@@ -17,6 +19,7 @@ export const listWebhookEndpointsWebhooks = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceWebhookEndpoint}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -44,6 +47,41 @@ export const listWebhookEndpointsWebhooks = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List webhook endpoints.
+ *
+ * **Scopes**: `webhooks:read` `webhooks:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<WebhookEndpoint>} A generator that yields items of type WebhookEndpoint.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistWebhookEndpointsWebhooks = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    page?: number;
+    limit?: number;
+  }): AsyncGenerator<WebhookEndpoint> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listWebhookEndpointsWebhooks(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const createWebhookEndpointWebhooks = (client: ClientBase) => {
   /**
    * Create a webhook endpoint.
@@ -53,6 +91,7 @@ export const createWebhookEndpointWebhooks = (client: ClientBase) => {
    * @param body - Request body
    * @returns {WebhookEndpoint}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -81,6 +120,7 @@ export const getWebhookEndpointWebhooks = (client: ClientBase) => {
    * @param id - The webhook endpoint ID.
    * @returns {WebhookEndpoint}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Webhook endpoint not found.
    * @throws {HTTPValidationError} Validation Error
@@ -113,6 +153,7 @@ export const deleteWebhookEndpointWebhooks = (client: ClientBase) => {
    * @param id - The webhook endpoint ID.
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Webhook endpoint not found.
    * @throws {HTTPValidationError} Validation Error
@@ -146,6 +187,7 @@ export const updateWebhookEndpointWebhooks = (client: ClientBase) => {
    * @param body - Request body
    * @returns {WebhookEndpoint}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Webhook endpoint not found.
    * @throws {HTTPValidationError} Validation Error
@@ -178,6 +220,7 @@ export const resetWebhookEndpointSecretWebhooks = (client: ClientBase) => {
    * @param id - The webhook endpoint ID.
    * @returns {WebhookEndpoint}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Webhook endpoint not found.
    * @throws {HTTPValidationError} Validation Error
@@ -212,6 +255,7 @@ export const listWebhookDeliveriesWebhooks = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceWebhookDelivery}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -251,6 +295,49 @@ export const listWebhookDeliveriesWebhooks = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List webhook deliveries.
+ *
+ * Deliveries are all the attempts to deliver a webhook event to an endpoint.
+ *
+ * **Scopes**: `webhooks:read` `webhooks:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<WebhookDelivery>} A generator that yields items of type WebhookDelivery.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistWebhookDeliveriesWebhooks = (client: ClientBase) => {
+  return async function* (query?: {
+    endpoint_id?: string | string[] | null;
+    start_timestamp?: string | null;
+    end_timestamp?: string | null;
+    succeeded?: boolean | null;
+    query?: string | null;
+    http_code_class?: ("2xx" | "3xx" | "4xx" | "5xx") | null;
+    event_type?: WebhookEventType | WebhookEventType[] | null;
+    page?: number;
+    limit?: number;
+  }): AsyncGenerator<WebhookDelivery> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listWebhookDeliveriesWebhooks(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const redeliverWebhookEventWebhooks = (client: ClientBase) => {
   /**
    * Schedule the re-delivery of a webhook event.
@@ -260,6 +347,7 @@ export const redeliverWebhookEventWebhooks = (client: ClientBase) => {
    * @param id - The webhook event ID.
    * @returns {unknown}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Webhook event not found.
    * @throws {HTTPValidationError} Validation Error
@@ -294,6 +382,8 @@ export function createWebhooksService(client: ClientBase) {
     resetWebhookEndpointSecret: resetWebhookEndpointSecretWebhooks(client),
     listWebhookDeliveries: listWebhookDeliveriesWebhooks(client),
     redeliverWebhookEvent: redeliverWebhookEventWebhooks(client),
+    iterlistWebhookEndpoints: iterlistWebhookEndpointsWebhooks(client),
+    iterlistWebhookDeliveries: iterlistWebhookDeliveriesWebhooks(client),
   };
 }
 

@@ -29,10 +29,19 @@ from polar.outputs import (
     CustomerState,
     ListResourceCustomer,
     ListResourcePaymentMethod,
+    PaymentMethod,
 )
+
+from .members import MembersAsync, MembersSync
 
 
 class CustomersSync(SyncServiceBase):
+    members: MembersSync
+
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.members = MembersSync.from_service(self)
+
     def list(
         self,
         *,
@@ -63,6 +72,7 @@ class CustomersSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -85,6 +95,58 @@ class CustomersSync(SyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourceCustomer, method_errors)
+
+    def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        email: str | None = None,
+        query: str | None = None,
+        active: bool | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[CustomerSortProperty] | None = ["-created_at"],
+        metadata: MetadataQuery = None,
+    ) -> typing.Generator[Customer, None, None]:
+        """
+        List customers.
+
+        **Scopes**: `customers:read` `customers:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            email: Filter by exact email.
+            query: Filter by name, email, or external ID.
+            active: Filter by active customers, i.e. customers with at least one trialing, active or past_due subscription.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+
+        Returns:
+            A generator that yields items of type Customer.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                organization_id=organization_id,
+                email=email,
+                query=query,
+                active=active,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                metadata=metadata,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     @typing.overload
     def create(
@@ -113,6 +175,7 @@ class CustomersSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -144,6 +207,7 @@ class CustomersSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -176,6 +240,7 @@ class CustomersSync(SyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -226,6 +291,7 @@ class CustomersSync(SyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -263,6 +329,7 @@ class CustomersSync(SyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -297,6 +364,7 @@ class CustomersSync(SyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -337,6 +405,7 @@ class CustomersSync(SyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -374,6 +443,7 @@ class CustomersSync(SyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -414,6 +484,7 @@ class CustomersSync(SyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -453,6 +524,7 @@ class CustomersSync(SyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -491,6 +563,7 @@ class CustomersSync(SyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -510,6 +583,44 @@ class CustomersSync(SyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourcePaymentMethod, method_errors)
+
+    def iter_list_payment_methods(
+        self,
+        id: str,
+        *,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.Generator[PaymentMethod, None, None]:
+        """
+        Get saved payment methods of a customer.
+
+        **Scopes**: `customers:read` `customers:write`
+
+        Args:
+            id: The customer ID.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            A generator that yields items of type PaymentMethod.
+
+        Raises:
+            ResourceNotFound: Customer not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list_payment_methods(
+                id=id,
+                page=page,
+                limit=limit,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     def list_payment_methods_external(
         self,
@@ -532,6 +643,7 @@ class CustomersSync(SyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -552,8 +664,52 @@ class CustomersSync(SyncServiceBase):
         }
         return parse_response_json(response, ListResourcePaymentMethod, method_errors)
 
+    def iter_list_payment_methods_external(
+        self,
+        external_id: str,
+        *,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.Generator[PaymentMethod, None, None]:
+        """
+        Get saved payment methods of a customer by external ID.
+
+        **Scopes**: `customers:read` `customers:write`
+
+        Args:
+            external_id: The customer external ID.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            A generator that yields items of type PaymentMethod.
+
+        Raises:
+            ResourceNotFound: Customer not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list_payment_methods_external(
+                external_id=external_id,
+                page=page,
+                limit=limit,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
 
 class CustomersAsync(AsyncServiceBase):
+    members: MembersAsync
+
+    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
+        super().__init__(*args, **kwargs)
+        self.members = MembersAsync.from_service(self)
+
     async def list(
         self,
         *,
@@ -584,6 +740,7 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -606,6 +763,59 @@ class CustomersAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourceCustomer, method_errors)
+
+    async def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        email: str | None = None,
+        query: str | None = None,
+        active: bool | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[CustomerSortProperty] | None = ["-created_at"],
+        metadata: MetadataQuery = None,
+    ) -> typing.AsyncGenerator[Customer, None]:
+        """
+        List customers.
+
+        **Scopes**: `customers:read` `customers:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            email: Filter by exact email.
+            query: Filter by name, email, or external ID.
+            active: Filter by active customers, i.e. customers with at least one trialing, active or past_due subscription.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+
+        Returns:
+            An async generator that yields items of type Customer.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                organization_id=organization_id,
+                email=email,
+                query=query,
+                active=active,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                metadata=metadata,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     @typing.overload
     async def create(
@@ -634,6 +844,7 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -665,6 +876,7 @@ class CustomersAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -697,6 +909,7 @@ class CustomersAsync(AsyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -747,6 +960,7 @@ class CustomersAsync(AsyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -784,6 +998,7 @@ class CustomersAsync(AsyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -818,6 +1033,7 @@ class CustomersAsync(AsyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -858,6 +1074,7 @@ class CustomersAsync(AsyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -895,6 +1112,7 @@ class CustomersAsync(AsyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -935,6 +1153,7 @@ class CustomersAsync(AsyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -974,6 +1193,7 @@ class CustomersAsync(AsyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -1012,6 +1232,7 @@ class CustomersAsync(AsyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -1031,6 +1252,45 @@ class CustomersAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourcePaymentMethod, method_errors)
+
+    async def iter_list_payment_methods(
+        self,
+        id: str,
+        *,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.AsyncGenerator[PaymentMethod, None]:
+        """
+        Get saved payment methods of a customer.
+
+        **Scopes**: `customers:read` `customers:write`
+
+        Args:
+            id: The customer ID.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            An async generator that yields items of type PaymentMethod.
+
+        Raises:
+            ResourceNotFound: Customer not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list_payment_methods(
+                id=id,
+                page=page,
+                limit=limit,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     async def list_payment_methods_external(
         self,
@@ -1053,6 +1313,7 @@ class CustomersAsync(AsyncServiceBase):
             ResourceNotFound: Customer not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -1072,3 +1333,42 @@ class CustomersAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourcePaymentMethod, method_errors)
+
+    async def iter_list_payment_methods_external(
+        self,
+        external_id: str,
+        *,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.AsyncGenerator[PaymentMethod, None]:
+        """
+        Get saved payment methods of a customer by external ID.
+
+        **Scopes**: `customers:read` `customers:write`
+
+        Args:
+            external_id: The customer external ID.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            An async generator that yields items of type PaymentMethod.
+
+        Raises:
+            ResourceNotFound: Customer not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list_payment_methods_external(
+                external_id=external_id,
+                page=page,
+                limit=limit,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1

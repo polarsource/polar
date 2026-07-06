@@ -116,6 +116,9 @@ class TypeScriptEmitter(EmitterBase):
         self.copy_file(
             self.templates_dir / "tsdown.config.ts", root_directory / "tsdown.config.ts"
         )
+        self.copy_file(
+            self.templates_dir / "oxfmt.config.ts", root_directory / "oxfmt.config.ts"
+        )
         self.copy_file(self.templates_dir / "justfile", root_directory / "justfile")
         self.copy_file(self.templates_dir / "README.md", root_directory / "README.md")
 
@@ -256,7 +259,7 @@ class TypeScriptEmitter(EmitterBase):
 
         self.render_file("src/services/service.ts", service_path, context)
 
-    def _get_input_enum_imports(self) -> set[str]:
+    def _get_input_enum_imports(self) -> list[str]:
         """Collect all enum imports needed for input models."""
         enum_imports: set[str] = set()
         for model in self.ir.input_models:
@@ -265,9 +268,9 @@ class TypeScriptEmitter(EmitterBase):
         for union in self.ir.input_unions:
             for variant in union.variants:
                 collect_enum_imports(variant, enum_imports, self.ir)
-        return enum_imports
+        return sorted(enum_imports)
 
-    def _get_output_enum_imports(self) -> set[str]:
+    def _get_output_enum_imports(self) -> list[str]:
         """Collect all enum imports needed for output models."""
         enum_imports: set[str] = set()
         for model in self.ir.output_models:
@@ -276,7 +279,7 @@ class TypeScriptEmitter(EmitterBase):
         for union in self.ir.output_unions:
             for variant in union.variants:
                 collect_enum_imports(variant, enum_imports, self.ir)
-        return enum_imports
+        return sorted(enum_imports)
 
     def _collect_all_errors(self) -> list[ErrorResponse]:
         """Collect all unique error responses from all services and methods."""
@@ -353,6 +356,18 @@ class TypeScriptEmitter(EmitterBase):
             # Collect imports from error responses
             for error in method.errors:
                 imports["errors"].add(error.name)
+
+            # Collect imports for pagination item schemas
+            if method.pagination is not None:
+                imports["outputs"].update(
+                    _collect_type_ref_names(method.pagination.item_schema, self.ir)
+                )
+                imports["outputs"].update(
+                    collect_union_imports(method.pagination.item_schema, self.ir)
+                )
+                imports["literals"].update(
+                    _collect_enum_names(method.pagination.item_schema, self.ir)
+                )
 
         # Collect sub-service imports
         for sub_service in service.services:

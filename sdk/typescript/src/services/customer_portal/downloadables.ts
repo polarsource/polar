@@ -1,5 +1,6 @@
-import { ClientBase } from "../../base";
-import type { ListResourceDownloadableRead } from "../../models/outputs";
+import type { ClientBase } from "../../base";
+import type { DownloadableRead, ListResourceDownloadableRead } from "../../models/outputs";
+
 import { HTTPValidationError } from "../../errors";
 
 export const listDownloadables = (client: ClientBase) => {
@@ -9,6 +10,7 @@ export const listDownloadables = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceDownloadableRead}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -36,10 +38,44 @@ export const listDownloadables = (client: ClientBase) => {
     });
   };
 };
+/**
+ * **Scopes**: `customer_portal:read` `customer_portal:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<DownloadableRead>} A generator that yields items of type DownloadableRead.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistDownloadables = (client: ClientBase) => {
+  return async function* (query?: {
+    benefit_id?: string | string[] | null;
+    page?: number;
+    limit?: number;
+  }): AsyncGenerator<DownloadableRead> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listDownloadables(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 
 export function createDownloadablesService(client: ClientBase) {
   return {
     list: listDownloadables(client),
+    iterlist: iterlistDownloadables(client),
   };
 }
 

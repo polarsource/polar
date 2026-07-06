@@ -52,6 +52,7 @@ class SubscriptionsSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -75,6 +76,52 @@ class SubscriptionsSync(SyncServiceBase):
             response, ListResourceCustomerSubscription, method_errors
         )
 
+    def iter_list(
+        self,
+        *,
+        product_id: str | builtins.list[str] | None = None,
+        active: bool | None = None,
+        query: str | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[CustomerSubscriptionSortProperty] | None = ["-started_at"],
+    ) -> typing.Generator[CustomerSubscription, None, None]:
+        """
+        List subscriptions of the authenticated customer.
+
+        **Scopes**: `customer_portal:read` `customer_portal:write`
+
+        Args:
+            product_id: Filter by product ID.
+            active: Filter by active or cancelled subscription.
+            query: Search by product or organization name.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Returns:
+            A generator that yields items of type CustomerSubscription.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                product_id=product_id,
+                active=active,
+                query=query,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     def get(
         self,
         id: str,
@@ -91,6 +138,7 @@ class SubscriptionsSync(SyncServiceBase):
             ResourceNotFound: Customer subscription was not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -123,6 +171,7 @@ class SubscriptionsSync(SyncServiceBase):
             ResourceNotFound: Customer subscription was not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -187,6 +236,7 @@ class SubscriptionsSync(SyncServiceBase):
             ResourceNotFound: Customer subscription was not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -235,6 +285,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -258,6 +309,53 @@ class SubscriptionsAsync(AsyncServiceBase):
             response, ListResourceCustomerSubscription, method_errors
         )
 
+    async def iter_list(
+        self,
+        *,
+        product_id: str | builtins.list[str] | None = None,
+        active: bool | None = None,
+        query: str | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[CustomerSubscriptionSortProperty] | None = ["-started_at"],
+    ) -> typing.AsyncGenerator[CustomerSubscription, None]:
+        """
+        List subscriptions of the authenticated customer.
+
+        **Scopes**: `customer_portal:read` `customer_portal:write`
+
+        Args:
+            product_id: Filter by product ID.
+            active: Filter by active or cancelled subscription.
+            query: Search by product or organization name.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Returns:
+            An async generator that yields items of type CustomerSubscription.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                product_id=product_id,
+                active=active,
+                query=query,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     async def get(
         self,
         id: str,
@@ -274,6 +372,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             ResourceNotFound: Customer subscription was not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -306,6 +405,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             ResourceNotFound: Customer subscription was not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -370,6 +470,7 @@ class SubscriptionsAsync(AsyncServiceBase):
             ResourceNotFound: Customer subscription was not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(

@@ -2646,6 +2646,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/support-cases/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Support Cases
+     * @description List the organization's support cases.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['support-cases:list_support_cases']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/support-cases/{id}': {
     parameters: {
       query?: never
@@ -4897,6 +4919,30 @@ export interface paths {
     put?: never
     /** Claim Seat */
     post: operations['customer-seats:claim_seat']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/merchant-migrations/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Merchant Migrations
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['merchant-migrations:list']
+    put?: never
+    /**
+     * Create Merchant Migration
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:create']
     delete?: never
     options?: never
     head?: never
@@ -19991,6 +20037,33 @@ export interface components {
       | 'under_review'
       | 'lost'
       | 'won'
+    /** DisputeSupportCaseListItem */
+    DisputeSupportCaseListItem: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'dispute'
+      /** @description The dispute this case handles. */
+      dispute: components['schemas']['Dispute']
+    }
     /**
      * DisputeSupportCaseMessageCreate
      * @description A reply on a dispute case.
@@ -21837,6 +21910,12 @@ export interface components {
       items: components['schemas']['Member'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[MerchantMigration] */
+    ListResource_MerchantMigration_: {
+      /** Items */
+      items: components['schemas']['MerchantMigration'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[Meter] */
     ListResource_Meter_: {
       /** Items */
@@ -21943,6 +22022,12 @@ export interface components {
     ListResource_Subscription_: {
       /** Items */
       items: components['schemas']['Subscription'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[SupportCaseListItem] */
+    ListResource_SupportCaseListItem_: {
+      /** Items */
+      items: components['schemas']['SupportCaseListItem'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[TaxJurisdiction] */
@@ -22378,6 +22463,32 @@ export interface components {
        * Format: uuid4
        */
       organization_id: string
+      /** @description The provider the billing is being migrated from. */
+      source_platform: components['schemas']['MerchantMigrationSourcePlatform']
+      /** @description The current step of the migration. */
+      step: components['schemas']['MerchantMigrationStep']
+      /**
+       * Source Connected
+       * @description Whether the source provider has been connected.
+       */
+      source_connected: boolean
+      /**
+       * Source
+       * @description Non-secret metadata about the connected source. The shape varies by provider (e.g. Stripe exposes `stripe_user_id`, `livemode`).
+       */
+      source: {
+        [key: string]: unknown
+      } | null
+    }
+    /** MerchantMigrationCreate */
+    MerchantMigrationCreate: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The organization the migration belongs to.
+       */
+      organization_id: string
+      /** @description The provider to migrate the billing from. */
       source_platform: components['schemas']['MerchantMigrationSourcePlatform']
     }
     /** MerchantMigrationNotFound */
@@ -22396,6 +22507,18 @@ export interface components {
      * @enum {string}
      */
     MerchantMigrationSourcePlatform: 'stripe' | 'lemon_squeezy' | 'paddle'
+    /**
+     * MerchantMigrationStep
+     * @enum {string}
+     */
+    MerchantMigrationStep:
+      | 'source_setup'
+      | 'pre_check'
+      | 'create_catalog'
+      | 'copy_cards'
+      | 'activate_subscriptions'
+      | 'cleanup'
+      | 'completed'
     MetadataOutputType: {
       [key: string]: string | number | boolean
     }
@@ -25830,6 +25953,12 @@ export interface components {
        * @default false
        */
       compass_enabled: boolean
+      /**
+       * Merchant Migration Enabled
+       * @description If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.
+       * @default false
+       */
+      merchant_migration_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate
@@ -29934,6 +30063,31 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** ReviewAppealSupportCaseListItem */
+    ReviewAppealSupportCaseListItem: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'review_appeal'
+    }
     /**
      * ReviewAppealSupportCaseMessageCreate
      * @description A reply on a review-appeal case.
@@ -32567,6 +32721,9 @@ export interface components {
       /** Size Readable */
       readonly size_readable: string
     }
+    SupportCaseListItem:
+      | components['schemas']['DisputeSupportCaseListItem']
+      | components['schemas']['ReviewAppealSupportCaseListItem']
     /** SupportCaseMessage */
     SupportCaseMessage: {
       /**
@@ -32624,6 +32781,11 @@ export interface components {
       | 'dispute_lost'
       | 'dispute_prevented'
       | 'merchant_accepted'
+    /**
+     * SupportCaseSortProperty
+     * @enum {string}
+     */
+    SupportCaseSortProperty: 'created_at' | '-created_at'
     /** SupportCaseThread */
     SupportCaseThread: {
       case: components['schemas']['SupportCase']
@@ -40957,6 +41119,54 @@ export interface operations {
       }
     }
   }
+  'support-cases:list_support_cases': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by support case type. */
+        type?:
+          | components['schemas']['SupportCaseType']
+          | components['schemas']['SupportCaseType'][]
+          | null
+        /** @description Filter dispute cases by the linked dispute's status. */
+        dispute_status?:
+          | components['schemas']['DisputeStatus']
+          | components['schemas']['DisputeStatus'][]
+          | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?: components['schemas']['SupportCaseSortProperty'][] | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_SupportCaseListItem_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'support-cases:get_support_case': {
     parameters: {
       query?: never
@@ -48709,6 +48919,74 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:list': {
+    parameters: {
+      query: {
+        organization_id: string
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_MerchantMigration_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:create': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MerchantMigrationCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigration']
+        }
       }
       /** @description Validation Error */
       422: {
@@ -61028,6 +61306,9 @@ export const disputeStatusValues: ReadonlyArray<
   'lost',
   'won',
 ]
+export const disputeSupportCaseListItemTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['DisputeSupportCaseListItem']['type']
+> = ['dispute']
 export const disputeSupportCaseMessageCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DisputeSupportCaseMessageCreate']['type']
 > = ['dispute']
@@ -61161,6 +61442,17 @@ export const memberSortPropertyValues: ReadonlyArray<
 export const merchantMigrationSourcePlatformValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationSourcePlatform']
 > = ['stripe', 'lemon_squeezy', 'paddle']
+export const merchantMigrationStepValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationStep']
+> = [
+  'source_setup',
+  'pre_check',
+  'create_catalog',
+  'copy_cards',
+  'activate_subscriptions',
+  'cleanup',
+  'completed',
+]
 export const meterCreditEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterCreditEvent']['name']
 > = ['meter.credited']
@@ -62961,6 +63253,9 @@ export const refundSortPropertyValues: ReadonlyArray<
 export const refundStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RefundStatus']
 > = ['pending', 'succeeded', 'failed', 'canceled']
+export const reviewAppealSupportCaseListItemTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ReviewAppealSupportCaseListItem']['type']
+> = ['review_appeal']
 export const reviewAppealSupportCaseMessageCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ReviewAppealSupportCaseMessageCreate']['type']
 > = ['review_appeal']
@@ -63276,6 +63571,9 @@ export const supportCaseMessageTypeValues: ReadonlyArray<
   'dispute_prevented',
   'merchant_accepted',
 ]
+export const supportCaseSortPropertyValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SupportCaseSortProperty']
+> = ['created_at', '-created_at']
 export const supportCaseTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SupportCaseType']
 > = ['review_appeal', 'dispute']

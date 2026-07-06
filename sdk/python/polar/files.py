@@ -23,12 +23,9 @@ from polar.inputs import (
     SupportCaseAttachmentFileCreate,
 )
 from polar.outputs import (
-    DownloadableFileRead,
+    FileRead,
     FileUpload,
     ListResourceFileRead,
-    OrganizationAvatarFileRead,
-    ProductMediaFileRead,
-    SupportCaseAttachmentFileRead,
 )
 
 
@@ -55,6 +52,7 @@ class FilesSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -73,6 +71,46 @@ class FilesSync(SyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourceFileRead, method_errors)
+
+    def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        ids: str | builtins.list[str] | None = None,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.Generator[FileRead, None, None]:
+        """
+        List files.
+
+        **Scopes**: `files:read` `files:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            ids: Filter by file ID.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            A generator that yields items of type FileRead.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                organization_id=organization_id,
+                ids=ids,
+                page=page,
+                limit=limit,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     @typing.overload
     def create(
@@ -113,6 +151,7 @@ class FilesSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -132,12 +171,7 @@ class FilesSync(SyncServiceBase):
         self,
         id_path: str,
         **kwargs: typing.Unpack[FileUploadCompleted],
-    ) -> (
-        DownloadableFileRead
-        | ProductMediaFileRead
-        | OrganizationAvatarFileRead
-        | SupportCaseAttachmentFileRead
-    ):
+    ) -> FileRead:
         """
         Complete a file upload.
 
@@ -152,6 +186,7 @@ class FilesSync(SyncServiceBase):
             ResourceNotFound: File not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -169,14 +204,7 @@ class FilesSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response_json(
-            response,
-            DownloadableFileRead
-            | ProductMediaFileRead
-            | OrganizationAvatarFileRead
-            | SupportCaseAttachmentFileRead,
-            method_errors,
-        )
+        return parse_response_json(response, FileRead, method_errors)
 
     def delete(
         self,
@@ -195,6 +223,7 @@ class FilesSync(SyncServiceBase):
             ResourceNotFound: File not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -217,12 +246,7 @@ class FilesSync(SyncServiceBase):
         self,
         id: str,
         **kwargs: typing.Unpack[FilePatch],
-    ) -> (
-        DownloadableFileRead
-        | ProductMediaFileRead
-        | OrganizationAvatarFileRead
-        | SupportCaseAttachmentFileRead
-    ):
+    ) -> FileRead:
         """
         Update a file.
 
@@ -237,6 +261,7 @@ class FilesSync(SyncServiceBase):
             ResourceNotFound: File not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -254,14 +279,7 @@ class FilesSync(SyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response_json(
-            response,
-            DownloadableFileRead
-            | ProductMediaFileRead
-            | OrganizationAvatarFileRead
-            | SupportCaseAttachmentFileRead,
-            method_errors,
-        )
+        return parse_response_json(response, FileRead, method_errors)
 
 
 class FilesAsync(AsyncServiceBase):
@@ -287,6 +305,7 @@ class FilesAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -305,6 +324,47 @@ class FilesAsync(AsyncServiceBase):
             422: HTTPValidationError,
         }
         return parse_response_json(response, ListResourceFileRead, method_errors)
+
+    async def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        ids: str | builtins.list[str] | None = None,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.AsyncGenerator[FileRead, None]:
+        """
+        List files.
+
+        **Scopes**: `files:read` `files:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            ids: Filter by file ID.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            An async generator that yields items of type FileRead.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                organization_id=organization_id,
+                ids=ids,
+                page=page,
+                limit=limit,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
     @typing.overload
     async def create(
@@ -345,6 +405,7 @@ class FilesAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -364,12 +425,7 @@ class FilesAsync(AsyncServiceBase):
         self,
         id_path: str,
         **kwargs: typing.Unpack[FileUploadCompleted],
-    ) -> (
-        DownloadableFileRead
-        | ProductMediaFileRead
-        | OrganizationAvatarFileRead
-        | SupportCaseAttachmentFileRead
-    ):
+    ) -> FileRead:
         """
         Complete a file upload.
 
@@ -384,6 +440,7 @@ class FilesAsync(AsyncServiceBase):
             ResourceNotFound: File not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -401,14 +458,7 @@ class FilesAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response_json(
-            response,
-            DownloadableFileRead
-            | ProductMediaFileRead
-            | OrganizationAvatarFileRead
-            | SupportCaseAttachmentFileRead,
-            method_errors,
-        )
+        return parse_response_json(response, FileRead, method_errors)
 
     async def delete(
         self,
@@ -427,6 +477,7 @@ class FilesAsync(AsyncServiceBase):
             ResourceNotFound: File not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -449,12 +500,7 @@ class FilesAsync(AsyncServiceBase):
         self,
         id: str,
         **kwargs: typing.Unpack[FilePatch],
-    ) -> (
-        DownloadableFileRead
-        | ProductMediaFileRead
-        | OrganizationAvatarFileRead
-        | SupportCaseAttachmentFileRead
-    ):
+    ) -> FileRead:
         """
         Update a file.
 
@@ -469,6 +515,7 @@ class FilesAsync(AsyncServiceBase):
             ResourceNotFound: File not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -486,11 +533,4 @@ class FilesAsync(AsyncServiceBase):
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
-        return parse_response_json(
-            response,
-            DownloadableFileRead
-            | ProductMediaFileRead
-            | OrganizationAvatarFileRead
-            | SupportCaseAttachmentFileRead,
-            method_errors,
-        )
+        return parse_response_json(response, FileRead, method_errors)

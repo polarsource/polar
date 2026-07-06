@@ -1,12 +1,13 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { MetadataQuery, MeterCreate, MeterUpdate } from "../models/inputs";
-import type { ListResourceMeter, Meter, MeterQuantities } from "../models/outputs";
 import type {
   AggregationFunction,
   MeterSortProperty,
   TimeInterval,
   Timezone,
 } from "../models/literals";
+import type { ListResourceMeter, Meter, MeterQuantities } from "../models/outputs";
+
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listMeters = (client: ClientBase) => {
@@ -18,6 +19,7 @@ export const listMeters = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceMeter}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -47,6 +49,45 @@ export const listMeters = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List meters.
+ *
+ * **Scopes**: `meters:read` `meters:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<Meter>} A generator that yields items of type Meter.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistMeters = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    query?: string | null;
+    is_archived?: boolean | null;
+    page?: number;
+    limit?: number;
+    sorting?: MeterSortProperty[] | null;
+    metadata?: MetadataQuery;
+  }): AsyncGenerator<Meter> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listMeters(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const createMeters = (client: ClientBase) => {
   /**
    * Create a meter.
@@ -56,6 +97,7 @@ export const createMeters = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Meter}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -78,6 +120,7 @@ export const getMeters = (client: ClientBase) => {
    * @param id - The meter ID.
    * @returns {Meter}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Meter not found.
    * @throws {HTTPValidationError} Validation Error
@@ -111,6 +154,7 @@ export const updateMeters = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Meter}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Meter not found.
    * @throws {HTTPValidationError} Validation Error
@@ -138,6 +182,7 @@ export const quantitiesMeters = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {MeterQuantities}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Meter not found.
    * @throws {HTTPValidationError} Validation Error
@@ -190,6 +235,7 @@ export function createMetersService(client: ClientBase) {
     get: getMeters(client),
     update: updateMeters(client),
     quantities: quantitiesMeters(client),
+    iterlist: iterlistMeters(client),
   };
 }
 

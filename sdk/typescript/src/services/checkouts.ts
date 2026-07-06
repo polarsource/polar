@@ -1,17 +1,18 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type {
   CheckoutConfirmStripe,
   CheckoutCreate,
   CheckoutUpdate,
   CheckoutUpdatePublic,
 } from "../models/inputs";
+import type { CheckoutSortProperty, CheckoutStatus } from "../models/literals";
 import type {
   Checkout,
   CheckoutPublic,
   CheckoutPublicConfirmed,
   ListResourceCheckout,
 } from "../models/outputs";
-import type { CheckoutSortProperty, CheckoutStatus } from "../models/literals";
+
 import {
   ClientConfirm403Error,
   ClientUpdate403Error,
@@ -31,6 +32,7 @@ export const listCheckouts = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceCheckout}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -70,6 +72,47 @@ export const listCheckouts = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List checkout sessions.
+ *
+ * **Scopes**: `checkouts:read` `checkouts:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<Checkout>} A generator that yields items of type Checkout.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistCheckouts = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    product_id?: string | string[] | null;
+    customer_id?: string | string[] | null;
+    external_customer_id?: string | string[] | null;
+    status?: CheckoutStatus | CheckoutStatus[] | null;
+    query?: string | null;
+    page?: number;
+    limit?: number;
+    sorting?: CheckoutSortProperty[] | null;
+  }): AsyncGenerator<Checkout> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listCheckouts(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const createCheckouts = (client: ClientBase) => {
   /**
    * Create a checkout session.
@@ -79,6 +122,7 @@ export const createCheckouts = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Checkout}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -101,6 +145,7 @@ export const getCheckouts = (client: ClientBase) => {
    * @param id - The checkout session ID.
    * @returns {Checkout}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Checkout session not found.
    * @throws {HTTPValidationError} Validation Error
@@ -134,6 +179,7 @@ export const updateCheckouts = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Checkout}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {Update403Error} The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
    * @throws {ResourceNotFound} Checkout session not found.
@@ -166,6 +212,7 @@ export const clientGetCheckouts = (client: ClientBase) => {
    * @param client_secret - The checkout session client secret.
    * @returns {CheckoutPublic}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Checkout session not found.
    * @throws {ExpiredCheckoutError} The checkout session is expired.
@@ -199,6 +246,7 @@ export const clientUpdateCheckouts = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CheckoutPublic}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ClientUpdate403Error} The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
    * @throws {ResourceNotFound} Checkout session not found.
@@ -236,6 +284,7 @@ export const clientConfirmCheckouts = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CheckoutPublicConfirmed}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {PaymentError} The payment failed.
    * @throws {ClientConfirm403Error} The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
@@ -278,6 +327,7 @@ export function createCheckoutsService(client: ClientBase) {
     clientGet: clientGetCheckouts(client),
     clientUpdate: clientUpdateCheckouts(client),
     clientConfirm: clientConfirmCheckouts(client),
+    iterlist: iterlistCheckouts(client),
   };
 }
 

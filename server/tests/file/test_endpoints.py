@@ -35,6 +35,22 @@ class TestEndpoints:
 
         assert response.status_code == 422
 
+    @pytest.mark.auth
+    async def test_create_with_too_many_parts(
+        self, client: AsyncClient, organization: Organization, logo_png: TestFile
+    ) -> None:
+        payload = logo_png.build_create(organization.id).model_dump(mode="json")
+        part = payload["upload"]["parts"][0]
+        payload["upload"]["parts"] = [{**part, "number": i + 1} for i in range(10_001)]
+
+        response = await client.post("/v1/files/", json=payload)
+
+        assert response.status_code == 422
+        errors = response.json()["detail"]
+        assert any(
+            error["type"] == "too_long" and "parts" in error["loc"] for error in errors
+        )
+
     async def test_create_downloadable_with_web_scope(
         self, session: AsyncSession, organization: Organization, logo_png: TestFile
     ) -> None:

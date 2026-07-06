@@ -67,6 +67,7 @@ class BenefitGrantsSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -94,6 +95,67 @@ class BenefitGrantsSync(SyncServiceBase):
             response, ListResourceCustomerBenefitGrant, method_errors
         )
 
+    def iter_list(
+        self,
+        *,
+        query: str | None = None,
+        type: BenefitType | builtins.list[BenefitType] | None = None,
+        benefit_id: str | builtins.list[str] | None = None,
+        checkout_id: str | builtins.list[str] | None = None,
+        order_id: str | builtins.list[str] | None = None,
+        subscription_id: str | builtins.list[str] | None = None,
+        member_id: str | builtins.list[str] | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[CustomerBenefitGrantSortProperty] | None = [
+            "product_benefit",
+            "-granted_at",
+        ],
+    ) -> typing.Generator[CustomerBenefitGrant, None, None]:
+        """
+        List benefits grants of the authenticated customer.
+
+        **Scopes**: `customer_portal:read` `customer_portal:write`
+
+        Args:
+            query: Filter by benefit description.
+            type: Filter by benefit type.
+            benefit_id: Filter by benefit ID.
+            checkout_id: Filter by checkout ID.
+            order_id: Filter by order ID.
+            subscription_id: Filter by subscription ID.
+            member_id: Filter by member ID.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Returns:
+            A generator that yields items of type CustomerBenefitGrant.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                query=query,
+                type=type,
+                benefit_id=benefit_id,
+                checkout_id=checkout_id,
+                order_id=order_id,
+                subscription_id=subscription_id,
+                member_id=member_id,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     def get(
         self,
         id: str,
@@ -110,6 +172,7 @@ class BenefitGrantsSync(SyncServiceBase):
             ResourceNotFound: Benefit grant not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -202,6 +265,7 @@ class BenefitGrantsSync(SyncServiceBase):
             ResourceNotFound: Benefit grant not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -260,6 +324,7 @@ class BenefitGrantsAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -287,6 +352,68 @@ class BenefitGrantsAsync(AsyncServiceBase):
             response, ListResourceCustomerBenefitGrant, method_errors
         )
 
+    async def iter_list(
+        self,
+        *,
+        query: str | None = None,
+        type: BenefitType | builtins.list[BenefitType] | None = None,
+        benefit_id: str | builtins.list[str] | None = None,
+        checkout_id: str | builtins.list[str] | None = None,
+        order_id: str | builtins.list[str] | None = None,
+        subscription_id: str | builtins.list[str] | None = None,
+        member_id: str | builtins.list[str] | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[CustomerBenefitGrantSortProperty] | None = [
+            "product_benefit",
+            "-granted_at",
+        ],
+    ) -> typing.AsyncGenerator[CustomerBenefitGrant, None]:
+        """
+        List benefits grants of the authenticated customer.
+
+        **Scopes**: `customer_portal:read` `customer_portal:write`
+
+        Args:
+            query: Filter by benefit description.
+            type: Filter by benefit type.
+            benefit_id: Filter by benefit ID.
+            checkout_id: Filter by checkout ID.
+            order_id: Filter by order ID.
+            subscription_id: Filter by subscription ID.
+            member_id: Filter by member ID.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Returns:
+            An async generator that yields items of type CustomerBenefitGrant.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                query=query,
+                type=type,
+                benefit_id=benefit_id,
+                checkout_id=checkout_id,
+                order_id=order_id,
+                subscription_id=subscription_id,
+                member_id=member_id,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     async def get(
         self,
         id: str,
@@ -303,6 +430,7 @@ class BenefitGrantsAsync(AsyncServiceBase):
             ResourceNotFound: Benefit grant not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -395,6 +523,7 @@ class BenefitGrantsAsync(AsyncServiceBase):
             ResourceNotFound: Benefit grant not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(

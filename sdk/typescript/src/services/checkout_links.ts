@@ -1,7 +1,8 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { CheckoutLinkCreate, CheckoutLinkUpdate } from "../models/inputs";
-import type { CheckoutLink, ListResourceCheckoutLink } from "../models/outputs";
 import type { CheckoutLinkSortProperty } from "../models/literals";
+import type { CheckoutLink, ListResourceCheckoutLink } from "../models/outputs";
+
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listCheckoutLinks = (client: ClientBase) => {
@@ -13,6 +14,7 @@ export const listCheckoutLinks = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceCheckoutLink}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -44,6 +46,43 @@ export const listCheckoutLinks = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List checkout links.
+ *
+ * **Scopes**: `checkout_links:read` `checkout_links:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<CheckoutLink>} A generator that yields items of type CheckoutLink.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistCheckoutLinks = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    product_id?: string | string[] | null;
+    page?: number;
+    limit?: number;
+    sorting?: CheckoutLinkSortProperty[] | null;
+  }): AsyncGenerator<CheckoutLink> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listCheckoutLinks(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const createCheckoutLinks = (client: ClientBase) => {
   /**
    * Create a checkout link.
@@ -53,6 +92,7 @@ export const createCheckoutLinks = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CheckoutLink}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -81,6 +121,7 @@ export const getCheckoutLinks = (client: ClientBase) => {
    * @param id - The checkout link ID.
    * @returns {CheckoutLink}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Checkout link not found.
    * @throws {HTTPValidationError} Validation Error
@@ -113,6 +154,7 @@ export const deleteCheckoutLinks = (client: ClientBase) => {
    * @param id - The checkout link ID.
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Checkout link not found.
    * @throws {HTTPValidationError} Validation Error
@@ -146,6 +188,7 @@ export const updateCheckoutLinks = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CheckoutLink}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Checkout link not found.
    * @throws {HTTPValidationError} Validation Error
@@ -177,6 +220,7 @@ export function createCheckoutLinksService(client: ClientBase) {
     get: getCheckoutLinks(client),
     delete: deleteCheckoutLinks(client),
     update: updateCheckoutLinks(client),
+    iterlist: iterlistCheckoutLinks(client),
   };
 }
 

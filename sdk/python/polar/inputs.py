@@ -21,11 +21,11 @@ from polar.literals import (
     PresentmentCurrency,
     ProductVisibility,
     PublicSubscriptionProrationBehavior,
-    RefundReason,
+    Reason,
+    RecurringInterval,
     Role,
     SeatTierType,
     SubscriptionProrationBehavior,
-    SubscriptionRecurringInterval,
     SubType,
     TaxBehaviorOption,
     Timeframe,
@@ -2180,11 +2180,10 @@ The value must be either:
 You can store up to **50 key-value pairs**."""
 
 
-class MemberCreate(typing.TypedDict):
-    """Schema for creating a new member."""
+class MemberCreateFromCustomer(typing.TypedDict):
+    """Schema for creating a new member nested under a customer.
 
-    customer_id: str
-    """The ID of the customer this member belongs to."""
+    The customer is taken from the URL path, so it's not part of the body."""
 
     email: str
     """The email address of the member."""
@@ -2653,6 +2652,9 @@ class OrganizationUpdate(typing.TypedDict):
     default_tax_behavior: typing.NotRequired[TaxBehaviorOption | None]
     """Default tax behavior applied on products."""
 
+    sso_enforced: typing.NotRequired[bool | None]
+    """Whether members must access this organization through its SSO connection. Turning this on requires an active SSO session for this organization and at least one enabled SSO connection."""
+
 
 class ProductBenefitsUpdate(typing.TypedDict):
     """Schema to update the benefits granted by a product."""
@@ -2752,10 +2754,16 @@ You can store up to **50 key-value pairs**."""
     trial_interval_count: typing.NotRequired[int | None]
     """The number of interval units for the trial period."""
 
-    recurring_interval: SubscriptionRecurringInterval
+    recurring_interval: RecurringInterval
 
     recurring_interval_count: typing.NotRequired[int]
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on."""
+
+    meter_interval: typing.NotRequired[RecurringInterval | None]
+    """Optional meter cycle, independent of the billing interval. When set, overage settlement, meter resets and meter-credit grants run on this cadence rather than the billing interval — e.g. yearly billing with monthly credits. It must evenly divide the billing interval. If `None`, metered concerns follow the billing interval. **Once set, it can't be changed.**"""
+
+    meter_interval_count: typing.NotRequired[int | None]
+    """Number of meter interval units. Defaults to 1 when `meter_interval` is set. Ignored when `meter_interval` is `None`."""
 
 
 class ProductMediaFileCreate(typing.TypedDict):
@@ -3298,7 +3306,7 @@ You can store up to **50 key-value pairs**."""
     description: typing.NotRequired[str | None]
     """The description of the product."""
 
-    recurring_interval: typing.NotRequired[SubscriptionRecurringInterval | None]
+    recurring_interval: typing.NotRequired[RecurringInterval | None]
     """The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**"""
 
     recurring_interval_count: typing.NotRequired[int | None]
@@ -3352,7 +3360,8 @@ You can store up to **50 key-value pairs**."""
 
     order_id: str
 
-    reason: RefundReason
+    reason: Reason
+    """Reason for the refund."""
 
     amount: int
     """Amount to refund in cents. Minimum is 1."""

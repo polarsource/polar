@@ -2,7 +2,7 @@
 
 import { DisputeStatusSelect } from '@/components/Disputes/DisputeStatusSelect'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { useDisputes } from '@/hooks/queries/disputes'
+import { useSupportCases } from '@/hooks/queries/supportCases'
 import {
   DataTablePaginationState,
   DataTableSortingState,
@@ -82,14 +82,17 @@ const DisputesPage = ({
     router.push(buildUrl(pagination, sorting, value))
   }
 
-  const disputesHook = useDisputes(organization.id, {
+  const { data: supportCases, isLoading } = useSupportCases(organization.id, {
     ...getAPIParams(pagination, sorting),
-    status: status === 'any' ? undefined : [status],
+    type: 'dispute',
+    dispute_status: status === 'any' ? undefined : [status],
   })
 
-  const disputes = disputesHook.data?.items || []
-  const rowCount = disputesHook.data?.pagination.total_count ?? 0
-  const pageCount = disputesHook.data?.pagination.max_page ?? 1
+  const disputes = (supportCases?.items ?? []).flatMap((item) =>
+    item.type === 'dispute' ? [item.dispute] : [],
+  )
+  const rowCount = supportCases?.pagination.total_count ?? 0
+  const pageCount = supportCases?.pagination.max_page ?? 1
 
   const columns: DataTableColumnDef<schemas['Dispute']>[] = [
     {
@@ -127,7 +130,7 @@ const DisputesPage = ({
     },
     {
       accessorKey: 'amount',
-      enableSorting: true,
+      enableSorting: false,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Amount" />
       ),
@@ -182,7 +185,7 @@ const DisputesPage = ({
           onPaginationChange={setPagination}
           sorting={sorting}
           onSortingChange={setSorting}
-          isLoading={disputesHook.isLoading}
+          isLoading={isLoading}
           getRowId={(row) => row.id}
           onRowClick={(row) =>
             router.push(

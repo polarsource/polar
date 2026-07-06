@@ -1,15 +1,9 @@
 'use client'
 
-import { useDisputes } from '@/hooks/queries/disputes'
+import { useSupportCases } from '@/hooks/queries/supportCases'
 import { schemas } from '@polar-sh/client'
 import { Alert } from '@polar-sh/orbit'
 import { useRouter } from 'next/navigation'
-
-const OPEN_DISPUTE_STATUSES: schemas['DisputeStatus'][] = [
-  'needs_response',
-  'under_review',
-  'early_warning',
-]
 
 const ACTION_REQUIRED_STATUS: schemas['DisputeStatus'] = 'needs_response'
 
@@ -21,9 +15,9 @@ export const DisputesBanner = ({ organization }: DisputesBannerProps) => {
   const router = useRouter()
   const disputesEnabled = !!organization.feature_settings?.disputes_enabled
 
-  const { data } = useDisputes(
+  const { data } = useSupportCases(
     organization.id,
-    { status: OPEN_DISPUTE_STATUSES, limit: 1 },
+    { type: 'dispute', dispute_status: ACTION_REQUIRED_STATUS, limit: 1 },
     disputesEnabled,
   )
 
@@ -37,12 +31,14 @@ export const DisputesBanner = ({ organization }: DisputesBannerProps) => {
   return (
     <Alert
       title={
-        single ? 'You have an open dispute' : `You have ${count} open disputes`
+        single
+          ? 'You have a dispute that needs a response'
+          : `You have ${count} disputes that need a response`
       }
       description={
         single
-          ? 'A customer has disputed a payment. Respond with evidence before the deadline to contest it.'
-          : 'Customers have disputed payments. Respond with evidence before the deadline to contest them.'
+          ? 'A customer disputed a payment. Submit evidence before the deadline to contest it.'
+          : 'Customers disputed payments. Submit evidence before the deadline to contest them.'
       }
       actions={[
         {

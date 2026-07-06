@@ -1,7 +1,8 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { CustomFieldCreate, CustomFieldUpdate } from "../models/inputs";
-import type { CustomField, ListResourceCustomField } from "../models/outputs";
 import type { CustomFieldSortProperty, CustomFieldType } from "../models/literals";
+import type { CustomField, ListResourceCustomField } from "../models/outputs";
+
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listCustomFields = (client: ClientBase) => {
@@ -13,6 +14,7 @@ export const listCustomFields = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceCustomField}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -46,6 +48,44 @@ export const listCustomFields = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List custom fields.
+ *
+ * **Scopes**: `custom_fields:read` `custom_fields:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<CustomField>} A generator that yields items of type CustomField.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistCustomFields = (client: ClientBase) => {
+  return async function* (query?: {
+    organization_id?: string | string[] | null;
+    query?: string | null;
+    type?: CustomFieldType | CustomFieldType[] | null;
+    page?: number;
+    limit?: number;
+    sorting?: CustomFieldSortProperty[] | null;
+  }): AsyncGenerator<CustomField> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listCustomFields(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const createCustomFields = (client: ClientBase) => {
   /**
    * Create a custom field.
@@ -55,6 +95,7 @@ export const createCustomFields = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomField}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -83,6 +124,7 @@ export const getCustomFields = (client: ClientBase) => {
    * @param id - The custom field ID.
    * @returns {CustomField}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Custom field not found.
    * @throws {HTTPValidationError} Validation Error
@@ -115,6 +157,7 @@ export const deleteCustomFields = (client: ClientBase) => {
    * @param id - The custom field ID.
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Custom field not found.
    * @throws {HTTPValidationError} Validation Error
@@ -148,6 +191,7 @@ export const updateCustomFields = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomField}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Custom field not found.
    * @throws {HTTPValidationError} Validation Error
@@ -179,6 +223,7 @@ export function createCustomFieldsService(client: ClientBase) {
     get: getCustomFields(client),
     delete: deleteCustomFields(client),
     update: updateCustomFields(client),
+    iterlist: iterlistCustomFields(client),
   };
 }
 

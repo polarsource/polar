@@ -10,10 +10,6 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.models import MerchantMigration
-from polar.models.merchant_migration import (
-    MerchantMigrationSourcePlatform,
-    MerchantMigrationStep,
-)
 
 
 class MerchantMigrationRepository(
@@ -38,20 +34,3 @@ class MerchantMigrationRepository(
                 MerchantMigration.organization_id == auth_subject.subject.id
             )
         return statement
-
-    async def get_ongoing_by_source(
-        self,
-        organization_id: UUID,
-        source_platform: MerchantMigrationSourcePlatform,
-    ) -> MerchantMigration | None:
-        statement = (
-            self.get_base_statement()
-            .where(
-                MerchantMigration.organization_id == organization_id,
-                MerchantMigration.source_platform == source_platform,
-                MerchantMigration.step != MerchantMigrationStep.completed,
-            )
-            .order_by(MerchantMigration.created_at.desc())
-            .limit(1)
-        )
-        return await self.get_one_or_none(statement)

@@ -1,9 +1,10 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type {
   CustomerSessionCustomerExternalIDCreate,
   CustomerSessionCustomerIDCreate,
 } from "../models/inputs";
 import type { CustomerSession } from "../models/outputs";
+
 import { HTTPValidationError } from "../errors";
 
 export const createCustomerSessions = (client: ClientBase) => {
@@ -18,6 +19,7 @@ export const createCustomerSessions = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomerSession}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */

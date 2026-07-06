@@ -1,8 +1,9 @@
-import { ClientBase } from "../../../base";
+import type { ClientBase } from "../../../base";
 import type {
   OAuth2ClientConfiguration,
   OAuth2ClientConfigurationUpdate,
 } from "../../../models/inputs";
+
 import { HTTPValidationError } from "../../../errors";
 
 export const createClientOauth2 = (client: ClientBase) => {
@@ -12,6 +13,7 @@ export const createClientOauth2 = (client: ClientBase) => {
    * @param body - Request body
    * @returns {unknown}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -38,6 +40,7 @@ export const getClientOauth2 = (client: ClientBase) => {
    * @param client_id
    * @returns {unknown}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -67,6 +70,7 @@ export const updateClientOauth2 = (client: ClientBase) => {
    * @param body - Request body
    * @returns {unknown}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -98,6 +102,7 @@ export const deleteClientOauth2 = (client: ClientBase) => {
    * @param client_id
    * @returns {unknown}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */

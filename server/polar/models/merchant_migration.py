@@ -67,3 +67,22 @@ class MerchantMigration(RecordModel):
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
+
+    @property
+    def source_connected(self) -> bool:
+        """Whether the source provider has been connected (credentials stored)."""
+        return bool(self.source_credentials)
+
+    @property
+    def source(self) -> dict[str, Any] | None:
+        """Non-secret metadata about the connected source, exposed to the API.
+
+        Whitelist the specific public fields rather than dumping the credentials
+        blob, so secrets can't leak by accident. The fields vary by provider.
+        """
+        if not self.source_credentials:
+            return None
+        return {
+            "stripe_user_id": self.source_credentials.get("stripe_user_id"),
+            "livemode": self.source_credentials.get("livemode"),
+        }

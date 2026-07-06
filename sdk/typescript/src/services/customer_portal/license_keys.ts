@@ -1,4 +1,4 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type {
   LicenseKeyActivate,
   LicenseKeyDeactivate,
@@ -6,10 +6,12 @@ import type {
 } from "../../models/inputs";
 import type {
   LicenseKeyActivationRead,
+  LicenseKeyRead,
   LicenseKeyWithActivations,
   ListResourceLicenseKeyRead,
   ValidatedLicenseKey,
 } from "../../models/outputs";
+
 import { HTTPValidationError, NotPermitted, ResourceNotFound, Unauthorized } from "../../errors";
 
 export const listLicenseKeys = (client: ClientBase) => {
@@ -19,6 +21,7 @@ export const listLicenseKeys = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceLicenseKeyRead}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {Unauthorized} Not authorized to manage license key.
    * @throws {ResourceNotFound} License key not found.
@@ -50,6 +53,41 @@ export const listLicenseKeys = (client: ClientBase) => {
     });
   };
 };
+/**
+ * **Scopes**: `customer_portal:read` `customer_portal:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<LicenseKeyRead>} A generator that yields items of type LicenseKeyRead.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {Unauthorized} Not authorized to manage license key.
+ * @throws {ResourceNotFound} License key not found.
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistLicenseKeys = (client: ClientBase) => {
+  return async function* (query?: {
+    benefit_id?: string | null;
+    page?: number;
+    limit?: number;
+  }): AsyncGenerator<LicenseKeyRead> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listLicenseKeys(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const getLicenseKeys = (client: ClientBase) => {
   /**
    * Get a license key.
@@ -59,6 +97,7 @@ export const getLicenseKeys = (client: ClientBase) => {
    * @param id
    * @returns {LicenseKeyWithActivations}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} License key not found.
    * @throws {HTTPValidationError} Validation Error
@@ -94,6 +133,7 @@ export const validateLicenseKeys = (client: ClientBase) => {
    * @param body - Request body
    * @returns {ValidatedLicenseKey}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} License key not found.
    * @throws {HTTPValidationError} Validation Error
@@ -127,6 +167,7 @@ export const activateLicenseKeys = (client: ClientBase) => {
    * @param body - Request body
    * @returns {LicenseKeyActivationRead}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} License key activation not supported or limit reached. Use /validate endpoint for licenses without activations.
    * @throws {ResourceNotFound} License key not found.
@@ -162,6 +203,7 @@ export const deactivateLicenseKeys = (client: ClientBase) => {
    * @param body - Request body
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} License key not found.
    * @throws {HTTPValidationError} Validation Error
@@ -191,6 +233,7 @@ export function createLicenseKeysService(client: ClientBase) {
     validate: validateLicenseKeys(client),
     activate: activateLicenseKeys(client),
     deactivate: deactivateLicenseKeys(client),
+    iterlist: iterlistLicenseKeys(client),
   };
 }
 

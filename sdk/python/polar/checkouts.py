@@ -64,6 +64,7 @@ class CheckoutsSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -88,6 +89,61 @@ class CheckoutsSync(SyncServiceBase):
         }
         return parse_response_json(response, ListResourceCheckout, method_errors)
 
+    def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        product_id: str | builtins.list[str] | None = None,
+        customer_id: str | builtins.list[str] | None = None,
+        external_customer_id: str | builtins.list[str] | None = None,
+        status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
+        query: str | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[CheckoutSortProperty] | None = ["-created_at"],
+    ) -> typing.Generator[Checkout, None, None]:
+        """
+        List checkout sessions.
+
+        **Scopes**: `checkouts:read` `checkouts:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            product_id: Filter by product ID.
+            customer_id: Filter by customer ID.
+            external_customer_id: Filter by customer external ID.
+            status: Filter by checkout session status.
+            query: Filter by customer email.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Returns:
+            A generator that yields items of type Checkout.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                organization_id=organization_id,
+                product_id=product_id,
+                customer_id=customer_id,
+                external_customer_id=external_customer_id,
+                status=status,
+                query=query,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     def create(
         self,
         **kwargs: typing.Unpack[CheckoutCreate],
@@ -103,6 +159,7 @@ class CheckoutsSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -134,6 +191,7 @@ class CheckoutsSync(SyncServiceBase):
             ResourceNotFound: Checkout session not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -170,6 +228,7 @@ class CheckoutsSync(SyncServiceBase):
             ResourceNotFound: Checkout session not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -204,6 +263,7 @@ class CheckoutsSync(SyncServiceBase):
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -240,6 +300,7 @@ class CheckoutsSync(SyncServiceBase):
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -281,6 +342,7 @@ class CheckoutsSync(SyncServiceBase):
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -336,6 +398,7 @@ class CheckoutsAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -360,6 +423,62 @@ class CheckoutsAsync(AsyncServiceBase):
         }
         return parse_response_json(response, ListResourceCheckout, method_errors)
 
+    async def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        product_id: str | builtins.list[str] | None = None,
+        customer_id: str | builtins.list[str] | None = None,
+        external_customer_id: str | builtins.list[str] | None = None,
+        status: CheckoutStatus | builtins.list[CheckoutStatus] | None = None,
+        query: str | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[CheckoutSortProperty] | None = ["-created_at"],
+    ) -> typing.AsyncGenerator[Checkout, None]:
+        """
+        List checkout sessions.
+
+        **Scopes**: `checkouts:read` `checkouts:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            product_id: Filter by product ID.
+            customer_id: Filter by customer ID.
+            external_customer_id: Filter by customer external ID.
+            status: Filter by checkout session status.
+            query: Filter by customer email.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Returns:
+            An async generator that yields items of type Checkout.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                organization_id=organization_id,
+                product_id=product_id,
+                customer_id=customer_id,
+                external_customer_id=external_customer_id,
+                status=status,
+                query=query,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     async def create(
         self,
         **kwargs: typing.Unpack[CheckoutCreate],
@@ -375,6 +494,7 @@ class CheckoutsAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -406,6 +526,7 @@ class CheckoutsAsync(AsyncServiceBase):
             ResourceNotFound: Checkout session not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -442,6 +563,7 @@ class CheckoutsAsync(AsyncServiceBase):
             ResourceNotFound: Checkout session not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -476,6 +598,7 @@ class CheckoutsAsync(AsyncServiceBase):
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -512,6 +635,7 @@ class CheckoutsAsync(AsyncServiceBase):
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -553,6 +677,7 @@ class CheckoutsAsync(AsyncServiceBase):
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(

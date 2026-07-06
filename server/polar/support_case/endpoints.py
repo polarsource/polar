@@ -1,4 +1,4 @@
-from fastapi import Depends
+from fastapi import Depends, Query
 from fastapi.responses import RedirectResponse
 
 from polar.dispute.dispute_case import dispute_case as dispute_case_service
@@ -8,7 +8,10 @@ from polar.exceptions import (
     ResourceNotFound,
 )
 from polar.file.service import file as file_service
+from polar.kit.pagination import ListResource, PaginationParamsQuery
+from polar.kit.schemas import MultipleQueryFilter
 from polar.models import File
+from polar.models.dispute import DisputeStatus
 from polar.models.file import FileServiceTypes
 from polar.models.support_case import (
     DisputeSupportCase,
@@ -17,8 +20,10 @@ from polar.models.support_case import (
     SupportCaseAudience,
     SupportCaseMessage,
     SupportCaseMessageAuthorKind,
+    SupportCaseType,
 )
 from polar.openapi import APITag
+from polar.organization.schemas import OrganizationID
 from polar.organization_review.appeal_case import CaseClosedError
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
 from polar.postgres import (
@@ -29,12 +34,14 @@ from polar.postgres import (
 )
 from polar.routing import APIRouter
 
-from . import auth
+from . import auth, sorting
 from .schemas import (
     DisputeSupportCaseMessageCreate,
     ReviewAppealSupportCaseMessageCreate,
     SupportCaseAttachmentID,
     SupportCaseID,
+    SupportCaseListItem,
+    SupportCaseListItemAdapter,
     SupportCaseMessageCreate,
     SupportCaseNotFound,
     SupportCaseThread,
@@ -62,6 +69,45 @@ def _reply_type_mismatch(
                 "input": message.type,
             }
         ]
+    )
+
+
+@router.get(
+    "/",
+    summary="List Support Cases",
+    response_model=ListResource[SupportCaseListItem],
+)
+async def list_support_cases(
+    auth_subject: auth.SupportCasesRead,
+    pagination: PaginationParamsQuery,
+    sorting: sorting.ListSorting,
+    organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
+        None, title="OrganizationID Filter", description="Filter by organization ID."
+    ),
+    type: MultipleQueryFilter[SupportCaseType] | None = Query(
+        None, title="Type Filter", description="Filter by support case type."
+    ),
+    dispute_status: MultipleQueryFilter[DisputeStatus] | None = Query(
+        None,
+        title="DisputeStatus Filter",
+        description="Filter dispute cases by the linked dispute's status.",
+    ),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ListResource[SupportCaseListItem]:
+    """List the organization's support cases."""
+    results, count = await support_case_service.list(
+        session,
+        auth_subject,
+        organization_id=organization_id,
+        type=type,
+        dispute_status=dispute_status,
+        pagination=pagination,
+        sorting=sorting,
+    )
+    return ListResource.from_paginated_results(
+        [SupportCaseListItemAdapter.validate_python(result) for result in results],
+        count,
+        pagination,
     )
 
 

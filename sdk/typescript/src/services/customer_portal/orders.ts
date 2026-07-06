@@ -1,5 +1,6 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type { CustomerOrderConfirmPayment, CustomerOrderUpdate } from "../../models/inputs";
+import type { CustomerOrderSortProperty, ProductBillingType } from "../../models/literals";
 import type {
   CustomerOrder,
   CustomerOrderInvoice,
@@ -8,7 +9,7 @@ import type {
   CustomerOrderReceipt,
   ListResourceCustomerOrder,
 } from "../../models/outputs";
-import type { CustomerOrderSortProperty, ProductBillingType } from "../../models/literals";
+
 import {
   HTTPValidationError,
   ManualRetryLimitExceeded,
@@ -26,6 +27,7 @@ export const listOrders = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceCustomerOrder}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -61,6 +63,43 @@ export const listOrders = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List orders of the authenticated customer.
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<CustomerOrder>} A generator that yields items of type CustomerOrder.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistOrders = (client: ClientBase) => {
+  return async function* (query?: {
+    product_id?: string | string[] | null;
+    product_billing_type?: ProductBillingType | ProductBillingType[] | null;
+    subscription_id?: string | string[] | null;
+    query?: string | null;
+    page?: number;
+    limit?: number;
+    sorting?: CustomerOrderSortProperty[] | null;
+  }): AsyncGenerator<CustomerOrder> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listOrders(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const getOrders = (client: ClientBase) => {
   /**
    * Get an order by ID for the authenticated customer.
@@ -68,6 +107,7 @@ export const getOrders = (client: ClientBase) => {
    * @param id - The order ID.
    * @returns {CustomerOrder}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
    * @throws {HTTPValidationError} Validation Error
@@ -99,6 +139,7 @@ export const updateOrders = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomerOrder}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
    * @throws {HTTPValidationError} Validation Error
@@ -129,6 +170,7 @@ export const invoiceOrders = (client: ClientBase) => {
    * @param id - The order ID.
    * @returns {CustomerOrderInvoice}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
    * @throws {HTTPValidationError} Validation Error
@@ -159,6 +201,7 @@ export const generateInvoiceOrders = (client: ClientBase) => {
    * @param id - The order ID.
    * @returns {unknown}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
    * @throws {OrderNotEligibleForInvoice} Order is not eligible for invoice generation (invalid status).
@@ -191,6 +234,7 @@ export const receiptOrders = (client: ClientBase) => {
    * @param id - The order ID.
    * @returns {CustomerOrderReceipt}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
    * @throws {HTTPValidationError} Validation Error
@@ -221,6 +265,7 @@ export const getPaymentStatusOrders = (client: ClientBase) => {
    * @param id - The order ID.
    * @returns {CustomerOrderPaymentStatus}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
    * @throws {HTTPValidationError} Validation Error
@@ -252,6 +297,7 @@ export const confirmRetryPaymentOrders = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomerOrderPaymentConfirmation}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Order not found.
    * @throws {PaymentAlreadyInProgress} Payment already in progress.
@@ -293,6 +339,7 @@ export function createOrdersService(client: ClientBase) {
     receipt: receiptOrders(client),
     getPaymentStatus: getPaymentStatusOrders(client),
     confirmRetryPayment: confirmRetryPaymentOrders(client),
+    iterlist: iterlistOrders(client),
   };
 }
 

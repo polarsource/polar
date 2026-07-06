@@ -26,6 +26,7 @@ from polar.inputs import (
 )
 from polar.outputs import (
     CustomerSeat,
+    CustomerSubscription,
     ListResourceCustomerSubscription,
     SeatsList,
 )
@@ -51,6 +52,7 @@ class SeatsSync(SyncServiceBase):
             ListSeats404Error: Subscription or order not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -86,6 +88,7 @@ class SeatsSync(SyncServiceBase):
             AssignSeat404Error: Subscription, order, or customer not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -119,6 +122,7 @@ class SeatsSync(SyncServiceBase):
             RevokeSeat404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -153,6 +157,7 @@ class SeatsSync(SyncServiceBase):
             ResendInvitation404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -192,6 +197,7 @@ class SeatsSync(SyncServiceBase):
             ListClaimedSubscriptions401Error: Authentication required
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -211,6 +217,41 @@ class SeatsSync(SyncServiceBase):
         return parse_response_json(
             response, ListResourceCustomerSubscription, method_errors
         )
+
+    def iter_list_claimed_subscriptions(
+        self,
+        *,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.Generator[CustomerSubscription, None, None]:
+        """
+        List all subscriptions where the authenticated customer has claimed a seat.
+
+        **Scopes**: `customer_portal:read` `customer_portal:write`
+
+        Args:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            A generator that yields items of type CustomerSubscription.
+
+        Raises:
+            ListClaimedSubscriptions401Error: Authentication required
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list_claimed_subscriptions(
+                page=page,
+                limit=limit,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
 
 
 class SeatsAsync(AsyncServiceBase):
@@ -233,6 +274,7 @@ class SeatsAsync(AsyncServiceBase):
             ListSeats404Error: Subscription or order not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -268,6 +310,7 @@ class SeatsAsync(AsyncServiceBase):
             AssignSeat404Error: Subscription, order, or customer not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -301,6 +344,7 @@ class SeatsAsync(AsyncServiceBase):
             RevokeSeat404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -335,6 +379,7 @@ class SeatsAsync(AsyncServiceBase):
             ResendInvitation404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -374,6 +419,7 @@ class SeatsAsync(AsyncServiceBase):
             ListClaimedSubscriptions401Error: Authentication required
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -393,3 +439,39 @@ class SeatsAsync(AsyncServiceBase):
         return parse_response_json(
             response, ListResourceCustomerSubscription, method_errors
         )
+
+    async def iter_list_claimed_subscriptions(
+        self,
+        *,
+        page: int = 1,
+        limit: int = 10,
+    ) -> typing.AsyncGenerator[CustomerSubscription, None]:
+        """
+        List all subscriptions where the authenticated customer has claimed a seat.
+
+        **Scopes**: `customer_portal:read` `customer_portal:write`
+
+        Args:
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+
+        Returns:
+            An async generator that yields items of type CustomerSubscription.
+
+        Raises:
+            ListClaimedSubscriptions401Error: Authentication required
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list_claimed_subscriptions(
+                page=page,
+                limit=limit,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1

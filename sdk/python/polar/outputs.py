@@ -29,10 +29,12 @@ from polar.literals import (
     OrganizationStatus,
     PaymentProcessor,
     PaymentStatus,
+    PaymentTrigger,
     Permission,
     ProductPriceSource,
     ProductVisibility,
     PublicSubscriptionProrationBehavior,
+    RecurringInterval,
     RefundReason,
     RefundStatus,
     Scope,
@@ -40,7 +42,6 @@ from polar.literals import (
     SeatTierType,
     Status,
     SubscriptionProrationBehavior,
-    SubscriptionRecurringInterval,
     SubscriptionStatus,
     SubType,
     TaxBehavior,
@@ -98,6 +99,13 @@ class AlreadyCanceledSubscription:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class AmbiguousExternalCustomerID:
+    error: typing.Literal["AmbiguousExternalCustomerID"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class AttachedCustomField:
     """Schema of a custom field attached to a resource."""
 
@@ -132,6 +140,10 @@ class AuthorizeResponseOrganization:
 
     scopes: list[Scope]
 
+    organizations: list[AuthorizeOrganization]
+
+    requires_single_organization: bool = False
+
     scope_display_names: dict[str, str] = dataclasses.field(
         default_factory=lambda: {
             "openid": "OpenID",
@@ -172,6 +184,7 @@ class AuthorizeResponseOrganization:
             "wallets:read": "Read wallets",
             "wallets:write": "Create or modify wallets",
             "disputes:read": "Read disputes",
+            "disputes:write": "Create or modify disputes",
             "customer_meters:read": "Read customer meters",
             "customer_sessions:write": "Create or modify customer sessions",
             "member_sessions:write": "Create or modify member sessions",
@@ -199,8 +212,6 @@ class AuthorizeResponseOrganization:
         }
     )
 
-    organizations: list[AuthorizeOrganization]
-
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class AuthorizeResponseUser:
@@ -211,6 +222,10 @@ class AuthorizeResponseUser:
     sub: AuthorizeUser | None
 
     scopes: list[Scope]
+
+    organizations: list[AuthorizeOrganization]
+
+    requires_single_organization: bool = False
 
     scope_display_names: dict[str, str] = dataclasses.field(
         default_factory=lambda: {
@@ -252,6 +267,7 @@ class AuthorizeResponseUser:
             "wallets:read": "Read wallets",
             "wallets:write": "Create or modify wallets",
             "disputes:read": "Read disputes",
+            "disputes:write": "Create or modify disputes",
             "customer_meters:read": "Read customer meters",
             "customer_sessions:write": "Create or modify customer sessions",
             "member_sessions:write": "Create or modify member sessions",
@@ -1828,6 +1844,13 @@ class BenefitUpdatedEvent:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class CannotCreateOrganizationError:
+    error: typing.Literal["CannotCreateOrganizationError"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class CardPayment:
     """Schema of a payment with a card payment method."""
 
@@ -1852,6 +1875,9 @@ class CardPayment:
 
     method: typing.Literal["card"]
     """The payment method used."""
+
+    trigger: PaymentTrigger | None
+    """What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry."""
 
     decline_reason: str | None
     """Error code, if the payment was declined."""
@@ -2313,11 +2339,17 @@ class CheckoutLinkProduct:
 
     visibility: ProductVisibility
 
-    recurring_interval: SubscriptionRecurringInterval | None
+    recurring_interval: RecurringInterval | None
     """The recurring interval of the product. If `None`, the product is a one-time purchase."""
 
     recurring_interval_count: int | None
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products."""
+
+    meter_interval: RecurringInterval | None
+    """The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval."""
+
+    meter_interval_count: int | None
+    """Number of meter interval units. None when no meter cycle is set."""
 
     is_recurring: bool
     """Whether the product is a subscription."""
@@ -2391,11 +2423,17 @@ class CheckoutProduct:
 
     visibility: ProductVisibility
 
-    recurring_interval: SubscriptionRecurringInterval | None
+    recurring_interval: RecurringInterval | None
     """The recurring interval of the product. If `None`, the product is a one-time purchase."""
 
     recurring_interval_count: int | None
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products."""
+
+    meter_interval: RecurringInterval | None
+    """The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval."""
+
+    meter_interval_count: int | None
+    """Number of meter interval units. None when no meter cycle is set."""
 
     is_recurring: bool
     """Whether the product is a subscription."""
@@ -3622,6 +3660,9 @@ class CustomerOrder:
 
     checkout_id: str | None
 
+    next_payment_attempt_at: str | None = None
+    """When the next automatic payment retry is scheduled. `null` if the order is not in dunning or all retries have been exhausted."""
+
     product: CustomerOrderProduct | None
 
     subscription: CustomerOrderSubscription | None
@@ -3631,9 +3672,6 @@ class CustomerOrder:
 
     description: str
     """A summary description of the order."""
-
-    next_payment_attempt_at: str | None = None
-    """When the next payment retry is scheduled"""
 
     refundable_amount: int
     """Amount in cents that can still be refunded (net, before taxes). Accounts for any applied customer balance and previous refunds."""
@@ -3700,11 +3738,17 @@ class CustomerOrderProduct:
 
     visibility: ProductVisibility
 
-    recurring_interval: SubscriptionRecurringInterval | None
+    recurring_interval: RecurringInterval | None
     """The recurring interval of the product. If `None`, the product is a one-time purchase."""
 
     recurring_interval_count: int | None
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products."""
+
+    meter_interval: RecurringInterval | None
+    """The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval."""
+
+    meter_interval_count: int | None
+    """Number of meter interval units. None when no meter cycle is set."""
 
     is_recurring: bool
     """Whether the product is a subscription."""
@@ -3752,7 +3796,7 @@ class CustomerOrderSubscription:
     currency: str
     """The currency of the subscription."""
 
-    recurring_interval: SubscriptionRecurringInterval
+    recurring_interval: RecurringInterval
 
     recurring_interval_count: int
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on."""
@@ -3764,6 +3808,12 @@ class CustomerOrderSubscription:
 
     current_period_end: str
     """The end timestamp of the current billing period."""
+
+    current_meter_period_start: str | None
+    """The start timestamp of the current meter period, if the product has a meter cycle set. Metered credits are granted and overage is settled on this cadence."""
+
+    current_meter_period_end: str | None
+    """The end timestamp of the current meter period, if the product has a meter cycle set. This is when credits next renew."""
 
     trial_start: str | None
     """The start timestamp of the trial period, if any."""
@@ -3785,6 +3835,9 @@ class CustomerOrderSubscription:
 
     ended_at: str | None
     """The timestamp when the subscription ended."""
+
+    past_due_at: str | None = None
+    """The timestamp when the subscription entered `past_due` status."""
 
     customer_id: str
     """The ID of the subscribed customer."""
@@ -4018,11 +4071,17 @@ class CustomerProduct:
 
     visibility: ProductVisibility
 
-    recurring_interval: SubscriptionRecurringInterval | None
+    recurring_interval: RecurringInterval | None
     """The recurring interval of the product. If `None`, the product is a one-time purchase."""
 
     recurring_interval_count: int | None
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products."""
+
+    meter_interval: RecurringInterval | None
+    """The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval."""
+
+    meter_interval_count: int | None
+    """Number of meter interval units. None when no meter cycle is set."""
 
     is_recurring: bool
     """Whether the product is a subscription."""
@@ -4054,39 +4113,39 @@ class CustomerSeat:
     id: str
     """The seat ID"""
 
-    subscription_id: str | None = None
+    subscription_id: str | None
     """The subscription ID (for recurring seats)"""
 
-    order_id: str | None = None
+    order_id: str | None
     """The order ID (for one-time purchase seats)"""
 
     status: SeatStatus
 
-    customer_id: str | None = None
+    customer_id: str | None
     """The customer ID. When member_model_enabled is true, this is the billing customer (purchaser). When false, this is the seat member customer."""
 
-    member_id: str | None = None
+    member_id: str | None
     """The member ID of the seat occupant"""
 
-    member: Member | None = None
+    member: Member | None
     """The member associated with this seat"""
 
-    email: str | None = None
+    email: str | None
     """Email of the seat member (set when member_model_enabled is true)"""
 
-    customer_email: str | None = None
+    customer_email: str | None
     """The assigned customer email"""
 
-    invitation_token_expires_at: str | None = None
+    invitation_token_expires_at: str | None
     """When the invitation token expires"""
 
-    claimed_at: str | None = None
+    claimed_at: str | None
     """When the seat was claimed"""
 
-    revoked_at: str | None = None
+    revoked_at: str | None
     """When the seat was revoked"""
 
-    seat_metadata: dict[str, typing.Any] | None = None
+    seat_metadata: dict[str, typing.Any] | None
     """Additional metadata for the seat"""
 
 
@@ -4276,7 +4335,7 @@ class CustomerStateSubscription:
     currency: str
     """The currency of the subscription."""
 
-    recurring_interval: SubscriptionRecurringInterval
+    recurring_interval: RecurringInterval
 
     current_period_start: str
     """The start timestamp of the current billing period."""
@@ -4419,7 +4478,7 @@ class CustomerSubscription:
     currency: str
     """The currency of the subscription."""
 
-    recurring_interval: SubscriptionRecurringInterval
+    recurring_interval: RecurringInterval
 
     recurring_interval_count: int
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on."""
@@ -4431,6 +4490,12 @@ class CustomerSubscription:
 
     current_period_end: str
     """The end timestamp of the current billing period."""
+
+    current_meter_period_start: str | None
+    """The start timestamp of the current meter period, if the product has a meter cycle set. Metered credits are granted and overage is settled on this cadence."""
+
+    current_meter_period_end: str | None
+    """The end timestamp of the current meter period, if the product has a meter cycle set. This is when credits next renew."""
 
     trial_start: str | None
     """The start timestamp of the trial period, if any."""
@@ -4452,6 +4517,9 @@ class CustomerSubscription:
 
     ended_at: str | None
     """The timestamp when the subscription ended."""
+
+    past_due_at: str | None = None
+    """The timestamp when the subscription entered `past_due` status."""
 
     customer_id: str
     """The ID of the subscribed customer."""
@@ -4549,11 +4617,17 @@ class CustomerSubscriptionProduct:
 
     visibility: ProductVisibility
 
-    recurring_interval: SubscriptionRecurringInterval | None
+    recurring_interval: RecurringInterval | None
     """The recurring interval of the product. If `None`, the product is a one-time purchase."""
 
     recurring_interval_count: int | None
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products."""
+
+    meter_interval: RecurringInterval | None
+    """The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval."""
+
+    meter_interval_count: int | None
+    """Number of meter interval units. None when no meter cycle is set."""
 
     is_recurring: bool
     """Whether the product is a subscription."""
@@ -5133,11 +5207,17 @@ class DiscountProduct:
 
     visibility: ProductVisibility
 
-    recurring_interval: SubscriptionRecurringInterval | None
+    recurring_interval: RecurringInterval | None
     """The recurring interval of the product. If `None`, the product is a one-time purchase."""
 
     recurring_interval_count: int | None
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products."""
+
+    meter_interval: RecurringInterval | None
+    """The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval."""
+
+    meter_interval_count: int | None
+    """Number of meter interval units. None when no meter cycle is set."""
 
     is_recurring: bool
     """Whether the product is a subscription."""
@@ -5181,11 +5261,80 @@ class Dispute:
     currency: str
     """Currency code of the dispute."""
 
+    reason: str | None
+    """The reason for the dispute as reported by the card network (e.g. `fraudulent`, `product_not_received`). `None` until the processor reports it."""
+
+    evidence_due_by: str | None
+    """Deadline to submit evidence in response to the dispute. `None` when no response is required."""
+
+    past_due: bool
+    """Whether the evidence submission deadline has passed."""
+
     order_id: str
     """The ID of the order associated with the dispute."""
 
     payment_id: str
     """The ID of the payment associated with the dispute."""
+
+    customer: DisputeCustomer
+
+    case_id: str | None
+    """The ID of the support case for this dispute, if one was opened."""
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class DisputeCustomer:
+    id: str
+    """The ID of the customer."""
+
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    metadata: MetadataOutputType
+
+    external_id: str | None = None
+    """The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated."""
+
+    email: str | None = None
+    """The email address of the customer. This must be unique within the organization."""
+
+    email_verified: bool
+    """Whether the customer email address is verified. The address is automatically verified when the customer accesses the customer portal using their email address."""
+
+    type: CustomerType
+
+    name: str | None
+    """The name of the customer."""
+
+    billing_name: str | None
+    """The name that should appear on the customer's invoices. Falls back to the customer name when not explicitly set."""
+
+    billing_address: Address | None
+
+    tax_id: list[typing.Any] | None
+
+    locale: str | None = None
+
+    organization_id: str
+    """The ID of the organization owning the customer."""
+
+    default_payment_method_id: str | None = None
+    """The ID of the customer's default payment method, if any. Use the payment methods endpoint to retrieve its details."""
+
+    deleted_at: str | None
+    """Timestamp for when the customer was soft deleted."""
+
+    avatar_url: str | None
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class DisputeNotOpenError:
+    error: typing.Literal["DisputeNotOpenError"]
+
+    detail: str
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -5246,6 +5395,9 @@ class EventMetadataOutput:
 class EventName:
     name: str
     """The name of the event."""
+
+    label: str
+    """Human readable label of the event."""
 
     source: EventSource
 
@@ -5448,6 +5600,9 @@ class GenericPayment:
     method: str
     """The payment method used."""
 
+    trigger: PaymentTrigger | None
+    """What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry."""
+
     decline_reason: str | None
     """Error code, if the payment was declined."""
 
@@ -5485,6 +5640,8 @@ class IntrospectTokenResponse:
     sub_type: SubType
 
     sub: str
+
+    organizations: list[str]
 
     aud: str
 
@@ -5556,7 +5713,7 @@ class LegacyRecurringProductPriceCustom:
     type: typing.Literal["recurring"]
     """The type of the price."""
 
-    recurring_interval: SubscriptionRecurringInterval
+    recurring_interval: RecurringInterval
 
     minimum_amount: int
     """The minimum amount the customer can pay. If 0, the price is 'free or pay what you want'."""
@@ -5604,7 +5761,7 @@ class LegacyRecurringProductPriceFixed:
     type: typing.Literal["recurring"]
     """The type of the price."""
 
-    recurring_interval: SubscriptionRecurringInterval
+    recurring_interval: RecurringInterval
 
     price_amount: int
     """The price in cents."""
@@ -5914,12 +6071,7 @@ class ListResourceEventTypeWithStats:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class ListResourceFileRead:
-    items: list[
-        DownloadableFileRead
-        | ProductMediaFileRead
-        | OrganizationAvatarFileRead
-        | SupportCaseAttachmentFileRead
-    ]
+    items: list[FileRead]
 
     pagination: Pagination
 
@@ -6762,6 +6914,9 @@ class Order:
 
     checkout_id: str | None
 
+    next_payment_attempt_at: str | None = None
+    """When the next automatic payment retry is scheduled. `null` if the order is not in dunning or all retries have been exhausted."""
+
     metadata: MetadataOutputType
 
     custom_field_data: dict[str, str | int | bool | str | None] | None = None
@@ -6893,6 +7048,13 @@ class OrderNotDraft:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class OrderNotEligibleForInvoice:
+    error: typing.Literal["OrderNotEligibleForInvoice"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class OrderNotEligibleForRetry:
     error: typing.Literal["OrderNotEligibleForRetry"]
 
@@ -7003,11 +7165,17 @@ class OrderProduct:
 
     visibility: ProductVisibility
 
-    recurring_interval: SubscriptionRecurringInterval | None
+    recurring_interval: RecurringInterval | None
     """The recurring interval of the product. If `None`, the product is a one-time purchase."""
 
     recurring_interval_count: int | None
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products."""
+
+    meter_interval: RecurringInterval | None
+    """The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval."""
+
+    meter_interval_count: int | None
+    """Number of meter interval units. None when no meter cycle is set."""
 
     is_recurring: bool
     """Whether the product is a subscription."""
@@ -7101,7 +7269,7 @@ class OrderSubscription:
     currency: str
     """The currency of the subscription."""
 
-    recurring_interval: SubscriptionRecurringInterval
+    recurring_interval: RecurringInterval
 
     recurring_interval_count: int
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on."""
@@ -7113,6 +7281,12 @@ class OrderSubscription:
 
     current_period_end: str
     """The end timestamp of the current billing period."""
+
+    current_meter_period_start: str | None
+    """The start timestamp of the current meter period, if the product has a meter cycle set. Metered credits are granted and overage is settled on this cadence."""
+
+    current_meter_period_end: str | None
+    """The end timestamp of the current meter period, if the product has a meter cycle set. This is when credits next renew."""
 
     trial_start: str | None
     """The start timestamp of the trial period, if any."""
@@ -7134,6 +7308,9 @@ class OrderSubscription:
 
     ended_at: str | None
     """The timestamp when the subscription ended."""
+
+    past_due_at: str | None = None
+    """The timestamp when the subscription entered `past_due` status."""
 
     customer_id: str
     """The ID of the subscribed customer."""
@@ -7247,6 +7424,9 @@ class Organization:
 
     details_submitted_at: str | None
     """When the business details were submitted for review."""
+
+    sso_enforced: bool
+    """Whether members must access this organization through its SSO connection."""
 
     default_presentment_currency: str
     """Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available."""
@@ -7400,6 +7580,15 @@ class OrganizationFeatureSettings:
 
     preview_access_enabled: bool = False
     """If this organization has preview access to new features enabled"""
+
+    disputes_enabled: bool = False
+    """If this organization has the disputes dashboard enabled"""
+
+    sso_enabled: bool = False
+    """If this organization has single sign-on configuration enabled"""
+
+    compass_enabled: bool = False
+    """If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard"""
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -7610,11 +7799,17 @@ class Product:
 
     visibility: ProductVisibility
 
-    recurring_interval: SubscriptionRecurringInterval | None
+    recurring_interval: RecurringInterval | None
     """The recurring interval of the product. If `None`, the product is a one-time purchase."""
 
     recurring_interval_count: int | None
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products."""
+
+    meter_interval: RecurringInterval | None
+    """The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval."""
+
+    meter_interval_count: int | None
+    """Number of meter interval units. None when no meter cycle is set."""
 
     is_recurring: bool
     """Whether the product is a subscription."""
@@ -7764,10 +7959,10 @@ class ProductPriceMeter:
 
     unit: MeterUnit
 
-    custom_label: str | None = None
+    custom_label: str | None
     """The label for the custom unit."""
 
-    custom_multiplier: int | None = None
+    custom_multiplier: int | None
     """The multiplier to convert from base unit to display scale."""
 
 
@@ -7952,6 +8147,15 @@ class RefundDispute:
     currency: str
     """Currency code of the dispute."""
 
+    reason: str | None
+    """The reason for the dispute as reported by the card network (e.g. `fraudulent`, `product_not_received`). `None` until the processor reports it."""
+
+    evidence_due_by: str | None
+    """Deadline to submit evidence in response to the dispute. `None` when no response is required."""
+
+    past_due: bool
+    """Whether the evidence submission deadline has passed."""
+
     order_id: str
     """The ID of the order associated with the dispute."""
 
@@ -8013,6 +8217,13 @@ class S3FileUploadPart:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class SSOEnforcementRequiresConnection:
+    error: typing.Literal["SSOEnforcementRequiresConnection"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class SeatClaimInfo:
     """Read-only information about a seat claim invitation.
     Safe for email scanners - no side effects when fetched."""
@@ -8065,7 +8276,7 @@ class Subscription:
     currency: str
     """The currency of the subscription."""
 
-    recurring_interval: SubscriptionRecurringInterval
+    recurring_interval: RecurringInterval
 
     recurring_interval_count: int
     """Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on."""
@@ -8077,6 +8288,12 @@ class Subscription:
 
     current_period_end: str
     """The end timestamp of the current billing period."""
+
+    current_meter_period_start: str | None
+    """The start timestamp of the current meter period, if the product has a meter cycle set. Metered credits are granted and overage is settled on this cadence."""
+
+    current_meter_period_end: str | None
+    """The end timestamp of the current meter period, if the product has a meter cycle set. This is when credits next renew."""
 
     trial_start: str | None
     """The start timestamp of the trial period, if any."""
@@ -8098,6 +8315,9 @@ class Subscription:
 
     ended_at: str | None
     """The timestamp when the subscription ended."""
+
+    past_due_at: str | None = None
+    """The timestamp when the subscription entered `past_due` status."""
 
     customer_id: str
     """The ID of the subscribed customer."""
@@ -9290,6 +9510,13 @@ Discount: typing.TypeAlias = (
     | DiscountFixedRepeatDuration
     | DiscountPercentageOnceForeverDuration
     | DiscountPercentageRepeatDuration
+)
+
+FileRead: typing.TypeAlias = (
+    DownloadableFileRead
+    | ProductMediaFileRead
+    | OrganizationAvatarFileRead
+    | SupportCaseAttachmentFileRead
 )
 
 LegacyRecurringProductPrice: typing.TypeAlias = (

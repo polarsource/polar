@@ -1156,6 +1156,7 @@ export type Scope =
   | "wallets:read"
   | "wallets:write"
   | "disputes:read"
+  | "disputes:write"
   | "customer_meters:read"
   | "customer_sessions:write"
   | "member_sessions:write"

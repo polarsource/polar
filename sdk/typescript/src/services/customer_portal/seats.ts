@@ -1,10 +1,12 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type { CustomerSeatAssign } from "../../models/inputs";
 import type {
   CustomerSeat,
+  CustomerSubscription,
   ListResourceCustomerSubscription,
   SeatsList,
 } from "../../models/outputs";
+
 import {
   AssignSeat400Error,
   AssignSeat401Error,
@@ -31,6 +33,7 @@ export const listSeatsSeats = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {SeatsList}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ListSeats401Error} Authentication required
    * @throws {ListSeats403Error} Not permitted or seat-based pricing not enabled
@@ -68,6 +71,7 @@ export const assignSeatSeats = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomerSeat}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {AssignSeat400Error} No available seats or customer already has a seat
    * @throws {AssignSeat401Error} Authentication required
@@ -101,6 +105,7 @@ export const revokeSeatSeats = (client: ClientBase) => {
    * @param seat_id
    * @returns {CustomerSeat}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {RevokeSeat401Error} Authentication required
    * @throws {RevokeSeat403Error} Not permitted or seat-based pricing not enabled
@@ -134,6 +139,7 @@ export const resendInvitationSeats = (client: ClientBase) => {
    * @param seat_id
    * @returns {CustomerSeat}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResendInvitation400Error} Seat is not pending or already claimed
    * @throws {ResendInvitation401Error} Authentication required
@@ -172,6 +178,7 @@ export const listClaimedSubscriptionsSeats = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceCustomerSubscription}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ListClaimedSubscriptions401Error} Authentication required
    * @throws {HTTPValidationError} Validation Error
@@ -199,6 +206,41 @@ export const listClaimedSubscriptionsSeats = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List all subscriptions where the authenticated customer has claimed a seat.
+ *
+ * **Scopes**: `customer_portal:read` `customer_portal:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<CustomerSubscription>} A generator that yields items of type CustomerSubscription.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {ListClaimedSubscriptions401Error} Authentication required
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistClaimedSubscriptionsSeats = (client: ClientBase) => {
+  return async function* (query?: {
+    page?: number;
+    limit?: number;
+  }): AsyncGenerator<CustomerSubscription> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listClaimedSubscriptionsSeats(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 
 export function createSeatsService(client: ClientBase) {
   return {
@@ -207,6 +249,7 @@ export function createSeatsService(client: ClientBase) {
     revokeSeat: revokeSeatSeats(client),
     resendInvitation: resendInvitationSeats(client),
     listClaimedSubscriptions: listClaimedSubscriptionsSeats(client),
+    iterlistClaimedSubscriptions: iterlistClaimedSubscriptionsSeats(client),
   };
 }
 

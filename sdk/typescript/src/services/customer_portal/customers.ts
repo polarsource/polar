@@ -1,4 +1,4 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type {
   CustomerEmailUpdateRequest,
   CustomerEmailUpdateVerifyRequest,
@@ -8,10 +8,12 @@ import type {
 } from "../../models/inputs";
 import type {
   CustomerEmailUpdateVerifyResponse,
+  CustomerPaymentMethod,
   CustomerPaymentMethodCreateResponse,
   CustomerPortalCustomer,
   ListResourceCustomerPaymentMethod,
 } from "../../models/outputs";
+
 import {
   CheckEmailUpdate401Error,
   CustomerNotReady,
@@ -31,6 +33,7 @@ export const getCustomers = (client: ClientBase) => {
    *
    * @returns {CustomerPortalCustomer}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    */
   return async (): Promise<CustomerPortalCustomer> => {
@@ -54,6 +57,7 @@ export const updateCustomers = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomerPortalCustomer}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -80,6 +84,7 @@ export const listPaymentMethodsCustomers = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceCustomerPaymentMethod}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -105,6 +110,38 @@ export const listPaymentMethodsCustomers = (client: ClientBase) => {
     });
   };
 };
+/**
+ * Get saved payment methods of the authenticated customer.
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<CustomerPaymentMethod>} A generator that yields items of type CustomerPaymentMethod.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistPaymentMethodsCustomers = (client: ClientBase) => {
+  return async function* (query?: {
+    page?: number;
+    limit?: number;
+  }): AsyncGenerator<CustomerPaymentMethod> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listPaymentMethodsCustomers(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const addPaymentMethodCustomers = (client: ClientBase) => {
   /**
    * Add a payment method to the authenticated customer.
@@ -112,6 +149,7 @@ export const addPaymentMethodCustomers = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomerPaymentMethodCreateResponse}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {PaymentMethodSetupFailed} The card was declined while setting up the payment method.
    * @throws {HTTPValidationError} Validation Error
@@ -142,6 +180,7 @@ export const confirmPaymentMethodCustomers = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomerPaymentMethodCreateResponse}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {CustomerNotReady} Customer is not ready to confirm a payment method.
    * @throws {HTTPValidationError} Validation Error
@@ -172,6 +211,7 @@ export const deletePaymentMethodCustomers = (client: ClientBase) => {
    * @param id
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {PaymentMethodInUseByActiveSubscription} Payment method is used by active subscription(s).
    * @throws {ResourceNotFound} Payment method not found.
@@ -204,6 +244,7 @@ export const requestEmailUpdateCustomers = (client: ClientBase) => {
    * @param body - Request body
    * @returns {unknown}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -230,6 +271,7 @@ export const checkEmailUpdateCustomers = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {CheckEmailUpdate401Error} Invalid or expired verification token.
    * @throws {HTTPValidationError} Validation Error
@@ -260,6 +302,7 @@ export const verifyEmailUpdateCustomers = (client: ClientBase) => {
    * @param body - Request body
    * @returns {CustomerEmailUpdateVerifyResponse}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {VerifyEmailUpdate401Error} Invalid or expired verification token.
    * @throws {VerifyEmailUpdate422Error} Email address is already in use.
@@ -295,6 +338,7 @@ export function createCustomersService(client: ClientBase) {
     requestEmailUpdate: requestEmailUpdateCustomers(client),
     checkEmailUpdate: checkEmailUpdateCustomers(client),
     verifyEmailUpdate: verifyEmailUpdateCustomers(client),
+    iterlistPaymentMethods: iterlistPaymentMethodsCustomers(client),
   };
 }
 

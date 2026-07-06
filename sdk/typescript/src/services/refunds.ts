@@ -1,7 +1,8 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { RefundCreate } from "../models/inputs";
-import type { ListResourceRefund, Refund } from "../models/outputs";
 import type { RefundSortProperty } from "../models/literals";
+import type { ListResourceRefund, Refund } from "../models/outputs";
+
 import { HTTPValidationError, RefundedAlready } from "../errors";
 
 export const listRefunds = (client: ClientBase) => {
@@ -13,6 +14,7 @@ export const listRefunds = (client: ClientBase) => {
    * @param query - Query parameters
    * @returns {ListResourceRefund}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
@@ -48,6 +50,48 @@ export const listRefunds = (client: ClientBase) => {
     });
   };
 };
+/**
+ * List refunds.
+ *
+ * **Scopes**: `refunds:read` `refunds:write`
+ *
+ * @param query - Query parameters
+ * @returns {AsyncGenerator<Refund>} A generator that yields items of type Refund.
+ * @throws {PolarNetworkError} When a network error occurs
+ * @throws {PolarRateLimitError} When the rate limit is exceeded
+ * @throws {PolarServerError} When the server returns a 5xx error
+ * @throws {HTTPValidationError} Validation Error
+ */
+export const iterlistRefunds = (client: ClientBase) => {
+  return async function* (query?: {
+    id?: string | string[] | null;
+    organization_id?: string | string[] | null;
+    order_id?: string | string[] | null;
+    subscription_id?: string | string[] | null;
+    customer_id?: string | string[] | null;
+    external_customer_id?: string | string[] | null;
+    succeeded?: boolean | null;
+    page?: number;
+    limit?: number;
+    sorting?: RefundSortProperty[] | null;
+  }): AsyncGenerator<Refund> {
+    let page: number;
+    page = query?.page ?? 1;
+    let limit: number | undefined;
+    limit = query?.limit;
+
+    while (true) {
+      const response = await listRefunds(client)({ ...query, page, limit });
+      for (const item of response.items) {
+        yield item;
+      }
+      if (page >= response.pagination.max_page) {
+        break;
+      }
+      page++;
+    }
+  };
+};
 export const createRefunds = (client: ClientBase) => {
   /**
    * Create a refund.
@@ -57,6 +101,7 @@ export const createRefunds = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Refund}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {RefundedAlready} Order is already fully refunded.
    * @throws {HTTPValidationError} Validation Error
@@ -77,6 +122,7 @@ export function createRefundsService(client: ClientBase) {
   return {
     list: listRefunds(client),
     create: createRefunds(client),
+    iterlist: iterlistRefunds(client),
   };
 }
 

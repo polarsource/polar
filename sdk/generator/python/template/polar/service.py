@@ -168,6 +168,7 @@ Raises:
     {{ error.name }}: {{ error.description }}
 {% endfor %}
     PolarNetworkError: Raised when a network error occurs while making the request.
+    PolarRateLimitError: Raised when the rate limit is exceeded.
     PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -195,6 +196,135 @@ Raises:
         return parse_response_none(response{% if method.errors %}, method_errors{% endif %})
         {% endif %}
 
+{% if method.pagination %}
+{% if method.body and (method.body.kind == 'union' or method.body.kind == 'union_ref') %}
+{% if method.body.kind == 'union' %}
+{% for variant in method.body.variants %}
+{% if variant.kind == 'model' %}
+    @typing.overload
+    def iter_{{ method.name | snake }}(
+        self,
+        {% for param in method.path_params %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }},
+        {% endfor %}
+        {% if method.query_params %}
+        *,
+        {% endif %}
+        {% for param in method.query_params %}
+        {% if param.default is not none %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
+        {% elif param.required %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }},
+        {% else %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }} = ...,
+        {% endif %}
+        {% endfor %}
+        **kwargs: typing.Unpack[{{ variant.name }}],
+    ) -> typing.Generator[{{ method.pagination.item_schema | type_annotation }}, None, None]: ...
+
+{% endif %}
+{% endfor %}
+{% else %}
+{% for union_model in ir.input_unions if union_model.name == method.body.name %}
+{% for variant in union_model.variants %}
+{% if variant.kind == 'model' %}
+    @typing.overload
+    def iter_{{ method.name | snake }}(
+        self,
+        {% for param in method.path_params %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }},
+        {% endfor %}
+        {% if method.query_params %}
+        *,
+        {% endif %}
+        {% for param in method.query_params %}
+        {% if param.default is not none %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
+        {% elif param.required %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }},
+        {% else %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }} = ...,
+        {% endif %}
+        {% endfor %}
+        **kwargs: typing.Unpack[{{ variant.name }}],
+    ) -> typing.Generator[{{ method.pagination.item_schema | type_annotation }}, None, None]: ...
+
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+{% endif %}
+    def iter_{{ method.name | snake }}(
+        self,
+        {% for param in method.path_params %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }},
+        {% endfor %}
+        {% if method.query_params %}
+        *,
+        {% endif %}
+        {% for param in method.query_params %}
+        {% if param.default is not none %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
+        {% elif param.required %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }},
+        {% else %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }} = None,
+        {% endif %}
+        {% endfor %}
+        {% if method.body and (method.body.kind == 'union' or method.body.kind == 'union_ref') %}
+        **kwargs: typing.Any,
+        {% elif method.body %}
+        **kwargs: typing.Unpack[{{ method.body | type_annotation }}],
+        {% endif %}
+    ) -> typing.Generator[{{ method.pagination.item_schema | type_annotation }}, None, None]:
+        """
+{% if method.description %}
+{{ method.description }}
+
+{% endif %}
+Args:
+{% for param in method.path_params %}
+    {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
+
+{% endfor %}
+{% for param in method.query_params %}
+    {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
+
+{% endfor %}
+{% if method.body %}
+    **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}
+
+{% endif %}
+
+Returns:
+    A generator that yields items of type {{ method.pagination.item_schema | type_annotation }}.
+
+Raises:
+{% for error in method.errors %}
+    {{ error.name }}: {{ error.description }}
+{% endfor %}
+    PolarNetworkError: Raised when a network error occurs while making the request.
+    PolarRateLimitError: Raised when the rate limit is exceeded.
+    PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.{{ method.name | snake }}(
+                {% for param in method.path_params %}
+                {{ param.parameter_name }}={{ param.parameter_name }},
+                {% endfor %}
+                {% for param in method.query_params %}
+                {{ param.parameter_name }}={{ param.parameter_name }},
+                {% endfor %}
+                {% if method.body %}
+                **kwargs,
+                {% endif %}
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
+{% endif %}
 {% endfor %}
 
 class {{ service.name }}Async(AsyncServiceBase):
@@ -319,6 +449,7 @@ Raises:
     {{ error.name }}: {{ error.description }}
 {% endfor %}
     PolarNetworkError: Raised when a network error occurs while making the request.
+    PolarRateLimitError: Raised when the rate limit is exceeded.
     PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -346,4 +477,131 @@ Raises:
         return parse_response_none(response{% if method.errors %}, method_errors{% endif %})
         {% endif %}
 
+{% if method.pagination %}
+{% if method.body and (method.body.kind == 'union' or method.body.kind == 'union_ref') %}
+{% if method.body.kind == 'union' %}
+{% for variant in method.body.variants %}
+{% if variant.kind == 'model' %}
+    @typing.overload
+    async def iter_{{ method.name | snake }}(
+        self,
+        {% for param in method.path_params %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }},
+        {% endfor %}
+        {% if method.query_params %}
+        *,
+        {% endif %}
+        {% for param in method.query_params %}
+        {% if param.default is not none %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
+        {% elif param.required %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }},
+        {% else %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }} = ...,
+        {% endif %}
+        {% endfor %}
+        **kwargs: typing.Unpack[{{ variant.name }}],
+    ) -> typing.AsyncGenerator[{{ method.pagination.item_schema | type_annotation }}, None]: ...
+
+{% endif %}
+{% endfor %}
+{% else %}
+{% for union_model in ir.input_unions if union_model.name == method.body.name %}
+{% for variant in union_model.variants %}
+{% if variant.kind == 'model' %}
+    @typing.overload
+    async def iter_{{ method.name | snake }}(
+        self,
+        {% for param in method.path_params %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }},
+        {% endfor %}
+        {% if method.query_params %}
+        *,
+        {% endif %}
+        {% for param in method.query_params %}
+        {% if param.default is not none %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
+        {% elif param.required %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }},
+        {% else %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }} = ...,
+        {% endif %}
+        {% endfor %}
+        **kwargs: typing.Unpack[{{ variant.name }}],
+    ) -> typing.AsyncGenerator[{{ method.pagination.item_schema | type_annotation }}], None: ...
+
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% endif %}
+{% endif %}
+    async def iter_{{ method.name | snake }}(
+        self,
+        {% for param in method.path_params %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }},
+        {% endfor %}
+        {% if method.query_params %}
+        *,
+        {% endif %}
+        {% for param in method.query_params %}
+        {% if param.default is not none %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }} = {{ param.default | format_default }},
+        {% elif param.required %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }},
+        {% else %}
+        {{ param.parameter_name }}: {{ param.type | type_annotation }} = None,
+        {% endif %}
+        {% endfor %}
+        {% if method.body and (method.body.kind == 'union' or method.body.kind == 'union_ref') %}
+        **kwargs: typing.Any,
+        {% elif method.body %}
+        **kwargs: typing.Unpack[{{ method.body | type_annotation }}],
+        {% endif %}
+    ) -> typing.AsyncGenerator[{{ method.pagination.item_schema | type_annotation }}, None]:
+        """
+{% if method.description %}
+{{ method.description }}
+
+{% endif %}Args:
+{% for param in method.path_params %}
+    {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
+
+{% endfor %}{% for param in method.query_params %}
+    {{ param.parameter_name }}:{% if param.description %} {{ param.description }}{% endif %}
+
+{% endfor %}{% if method.body %}
+    **kwargs: {% if method.body.description %}{{ method.body.description }}{% else %}Request body parameters{% endif %}
+
+{% endif %}
+
+Returns:
+    An async generator that yields items of type {{ method.pagination.item_schema | type_annotation }}.
+
+Raises:
+{% for error in method.errors %}
+    {{ error.name }}: {{ error.description }}
+{% endfor %}
+    PolarNetworkError: Raised when a network error occurs while making the request.
+    PolarRateLimitError: Raised when the rate limit is exceeded.
+    PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.{{ method.name | snake }}(
+                {% for param in method.path_params %}
+                {{ param.parameter_name }}={{ param.parameter_name }},
+                {% endfor %}
+                {% for param in method.query_params %}
+                {{ param.parameter_name }}={{ param.parameter_name }},
+                {% endfor %}
+                {% if method.body %}
+                **kwargs,
+                {% endif %}
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
+{% endif %}
 {% endfor %}

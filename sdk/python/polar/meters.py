@@ -55,6 +55,7 @@ class MetersSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -77,6 +78,55 @@ class MetersSync(SyncServiceBase):
         }
         return parse_response_json(response, ListResourceMeter, method_errors)
 
+    def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
+        is_archived: bool | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[MeterSortProperty] | None = ["name"],
+        metadata: MetadataQuery = None,
+    ) -> typing.Generator[Meter, None, None]:
+        """
+        List meters.
+
+        **Scopes**: `meters:read` `meters:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            query: Filter by name.
+            is_archived: Filter on archived meters.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+
+        Returns:
+            A generator that yields items of type Meter.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                organization_id=organization_id,
+                query=query,
+                is_archived=is_archived,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                metadata=metadata,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     def create(
         self,
         **kwargs: typing.Unpack[MeterCreate],
@@ -92,6 +142,7 @@ class MetersSync(SyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -123,6 +174,7 @@ class MetersSync(SyncServiceBase):
             ResourceNotFound: Meter not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -158,6 +210,7 @@ class MetersSync(SyncServiceBase):
             ResourceNotFound: Meter not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -209,6 +262,7 @@ class MetersSync(SyncServiceBase):
             ResourceNotFound: Meter not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -265,6 +319,7 @@ class MetersAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -287,6 +342,56 @@ class MetersAsync(AsyncServiceBase):
         }
         return parse_response_json(response, ListResourceMeter, method_errors)
 
+    async def iter_list(
+        self,
+        *,
+        organization_id: str | builtins.list[str] | None = None,
+        query: str | None = None,
+        is_archived: bool | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[MeterSortProperty] | None = ["name"],
+        metadata: MetadataQuery = None,
+    ) -> typing.AsyncGenerator[Meter, None]:
+        """
+        List meters.
+
+        **Scopes**: `meters:read` `meters:write`
+
+        Args:
+            organization_id: Filter by organization ID.
+            query: Filter by name.
+            is_archived: Filter on archived meters.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+            metadata: Filter by metadata key-value pairs. It uses the `deepObject` style, e.g. `?metadata[key]=value`.
+
+        Returns:
+            An async generator that yields items of type Meter.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                organization_id=organization_id,
+                query=query,
+                is_archived=is_archived,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+                metadata=metadata,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
     async def create(
         self,
         **kwargs: typing.Unpack[MeterCreate],
@@ -302,6 +407,7 @@ class MetersAsync(AsyncServiceBase):
         Raises:
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -333,6 +439,7 @@ class MetersAsync(AsyncServiceBase):
             ResourceNotFound: Meter not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -368,6 +475,7 @@ class MetersAsync(AsyncServiceBase):
             ResourceNotFound: Meter not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(
@@ -419,6 +527,7 @@ class MetersAsync(AsyncServiceBase):
             ResourceNotFound: Meter not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
         """
         request = self.client.build_request(

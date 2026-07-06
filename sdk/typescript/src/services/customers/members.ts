@@ -1,6 +1,7 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type { MemberCreateFromCustomer, MemberUpdate } from "../../models/inputs";
 import type { Member } from "../../models/outputs";
+
 import {
   AmbiguousExternalCustomerID,
   HTTPValidationError,
@@ -21,6 +22,7 @@ export const createMembers = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Member}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} Not permitted to add members.
    * @throws {ResourceNotFound} Customer not found.
@@ -56,6 +58,7 @@ export const createExternalMembers = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Member}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {NotPermitted} Not permitted to add members.
    * @throws {ResourceNotFound} Customer not found.
@@ -93,6 +96,7 @@ export const getMembers = (client: ClientBase) => {
    * @param member_id
    * @returns {Member}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Member not found.
    * @throws {HTTPValidationError} Validation Error
@@ -127,6 +131,7 @@ export const deleteMembers = (client: ClientBase) => {
    * @param member_id
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Member not found.
    * @throws {HTTPValidationError} Validation Error
@@ -164,6 +169,7 @@ export const updateMembers = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Member}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Member not found.
    * @throws {HTTPValidationError} Validation Error
@@ -198,6 +204,7 @@ export const getExternalMembers = (client: ClientBase) => {
    * @param member_external_id - The member external ID.
    * @returns {Member}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Member not found.
    * @throws {AmbiguousExternalCustomerID} The external customer ID matches customers in several accessible organizations.
@@ -234,6 +241,7 @@ export const deleteExternalMembers = (client: ClientBase) => {
    * @param member_external_id - The member external ID.
    * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Member not found.
    * @throws {AmbiguousExternalCustomerID} The external customer ID matches customers in several accessible organizations.
@@ -271,6 +279,7 @@ export const updateExternalMembers = (client: ClientBase) => {
    * @param body - Request body
    * @returns {Member}
    * @throws {PolarNetworkError} When a network error occurs
+   * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {ResourceNotFound} Member not found.
    * @throws {AmbiguousExternalCustomerID} The external customer ID matches customers in several accessible organizations.

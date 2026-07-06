@@ -219,7 +219,7 @@ Raises:
         {% endif %}
         {% endfor %}
         **kwargs: typing.Unpack[{{ variant.name }}],
-    ) -> typing.Generator[{{ method.pagination.item_schema | type_annotation }}]: ...
+    ) -> typing.Generator[{{ method.pagination.item_schema | type_annotation }}, None, None]: ...
 
 {% endif %}
 {% endfor %}
@@ -246,7 +246,7 @@ Raises:
         {% endif %}
         {% endfor %}
         **kwargs: typing.Unpack[{{ variant.name }}],
-    ) -> typing.Generator[{{ method.pagination.item_schema | type_annotation }}]: ...
+    ) -> typing.Generator[{{ method.pagination.item_schema | type_annotation }}, None, None]: ...
 
 {% endif %}
 {% endfor %}
@@ -275,7 +275,7 @@ Raises:
         {% elif method.body %}
         **kwargs: typing.Unpack[{{ method.body | type_annotation }}],
         {% endif %}
-    ) -> typing.Generator[{{ method.pagination.item_schema | type_annotation }}]:
+    ) -> typing.Generator[{{ method.pagination.item_schema | type_annotation }}, None, None]:
         """
 {% if method.description %}
 {{ method.description }}
@@ -498,7 +498,7 @@ Raises:
         {% endif %}
         {% endfor %}
         **kwargs: typing.Unpack[{{ variant.name }}],
-    ) -> typing.AsyncGenerator[{{ method.pagination.item_schema | type_annotation }}]: ...
+    ) -> typing.AsyncGenerator[{{ method.pagination.item_schema | type_annotation }}, None]: ...
 
 {% endif %}
 {% endfor %}
@@ -525,7 +525,7 @@ Raises:
         {% endif %}
         {% endfor %}
         **kwargs: typing.Unpack[{{ variant.name }}],
-    ) -> typing.AsyncGenerator[{{ method.pagination.item_schema | type_annotation }}]: ...
+    ) -> typing.AsyncGenerator[{{ method.pagination.item_schema | type_annotation }}], None: ...
 
 {% endif %}
 {% endfor %}
@@ -554,7 +554,7 @@ Raises:
         {% elif method.body %}
         **kwargs: typing.Unpack[{{ method.body | type_annotation }}],
         {% endif %}
-    ) -> typing.AsyncGenerator[{{ method.pagination.item_schema | type_annotation }}]:
+    ) -> typing.AsyncGenerator[{{ method.pagination.item_schema | type_annotation }}, None]:
         """
 {% if method.description %}
 {{ method.description }}

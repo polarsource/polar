@@ -87,7 +87,7 @@ class MetersSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[MeterSortProperty] | None = ["name"],
         metadata: MetadataQuery = None,
-    ) -> typing.Generator[Meter]:
+    ) -> typing.Generator[Meter, None, None]:
         """
         List meters.
 
@@ -345,7 +345,7 @@ class MetersAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[MeterSortProperty] | None = ["name"],
         metadata: MetadataQuery = None,
-    ) -> typing.AsyncGenerator[Meter]:
+    ) -> typing.AsyncGenerator[Meter, None]:
         """
         List meters.
 

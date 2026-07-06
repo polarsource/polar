@@ -100,7 +100,7 @@ class CheckoutsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CheckoutSortProperty] | None = ["-created_at"],
-    ) -> typing.Generator[Checkout]:
+    ) -> typing.Generator[Checkout, None, None]:
         """
         List checkout sessions.
 
@@ -426,7 +426,7 @@ class CheckoutsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CheckoutSortProperty] | None = ["-created_at"],
-    ) -> typing.AsyncGenerator[Checkout]:
+    ) -> typing.AsyncGenerator[Checkout, None]:
         """
         List checkout sessions.
 

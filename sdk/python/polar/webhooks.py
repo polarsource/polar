@@ -72,7 +72,7 @@ class WebhooksSync(SyncServiceBase):
         organization_id: str | list[str] | None = None,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.Generator[WebhookEndpoint]:
+    ) -> typing.Generator[WebhookEndpoint, None, None]:
         """
         List webhook endpoints.
 
@@ -345,7 +345,7 @@ class WebhooksSync(SyncServiceBase):
         event_type: WebhookEventType | list[WebhookEventType] | None = None,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.Generator[WebhookDelivery]:
+    ) -> typing.Generator[WebhookDelivery, None, None]:
         """
         List webhook deliveries.
 
@@ -468,7 +468,7 @@ class WebhooksAsync(AsyncServiceBase):
         organization_id: str | list[str] | None = None,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.AsyncGenerator[WebhookEndpoint]:
+    ) -> typing.AsyncGenerator[WebhookEndpoint, None]:
         """
         List webhook endpoints.
 
@@ -742,7 +742,7 @@ class WebhooksAsync(AsyncServiceBase):
         event_type: WebhookEventType | list[WebhookEventType] | None = None,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.AsyncGenerator[WebhookDelivery]:
+    ) -> typing.AsyncGenerator[WebhookDelivery, None]:
         """
         List webhook deliveries.
 

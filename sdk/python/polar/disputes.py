@@ -76,7 +76,7 @@ class DisputesSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[DisputeSortProperty] | None = ["-created_at"],
-    ) -> typing.Generator[Dispute]:
+    ) -> typing.Generator[Dispute, None, None]:
         """
         List disputes.
 
@@ -241,7 +241,7 @@ class DisputesAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[DisputeSortProperty] | None = ["-created_at"],
-    ) -> typing.AsyncGenerator[Dispute]:
+    ) -> typing.AsyncGenerator[Dispute, None]:
         """
         List disputes.
 

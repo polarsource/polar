@@ -81,7 +81,7 @@ class MembersSync(SyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.Generator[CustomerPortalMember]:
+    ) -> typing.Generator[CustomerPortalMember, None, None]:
         """
         List all members of the customer's team.
 
@@ -288,7 +288,7 @@ class MembersAsync(AsyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.AsyncGenerator[CustomerPortalMember]:
+    ) -> typing.AsyncGenerator[CustomerPortalMember, None]:
         """
         List all members of the customer's team.
 

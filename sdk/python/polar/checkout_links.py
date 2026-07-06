@@ -81,7 +81,7 @@ class CheckoutLinksSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CheckoutLinkSortProperty] | None = ["created_at"],
-    ) -> typing.Generator[CheckoutLink]:
+    ) -> typing.Generator[CheckoutLink, None, None]:
         """
         List checkout links.
 
@@ -319,7 +319,7 @@ class CheckoutLinksAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CheckoutLinkSortProperty] | None = ["created_at"],
-    ) -> typing.AsyncGenerator[CheckoutLink]:
+    ) -> typing.AsyncGenerator[CheckoutLink, None]:
         """
         List checkout links.
 

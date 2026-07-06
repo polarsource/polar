@@ -103,7 +103,7 @@ class ProductsSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[ProductSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
-    ) -> typing.Generator[Product]:
+    ) -> typing.Generator[Product, None, None]:
         """
         List products.
 
@@ -378,7 +378,7 @@ class ProductsAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[ProductSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
-    ) -> typing.AsyncGenerator[Product]:
+    ) -> typing.AsyncGenerator[Product, None]:
         """
         List products.
 

@@ -121,7 +121,7 @@ class OrdersSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[OrderSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
-    ) -> typing.Generator[Order]:
+    ) -> typing.Generator[Order, None, None]:
         """
         List orders.
 
@@ -542,7 +542,7 @@ class OrdersAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[OrderSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
-    ) -> typing.AsyncGenerator[Order]:
+    ) -> typing.AsyncGenerator[Order, None]:
         """
         List orders.
 

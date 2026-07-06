@@ -60,7 +60,7 @@ class WalletsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerWalletSortProperty] | None = ["-created_at"],
-    ) -> typing.Generator[CustomerWallet]:
+    ) -> typing.Generator[CustomerWallet, None, None]:
         """
         List wallets of the authenticated customer.
 
@@ -163,7 +163,7 @@ class WalletsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerWalletSortProperty] | None = ["-created_at"],
-    ) -> typing.AsyncGenerator[CustomerWallet]:
+    ) -> typing.AsyncGenerator[CustomerWallet, None]:
         """
         List wallets of the authenticated customer.
 

@@ -135,7 +135,7 @@ class SubscriptionsSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[SubscriptionSortProperty] | None = ["-started_at"],
         metadata: MetadataQuery = None,
-    ) -> typing.Generator[Subscription]:
+    ) -> typing.Generator[Subscription, None, None]:
         """
         List subscriptions.
 
@@ -520,7 +520,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[SubscriptionSortProperty] | None = ["-started_at"],
         metadata: MetadataQuery = None,
-    ) -> typing.AsyncGenerator[Subscription]:
+    ) -> typing.AsyncGenerator[Subscription, None]:
         """
         List subscriptions.
 

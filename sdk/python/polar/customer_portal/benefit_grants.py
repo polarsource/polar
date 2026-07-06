@@ -110,7 +110,7 @@ class BenefitGrantsSync(SyncServiceBase):
             "product_benefit",
             "-granted_at",
         ],
-    ) -> typing.Generator[CustomerBenefitGrant]:
+    ) -> typing.Generator[CustomerBenefitGrant, None, None]:
         """
         List benefits grants of the authenticated customer.
 
@@ -363,7 +363,7 @@ class BenefitGrantsAsync(AsyncServiceBase):
             "product_benefit",
             "-granted_at",
         ],
-    ) -> typing.AsyncGenerator[CustomerBenefitGrant]:
+    ) -> typing.AsyncGenerator[CustomerBenefitGrant, None]:
         """
         List benefits grants of the authenticated customer.
 

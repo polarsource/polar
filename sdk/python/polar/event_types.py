@@ -97,7 +97,7 @@ class EventTypesSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[EventTypesSortProperty] | None = ["-last_seen"],
-    ) -> typing.Generator[EventTypeWithStats]:
+    ) -> typing.Generator[EventTypeWithStats, None, None]:
         """
         List event types with aggregated statistics.
 
@@ -253,7 +253,7 @@ class EventTypesAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[EventTypesSortProperty] | None = ["-last_seen"],
-    ) -> typing.AsyncGenerator[EventTypeWithStats]:
+    ) -> typing.AsyncGenerator[EventTypeWithStats, None]:
         """
         List event types with aggregated statistics.
 

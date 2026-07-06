@@ -90,7 +90,7 @@ class LicenseKeysSync(SyncServiceBase):
         status: LicenseKeyStatus | builtins.list[LicenseKeyStatus] | None = None,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.Generator[LicenseKeyRead]:
+    ) -> typing.Generator[LicenseKeyRead, None, None]:
         """
         Get license keys connected to the given organization & filters.
 
@@ -393,7 +393,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         status: LicenseKeyStatus | builtins.list[LicenseKeyStatus] | None = None,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.AsyncGenerator[LicenseKeyRead]:
+    ) -> typing.AsyncGenerator[LicenseKeyRead, None]:
         """
         Get license keys connected to the given organization & filters.
 

@@ -73,7 +73,7 @@ class MembersSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: list[MemberSortProperty] | None = ["-created_at"],
-    ) -> typing.Generator[Member]:
+    ) -> typing.Generator[Member, None, None]:
         """
         List members with optional customer ID filter.
 
@@ -167,7 +167,7 @@ class MembersAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: list[MemberSortProperty] | None = ["-created_at"],
-    ) -> typing.AsyncGenerator[Member]:
+    ) -> typing.AsyncGenerator[Member, None]:
         """
         List members with optional customer ID filter.
 

@@ -173,7 +173,7 @@ class EventsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[EventNamesSortProperty] | None = ["-last_seen"],
-    ) -> typing.Generator[EventName]:
+    ) -> typing.Generator[EventName, None, None]:
         """
         List event names.
 
@@ -423,7 +423,7 @@ class EventsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[EventNamesSortProperty] | None = ["-last_seen"],
-    ) -> typing.AsyncGenerator[EventName]:
+    ) -> typing.AsyncGenerator[EventName, None]:
         """
         List event names.
 

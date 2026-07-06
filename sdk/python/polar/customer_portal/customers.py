@@ -126,7 +126,7 @@ class CustomersSync(SyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.Generator[CustomerPaymentMethod]:
+    ) -> typing.Generator[CustomerPaymentMethod, None, None]:
         """
         Get saved payment methods of the authenticated customer.
 
@@ -434,7 +434,7 @@ class CustomersAsync(AsyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.AsyncGenerator[CustomerPaymentMethod]:
+    ) -> typing.AsyncGenerator[CustomerPaymentMethod, None]:
         """
         Get saved payment methods of the authenticated customer.
 

@@ -77,7 +77,7 @@ class BenefitGrantsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[BenefitGrantSortProperty] | None = ["-created_at"],
-    ) -> typing.Generator[BenefitGrant]:
+    ) -> typing.Generator[BenefitGrant, None, None]:
         """
         List benefit grants across all benefits accessible to the authenticated subject.
 
@@ -177,7 +177,7 @@ class BenefitGrantsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[BenefitGrantSortProperty] | None = ["-created_at"],
-    ) -> typing.AsyncGenerator[BenefitGrant]:
+    ) -> typing.AsyncGenerator[BenefitGrant, None]:
         """
         List benefit grants across all benefits accessible to the authenticated subject.
 

@@ -80,7 +80,7 @@ class DiscountsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[DiscountSortProperty] | None = ["-created_at"],
-    ) -> typing.Generator[Discount]:
+    ) -> typing.Generator[Discount, None, None]:
         """
         List discounts.
 
@@ -312,7 +312,7 @@ class DiscountsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[DiscountSortProperty] | None = ["-created_at"],
-    ) -> typing.AsyncGenerator[Discount]:
+    ) -> typing.AsyncGenerator[Discount, None]:
         """
         List discounts.
 

@@ -106,7 +106,7 @@ class CustomersSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[CustomerSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
-    ) -> typing.Generator[Customer]:
+    ) -> typing.Generator[Customer, None, None]:
         """
         List customers.
 
@@ -577,7 +577,7 @@ class CustomersSync(SyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.Generator[PaymentMethod]:
+    ) -> typing.Generator[PaymentMethod, None, None]:
         """
         Get saved payment methods of a customer.
 
@@ -655,7 +655,7 @@ class CustomersSync(SyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.Generator[PaymentMethod]:
+    ) -> typing.Generator[PaymentMethod, None, None]:
         """
         Get saved payment methods of a customer by external ID.
 
@@ -758,7 +758,7 @@ class CustomersAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[CustomerSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
-    ) -> typing.AsyncGenerator[Customer]:
+    ) -> typing.AsyncGenerator[Customer, None]:
         """
         List customers.
 
@@ -1230,7 +1230,7 @@ class CustomersAsync(AsyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.AsyncGenerator[PaymentMethod]:
+    ) -> typing.AsyncGenerator[PaymentMethod, None]:
         """
         Get saved payment methods of a customer.
 
@@ -1309,7 +1309,7 @@ class CustomersAsync(AsyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.AsyncGenerator[PaymentMethod]:
+    ) -> typing.AsyncGenerator[PaymentMethod, None]:
         """
         Get saved payment methods of a customer by external ID.
 

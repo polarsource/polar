@@ -218,7 +218,7 @@ class SeatsSync(SyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.Generator[CustomerSubscription]:
+    ) -> typing.Generator[CustomerSubscription, None, None]:
         """
         List all subscriptions where the authenticated customer has claimed a seat.
 
@@ -434,7 +434,7 @@ class SeatsAsync(AsyncServiceBase):
         *,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.AsyncGenerator[CustomerSubscription]:
+    ) -> typing.AsyncGenerator[CustomerSubscription, None]:
         """
         List all subscriptions where the authenticated customer has claimed a seat.
 

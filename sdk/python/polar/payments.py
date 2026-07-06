@@ -91,7 +91,7 @@ class PaymentsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[PaymentSortProperty] | None = ["-created_at"],
-    ) -> typing.Generator[Payment]:
+    ) -> typing.Generator[Payment, None, None]:
         """
         List payments.
 
@@ -242,7 +242,7 @@ class PaymentsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[PaymentSortProperty] | None = ["-created_at"],
-    ) -> typing.AsyncGenerator[Payment]:
+    ) -> typing.AsyncGenerator[Payment, None]:
         """
         List payments.
 

@@ -75,7 +75,7 @@ class LicenseKeysSync(SyncServiceBase):
         benefit_id: str | None = None,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.Generator[LicenseKeyRead]:
+    ) -> typing.Generator[LicenseKeyRead, None, None]:
         """
         **Scopes**: `customer_portal:read` `customer_portal:write`
 
@@ -293,7 +293,7 @@ class LicenseKeysAsync(AsyncServiceBase):
         benefit_id: str | None = None,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.AsyncGenerator[LicenseKeyRead]:
+    ) -> typing.AsyncGenerator[LicenseKeyRead, None]:
         """
         **Scopes**: `customer_portal:read` `customer_portal:write`
 

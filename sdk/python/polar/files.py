@@ -78,7 +78,7 @@ class FilesSync(SyncServiceBase):
         ids: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.Generator[FileRead]:
+    ) -> typing.Generator[FileRead, None, None]:
         """
         List files.
 
@@ -325,7 +325,7 @@ class FilesAsync(AsyncServiceBase):
         ids: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.AsyncGenerator[FileRead]:
+    ) -> typing.AsyncGenerator[FileRead, None]:
         """
         List files.
 

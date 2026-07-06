@@ -73,7 +73,7 @@ class OrganizationsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[OrganizationSortProperty] | None = ["created_at"],
-    ) -> typing.Generator[Organization]:
+    ) -> typing.Generator[Organization, None, None]:
         """
         List organizations.
 
@@ -260,7 +260,7 @@ class OrganizationsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[OrganizationSortProperty] | None = ["created_at"],
-    ) -> typing.AsyncGenerator[Organization]:
+    ) -> typing.AsyncGenerator[Organization, None]:
         """
         List organizations.
 

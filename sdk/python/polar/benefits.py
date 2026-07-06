@@ -114,7 +114,7 @@ class BenefitsSync(SyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[BenefitSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
-    ) -> typing.Generator[Benefit]:
+    ) -> typing.Generator[Benefit, None, None]:
         """
         List benefits.
 
@@ -459,7 +459,7 @@ class BenefitsSync(SyncServiceBase):
         member_id: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.Generator[BenefitGrant]:
+    ) -> typing.Generator[BenefitGrant, None, None]:
         """
         List the individual grants for a benefit.
 
@@ -568,7 +568,7 @@ class BenefitsAsync(AsyncServiceBase):
         limit: int = 10,
         sorting: builtins.list[BenefitSortProperty] | None = ["-created_at"],
         metadata: MetadataQuery = None,
-    ) -> typing.AsyncGenerator[Benefit]:
+    ) -> typing.AsyncGenerator[Benefit, None]:
         """
         List benefits.
 
@@ -914,7 +914,7 @@ class BenefitsAsync(AsyncServiceBase):
         member_id: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.AsyncGenerator[BenefitGrant]:
+    ) -> typing.AsyncGenerator[BenefitGrant, None]:
         """
         List the individual grants for a benefit.
 

@@ -84,7 +84,7 @@ class SubscriptionsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerSubscriptionSortProperty] | None = ["-started_at"],
-    ) -> typing.Generator[CustomerSubscription]:
+    ) -> typing.Generator[CustomerSubscription, None, None]:
         """
         List subscriptions of the authenticated customer.
 
@@ -312,7 +312,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerSubscriptionSortProperty] | None = ["-started_at"],
-    ) -> typing.AsyncGenerator[CustomerSubscription]:
+    ) -> typing.AsyncGenerator[CustomerSubscription, None]:
         """
         List subscriptions of the authenticated customer.
 

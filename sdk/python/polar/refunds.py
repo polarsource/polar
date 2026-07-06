@@ -93,7 +93,7 @@ class RefundsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[RefundSortProperty] | None = ["-created_at"],
-    ) -> typing.Generator[Refund]:
+    ) -> typing.Generator[Refund, None, None]:
         """
         List refunds.
 
@@ -243,7 +243,7 @@ class RefundsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[RefundSortProperty] | None = ["-created_at"],
-    ) -> typing.AsyncGenerator[Refund]:
+    ) -> typing.AsyncGenerator[Refund, None]:
         """
         List refunds.
 

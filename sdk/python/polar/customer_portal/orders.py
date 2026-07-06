@@ -94,7 +94,7 @@ class OrdersSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerOrderSortProperty] | None = ["-created_at"],
-    ) -> typing.Generator[CustomerOrder]:
+    ) -> typing.Generator[CustomerOrder, None, None]:
         """
         List orders of the authenticated customer.
 
@@ -425,7 +425,7 @@ class OrdersAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomerOrderSortProperty] | None = ["-created_at"],
-    ) -> typing.AsyncGenerator[CustomerOrder]:
+    ) -> typing.AsyncGenerator[CustomerOrder, None]:
         """
         List orders of the authenticated customer.
 

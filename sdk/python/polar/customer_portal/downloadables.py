@@ -58,7 +58,7 @@ class DownloadablesSync(SyncServiceBase):
         benefit_id: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.Generator[DownloadableRead]:
+    ) -> typing.Generator[DownloadableRead, None, None]:
         """
         **Scopes**: `customer_portal:read` `customer_portal:write`
 
@@ -132,7 +132,7 @@ class DownloadablesAsync(AsyncServiceBase):
         benefit_id: str | builtins.list[str] | None = None,
         page: int = 1,
         limit: int = 10,
-    ) -> typing.AsyncGenerator[DownloadableRead]:
+    ) -> typing.AsyncGenerator[DownloadableRead, None]:
         """
         **Scopes**: `customer_portal:read` `customer_portal:write`
 

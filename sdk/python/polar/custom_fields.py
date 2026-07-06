@@ -92,7 +92,7 @@ class CustomFieldsSync(SyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomFieldSortProperty] | None = ["slug"],
-    ) -> typing.Generator[CustomField]:
+    ) -> typing.Generator[CustomField, None, None]:
         """
         List custom fields.
 
@@ -383,7 +383,7 @@ class CustomFieldsAsync(AsyncServiceBase):
         page: int = 1,
         limit: int = 10,
         sorting: builtins.list[CustomFieldSortProperty] | None = ["slug"],
-    ) -> typing.AsyncGenerator[CustomField]:
+    ) -> typing.AsyncGenerator[CustomField, None]:
         """
         List custom fields.
 

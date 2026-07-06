@@ -76,7 +76,7 @@ class CustomerMetersSync(SyncServiceBase):
         sorting: builtins.list[CustomerCustomerMeterSortProperty] | None = [
             "-modified_at"
         ],
-    ) -> typing.Generator[CustomerCustomerMeter]:
+    ) -> typing.Generator[CustomerCustomerMeter, None, None]:
         """
         List meters of the authenticated customer.
 
@@ -203,7 +203,7 @@ class CustomerMetersAsync(AsyncServiceBase):
         sorting: builtins.list[CustomerCustomerMeterSortProperty] | None = [
             "-modified_at"
         ],
-    ) -> typing.AsyncGenerator[CustomerCustomerMeter]:
+    ) -> typing.AsyncGenerator[CustomerCustomerMeter, None]:
         """
         List meters of the authenticated customer.
 

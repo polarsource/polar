@@ -35,7 +35,6 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
       <PlanUpsell organization={organization} />
       <OrganizationStatusBanner organization={organization} />
       <DisputesBanner organization={organization} />
-      <CompassWidget organization={organization} limit={3} hideWhenEmpty />
       <OverviewSection organization={organization} />
       <CompassWidget organization={organization} limit={3} hideWhenEmpty />
 

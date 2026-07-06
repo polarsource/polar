@@ -1,15 +1,16 @@
 """
-Signal layer: turns the metrics API into the uniform inputs detectors reason over.
+Signal layer: turns metrics into the uniform inputs (`MetricSignal`) detectors
+reason over.
 
-In the target architecture these come straight from parameterized Tinybird pipes
-that return value + baseline + drivers in one fast columnar query. For the scaffold
-we compute them by reading the existing `metrics` service (which already merges
-Postgres + Tinybird, and handles auth, filtering and caching) over a window, then
-diffing periods in Python. Detectors depend only on `MetricSignal`, so swapping in
-dedicated pipes later is a signals-layer change, not a detector change.
+The source is always the `metrics` service (Postgres + Tinybird); this module is
+only about *how* a metric's current-vs-baseline shape is derived from it. Today
+we read a window of periods and diff them in Python. A later optimization could
+have parameterized Tinybird pipes return value + baseline + drivers directly in
+one columnar query instead, avoiding the Python diffing — same data, computed
+server-side. Because detectors depend only on `MetricSignal`, that swap is a
+signals-layer change, not a detector change.
 
-The per-period readers (`series`, `latest`, …) live on `MetricsResponse` in the
-metrics module, so they're reusable by any metrics consumer, not just Compass.
+The per-period readers (`series`, `latest`, …) live in `polar.metrics.aggregation`.
 """
 
 from dataclasses import dataclass, field

@@ -1,6 +1,6 @@
 from polar.metrics.aggregation import series
 
-from ..schemas import Insight, InsightAction, InsightCategory, InsightSeverity
+from ..schemas import Insight, InsightCategory, InsightSeverity, ViewMetricAction
 from ..signals import format_pct
 from .base import Detector, DetectorContext, confidence_for_sample
 
@@ -88,7 +88,7 @@ class CheckoutConversionDetector(Detector):
             body=body,
             why=why,
             confidence=confidence,
-            primary_action=InsightAction(
+            primary_action=ViewMetricAction(
                 label="View conversion",
                 metric="checkouts_conversion",
             ),

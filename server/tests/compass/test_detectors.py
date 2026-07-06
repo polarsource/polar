@@ -11,10 +11,19 @@ from polar.compass.detectors.conversion import CheckoutConversionDetector
 from polar.compass.detectors.cost_per_user import CostPerUserDetector
 from polar.compass.detectors.margin import GrossMarginDetector
 from polar.compass.detectors.mrr import MRRGrowthDetector
+from polar.compass.detectors.product_margin import ProductMarginDetector
 from polar.compass.detectors.subscribers import SubscriberGrowthDetector
 from polar.compass.detectors.trials import TrialConversionDetector
 from polar.compass.keys import build_insight_key, parse_insight_key
-from polar.compass.schemas import ConfidenceLevel, InsightCategory, InsightSeverity
+from polar.compass.schemas import (
+    AdjustPriceAction,
+    ConfidenceLevel,
+    Insight,
+    InsightCategory,
+    InsightSeverity,
+    ViewMetricAction,
+)
+from polar.compass.signals import ProductPricing
 from polar.metrics.schemas import MetricsResponse
 
 
@@ -558,3 +567,125 @@ class TestCheckoutConversionDetector:
         )
 
         assert insight is None
+
+
+def _product(
+    name: str = "Pro",
+    price_amount: int = 4000,
+    margin: float = 0.5,
+    subs: float = 50.0,
+) -> ProductPricing:
+    return ProductPricing(
+        product_id=uuid.uuid4(),
+        name=name,
+        price_amount=price_amount,
+        currency="usd",
+        metrics=_response_from(
+            gross_margin_percentage=[margin] * 36,
+            active_subscriptions=[subs] * 36,
+        ),
+    )
+
+
+def _context_with_products(products: list[ProductPricing]) -> DetectorContext:
+    return DetectorContext(
+        organization_id=uuid.uuid4(),
+        timezone=ZoneInfo("UTC"),
+        today=date(2026, 2, 6),
+        metrics=_response_from(gross_margin_percentage=[0.5] * 36),
+        products=tuple(products),
+    )
+
+
+class TestProductMarginDetector:
+    def test_fires_with_price_suggestion(self) -> None:
+        # $40 product at 41% margin: ~$23.60 goes to serving each customer.
+        product = _product(price_amount=4000, margin=0.41)
+
+        insight = ProductMarginDetector().evaluate(_context_with_products([product]))
+
+        assert insight is not None
+        assert insight.category is InsightCategory.cost
+        assert insight.severity is InsightSeverity.warning
+        assert "Pro margin is down to 41%" in insight.title
+        assert "$24 per customer" in insight.body
+        action = insight.primary_action
+        assert isinstance(action, AdjustPriceAction)
+        assert action.product_id == product.product_id
+        assert action.current_price_amount == 4000
+        # ceil(4000 * 0.59 / 0.30 / 100) * 100 — the price restoring 70% margin.
+        assert action.suggested_price_amount == 7900
+        assert "$79" in insight.body
+
+    def test_deep_margin_loss_is_critical(self) -> None:
+        insight = ProductMarginDetector().evaluate(
+            _context_with_products([_product(margin=0.30)])
+        )
+
+        assert insight is not None
+        assert insight.severity is InsightSeverity.critical
+
+    def test_picks_the_worst_product(self) -> None:
+        healthy = _product(name="Starter", margin=0.85)
+        thin = _product(name="Pro", margin=0.55)
+        thinner = _product(name="Enterprise", margin=0.45)
+
+        insight = ProductMarginDetector().evaluate(
+            _context_with_products([healthy, thin, thinner])
+        )
+
+        assert insight is not None
+        assert "Enterprise" in insight.title
+        action = insight.primary_action
+        assert isinstance(action, AdjustPriceAction)
+        assert action.product_id == thinner.product_id
+
+    def test_no_insight_when_margins_healthy(self) -> None:
+        insight = ProductMarginDetector().evaluate(
+            _context_with_products([_product(margin=0.85)])
+        )
+
+        assert insight is None
+
+    def test_silent_without_cost_data(self) -> None:
+        # Margin of 0 means no cost data for the product, not a 0% business.
+        insight = ProductMarginDetector().evaluate(
+            _context_with_products([_product(margin=0.0)])
+        )
+
+        assert insight is None
+
+    def test_suppressed_when_sample_too_small(self) -> None:
+        insight = ProductMarginDetector().evaluate(
+            _context_with_products([_product(margin=0.41, subs=3.0)])
+        )
+
+        assert insight is None
+
+    def test_no_insight_without_products(self) -> None:
+        insight = ProductMarginDetector().evaluate(_context_with_products([]))
+
+        assert insight is None
+
+
+class TestInsightActionUnion:
+    def test_adjust_price_round_trips_through_the_wire_format(self) -> None:
+        insight = ProductMarginDetector().evaluate(
+            _context_with_products([_product(margin=0.41)])
+        )
+        assert insight is not None
+
+        parsed = Insight.model_validate(insight.model_dump())
+
+        assert isinstance(parsed.primary_action, AdjustPriceAction)
+        assert parsed.primary_action.type == "adjust_price"
+
+    def test_view_metric_round_trips_through_the_wire_format(self) -> None:
+        mrr = [100_000.0] * 6 + [110_000.0] * 29 + [120_000.0]
+        insight = MRRGrowthDetector().evaluate(_context(_response(mrr, [50.0] * 36)))
+        assert insight is not None
+
+        parsed = Insight.model_validate(insight.model_dump())
+
+        assert isinstance(parsed.primary_action, ViewMetricAction)
+        assert parsed.primary_action.type == "view_metric"

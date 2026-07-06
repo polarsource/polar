@@ -13,8 +13,11 @@ signals-layer change, not a detector change.
 The per-period readers (`series`, `latest`, …) live in `polar.metrics.aggregation`.
 """
 
+import uuid
 from dataclasses import dataclass, field
 from enum import StrEnum
+
+from polar.metrics.schemas import MetricsResponse
 
 
 class DriverDimension(StrEnum):
@@ -45,6 +48,25 @@ class MetricSignal:
         if self.baseline == 0:
             return None
         return (self.current - self.baseline) / abs(self.baseline)
+
+
+@dataclass(frozen=True)
+class ProductPricing:
+    """A product's current list price plus its product-filtered metrics window.
+
+    Prefetched by the service for detectors that declare `product_metric_slugs`,
+    so per-product detectors stay pure: pricing + signals in, insight out.
+    """
+
+    product_id: uuid.UUID
+    name: str
+    price_amount: int
+    """Current list price in cents."""
+    currency: str
+    metrics: MetricsResponse
+    """The same metrics window as the organization's, scoped to this product:
+    revenue metrics filtered by product, cost metrics by its active-customer
+    cohort (cost events attach to customers, not products)."""
 
 
 def format_currency(cents: float) -> str:

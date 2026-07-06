@@ -13,6 +13,7 @@ from .conversion import CheckoutConversionDetector
 from .cost_per_user import CostPerUserDetector
 from .margin import GrossMarginDetector
 from .mrr import MRRGrowthDetector
+from .product_margin import ProductMarginDetector
 from .subscribers import SubscriberGrowthDetector
 from .trials import TrialConversionDetector
 
@@ -25,6 +26,7 @@ DETECTORS: list[Detector] = [
     GrossMarginDetector(),
     CostPerUserDetector(),
     CheckoutConversionDetector(),
+    ProductMarginDetector(),
 ]
 
 DETECTOR_IDS: frozenset[str] = frozenset(detector.id for detector in DETECTORS)

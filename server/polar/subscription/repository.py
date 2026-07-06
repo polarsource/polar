@@ -137,6 +137,23 @@ class SubscriptionRepository(
         result = await self.session.execute(statement)
         return result.scalars().all()
 
+    async def get_active_customer_ids_by_product(
+        self, product_id: UUID, *, limit: int | None = None
+    ) -> Sequence[UUID]:
+        statement = (
+            select(Subscription.customer_id)
+            .where(
+                Subscription.product_id == product_id,
+                Subscription.active.is_(True),
+                Subscription.is_deleted.is_(False),
+            )
+            .distinct()
+        )
+        if limit is not None:
+            statement = statement.limit(limit)
+        result = await self.session.execute(statement)
+        return result.scalars().all()
+
     async def get_by_id_and_organization(
         self,
         id: UUID,

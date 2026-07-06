@@ -1,11 +1,11 @@
 'use client'
 
-import { getMetricGroupSlug } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { Text, Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
+import { resolveInsightActionHref } from './insightActions'
 
 const categoryColor: Record<schemas['InsightCategory'], string> = {
   growth: 'bg-green-500',
@@ -24,14 +24,8 @@ export const InsightCard = ({
   insight: schemas['Insight']
 }) => {
   const action = insight.primary_action
-  // The backend names the metric behind the insight; the client owns routing
-  // and resolves it to that metric's analytics page (grouped by category).
-  const metricsBase = `/dashboard/${organization.slug}/analytics/metrics`
   const actionHref = action
-    ? (() => {
-        const group = getMetricGroupSlug(action.metric)
-        return group ? `${metricsBase}/${group}` : metricsBase
-      })()
+    ? resolveInsightActionHref(organization, action)
     : null
 
   return (

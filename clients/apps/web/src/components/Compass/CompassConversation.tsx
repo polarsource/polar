@@ -1,5 +1,7 @@
 'use client'
 
+import { AssistantMessage } from '@/hooks/useCompassAssistant'
+import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import CloseRounded from '@mui/icons-material/CloseRounded'
@@ -10,17 +12,14 @@ import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
 import { ChevronRight } from 'lucide-react'
 import { ComponentType, RefObject, useEffect, useRef } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { AssistantPartView } from './AssistantBlocks'
 import { CompassInputBar } from './CompassInputBar'
-
-export interface CompassMessage {
-  id: string
-  role: 'user' | 'assistant'
-  content: string
-}
 
 interface CompassConversationProps {
   active: boolean
-  messages: CompassMessage[]
+  organization: schemas['Organization']
+  messages: AssistantMessage[]
+  isStreaming: boolean
   value: string
   onValueChange: (value: string) => void
   onSubmit: () => void
@@ -76,12 +75,14 @@ const findScrollParent = (el: HTMLElement | null): HTMLElement | null => {
  * The conversation surface: a solid panel that covers the dashboard body
  * (`absolute inset-0`, anchored to the relative body container, so it never
  * touches the sidebar). Empty, it offers a 2x2 grid of preset questions;
- * once there are messages it shows the thread. Kept mounted and faded in for a
- * pure opacity crossfade, snapping the body to the top on open so it lines up.
+ * once there are messages it renders the streamed thread — text parts and
+ * generative-UI blocks via the block registry.
  */
 export const CompassConversation = ({
   active,
+  organization,
   messages,
+  isStreaming,
   value,
   onValueChange,
   onSubmit,
@@ -132,10 +133,13 @@ export const CompassConversation = ({
                   key={question}
                   type="button"
                   onClick={() => onAsk(question)}
-                  className="dark:border-polar-700 dark:hover:border-polar-600 dark:hover:bg-polar-800 flex cursor-pointer flex-col gap-3 rounded-2xl border border-gray-200 p-4 text-left transition-colors hover:border-gray-300 hover:bg-gray-50"
+                  className="dark:border-polar-700 dark:hover:border-polar-600 dark:hover:bg-polar-700 flex flex-col gap-3 rounded-2xl border border-gray-200 p-4 text-left transition-colors hover:border-gray-300 hover:bg-gray-50"
                 >
-                  <Box flexDirection="row" columnGap="m" alignItems="center">
-                    <Icon style={{ fontSize: '1rem' }} />
+                  <Box columnGap="m" alignItems="center">
+                    <Icon
+                      className="dark:text-polar-500 text-gray-400"
+                      style={{ fontSize: '1rem' }}
+                    />
                     <Text>{question}</Text>
                   </Box>
                   <Box
@@ -153,30 +157,54 @@ export const CompassConversation = ({
               ))}
             </div>
           ) : (
-            <Box display="flex" flexDirection="column" rowGap="l">
-              {messages.map((message) => (
-                <Box
-                  key={message.id}
-                  alignSelf={message.role === 'user' ? 'end' : 'start'}
-                  maxWidth="85%"
-                  paddingHorizontal="l"
-                  paddingVertical="m"
-                  borderRadius="l"
-                  backgroundColor={
-                    message.role === 'user' ? 'background-card' : undefined
-                  }
-                >
-                  <Text color={message.role === 'user' ? undefined : 'muted'}>
-                    {message.content}
-                  </Text>
-                </Box>
-              ))}
+            <Box display="flex" flexDirection="column" rowGap="2xl">
+              {messages.map((message) =>
+                message.role === 'user' ? (
+                  <Box
+                    key={message.id}
+                    alignSelf="end"
+                    maxWidth="85%"
+                    paddingHorizontal="l"
+                    paddingVertical="m"
+                    borderRadius="l"
+                    backgroundColor="background-card"
+                  >
+                    {message.parts.map((part, i) => (
+                      <AssistantPartView
+                        key={i}
+                        part={part}
+                        organization={organization}
+                      />
+                    ))}
+                  </Box>
+                ) : (
+                  <Box
+                    key={message.id}
+                    display="flex"
+                    flexDirection="column"
+                    rowGap="2xl"
+                    maxWidth="85%"
+                  >
+                    {message.parts.length === 0 && isStreaming ? (
+                      <Text color="muted">Thinking...</Text>
+                    ) : (
+                      message.parts.map((part, i) => (
+                        <AssistantPartView
+                          key={i}
+                          part={part}
+                          organization={organization}
+                        />
+                      ))
+                    )}
+                  </Box>
+                ),
+              )}
             </Box>
           )}
         </div>
       </div>
 
-      <div className="flex w-full justify-center px-6 pb-6">
+      <div className="flex w-full justify-center px-6 pb-8">
         <div className="w-full max-w-[760px]">
           <CompassInputBar
             ref={inputRef}

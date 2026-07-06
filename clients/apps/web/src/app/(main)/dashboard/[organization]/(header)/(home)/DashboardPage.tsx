@@ -39,7 +39,9 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
           <AccountWidget className={cellClassName} />
         </div>
       </div>
-      {organization.feature_settings?.compass_enabled && <CompassBox />}
+      {organization.feature_settings?.compass_enabled && (
+        <CompassBox organization={organization} />
+      )}
     </DashboardBody>
   )
 }

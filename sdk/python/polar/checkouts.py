@@ -138,7 +138,7 @@ class CheckoutsSync(SyncServiceBase):
                 sorting=sorting,
             )
             yield from response.items
-            if page == response.pagination.max_page:
+            if page >= response.pagination.max_page:
                 break
             page += 1
 
@@ -465,7 +465,7 @@ class CheckoutsAsync(AsyncServiceBase):
             )
             for item in response.items:
                 yield item
-            if page == response.pagination.max_page:
+            if page >= response.pagination.max_page:
                 break
             page += 1
 

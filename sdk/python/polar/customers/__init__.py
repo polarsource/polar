@@ -142,7 +142,7 @@ class CustomersSync(SyncServiceBase):
                 metadata=metadata,
             )
             yield from response.items
-            if page == response.pagination.max_page:
+            if page >= response.pagination.max_page:
                 break
             page += 1
 
@@ -604,7 +604,7 @@ class CustomersSync(SyncServiceBase):
                 limit=limit,
             )
             yield from response.items
-            if page == response.pagination.max_page:
+            if page >= response.pagination.max_page:
                 break
             page += 1
 
@@ -682,7 +682,7 @@ class CustomersSync(SyncServiceBase):
                 limit=limit,
             )
             yield from response.items
-            if page == response.pagination.max_page:
+            if page >= response.pagination.max_page:
                 break
             page += 1
 
@@ -795,7 +795,7 @@ class CustomersAsync(AsyncServiceBase):
             )
             for item in response.items:
                 yield item
-            if page == response.pagination.max_page:
+            if page >= response.pagination.max_page:
                 break
             page += 1
 
@@ -1258,7 +1258,7 @@ class CustomersAsync(AsyncServiceBase):
             )
             for item in response.items:
                 yield item
-            if page == response.pagination.max_page:
+            if page >= response.pagination.max_page:
                 break
             page += 1
 
@@ -1337,6 +1337,6 @@ class CustomersAsync(AsyncServiceBase):
             )
             for item in response.items:
                 yield item
-            if page == response.pagination.max_page:
+            if page >= response.pagination.max_page:
                 break
             page += 1

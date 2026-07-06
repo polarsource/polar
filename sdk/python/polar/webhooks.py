@@ -98,7 +98,7 @@ class WebhooksSync(SyncServiceBase):
                 limit=limit,
             )
             yield from response.items
-            if page == response.pagination.max_page:
+            if page >= response.pagination.max_page:
                 break
             page += 1
 
@@ -385,7 +385,7 @@ class WebhooksSync(SyncServiceBase):
                 limit=limit,
             )
             yield from response.items
-            if page == response.pagination.max_page:
+            if page >= response.pagination.max_page:
                 break
             page += 1
 
@@ -495,7 +495,7 @@ class WebhooksAsync(AsyncServiceBase):
             )
             for item in response.items:
                 yield item
-            if page == response.pagination.max_page:
+            if page >= response.pagination.max_page:
                 break
             page += 1
 
@@ -783,7 +783,7 @@ class WebhooksAsync(AsyncServiceBase):
             )
             for item in response.items:
                 yield item
-            if page == response.pagination.max_page:
+            if page >= response.pagination.max_page:
                 break
             page += 1
 

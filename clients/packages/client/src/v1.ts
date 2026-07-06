@@ -2646,6 +2646,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/support-cases/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Support Cases
+     * @description List the organization's support cases.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['support-cases:list_support_cases']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/support-cases/{id}': {
     parameters: {
       query?: never
@@ -19957,6 +19979,33 @@ export interface components {
       | 'under_review'
       | 'lost'
       | 'won'
+    /** DisputeSupportCaseListItem */
+    DisputeSupportCaseListItem: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'dispute'
+      /** @description The dispute this case handles. */
+      dispute: components['schemas']['Dispute']
+    }
     /**
      * DisputeSupportCaseMessageCreate
      * @description A reply on a dispute case.
@@ -21800,6 +21849,12 @@ export interface components {
     ListResource_Subscription_: {
       /** Items */
       items: components['schemas']['Subscription'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[SupportCaseListItem] */
+    ListResource_SupportCaseListItem_: {
+      /** Items */
+      items: components['schemas']['SupportCaseListItem'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[TaxJurisdiction] */
@@ -29791,6 +29846,31 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** ReviewAppealSupportCaseListItem */
+    ReviewAppealSupportCaseListItem: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'review_appeal'
+    }
     /**
      * ReviewAppealSupportCaseMessageCreate
      * @description A reply on a review-appeal case.
@@ -32424,6 +32504,9 @@ export interface components {
       /** Size Readable */
       readonly size_readable: string
     }
+    SupportCaseListItem:
+      | components['schemas']['DisputeSupportCaseListItem']
+      | components['schemas']['ReviewAppealSupportCaseListItem']
     /** SupportCaseMessage */
     SupportCaseMessage: {
       /**
@@ -32481,6 +32564,11 @@ export interface components {
       | 'dispute_lost'
       | 'dispute_prevented'
       | 'merchant_accepted'
+    /**
+     * SupportCaseSortProperty
+     * @enum {string}
+     */
+    SupportCaseSortProperty: 'created_at' | '-created_at'
     /** SupportCaseThread */
     SupportCaseThread: {
       case: components['schemas']['SupportCase']
@@ -40801,6 +40889,54 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['DisputeNotOpenError']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'support-cases:list_support_cases': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by support case type. */
+        type?:
+          | components['schemas']['SupportCaseType']
+          | components['schemas']['SupportCaseType'][]
+          | null
+        /** @description Filter dispute cases by the linked dispute's status. */
+        dispute_status?:
+          | components['schemas']['DisputeStatus']
+          | components['schemas']['DisputeStatus'][]
+          | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?: components['schemas']['SupportCaseSortProperty'][] | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_SupportCaseListItem_']
         }
       }
       /** @description Validation Error */
@@ -59643,6 +59779,9 @@ export const disputeStatusValues: ReadonlyArray<
   'lost',
   'won',
 ]
+export const disputeSupportCaseListItemTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['DisputeSupportCaseListItem']['type']
+> = ['dispute']
 export const disputeSupportCaseMessageCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DisputeSupportCaseMessageCreate']['type']
 > = ['dispute']
@@ -61570,6 +61709,9 @@ export const refundSortPropertyValues: ReadonlyArray<
 export const refundStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RefundStatus']
 > = ['pending', 'succeeded', 'failed', 'canceled']
+export const reviewAppealSupportCaseListItemTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ReviewAppealSupportCaseListItem']['type']
+> = ['review_appeal']
 export const reviewAppealSupportCaseMessageCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ReviewAppealSupportCaseMessageCreate']['type']
 > = ['review_appeal']
@@ -61885,6 +62027,9 @@ export const supportCaseMessageTypeValues: ReadonlyArray<
   'dispute_prevented',
   'merchant_accepted',
 ]
+export const supportCaseSortPropertyValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SupportCaseSortProperty']
+> = ['created_at', '-created_at']
 export const supportCaseTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SupportCaseType']
 > = ['review_appeal', 'dispute']

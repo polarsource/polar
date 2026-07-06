@@ -450,3 +450,96 @@ class TestDownloadSupportCaseAttachment:
             "00000000-0000-4000-8000-000000000000/download"
         )
         assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestListSupportCases:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/support-cases/")
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_lists_dispute_cases_with_embedded_dispute(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        case = await create_dispute_case(save_fixture, organization, customer, product)
+
+        response = await client.get("/v1/support-cases/", params={"type": "dispute"})
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total_count"] == 1
+        item = data["items"][0]
+        assert item["id"] == str(case.id)
+        assert item["type"] == "dispute"
+        assert item["dispute"]["id"] == str(case.dispute_id)
+        assert item["dispute"]["status"] == "needs_response"
+        assert item["dispute"]["customer"]["email"] == customer.email
+
+    @pytest.mark.auth
+    async def test_filters_by_dispute_status(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_dispute_case(save_fixture, organization, customer, product)
+
+        matching = await client.get(
+            "/v1/support-cases/",
+            params={"type": "dispute", "dispute_status": "needs_response"},
+        )
+        assert matching.json()["pagination"]["total_count"] == 1
+
+        other = await client.get(
+            "/v1/support-cases/",
+            params={"type": "dispute", "dispute_status": "won"},
+        )
+        assert other.json()["pagination"]["total_count"] == 0
+
+    @pytest.mark.auth
+    async def test_type_filter_excludes_appeals(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_appeal_case(save_fixture, organization)
+        await create_dispute_case(save_fixture, organization, customer, product)
+
+        response = await client.get("/v1/support-cases/", params={"type": "dispute"})
+
+        data = response.json()
+        assert data["pagination"]["total_count"] == 1
+        assert data["items"][0]["type"] == "dispute"
+
+    @pytest.mark.auth
+    async def test_member_without_manage_sees_nothing(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        user_organization.role = OrganizationRole.member
+        await save_fixture(user_organization)
+        await create_dispute_case(save_fixture, organization, customer, product)
+
+        response = await client.get("/v1/support-cases/", params={"type": "dispute"})
+
+        assert response.status_code == 200
+        assert response.json()["pagination"]["total_count"] == 0

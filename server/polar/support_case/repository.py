@@ -9,6 +9,10 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
 from polar.authz.repository import select_accessible_org_ids
+from polar.kit.repository import (
+    RepositorySortingMixin,
+    SortingClause,
+)
 from polar.kit.repository.base import (
     RepositoryBase,
     RepositorySoftDeletionIDMixin,
@@ -27,6 +31,8 @@ from polar.models.support_case import (
     SupportCaseParticipantKind,
 )
 
+from .sorting import SupportCaseSortProperty
+
 # Message types whose latest occurrence determines the open/closed state.
 _LIFECYCLE_TYPES = (
     SupportCaseMessageType.opened,
@@ -35,11 +41,17 @@ _LIFECYCLE_TYPES = (
 
 
 class SupportCaseRepository(
+    RepositorySortingMixin[SupportCase, SupportCaseSortProperty],
     RepositorySoftDeletionIDMixin[SupportCase, UUID],
     RepositorySoftDeletionMixin[SupportCase],
     RepositoryBase[SupportCase],
 ):
     model = SupportCase
+
+    def get_sorting_clause(self, property: SupportCaseSortProperty) -> SortingClause:
+        match property:
+            case SupportCaseSortProperty.created_at:
+                return SupportCase.created_at
 
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]

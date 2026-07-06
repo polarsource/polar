@@ -40,8 +40,8 @@ from polar.event.system import (
     SubscriptionCanceledMetadata,
     SubscriptionCreatedMetadata,
     SubscriptionCycledMetadata,
-    SubscriptionPausedMetadata,
     SubscriptionPastDueMetadata,
+    SubscriptionPausedMetadata,
     SubscriptionReactivatedMetadata,
     SubscriptionResumedMetadata,
     SubscriptionRevokedMetadata,
@@ -1930,6 +1930,12 @@ class SubscriptionService:
         subscription.pause_at_period_end = True
         subscription.resumes_at = resumes_at
         session.add(subscription)
+
+        # Notify the customer at request time, while the subscription is still
+        # active until the end of the current period.
+        # The actual`paused` transition happens later in `cycle()`.
+        await self.send_paused_email(session, subscription)
+
         return subscription
 
     async def cancel_scheduled_pause(
@@ -2463,6 +2469,8 @@ class SubscriptionService:
             ),
         )
 
+        await self.send_resumed_email(session, subscription)
+
     async def _on_subscription_past_due(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
@@ -2811,6 +2819,26 @@ class SubscriptionService:
             template_name="subscription_past_due",
         )
 
+    async def send_paused_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {product.name} subscription is paused",
+            template_name="subscription_paused",
+        )
+
+    async def send_resumed_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {product.name} subscription has resumed",
+            template_name="subscription_resumed",
+        )
+
     async def send_subscription_updated_email(
         self,
         session: AsyncSession,
@@ -2882,6 +2910,8 @@ class SubscriptionService:
         template_name: Literal[
             "subscription_cancellation",
             "subscription_past_due",
+            "subscription_paused",
+            "subscription_resumed",
             "subscription_renewal_reminder",
             "subscription_revoked",
             "subscription_trial_conversion_reminder",
@@ -2907,7 +2937,10 @@ class SubscriptionService:
         )
         assert organization is not None
 
-        if not organization.customer_email_settings[template_name]:
+        # Read-default to enabled: the key is absent from the stored settings of
+        # organizations created before this template existed, and is materialized
+        # only when an admin next edits their notification settings.
+        if not organization.customer_email_settings.get(template_name, True):
             return
 
         customer = subscription.customer

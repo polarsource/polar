@@ -23,6 +23,7 @@ from polar.models.support_case import (
     SupportCaseMessageType,
     SupportCaseType,
 )
+from polar.support_case.pdf import is_mergeable
 
 from .... import formatters
 from ....components import button, card, dispute_status_badge
@@ -123,6 +124,106 @@ _EVENT_NODES: dict[SupportCaseMessageType, tuple[str, str]] = {
 }
 
 Thread = tuple[SupportCase, bool, Sequence[SupportCaseMessage]]
+
+MERGED_PDFS_REGION_ID = "merged-pdfs"
+MERGE_POLL_MAX_ATTEMPTS = 60
+
+
+def render_attachment_pill(request: Request, attachment: SupportCaseAttachment) -> None:
+    file = attachment.file
+    url = str(
+        request.url_for(
+            "support_cases:attachment_download", attachment_id=attachment.id
+        )
+    )
+    with tag.a(
+        href=url,
+        target="_blank",
+        classes="flex items-center gap-3 max-w-md rounded-lg border "
+        "border-base-300 bg-base-100 px-3 py-2 hover:bg-base-200",
+    ):
+        if file.mime_type.startswith("image/"):
+            with tag.img(
+                src=url,
+                alt=file.name,
+                loading="lazy",
+                classes="h-12 w-12 flex-none rounded-md object-cover bg-base-200",
+            ):
+                pass
+        else:
+            with tag.div(
+                classes="flex h-12 w-12 flex-none items-center "
+                "justify-center rounded-md bg-base-200 "
+                "text-base-content/40"
+            ):
+                with tag.span(classes="icon-paperclip"):
+                    pass
+        with tag.div(classes="min-w-0"):
+            with tag.div(classes="text-sm font-medium truncate"):
+                text(file.name)
+            with tag.div(classes="text-xs text-base-content/50"):
+                text(_format_size(file.size))
+
+
+def render_merged_pdfs_region(
+    request: Request,
+    case_id: UUID,
+    merged_files: Sequence[SupportCaseAttachment],
+    *,
+    expected: int | None = None,
+    merging: int | None = None,
+    attempts: int = 0,
+) -> None:
+    """The "Merged PDFs" block below the evidence list.
+
+    While fewer files than ``expected`` exist, the region polls itself until
+    the new PDF appears, giving up after ``MERGE_POLL_MAX_ATTEMPTS``."""
+    pending = expected is not None and len(merged_files) < expected
+    timed_out = pending and attempts >= MERGE_POLL_MAX_ATTEMPTS
+    with tag.div(id=MERGED_PDFS_REGION_ID, classes="flex flex-col gap-2"):
+        if pending and not timed_out:
+            partial_url = str(
+                request.url_for(
+                    "support_cases:attachments_merged_partial", case_id=case_id
+                )
+            )
+            attr(
+                "hx-get",
+                f"{partial_url}?expected={expected}"
+                f"&merging={merging or 0}&attempts={attempts + 1}",
+            )
+            attr("hx-trigger", "every 2s")
+            attr("hx-swap", "outerHTML")
+        if merged_files or pending:
+            with tag.div(
+                classes="text-xs uppercase tracking-wide text-base-content/40 mt-2"
+            ):
+                text(f"Merged PDFs ({len(merged_files)})")
+        for attachment in merged_files:
+            with tag.div(classes="flex"):
+                render_attachment_pill(request, attachment)
+        if timed_out:
+            with tag.div(classes="text-sm text-error"):
+                text(
+                    "The merge did not complete. Reload the page to check "
+                    "for the file, or try again."
+                )
+        elif pending:
+            with tag.div(
+                classes="flex items-center gap-2 text-sm text-base-content/60"
+            ):
+                with tag.span(classes="loading loading-spinner loading-xs"):
+                    pass
+                text(f"Merging {merging} files…" if merging else "Merging files…")
+
+
+def _format_size(size: int) -> str:
+    value = float(size)
+    for unit in ("B", "KB", "MB", "GB"):
+        if value < 1024:
+            return f"{value:.0f} {unit}" if unit == "B" else f"{value:.1f} {unit}"
+        value /= 1024
+    return f"{value:.1f} TB"
 
 
 class SupportCaseSection:
@@ -371,10 +472,8 @@ class SupportCaseSection:
             text(label)
 
     def _merchant_attachments(self) -> list[SupportCaseAttachment]:
-        """Attachments carried by merchant-authored messages.
-
-        The case can also hold platform/internal attachments; those must not
-        appear under a "merchant submitted" heading."""
+        """Attachments carried by merchant-authored messages — internal
+        case-level files must not appear under a "merchant submitted" heading."""
         if self.thread is None:
             return []
         _case, _is_open, messages = self.thread
@@ -390,20 +489,65 @@ class SupportCaseSection:
         ]
 
     def _render_evidence_files(self, request: Request) -> None:
-        """The merchant's evidence — the counter submission and any files sent
-        later in the chat — consolidated so support always has the full set."""
-        attachments = self._merchant_attachments()
-        if not attachments:
+        """All merchant evidence consolidated, with checkboxes feeding the
+        "Merge into PDF" action for mergeable files."""
+        if self.thread is None:
             return
-        with tag.div(
-            classes="flex flex-col gap-2 px-4 pb-4 border-t border-base-300 pt-4"
+        attachments = self._merchant_attachments()
+        merged_files = [a for a in self.attachments if a.message_id is None]
+        if not attachments and not merged_files:
+            return
+        case = self.thread[0]
+        merge_url = str(
+            request.url_for("support_cases:attachments_merge", case_id=case.id)
+        )
+        with tag.form(
+            method="post",
+            action=merge_url,
+            hx_post=merge_url,
+            hx_target=f"#{MERGED_PDFS_REGION_ID}",
+            hx_swap="outerHTML",
+            _="on htmx:afterRequest[detail.elt is me and detail.successful] "
+            "from me reset() me "
+            "then add @disabled to first <button[type='submit']/> in me",
+            classes="flex flex-col gap-2 px-4 pb-4 border-t border-base-300 pt-4",
         ):
             with tag.div(
                 classes="text-xs uppercase tracking-wide text-base-content/40"
             ):
                 text(f"Merchant submitted files ({len(attachments)})")
+            mergeable_count = 0
             for attachment in attachments:
-                self._render_attachment(request, attachment)
+                with tag.div(classes="flex items-center gap-3"):
+                    if is_mergeable(attachment.file.mime_type):
+                        mergeable_count += 1
+                        with tag.input(
+                            type="checkbox",
+                            name="attachment_ids",
+                            value=str(attachment.id),
+                            classes="checkbox checkbox-sm flex-none",
+                        ):
+                            pass
+                    else:
+                        with tag.div(classes="w-5 flex-none"):
+                            pass
+                    render_attachment_pill(request, attachment)
+            if mergeable_count > 0:
+                with tag.div(classes="mt-2"):
+                    with button(
+                        size="sm",
+                        outline=True,
+                        type="submit",
+                        disabled=True,
+                        _="on change from closest <form/> "
+                        "if <input[name='attachment_ids']:checked/> "
+                        "in closest <form/> is empty "
+                        "add @disabled else remove @disabled",
+                    ):
+                        with tag.span(classes="icon-file-text"):
+                            pass
+                        text("Merge into PDF")
+            render_merged_pdfs_region(request, case.id, merged_files)
 
     @contextlib.contextmanager
     def _fact(self, label: str) -> Generator[None]:
@@ -559,53 +703,7 @@ class SupportCaseSection:
                         text(message.body)
             for attachment in attachments:
                 with tag.div(classes=f"flex {justify}"):
-                    self._render_attachment(request, attachment)
-
-    def _render_attachment(
-        self, request: Request, attachment: SupportCaseAttachment
-    ) -> None:
-        file = attachment.file
-        url = str(
-            request.url_for(
-                "support_cases:attachment_download", attachment_id=attachment.id
-            )
-        )
-        with tag.a(
-            href=url,
-            target="_blank",
-            classes="flex items-center gap-3 max-w-md rounded-lg border "
-            "border-base-300 bg-base-100 px-3 py-2 hover:bg-base-200",
-        ):
-            if file.mime_type.startswith("image/"):
-                with tag.img(
-                    src=url,
-                    alt=file.name,
-                    loading="lazy",
-                    classes="h-12 w-12 flex-none rounded-md object-cover bg-base-200",
-                ):
-                    pass
-            else:
-                with tag.div(
-                    classes="flex h-12 w-12 flex-none items-center "
-                    "justify-center rounded-md bg-base-200 "
-                    "text-base-content/40"
-                ):
-                    with tag.span(classes="icon-paperclip"):
-                        pass
-            with tag.div(classes="min-w-0"):
-                with tag.div(classes="text-sm font-medium truncate"):
-                    text(file.name)
-                with tag.div(classes="text-xs text-base-content/50"):
-                    text(self._format_size(file.size))
-
-    @staticmethod
-    def _format_size(size: int) -> str:
-        value = float(size)
-        for unit in ("B", "KB", "MB", "GB"):
-            if value < 1024:
-                return f"{value:.0f} {unit}" if unit == "B" else f"{value:.1f} {unit}"
-            value /= 1024
-        return f"{value:.1f} TB"
+                    render_attachment_pill(request, attachment)
 
     def _bubble(self, message: SupportCaseMessage, internal: bool) -> str:
         if internal:

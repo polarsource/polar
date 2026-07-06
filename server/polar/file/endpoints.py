@@ -12,6 +12,7 @@ from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import File
+from polar.models.file import FileServiceTypes
 from polar.openapi import APITag
 from polar.organization.resolver import get_payload_organization
 from polar.organization.schemas import OrganizationID
@@ -38,6 +39,16 @@ router = APIRouter(prefix="/files", tags=["files", APITag.public])
 
 FileID = Annotated[UUID4, Path(description="The file ID.")]
 FileNotFound = {"description": "File not found.", "model": ResourceNotFound.schema()}
+
+
+def _assert_mutable(file: File) -> None:
+    """Files attached to a support case are part of the case record — they are
+    created through this API but can't be modified or deleted through it."""
+    if file.service == FileServiceTypes.support_case_attachment:
+        raise NotPermitted(
+            "Support case attachments cannot be modified or deleted "
+            "through the files API."
+        )
 
 
 @router.get("/", summary="List Files", response_model=ListResource[FileRead])
@@ -153,6 +164,7 @@ async def update(
     if file is None:
         raise ResourceNotFound()
 
+    _assert_mutable(file)
     await assert_resource_permission(
         session, auth_subject, file, OrganizationPermission.products_manage
     )
@@ -182,6 +194,7 @@ async def delete(
     if file is None:
         raise ResourceNotFound()
 
+    _assert_mutable(file)
     await assert_resource_permission(
         session, auth_subject, file, OrganizationPermission.products_manage
     )

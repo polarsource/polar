@@ -9,7 +9,7 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.kit.pagination import PaginationParams
 from polar.models import Organization, ProductMedia, User
-from polar.models.file import File, ProductMediaFile
+from polar.models.file import File, FileServiceTypes, ProductMediaFile
 from polar.postgres import AsyncReadSession, AsyncSession, sql
 
 from .repository import FileRepository
@@ -41,7 +41,8 @@ class FileService:
         )
 
         statement = repository.get_statement_by_org_ids(org_ids).where(
-            File.is_uploaded.is_(True)
+            File.is_uploaded.is_(True),
+            File.service != FileServiceTypes.support_case_attachment,
         )
 
         if organization_id is not None:

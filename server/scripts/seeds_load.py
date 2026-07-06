@@ -2263,10 +2263,10 @@ async def create_seed_data(
                         if member_model_enabled and i < len(members_for_seats):
                             # With member - claimed
                             seat = CustomerSeat(
-                                subscription_id=subscription.id,
+                                subscription=subscription,
                                 status=SeatStatus.claimed,
-                                customer_id=seat_customer.id,
-                                member_id=members_for_seats[i].id,
+                                customer=seat_customer,
+                                member=members_for_seats[i],
                                 email=members_for_seats[i].email,
                                 claimed_at=utc_now(),
                             )
@@ -2285,18 +2285,18 @@ async def create_seed_data(
                                 auth_subject=auth_subject,
                             )
                             seat = CustomerSeat(
-                                subscription_id=subscription.id,
+                                subscription=subscription,
                                 status=SeatStatus.claimed,
-                                customer_id=seat_holder_customer.id,
+                                customer=seat_holder_customer,
                                 email=seat_holder_email,
                                 claimed_at=utc_now(),
                             )
                     else:
                         # Pending seats (not yet allocated)
                         seat = CustomerSeat(
-                            subscription_id=subscription.id,
+                            subscription=subscription,
                             status=SeatStatus.pending,
-                            customer_id=seat_customer.id,
+                            customer=seat_customer,
                         )
                     session.add(seat)
 

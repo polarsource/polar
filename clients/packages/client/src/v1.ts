@@ -11325,7 +11325,7 @@ export interface components {
        * @description What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.
        * @example subscription_cycle
        */
-      trigger?: components['schemas']['PaymentTrigger'] | null
+      trigger: components['schemas']['PaymentTrigger'] | null
       /**
        * Decline Reason
        * @description Error code, if the payment was declined.
@@ -17154,56 +17154,56 @@ export interface components {
        * Subscription Id
        * @description The subscription ID (for recurring seats)
        */
-      subscription_id?: string | null
+      subscription_id: string | null
       /**
        * Order Id
        * @description The order ID (for one-time purchase seats)
        */
-      order_id?: string | null
+      order_id: string | null
       /** @description Status of the seat */
       status: components['schemas']['SeatStatus']
       /**
        * Customer Id
        * @description The customer ID. When member_model_enabled is true, this is the billing customer (purchaser). When false, this is the seat member customer.
        */
-      customer_id?: string | null
+      customer_id: string | null
       /**
        * Member Id
        * @description The member ID of the seat occupant
        */
-      member_id?: string | null
+      member_id: string | null
       /** @description The member associated with this seat */
-      member?: components['schemas']['Member'] | null
+      member: components['schemas']['Member'] | null
       /**
        * Email
        * @description Email of the seat member (set when member_model_enabled is true)
        */
-      email?: string | null
+      email: string | null
       /**
        * Customer Email
        * @description The assigned customer email
        */
-      customer_email?: string | null
+      customer_email: string | null
       /**
        * Invitation Token Expires At
        * @description When the invitation token expires
        */
-      invitation_token_expires_at?: string | null
+      invitation_token_expires_at: string | null
       /**
        * Claimed At
        * @description When the seat was claimed
        */
-      claimed_at?: string | null
+      claimed_at: string | null
       /**
        * Revoked At
        * @description When the seat was revoked
        */
-      revoked_at?: string | null
+      revoked_at: string | null
       /**
        * Seat Metadata
        * @description Additional metadata for the seat
        */
-      seat_metadata?: {
+      seat_metadata: {
         [key: string]: unknown
       } | null
     }
@@ -20812,7 +20812,7 @@ export interface components {
        * @description What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.
        * @example subscription_cycle
        */
-      trigger?: components['schemas']['PaymentTrigger'] | null
+      trigger: components['schemas']['PaymentTrigger'] | null
       /**
        * Decline Reason
        * @description Error code, if the payment was declined.
@@ -29155,12 +29155,12 @@ export interface components {
        * Custom Label
        * @description The label for the custom unit.
        */
-      custom_label?: string | null
+      custom_label: string | null
       /**
        * Custom Multiplier
        * @description The multiplier to convert from base unit to display scale.
        */
-      custom_multiplier?: number | null
+      custom_multiplier: number | null
     }
     /**
      * ProductPriceMeteredUnit

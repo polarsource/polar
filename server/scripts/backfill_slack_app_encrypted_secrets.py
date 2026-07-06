@@ -1,3 +1,10 @@
+"""Encrypt SlackApp secrets written before dual-write.
+
+Dry-run by default (counts rows only). Pass --execute to write:
+
+    uv run python -m scripts.backfill_slack_app_encrypted_secrets --execute
+"""
+
 import asyncio
 
 import typer
@@ -173,12 +180,7 @@ async def backfill(
         False, "--execute", help="Write encrypted secrets; without it, only counts rows"
     ),
 ) -> None:
-    """Encrypt SlackApp secrets written before dual-write.
-
-    Dry-run by default (counts rows only). Pass --execute to write:
-
-        uv run python -m scripts.backfill_slack_app_encrypted_secrets --execute
-    """
+    """Encrypt SlackApp secrets written before dual-write."""
     configure_script_logging()
     total_encrypted = await run_backfill(
         batch_size=batch_size, sleep_seconds=sleep_seconds, dry_run=not execute

@@ -1,4 +1,4 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type { CustomerSeatAssign } from "../../models/inputs";
 import type {
   CustomerSeat,
@@ -6,6 +6,7 @@ import type {
   ListResourceCustomerSubscription,
   SeatsList,
 } from "../../models/outputs";
+
 import {
   AssignSeat400Error,
   AssignSeat401Error,

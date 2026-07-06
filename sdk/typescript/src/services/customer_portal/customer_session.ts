@@ -1,4 +1,4 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type { CustomerCustomerSession, PortalAuthenticatedUser } from "../../models/outputs";
 
 export const introspectCustomerSession = (client: ClientBase) => {

@@ -1,5 +1,6 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { EventsIngest, MetadataQuery } from "../models/inputs";
+import type { EventNamesSortProperty, EventSortProperty, EventSource } from "../models/literals";
 import type {
   Event,
   EventName,
@@ -8,7 +9,7 @@ import type {
   ListResourceEventName,
   ListResourceWithCursorPaginationEvent,
 } from "../models/outputs";
-import type { EventNamesSortProperty, EventSortProperty, EventSource } from "../models/literals";
+
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listEvents = (client: ClientBase) => {

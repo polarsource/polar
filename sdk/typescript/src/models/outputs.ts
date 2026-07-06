@@ -1,51 +1,51 @@
 import type {
-  RecurringInterval,
-  CountryAlpha2,
-  TrialInterval,
-  DisputeStatus,
-  BenefitType,
-  OrderStatus,
-  OrganizationStatus,
-  DiscountDuration,
-  Timeframe,
-  RefundStatus,
-  OrderBillingReason,
-  Permission,
-  BillingAddressFieldMode,
-  EventSource,
-  FileServiceTypes,
-  LicenseKeyStatus,
-  MetricType,
-  CustomerType,
-  PublicSubscriptionProrationBehavior,
-  ProductVisibility,
-  MemberRole,
-  SeatStatus,
-  FilterOperator,
   Scope,
-  DiscountType,
-  CheckoutStatus,
-  TokenType,
-  TaxBehaviorOption,
-  SubType,
-  BenefitVisibility,
-  WebhookFormat,
-  ProductPriceSource,
-  MeterUnit,
-  TaxBehavior,
   SubscriptionProrationBehavior,
-  SubscriptionStatus,
-  Status,
-  PaymentTrigger,
-  OrganizationSocialPlatforms,
-  SeatTierType,
-  WebhookEventType,
-  CustomerCancellationReason,
-  Func,
-  PaymentProcessor,
+  DiscountDuration,
+  MeterUnit,
+  EventSource,
+  BillingAddressFieldMode,
+  MemberRole,
   RefundReason,
+  WebhookFormat,
+  OrganizationSocialPlatforms,
+  SubType,
+  DiscountType,
+  CustomerType,
+  SeatStatus,
+  LicenseKeyStatus,
+  WebhookEventType,
+  OrderStatus,
+  SubscriptionStatus,
+  RecurringInterval,
   PaymentStatus,
   FilterConjunction,
+  TrialInterval,
+  PaymentTrigger,
+  Permission,
+  OrderBillingReason,
+  Timeframe,
+  BenefitType,
+  Status,
+  MetricType,
+  RefundStatus,
+  ProductVisibility,
+  FileServiceTypes,
+  TokenType,
+  PublicSubscriptionProrationBehavior,
+  DisputeStatus,
+  TaxBehaviorOption,
+  CountryAlpha2,
+  Func,
+  PaymentProcessor,
+  BenefitVisibility,
+  ProductPriceSource,
+  OrganizationStatus,
+  SeatTierType,
+  FilterOperator,
+  CustomerCancellationReason,
+  CheckoutStatus,
+  TaxBehavior,
 } from "./literals";
 /**
  * Address
@@ -75,7 +75,8 @@ export interface Address {
    * country
    */
   country: CountryAlpha2;
-} /**
+}
+/**
  * AddressDict
  */
 export interface AddressDict {
@@ -103,7 +104,8 @@ export interface AddressDict {
    * country
    */
   country: string;
-} /**
+}
+/**
  * AlreadyActiveSubscriptionError
  */
 export interface AlreadyActiveSubscriptionError {
@@ -115,7 +117,8 @@ export interface AlreadyActiveSubscriptionError {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * AlreadyCanceledSubscription
  */
 export interface AlreadyCanceledSubscription {
@@ -127,7 +130,8 @@ export interface AlreadyCanceledSubscription {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * AmbiguousExternalCustomerID
  */
 export interface AmbiguousExternalCustomerID {
@@ -139,7 +143,8 @@ export interface AmbiguousExternalCustomerID {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * Schema of a custom field attached to a resource.
  */
 export interface AttachedCustomField {
@@ -159,7 +164,8 @@ export interface AttachedCustomField {
    * Whether the value is required for this custom field.
    */
   required: boolean;
-} /**
+}
+/**
  * AuthorizeOrganization
  */
 export interface AuthorizeOrganization {
@@ -175,7 +181,8 @@ export interface AuthorizeOrganization {
    * avatar_url
    */
   avatar_url: string | null;
-} /**
+}
+/**
  * AuthorizeResponseOrganization
  */
 export interface AuthorizeResponseOrganization {
@@ -207,7 +214,8 @@ export interface AuthorizeResponseOrganization {
    * scope_display_names
    */
   scope_display_names?: Record<string, string>;
-} /**
+}
+/**
  * AuthorizeResponseUser
  */
 export interface AuthorizeResponseUser {
@@ -239,7 +247,8 @@ export interface AuthorizeResponseUser {
    * scope_display_names
    */
   scope_display_names?: Record<string, string>;
-} /**
+}
+/**
  * AuthorizeUser
  */
 export interface AuthorizeUser {
@@ -255,7 +264,8 @@ export interface AuthorizeUser {
    * avatar_url
    */
   avatar_url: string | null;
-} /**
+}
+/**
  * An event created by Polar when an order is paid via customer balance.
  */
 export interface BalanceCreditOrderEvent {
@@ -315,7 +325,8 @@ export interface BalanceCreditOrderEvent {
    * metadata
    */
   metadata: BalanceCreditOrderMetadata;
-} /**
+}
+/**
  * BalanceCreditOrderMetadata
  */
 export interface BalanceCreditOrderMetadata {
@@ -359,7 +370,8 @@ export interface BalanceCreditOrderMetadata {
    * exchange_rate
    */
   exchange_rate?: number;
-} /**
+}
+/**
  * An event created by Polar when an order is disputed.
  */
 export interface BalanceDisputeEvent {
@@ -419,7 +431,8 @@ export interface BalanceDisputeEvent {
    * metadata
    */
   metadata: BalanceDisputeMetadata;
-} /**
+}
+/**
  * BalanceDisputeMetadata
  */
 export interface BalanceDisputeMetadata {
@@ -483,7 +496,8 @@ export interface BalanceDisputeMetadata {
    * exchange_rate
    */
   exchange_rate?: number;
-} /**
+}
+/**
  * An event created by Polar when a dispute is won and funds are reinstated.
  */
 export interface BalanceDisputeReversalEvent {
@@ -543,7 +557,8 @@ export interface BalanceDisputeReversalEvent {
    * metadata
    */
   metadata: BalanceDisputeMetadata;
-} /**
+}
+/**
  * An event created by Polar when an order is paid.
  */
 export interface BalanceOrderEvent {
@@ -603,7 +618,8 @@ export interface BalanceOrderEvent {
    * metadata
    */
   metadata: BalanceOrderMetadata;
-} /**
+}
+/**
  * BalanceOrderMetadata
  */
 export interface BalanceOrderMetadata {
@@ -663,7 +679,8 @@ export interface BalanceOrderMetadata {
    * exchange_rate
    */
   exchange_rate?: number;
-} /**
+}
+/**
  * An event created by Polar when an order is refunded.
  */
 export interface BalanceRefundEvent {
@@ -723,7 +740,8 @@ export interface BalanceRefundEvent {
    * metadata
    */
   metadata: BalanceRefundMetadata;
-} /**
+}
+/**
  * BalanceRefundMetadata
  */
 export interface BalanceRefundMetadata {
@@ -791,7 +809,8 @@ export interface BalanceRefundMetadata {
    * exchange_rate
    */
   exchange_rate?: number;
-} /**
+}
+/**
  * An event created by Polar when a refund is reverted.
  */
 export interface BalanceRefundReversalEvent {
@@ -851,7 +870,8 @@ export interface BalanceRefundReversalEvent {
    * metadata
    */
   metadata: BalanceRefundMetadata;
-} /**
+}
+/**
  * A benefit of type `custom`.
 
 Use it to grant any kind of benefit that doesn't fit in the other types.
@@ -909,7 +929,8 @@ export interface BenefitCustom {
    * visibility_configurable
    */
   visibility_configurable: boolean;
-} /**
+}
+/**
  * Properties for a benefit of type `custom`.
  */
 export interface BenefitCustomProperties {
@@ -917,7 +938,8 @@ export interface BenefitCustomProperties {
    * note
    */
   note: (string | null) | null;
-} /**
+}
+/**
  * BenefitCustomSubscriber
  */
 export interface BenefitCustomSubscriber {
@@ -965,7 +987,8 @@ export interface BenefitCustomSubscriber {
    * properties
    */
   properties: BenefitCustomSubscriberProperties;
-} /**
+}
+/**
  * Properties available to subscribers for a benefit of type `custom`.
  */
 export interface BenefitCustomSubscriberProperties {
@@ -973,7 +996,8 @@ export interface BenefitCustomSubscriberProperties {
    * note
    */
   note: (string | null) | null;
-} /**
+}
+/**
  * An event created by Polar when a benefit is cycled.
  */
 export interface BenefitCycledEvent {
@@ -1033,7 +1057,8 @@ export interface BenefitCycledEvent {
    * metadata
    */
   metadata: BenefitGrantMetadata;
-} /**
+}
+/**
  * A benefit of type `discord`.
 
 Use it to automatically invite your backers to a Discord server.
@@ -1091,7 +1116,8 @@ export interface BenefitDiscord {
    * visibility_configurable
    */
   visibility_configurable: boolean;
-} /**
+}
+/**
  * Properties for a benefit of type `discord`.
  */
 export interface BenefitDiscordProperties {
@@ -1111,7 +1137,8 @@ export interface BenefitDiscordProperties {
    * guild_token
    */
   guild_token: string;
-} /**
+}
+/**
  * BenefitDiscordSubscriber
  */
 export interface BenefitDiscordSubscriber {
@@ -1159,7 +1186,8 @@ export interface BenefitDiscordSubscriber {
    * properties
    */
   properties: BenefitDiscordSubscriberProperties;
-} /**
+}
+/**
  * Properties available to subscribers for a benefit of type `discord`.
  */
 export interface BenefitDiscordSubscriberProperties {
@@ -1167,7 +1195,8 @@ export interface BenefitDiscordSubscriberProperties {
    * The ID of the Discord server.
    */
   guild_id: string;
-} /**
+}
+/**
  * BenefitDownloadables
  */
 export interface BenefitDownloadables {
@@ -1223,7 +1252,8 @@ export interface BenefitDownloadables {
    * visibility_configurable
    */
   visibility_configurable: boolean;
-} /**
+}
+/**
  * BenefitDownloadablesProperties
  */
 export interface BenefitDownloadablesProperties {
@@ -1235,7 +1265,8 @@ export interface BenefitDownloadablesProperties {
    * files
    */
   files: string[];
-} /**
+}
+/**
  * BenefitDownloadablesSubscriber
  */
 export interface BenefitDownloadablesSubscriber {
@@ -1283,7 +1314,8 @@ export interface BenefitDownloadablesSubscriber {
    * properties
    */
   properties: BenefitDownloadablesSubscriberProperties;
-} /**
+}
+/**
  * BenefitDownloadablesSubscriberProperties
  */
 export interface BenefitDownloadablesSubscriberProperties {
@@ -1291,7 +1323,8 @@ export interface BenefitDownloadablesSubscriberProperties {
    * active_files
    */
   active_files: string[];
-} /**
+}
+/**
  * A benefit of type `feature_flag`.
 
 Use it to grant feature flags with key-value metadata
@@ -1350,10 +1383,12 @@ export interface BenefitFeatureFlag {
    * visibility_configurable
    */
   visibility_configurable: boolean;
-} /**
+}
+/**
  * Properties for a benefit of type `feature_flag`.
  */
-export interface BenefitFeatureFlagProperties extends Record<string, never> {} /**
+export interface BenefitFeatureFlagProperties extends Record<string, never> {}
+/**
  * BenefitFeatureFlagSubscriber
  */
 export interface BenefitFeatureFlagSubscriber {
@@ -1401,10 +1436,12 @@ export interface BenefitFeatureFlagSubscriber {
    * properties
    */
   properties: BenefitFeatureFlagSubscriberProperties;
-} /**
+}
+/**
  * Properties available to subscribers for a benefit of type `feature_flag`.
  */
-export interface BenefitFeatureFlagSubscriberProperties extends Record<string, never> {} /**
+export interface BenefitFeatureFlagSubscriberProperties extends Record<string, never> {}
+/**
  * A benefit of type `github_repository`.
 
 Use it to automatically invite your backers to a private GitHub repository.
@@ -1462,7 +1499,8 @@ export interface BenefitGitHubRepository {
    * visibility_configurable
    */
   visibility_configurable: boolean;
-} /**
+}
+/**
  * Properties for a benefit of type `github_repository`.
  */
 export interface BenefitGitHubRepositoryProperties {
@@ -1478,7 +1516,8 @@ export interface BenefitGitHubRepositoryProperties {
    * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
    */
   permission: Permission;
-} /**
+}
+/**
  * BenefitGitHubRepositorySubscriber
  */
 export interface BenefitGitHubRepositorySubscriber {
@@ -1526,7 +1565,8 @@ export interface BenefitGitHubRepositorySubscriber {
    * properties
    */
   properties: BenefitGitHubRepositorySubscriberProperties;
-} /**
+}
+/**
  * Properties available to subscribers for a benefit of type `github_repository`.
  */
 export interface BenefitGitHubRepositorySubscriberProperties {
@@ -1538,7 +1578,8 @@ export interface BenefitGitHubRepositorySubscriberProperties {
    * The name of the repository.
    */
   repository_name: string;
-} /**
+}
+/**
  * BenefitGrant
  */
 export interface BenefitGrant {
@@ -1617,10 +1658,12 @@ export interface BenefitGrant {
     | BenefitGrantCustomProperties
     | BenefitGrantFeatureFlagProperties
     | BenefitGrantSlackSharedChannelProperties;
-} /**
+}
+/**
  * BenefitGrantCustomProperties
  */
-export interface BenefitGrantCustomProperties extends Record<string, never> {} /**
+export interface BenefitGrantCustomProperties extends Record<string, never> {}
+/**
  * BenefitGrantDiscordProperties
  */
 export interface BenefitGrantDiscordProperties {
@@ -1640,7 +1683,8 @@ export interface BenefitGrantDiscordProperties {
    * granted_account_id
    */
   granted_account_id?: string;
-} /**
+}
+/**
  * BenefitGrantDownloadablesProperties
  */
 export interface BenefitGrantDownloadablesProperties {
@@ -1648,7 +1692,8 @@ export interface BenefitGrantDownloadablesProperties {
    * files
    */
   files?: string[];
-} /**
+}
+/**
  * BenefitGrantError
  */
 export interface BenefitGrantError {
@@ -1664,10 +1709,12 @@ export interface BenefitGrantError {
    * timestamp
    */
   timestamp: string;
-} /**
+}
+/**
  * BenefitGrantFeatureFlagProperties
  */
-export interface BenefitGrantFeatureFlagProperties extends Record<string, never> {} /**
+export interface BenefitGrantFeatureFlagProperties extends Record<string, never> {}
+/**
  * BenefitGrantGitHubRepositoryProperties
  */
 export interface BenefitGrantGitHubRepositoryProperties {
@@ -1691,7 +1738,8 @@ export interface BenefitGrantGitHubRepositoryProperties {
    * granted_account_id
    */
   granted_account_id?: string;
-} /**
+}
+/**
  * BenefitGrantLicenseKeysProperties
  */
 export interface BenefitGrantLicenseKeysProperties {
@@ -1707,7 +1755,8 @@ export interface BenefitGrantLicenseKeysProperties {
    * display_key
    */
   display_key?: string;
-} /**
+}
+/**
  * BenefitGrantMetadata
  */
 export interface BenefitGrantMetadata {
@@ -1727,7 +1776,8 @@ export interface BenefitGrantMetadata {
    * member_id
    */
   member_id?: string;
-} /**
+}
+/**
  * BenefitGrantMeterCreditProperties
  */
 export interface BenefitGrantMeterCreditProperties {
@@ -1743,7 +1793,8 @@ export interface BenefitGrantMeterCreditProperties {
    * last_credited_at
    */
   last_credited_at?: string;
-} /**
+}
+/**
  * BenefitGrantSlackSharedChannelProperties
  */
 export interface BenefitGrantSlackSharedChannelProperties {
@@ -1771,7 +1822,8 @@ export interface BenefitGrantSlackSharedChannelProperties {
    * connected_team_id
    */
   connected_team_id?: string;
-} /**
+}
+/**
  * An event created by Polar when a benefit is granted to a customer.
  */
 export interface BenefitGrantedEvent {
@@ -1831,7 +1883,8 @@ export interface BenefitGrantedEvent {
    * metadata
    */
   metadata: BenefitGrantMetadata;
-} /**
+}
+/**
  * BenefitLicenseKeyActivationProperties
  */
 export interface BenefitLicenseKeyActivationProperties {
@@ -1843,7 +1896,8 @@ export interface BenefitLicenseKeyActivationProperties {
    * enable_customer_admin
    */
   enable_customer_admin: boolean;
-} /**
+}
+/**
  * BenefitLicenseKeyExpirationProperties
  */
 export interface BenefitLicenseKeyExpirationProperties {
@@ -1855,7 +1909,8 @@ export interface BenefitLicenseKeyExpirationProperties {
    * timeframe
    */
   timeframe: Timeframe;
-} /**
+}
+/**
  * BenefitLicenseKeys
  */
 export interface BenefitLicenseKeys {
@@ -1911,7 +1966,8 @@ export interface BenefitLicenseKeys {
    * visibility_configurable
    */
   visibility_configurable: boolean;
-} /**
+}
+/**
  * BenefitLicenseKeysProperties
  */
 export interface BenefitLicenseKeysProperties {
@@ -1931,7 +1987,8 @@ export interface BenefitLicenseKeysProperties {
    * limit_usage
    */
   limit_usage: number | null;
-} /**
+}
+/**
  * BenefitLicenseKeysSubscriber
  */
 export interface BenefitLicenseKeysSubscriber {
@@ -1979,7 +2036,8 @@ export interface BenefitLicenseKeysSubscriber {
    * properties
    */
   properties: BenefitLicenseKeysSubscriberProperties;
-} /**
+}
+/**
  * BenefitLicenseKeysSubscriberProperties
  */
 export interface BenefitLicenseKeysSubscriberProperties {
@@ -1999,7 +2057,8 @@ export interface BenefitLicenseKeysSubscriberProperties {
    * limit_usage
    */
   limit_usage: number | null;
-} /**
+}
+/**
  * A benefit of type `meter_unit`.
 
 Use it to grant a number of units on a specific meter.
@@ -2057,7 +2116,8 @@ export interface BenefitMeterCredit {
    * visibility_configurable
    */
   visibility_configurable: boolean;
-} /**
+}
+/**
  * Properties for a benefit of type `meter_unit`.
  */
 export interface BenefitMeterCreditProperties {
@@ -2073,7 +2133,8 @@ export interface BenefitMeterCreditProperties {
    * meter_id
    */
   meter_id: string;
-} /**
+}
+/**
  * BenefitMeterCreditSubscriber
  */
 export interface BenefitMeterCreditSubscriber {
@@ -2121,7 +2182,8 @@ export interface BenefitMeterCreditSubscriber {
    * properties
    */
   properties: BenefitMeterCreditSubscriberProperties;
-} /**
+}
+/**
  * Properties available to subscribers for a benefit of type `meter_unit`.
  */
 export interface BenefitMeterCreditSubscriberProperties {
@@ -2137,7 +2199,8 @@ export interface BenefitMeterCreditSubscriberProperties {
    * meter_id
    */
   meter_id: string;
-} /**
+}
+/**
  * BenefitPublic
  */
 export interface BenefitPublic {
@@ -2177,7 +2240,8 @@ export interface BenefitPublic {
    * The ID of the organization owning the benefit.
    */
   organization_id: string;
-} /**
+}
+/**
  * An event created by Polar when a benefit is revoked from a customer.
  */
 export interface BenefitRevokedEvent {
@@ -2237,7 +2301,8 @@ export interface BenefitRevokedEvent {
    * metadata
    */
   metadata: BenefitGrantMetadata;
-} /**
+}
+/**
  * BenefitSlackSharedChannel
  */
 export interface BenefitSlackSharedChannel {
@@ -2293,7 +2358,8 @@ export interface BenefitSlackSharedChannel {
    * visibility_configurable
    */
   visibility_configurable: boolean;
-} /**
+}
+/**
  * BenefitSlackSharedChannelProperties
  */
 export interface BenefitSlackSharedChannelProperties {
@@ -2321,7 +2387,8 @@ export interface BenefitSlackSharedChannelProperties {
    * Slack user IDs from the merchant workspace to invite to every channel created for this benefit.
    */
   team_invitees?: string[];
-} /**
+}
+/**
  * BenefitSlackSharedChannelSubscriber
  */
 export interface BenefitSlackSharedChannelSubscriber {
@@ -2369,10 +2436,12 @@ export interface BenefitSlackSharedChannelSubscriber {
    * properties
    */
   properties: BenefitSlackSharedChannelSubscriberProperties;
-} /**
+}
+/**
  * BenefitSlackSharedChannelSubscriberProperties
  */
-export interface BenefitSlackSharedChannelSubscriberProperties extends Record<string, never> {} /**
+export interface BenefitSlackSharedChannelSubscriberProperties extends Record<string, never> {}
+/**
  * BenefitSubscriberOrganization
  */
 export interface BenefitSubscriberOrganization {
@@ -2408,7 +2477,8 @@ export interface BenefitSubscriberOrganization {
    * Whether customers can update their subscriptions from the customer portal.
    */
   allow_customer_updates: boolean;
-} /**
+}
+/**
  * An event created by Polar when a benefit is updated.
  */
 export interface BenefitUpdatedEvent {
@@ -2468,7 +2538,8 @@ export interface BenefitUpdatedEvent {
    * metadata
    */
   metadata: BenefitGrantMetadata;
-} /**
+}
+/**
  * CannotCreateOrganizationError
  */
 export interface CannotCreateOrganizationError {
@@ -2480,7 +2551,8 @@ export interface CannotCreateOrganizationError {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * Schema of a payment with a card payment method.
  */
 export interface CardPayment {
@@ -2519,7 +2591,7 @@ export interface CardPayment {
   /**
    * What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.
    */
-  trigger?: PaymentTrigger | null;
+  trigger: PaymentTrigger | null;
   /**
    * Error code, if the payment was declined.
    */
@@ -2548,7 +2620,8 @@ export interface CardPayment {
    * method_metadata
    */
   method_metadata: CardPaymentMetadata;
-} /**
+}
+/**
  * Additional metadata for a card payment method.
  */
 export interface CardPaymentMetadata {
@@ -2560,7 +2633,8 @@ export interface CardPaymentMetadata {
    * The last 4 digits of the card number.
    */
   last4: string;
-} /**
+}
+/**
  * Checkout session data retrieved using an access token.
  */
 export interface Checkout {
@@ -2811,7 +2885,8 @@ export interface Checkout {
    * customer_metadata
    */
   customer_metadata: Record<string, string | number | boolean>;
-} /**
+}
+/**
  * CheckoutBillingAddressFields
  */
 export interface CheckoutBillingAddressFields {
@@ -2839,7 +2914,8 @@ export interface CheckoutBillingAddressFields {
    * line2
    */
   line2: BillingAddressFieldMode;
-} /**
+}
+/**
  * An event created by Polar when a checkout is created.
  */
 export interface CheckoutCreatedEvent {
@@ -2899,7 +2975,8 @@ export interface CheckoutCreatedEvent {
    * metadata
    */
   metadata: CheckoutCreatedMetadata;
-} /**
+}
+/**
  * CheckoutCreatedMetadata
  */
 export interface CheckoutCreatedMetadata {
@@ -2915,7 +2992,8 @@ export interface CheckoutCreatedMetadata {
    * product_id
    */
   product_id?: string;
-} /**
+}
+/**
  * Schema for a fixed amount discount that is applied once or forever.
  */
 export interface CheckoutDiscountFixedOnceForeverDuration {
@@ -2951,7 +3029,8 @@ export interface CheckoutDiscountFixedOnceForeverDuration {
    * code
    */
   code: string | null;
-} /**
+}
+/**
  * Schema for a fixed amount discount that is applied on every invoice
 for a certain number of months.
  */
@@ -2992,7 +3071,8 @@ export interface CheckoutDiscountFixedRepeatDuration {
    * code
    */
   code: string | null;
-} /**
+}
+/**
  * Schema for a percentage discount that is applied once or forever.
  */
 export interface CheckoutDiscountPercentageOnceForeverDuration {
@@ -3020,7 +3100,8 @@ export interface CheckoutDiscountPercentageOnceForeverDuration {
    * code
    */
   code: string | null;
-} /**
+}
+/**
  * Schema for a percentage discount that is applied on every invoice
 for a certain number of months.
  */
@@ -3053,7 +3134,8 @@ export interface CheckoutDiscountPercentageRepeatDuration {
    * code
    */
   code: string | null;
-} /**
+}
+/**
  * Checkout link data.
  */
 export interface CheckoutLink {
@@ -3140,7 +3222,8 @@ export interface CheckoutLink {
    * url
    */
   url: string;
-} /**
+}
+/**
  * Product data for a checkout link.
  */
 export interface CheckoutLinkProduct {
@@ -3220,7 +3303,8 @@ export interface CheckoutLinkProduct {
    * List of medias associated to the product.
    */
   medias: ProductMediaFileRead[];
-} /**
+}
+/**
  * CheckoutOrganization
  */
 export interface CheckoutOrganization {
@@ -3256,7 +3340,8 @@ export interface CheckoutOrganization {
    * Whether customers can update their subscriptions from the customer portal.
    */
   allow_customer_updates: boolean;
-} /**
+}
+/**
  * Product data for a checkout session.
  */
 export interface CheckoutProduct {
@@ -3332,7 +3417,8 @@ export interface CheckoutProduct {
    * List of medias associated to the product.
    */
   medias: ProductMediaFileRead[];
-} /**
+}
+/**
  * Checkout session data retrieved using the client secret.
  */
 export interface CheckoutPublic {
@@ -3563,7 +3649,8 @@ export interface CheckoutPublic {
    * attached_custom_fields
    */
   attached_custom_fields: AttachedCustomField[] | null;
-} /**
+}
+/**
  * Checkout session data retrieved using the client secret after confirmation.
 
 It contains a customer session token to retrieve order information
@@ -3801,10 +3888,12 @@ export interface CheckoutPublicConfirmed {
    * customer_session_token
    */
   customer_session_token: string | null;
-} /**
+}
+/**
  * Context
  */
-export interface Context extends Record<string, never> {} /**
+export interface Context extends Record<string, never> {}
+/**
  * CostMetadataOutput
  */
 export interface CostMetadataOutput {
@@ -3816,7 +3905,8 @@ export interface CostMetadataOutput {
    * The currency. Currently, only `usd` is supported.
    */
   currency: string;
-} /**
+}
+/**
  * CountAggregation
  */
 export interface CountAggregation {
@@ -3824,7 +3914,8 @@ export interface CountAggregation {
    * func
    */
   func?: "count";
-} /**
+}
+/**
  * CursorPagination
  */
 export interface CursorPagination {
@@ -3832,7 +3923,8 @@ export interface CursorPagination {
    * has_next_page
    */
   has_next_page: boolean;
-} /**
+}
+/**
  * Schema for a custom field of type checkbox.
  */
 export interface CustomFieldCheckbox {
@@ -3872,7 +3964,8 @@ export interface CustomFieldCheckbox {
    * properties
    */
   properties: CustomFieldCheckboxProperties;
-} /**
+}
+/**
  * CustomFieldCheckboxProperties
  */
 export interface CustomFieldCheckboxProperties {
@@ -3888,7 +3981,8 @@ export interface CustomFieldCheckboxProperties {
    * form_placeholder
    */
   form_placeholder?: string;
-} /**
+}
+/**
  * Schema for a custom field of type date.
  */
 export interface CustomFieldDate {
@@ -3928,7 +4022,8 @@ export interface CustomFieldDate {
    * properties
    */
   properties: CustomFieldDateProperties;
-} /**
+}
+/**
  * CustomFieldDateProperties
  */
 export interface CustomFieldDateProperties {
@@ -3952,7 +4047,8 @@ export interface CustomFieldDateProperties {
    * le
    */
   le?: number;
-} /**
+}
+/**
  * Schema for a custom field of type number.
  */
 export interface CustomFieldNumber {
@@ -3992,7 +4088,8 @@ export interface CustomFieldNumber {
    * properties
    */
   properties: CustomFieldNumberProperties;
-} /**
+}
+/**
  * CustomFieldNumberProperties
  */
 export interface CustomFieldNumberProperties {
@@ -4016,7 +4113,8 @@ export interface CustomFieldNumberProperties {
    * le
    */
   le?: number;
-} /**
+}
+/**
  * Schema for a custom field of type select.
  */
 export interface CustomFieldSelect {
@@ -4056,7 +4154,8 @@ export interface CustomFieldSelect {
    * properties
    */
   properties: CustomFieldSelectProperties;
-} /**
+}
+/**
  * CustomFieldSelectOption
  */
 export interface CustomFieldSelectOption {
@@ -4068,7 +4167,8 @@ export interface CustomFieldSelectOption {
    * label
    */
   label: string;
-} /**
+}
+/**
  * CustomFieldSelectProperties
  */
 export interface CustomFieldSelectProperties {
@@ -4088,7 +4188,8 @@ export interface CustomFieldSelectProperties {
    * options
    */
   options: CustomFieldSelectOption[];
-} /**
+}
+/**
  * Schema for a custom field of type text.
  */
 export interface CustomFieldText {
@@ -4128,7 +4229,8 @@ export interface CustomFieldText {
    * properties
    */
   properties: CustomFieldTextProperties;
-} /**
+}
+/**
  * CustomFieldTextProperties
  */
 export interface CustomFieldTextProperties {
@@ -4156,7 +4258,8 @@ export interface CustomFieldTextProperties {
    * max_length
    */
   max_length?: number;
-} /**
+}
+/**
  * CustomerBenefitGrantCustom
  */
 export interface CustomerBenefitGrantCustom {
@@ -4224,7 +4327,8 @@ export interface CustomerBenefitGrantCustom {
    * properties
    */
   properties: BenefitGrantCustomProperties;
-} /**
+}
+/**
  * CustomerBenefitGrantDiscord
  */
 export interface CustomerBenefitGrantDiscord {
@@ -4292,7 +4396,8 @@ export interface CustomerBenefitGrantDiscord {
    * properties
    */
   properties: BenefitGrantDiscordProperties;
-} /**
+}
+/**
  * CustomerBenefitGrantDownloadables
  */
 export interface CustomerBenefitGrantDownloadables {
@@ -4360,7 +4465,8 @@ export interface CustomerBenefitGrantDownloadables {
    * properties
    */
   properties: BenefitGrantDownloadablesProperties;
-} /**
+}
+/**
  * CustomerBenefitGrantFeatureFlag
  */
 export interface CustomerBenefitGrantFeatureFlag {
@@ -4428,7 +4534,8 @@ export interface CustomerBenefitGrantFeatureFlag {
    * properties
    */
   properties: BenefitGrantFeatureFlagProperties;
-} /**
+}
+/**
  * CustomerBenefitGrantGitHubRepository
  */
 export interface CustomerBenefitGrantGitHubRepository {
@@ -4496,7 +4603,8 @@ export interface CustomerBenefitGrantGitHubRepository {
    * properties
    */
   properties: BenefitGrantGitHubRepositoryProperties;
-} /**
+}
+/**
  * CustomerBenefitGrantLicenseKeys
  */
 export interface CustomerBenefitGrantLicenseKeys {
@@ -4564,7 +4672,8 @@ export interface CustomerBenefitGrantLicenseKeys {
    * properties
    */
   properties: BenefitGrantLicenseKeysProperties;
-} /**
+}
+/**
  * CustomerBenefitGrantMeterCredit
  */
 export interface CustomerBenefitGrantMeterCredit {
@@ -4632,7 +4741,8 @@ export interface CustomerBenefitGrantMeterCredit {
    * properties
    */
   properties: BenefitGrantMeterCreditProperties;
-} /**
+}
+/**
  * CustomerBenefitGrantSlackSharedChannel
  */
 export interface CustomerBenefitGrantSlackSharedChannel {
@@ -4700,7 +4810,8 @@ export interface CustomerBenefitGrantSlackSharedChannel {
    * properties
    */
   properties: BenefitGrantSlackSharedChannelProperties;
-} /**
+}
+/**
  * An event created by Polar when a customer is created.
  */
 export interface CustomerCreatedEvent {
@@ -4760,7 +4871,8 @@ export interface CustomerCreatedEvent {
    * metadata
    */
   metadata: CustomerCreatedMetadata;
-} /**
+}
+/**
  * CustomerCreatedMetadata
  */
 export interface CustomerCreatedMetadata {
@@ -4780,7 +4892,8 @@ export interface CustomerCreatedMetadata {
    * customer_external_id
    */
   customer_external_id: string | null;
-} /**
+}
+/**
  * CustomerCustomerMeter
  */
 export interface CustomerCustomerMeter {
@@ -4820,7 +4933,8 @@ export interface CustomerCustomerMeter {
    * meter
    */
   meter: CustomerCustomerMeterMeter;
-} /**
+}
+/**
  * CustomerCustomerMeterMeter
  */
 export interface CustomerCustomerMeterMeter {
@@ -4840,7 +4954,8 @@ export interface CustomerCustomerMeterMeter {
    * The name of the meter. Will be shown on customer's invoices and usage.
    */
   name: string;
-} /**
+}
+/**
  * CustomerCustomerSession
  */
 export interface CustomerCustomerSession {
@@ -4852,7 +4967,8 @@ export interface CustomerCustomerSession {
    * return_url
    */
   return_url: string | null;
-} /**
+}
+/**
  * An event created by Polar when a customer is deleted.
  */
 export interface CustomerDeletedEvent {
@@ -4912,7 +5028,8 @@ export interface CustomerDeletedEvent {
    * metadata
    */
   metadata: CustomerDeletedMetadata;
-} /**
+}
+/**
  * CustomerDeletedMetadata
  */
 export interface CustomerDeletedMetadata {
@@ -4932,7 +5049,8 @@ export interface CustomerDeletedMetadata {
    * customer_external_id
    */
   customer_external_id: string | null;
-} /**
+}
+/**
  * CustomerEmailUpdateVerifyResponse
  */
 export interface CustomerEmailUpdateVerifyResponse {
@@ -4940,7 +5058,8 @@ export interface CustomerEmailUpdateVerifyResponse {
    * token
    */
   token: string;
-} /**
+}
+/**
  * A customer in an organization.
  */
 export interface CustomerIndividual {
@@ -5012,7 +5131,8 @@ export interface CustomerIndividual {
    * avatar_url
    */
   avatar_url: string | null;
-} /**
+}
+/**
  * An active customer meter, with current consumed and credited units.
  */
 export interface CustomerMeter {
@@ -5056,7 +5176,8 @@ export interface CustomerMeter {
    * meter
    */
   meter: Meter;
-} /**
+}
+/**
  * CustomerNotReady
  */
 export interface CustomerNotReady {
@@ -5068,7 +5189,8 @@ export interface CustomerNotReady {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * CustomerOrder
  */
 export interface CustomerOrder {
@@ -5208,7 +5330,8 @@ export interface CustomerOrder {
    * Sales tax in cents that would be refunded if the full refundable amount is refunded.
    */
   refundable_tax_amount: number;
-} /**
+}
+/**
  * Order's invoice data.
  */
 export interface CustomerOrderInvoice {
@@ -5216,7 +5339,8 @@ export interface CustomerOrderInvoice {
    * The URL to the invoice.
    */
   url: string;
-} /**
+}
+/**
  * Response after confirming a retry payment.
  */
 export interface CustomerOrderPaymentConfirmation {
@@ -5232,7 +5356,8 @@ export interface CustomerOrderPaymentConfirmation {
    * Error message if confirmation failed.
    */
   error?: string | null;
-} /**
+}
+/**
  * Payment status for an order.
  */
 export interface CustomerOrderPaymentStatus {
@@ -5244,7 +5369,8 @@ export interface CustomerOrderPaymentStatus {
    * Error message if payment failed.
    */
   error?: string | null;
-} /**
+}
+/**
  * CustomerOrderProduct
  */
 export interface CustomerOrderProduct {
@@ -5324,7 +5450,8 @@ export interface CustomerOrderProduct {
    * organization
    */
   organization: CustomerOrganization;
-} /**
+}
+/**
  * Order's receipt data.
  */
 export interface CustomerOrderReceipt {
@@ -5332,7 +5459,8 @@ export interface CustomerOrderReceipt {
    * The URL to the receipt PDF.
    */
   url: string;
-} /**
+}
+/**
  * CustomerOrderSubscription
  */
 export interface CustomerOrderSubscription {
@@ -5444,7 +5572,8 @@ export interface CustomerOrderSubscription {
    * customer_cancellation_comment
    */
   customer_cancellation_comment: string | null;
-} /**
+}
+/**
  * CustomerOrganization
  */
 export interface CustomerOrganization {
@@ -5488,7 +5617,8 @@ export interface CustomerOrganization {
    * organization_features
    */
   organization_features?: CustomerOrganizationFeatureSettings;
-} /**
+}
+/**
  * Schema of an organization and related data for customer portal.
  */
 export interface CustomerOrganizationData {
@@ -5500,7 +5630,8 @@ export interface CustomerOrganizationData {
    * products
    */
   products: CustomerProduct[];
-} /**
+}
+/**
  * Feature flags exposed to the customer portal.
  */
 export interface CustomerOrganizationFeatureSettings {
@@ -5512,7 +5643,8 @@ export interface CustomerOrganizationFeatureSettings {
    * Whether localization is enabled for this organization.
    */
   checkout_localization_enabled?: boolean;
-} /**
+}
+/**
  * CustomerPaymentMethodCard
  */
 export interface CustomerPaymentMethodCard {
@@ -5548,7 +5680,8 @@ export interface CustomerPaymentMethodCard {
    * Whether this payment method is the customer's default payment method.
    */
   is_default: boolean;
-} /**
+}
+/**
  * CustomerPaymentMethodCreateRequiresActionResponse
  */
 export interface CustomerPaymentMethodCreateRequiresActionResponse {
@@ -5560,7 +5693,8 @@ export interface CustomerPaymentMethodCreateRequiresActionResponse {
    * client_secret
    */
   client_secret: string;
-} /**
+}
+/**
  * CustomerPaymentMethodCreateSucceededResponse
  */
 export interface CustomerPaymentMethodCreateSucceededResponse {
@@ -5572,7 +5706,8 @@ export interface CustomerPaymentMethodCreateSucceededResponse {
    * payment_method
    */
   payment_method: CustomerPaymentMethod;
-} /**
+}
+/**
  * CustomerPaymentMethodGeneric
  */
 export interface CustomerPaymentMethodGeneric {
@@ -5604,7 +5739,8 @@ export interface CustomerPaymentMethodGeneric {
    * Whether this payment method is the customer's default payment method.
    */
   is_default: boolean;
-} /**
+}
+/**
  * CustomerPortalCustomer
  */
 export interface CustomerPortalCustomer {
@@ -5660,7 +5796,8 @@ export interface CustomerPortalCustomer {
    * locale
    */
   locale?: string | null;
-} /**
+}
+/**
  * CustomerPortalCustomerSettings
  */
 export interface CustomerPortalCustomerSettings {
@@ -5668,7 +5805,8 @@ export interface CustomerPortalCustomerSettings {
    * allow_email_change
    */
   allow_email_change?: boolean;
-} /**
+}
+/**
  * A member of the customer's team as seen in the customer portal.
  */
 export interface CustomerPortalMember {
@@ -5696,7 +5834,8 @@ export interface CustomerPortalMember {
    * role
    */
   role: MemberRole;
-} /**
+}
+/**
  * CustomerPortalOAuthAccount
  */
 export interface CustomerPortalOAuthAccount {
@@ -5708,7 +5847,8 @@ export interface CustomerPortalOAuthAccount {
    * account_username
    */
   account_username: string | null;
-} /**
+}
+/**
  * CustomerPortalSubscriptionSettings
  */
 export interface CustomerPortalSubscriptionSettings {
@@ -5720,7 +5860,8 @@ export interface CustomerPortalSubscriptionSettings {
    * update_plan
    */
   update_plan: boolean;
-} /**
+}
+/**
  * CustomerPortalUsageSettings
  */
 export interface CustomerPortalUsageSettings {
@@ -5728,7 +5869,8 @@ export interface CustomerPortalUsageSettings {
    * show
    */
   show: boolean;
-} /**
+}
+/**
  * Schema of a product for customer portal.
  */
 export interface CustomerProduct {
@@ -5804,7 +5946,8 @@ export interface CustomerProduct {
    * The medias associated to the product.
    */
   medias: ProductMediaFileRead[];
-} /**
+}
+/**
  * CustomerSeat
  */
 export interface CustomerSeat {
@@ -5823,11 +5966,11 @@ export interface CustomerSeat {
   /**
    * The subscription ID (for recurring seats)
    */
-  subscription_id?: string | null;
+  subscription_id: string | null;
   /**
    * The order ID (for one-time purchase seats)
    */
-  order_id?: string | null;
+  order_id: string | null;
   /**
    * status
    */
@@ -5835,40 +5978,41 @@ export interface CustomerSeat {
   /**
    * The customer ID. When member_model_enabled is true, this is the billing customer (purchaser). When false, this is the seat member customer.
    */
-  customer_id?: string | null;
+  customer_id: string | null;
   /**
    * The member ID of the seat occupant
    */
-  member_id?: string | null;
+  member_id: string | null;
   /**
    * The member associated with this seat
    */
-  member?: Member | null;
+  member: Member | null;
   /**
    * Email of the seat member (set when member_model_enabled is true)
    */
-  email?: string | null;
+  email: string | null;
   /**
    * The assigned customer email
    */
-  customer_email?: string | null;
+  customer_email: string | null;
   /**
    * When the invitation token expires
    */
-  invitation_token_expires_at?: string | null;
+  invitation_token_expires_at: string | null;
   /**
    * When the seat was claimed
    */
-  claimed_at?: string | null;
+  claimed_at: string | null;
   /**
    * When the seat was revoked
    */
-  revoked_at?: string | null;
+  revoked_at: string | null;
   /**
    * Additional metadata for the seat
    */
-  seat_metadata?: Record<string, unknown> | null;
-} /**
+  seat_metadata: Record<string, unknown> | null;
+}
+/**
  * Response after successfully claiming a seat.
  */
 export interface CustomerSeatClaimResponse {
@@ -5880,7 +6024,8 @@ export interface CustomerSeatClaimResponse {
    * Session token for immediate customer portal access
    */
   customer_session_token: string;
-} /**
+}
+/**
  * A customer session that can be used to authenticate as a customer.
  */
 export interface CustomerSession {
@@ -5920,7 +6065,8 @@ export interface CustomerSession {
    * customer
    */
   customer: Customer;
-} /**
+}
+/**
  * An active benefit grant for a customer.
  */
 export interface CustomerStateBenefitGrant {
@@ -5963,7 +6109,8 @@ export interface CustomerStateBenefitGrant {
     | BenefitGrantCustomProperties
     | BenefitGrantFeatureFlagProperties
     | BenefitGrantSlackSharedChannelProperties;
-} /**
+}
+/**
  * A customer along with additional state information:
 
 * Active subscriptions
@@ -6051,7 +6198,8 @@ export interface CustomerStateIndividual {
    * The customer's active meters.
    */
   active_meters: CustomerStateMeter[];
-} /**
+}
+/**
  * An active meter for a customer, with latest consumed and credited units.
  */
 export interface CustomerStateMeter {
@@ -6083,7 +6231,8 @@ export interface CustomerStateMeter {
    * The balance of the meter, i.e. the difference between credited and consumed units.
    */
   balance: number;
-} /**
+}
+/**
  * An active customer subscription.
  */
 export interface CustomerStateSubscription {
@@ -6167,7 +6316,8 @@ export interface CustomerStateSubscription {
    * List of meters associated with the subscription.
    */
   meters: CustomerStateSubscriptionMeter[];
-} /**
+}
+/**
  * Current consumption and spending for a subscription meter.
  */
 export interface CustomerStateSubscriptionMeter {
@@ -6199,7 +6349,8 @@ export interface CustomerStateSubscriptionMeter {
    * The ID of the meter.
    */
   meter_id: string;
-} /**
+}
+/**
  * A team customer along with additional state information:
 
 * Active subscriptions
@@ -6287,7 +6438,8 @@ export interface CustomerStateTeam {
    * The customer's active meters.
    */
   active_meters: CustomerStateMeter[];
-} /**
+}
+/**
  * CustomerSubscription
  */
 export interface CustomerSubscription {
@@ -6415,7 +6567,8 @@ export interface CustomerSubscription {
    * Pending subscription update that will be applied at the beginning of the next period. If `null`, there is no pending update.
    */
   pending_update: PendingSubscriptionUpdate | null;
-} /**
+}
+/**
  * CustomerSubscriptionMeter
  */
 export interface CustomerSubscriptionMeter {
@@ -6451,7 +6604,8 @@ export interface CustomerSubscriptionMeter {
    * meter
    */
   meter: CustomerSubscriptionMeterMeter;
-} /**
+}
+/**
  * CustomerSubscriptionMeterMeter
  */
 export interface CustomerSubscriptionMeterMeter {
@@ -6471,7 +6625,8 @@ export interface CustomerSubscriptionMeterMeter {
    * The name of the meter. Will be shown on customer's invoices and usage.
    */
   name: string;
-} /**
+}
+/**
  * CustomerSubscriptionProduct
  */
 export interface CustomerSubscriptionProduct {
@@ -6551,7 +6706,8 @@ export interface CustomerSubscriptionProduct {
    * organization
    */
   organization: CustomerOrganization;
-} /**
+}
+/**
  * A team customer in an organization.
  */
 export interface CustomerTeam {
@@ -6623,7 +6779,8 @@ export interface CustomerTeam {
    * avatar_url
    */
   avatar_url: string | null;
-} /**
+}
+/**
  * An event created by Polar when a customer is updated.
  */
 export interface CustomerUpdatedEvent {
@@ -6683,7 +6840,8 @@ export interface CustomerUpdatedEvent {
    * metadata
    */
   metadata: CustomerUpdatedMetadata;
-} /**
+}
+/**
  * CustomerUpdatedFields
  */
 export interface CustomerUpdatedFields {
@@ -6711,7 +6869,8 @@ export interface CustomerUpdatedFields {
    * metadata
    */
   metadata?: Record<string, string | number | boolean> | null;
-} /**
+}
+/**
  * CustomerUpdatedMetadata
  */
 export interface CustomerUpdatedMetadata {
@@ -6735,7 +6894,8 @@ export interface CustomerUpdatedMetadata {
    * updated_fields
    */
   updated_fields: CustomerUpdatedFields;
-} /**
+}
+/**
  * A wallet represents your balance with an organization.
 
 You can top-up your wallet and use the balance to pay for usage.
@@ -6765,7 +6925,8 @@ export interface CustomerWallet {
    * The currency of the wallet.
    */
   currency: string;
-} /**
+}
+/**
  * Schema for a fixed amount discount that is applied once or forever.
  */
 export interface DiscountFixedOnceForeverDuration {
@@ -6837,7 +6998,8 @@ export interface DiscountFixedOnceForeverDuration {
    * products
    */
   products: DiscountProduct[];
-} /**
+}
+/**
  * DiscountFixedOnceForeverDurationBase
  */
 export interface DiscountFixedOnceForeverDurationBase {
@@ -6905,7 +7067,8 @@ export interface DiscountFixedOnceForeverDurationBase {
    * The organization ID.
    */
   organization_id: string;
-} /**
+}
+/**
  * Schema for a fixed amount discount that is applied on every invoice
 for a certain number of months.
  */
@@ -6982,7 +7145,8 @@ export interface DiscountFixedRepeatDuration {
    * products
    */
   products: DiscountProduct[];
-} /**
+}
+/**
  * DiscountFixedRepeatDurationBase
  */
 export interface DiscountFixedRepeatDurationBase {
@@ -7054,7 +7218,8 @@ export interface DiscountFixedRepeatDurationBase {
    * The organization ID.
    */
   organization_id: string;
-} /**
+}
+/**
  * Schema for a percentage discount that is applied once or forever.
  */
 export interface DiscountPercentageOnceForeverDuration {
@@ -7118,7 +7283,8 @@ export interface DiscountPercentageOnceForeverDuration {
    * products
    */
   products: DiscountProduct[];
-} /**
+}
+/**
  * DiscountPercentageOnceForeverDurationBase
  */
 export interface DiscountPercentageOnceForeverDurationBase {
@@ -7178,7 +7344,8 @@ export interface DiscountPercentageOnceForeverDurationBase {
    * The organization ID.
    */
   organization_id: string;
-} /**
+}
+/**
  * Schema for a percentage discount that is applied on every invoice
 for a certain number of months.
  */
@@ -7247,7 +7414,8 @@ export interface DiscountPercentageRepeatDuration {
    * products
    */
   products: DiscountProduct[];
-} /**
+}
+/**
  * DiscountPercentageRepeatDurationBase
  */
 export interface DiscountPercentageRepeatDurationBase {
@@ -7311,7 +7479,8 @@ export interface DiscountPercentageRepeatDurationBase {
    * The organization ID.
    */
   organization_id: string;
-} /**
+}
+/**
  * A product that a discount can be applied to.
  */
 export interface DiscountProduct {
@@ -7379,7 +7548,8 @@ export interface DiscountProduct {
    * The ID of the organization owning the product.
    */
   organization_id: string;
-} /**
+}
+/**
  * Schema representing a dispute.
 
 A dispute is a challenge raised by a customer or their bank regarding a payment.
@@ -7449,7 +7619,8 @@ export interface Dispute {
    * The ID of the support case for this dispute, if one was opened.
    */
   case_id: string | null;
-} /**
+}
+/**
  * DisputeCustomer
  */
 export interface DisputeCustomer {
@@ -7521,7 +7692,8 @@ export interface DisputeCustomer {
    * avatar_url
    */
   avatar_url: string | null;
-} /**
+}
+/**
  * DisputeNotOpenError
  */
 export interface DisputeNotOpenError {
@@ -7533,7 +7705,8 @@ export interface DisputeNotOpenError {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * File to be associated with the downloadables benefit.
  */
 export interface DownloadableFileRead {
@@ -7601,7 +7774,8 @@ export interface DownloadableFileRead {
    * size_readable
    */
   size_readable: string;
-} /**
+}
+/**
  * DownloadableRead
  */
 export interface DownloadableRead {
@@ -7617,7 +7791,8 @@ export interface DownloadableRead {
    * file
    */
   file: FileDownload;
-} /**
+}
+/**
  * EventMetadataOutput
  */
 export interface EventMetadataOutput {
@@ -7629,7 +7804,8 @@ export interface EventMetadataOutput {
    * _llm
    */
   _llm?: LLMMetadata;
-} /**
+}
+/**
  * EventName
  */
 export interface EventName {
@@ -7657,7 +7833,8 @@ export interface EventName {
    * The last time the event occurred.
    */
   last_seen: string;
-} /**
+}
+/**
  * EventType
  */
 export interface EventType {
@@ -7689,7 +7866,8 @@ export interface EventType {
    * The ID of the organization owning the event type.
    */
   organization_id: string;
-} /**
+}
+/**
  * EventTypeWithStats
  */
 export interface EventTypeWithStats {
@@ -7737,7 +7915,8 @@ export interface EventTypeWithStats {
    * The last time the event occurred.
    */
   last_seen: string;
-} /**
+}
+/**
  * EventsIngestResponse
  */
 export interface EventsIngestResponse {
@@ -7749,7 +7928,8 @@ export interface EventsIngestResponse {
    * Number of duplicate events skipped.
    */
   duplicates?: number;
-} /**
+}
+/**
  * ExpiredCheckoutError
  */
 export interface ExpiredCheckoutError {
@@ -7761,7 +7941,8 @@ export interface ExpiredCheckoutError {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * FileDownload
  */
 export interface FileDownload {
@@ -7829,7 +8010,8 @@ export interface FileDownload {
    * size_readable
    */
   size_readable: string;
-} /**
+}
+/**
  * FileUpload
  */
 export interface FileUpload {
@@ -7897,7 +8079,8 @@ export interface FileUpload {
    * size_readable
    */
   size_readable: string;
-} /**
+}
+/**
  * Filter
  */
 export interface Filter {
@@ -7909,7 +8092,8 @@ export interface Filter {
    * clauses
    */
   clauses: (FilterClause | Filter)[];
-} /**
+}
+/**
  * FilterClause
  */
 export interface FilterClause {
@@ -7925,7 +8109,8 @@ export interface FilterClause {
    * value
    */
   value: string | number | boolean;
-} /**
+}
+/**
  * Schema of a payment with a generic payment method.
  */
 export interface GenericPayment {
@@ -7964,7 +8149,7 @@ export interface GenericPayment {
   /**
    * What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.
    */
-  trigger?: PaymentTrigger | null;
+  trigger: PaymentTrigger | null;
   /**
    * Error code, if the payment was declined.
    */
@@ -7989,7 +8174,8 @@ export interface GenericPayment {
    * Additional metadata from the payment processor for internal use.
    */
   processor_metadata?: Record<string, unknown>;
-} /**
+}
+/**
  * HTTPValidationError
  */
 export interface HTTPValidationError {
@@ -7997,7 +8183,8 @@ export interface HTTPValidationError {
    * detail
    */
   detail?: ValidationError[];
-} /**
+}
+/**
  * IntrospectTokenResponse
  */
 export interface IntrospectTokenResponse {
@@ -8045,7 +8232,8 @@ export interface IntrospectTokenResponse {
    * iat
    */
   iat: number;
-} /**
+}
+/**
  * LLMMetadata
  */
 export interface LLMMetadata {
@@ -8081,7 +8269,8 @@ export interface LLMMetadata {
    * The total number of LLM tokens used for the event.
    */
   total_tokens: number;
-} /**
+}
+/**
  * A pay-what-you-want recurring price for a product, i.e. a subscription.
 
 **Deprecated**: The recurring interval should be set on the product itself.
@@ -8147,7 +8336,8 @@ export interface LegacyRecurringProductPriceCustom {
    * legacy
    */
   legacy: true;
-} /**
+}
+/**
  * A recurring price for a product, i.e. a subscription.
 
 **Deprecated**: The recurring interval should be set on the product itself.
@@ -8205,7 +8395,8 @@ export interface LegacyRecurringProductPriceFixed {
    * legacy
    */
   legacy: true;
-} /**
+}
+/**
  * LicenseKeyActivationBase
  */
 export interface LicenseKeyActivationBase {
@@ -8233,7 +8424,8 @@ export interface LicenseKeyActivationBase {
    * modified_at
    */
   modified_at: string | null;
-} /**
+}
+/**
  * LicenseKeyActivationRead
  */
 export interface LicenseKeyActivationRead {
@@ -8265,7 +8457,8 @@ export interface LicenseKeyActivationRead {
    * license_key
    */
   license_key: LicenseKeyRead;
-} /**
+}
+/**
  * LicenseKeyCustomer
  */
 export interface LicenseKeyCustomer {
@@ -8337,7 +8530,8 @@ export interface LicenseKeyCustomer {
    * avatar_url
    */
   avatar_url: string | null;
-} /**
+}
+/**
  * LicenseKeyRead
  */
 export interface LicenseKeyRead {
@@ -8405,7 +8599,8 @@ export interface LicenseKeyRead {
    * expires_at
    */
   expires_at: string | null;
-} /**
+}
+/**
  * LicenseKeyWithActivations
  */
 export interface LicenseKeyWithActivations {
@@ -8477,7 +8672,8 @@ export interface LicenseKeyWithActivations {
    * activations
    */
   activations: LicenseKeyActivationBase[];
-} /**
+}
+/**
  * ListResourceBenefit
  */
 export interface ListResourceBenefit {
@@ -8489,7 +8685,8 @@ export interface ListResourceBenefit {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceBenefitGrant
  */
 export interface ListResourceBenefitGrant {
@@ -8501,7 +8698,8 @@ export interface ListResourceBenefitGrant {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceCheckout
  */
 export interface ListResourceCheckout {
@@ -8513,7 +8711,8 @@ export interface ListResourceCheckout {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceCheckoutLink
  */
 export interface ListResourceCheckoutLink {
@@ -8525,7 +8724,8 @@ export interface ListResourceCheckoutLink {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceCustomField
  */
 export interface ListResourceCustomField {
@@ -8537,7 +8737,8 @@ export interface ListResourceCustomField {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceCustomer
  */
 export interface ListResourceCustomer {
@@ -8549,7 +8750,8 @@ export interface ListResourceCustomer {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceCustomerBenefitGrant
  */
 export interface ListResourceCustomerBenefitGrant {
@@ -8561,7 +8763,8 @@ export interface ListResourceCustomerBenefitGrant {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceCustomerCustomerMeter
  */
 export interface ListResourceCustomerCustomerMeter {
@@ -8573,7 +8776,8 @@ export interface ListResourceCustomerCustomerMeter {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceCustomerMeter
  */
 export interface ListResourceCustomerMeter {
@@ -8585,7 +8789,8 @@ export interface ListResourceCustomerMeter {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceCustomerOrder
  */
 export interface ListResourceCustomerOrder {
@@ -8597,7 +8802,8 @@ export interface ListResourceCustomerOrder {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceCustomerPaymentMethod
  */
 export interface ListResourceCustomerPaymentMethod {
@@ -8609,7 +8815,8 @@ export interface ListResourceCustomerPaymentMethod {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceCustomerPortalMember
  */
 export interface ListResourceCustomerPortalMember {
@@ -8621,7 +8828,8 @@ export interface ListResourceCustomerPortalMember {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceCustomerSubscription
  */
 export interface ListResourceCustomerSubscription {
@@ -8633,7 +8841,8 @@ export interface ListResourceCustomerSubscription {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceCustomerWallet
  */
 export interface ListResourceCustomerWallet {
@@ -8645,7 +8854,8 @@ export interface ListResourceCustomerWallet {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceDiscount
  */
 export interface ListResourceDiscount {
@@ -8657,7 +8867,8 @@ export interface ListResourceDiscount {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceDispute
  */
 export interface ListResourceDispute {
@@ -8669,7 +8880,8 @@ export interface ListResourceDispute {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceDownloadableRead
  */
 export interface ListResourceDownloadableRead {
@@ -8681,7 +8893,8 @@ export interface ListResourceDownloadableRead {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceEvent
  */
 export interface ListResourceEvent {
@@ -8693,7 +8906,8 @@ export interface ListResourceEvent {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceEventName
  */
 export interface ListResourceEventName {
@@ -8705,7 +8919,8 @@ export interface ListResourceEventName {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceEventTypeWithStats
  */
 export interface ListResourceEventTypeWithStats {
@@ -8717,7 +8932,8 @@ export interface ListResourceEventTypeWithStats {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceFileRead
  */
 export interface ListResourceFileRead {
@@ -8729,7 +8945,8 @@ export interface ListResourceFileRead {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceLicenseKeyRead
  */
 export interface ListResourceLicenseKeyRead {
@@ -8741,7 +8958,8 @@ export interface ListResourceLicenseKeyRead {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceMember
  */
 export interface ListResourceMember {
@@ -8753,7 +8971,8 @@ export interface ListResourceMember {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceMeter
  */
 export interface ListResourceMeter {
@@ -8765,7 +8984,8 @@ export interface ListResourceMeter {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceOrder
  */
 export interface ListResourceOrder {
@@ -8777,7 +8997,8 @@ export interface ListResourceOrder {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceOrganization
  */
 export interface ListResourceOrganization {
@@ -8789,7 +9010,8 @@ export interface ListResourceOrganization {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourcePayment
  */
 export interface ListResourcePayment {
@@ -8801,7 +9023,8 @@ export interface ListResourcePayment {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourcePaymentMethod
  */
 export interface ListResourcePaymentMethod {
@@ -8813,7 +9036,8 @@ export interface ListResourcePaymentMethod {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceProduct
  */
 export interface ListResourceProduct {
@@ -8825,7 +9049,8 @@ export interface ListResourceProduct {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceRefund
  */
 export interface ListResourceRefund {
@@ -8837,7 +9062,8 @@ export interface ListResourceRefund {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceSubscription
  */
 export interface ListResourceSubscription {
@@ -8849,7 +9075,8 @@ export interface ListResourceSubscription {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceWebhookDelivery
  */
 export interface ListResourceWebhookDelivery {
@@ -8861,7 +9088,8 @@ export interface ListResourceWebhookDelivery {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceWebhookEndpoint
  */
 export interface ListResourceWebhookEndpoint {
@@ -8873,7 +9101,8 @@ export interface ListResourceWebhookEndpoint {
    * pagination
    */
   pagination: Pagination;
-} /**
+}
+/**
  * ListResourceWithCursorPaginationEvent
  */
 export interface ListResourceWithCursorPaginationEvent {
@@ -8885,7 +9114,8 @@ export interface ListResourceWithCursorPaginationEvent {
    * pagination
    */
   pagination: CursorPagination;
-} /**
+}
+/**
  * ManualRetryLimitExceeded
  */
 export interface ManualRetryLimitExceeded {
@@ -8897,7 +9127,8 @@ export interface ManualRetryLimitExceeded {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * A member of a customer.
  */
 export interface Member {
@@ -8933,10 +9164,12 @@ export interface Member {
    * role
    */
   role: MemberRole;
-} /**
+}
+/**
  * MetadataOutputType
  */
-export interface MetadataOutputType extends Record<string, never> {} /**
+export interface MetadataOutputType extends Record<string, never> {}
+/**
  * Meter
  */
 export interface Meter {
@@ -8988,7 +9221,8 @@ export interface Meter {
    * Whether the meter is archived and the time it was archived.
    */
   archived_at?: string | null;
-} /**
+}
+/**
  * An event created by Polar when credits are added to a customer meter.
  */
 export interface MeterCreditEvent {
@@ -9048,7 +9282,8 @@ export interface MeterCreditEvent {
    * metadata
    */
   metadata: MeterCreditedMetadata;
-} /**
+}
+/**
  * MeterCreditedMetadata
  */
 export interface MeterCreditedMetadata {
@@ -9064,7 +9299,8 @@ export interface MeterCreditedMetadata {
    * rollover
    */
   rollover: boolean;
-} /**
+}
+/**
  * MeterQuantities
  */
 export interface MeterQuantities {
@@ -9076,7 +9312,8 @@ export interface MeterQuantities {
    * The total quantity for the period.
    */
   total: number;
-} /**
+}
+/**
  * MeterQuantity
  */
 export interface MeterQuantity {
@@ -9088,7 +9325,8 @@ export interface MeterQuantity {
    * The quantity for the current period.
    */
   quantity: number;
-} /**
+}
+/**
  * An event created by Polar when a customer meter is reset.
  */
 export interface MeterResetEvent {
@@ -9148,7 +9386,8 @@ export interface MeterResetEvent {
    * metadata
    */
   metadata: MeterResetMetadata;
-} /**
+}
+/**
  * MeterResetMetadata
  */
 export interface MeterResetMetadata {
@@ -9156,7 +9395,8 @@ export interface MeterResetMetadata {
    * meter_id
    */
   meter_id: string;
-} /**
+}
+/**
  * Information about a metric.
  */
 export interface Metric {
@@ -9172,7 +9412,8 @@ export interface Metric {
    * type
    */
   type: MetricType;
-} /**
+}
+/**
  * A user-defined metrics dashboard.
  */
 export interface MetricDashboardSchema {
@@ -9200,7 +9441,8 @@ export interface MetricDashboardSchema {
    * The ID of the organization owning this dashboard.
    */
   organization_id: string;
-} /**
+}
+/**
  * MetricPeriod
  */
 export interface MetricPeriod {
@@ -9428,7 +9670,8 @@ export interface MetricPeriod {
    * seat_utilization_rate
    */
   seat_utilization_rate?: number | number | null;
-} /**
+}
+/**
  * Metrics
  */
 export interface Metrics {
@@ -9652,7 +9895,8 @@ export interface Metrics {
    * seat_utilization_rate
    */
   seat_utilization_rate?: Metric | null;
-} /**
+}
+/**
  * Date interval limit to get metrics for a given interval.
  */
 export interface MetricsIntervalLimit {
@@ -9664,7 +9908,8 @@ export interface MetricsIntervalLimit {
    * Maximum number of days for this interval.
    */
   max_days: number;
-} /**
+}
+/**
  * Date interval limits to get metrics for each interval.
  */
 export interface MetricsIntervalsLimits {
@@ -9688,7 +9933,8 @@ export interface MetricsIntervalsLimits {
    * year
    */
   year: MetricsIntervalLimit;
-} /**
+}
+/**
  * Date limits to get metrics.
  */
 export interface MetricsLimits {
@@ -9700,7 +9946,8 @@ export interface MetricsLimits {
    * intervals
    */
   intervals: MetricsIntervalsLimits;
-} /**
+}
+/**
  * Metrics response schema.
  */
 export interface MetricsResponse {
@@ -9716,7 +9963,8 @@ export interface MetricsResponse {
    * metrics
    */
   metrics: Metrics;
-} /**
+}
+/**
  * MetricsTotals
  */
 export interface MetricsTotals {
@@ -9940,7 +10188,8 @@ export interface MetricsTotals {
    * seat_utilization_rate
    */
   seat_utilization_rate?: number | number | null;
-} /**
+}
+/**
  * MissingInvoiceBillingDetails
  */
 export interface MissingInvoiceBillingDetails {
@@ -9952,7 +10201,8 @@ export interface MissingInvoiceBillingDetails {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * NotOpenCheckout
  */
 export interface NotOpenCheckout {
@@ -9964,7 +10214,8 @@ export interface NotOpenCheckout {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * NotPermitted
  */
 export interface NotPermitted {
@@ -9976,7 +10227,8 @@ export interface NotPermitted {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * OAuth2ClientPublic
  */
 export interface OAuth2ClientPublic {
@@ -10012,7 +10264,8 @@ export interface OAuth2ClientPublic {
    * policy_uri
    */
   policy_uri: string | null;
-} /**
+}
+/**
  * OffSessionChargesNotEnabled
  */
 export interface OffSessionChargesNotEnabled {
@@ -10024,7 +10277,8 @@ export interface OffSessionChargesNotEnabled {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * Order
  */
 export interface Order {
@@ -10195,7 +10449,8 @@ export interface Order {
    * Sales tax in cents that would be refunded if the full refundable amount is refunded.
    */
   refundable_tax_amount: number;
-} /**
+}
+/**
  * OrderCustomer
  */
 export interface OrderCustomer {
@@ -10267,7 +10522,8 @@ export interface OrderCustomer {
    * avatar_url
    */
   avatar_url: string | null;
-} /**
+}
+/**
  * Order's invoice data.
  */
 export interface OrderInvoice {
@@ -10275,7 +10531,8 @@ export interface OrderInvoice {
    * The URL to the invoice.
    */
   url: string;
-} /**
+}
+/**
  * An order line item.
  */
 export interface OrderItemSchema {
@@ -10311,7 +10568,8 @@ export interface OrderItemSchema {
    * Associated price ID, if any.
    */
   product_price_id: string | null;
-} /**
+}
+/**
  * OrderNotDraft
  */
 export interface OrderNotDraft {
@@ -10323,7 +10581,8 @@ export interface OrderNotDraft {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * OrderNotEligibleForInvoice
  */
 export interface OrderNotEligibleForInvoice {
@@ -10335,7 +10594,8 @@ export interface OrderNotEligibleForInvoice {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * OrderNotEligibleForRetry
  */
 export interface OrderNotEligibleForRetry {
@@ -10347,7 +10607,8 @@ export interface OrderNotEligibleForRetry {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * An event created by Polar when an order is paid.
  */
 export interface OrderPaidEvent {
@@ -10407,7 +10668,8 @@ export interface OrderPaidEvent {
    * metadata
    */
   metadata: OrderPaidMetadata;
-} /**
+}
+/**
  * OrderPaidMetadata
  */
 export interface OrderPaidMetadata {
@@ -10467,7 +10729,8 @@ export interface OrderPaidMetadata {
    * recurring_interval_count
    */
   recurring_interval_count?: number;
-} /**
+}
+/**
  * OrderProduct
  */
 export interface OrderProduct {
@@ -10535,7 +10798,8 @@ export interface OrderProduct {
    * The ID of the organization owning the product.
    */
   organization_id: string;
-} /**
+}
+/**
  * Order's receipt data.
  */
 export interface OrderReceipt {
@@ -10543,7 +10807,8 @@ export interface OrderReceipt {
    * The URL to the receipt PDF.
    */
   url: string;
-} /**
+}
+/**
  * An event created by Polar when an order is refunded.
  */
 export interface OrderRefundedEvent {
@@ -10603,7 +10868,8 @@ export interface OrderRefundedEvent {
    * metadata
    */
   metadata: OrderRefundedMetadata;
-} /**
+}
+/**
  * OrderRefundedMetadata
  */
 export interface OrderRefundedMetadata {
@@ -10619,7 +10885,8 @@ export interface OrderRefundedMetadata {
    * currency
    */
   currency: string;
-} /**
+}
+/**
  * OrderSubscription
  */
 export interface OrderSubscription {
@@ -10735,7 +11002,8 @@ export interface OrderSubscription {
    * customer_cancellation_comment
    */
   customer_cancellation_comment: string | null;
-} /**
+}
+/**
  * An event created by Polar when an order is voided.
  */
 export interface OrderVoidedEvent {
@@ -10795,7 +11063,8 @@ export interface OrderVoidedEvent {
    * metadata
    */
   metadata: OrderVoidedMetadata;
-} /**
+}
+/**
  * OrderVoidedMetadata
  */
 export interface OrderVoidedMetadata {
@@ -10811,7 +11080,8 @@ export interface OrderVoidedMetadata {
    * currency
    */
   currency: string;
-} /**
+}
+/**
  * Organization
  */
 export interface Organization {
@@ -10911,7 +11181,8 @@ export interface Organization {
    * capabilities
    */
   capabilities: OrganizationCapabilities;
-} /**
+}
+/**
  * File to be used as an organization avatar.
  */
 export interface OrganizationAvatarFileRead {
@@ -10983,7 +11254,8 @@ export interface OrganizationAvatarFileRead {
    * public_url
    */
   public_url: string;
-} /**
+}
+/**
  * OrganizationCapabilities
  */
 export interface OrganizationCapabilities {
@@ -11011,7 +11283,8 @@ export interface OrganizationCapabilities {
    * Whether the organization can access the dashboard.
    */
   dashboard_access: boolean;
-} /**
+}
+/**
  * OrganizationCustomerEmailSettings
  */
 export interface OrganizationCustomerEmailSettings {
@@ -11059,7 +11332,8 @@ export interface OrganizationCustomerEmailSettings {
    * subscription_updated
    */
   subscription_updated: boolean;
-} /**
+}
+/**
  * OrganizationCustomerPortalSettings
  */
 export interface OrganizationCustomerPortalSettings {
@@ -11075,7 +11349,8 @@ export interface OrganizationCustomerPortalSettings {
    * customer
    */
   customer?: CustomerPortalCustomerSettings;
-} /**
+}
+/**
  * OrganizationFeatureSettings
  */
 export interface OrganizationFeatureSettings {
@@ -11127,7 +11402,12 @@ export interface OrganizationFeatureSettings {
    * If this organization has single sign-on configuration enabled
    */
   sso_enabled?: boolean;
-} /**
+  /**
+   * If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard
+   */
+  compass_enabled?: boolean;
+}
+/**
  * OrganizationNotReadyForPayments
  */
 export interface OrganizationNotReadyForPayments {
@@ -11139,7 +11419,8 @@ export interface OrganizationNotReadyForPayments {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * OrganizationSocialLink
  */
 export interface OrganizationSocialLink {
@@ -11151,7 +11432,8 @@ export interface OrganizationSocialLink {
    * The URL to the organization profile
    */
   url: string;
-} /**
+}
+/**
  * OrganizationSubscriptionSettings
  */
 export interface OrganizationSubscriptionSettings {
@@ -11175,7 +11457,8 @@ export interface OrganizationSubscriptionSettings {
    * allow_customer_updates
    */
   allow_customer_updates: boolean;
-} /**
+}
+/**
  * Pagination
  */
 export interface Pagination {
@@ -11187,7 +11470,8 @@ export interface Pagination {
    * max_page
    */
   max_page: number;
-} /**
+}
+/**
  * PaymentActionRequired
  */
 export interface PaymentActionRequired {
@@ -11199,7 +11483,8 @@ export interface PaymentActionRequired {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * PaymentAlreadyInProgress
  */
 export interface PaymentAlreadyInProgress {
@@ -11211,7 +11496,8 @@ export interface PaymentAlreadyInProgress {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * PaymentError
  */
 export interface PaymentError {
@@ -11223,7 +11509,8 @@ export interface PaymentError {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * PaymentFailed
  */
 export interface PaymentFailed {
@@ -11235,7 +11522,8 @@ export interface PaymentFailed {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * PaymentMethodCard
  */
 export interface PaymentMethodCard {
@@ -11267,7 +11555,8 @@ export interface PaymentMethodCard {
    * method_metadata
    */
   method_metadata: PaymentMethodCardMetadata;
-} /**
+}
+/**
  * PaymentMethodCardMetadata
  */
 export interface PaymentMethodCardMetadata {
@@ -11291,7 +11580,8 @@ export interface PaymentMethodCardMetadata {
    * wallet
    */
   wallet?: string | null;
-} /**
+}
+/**
  * PaymentMethodGeneric
  */
 export interface PaymentMethodGeneric {
@@ -11319,7 +11609,8 @@ export interface PaymentMethodGeneric {
    * type
    */
   type: string;
-} /**
+}
+/**
  * PaymentMethodInUseByActiveSubscription
  */
 export interface PaymentMethodInUseByActiveSubscription {
@@ -11331,7 +11622,8 @@ export interface PaymentMethodInUseByActiveSubscription {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * PaymentMethodSetupFailed
  */
 export interface PaymentMethodSetupFailed {
@@ -11343,7 +11635,8 @@ export interface PaymentMethodSetupFailed {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * PaymentNotReady
  */
 export interface PaymentNotReady {
@@ -11355,7 +11648,8 @@ export interface PaymentNotReady {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * Pending update to be applied to a subscription at the beginning of the next period.
  */
 export interface PendingSubscriptionUpdate {
@@ -11383,7 +11677,8 @@ export interface PendingSubscriptionUpdate {
    * Number of seats to apply to the subscription. If `null`, the number of seats won't be changed.
    */
   seats: number | null;
-} /**
+}
+/**
  * Information about the authenticated portal user.
  */
 export interface PortalAuthenticatedUser {
@@ -11411,7 +11706,8 @@ export interface PortalAuthenticatedUser {
    * Member role (owner, billing_manager, member). Only set for members.
    */
   role?: string | null;
-} /**
+}
+/**
  * A product.
  */
 export interface Product {
@@ -11495,7 +11791,8 @@ export interface Product {
    * List of custom fields attached to the product.
    */
   attached_custom_fields: AttachedCustomField[];
-} /**
+}
+/**
  * File to be used as a product media file.
  */
 export interface ProductMediaFileRead {
@@ -11567,7 +11864,8 @@ export interface ProductMediaFileRead {
    * public_url
    */
   public_url: string;
-} /**
+}
+/**
  * A pay-what-you-want price for a product.
  */
 export interface ProductPriceCustom {
@@ -11619,7 +11917,8 @@ export interface ProductPriceCustom {
    * The initial amount shown to the customer.
    */
   preset_amount: number | null;
-} /**
+}
+/**
  * A fixed price for a product.
  */
 export interface ProductPriceFixed {
@@ -11663,7 +11962,8 @@ export interface ProductPriceFixed {
    * The price in cents.
    */
   price_amount: number;
-} /**
+}
+/**
  * A meter associated to a metered price.
  */
 export interface ProductPriceMeter {
@@ -11682,12 +11982,13 @@ export interface ProductPriceMeter {
   /**
    * The label for the custom unit.
    */
-  custom_label?: string | null;
+  custom_label: string | null;
   /**
    * The multiplier to convert from base unit to display scale.
    */
-  custom_multiplier?: number | null;
-} /**
+  custom_multiplier: number | null;
+}
+/**
  * A metered, usage-based, price for a product, with a fixed unit price.
  */
 export interface ProductPriceMeteredUnit {
@@ -11743,7 +12044,8 @@ export interface ProductPriceMeteredUnit {
    * meter
    */
   meter: ProductPriceMeter;
-} /**
+}
+/**
  * A seat-based price for a product.
  */
 export interface ProductPriceSeatBased {
@@ -11787,7 +12089,8 @@ export interface ProductPriceSeatBased {
    * seat_tiers
    */
   seat_tiers: ProductPriceSeatTiersOutput;
-} /**
+}
+/**
  * A pricing tier for seat-based pricing.
  */
 export interface ProductPriceSeatTier {
@@ -11803,7 +12106,8 @@ export interface ProductPriceSeatTier {
    * Price per seat in cents for this tier
    */
   price_per_seat: number;
-} /**
+}
+/**
  * List of pricing tiers for seat-based pricing.
 
 The minimum and maximum seat limits are derived from the tiers:
@@ -11827,7 +12131,8 @@ export interface ProductPriceSeatTiersOutput {
    * Maximum number of seats allowed for purchase, derived from last tier. None for unlimited.
    */
   maximum_seats: number | null;
-} /**
+}
+/**
  * PropertyAggregation
  */
 export interface PropertyAggregation {
@@ -11839,7 +12144,8 @@ export interface PropertyAggregation {
    * property
    */
   property: string;
-} /**
+}
+/**
  * Refund
  */
 export interface Refund {
@@ -11903,7 +12209,8 @@ export interface Refund {
    * dispute
    */
   dispute: RefundDispute | null;
-} /**
+}
+/**
  * Dispute associated with a refund,
 in case we prevented a dispute by issuing a refund.
  */
@@ -11964,7 +12271,8 @@ export interface RefundDispute {
    * The ID of the payment associated with the dispute.
    */
   payment_id: string;
-} /**
+}
+/**
  * RefundedAlready
  */
 export interface RefundedAlready {
@@ -11976,7 +12284,8 @@ export interface RefundedAlready {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * ResourceNotFound
  */
 export interface ResourceNotFound {
@@ -11988,10 +12297,12 @@ export interface ResourceNotFound {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * RevokeTokenResponse
  */
-export interface RevokeTokenResponse extends Record<string, never> {} /**
+export interface RevokeTokenResponse extends Record<string, never> {}
+/**
  * S3DownloadURL
  */
 export interface S3DownloadURL {
@@ -12007,7 +12318,8 @@ export interface S3DownloadURL {
    * expires_at
    */
   expires_at: string;
-} /**
+}
+/**
  * S3FileUploadMultipart
  */
 export interface S3FileUploadMultipart {
@@ -12023,7 +12335,8 @@ export interface S3FileUploadMultipart {
    * parts
    */
   parts: S3FileUploadPart[];
-} /**
+}
+/**
  * S3FileUploadPart
  */
 export interface S3FileUploadPart {
@@ -12055,7 +12368,8 @@ export interface S3FileUploadPart {
    * headers
    */
   headers?: Record<string, string>;
-} /**
+}
+/**
  * SSOEnforcementRequiresConnection
  */
 export interface SSOEnforcementRequiresConnection {
@@ -12067,7 +12381,8 @@ export interface SSOEnforcementRequiresConnection {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * Read-only information about a seat claim invitation.
 Safe for email scanners - no side effects when fetched.
  */
@@ -12096,7 +12411,8 @@ export interface SeatClaimInfo {
    * Whether the seat can be claimed
    */
   can_claim: boolean;
-} /**
+}
+/**
  * SeatsList
  */
 export interface SeatsList {
@@ -12112,7 +12428,8 @@ export interface SeatsList {
    * Total number of seats for the subscription
    */
   total_seats: number;
-} /**
+}
+/**
  * Subscription
  */
 export interface Subscription {
@@ -12263,7 +12580,8 @@ export interface Subscription {
    * Pending subscription update that will be applied at the beginning of the next period. If `null`, there is no pending update.
    */
   pending_update: PendingSubscriptionUpdate | null;
-} /**
+}
+/**
  * An event created by Polar when a subscription billing period is updated.
  */
 export interface SubscriptionBillingPeriodUpdatedEvent {
@@ -12323,7 +12641,8 @@ export interface SubscriptionBillingPeriodUpdatedEvent {
    * metadata
    */
   metadata: SubscriptionBillingPeriodUpdatedMetadata;
-} /**
+}
+/**
  * SubscriptionBillingPeriodUpdatedMetadata
  */
 export interface SubscriptionBillingPeriodUpdatedMetadata {
@@ -12339,7 +12658,8 @@ export interface SubscriptionBillingPeriodUpdatedMetadata {
    * new_period_end
    */
   new_period_end: string;
-} /**
+}
+/**
  * An event created by Polar when a subscription is canceled.
  */
 export interface SubscriptionCanceledEvent {
@@ -12399,7 +12719,8 @@ export interface SubscriptionCanceledEvent {
    * metadata
    */
   metadata: SubscriptionCanceledMetadata;
-} /**
+}
+/**
  * SubscriptionCanceledMetadata
  */
 export interface SubscriptionCanceledMetadata {
@@ -12447,7 +12768,8 @@ export interface SubscriptionCanceledMetadata {
    * cancel_at_period_end
    */
   cancel_at_period_end?: boolean;
-} /**
+}
+/**
  * An event created by Polar when a subscription is created.
  */
 export interface SubscriptionCreatedEvent {
@@ -12507,7 +12829,8 @@ export interface SubscriptionCreatedEvent {
    * metadata
    */
   metadata: SubscriptionCreatedMetadata;
-} /**
+}
+/**
  * SubscriptionCreatedMetadata
  */
 export interface SubscriptionCreatedMetadata {
@@ -12539,7 +12862,8 @@ export interface SubscriptionCreatedMetadata {
    * started_at
    */
   started_at: string;
-} /**
+}
+/**
  * SubscriptionCustomer
  */
 export interface SubscriptionCustomer {
@@ -12611,7 +12935,8 @@ export interface SubscriptionCustomer {
    * avatar_url
    */
   avatar_url: string | null;
-} /**
+}
+/**
  * An event created by Polar when a subscription is cycled.
  */
 export interface SubscriptionCycledEvent {
@@ -12671,7 +12996,8 @@ export interface SubscriptionCycledEvent {
    * metadata
    */
   metadata: SubscriptionCycledMetadata;
-} /**
+}
+/**
  * SubscriptionCycledMetadata
  */
 export interface SubscriptionCycledMetadata {
@@ -12699,7 +13025,8 @@ export interface SubscriptionCycledMetadata {
    * recurring_interval_count
    */
   recurring_interval_count?: number;
-} /**
+}
+/**
  * SubscriptionLocked
  */
 export interface SubscriptionLocked {
@@ -12711,7 +13038,8 @@ export interface SubscriptionLocked {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * Current consumption and spending for a subscription meter.
  */
 export interface SubscriptionMeter {
@@ -12747,7 +13075,8 @@ export interface SubscriptionMeter {
    * meter
    */
   meter: Meter;
-} /**
+}
+/**
  * An event created by Polar when a subscription becomes past due.
  */
 export interface SubscriptionPastDueEvent {
@@ -12807,7 +13136,8 @@ export interface SubscriptionPastDueEvent {
    * metadata
    */
   metadata: SubscriptionPastDueMetadata;
-} /**
+}
+/**
  * SubscriptionPastDueMetadata
  */
 export interface SubscriptionPastDueMetadata {
@@ -12839,7 +13169,8 @@ export interface SubscriptionPastDueMetadata {
    * recurring_interval_count
    */
   recurring_interval_count?: number;
-} /**
+}
+/**
  * An event created by Polar when a subscription changes the product.
  */
 export interface SubscriptionProductUpdatedEvent {
@@ -12899,7 +13230,8 @@ export interface SubscriptionProductUpdatedEvent {
    * metadata
    */
   metadata: SubscriptionProductUpdatedMetadata;
-} /**
+}
+/**
  * SubscriptionProductUpdatedMetadata
  */
 export interface SubscriptionProductUpdatedMetadata {
@@ -12915,7 +13247,8 @@ export interface SubscriptionProductUpdatedMetadata {
    * new_product_id
    */
   new_product_id: string;
-} /**
+}
+/**
  * An event created by Polar when a past due subscription is recovered.
  */
 export interface SubscriptionReactivatedEvent {
@@ -12975,7 +13308,8 @@ export interface SubscriptionReactivatedEvent {
    * metadata
    */
   metadata: SubscriptionReactivatedMetadata;
-} /**
+}
+/**
  * SubscriptionReactivatedMetadata
  */
 export interface SubscriptionReactivatedMetadata {
@@ -13003,7 +13337,8 @@ export interface SubscriptionReactivatedMetadata {
    * recurring_interval_count
    */
   recurring_interval_count?: number;
-} /**
+}
+/**
  * An event created by Polar when a subscription is revoked from a customer.
  */
 export interface SubscriptionRevokedEvent {
@@ -13063,7 +13398,8 @@ export interface SubscriptionRevokedEvent {
    * metadata
    */
   metadata: SubscriptionRevokedMetadata;
-} /**
+}
+/**
  * SubscriptionRevokedMetadata
  */
 export interface SubscriptionRevokedMetadata {
@@ -13091,7 +13427,8 @@ export interface SubscriptionRevokedMetadata {
    * recurring_interval_count
    */
   recurring_interval_count?: number;
-} /**
+}
+/**
  * An event created by Polar when a the seats on a subscription is changed.
  */
 export interface SubscriptionSeatsUpdatedEvent {
@@ -13151,7 +13488,8 @@ export interface SubscriptionSeatsUpdatedEvent {
    * metadata
    */
   metadata: SubscriptionSeatsUpdatedMetadata;
-} /**
+}
+/**
  * SubscriptionSeatsUpdatedMetadata
  */
 export interface SubscriptionSeatsUpdatedMetadata {
@@ -13171,7 +13509,8 @@ export interface SubscriptionSeatsUpdatedMetadata {
    * proration_behavior
    */
   proration_behavior: string;
-} /**
+}
+/**
  * An event created by Polar when a subscription cancellation is reversed.
  */
 export interface SubscriptionUncanceledEvent {
@@ -13231,7 +13570,8 @@ export interface SubscriptionUncanceledEvent {
    * metadata
    */
   metadata: SubscriptionUncanceledMetadata;
-} /**
+}
+/**
  * SubscriptionUncanceledMetadata
  */
 export interface SubscriptionUncanceledMetadata {
@@ -13259,7 +13599,8 @@ export interface SubscriptionUncanceledMetadata {
    * recurring_interval_count
    */
   recurring_interval_count: number;
-} /**
+}
+/**
  * An event created by Polar when a pending subscription update is cleared without being applied.
  */
 export interface SubscriptionUpdateClearedEvent {
@@ -13319,7 +13660,8 @@ export interface SubscriptionUpdateClearedEvent {
    * metadata
    */
   metadata: SubscriptionUpdateClearedMetadata;
-} /**
+}
+/**
  * SubscriptionUpdateClearedMetadata
  */
 export interface SubscriptionUpdateClearedMetadata {
@@ -13327,7 +13669,8 @@ export interface SubscriptionUpdateClearedMetadata {
    * subscription_id
    */
   subscription_id: string;
-} /**
+}
+/**
  * An event created by Polar when a subscription is updated.
  */
 export interface SubscriptionUpdatedEvent {
@@ -13387,7 +13730,8 @@ export interface SubscriptionUpdatedEvent {
    * metadata
    */
   metadata: SubscriptionUpdatedMetadata;
-} /**
+}
+/**
  * SubscriptionUpdatedMetadata
  */
 export interface SubscriptionUpdatedMetadata {
@@ -13419,7 +13763,8 @@ export interface SubscriptionUpdatedMetadata {
    * subscription_id
    */
   subscription_id: string;
-} /**
+}
+/**
  * File attached to a support case (private; fetched via presigned URL).
  */
 export interface SupportCaseAttachmentFileRead {
@@ -13487,7 +13832,8 @@ export interface SupportCaseAttachmentFileRead {
    * size_readable
    */
   size_readable: string;
-} /**
+}
+/**
  * TokenResponse
  */
 export interface TokenResponse {
@@ -13515,7 +13861,8 @@ export interface TokenResponse {
    * id_token
    */
   id_token?: string | null;
-} /**
+}
+/**
  * TrialAlreadyRedeemed
  */
 export interface TrialAlreadyRedeemed {
@@ -13527,7 +13874,8 @@ export interface TrialAlreadyRedeemed {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * Unauthorized
  */
 export interface Unauthorized {
@@ -13539,7 +13887,8 @@ export interface Unauthorized {
    * detail
    */
   detail: string;
-} /**
+}
+/**
  * UniqueAggregation
  */
 export interface UniqueAggregation {
@@ -13551,7 +13900,8 @@ export interface UniqueAggregation {
    * property
    */
   property: string;
-} /**
+}
+/**
  * An event you created through the ingestion API.
  */
 export interface UserEvent {
@@ -13611,7 +13961,8 @@ export interface UserEvent {
    * metadata
    */
   metadata: EventMetadataOutput;
-} /**
+}
+/**
  * UserInfoOrganization
  */
 export interface UserInfoOrganization {
@@ -13623,7 +13974,8 @@ export interface UserInfoOrganization {
    * name
    */
   name?: string | null;
-} /**
+}
+/**
  * UserInfoUser
  */
 export interface UserInfoUser {
@@ -13643,7 +13995,8 @@ export interface UserInfoUser {
    * email_verified
    */
   email_verified?: boolean | null;
-} /**
+}
+/**
  * ValidatedLicenseKey
  */
 export interface ValidatedLicenseKey {
@@ -13715,7 +14068,8 @@ export interface ValidatedLicenseKey {
    * activation
    */
   activation?: LicenseKeyActivationBase | null;
-} /**
+}
+/**
  * ValidationError
  */
 export interface ValidationError {
@@ -13739,7 +14093,8 @@ export interface ValidationError {
    * ctx
    */
   ctx?: Context;
-} /**
+}
+/**
  * A webhook delivery for a webhook event.
  */
 export interface WebhookDelivery {
@@ -13771,7 +14126,8 @@ export interface WebhookDelivery {
    * webhook_event
    */
   webhook_event: WebhookEvent;
-} /**
+}
+/**
  * A webhook endpoint.
  */
 export interface WebhookEndpoint {
@@ -13815,7 +14171,8 @@ export interface WebhookEndpoint {
    * Whether the webhook endpoint is enabled and will receive events.
    */
   enabled: boolean;
-} /**
+}
+/**
  * A webhook event.
 
 An event represent something that happened in the system
@@ -13862,6 +14219,7 @@ export interface WebhookEvent {
    */
   is_archived: boolean;
 }
+
 /**
  * Benefit
  */
@@ -13874,6 +14232,7 @@ export type Benefit =
   | BenefitMeterCredit
   | BenefitFeatureFlag
   | BenefitSlackSharedChannel;
+
 /**
  * CheckoutForbiddenError
  */
@@ -13882,6 +14241,7 @@ export type CheckoutForbiddenError =
   | NotOpenCheckout
   | PaymentNotReady
   | TrialAlreadyRedeemed;
+
 /**
  * CustomField
  */
@@ -13891,10 +14251,12 @@ export type CustomField =
   | CustomFieldDate
   | CustomFieldCheckbox
   | CustomFieldSelect;
+
 /**
  * Customer
  */
 export type Customer = CustomerIndividual | CustomerTeam;
+
 /**
  * CustomerBenefitGrant
  */
@@ -13907,20 +14269,24 @@ export type CustomerBenefitGrant =
   | CustomerBenefitGrantMeterCredit
   | CustomerBenefitGrantFeatureFlag
   | CustomerBenefitGrantSlackSharedChannel;
+
 /**
  * CustomerPaymentMethod
  */
 export type CustomerPaymentMethod = PaymentMethodCard | PaymentMethodGeneric;
+
 /**
  * CustomerPaymentMethodCreateResponse
  */
 export type CustomerPaymentMethodCreateResponse =
   | CustomerPaymentMethodCreateSucceededResponse
   | CustomerPaymentMethodCreateRequiresActionResponse;
+
 /**
  * CustomerState
  */
 export type CustomerState = CustomerStateIndividual | CustomerStateTeam;
+
 /**
  * Discount
  */
@@ -13929,6 +14295,7 @@ export type Discount =
   | DiscountFixedRepeatDuration
   | DiscountPercentageOnceForeverDuration
   | DiscountPercentageRepeatDuration;
+
 /**
  * FileRead
  */
@@ -13937,20 +14304,24 @@ export type FileRead =
   | ProductMediaFileRead
   | OrganizationAvatarFileRead
   | SupportCaseAttachmentFileRead;
+
 /**
  * LegacyRecurringProductPrice
  */
 export type LegacyRecurringProductPrice =
   | LegacyRecurringProductPriceFixed
   | LegacyRecurringProductPriceCustom;
+
 /**
  * Payment
  */
 export type Payment = CardPayment | GenericPayment;
+
 /**
  * PaymentMethod
  */
 export type PaymentMethod = CustomerPaymentMethodCard | CustomerPaymentMethodGeneric;
+
 /**
  * ProductPrice
  */
@@ -13959,6 +14330,7 @@ export type ProductPrice =
   | ProductPriceCustom
   | ProductPriceSeatBased
   | ProductPriceMeteredUnit;
+
 /**
  * SystemEvent
  */
@@ -13994,6 +14366,7 @@ export type SystemEvent =
   | BalanceRefundReversalEvent
   | BalanceDisputeEvent
   | BalanceDisputeReversalEvent;
+
 /**
  * Event
  */

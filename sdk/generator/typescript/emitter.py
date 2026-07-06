@@ -116,6 +116,9 @@ class TypeScriptEmitter(EmitterBase):
         self.copy_file(
             self.templates_dir / "tsdown.config.ts", root_directory / "tsdown.config.ts"
         )
+        self.copy_file(
+            self.templates_dir / "oxfmt.config.ts", root_directory / "oxfmt.config.ts"
+        )
         self.copy_file(self.templates_dir / "justfile", root_directory / "justfile")
         self.copy_file(self.templates_dir / "README.md", root_directory / "README.md")
 
@@ -256,7 +259,7 @@ class TypeScriptEmitter(EmitterBase):
 
         self.render_file("src/services/service.ts", service_path, context)
 
-    def _get_input_enum_imports(self) -> set[str]:
+    def _get_input_enum_imports(self) -> list[str]:
         """Collect all enum imports needed for input models."""
         enum_imports: set[str] = set()
         for model in self.ir.input_models:
@@ -265,7 +268,7 @@ class TypeScriptEmitter(EmitterBase):
         for union in self.ir.input_unions:
             for variant in union.variants:
                 collect_enum_imports(variant, enum_imports, self.ir)
-        return enum_imports
+        return sorted(enum_imports)
 
     def _get_output_enum_imports(self) -> set[str]:
         """Collect all enum imports needed for output models."""

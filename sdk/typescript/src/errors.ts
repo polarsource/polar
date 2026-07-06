@@ -1,4 +1,3 @@
-import { PolarClientError } from "./base";
 import type {
   AlreadyCanceledSubscription as AlreadyCanceledSubscriptionModel,
   AmbiguousExternalCustomerID as AmbiguousExternalCustomerIDModel,
@@ -28,6 +27,8 @@ import type {
   SubscriptionLocked as SubscriptionLockedModel,
   Unauthorized as UnauthorizedModel,
 } from "./models/outputs";
+
+import { PolarClientError } from "./base";
 /**
  * Validation Error
  */

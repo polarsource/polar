@@ -1,12 +1,13 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type {
   MetadataQuery,
   ProductBenefitsUpdate,
   ProductCreate,
   ProductUpdate,
 } from "../models/inputs";
-import type { ListResourceProduct, Product } from "../models/outputs";
 import type { ProductSortProperty, ProductVisibility } from "../models/literals";
+import type { ListResourceProduct, Product } from "../models/outputs";
+
 import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../errors";
 
 export const listProducts = (client: ClientBase) => {

@@ -1,11 +1,12 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { EventTypeUpdate } from "../models/inputs";
+import type { EventSource, EventTypesSortProperty } from "../models/literals";
 import type {
   EventType,
   EventTypeWithStats,
   ListResourceEventTypeWithStats,
 } from "../models/outputs";
-import type { EventSource, EventTypesSortProperty } from "../models/literals";
+
 import { HTTPValidationError, Update404Error } from "../errors";
 
 export const listEventTypes = (client: ClientBase) => {

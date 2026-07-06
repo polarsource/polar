@@ -1,6 +1,7 @@
-import { ClientBase } from "../base";
-import type { ListResourceMember, Member } from "../models/outputs";
+import type { ClientBase } from "../base";
 import type { MemberRole, MemberSortProperty } from "../models/literals";
+import type { ListResourceMember, Member } from "../models/outputs";
+
 import { HTTPValidationError } from "../errors";
 
 export const listMembersMembers = (client: ClientBase) => {

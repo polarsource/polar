@@ -1,6 +1,7 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type { MemberCreateFromCustomer, MemberUpdate } from "../../models/inputs";
 import type { Member } from "../../models/outputs";
+
 import {
   AmbiguousExternalCustomerID,
   HTTPValidationError,

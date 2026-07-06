@@ -1,7 +1,8 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { CustomFieldCreate, CustomFieldUpdate } from "../models/inputs";
-import type { CustomField, ListResourceCustomField } from "../models/outputs";
 import type { CustomFieldSortProperty, CustomFieldType } from "../models/literals";
+import type { CustomField, ListResourceCustomField } from "../models/outputs";
+
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listCustomFields = (client: ClientBase) => {

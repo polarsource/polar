@@ -1,6 +1,7 @@
-import { ClientBase } from "../base";
-import type { Dispute, ListResourceDispute } from "../models/outputs";
+import type { ClientBase } from "../base";
 import type { DisputeSortProperty, DisputeStatus } from "../models/literals";
+import type { Dispute, ListResourceDispute } from "../models/outputs";
+
 import { DisputeNotOpenError, HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listDisputes = (client: ClientBase) => {

@@ -1876,7 +1876,7 @@ class CardPayment:
     method: typing.Literal["card"]
     """The payment method used."""
 
-    trigger: PaymentTrigger | None = None
+    trigger: PaymentTrigger | None
     """What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry."""
 
     decline_reason: str | None
@@ -4113,39 +4113,39 @@ class CustomerSeat:
     id: str
     """The seat ID"""
 
-    subscription_id: str | None = None
+    subscription_id: str | None
     """The subscription ID (for recurring seats)"""
 
-    order_id: str | None = None
+    order_id: str | None
     """The order ID (for one-time purchase seats)"""
 
     status: SeatStatus
 
-    customer_id: str | None = None
+    customer_id: str | None
     """The customer ID. When member_model_enabled is true, this is the billing customer (purchaser). When false, this is the seat member customer."""
 
-    member_id: str | None = None
+    member_id: str | None
     """The member ID of the seat occupant"""
 
-    member: Member | None = None
+    member: Member | None
     """The member associated with this seat"""
 
-    email: str | None = None
+    email: str | None
     """Email of the seat member (set when member_model_enabled is true)"""
 
-    customer_email: str | None = None
+    customer_email: str | None
     """The assigned customer email"""
 
-    invitation_token_expires_at: str | None = None
+    invitation_token_expires_at: str | None
     """When the invitation token expires"""
 
-    claimed_at: str | None = None
+    claimed_at: str | None
     """When the seat was claimed"""
 
-    revoked_at: str | None = None
+    revoked_at: str | None
     """When the seat was revoked"""
 
-    seat_metadata: dict[str, typing.Any] | None = None
+    seat_metadata: dict[str, typing.Any] | None
     """Additional metadata for the seat"""
 
 
@@ -5600,7 +5600,7 @@ class GenericPayment:
     method: str
     """The payment method used."""
 
-    trigger: PaymentTrigger | None = None
+    trigger: PaymentTrigger | None
     """What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry."""
 
     decline_reason: str | None
@@ -7587,6 +7587,9 @@ class OrganizationFeatureSettings:
     sso_enabled: bool = False
     """If this organization has single sign-on configuration enabled"""
 
+    compass_enabled: bool = False
+    """If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard"""
+
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class OrganizationNotReadyForPayments:
@@ -7956,10 +7959,10 @@ class ProductPriceMeter:
 
     unit: MeterUnit
 
-    custom_label: str | None = None
+    custom_label: str | None
     """The label for the custom unit."""
 
-    custom_multiplier: int | None = None
+    custom_multiplier: int | None
     """The multiplier to convert from base unit to display scale."""
 
 

@@ -1,16 +1,17 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type {
   MetadataQuery,
   SubscriptionCreateCustomer,
   SubscriptionCreateExternalCustomer,
   SubscriptionUpdate,
 } from "../models/inputs";
-import type { ListResourceSubscription, Subscription } from "../models/outputs";
 import type {
   CustomerCancellationReason,
   SubscriptionSortProperty,
   SubscriptionStatus,
 } from "../models/literals";
+import type { ListResourceSubscription, Subscription } from "../models/outputs";
+
 import {
   AlreadyCanceledSubscription,
   HTTPValidationError,

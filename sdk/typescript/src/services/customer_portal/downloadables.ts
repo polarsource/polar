@@ -1,5 +1,6 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type { DownloadableRead, ListResourceDownloadableRead } from "../../models/outputs";
+
 import { HTTPValidationError } from "../../errors";
 
 export const listDownloadables = (client: ClientBase) => {

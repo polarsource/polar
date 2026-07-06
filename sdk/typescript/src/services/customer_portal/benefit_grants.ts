@@ -1,7 +1,8 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type { CustomerBenefitGrantUpdate } from "../../models/inputs";
-import type { CustomerBenefitGrant, ListResourceCustomerBenefitGrant } from "../../models/outputs";
 import type { BenefitType, CustomerBenefitGrantSortProperty } from "../../models/literals";
+import type { CustomerBenefitGrant, ListResourceCustomerBenefitGrant } from "../../models/outputs";
+
 import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../../errors";
 
 export const listBenefitGrants = (client: ClientBase) => {

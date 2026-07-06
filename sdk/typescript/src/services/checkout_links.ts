@@ -1,7 +1,8 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { CheckoutLinkCreate, CheckoutLinkUpdate } from "../models/inputs";
-import type { CheckoutLink, ListResourceCheckoutLink } from "../models/outputs";
 import type { CheckoutLinkSortProperty } from "../models/literals";
+import type { CheckoutLink, ListResourceCheckoutLink } from "../models/outputs";
+
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listCheckoutLinks = (client: ClientBase) => {

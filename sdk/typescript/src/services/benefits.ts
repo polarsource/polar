@@ -1,4 +1,4 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type {
   BenefitCreate,
   BenefitCustomUpdate,
@@ -11,13 +11,14 @@ import type {
   BenefitSlackSharedChannelUpdate,
   MetadataQuery,
 } from "../models/inputs";
+import type { BenefitSortProperty, BenefitType } from "../models/literals";
 import type {
   Benefit,
   BenefitGrant,
   ListResourceBenefit,
   ListResourceBenefitGrant,
 } from "../models/outputs";
-import type { BenefitSortProperty, BenefitType } from "../models/literals";
+
 import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../errors";
 
 export const listBenefits = (client: ClientBase) => {

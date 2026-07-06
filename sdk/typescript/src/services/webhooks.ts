@@ -1,12 +1,13 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { WebhookEndpointCreate, WebhookEndpointUpdate } from "../models/inputs";
+import type { WebhookEventType } from "../models/literals";
 import type {
   ListResourceWebhookDelivery,
   ListResourceWebhookEndpoint,
   WebhookDelivery,
   WebhookEndpoint,
 } from "../models/outputs";
-import type { WebhookEventType } from "../models/literals";
+
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listWebhookEndpointsWebhooks = (client: ClientBase) => {

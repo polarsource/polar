@@ -1,5 +1,6 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type { CustomerOrderConfirmPayment, CustomerOrderUpdate } from "../../models/inputs";
+import type { CustomerOrderSortProperty, ProductBillingType } from "../../models/literals";
 import type {
   CustomerOrder,
   CustomerOrderInvoice,
@@ -8,7 +9,7 @@ import type {
   CustomerOrderReceipt,
   ListResourceCustomerOrder,
 } from "../../models/outputs";
-import type { CustomerOrderSortProperty, ProductBillingType } from "../../models/literals";
+
 import {
   HTTPValidationError,
   ManualRetryLimitExceeded,

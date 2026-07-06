@@ -12,6 +12,7 @@ export interface {{ model.name }}{% if model.fields %} {
   {{ field.name }}{{ "?" if not field.required }}: {{ field.type | ts_type }};
   {% endfor %}
 }{% else %} extends Record<string, never> {}{% endif %}
+
 {% endfor %}
 
 {% for union in unions %}
@@ -19,4 +20,5 @@ export interface {{ model.name }}{% if model.fields %} {
  * {{ union.description or union.name }}
  */
 export type {{ union.name }} = {% if union.variants %}{% for variant in union.variants %}{{ variant | ts_type }}{% if not loop.last %} | {% endif %}{% endfor %}{% else %}unknown{% endif %};
+
 {% endfor %}

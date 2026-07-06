@@ -1,6 +1,7 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { FileCreate, FilePatch, FileUploadCompleted } from "../models/inputs";
 import type { FileRead, FileUpload, ListResourceFileRead } from "../models/outputs";
+
 import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../errors";
 
 export const listFiles = (client: ClientBase) => {

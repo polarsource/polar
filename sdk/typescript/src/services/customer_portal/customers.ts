@@ -1,4 +1,4 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
 import type {
   CustomerEmailUpdateRequest,
   CustomerEmailUpdateVerifyRequest,
@@ -13,6 +13,7 @@ import type {
   CustomerPortalCustomer,
   ListResourceCustomerPaymentMethod,
 } from "../../models/outputs";
+
 import {
   CheckEmailUpdate401Error,
   CustomerNotReady,

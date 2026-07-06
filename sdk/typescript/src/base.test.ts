@@ -1,4 +1,5 @@
 import { describe, expect, test } from "vitest";
+
 import { ClientBase } from "./base";
 
 const client = new ClientBase({

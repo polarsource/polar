@@ -1,6 +1,7 @@
-import { ClientBase } from "../base";
-import type { ListResourcePayment, Payment } from "../models/outputs";
+import type { ClientBase } from "../base";
 import type { PaymentSortProperty, PaymentStatus } from "../models/literals";
+import type { ListResourcePayment, Payment } from "../models/outputs";
+
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listPayments = (client: ClientBase) => {

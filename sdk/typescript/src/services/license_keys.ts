@@ -1,10 +1,11 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type {
   LicenseKeyActivate,
   LicenseKeyDeactivate,
   LicenseKeyUpdate,
   LicenseKeyValidate,
 } from "../models/inputs";
+import type { LicenseKeyStatus } from "../models/literals";
 import type {
   LicenseKeyActivationRead,
   LicenseKeyRead,
@@ -12,7 +13,7 @@ import type {
   ListResourceLicenseKeyRead,
   ValidatedLicenseKey,
 } from "../models/outputs";
-import type { LicenseKeyStatus } from "../models/literals";
+
 import { HTTPValidationError, NotPermitted, ResourceNotFound, Unauthorized } from "../errors";
 
 export const listLicenseKeys = (client: ClientBase) => {

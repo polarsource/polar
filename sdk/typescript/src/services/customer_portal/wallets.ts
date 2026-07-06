@@ -1,6 +1,7 @@
-import { ClientBase } from "../../base";
-import type { CustomerWallet, ListResourceCustomerWallet } from "../../models/outputs";
+import type { ClientBase } from "../../base";
 import type { CustomerWalletSortProperty } from "../../models/literals";
+import type { CustomerWallet, ListResourceCustomerWallet } from "../../models/outputs";
+
 import { HTTPValidationError, ResourceNotFound } from "../../errors";
 
 export const listWallets = (client: ClientBase) => {

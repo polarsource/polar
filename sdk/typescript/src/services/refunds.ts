@@ -1,7 +1,8 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { RefundCreate } from "../models/inputs";
-import type { ListResourceRefund, Refund } from "../models/outputs";
 import type { RefundSortProperty } from "../models/literals";
+import type { ListResourceRefund, Refund } from "../models/outputs";
+
 import { HTTPValidationError, RefundedAlready } from "../errors";
 
 export const listRefunds = (client: ClientBase) => {

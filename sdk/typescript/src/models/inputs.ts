@@ -1,34 +1,34 @@
 import type {
-  RecurringInterval,
-  TrialInterval,
-  PresentmentCurrency,
-  DiscountDuration,
-  Timeframe,
-  Permission,
-  LicenseKeyStatus,
-  Role,
-  CountryAlpha2Input,
-  CustomerType,
-  PublicSubscriptionProrationBehavior,
-  MemberRole,
-  ProductVisibility,
-  FilterOperator,
-  DiscountType,
-  TaxBehaviorOption,
-  SubType,
   BenefitVisibility,
-  WebhookFormat,
-  Reason,
-  MeterUnit,
-  SubscriptionProrationBehavior,
-  TokenEndpointAuthMethod,
-  WebhookEventType,
-  OrganizationSocialPlatforms,
-  SeatTierType,
+  CountryAlpha2Input,
   CustomerCancellationReason,
-  Func,
-  PaymentProcessor,
+  CustomerType,
+  DiscountDuration,
+  DiscountType,
   FilterConjunction,
+  FilterOperator,
+  Func,
+  LicenseKeyStatus,
+  MemberRole,
+  MeterUnit,
+  OrganizationSocialPlatforms,
+  PaymentProcessor,
+  Permission,
+  PresentmentCurrency,
+  ProductVisibility,
+  PublicSubscriptionProrationBehavior,
+  Reason,
+  RecurringInterval,
+  Role,
+  SeatTierType,
+  SubType,
+  SubscriptionProrationBehavior,
+  TaxBehaviorOption,
+  Timeframe,
+  TokenEndpointAuthMethod,
+  TrialInterval,
+  WebhookEventType,
+  WebhookFormat,
 } from "./literals";
 /**
  * AddressInput
@@ -58,7 +58,8 @@ export interface AddressInput {
    * country
    */
   country: CountryAlpha2Input;
-} /**
+}
+/**
  * Schema to attach a custom field to a resource.
  */
 export interface AttachedCustomFieldCreate {
@@ -70,7 +71,8 @@ export interface AttachedCustomFieldCreate {
    * Whether the value is required for this custom field.
    */
   required: boolean;
-} /**
+}
+/**
  * Schema to create a benefit of type `custom`.
  */
 export interface BenefitCustomCreate {
@@ -108,7 +110,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties: BenefitCustomCreateProperties;
-} /**
+}
+/**
  * Properties for creating a benefit of type `custom`.
  */
 export interface BenefitCustomCreateProperties {
@@ -116,7 +119,8 @@ export interface BenefitCustomCreateProperties {
    * note
    */
   note?: (string | null) | null;
-} /**
+}
+/**
  * Properties for a benefit of type `custom`.
  */
 export interface BenefitCustomProperties {
@@ -124,7 +128,8 @@ export interface BenefitCustomProperties {
    * note
    */
   note: (string | null) | null;
-} /**
+}
+/**
  * BenefitCustomUpdate
  */
 export interface BenefitCustomUpdate {
@@ -158,7 +163,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties?: BenefitCustomProperties | null;
-} /**
+}
+/**
  * BenefitDiscordCreate
  */
 export interface BenefitDiscordCreate {
@@ -196,7 +202,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties: BenefitDiscordCreateProperties;
-} /**
+}
+/**
  * Properties to create a benefit of type `discord`.
  */
 export interface BenefitDiscordCreateProperties {
@@ -212,7 +219,8 @@ export interface BenefitDiscordCreateProperties {
    * Whether to kick the member from the Discord server on revocation.
    */
   kick_member: boolean;
-} /**
+}
+/**
  * BenefitDiscordUpdate
  */
 export interface BenefitDiscordUpdate {
@@ -242,7 +250,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties?: BenefitDiscordCreateProperties | null;
-} /**
+}
+/**
  * BenefitDownloadablesCreate
  */
 export interface BenefitDownloadablesCreate {
@@ -280,7 +289,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties: BenefitDownloadablesCreateProperties;
-} /**
+}
+/**
  * BenefitDownloadablesCreateProperties
  */
 export interface BenefitDownloadablesCreateProperties {
@@ -292,7 +302,8 @@ export interface BenefitDownloadablesCreateProperties {
    * files
    */
   files: string[];
-} /**
+}
+/**
  * BenefitDownloadablesUpdate
  */
 export interface BenefitDownloadablesUpdate {
@@ -322,7 +333,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties?: BenefitDownloadablesCreateProperties | null;
-} /**
+}
+/**
  * Schema to create a benefit of type `feature_flag`.
  */
 export interface BenefitFeatureFlagCreate {
@@ -360,13 +372,16 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties: BenefitFeatureFlagCreateProperties;
-} /**
+}
+/**
  * Properties for creating a benefit of type `feature_flag`.
  */
-export interface BenefitFeatureFlagCreateProperties extends Record<string, never> {} /**
+export interface BenefitFeatureFlagCreateProperties extends Record<string, never> {}
+/**
  * Properties for a benefit of type `feature_flag`.
  */
-export interface BenefitFeatureFlagProperties extends Record<string, never> {} /**
+export interface BenefitFeatureFlagProperties extends Record<string, never> {}
+/**
  * BenefitFeatureFlagUpdate
  */
 export interface BenefitFeatureFlagUpdate {
@@ -400,7 +415,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties?: BenefitFeatureFlagProperties | null;
-} /**
+}
+/**
  * BenefitGitHubRepositoryCreate
  */
 export interface BenefitGitHubRepositoryCreate {
@@ -438,7 +454,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties: BenefitGitHubRepositoryCreateProperties;
-} /**
+}
+/**
  * Properties to create a benefit of type `github_repository`.
  */
 export interface BenefitGitHubRepositoryCreateProperties {
@@ -454,7 +471,8 @@ export interface BenefitGitHubRepositoryCreateProperties {
    * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
    */
   permission: Permission;
-} /**
+}
+/**
  * BenefitGitHubRepositoryUpdate
  */
 export interface BenefitGitHubRepositoryUpdate {
@@ -484,7 +502,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties?: BenefitGitHubRepositoryCreateProperties | null;
-} /**
+}
+/**
  * BenefitLicenseKeyActivationCreateProperties
  */
 export interface BenefitLicenseKeyActivationCreateProperties {
@@ -496,7 +515,8 @@ export interface BenefitLicenseKeyActivationCreateProperties {
    * enable_customer_admin
    */
   enable_customer_admin: boolean;
-} /**
+}
+/**
  * BenefitLicenseKeyExpirationProperties
  */
 export interface BenefitLicenseKeyExpirationProperties {
@@ -508,7 +528,8 @@ export interface BenefitLicenseKeyExpirationProperties {
    * timeframe
    */
   timeframe: Timeframe;
-} /**
+}
+/**
  * BenefitLicenseKeysCreate
  */
 export interface BenefitLicenseKeysCreate {
@@ -546,7 +567,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties: BenefitLicenseKeysCreateProperties;
-} /**
+}
+/**
  * BenefitLicenseKeysCreateProperties
  */
 export interface BenefitLicenseKeysCreateProperties {
@@ -566,7 +588,8 @@ export interface BenefitLicenseKeysCreateProperties {
    * limit_usage
    */
   limit_usage?: number | null;
-} /**
+}
+/**
  * BenefitLicenseKeysUpdate
  */
 export interface BenefitLicenseKeysUpdate {
@@ -600,7 +623,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties?: BenefitLicenseKeysCreateProperties | null;
-} /**
+}
+/**
  * Schema to create a benefit of type `meter_unit`.
  */
 export interface BenefitMeterCreditCreate {
@@ -638,7 +662,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties: BenefitMeterCreditCreateProperties;
-} /**
+}
+/**
  * Properties for creating a benefit of type `meter_unit`.
  */
 export interface BenefitMeterCreditCreateProperties {
@@ -654,7 +679,8 @@ export interface BenefitMeterCreditCreateProperties {
    * meter_id
    */
   meter_id: string;
-} /**
+}
+/**
  * BenefitMeterCreditUpdate
  */
 export interface BenefitMeterCreditUpdate {
@@ -688,7 +714,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties?: BenefitMeterCreditCreateProperties | null;
-} /**
+}
+/**
  * BenefitSlackSharedChannelCreate
  */
 export interface BenefitSlackSharedChannelCreate {
@@ -726,7 +753,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties: BenefitSlackSharedChannelCreateProperties;
-} /**
+}
+/**
  * BenefitSlackSharedChannelCreateProperties
  */
 export interface BenefitSlackSharedChannelCreateProperties {
@@ -754,7 +782,8 @@ export interface BenefitSlackSharedChannelCreateProperties {
    * team_invitees
    */
   team_invitees?: string[];
-} /**
+}
+/**
  * BenefitSlackSharedChannelUpdate
  */
 export interface BenefitSlackSharedChannelUpdate {
@@ -784,7 +813,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties?: BenefitSlackSharedChannelCreateProperties | null;
-} /**
+}
+/**
  * Confirm a checkout session using a Stripe confirmation token.
  */
 export interface CheckoutConfirmStripe {
@@ -848,7 +878,8 @@ export interface CheckoutConfirmStripe {
    * ID of the Stripe confirmation token. Required for fixed prices and custom prices.
    */
   confirmation_token_id?: string | null;
-} /**
+}
+/**
  * Create a new checkout session from a list of products.
 Customers will be able to switch between those products.
 
@@ -1004,7 +1035,8 @@ You can store up to **50 key-value pairs**.
       | ProductPriceMeteredUnitCreate
     )[]
   > | null;
-} /**
+}
+/**
  * Schema to create a new checkout link from a a single product.
 
 **Deprecated**: Use `CheckoutLinkCreateProducts` instead.
@@ -1068,7 +1100,8 @@ You can store up to **50 key-value pairs**.
    * product_id
    */
   product_id: string;
-} /**
+}
+/**
  * Schema to create a new checkout link from a a single product price.
 
 **Deprecated**: Use `CheckoutLinkCreateProducts` instead.
@@ -1132,7 +1165,8 @@ You can store up to **50 key-value pairs**.
    * product_price_id
    */
   product_price_id: string;
-} /**
+}
+/**
  * Schema to create a new checkout link.
  */
 export interface CheckoutLinkCreateProducts {
@@ -1194,7 +1228,8 @@ You can store up to **50 key-value pairs**.
    * List of products that will be available to select at checkout.
    */
   products: string[];
-} /**
+}
+/**
  * Schema to update an existing checkout link.
  */
 export interface CheckoutLinkUpdate {
@@ -1252,7 +1287,8 @@ You can store up to **50 key-value pairs**.
    * When set, a back button will be shown in the checkout to return to this URL.
    */
   return_url?: string | null;
-} /**
+}
+/**
  * Update an existing checkout session using an access token.
  */
 export interface CheckoutUpdate {
@@ -1376,7 +1412,8 @@ You can store up to **50 key-value pairs**.
    * If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
    */
   embed_origin?: string | null;
-} /**
+}
+/**
  * Update an existing checkout session using the client secret.
  */
 export interface CheckoutUpdatePublic {
@@ -1436,7 +1473,8 @@ export interface CheckoutUpdatePublic {
    * Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one.
    */
   allow_trial?: false | null;
-} /**
+}
+/**
  * CostMetadataInput
  */
 export interface CostMetadataInput {
@@ -1448,7 +1486,8 @@ export interface CostMetadataInput {
    * The currency. Currently, only `usd` is supported.
    */
   currency: string;
-} /**
+}
+/**
  * CountAggregation
  */
 export interface CountAggregation {
@@ -1456,7 +1495,8 @@ export interface CountAggregation {
    * func
    */
   func?: "count";
-} /**
+}
+/**
  * CustomFieldCheckboxProperties
  */
 export interface CustomFieldCheckboxProperties {
@@ -1472,7 +1512,8 @@ export interface CustomFieldCheckboxProperties {
    * form_placeholder
    */
   form_placeholder?: string;
-} /**
+}
+/**
  * Schema to create a custom field of type checkbox.
  */
 export interface CustomFieldCreateCheckbox {
@@ -1510,7 +1551,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties: CustomFieldCheckboxProperties;
-} /**
+}
+/**
  * Schema to create a custom field of type date.
  */
 export interface CustomFieldCreateDate {
@@ -1548,7 +1590,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties: CustomFieldDateProperties;
-} /**
+}
+/**
  * Schema to create a custom field of type number.
  */
 export interface CustomFieldCreateNumber {
@@ -1586,7 +1629,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties: CustomFieldNumberProperties;
-} /**
+}
+/**
  * Schema to create a custom field of type select.
  */
 export interface CustomFieldCreateSelect {
@@ -1624,7 +1668,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties: CustomFieldSelectProperties;
-} /**
+}
+/**
  * Schema to create a custom field of type text.
  */
 export interface CustomFieldCreateText {
@@ -1662,7 +1707,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties: CustomFieldTextProperties;
-} /**
+}
+/**
  * CustomFieldDateProperties
  */
 export interface CustomFieldDateProperties {
@@ -1686,7 +1732,8 @@ export interface CustomFieldDateProperties {
    * le
    */
   le?: number;
-} /**
+}
+/**
  * CustomFieldNumberProperties
  */
 export interface CustomFieldNumberProperties {
@@ -1710,7 +1757,8 @@ export interface CustomFieldNumberProperties {
    * le
    */
   le?: number;
-} /**
+}
+/**
  * CustomFieldSelectOption
  */
 export interface CustomFieldSelectOption {
@@ -1722,7 +1770,8 @@ export interface CustomFieldSelectOption {
    * label
    */
   label: string;
-} /**
+}
+/**
  * CustomFieldSelectProperties
  */
 export interface CustomFieldSelectProperties {
@@ -1742,7 +1791,8 @@ export interface CustomFieldSelectProperties {
    * options
    */
   options: CustomFieldSelectOption[];
-} /**
+}
+/**
  * CustomFieldTextProperties
  */
 export interface CustomFieldTextProperties {
@@ -1770,7 +1820,8 @@ export interface CustomFieldTextProperties {
    * max_length
    */
   max_length?: number;
-} /**
+}
+/**
  * Schema to update a custom field of type checkbox.
  */
 export interface CustomFieldUpdateCheckbox {
@@ -1804,7 +1855,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties?: CustomFieldCheckboxProperties | null;
-} /**
+}
+/**
  * Schema to update a custom field of type date.
  */
 export interface CustomFieldUpdateDate {
@@ -1838,7 +1890,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties?: CustomFieldDateProperties | null;
-} /**
+}
+/**
  * Schema to update a custom field of type number.
  */
 export interface CustomFieldUpdateNumber {
@@ -1872,7 +1925,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties?: CustomFieldNumberProperties | null;
-} /**
+}
+/**
  * Schema to update a custom field of type select.
  */
 export interface CustomFieldUpdateSelect {
@@ -1906,7 +1960,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties?: CustomFieldSelectProperties | null;
-} /**
+}
+/**
  * Schema to update a custom field of type text.
  */
 export interface CustomFieldUpdateText {
@@ -1940,7 +1995,8 @@ You can store up to **50 key-value pairs**.
    * properties
    */
   properties?: CustomFieldTextProperties | null;
-} /**
+}
+/**
  * CustomerBenefitGrantCustomUpdate
  */
 export interface CustomerBenefitGrantCustomUpdate {
@@ -1948,7 +2004,8 @@ export interface CustomerBenefitGrantCustomUpdate {
    * benefit_type
    */
   benefit_type: "custom";
-} /**
+}
+/**
  * CustomerBenefitGrantDiscordPropertiesUpdate
  */
 export interface CustomerBenefitGrantDiscordPropertiesUpdate {
@@ -1956,7 +2013,8 @@ export interface CustomerBenefitGrantDiscordPropertiesUpdate {
    * account_id
    */
   account_id: string | null;
-} /**
+}
+/**
  * CustomerBenefitGrantDiscordUpdate
  */
 export interface CustomerBenefitGrantDiscordUpdate {
@@ -1968,7 +2026,8 @@ export interface CustomerBenefitGrantDiscordUpdate {
    * properties
    */
   properties: CustomerBenefitGrantDiscordPropertiesUpdate;
-} /**
+}
+/**
  * CustomerBenefitGrantDownloadablesUpdate
  */
 export interface CustomerBenefitGrantDownloadablesUpdate {
@@ -1976,7 +2035,8 @@ export interface CustomerBenefitGrantDownloadablesUpdate {
    * benefit_type
    */
   benefit_type: "downloadables";
-} /**
+}
+/**
  * CustomerBenefitGrantFeatureFlagUpdate
  */
 export interface CustomerBenefitGrantFeatureFlagUpdate {
@@ -1984,7 +2044,8 @@ export interface CustomerBenefitGrantFeatureFlagUpdate {
    * benefit_type
    */
   benefit_type: "feature_flag";
-} /**
+}
+/**
  * CustomerBenefitGrantGitHubRepositoryPropertiesUpdate
  */
 export interface CustomerBenefitGrantGitHubRepositoryPropertiesUpdate {
@@ -1992,7 +2053,8 @@ export interface CustomerBenefitGrantGitHubRepositoryPropertiesUpdate {
    * account_id
    */
   account_id: string | null;
-} /**
+}
+/**
  * CustomerBenefitGrantGitHubRepositoryUpdate
  */
 export interface CustomerBenefitGrantGitHubRepositoryUpdate {
@@ -2004,7 +2066,8 @@ export interface CustomerBenefitGrantGitHubRepositoryUpdate {
    * properties
    */
   properties: CustomerBenefitGrantGitHubRepositoryPropertiesUpdate;
-} /**
+}
+/**
  * CustomerBenefitGrantLicenseKeysUpdate
  */
 export interface CustomerBenefitGrantLicenseKeysUpdate {
@@ -2012,7 +2075,8 @@ export interface CustomerBenefitGrantLicenseKeysUpdate {
    * benefit_type
    */
   benefit_type: "license_keys";
-} /**
+}
+/**
  * CustomerBenefitGrantMeterCreditUpdate
  */
 export interface CustomerBenefitGrantMeterCreditUpdate {
@@ -2020,7 +2084,8 @@ export interface CustomerBenefitGrantMeterCreditUpdate {
    * benefit_type
    */
   benefit_type: "meter_credit";
-} /**
+}
+/**
  * CustomerBenefitGrantSlackSharedChannelPropertiesUpdate
  */
 export interface CustomerBenefitGrantSlackSharedChannelPropertiesUpdate {
@@ -2028,7 +2093,8 @@ export interface CustomerBenefitGrantSlackSharedChannelPropertiesUpdate {
    * invited_email
    */
   invited_email: string;
-} /**
+}
+/**
  * CustomerBenefitGrantSlackSharedChannelUpdate
  */
 export interface CustomerBenefitGrantSlackSharedChannelUpdate {
@@ -2040,7 +2106,8 @@ export interface CustomerBenefitGrantSlackSharedChannelUpdate {
    * properties
    */
   properties: CustomerBenefitGrantSlackSharedChannelPropertiesUpdate;
-} /**
+}
+/**
  * CustomerEmailUpdateRequest
  */
 export interface CustomerEmailUpdateRequest {
@@ -2048,7 +2115,8 @@ export interface CustomerEmailUpdateRequest {
    * email
    */
   email: string;
-} /**
+}
+/**
  * CustomerEmailUpdateVerifyRequest
  */
 export interface CustomerEmailUpdateVerifyRequest {
@@ -2056,7 +2124,8 @@ export interface CustomerEmailUpdateVerifyRequest {
    * token
    */
   token: string;
-} /**
+}
+/**
  * CustomerIndividualCreate
  */
 export interface CustomerIndividualCreate {
@@ -2110,7 +2179,8 @@ You can store up to **50 key-value pairs**.
    * The email address of the customer. This must be unique within the organization.
    */
   email: string;
-} /**
+}
+/**
  * Schema to confirm a retry payment using either a saved payment method or a new confirmation token.
  */
 export interface CustomerOrderConfirmPayment {
@@ -2126,7 +2196,8 @@ export interface CustomerOrderConfirmPayment {
    * payment_processor
    */
   payment_processor?: PaymentProcessor;
-} /**
+}
+/**
  * Schema to update an order.
  */
 export interface CustomerOrderUpdate {
@@ -2138,7 +2209,8 @@ export interface CustomerOrderUpdate {
    * The address of the customer that should appear on the invoice. Country and state fields cannot be updated.
    */
   billing_address?: AddressInput | null;
-} /**
+}
+/**
  * CustomerPaymentMethodConfirm
  */
 export interface CustomerPaymentMethodConfirm {
@@ -2150,7 +2222,8 @@ export interface CustomerPaymentMethodConfirm {
    * set_default
    */
   set_default: boolean;
-} /**
+}
+/**
  * CustomerPaymentMethodCreate
  */
 export interface CustomerPaymentMethodCreate {
@@ -2166,7 +2239,8 @@ export interface CustomerPaymentMethodCreate {
    * return_url
    */
   return_url: string;
-} /**
+}
+/**
  * CustomerPortalCustomerSettings
  */
 export interface CustomerPortalCustomerSettings {
@@ -2174,7 +2248,8 @@ export interface CustomerPortalCustomerSettings {
    * allow_email_change
    */
   allow_email_change?: boolean;
-} /**
+}
+/**
  * CustomerPortalCustomerUpdate
  */
 export interface CustomerPortalCustomerUpdate {
@@ -2194,7 +2269,8 @@ export interface CustomerPortalCustomerUpdate {
    * default_payment_method_id
    */
   default_payment_method_id?: string | null;
-} /**
+}
+/**
  * Schema for adding a new member to the customer's team.
  */
 export interface CustomerPortalMemberCreate {
@@ -2210,7 +2286,8 @@ export interface CustomerPortalMemberCreate {
    * role
    */
   role?: MemberRole;
-} /**
+}
+/**
  * Schema for updating a member in the customer portal.
  */
 export interface CustomerPortalMemberUpdate {
@@ -2222,7 +2299,8 @@ export interface CustomerPortalMemberUpdate {
    * The new role for the member.
    */
   role?: MemberRole | null;
-} /**
+}
+/**
  * CustomerPortalSubscriptionSettings
  */
 export interface CustomerPortalSubscriptionSettings {
@@ -2234,7 +2312,8 @@ export interface CustomerPortalSubscriptionSettings {
    * update_plan
    */
   update_plan: boolean;
-} /**
+}
+/**
  * CustomerPortalUsageSettings
  */
 export interface CustomerPortalUsageSettings {
@@ -2242,7 +2321,8 @@ export interface CustomerPortalUsageSettings {
    * show
    */
   show: boolean;
-} /**
+}
+/**
  * CustomerSeatAssign
  */
 export interface CustomerSeatAssign {
@@ -2286,7 +2366,8 @@ export interface CustomerSeatAssign {
    * Checkout ID. Resolves to the subscription or order produced by the checkout.
    */
   checkout_id?: string | null;
-} /**
+}
+/**
  * Schema for creating a customer session using an external customer ID.
  */
 export interface CustomerSessionCustomerExternalIDCreate {
@@ -2306,7 +2387,8 @@ export interface CustomerSessionCustomerExternalIDCreate {
    * External ID of the customer to create a session for.
    */
   external_customer_id: string;
-} /**
+}
+/**
  * Schema for creating a customer session using a customer ID.
  */
 export interface CustomerSessionCustomerIDCreate {
@@ -2326,7 +2408,8 @@ export interface CustomerSessionCustomerIDCreate {
    * ID of the customer to create a session for.
    */
   customer_id: string;
-} /**
+}
+/**
  * CustomerSubscriptionCancel
  */
 export interface CustomerSubscriptionCancel {
@@ -2353,7 +2436,8 @@ Or uncancel a subscription currently set to be revoked at period end.
    * Customer feedback and why they decided to cancel.
    */
   cancellation_comment?: string | null;
-} /**
+}
+/**
  * CustomerSubscriptionUpdateClear
  */
 export interface CustomerSubscriptionUpdateClear {
@@ -2361,7 +2445,8 @@ export interface CustomerSubscriptionUpdateClear {
    * Clear the pending subscription update.
    */
   pending_update: null;
-} /**
+}
+/**
  * CustomerSubscriptionUpdateProduct
  */
 export interface CustomerSubscriptionUpdateProduct {
@@ -2369,7 +2454,8 @@ export interface CustomerSubscriptionUpdateProduct {
    * Update subscription to another product.
    */
   product_id: string;
-} /**
+}
+/**
  * CustomerSubscriptionUpdateSeats
  */
 export interface CustomerSubscriptionUpdateSeats {
@@ -2381,7 +2467,8 @@ export interface CustomerSubscriptionUpdateSeats {
    * Determine how to handle the proration billing. If not provided, will use the default organization setting.
    */
   proration_behavior?: SubscriptionProrationBehavior | null;
-} /**
+}
+/**
  * CustomerTeamCreate
  */
 export interface CustomerTeamCreate {
@@ -2435,7 +2522,8 @@ You can store up to **50 key-value pairs**.
    * The email address of the team customer. Optional for team customers — if omitted, an owner with an email must be provided.
    */
   email?: string | null;
-} /**
+}
+/**
  * CustomerUpdate
  */
 export interface CustomerUpdate {
@@ -2481,7 +2569,8 @@ You can store up to **50 key-value pairs**.
    * The customer type. Can only be upgraded from 'individual' to 'team', never downgraded.
    */
   type?: CustomerType | null;
-} /**
+}
+/**
  * CustomerUpdateExternalID
  */
 export interface CustomerUpdateExternalID {
@@ -2519,7 +2608,8 @@ You can store up to **50 key-value pairs**.
    * locale
    */
   locale?: string | null;
-} /**
+}
+/**
  * Schema to create a fixed amount discount.
  */
 export interface DiscountFixedCreate {
@@ -2594,7 +2684,8 @@ For example, to apply the discount for 2 years, set this to 24.
    * amounts
    */
   amounts?: Record<string, number> | null;
-} /**
+}
+/**
  * Schema to create a percentage discount.
  */
 export interface DiscountPercentageCreate {
@@ -2664,7 +2755,8 @@ A basis point is 1/100th of a percent.
 For example, to create a 25.5% discount, set this to 2550.
    */
   basis_points: number;
-} /**
+}
+/**
  * Schema to update a discount.
  */
 export interface DiscountUpdate {
@@ -2734,7 +2826,8 @@ You can store up to **50 key-value pairs**.
    * products
    */
   products?: string[] | null;
-} /**
+}
+/**
  * Schema to create a file to be associated with the downloadables benefit.
  */
 export interface DownloadableFileCreate {
@@ -2770,7 +2863,8 @@ export interface DownloadableFileCreate {
    * version
    */
   version?: string | null;
-} /**
+}
+/**
  * EventCreateCustomer
  */
 export interface EventCreateCustomer {
@@ -2806,7 +2900,8 @@ export interface EventCreateCustomer {
    * ID of the member within the customer's organization who performed the action. Used for member-level attribution in B2B.
    */
   member_id?: string | null;
-} /**
+}
+/**
  * EventCreateExternalCustomer
  */
 export interface EventCreateExternalCustomer {
@@ -2842,7 +2937,8 @@ export interface EventCreateExternalCustomer {
    * ID of the member in your system within the customer's organization who performed the action. Used for member-level attribution in B2B.
    */
   external_member_id?: string | null;
-} /**
+}
+/**
  * EventMetadataInput
  */
 export interface EventMetadataInput {
@@ -2854,7 +2950,8 @@ export interface EventMetadataInput {
    * _llm
    */
   _llm?: LLMMetadata;
-} /**
+}
+/**
  * EventTypeUpdate
  */
 export interface EventTypeUpdate {
@@ -2866,7 +2963,8 @@ export interface EventTypeUpdate {
    * Property path to extract dynamic label from event metadata (e.g., 'subject' or 'metadata.subject').
    */
   label_property_selector?: string | null;
-} /**
+}
+/**
  * EventsIngest
  */
 export interface EventsIngest {
@@ -2874,7 +2972,8 @@ export interface EventsIngest {
    * List of events to ingest.
    */
   events: (EventCreateCustomer | EventCreateExternalCustomer)[];
-} /**
+}
+/**
  * A price that already exists for this product.
 
 Useful when updating a product if you want to keep an existing price.
@@ -2884,7 +2983,8 @@ export interface ExistingProductPrice {
    * id
    */
   id: string;
-} /**
+}
+/**
  * FilePatch
  */
 export interface FilePatch {
@@ -2896,7 +2996,8 @@ export interface FilePatch {
    * version
    */
   version?: string | null;
-} /**
+}
+/**
  * FileUploadCompleted
  */
 export interface FileUploadCompleted {
@@ -2912,7 +3013,8 @@ export interface FileUploadCompleted {
    * parts
    */
   parts: S3FileUploadCompletedPart[];
-} /**
+}
+/**
  * Filter
  */
 export interface Filter {
@@ -2924,7 +3026,8 @@ export interface Filter {
    * clauses
    */
   clauses: (FilterClause | Filter)[];
-} /**
+}
+/**
  * FilterClause
  */
 export interface FilterClause {
@@ -2940,7 +3043,8 @@ export interface FilterClause {
    * value
    */
   value: string | number | boolean;
-} /**
+}
+/**
  * LLMMetadata
  */
 export interface LLMMetadata {
@@ -2976,7 +3080,8 @@ export interface LLMMetadata {
    * The total number of LLM tokens used for the event.
    */
   total_tokens: number;
-} /**
+}
+/**
  * LicenseKeyActivate
  */
 export interface LicenseKeyActivate {
@@ -3020,7 +3125,8 @@ The value must be either:
 You can store up to **50 key-value pairs**.
    */
   meta?: Record<string, string | number | number | boolean>;
-} /**
+}
+/**
  * LicenseKeyDeactivate
  */
 export interface LicenseKeyDeactivate {
@@ -3036,7 +3142,8 @@ export interface LicenseKeyDeactivate {
    * activation_id
    */
   activation_id: string;
-} /**
+}
+/**
  * LicenseKeyUpdate
  */
 export interface LicenseKeyUpdate {
@@ -3060,7 +3167,8 @@ export interface LicenseKeyUpdate {
    * expires_at
    */
   expires_at?: string | null;
-} /**
+}
+/**
  * LicenseKeyValidate
  */
 export interface LicenseKeyValidate {
@@ -3102,7 +3210,8 @@ The value must be either:
 You can store up to **50 key-value pairs**.
    */
   conditions?: Record<string, string | number | number | boolean>;
-} /**
+}
+/**
  * Schema for creating a new member nested under a customer.
 
 The customer is taken from the URL path, so it's not part of the body.
@@ -3124,7 +3233,8 @@ export interface MemberCreateFromCustomer {
    * The role of the member within the customer. To assign or transfer ownership, use the member update endpoint.
    */
   role?: Role;
-} /**
+}
+/**
  * Schema for creating an owner member during customer creation.
  */
 export interface MemberOwnerCreate {
@@ -3140,7 +3250,8 @@ export interface MemberOwnerCreate {
    * The ID of the member in your system. This must be unique within the customer.
    */
   external_id?: string | null;
-} /**
+}
+/**
  * Schema for updating a member.
  */
 export interface MemberUpdate {
@@ -3156,7 +3267,8 @@ export interface MemberUpdate {
    * The role of the member within the customer.
    */
   role?: MemberRole | null;
-} /**
+}
+/**
  * MeterCreate
  */
 export interface MeterCreate {
@@ -3202,7 +3314,8 @@ You can store up to **50 key-value pairs**.
    * The ID of the organization owning the meter. **Required unless you use an organization token.**
    */
   organization_id?: string | null;
-} /**
+}
+/**
  * MeterUpdate
  */
 export interface MeterUpdate {
@@ -3248,7 +3361,8 @@ You can store up to **50 key-value pairs**.
    * Whether the meter is archived. Archived meters are no longer used for billing.
    */
   is_archived?: boolean | null;
-} /**
+}
+/**
  * Schema for creating a metrics dashboard.
  */
 export interface MetricDashboardCreate {
@@ -3264,7 +3378,8 @@ export interface MetricDashboardCreate {
    * The ID of the organization owning this dashboard. **Required unless you use an organization token.**
    */
   organization_id?: string | null;
-} /**
+}
+/**
  * Schema for updating a metrics dashboard.
  */
 export interface MetricDashboardUpdate {
@@ -3276,7 +3391,8 @@ export interface MetricDashboardUpdate {
    * List of metric slugs to display in this dashboard.
    */
   metrics?: string[] | null;
-} /**
+}
+/**
  * OAuth2ClientConfiguration
  */
 export interface OAuth2ClientConfiguration {
@@ -3324,7 +3440,8 @@ export interface OAuth2ClientConfiguration {
    * default_sub_type
    */
   default_sub_type?: SubType;
-} /**
+}
+/**
  * OAuth2ClientConfigurationUpdate
  */
 export interface OAuth2ClientConfigurationUpdate {
@@ -3376,7 +3493,8 @@ export interface OAuth2ClientConfigurationUpdate {
    * client_id
    */
   client_id: string;
-} /**
+}
+/**
  * Schema to create a draft order for an off-session charge.
  */
 export interface OrderCreate {
@@ -3422,7 +3540,8 @@ You can store up to **50 key-value pairs**.
    * A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name.
    */
   description?: string | null;
-} /**
+}
+/**
  * Schema to finalize a draft order and trigger an off-session charge.
  */
 export interface OrderFinalize {
@@ -3430,7 +3549,8 @@ export interface OrderFinalize {
    * ID of the payment method to charge. Must belong to the order's customer. Falls back to the customer's default payment method when unset.
    */
   payment_method_id?: string | null;
-} /**
+}
+/**
  * Schema to update an order.
  */
 export interface OrderUpdate {
@@ -3442,7 +3562,8 @@ export interface OrderUpdate {
    * The address of the customer that should appear on the invoice. Country and state fields cannot be updated.
    */
   billing_address?: AddressInput | null;
-} /**
+}
+/**
  * Schema to create a file to be used as an organization avatar.
  */
 export interface OrganizationAvatarFileCreate {
@@ -3478,7 +3599,8 @@ export interface OrganizationAvatarFileCreate {
    * version
    */
   version?: string | null;
-} /**
+}
+/**
  * OrganizationCompanyLegalEntitySchema
  */
 export interface OrganizationCompanyLegalEntitySchema {
@@ -3490,7 +3612,8 @@ export interface OrganizationCompanyLegalEntitySchema {
    * registered_name
    */
   registered_name: string;
-} /**
+}
+/**
  * OrganizationCreate
  */
 export interface OrganizationCreate {
@@ -3556,7 +3679,8 @@ export interface OrganizationCreate {
    * default_tax_behavior
    */
   default_tax_behavior?: TaxBehaviorOption;
-} /**
+}
+/**
  * OrganizationCustomerEmailSettings
  */
 export interface OrganizationCustomerEmailSettings {
@@ -3604,7 +3728,8 @@ export interface OrganizationCustomerEmailSettings {
    * subscription_updated
    */
   subscription_updated: boolean;
-} /**
+}
+/**
  * OrganizationCustomerPortalSettings
  */
 export interface OrganizationCustomerPortalSettings {
@@ -3620,7 +3745,8 @@ export interface OrganizationCustomerPortalSettings {
    * customer
    */
   customer?: CustomerPortalCustomerSettings;
-} /**
+}
+/**
  * OrganizationDetails
  */
 export interface OrganizationDetails {
@@ -3664,7 +3790,8 @@ export interface OrganizationDetails {
    * Revenue from last year if applicable.
    */
   previous_annual_revenue?: number | null;
-} /**
+}
+/**
  * Feature settings that organizations can update themselves.
 
 Other feature settings are managed by Polar staff: they're ignored if
@@ -3687,7 +3814,8 @@ export interface OrganizationFeatureSettingsUpdate {
    * Ordered list of metric slugs shown on the dashboard overview.
    */
   overview_metrics?: string[] | null;
-} /**
+}
+/**
  * OrganizationIndividualLegalEntitySchema
  */
 export interface OrganizationIndividualLegalEntitySchema {
@@ -3695,7 +3823,8 @@ export interface OrganizationIndividualLegalEntitySchema {
    * type
    */
   type: "individual";
-} /**
+}
+/**
  * OrganizationSocialLink
  */
 export interface OrganizationSocialLink {
@@ -3707,7 +3836,8 @@ export interface OrganizationSocialLink {
    * The URL to the organization profile
    */
   url: string;
-} /**
+}
+/**
  * OrganizationSubscriptionSettings
  */
 export interface OrganizationSubscriptionSettings {
@@ -3731,7 +3861,8 @@ export interface OrganizationSubscriptionSettings {
    * allow_customer_updates
    */
   allow_customer_updates: boolean;
-} /**
+}
+/**
  * OrganizationUpdate
  */
 export interface OrganizationUpdate {
@@ -3791,7 +3922,8 @@ export interface OrganizationUpdate {
    * Whether members must access this organization through its SSO connection. Turning this on requires an active SSO session for this organization and at least one enabled SSO connection.
    */
   sso_enforced?: boolean | null;
-} /**
+}
+/**
  * Schema to update the benefits granted by a product.
  */
 export interface ProductBenefitsUpdate {
@@ -3799,7 +3931,8 @@ export interface ProductBenefitsUpdate {
    * List of benefit IDs. Each one must be on the same organization as the product.
    */
   benefits: string[];
-} /**
+}
+/**
  * ProductCreateOneTime
  */
 export interface ProductCreateOneTime {
@@ -3858,7 +3991,8 @@ You can store up to **50 key-value pairs**.
    * One-time products don't have a recurring interval count.
    */
   recurring_interval_count?: null;
-} /**
+}
+/**
  * ProductCreateRecurring
  */
 export interface ProductCreateRecurring {
@@ -3933,7 +4067,8 @@ You can store up to **50 key-value pairs**.
    * Number of meter interval units. Defaults to 1 when `meter_interval` is set. Ignored when `meter_interval` is `None`.
    */
   meter_interval_count?: number | null;
-} /**
+}
+/**
  * Schema to create a file to be used as a product media file.
  */
 export interface ProductMediaFileCreate {
@@ -3969,7 +4104,8 @@ export interface ProductMediaFileCreate {
    * version
    */
   version?: string | null;
-} /**
+}
+/**
  * Schema to create a pay-what-you-want price.
  */
 export interface ProductPriceCustomCreate {
@@ -4267,7 +4403,8 @@ export interface ProductPriceCustomCreate {
 - Other currencies: 50 minor units
    */
   preset_amount?: number | null;
-} /**
+}
+/**
  * Schema to create a fixed price.
  */
 export interface ProductPriceFixedCreate {
@@ -4415,7 +4552,8 @@ Minimum amounts per currency:
 - Other currencies: 50 minor units
    */
   price_amount: number;
-} /**
+}
+/**
  * Schema to create a metered price with a fixed unit price.
  */
 export interface ProductPriceMeteredUnitCreate {
@@ -4443,7 +4581,8 @@ export interface ProductPriceMeteredUnitCreate {
    * Optional maximum amount in cents that can be charged, regardless of the number of units consumed.
    */
   cap_amount?: number | null;
-} /**
+}
+/**
  * Schema to create a seat-based price with volume-based tiers.
  */
 export interface ProductPriceSeatBasedCreate {
@@ -4463,7 +4602,8 @@ export interface ProductPriceSeatBasedCreate {
    * seat_tiers
    */
   seat_tiers: ProductPriceSeatTiersInput;
-} /**
+}
+/**
  * A pricing tier for seat-based pricing.
  */
 export interface ProductPriceSeatTier {
@@ -4479,7 +4619,8 @@ export interface ProductPriceSeatTier {
    * Price per seat in cents for this tier
    */
   price_per_seat: number;
-} /**
+}
+/**
  * List of pricing tiers for seat-based pricing.
 
 The minimum and maximum seat limits are derived from the tiers:
@@ -4495,7 +4636,8 @@ export interface ProductPriceSeatTiersInput {
    * List of pricing tiers
    */
   tiers: ProductPriceSeatTier[];
-} /**
+}
+/**
  * Schema to update a product.
  */
 export interface ProductUpdate {
@@ -4567,7 +4709,8 @@ You can store up to **50 key-value pairs**.
    * attached_custom_fields
    */
   attached_custom_fields?: AttachedCustomFieldCreate[] | null;
-} /**
+}
+/**
  * PropertyAggregation
  */
 export interface PropertyAggregation {
@@ -4579,7 +4722,8 @@ export interface PropertyAggregation {
    * property
    */
   property: string;
-} /**
+}
+/**
  * RefundCreate
  */
 export interface RefundCreate {
@@ -4622,7 +4766,8 @@ Subscriptions automatically revoke customer benefits once the
 subscription itself is revoked, i.e fully canceled.
    */
   revoke_benefits?: boolean;
-} /**
+}
+/**
  * S3FileCreateMultipart
  */
 export interface S3FileCreateMultipart {
@@ -4630,7 +4775,8 @@ export interface S3FileCreateMultipart {
    * parts
    */
   parts: S3FileCreatePart[];
-} /**
+}
+/**
  * S3FileCreatePart
  */
 export interface S3FileCreatePart {
@@ -4650,7 +4796,8 @@ export interface S3FileCreatePart {
    * checksum_sha256_base64
    */
   checksum_sha256_base64?: string | null;
-} /**
+}
+/**
  * S3FileUploadCompletedPart
  */
 export interface S3FileUploadCompletedPart {
@@ -4666,7 +4813,8 @@ export interface S3FileUploadCompletedPart {
    * checksum_sha256_base64
    */
   checksum_sha256_base64: string | null;
-} /**
+}
+/**
  * SeatAssign
  */
 export interface SeatAssign {
@@ -4706,7 +4854,8 @@ export interface SeatAssign {
    * If true, the seat will be immediately claimed without sending an invitation email. API-only feature.
    */
   immediate_claim?: boolean;
-} /**
+}
+/**
  * SeatClaim
  */
 export interface SeatClaim {
@@ -4714,7 +4863,8 @@ export interface SeatClaim {
    * Invitation token to claim the seat
    */
   invitation_token: string;
-} /**
+}
+/**
  * SubscriptionCancel
  */
 export interface SubscriptionCancel {
@@ -4756,7 +4906,8 @@ conversation, i.e support.
 Or uncancel a subscription currently set to be revoked at period end.
    */
   cancel_at_period_end: boolean;
-} /**
+}
+/**
  * Create a subscription for an existing customer.
  */
 export interface SubscriptionCreateCustomer {
@@ -4782,7 +4933,8 @@ You can store up to **50 key-value pairs**.
    * The ID of the customer to create the subscription for.
    */
   customer_id: string;
-} /**
+}
+/**
  * Create a subscription for an existing customer identified by an external ID.
  */
 export interface SubscriptionCreateExternalCustomer {
@@ -4808,7 +4960,8 @@ You can store up to **50 key-value pairs**.
    * The ID of the customer in your system to create the subscription for. It must already exist in Polar.
    */
   external_customer_id: string;
-} /**
+}
+/**
  * SubscriptionRevoke
  */
 export interface SubscriptionRevoke {
@@ -4848,7 +5001,8 @@ conversation, i.e support.
    * Cancel and revoke an active subscription immediately
    */
   revoke: true;
-} /**
+}
+/**
  * SubscriptionUpdateBase
  */
 export interface SubscriptionUpdateBase {
@@ -4868,7 +5022,8 @@ export interface SubscriptionUpdateBase {
    * Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately.
    */
   trial_end?: string | "now" | null;
-} /**
+}
+/**
  * SubscriptionUpdateBillingPeriod
  */
 export interface SubscriptionUpdateBillingPeriod {
@@ -4878,7 +5033,8 @@ export interface SubscriptionUpdateBillingPeriod {
 It is not possible to update the current billing period on a canceled subscription.
    */
   current_billing_period_end: string;
-} /**
+}
+/**
  * SubscriptionUpdateClear
  */
 export interface SubscriptionUpdateClear {
@@ -4886,7 +5042,8 @@ export interface SubscriptionUpdateClear {
    * Clear the pending subscription update. Set to null to remove scheduled changes.
    */
   pending_update: null;
-} /**
+}
+/**
  * SubscriptionUpdateSeats
  */
 export interface SubscriptionUpdateSeats {
@@ -4898,7 +5055,8 @@ export interface SubscriptionUpdateSeats {
    * Determine how to handle the proration billing. If not provided, will use the default organization setting.
    */
   proration_behavior?: SubscriptionProrationBehavior | null;
-} /**
+}
+/**
  * Schema to create a file attached to a support case.
  */
 export interface SupportCaseAttachmentFileCreate {
@@ -4934,7 +5092,8 @@ export interface SupportCaseAttachmentFileCreate {
    * version
    */
   version?: string | null;
-} /**
+}
+/**
  * UniqueAggregation
  */
 export interface UniqueAggregation {
@@ -4946,7 +5105,8 @@ export interface UniqueAggregation {
    * property
    */
   property: string;
-} /**
+}
+/**
  * Schema to create a webhook endpoint.
  */
 export interface WebhookEndpointCreate {
@@ -4970,7 +5130,8 @@ export interface WebhookEndpointCreate {
    * The organization ID associated with the webhook endpoint. **Required unless you use an organization token.**
    */
   organization_id?: string | null;
-} /**
+}
+/**
  * Schema to update a webhook endpoint.
  */
 export interface WebhookEndpointUpdate {
@@ -4995,6 +5156,7 @@ export interface WebhookEndpointUpdate {
    */
   enabled?: boolean | null;
 }
+
 /**
  * BenefitCreate
  */
@@ -5007,6 +5169,7 @@ export type BenefitCreate =
   | BenefitMeterCreditCreate
   | BenefitFeatureFlagCreate
   | BenefitSlackSharedChannelCreate;
+
 /**
  * CheckoutLinkCreate
  */
@@ -5014,6 +5177,7 @@ export type CheckoutLinkCreate =
   | CheckoutLinkCreateProductPrice
   | CheckoutLinkCreateProduct
   | CheckoutLinkCreateProducts;
+
 /**
  * CustomFieldCreate
  */
@@ -5023,6 +5187,7 @@ export type CustomFieldCreate =
   | CustomFieldCreateDate
   | CustomFieldCreateCheckbox
   | CustomFieldCreateSelect;
+
 /**
  * CustomFieldUpdate
  */
@@ -5032,6 +5197,7 @@ export type CustomFieldUpdate =
   | CustomFieldUpdateDate
   | CustomFieldUpdateCheckbox
   | CustomFieldUpdateSelect;
+
 /**
  * CustomerBenefitGrantUpdate
  */
@@ -5044,10 +5210,12 @@ export type CustomerBenefitGrantUpdate =
   | CustomerBenefitGrantMeterCreditUpdate
   | CustomerBenefitGrantFeatureFlagUpdate
   | CustomerBenefitGrantSlackSharedChannelUpdate;
+
 /**
  * CustomerCreate
  */
 export type CustomerCreate = CustomerIndividualCreate | CustomerTeamCreate;
+
 /**
  * CustomerSubscriptionUpdate
  */
@@ -5056,10 +5224,12 @@ export type CustomerSubscriptionUpdate =
   | CustomerSubscriptionUpdateSeats
   | CustomerSubscriptionCancel
   | CustomerSubscriptionUpdateClear;
+
 /**
  * DiscountCreate
  */
 export type DiscountCreate = DiscountFixedCreate | DiscountPercentageCreate;
+
 /**
  * FileCreate
  */
@@ -5068,6 +5238,7 @@ export type FileCreate =
   | ProductMediaFileCreate
   | OrganizationAvatarFileCreate
   | SupportCaseAttachmentFileCreate;
+
 /**
  * MetadataQuery
  */
@@ -5075,10 +5246,12 @@ export type MetadataQuery = Record<
   string,
   string | number | boolean | string[] | number[] | boolean[]
 > | null;
+
 /**
  * ProductCreate
  */
 export type ProductCreate = ProductCreateRecurring | ProductCreateOneTime;
+
 /**
  * SubscriptionUpdate
  */

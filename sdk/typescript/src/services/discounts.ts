@@ -1,7 +1,8 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type { DiscountCreate, DiscountUpdate } from "../models/inputs";
-import type { Discount, ListResourceDiscount } from "../models/outputs";
 import type { DiscountSortProperty } from "../models/literals";
+import type { Discount, ListResourceDiscount } from "../models/outputs";
+
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 
 export const listDiscounts = (client: ClientBase) => {

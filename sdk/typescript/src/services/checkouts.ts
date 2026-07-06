@@ -1,17 +1,18 @@
-import { ClientBase } from "../base";
+import type { ClientBase } from "../base";
 import type {
   CheckoutConfirmStripe,
   CheckoutCreate,
   CheckoutUpdate,
   CheckoutUpdatePublic,
 } from "../models/inputs";
+import type { CheckoutSortProperty, CheckoutStatus } from "../models/literals";
 import type {
   Checkout,
   CheckoutPublic,
   CheckoutPublicConfirmed,
   ListResourceCheckout,
 } from "../models/outputs";
-import type { CheckoutSortProperty, CheckoutStatus } from "../models/literals";
+
 import {
   ClientConfirm403Error,
   ClientUpdate403Error,

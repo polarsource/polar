@@ -1,4 +1,4 @@
-import { ClientBase } from "{{ base_import }}";
+import type { ClientBase } from "{{ base_import }}";
 {% if imports.inputs %}
 import type { {% for name in imports.inputs %}{{ name }}{% if not loop.last %}, {% endif %}{% endfor %}} from "{{ models_import }}/inputs";
 {% endif %}

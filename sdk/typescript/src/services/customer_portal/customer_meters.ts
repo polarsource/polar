@@ -1,9 +1,10 @@
-import { ClientBase } from "../../base";
+import type { ClientBase } from "../../base";
+import type { CustomerCustomerMeterSortProperty } from "../../models/literals";
 import type {
   CustomerCustomerMeter,
   ListResourceCustomerCustomerMeter,
 } from "../../models/outputs";
-import type { CustomerCustomerMeterSortProperty } from "../../models/literals";
+
 import { HTTPValidationError, ResourceNotFound } from "../../errors";
 
 export const listCustomerMeters = (client: ClientBase) => {

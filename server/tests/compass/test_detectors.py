@@ -491,6 +491,18 @@ class TestCostPerUserDetector:
 
         assert insight is None
 
+    def test_silent_when_baseline_negligible(self) -> None:
+        # Cost tracking just started: a near-zero baseline against real costs
+        # would read as an absurd million-percent increase, not a trend.
+        cpu = [1.0] * 6 + [1.0] * 29 + [13_750.0]
+        subs = [50.0] * 36
+
+        insight = CostPerUserDetector().evaluate(
+            _context(_response_from(cost_per_user=cpu, active_subscriptions=subs))
+        )
+
+        assert insight is None
+
 
 class TestCheckoutConversionDetector:
     def test_fires_when_conversion_drops(self) -> None:

@@ -36,7 +36,9 @@ class CostPerUserDetector(Detector):
             return None
 
         baseline = value_n_periods_ago(response, "cost_per_user", _LOOKBACK_DAYS)
-        if baseline is None or baseline == 0:
+        # A sub-dollar baseline means cost tracking effectively just started —
+        # comparing against it yields absurd percentages, not a trend.
+        if baseline is None or baseline < _MIN_COST_PER_USER:
             return None
 
         sample_n = int(latest(response, "active_subscriptions"))

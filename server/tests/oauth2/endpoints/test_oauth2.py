@@ -148,7 +148,17 @@ async def create_oauth2_grant(
 
 @pytest.mark.asyncio
 class TestOAuth2Register:
-    @pytest.mark.parametrize("redirect_uri", ["http://example.com", "foobar"])
+    @pytest.mark.parametrize(
+        "redirect_uri",
+        [
+            "http://example.com",
+            "foobar",
+            f"http://{'a' * 54773}slocalhost/callback",
+            "http://localhost.evil/callback",
+            "http://localhostevil/callback",
+            "http://localhost./callback",
+        ],
+    )
     @pytest.mark.auth
     async def test_invalid_redirect_uri(
         self, redirect_uri: str, client: AsyncClient
@@ -169,6 +179,7 @@ class TestOAuth2Register:
         [
             "https://example.com",
             "http://localhost:8000/callback",
+            "http://foo.localhost:8000/callback",
             "http://127.0.0.1:8000/callback",
         ],
     )

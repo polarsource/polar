@@ -1,6 +1,7 @@
 'use client'
 
 import { OverviewSection } from '@/components/DashboardOverview/OverviewSection'
+import { CompassWidget } from '@/components/Compass/CompassWidget'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { PlanUpsell } from '@/components/Upsell/PlanUpsell'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
@@ -23,6 +24,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
       <PlanUpsell organization={organization} />
       <OrganizationStatusBanner organization={organization} />
       <DisputesBanner organization={organization} />
+      <CompassWidget organization={organization} limit={3} hideWhenEmpty />
       <OverviewSection organization={organization} />
 
       <div className="dark:border-polar-700 overflow-hidden rounded-xl border border-gray-200">

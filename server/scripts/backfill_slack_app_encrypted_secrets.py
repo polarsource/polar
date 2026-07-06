@@ -169,16 +169,21 @@ async def run_backfill(
 async def backfill(
     batch_size: int = typer.Option(500, help="Number of rows to process per batch"),
     sleep_seconds: float = typer.Option(0.1, help="Seconds to sleep between batches"),
-    dry_run: bool = typer.Option(
-        False, "--dry-run", help="Count rows that would be encrypted without writing"
+    execute: bool = typer.Option(
+        False, "--execute", help="Write encrypted secrets; without it, only counts rows"
     ),
 ) -> None:
-    """Encrypt SlackApp secrets written before dual-write."""
+    """Encrypt SlackApp secrets written before dual-write.
+
+    Dry-run by default (counts rows only). Pass --execute to write:
+
+        uv run python -m scripts.backfill_slack_app_encrypted_secrets --execute
+    """
     configure_script_logging()
     total_encrypted = await run_backfill(
-        batch_size=batch_size, sleep_seconds=sleep_seconds, dry_run=dry_run
+        batch_size=batch_size, sleep_seconds=sleep_seconds, dry_run=not execute
     )
-    if not dry_run:
+    if execute:
         typer.echo(f"Encrypted {total_encrypted} slack apps")
 
 

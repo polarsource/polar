@@ -57,6 +57,9 @@ from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.oauth2.service.oauth2_token import (
+    oauth2_token as oauth2_token_service,
+)
 from polar.organization_access_token.repository import (
     OrganizationAccessTokenRepository,
 )
@@ -548,6 +551,10 @@ class OrganizationService:
                 session, organization, update_schema.default_presentment_currency
             )
 
+        sso_newly_enforced = (
+            update_schema.sso_enforced is True and not organization.sso_enforced
+        )
+
         update_dict = update_schema.model_dump(
             by_alias=True,
             exclude_unset=True,
@@ -565,6 +572,11 @@ class OrganizationService:
             )
 
         organization = await repository.update(organization, update_dict=update_dict)
+
+        if sso_newly_enforced:
+            await oauth2_token_service.revoke_for_sso_enforcement(
+                session, organization.id
+            )
 
         await self._after_update(session, organization)
         return organization

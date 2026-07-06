@@ -43,6 +43,7 @@ from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_review import OrganizationReview
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
+from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import (
     LegacyOrganizationStatus,
@@ -5070,3 +5071,46 @@ class TestCancelExpiredOrganizationsSubscriptions:
 
         assert organization.id not in {org.id for org in result}
         enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestUpdateSSOEnforcement:
+    @pytest.mark.auth
+    async def test_enabling_revokes_tokens(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        revoke_mock = mocker.patch.object(
+            oauth2_token_service, "revoke_for_sso_enforcement"
+        )
+        organization.sso_enforced = False
+        session.add(organization)
+        await session.flush()
+
+        await organization_service.update(
+            session, organization, OrganizationUpdate(sso_enforced=True)
+        )
+
+        revoke_mock.assert_awaited_once_with(session, organization.id)
+
+    @pytest.mark.auth
+    async def test_already_enforced_does_not_revoke(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        revoke_mock = mocker.patch.object(
+            oauth2_token_service, "revoke_for_sso_enforcement"
+        )
+        organization.sso_enforced = True
+        session.add(organization)
+        await session.flush()
+
+        await organization_service.update(
+            session, organization, OrganizationUpdate(sso_enforced=True)
+        )
+
+        revoke_mock.assert_not_awaited()

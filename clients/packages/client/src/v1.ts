@@ -4900,6 +4900,30 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Merchant Migrations
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['merchant-migrations:list']
+    put?: never
+    /**
+     * Create Merchant Migration
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:create']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/merchant-migrations/{id}': {
     parameters: {
       query?: never
@@ -21743,6 +21767,12 @@ export interface components {
       items: components['schemas']['Member'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[MerchantMigration] */
+    ListResource_MerchantMigration_: {
+      /** Items */
+      items: components['schemas']['MerchantMigration'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[Meter] */
     ListResource_Meter_: {
       /** Items */
@@ -22290,6 +22320,32 @@ export interface components {
        * Format: uuid4
        */
       organization_id: string
+      /** @description The provider the billing is being migrated from. */
+      source_platform: components['schemas']['MerchantMigrationSourcePlatform']
+      /** @description The current step of the migration. */
+      step: components['schemas']['MerchantMigrationStep']
+      /**
+       * Source Connected
+       * @description Whether the source provider has been connected.
+       */
+      source_connected: boolean
+      /**
+       * Source
+       * @description Non-secret metadata about the connected source. The shape varies by provider (e.g. Stripe exposes `stripe_user_id`, `livemode`).
+       */
+      source: {
+        [key: string]: unknown
+      } | null
+    }
+    /** MerchantMigrationCreate */
+    MerchantMigrationCreate: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The organization the migration belongs to.
+       */
+      organization_id: string
+      /** @description The provider to migrate the billing from. */
       source_platform: components['schemas']['MerchantMigrationSourcePlatform']
     }
     /** MerchantMigrationNotFound */
@@ -22308,6 +22364,18 @@ export interface components {
      * @enum {string}
      */
     MerchantMigrationSourcePlatform: 'stripe' | 'lemon_squeezy' | 'paddle'
+    /**
+     * MerchantMigrationStep
+     * @enum {string}
+     */
+    MerchantMigrationStep:
+      | 'source_setup'
+      | 'pre_check'
+      | 'create_catalog'
+      | 'copy_cards'
+      | 'activate_subscriptions'
+      | 'cleanup'
+      | 'completed'
     MetadataOutputType: {
       [key: string]: string | number | boolean
     }
@@ -25742,6 +25810,12 @@ export interface components {
        * @default false
        */
       compass_enabled: boolean
+      /**
+       * Merchant Migration Enabled
+       * @description If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.
+       * @default false
+       */
+      merchant_migration_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate
@@ -48077,6 +48151,74 @@ export interface operations {
       }
     }
   }
+  'merchant-migrations:list': {
+    parameters: {
+      query: {
+        organization_id: string
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_MerchantMigration_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:create': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MerchantMigrationCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigration']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'merchant-migrations:get': {
     parameters: {
       query?: never
@@ -59909,6 +60051,17 @@ export const memberSortPropertyValues: ReadonlyArray<
 export const merchantMigrationSourcePlatformValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationSourcePlatform']
 > = ['stripe', 'lemon_squeezy', 'paddle']
+export const merchantMigrationStepValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationStep']
+> = [
+  'source_setup',
+  'pre_check',
+  'create_catalog',
+  'copy_cards',
+  'activate_subscriptions',
+  'cleanup',
+  'completed',
+]
 export const meterCreditEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterCreditEvent']['name']
 > = ['meter.credited']

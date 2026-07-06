@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 from pytest_mock import MockerFixture
@@ -14,6 +15,7 @@ from polar.merchant_migration.canonical import (
     CanonicalRecord,
 )
 from polar.merchant_migration.repository import MerchantMigrationRepository
+from polar.merchant_migration.schemas import MerchantMigrationCreate
 from polar.merchant_migration.service import (
     SourceNotConnected,
     UnsupportedMigrationSource,
@@ -46,50 +48,93 @@ class _FakeAdapter:
         return CanonicalAccount(country="US", is_connect_platform=False)
 
 
+async def _enable_feature(
+    save_fixture: SaveFixture, organization: Organization
+) -> None:
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "merchant_migration_enabled": True,
+    }
+    await save_fixture(organization)
+
+
+@pytest.mark.asyncio
+class TestCreate:
+    @pytest.mark.auth
+    async def test_creates_independent_migrations(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+
+        first = await service.create(
+            session,
+            auth_subject,
+            MerchantMigrationCreate(
+                organization_id=organization.id,
+                source_platform=MerchantMigrationSourcePlatform.stripe,
+            ),
+        )
+        second = await service.create(
+            session,
+            auth_subject,
+            MerchantMigrationCreate(
+                organization_id=organization.id,
+                source_platform=MerchantMigrationSourcePlatform.stripe,
+            ),
+        )
+
+        assert first.id != second.id
+        assert first.step == MerchantMigrationStep.source_setup
+        assert first.source_platform == MerchantMigrationSourcePlatform.stripe
+
+        repository = MerchantMigrationRepository.from_session(session)
+        migrations = await repository.get_all(
+            repository.get_base_statement().where(
+                MerchantMigration.organization_id == organization.id
+            )
+        )
+        assert len(migrations) == 2
+
+
 @pytest.mark.asyncio
 class TestCreateStripeAuthorizationUrl:
     @pytest.mark.auth
-    async def test_creates_migration_and_reuses_ongoing(
+    async def test_targets_the_given_migration(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
+        save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
         mocker.patch.object(settings, "STRIPE_APP_CLIENT_ID", "ca_test")
         mocker.patch.object(settings, "STRIPE_APP_CLIENT_LINK_ID", "chnlink_test")
+        migration = MerchantMigration(
+            organization_id=organization.id,
+            source_platform=MerchantMigrationSourcePlatform.stripe,
+            step=MerchantMigrationStep.source_setup,
+        )
+        await save_fixture(migration)
 
         url = await service.create_stripe_authorization_url(
             session,
             auth_subject,
-            organization_id=organization.id,
+            migration_id=migration.id,
             redirect_uri="http://test/callback",
             return_to="http://test/return",
         )
         assert "chnlink_test" in url
         assert "ca_test" in url
-        assert "state=" in url
 
-        repository = MerchantMigrationRepository.from_session(session)
-        migration = await repository.get_ongoing_by_source(
-            organization.id, MerchantMigrationSourcePlatform.stripe
-        )
-        assert migration is not None
-        assert migration.step == MerchantMigrationStep.source_setup
-
-        await service.create_stripe_authorization_url(
-            session,
-            auth_subject,
-            organization_id=organization.id,
-            redirect_uri="http://test/callback",
-            return_to="http://test/return",
-        )
-        statement = repository.get_base_statement().where(
-            MerchantMigration.organization_id == organization.id
-        )
-        migrations = await repository.get_all(statement)
-        assert len(migrations) == 1
+        token = parse_qs(urlparse(url).query)["state"][0]
+        state = jwt.decode(token=token, secret=settings.SECRET, type="stripe_app_oauth")
+        assert state["migration_id"] == str(migration.id)
 
 
 @pytest.mark.asyncio

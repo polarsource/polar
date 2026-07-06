@@ -133,8 +133,7 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     )
     pause_at_period_end: bool = Field(
         description=(
-            "Whether the subscription will be paused "
-            "at the end of the current period."
+            "Whether the subscription will be paused at the end of the current period."
         )
     )
     paused_at: datetime | None = Field(

@@ -217,5 +217,9 @@ export const useClearPendingSubscriptionUpdate = (id: string) =>
           }
         },
       )
+
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'charge-preview'],
+      })
     },
   })

@@ -115,6 +115,8 @@ from .schemas import (
     SubscriptionChargePreviewProration,
     SubscriptionCreate,
     SubscriptionCreateCustomer,
+    SubscriptionPause,
+    SubscriptionResume,
     SubscriptionRevoke,
     SubscriptionUpdate,
     SubscriptionUpdateBase,
@@ -174,6 +176,27 @@ class SubscriptionLocked(SubscriptionError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
         message = "This subscription is pending an update."
+        super().__init__(message, 409)
+
+
+class CannotPauseSubscription(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = "This subscription cannot be paused."
+        super().__init__(message, 409)
+
+
+class NoScheduledPause(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = "This subscription is not scheduled to be paused."
+        super().__init__(message, 409)
+
+
+class NotPausedSubscription(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = "This subscription is not paused."
         super().__init__(message, 409)
 
 
@@ -775,6 +798,21 @@ class SubscriptionService:
             return subscription
 
         revoke = subscription.cancel_at_period_end
+
+        # Subscription is due to pause: it enters the paused state at the end of
+        # its current period instead of renewing. Benefits are revoked and no
+        # order is created; a scheduled or manual resume starts a new period. A
+        # scheduled cancellation takes precedence over a scheduled pause.
+        if not revoke and subscription.pause_at_period_end:
+            subscription.status = SubscriptionStatus.paused
+            subscription.paused_at = utc_now()
+            subscription.pause_at_period_end = False
+            await self.enqueue_benefits_grants(session, subscription)
+            repository = SubscriptionRepository.from_session(session)
+            return await repository.update(
+                subscription, update_dict={"scheduler_locked_at": None}
+            )
+
         previous_status = subscription.status
         previous_canceled = subscription.canceled
 
@@ -857,49 +895,7 @@ class SubscriptionService:
                 ):
                     subscription.discount = None
 
-            event = event = await event_service.create_event(
-                session,
-                build_system_event(
-                    SystemEvent.subscription_cycled,
-                    customer=subscription.customer,
-                    organization=subscription.organization,
-                    metadata=SubscriptionCycledMetadata(
-                        subscription_id=str(subscription.id),
-                        product_id=str(subscription.product_id),
-                        amount=subscription.amount,
-                        currency=subscription.currency,
-                        recurring_interval=subscription.recurring_interval.value,
-                        recurring_interval_count=subscription.recurring_interval_count,
-                    ),
-                ),
-            )
-            # Add a billing entry for a new period
-            billing_entry_repository = BillingEntryRepository.from_session(session)
-            for subscription_product_price in subscription.subscription_product_prices:
-                product_price = subscription_product_price.product_price
-                if is_static_price(product_price):
-                    discount_amount = 0
-                    if subscription.discount:
-                        discount_amount = subscription.discount.get_discount_amount(
-                            subscription_product_price.amount, subscription.currency
-                        )
-
-                    await billing_entry_repository.create(
-                        BillingEntry(
-                            start_timestamp=subscription.current_period_start,
-                            end_timestamp=subscription.current_period_end,
-                            type=BillingEntryType.cycle,
-                            direction=BillingEntryDirection.debit,
-                            amount=subscription_product_price.amount,
-                            currency=subscription.currency,
-                            customer=subscription.customer,
-                            product_price=product_price,
-                            discount=subscription.discount,
-                            discount_amount=discount_amount,
-                            subscription=subscription,
-                            event=event,
-                        ),
-                    )
+            await self._create_cycle_billing_entries(session, subscription)
 
         if previous_status == SubscriptionStatus.trialing:
             subscription.status = SubscriptionStatus.active
@@ -930,6 +926,53 @@ class SubscriptionService:
         )
 
         return subscription
+
+    async def _create_cycle_billing_entries(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        event = await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_cycled,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata=SubscriptionCycledMetadata(
+                    subscription_id=str(subscription.id),
+                    product_id=str(subscription.product_id),
+                    amount=subscription.amount,
+                    currency=subscription.currency,
+                    recurring_interval=subscription.recurring_interval.value,
+                    recurring_interval_count=subscription.recurring_interval_count,
+                ),
+            ),
+        )
+        # Add a billing entry for a new period
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        for subscription_product_price in subscription.subscription_product_prices:
+            product_price = subscription_product_price.product_price
+            if is_static_price(product_price):
+                discount_amount = 0
+                if subscription.discount:
+                    discount_amount = subscription.discount.get_discount_amount(
+                        subscription_product_price.amount, subscription.currency
+                    )
+
+                await billing_entry_repository.create(
+                    BillingEntry(
+                        start_timestamp=subscription.current_period_start,
+                        end_timestamp=subscription.current_period_end,
+                        type=BillingEntryType.cycle,
+                        direction=BillingEntryDirection.debit,
+                        amount=subscription_product_price.amount,
+                        currency=subscription.currency,
+                        customer=subscription.customer,
+                        product_price=product_price,
+                        discount=subscription.discount,
+                        discount_amount=discount_amount,
+                        subscription=subscription,
+                        event=event,
+                    ),
+                )
 
     async def reset_meters(
         self, session: AsyncSession, subscription: Subscription
@@ -1099,6 +1142,19 @@ class SubscriptionService:
                 customer_comment=update.customer_cancellation_comment,
                 immediately=True,
             )
+
+        if isinstance(update, SubscriptionPause):
+            if update.pause_at_period_end:
+                subscription = await self.pause(
+                    session, ctx, subscription, resumes_at=update.resumes_at
+                )
+            else:
+                subscription = await self.cancel_scheduled_pause(
+                    session, ctx, subscription
+                )
+
+        if isinstance(update, SubscriptionResume):
+            subscription = await self.resume(session, ctx, subscription)
 
         if isinstance(update, SubscriptionUpdateClear):
             subscription = await self.clear_pending_update(session, ctx, subscription)
@@ -1845,6 +1901,91 @@ class SubscriptionService:
             customer_reason=customer_reason,
             customer_comment=customer_comment,
         )
+
+    async def pause(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+        *,
+        resumes_at: datetime | None = None,
+    ) -> Subscription:
+        if not subscription.can_pause():
+            raise CannotPauseSubscription(subscription)
+
+        if resumes_at is not None and resumes_at <= subscription.current_period_end:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "resumes_at"),
+                        "msg": "resumes_at must be after the current period end.",
+                        "input": resumes_at,
+                    }
+                ]
+            )
+
+        subscription.pause_at_period_end = True
+        subscription.resumes_at = resumes_at
+        session.add(subscription)
+        return subscription
+
+    async def cancel_scheduled_pause(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+    ) -> Subscription:
+        if not subscription.can_cancel_scheduled_pause():
+            raise NoScheduledPause(subscription)
+
+        subscription.pause_at_period_end = False
+        subscription.resumes_at = None
+        session.add(subscription)
+        return subscription
+
+    async def resume(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+    ) -> Subscription:
+        if not subscription.can_resume():
+            raise NotPausedSubscription(subscription)
+
+        now = utc_now()
+        subscription.status = SubscriptionStatus.active
+        subscription.paused_at = None
+        subscription.resumes_at = None
+
+        # Start a fresh billing period from now and charge immediately.
+        subscription.current_period_start = now
+        subscription.anchor_day = now.day
+        subscription.current_period_end = (
+            subscription.recurring_interval.get_next_period(
+                now, subscription.anchor_day, subscription.recurring_interval_count
+            )
+        )
+        subscription.initialize_meter_period(now)
+
+        await self.enqueue_benefits_grants(session, subscription)
+        await self._create_cycle_billing_entries(session, subscription)
+
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.update(subscription)
+
+        enqueue_job(
+            "order.create_subscription_order",
+            subscription.id,
+            OrderBillingReasonInternal.subscription_cycle,
+        )
+
+        log.info(
+            "subscription.resumed",
+            id=subscription.id,
+            current_period_end=subscription.current_period_end,
+        )
+        return subscription
 
     async def cancel_customer(
         self, session: AsyncSession, customer_id: uuid.UUID

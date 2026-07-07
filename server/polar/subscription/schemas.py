@@ -131,6 +131,20 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
         None,
         description=("The timestamp when the subscription entered `past_due` status."),
     )
+    pause_at_period_end: bool = Field(
+        description=(
+            "Whether the subscription will be paused at the end of the current period."
+        )
+    )
+    paused_at: datetime | None = Field(
+        description="The timestamp when the subscription was paused.",
+    )
+    resumes_at: datetime | None = Field(
+        description=(
+            "The timestamp when a paused subscription is scheduled to "
+            "automatically resume, if set."
+        ),
+    )
 
     customer_id: UUID4 = Field(description="The ID of the subscribed customer.")
     product_id: UUID4 = Field(description="The ID of the subscribed product.")
@@ -435,6 +449,43 @@ class SubscriptionRevoke(SubscriptionCancelBase):
     )
 
 
+class SubscriptionPause(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    pause_at_period_end: bool = Field(
+        description=inspect.cleandoc(
+            """
+        Pause an active subscription at the end of the current period.
+
+        Or cancel a scheduled pause on a subscription set to be paused at
+        period end.
+        """
+        ),
+    )
+    resumes_at: FutureDatetime | None = Field(
+        None,
+        description=inspect.cleandoc(
+            """
+        Date at which the paused subscription should automatically resume.
+
+        If not set, the subscription stays paused until it is resumed manually.
+        Must be after the current period end.
+        """
+        ),
+    )
+
+
+class SubscriptionResume(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    resume: Literal[True] = Field(
+        description=(
+            "Resume a paused subscription immediately, "
+            "starting a new billing period and charging the customer."
+        )
+    )
+
+
 class SubscriptionUpdateClear(Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -449,6 +500,8 @@ SubscriptionUpdate = Annotated[
     | SubscriptionUpdateBillingPeriod
     | SubscriptionCancel
     | SubscriptionRevoke
+    | SubscriptionPause
+    | SubscriptionResume
     | SubscriptionUpdateClear,
     SetSchemaReference("SubscriptionUpdate"),
 ]

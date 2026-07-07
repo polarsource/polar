@@ -316,11 +316,30 @@ class SubscriptionRepository(
             .where(
                 Subscription.status == SubscriptionStatus.active,
                 Subscription.cancel_at_period_end.is_(False),
+                Subscription.pause_at_period_end.is_(False),
                 Subscription.current_period_end.isnot(None),
                 Subscription.current_period_end > now,
                 Subscription.current_period_end <= reminder_window_end,
                 long_cycle_condition,
                 ~dedup_subquery,
+            )
+            .options(*options)
+        )
+        return await self.get_all(statement)
+
+    async def get_subscriptions_to_resume(
+        self,
+        now: datetime,
+        *,
+        options: Options = (),
+    ) -> Sequence[Subscription]:
+        """Find paused subscriptions whose scheduled resume time has passed."""
+        statement = (
+            self.get_base_statement()
+            .where(
+                Subscription.status == SubscriptionStatus.paused,
+                Subscription.resumes_at.isnot(None),
+                Subscription.resumes_at <= now,
             )
             .options(*options)
         )

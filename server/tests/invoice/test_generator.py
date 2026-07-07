@@ -6,7 +6,12 @@ from typing import Any
 
 import pytest
 
-from polar.invoice.generator import Invoice, InvoiceGenerator, InvoiceItem
+from polar.invoice.generator import (
+    Invoice,
+    InvoiceGenerator,
+    InvoiceItem,
+    escape_markdown,
+)
 from polar.kit.address import Address, CountryAlpha2
 from polar.tax.calculation import TaxabilityReason
 
@@ -135,6 +140,13 @@ Thank you for your business!
                 ],
             },
             "multiple_tax_breakdown",
+        ),
+        (
+            {
+                "customer_additional_info": "john__doe__1@example.com",
+                "notes": "Thank you! __Terms__ apply, **conditions** too.",
+            },
+            "markdown_markers",
         ),
         (
             {
@@ -459,3 +471,17 @@ def test_generator_renders_amounts_in_primary_font_after_cjk(
         f"{cjk_tf_ops}. This means current_font drifted after the "
         f"description cell and amounts rendered in the CJK font."
     )
+
+
+@pytest.mark.parametrize(
+    ("text", "expected"),
+    [
+        ("john__doe__1@example.com", "john\\__doe\\__1@example.com"),
+        ("**bold**", "\\**bold\\**"),
+        ("--underline--", "\\--underline\\--"),
+        ("~~strike~~", "\\~~strike\\~~"),
+        ("plain@example.com", "plain@example.com"),
+    ],
+)
+def test_escape_markdown(text: str, expected: str) -> None:
+    assert escape_markdown(text) == expected

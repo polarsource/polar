@@ -1,3 +1,4 @@
+import re
 import textwrap
 from datetime import date, datetime
 from pathlib import Path
@@ -39,6 +40,10 @@ def format_percent(rate: float) -> str:
 
 def format_date(date: date | datetime) -> str:
     return _format_date(date, format="long", locale="en_US")
+
+
+def escape_markdown(text: str) -> str:
+    return re.sub(r"(\*\*|__|--|~~)", r"\\\1", text)
 
 
 class InvoiceItem(BaseModel):
@@ -220,7 +225,9 @@ class Invoice(BaseModel):
             seller_address=settings.INVOICES_ADDRESS,
             seller_additional_info=get_polar_additional_info(order.billing_address),
             customer_name=order.billing_name,
-            customer_additional_info=order.tax_id[0] if order.tax_id else None,
+            customer_additional_info=escape_markdown(order.tax_id[0])
+            if order.tax_id
+            else None,
             customer_address=order.billing_address,
             customer_locale=order.customer.locale,
             subtotal_amount=order.subtotal_amount,

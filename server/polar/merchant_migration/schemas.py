@@ -31,9 +31,49 @@ class PrecheckIssue(Schema):
     source_id: str | None
 
 
+class PrecheckEntity(StrEnum):
+    products = "products"
+    prices = "prices"
+    customers = "customers"
+    subscriptions = "subscriptions"
+
+
+class PrecheckRecordStatus(StrEnum):
+    importable = "importable"
+    skipped = "skipped"
+
+
+class PrecheckEntitySummary(Schema):
+    entity: PrecheckEntity = Field(description="The source entity type.")
+    total: int = Field(description="How many were read from the source.")
+    importable: int = Field(description="How many will be imported into Polar.")
+    skipped: int = Field(
+        description="How many won't be imported and stay on the source."
+    )
+
+
 class PrecheckReport(Schema):
     can_start: bool
     issues: list[PrecheckIssue]
+    entities: list[PrecheckEntitySummary] = Field(
+        description="Per-entity counts of what will be imported vs stay on the source."
+    )
+
+
+class MerchantMigrationRecordItem(Schema):
+    entity: PrecheckEntity = Field(description="The source entity type.")
+    source_id: str = Field(description="The source identifier (e.g. Stripe `sub_…`).")
+    title: str = Field(description="Primary label (name, email or product).")
+    subtitle: str | None = Field(
+        description="Secondary detail (interval, amount, country, status)."
+    )
+    status: PrecheckRecordStatus = Field(
+        description="Whether this record will be imported or stays on the source."
+    )
+    reason: str | None = Field(description="Why the record is skipped, if it is.")
+    reason_code: str | None = Field(
+        description="Stable code for the skip reason, if any."
+    )
 
 
 class MerchantMigration(IDSchema, TimestampedSchema):

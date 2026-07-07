@@ -15,8 +15,17 @@ from polar.merchant_migration.canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
 )
-from polar.merchant_migration.precheck import precheck_engine
-from polar.merchant_migration.schemas import PrecheckIssueLevel, PrecheckReport
+from polar.merchant_migration.precheck import (
+    classify_records,
+    precheck_engine,
+    summarize_records,
+)
+from polar.merchant_migration.schemas import (
+    PrecheckEntity,
+    PrecheckIssueLevel,
+    PrecheckRecordStatus,
+    PrecheckReport,
+)
 from polar.models import Organization
 from polar.models.organization import OrganizationStatus
 
@@ -303,3 +312,103 @@ class TestPrecheckEngine:
         assert "payment_method_requires_reentry" not in codes(
             report, PrecheckIssueLevel.warning
         )
+
+
+class TestClassifyRecords:
+    def test_products_importable_and_skipped(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(product_source_id="prod_1", name="Pro"),
+            build_product(
+                product_source_id="prod_2", name="Legacy", recurring_interval=None
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.products)
+
+        by_id = {item.source_id: item for item in items}
+        assert by_id["prod_1"].status == PrecheckRecordStatus.importable
+        assert by_id["prod_2"].status == PrecheckRecordStatus.skipped
+        assert by_id["prod_2"].reason_code == "one_time_product"
+
+    def test_prices_drop_unsupported_scheme(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                prices=[build_price(source_id="price_ok")],
+            ),
+            build_product(
+                product_source_id="prod_2",
+                name="Metered",
+                prices=[
+                    build_price(
+                        source_id="price_metered",
+                        pricing_scheme=CanonicalPricingScheme.metered,
+                    )
+                ],
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.prices)
+
+        by_id = {item.source_id: item for item in items}
+        assert by_id["price_ok"].status == PrecheckRecordStatus.importable
+        assert by_id["price_metered"].status == PrecheckRecordStatus.skipped
+        assert by_id["price_metered"].reason_code == "unsupported_pricing_scheme"
+
+    def test_duplicate_customer_email_skipped(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_customer(source_id="cus_1", email="same@example.com"),
+            build_customer(source_id="cus_2", email="same@example.com"),
+        ]
+
+        items = classify_records(records, PrecheckEntity.customers)
+
+        by_id = {item.source_id: item for item in items}
+        assert by_id["cus_1"].status == PrecheckRecordStatus.importable
+        assert by_id["cus_2"].status == PrecheckRecordStatus.skipped
+        assert by_id["cus_2"].reason_code == "duplicate_customer_email"
+
+    def test_subscription_status_drop(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_customer(source_id="cus_1", email="a@example.com"),
+            build_subscription(source_id="sub_1"),
+            build_subscription(
+                source_id="sub_2", status=CanonicalSubscriptionStatus.past_due
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions)
+
+        by_id = {item.source_id: item for item in items}
+        assert by_id["sub_1"].status == PrecheckRecordStatus.importable
+        assert by_id["sub_1"].title == "a@example.com"
+        assert by_id["sub_2"].status == PrecheckRecordStatus.skipped
+        assert by_id["sub_2"].reason_code == "subscription_not_importable"
+
+
+class TestSummarizeRecords:
+    def test_counts_match_classification(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(product_source_id="prod_1", name="Pro"),
+            build_product(
+                product_source_id="prod_2", name="Legacy", recurring_interval=None
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+        ]
+
+        summaries = {s.entity: s for s in summarize_records(records)}
+
+        assert summaries[PrecheckEntity.products].total == 2
+        assert summaries[PrecheckEntity.products].importable == 1
+        assert summaries[PrecheckEntity.products].skipped == 1
+        assert summaries[PrecheckEntity.customers].total == 1
+        assert summaries[PrecheckEntity.subscriptions].total == 0
+
+        for entity, summary in summaries.items():
+            items = classify_records(records, entity)
+            importable = sum(
+                1 for i in items if i.status == PrecheckRecordStatus.importable
+            )
+            assert summary.total == len(items)
+            assert summary.importable == importable
+            assert summary.skipped == len(items) - importable

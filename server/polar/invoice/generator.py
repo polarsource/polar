@@ -397,6 +397,11 @@ class InvoiceGenerator(FPDF):
             self.add_font(family, fname=bold, style="B")
             self.loaded_font_families.add(family)
 
+        # fpdf markdown preloads styles "I"/"BI"; no italic Inter ships, so alias upright
+        regular, bold = self.font_files[self.font_name]
+        self.add_font(self.font_name, fname=regular, style="I")
+        self.add_font(self.font_name, fname=bold, style="BI")
+
         # Fallback order: Hebrew, Arabic, then CJK with the customer's script
         # first so shared Han chars get the right regional glyph form.
         # customer locale/country first, and then all other scripts.

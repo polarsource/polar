@@ -1,4 +1,3 @@
-from datetime import timedelta
 from unittest.mock import MagicMock
 
 import pytest
@@ -6,9 +5,8 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
-from polar.config import settings
-from polar.kit.utils import utc_now
-from polar.models import User, UserSession
+from polar.models import User
+from tests.fixtures.auth import make_session_stale
 
 
 @pytest.fixture(autouse=True)
@@ -29,10 +27,7 @@ class TestRequestEmailUpdate:
     async def test_stale_session(
         self, client: AsyncClient, auth_subject: AuthSubject[User]
     ) -> None:
-        assert isinstance(auth_subject.session, UserSession)
-        auth_subject.session.created_at = utc_now() - (
-            settings.USER_SESSION_FRESHNESS_TTL + timedelta(minutes=1)
-        )
+        make_session_stale(auth_subject)
 
         response = await client.post(
             "/v1/email-update/request", json={"email": "new.email@example.com"}

@@ -282,8 +282,7 @@ async def totp_enroll(
     responses={
         403: {
             "description": (
-                "Session is not fresh, TOTP factor not enrolled, "
-                "or invalid TOTP code."
+                "Session is not fresh, TOTP factor not enrolled, or invalid TOTP code."
             ),
             "model": SessionNotFreshError.schema() | PolarAuthError.schema(),
         }

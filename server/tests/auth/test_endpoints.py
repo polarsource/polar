@@ -1,19 +1,9 @@
-from datetime import timedelta
-
 import pytest
 from httpx import AsyncClient
 
 from polar.auth.models import AuthSubject
-from polar.config import settings
-from polar.kit.utils import utc_now
-from polar.models import User, UserSession
-
-
-def make_session_stale(auth_subject: AuthSubject[User]) -> None:
-    assert isinstance(auth_subject.session, UserSession)
-    auth_subject.session.created_at = utc_now() - (
-        settings.USER_SESSION_FRESHNESS_TTL + timedelta(minutes=1)
-    )
+from polar.models import User
+from tests.fixtures.auth import make_session_stale
 
 
 @pytest.mark.asyncio

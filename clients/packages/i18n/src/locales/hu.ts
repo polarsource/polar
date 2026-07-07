@@ -223,28 +223,33 @@ export default {
     productDescription: {
       readMore: 'Bővebben',
     },
+    trialUnavailable: {
+      title: 'Ehhez a vásárláshoz nincs ingyenes próbaidőszak',
+      description:
+        'Ehhez a termékhez már felhasznált egy ingyenes próbaidőszakot, így ma kiszámlázzuk az összeget. A vásárlás befejezéséhez folytassa lent.',
+    },
   },
   intervals: {
     short: {
       day: {
-        _mode: 'plural',
         '=1': 'nap',
         other: '# nap',
+        _mode: 'plural',
       },
       week: {
-        _mode: 'plural',
         '=1': 'hét',
         other: '# hét',
+        _mode: 'plural',
       },
       month: {
-        _mode: 'plural',
         '=1': 'hó',
         other: '# hó',
+        _mode: 'plural',
       },
       year: {
-        _mode: 'plural',
         '=1': 'év',
         other: '# év',
+        _mode: 'plural',
       },
     },
   },

@@ -226,28 +226,33 @@ export default {
       getFree: '無料で入手',
       paymentsUnavailable: '現在、支払いはご利用いただけません',
     },
+    trialUnavailable: {
+      title: 'この購入では無料トライアルは利用できません',
+      description:
+        'この商品ではすでに無料トライアルを利用済みのため、本日ご請求されます。以下から続行して購入を完了してください。',
+    },
   },
   intervals: {
     short: {
       day: {
-        _mode: 'plural',
         '=1': '日',
         other: '#日',
+        _mode: 'plural',
       },
       week: {
-        _mode: 'plural',
         '=1': '週',
         other: '#週間',
+        _mode: 'plural',
       },
       month: {
-        _mode: 'plural',
         '=1': '月',
         other: '#ヶ月',
+        _mode: 'plural',
       },
       year: {
-        _mode: 'plural',
         '=1': '年',
         other: '#年',
+        _mode: 'plural',
       },
     },
   },

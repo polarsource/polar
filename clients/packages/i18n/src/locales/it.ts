@@ -225,28 +225,33 @@ export default {
     productDescription: {
       readMore: 'Leggi di più',
     },
+    trialUnavailable: {
+      title: 'Nessuna prova gratuita per questo acquisto',
+      description:
+        "Hai già utilizzato una prova gratuita per questo prodotto, quindi ti verrà addebitato oggi. Continua qui sotto per completare l'acquisto.",
+    },
   },
   intervals: {
     short: {
       day: {
-        _mode: 'plural',
         '=1': 'g',
         other: '# giorni',
+        _mode: 'plural',
       },
       week: {
-        _mode: 'plural',
         '=1': 'sett',
         other: '# settimane',
+        _mode: 'plural',
       },
       month: {
-        _mode: 'plural',
         '=1': 'mese',
         other: '# mesi',
+        _mode: 'plural',
       },
       year: {
-        _mode: 'plural',
         '=1': 'anno',
         other: '# anni',
+        _mode: 'plural',
       },
     },
   },

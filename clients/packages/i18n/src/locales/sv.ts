@@ -222,28 +222,33 @@ export default {
     productDescription: {
       readMore: 'Läs mer',
     },
+    trialUnavailable: {
+      title: 'Ingen gratis provperiod för det här köpet',
+      description:
+        'Du har redan använt en gratis provperiod för den här produkten, så du debiteras idag. Fortsätt nedan för att slutföra köpet.',
+    },
   },
   intervals: {
     short: {
       day: {
-        _mode: 'plural',
         '=1': 'd',
         other: '# d',
+        _mode: 'plural',
       },
       week: {
-        _mode: 'plural',
         '=1': 'v',
         other: '# v',
+        _mode: 'plural',
       },
       month: {
-        _mode: 'plural',
         '=1': 'mån',
         other: '# mån',
+        _mode: 'plural',
       },
       year: {
-        _mode: 'plural',
         '=1': 'år',
         other: '# år',
+        _mode: 'plural',
       },
     },
   },

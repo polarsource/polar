@@ -17,18 +17,23 @@ Rules:
   entity select, call `.with_only_columns(...)` explicitly.
 - `# noqa: subquery-all-columns` on the call line is an explicit escape for
   cases where full-column projection is intentional.
-
-Exits 1 on any violation.
 """
 
 from __future__ import annotations
 
 import ast
-import sys
-from pathlib import Path
 
-NOQA_MARKER = "subquery-all-columns"
+from .base import Rule, Violation
+
 SAFE_NAMES = frozenset({"with_only_columns", "union", "union_all", "intersect"})
+
+MESSAGE = (
+    "call .with_only_columns(...) before .subquery(), or use "
+    "count_subquery() from polar.kit.pagination. "
+    "`deferred=True` does not propagate into .subquery(). "
+    "Escape with `# noqa: subquery-all-columns` if full-column "
+    "projection is intentional."
+)
 
 
 def _iter_chain_calls(node: ast.AST) -> list[ast.Call]:
@@ -98,77 +103,23 @@ def _chain_is_safe(receiver: ast.AST) -> bool:
     return True
 
 
-def _line_has_noqa(source_lines: list[str], lineno: int) -> bool:
-    idx = lineno - 1
-    return 0 <= idx < len(source_lines) and NOQA_MARKER in source_lines[idx]
-
-
-def check_file(path: Path) -> list[tuple[Path, int, str]]:
-    """Return a list of (path, lineno, message) violations."""
-    source = path.read_text()
-    try:
-        tree = ast.parse(source, filename=str(path))
-    except SyntaxError as exc:
-        return [(path, exc.lineno or 0, f"syntax error: {exc.msg}")]
-
-    source_lines = source.splitlines()
-    violations: list[tuple[Path, int, str]] = []
-
+def check(tree: ast.Module) -> list[Violation]:
+    violations: list[Violation] = []
     for node in ast.walk(tree):
         if not isinstance(node, ast.Call):
             continue
         func = node.func
         if not isinstance(func, ast.Attribute) or func.attr != "subquery":
             continue
-
-        if _line_has_noqa(source_lines, node.lineno):
-            continue
-
         if _chain_is_safe(func.value):
             continue
-
-        violations.append(
-            (
-                path,
-                node.lineno,
-                "call .with_only_columns(...) before .subquery(), or use "
-                "count_subquery() from polar.kit.pagination. "
-                "`deferred=True` does not propagate into .subquery(). "
-                "Escape with `# noqa: subquery-all-columns` if full-column "
-                "projection is intentional.",
-            )
-        )
-
+        violations.append((node.lineno, MESSAGE))
     return violations
 
 
-def main() -> int:
-    root = Path(__file__).resolve().parent.parent / "polar"
-    if not root.exists():
-        print(f"error: {root} not found", file=sys.stderr)
-        return 2
-
-    checked = 0
-    violations: list[tuple[Path, int, str]] = []
-    for path in sorted(root.rglob("*.py")):
-        if "migrations" in path.parts:
-            continue
-        checked += 1
-        violations.extend(check_file(path))
-
-    if violations:
-        for path, lineno, message in violations:
-            try:
-                rel = path.relative_to(Path.cwd())
-            except ValueError:
-                rel = path
-            print(f"{rel}:{lineno}: {message}")
-        print(f"\n{len(violations)} violation(s) across {checked} file(s).")
-        return 1
-
-    print(f"OK: {checked} file(s) checked, no .subquery() violations.")
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+RULE = Rule(
+    name="subquery",
+    noqa_code="subquery-all-columns",
+    summary="flag .subquery() calls that don't narrow columns",
+    check=check,
+)

@@ -12,24 +12,22 @@ Rules (per function, intra-procedural):
   (`Query`/`Path`/`Form`/`Header`/`Cookie`/`Body`), either as a default value
   or inside `Annotated[...]` metadata. Assigning an expression that references
   a tainted name to a local taints that local (fixed-point propagation).
+  References inside comparisons don't propagate — comparing against user input
+  selects a value, it doesn't let the input construct it.
 - Flag `generate_frontend_url(...)` calls whose arguments reference a tainted
   name.
 - Flag f-strings or `+` concatenations that combine `FRONTEND_BASE_URL` with a
   tainted name — the inlined form of the same bug.
 - `# noqa: frontend-url` on the offending line is an explicit escape for
   values already validated upstream.
-
-Exits 1 on any violation.
 """
 
 from __future__ import annotations
 
 import ast
-import re
-import sys
-from pathlib import Path
 
-NOQA_MARKER = "frontend-url"
+from .base import Rule, Violation
+
 TARGET_CALL = "generate_frontend_url"
 BASE_URL_SETTING = "FRONTEND_BASE_URL"
 FASTAPI_PARAM_MARKERS = frozenset({"Query", "Path", "Form", "Header", "Cookie", "Body"})
@@ -45,8 +43,6 @@ CONCAT_MESSAGE = (
     "redirect. Route it through get_safe_return_url (polar.kit.http). Escape "
     "with `# noqa: frontend-url` if already validated."
 )
-
-_NOQA_RE = re.compile(r"#\s*noqa(?::\s*(?P<codes>[^#]*))?", re.IGNORECASE)
 
 FunctionNode = ast.FunctionDef | ast.AsyncFunctionDef
 
@@ -90,6 +86,19 @@ def _references_any(node: ast.AST, names: set[str]) -> bool:
     )
 
 
+def _references_any_outside_compare(node: ast.AST, names: set[str]) -> bool:
+    inside_compare: set[int] = set()
+    for child in ast.walk(node):
+        if isinstance(child, ast.Compare):
+            inside_compare.update(id(sub) for sub in ast.walk(child))
+    return any(
+        isinstance(child, ast.Name)
+        and child.id in names
+        and id(child) not in inside_compare
+        for child in ast.walk(node)
+    )
+
+
 def _propagate(func: FunctionNode, tainted: set[str]) -> set[str]:
     """Fixed-point: a local assigned from a tainted expression is tainted."""
     changed = True
@@ -106,7 +115,7 @@ def _propagate(func: FunctionNode, tainted: set[str]) -> set[str]:
                 value, targets = node.value, [node.target]
             else:
                 continue
-            if value is None or not _references_any(value, tainted):
+            if value is None or not _references_any_outside_compare(value, tainted):
                 continue
             for target in targets:
                 for child in ast.walk(target):
@@ -130,13 +139,13 @@ def _references_base_url(node: ast.AST) -> bool:
     )
 
 
-def check_function(func: FunctionNode) -> list[tuple[int, str]]:
+def _check_function(func: FunctionNode) -> list[Violation]:
     tainted = _tainted_params(func)
     if not tainted:
         return []
     tainted = _propagate(func, tainted)
 
-    violations: list[tuple[int, str]] = []
+    violations: list[Violation] = []
     seen_lines: set[int] = set()
     for node in ast.walk(func):
         if isinstance(node, ast.Call) and _is_target_call(node):
@@ -156,65 +165,17 @@ def check_function(func: FunctionNode) -> list[tuple[int, str]]:
     return violations
 
 
-def _line_has_noqa(source_lines: list[str], lineno: int) -> bool:
-    idx = lineno - 1
-    if not (0 <= idx < len(source_lines)):
-        return False
-    match = _NOQA_RE.search(source_lines[idx])
-    if match is None:
-        return False
-    codes = match.group("codes")
-    if codes is None:
-        return True
-    return NOQA_MARKER in {code.strip() for code in codes.split(",")}
-
-
-def check_file(path: Path) -> list[tuple[Path, int, str]]:
-    source = path.read_text()
-    try:
-        tree = ast.parse(source, filename=str(path))
-    except SyntaxError as exc:
-        return [(path, exc.lineno or 0, f"syntax error: {exc.msg}")]
-
-    source_lines = source.splitlines()
-    violations: list[tuple[Path, int, str]] = []
+def check(tree: ast.Module) -> list[Violation]:
+    violations: list[Violation] = []
     for node in ast.walk(tree):
-        if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-            continue
-        for lineno, message in check_function(node):
-            if _line_has_noqa(source_lines, lineno):
-                continue
-            violations.append((path, lineno, message))
+        if isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
+            violations.extend(_check_function(node))
     return violations
 
 
-def main() -> int:
-    root = Path(__file__).resolve().parent.parent / "polar"
-    if not root.exists():
-        print(f"error: {root} not found", file=sys.stderr)
-        return 2
-
-    checked = 0
-    violations: list[tuple[Path, int, str]] = []
-    for path in sorted(root.rglob("*.py")):
-        if "migrations" in path.parts:
-            continue
-        checked += 1
-        violations.extend(check_file(path))
-
-    if violations:
-        for path, lineno, message in violations:
-            try:
-                rel = path.relative_to(Path.cwd())
-            except ValueError:
-                rel = path
-            print(f"{rel}:{lineno}: {message}")
-        print(f"\n{len(violations)} violation(s) across {checked} file(s).")
-        return 1
-
-    print(f"OK: {checked} file(s) checked, no frontend-url violations.")
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+RULE = Rule(
+    name="frontend-url",
+    noqa_code="frontend-url",
+    summary="flag request-derived values passed to generate_frontend_url",
+    check=check,
+)

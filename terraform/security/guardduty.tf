@@ -1,3 +1,13 @@
+import {
+  to = aws_guardduty_detector.us_east_1
+  id = "56cf9e143c422ea8000cad4a80678a5a"
+}
+
+import {
+  to = aws_guardduty_detector.us_east_2
+  id = "d6cf9e143d2cc1b55f1ce549b8799da3"
+}
+
 resource "aws_guardduty_detector" "us_east_1" {
   enable = true
 }

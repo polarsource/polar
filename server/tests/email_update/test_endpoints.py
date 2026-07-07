@@ -6,6 +6,7 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
+from polar.config import settings
 from polar.kit.utils import utc_now
 from polar.models import User, UserSession
 
@@ -29,7 +30,9 @@ class TestRequestEmailUpdate:
         self, client: AsyncClient, auth_subject: AuthSubject[User]
     ) -> None:
         assert isinstance(auth_subject.session, UserSession)
-        auth_subject.session.created_at = utc_now() - timedelta(minutes=10)
+        auth_subject.session.created_at = utc_now() - (
+            settings.USER_SESSION_FRESHNESS_TTL + timedelta(minutes=1)
+        )
 
         response = await client.post(
             "/v1/email-update/request", json={"email": "new.email@example.com"}

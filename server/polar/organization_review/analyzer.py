@@ -701,7 +701,7 @@ class ReviewAnalyzer:
                     timeout=timeout_seconds,
                 )
             usage = UsageInfo.from_agent_usage(
-                result.usage(), self.model_provider, self.model_name
+                result.usage, self.model_provider, self.model_name
             )
             return result.output, usage
         except Exception as e:

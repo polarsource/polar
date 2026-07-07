@@ -411,7 +411,5 @@ async def _run_website_agent(
             total_pages_succeeded=len(
                 [p for p in deps.pages_visited if p.content.strip()]
             ),
-            usage=UsageInfo.from_agent_usage(
-                result.usage(), model_provider, model_name
-            ),
+            usage=UsageInfo.from_agent_usage(result.usage, model_provider, model_name),
         )

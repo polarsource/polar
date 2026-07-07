@@ -460,3 +460,12 @@ pre.shiki {
     transform: translateX(-50%);
   }
 }
+
+@keyframes shimmer {
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
+}

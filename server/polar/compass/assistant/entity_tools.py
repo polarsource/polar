@@ -9,21 +9,30 @@ everything touched is eager-loaded.
 """
 
 from collections.abc import Sequence
+from datetime import datetime, time, timedelta
 from typing import Any, Literal, cast
 
 from pydantic_ai import RunContext
+from sqlalchemy.orm import selectinload
 
 from polar.auth.scope import Scope
 from polar.checkout.service import checkout as checkout_service
 from polar.customer.service import customer as customer_service
 from polar.dispute.service import dispute as dispute_service
+from polar.event.service import event as event_service
 from polar.kit.pagination import PaginationParams
+from polar.kit.time_queries import TimeInterval
+from polar.metrics.service import metrics as metrics_service
+from polar.models import Product
 from polar.models.checkout import CheckoutStatus
+from polar.models.customer import _avatar_url_for_email
 from polar.models.product_price import ProductPriceFixed
+from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
 from polar.payout.service import payout as payout_service
 from polar.postgres import AsyncSession
+from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
 from polar.refund.service import refund as refund_service
 from polar.subscription.service import subscription as subscription_service
@@ -33,12 +42,13 @@ from .blocks import (
     DataTableBlock,
     DataTableColumn,
     EntityListBlock,
-    EntityListItem,
 )
 from .deps import AssistantDeps
 from .tools import _scope_denial
 
 _MAX_LIMIT = 25
+# Each ranked product costs one metrics query; keep the fan-out small.
+_MAX_RANKED_PRODUCTS = 8
 _LIST_PRESENTATION_MAX = 5
 
 Presentation = Literal["list", "table"]
@@ -49,41 +59,27 @@ def _emit_entities(
     deps: AssistantDeps,
     *,
     entity: str,
+    title: str,
     columns: list[DataTableColumn],
     rows: list[Row],
     total_count: int,
     presentation: Presentation,
 ) -> str:
     if presentation == "list" and len(rows) <= _LIST_PRESENTATION_MAX:
-        first_key = columns[0].key
-        meta_key = columns[-1].key
-        deps.emit(
+        marker = deps.emit(
             EntityListBlock(
                 entity=entity,
-                items=[
-                    EntityListItem(
-                        title=str(row.get(first_key) or ""),
-                        description=", ".join(
-                            str(row[column.key])
-                            for column in columns[1:-1]
-                            if row.get(column.key) is not None
-                        )
-                        or None,
-                        meta=(
-                            str(row[meta_key])
-                            if row.get(meta_key) is not None
-                            else None
-                        ),
-                    )
-                    for row in rows
-                ],
+                title=title,
+                columns=columns,
+                rows=rows,
                 total_count=total_count,
             )
         )
     else:
-        deps.emit(
+        marker = deps.emit(
             DataTableBlock(
                 entity=entity,
+                title=title,
                 columns=columns,
                 rows=rows,
                 total_count=total_count,
@@ -91,7 +87,8 @@ def _emit_entities(
         )
     shown = len(rows)
     return (
-        f"Rendered {shown} of {total_count} {entity} for the user. Rows: "
+        f"Prepared a block with {shown} of {total_count} {entity}; place it "
+        f"with [block:{marker}] directly after the claim it supports. Rows: "
         + "; ".join(str(row) for row in rows[:_LIST_PRESENTATION_MAX])
     )
 
@@ -140,6 +137,7 @@ async def list_orders(
     return _emit_entities(
         deps,
         entity="orders",
+        title="Recent orders",
         columns=columns,
         rows=rows,
         total_count=count,
@@ -190,6 +188,7 @@ async def list_subscriptions(
     return _emit_entities(
         deps,
         entity="subscriptions",
+        title="Subscriptions",
         columns=columns,
         rows=rows,
         total_count=count,
@@ -222,6 +221,7 @@ async def list_customers(
     )
     rows: list[Row] = [
         {
+            "avatar": item.avatar_url,
             "email": item.email,
             "name": item.name,
             "created": item.created_at.isoformat(),
@@ -229,6 +229,7 @@ async def list_customers(
         for item in items
     ]
     columns = [
+        DataTableColumn(key="avatar", label="", format=ColumnFormat.avatar),
         DataTableColumn(key="email", label="Email"),
         DataTableColumn(key="name", label="Name"),
         DataTableColumn(key="created", label="Created", format=ColumnFormat.datetime),
@@ -236,6 +237,7 @@ async def list_customers(
     return _emit_entities(
         deps,
         entity="customers",
+        title="Customers",
         columns=columns,
         rows=rows,
         total_count=count,
@@ -264,13 +266,15 @@ async def list_products(
     deps = ctx.deps
     if denial := _scope_denial(deps, Scope.products_read):
         return denial
-    items, count = await product_service.list(
-        deps.session,
-        deps.auth_subject,
-        organization_id=[deps.organization_id],
-        is_archived=False,
-        pagination=_clamp(limit),
+    # Loaded via the repository with prices eager-loaded: the price column
+    # reads `all_prices`, which is lazy="raise" and not loaded by the
+    # service's list query.
+    items = await ProductRepository.from_session(deps.session).get_all_by_organization(
+        deps.organization_id,
+        options=(selectinload(Product.all_prices),),
+        limit=max(1, min(_MAX_LIMIT, limit)),
     )
+    count = len(items)
     rows: list[Row] = [
         {
             "name": item.name,
@@ -287,6 +291,7 @@ async def list_products(
     return _emit_entities(
         deps,
         entity="products",
+        title="Products",
         columns=columns,
         rows=rows,
         total_count=count,
@@ -330,6 +335,7 @@ async def list_disputes(
     return _emit_entities(
         deps,
         entity="disputes",
+        title="Disputes",
         columns=columns,
         rows=rows,
         total_count=count,
@@ -380,6 +386,7 @@ async def list_checkouts(
     return _emit_entities(
         deps,
         entity="checkouts",
+        title="Checkouts",
         columns=columns,
         rows=rows,
         total_count=count,
@@ -426,6 +433,7 @@ async def list_refunds(
     return _emit_entities(
         deps,
         entity="refunds",
+        title="Refunds",
         columns=columns,
         rows=rows,
         total_count=count,
@@ -478,10 +486,221 @@ async def list_payouts(
     return _emit_entities(
         deps,
         entity="payouts",
+        title="Payouts",
         columns=columns,
         rows=rows,
         total_count=count,
         presentation=presentation,
+    )
+
+
+async def top_products_by_revenue(
+    ctx: RunContext[AssistantDeps],
+    days: int = 365,
+    limit: int = 5,
+    presentation: Presentation = "table",
+) -> str:
+    """Rank products by revenue over a trailing window, via the revenue metric
+    filtered per product. Answers questions like "what is my most successful
+    product" or "which product sells best".
+
+    Args:
+        days: Trailing window in days (7 to 365, default 365).
+        limit: How many products to rank (1 to 8; one metrics query each).
+        presentation: `list` for a compact list (5 or fewer), else `table`.
+    """
+    deps = ctx.deps
+    if denial := _scope_denial(deps, Scope.metrics_read):
+        return denial
+    days = max(7, min(365, days))
+    limit = max(1, min(_MAX_RANKED_PRODUCTS, limit))
+
+    products, _ = await product_service.list(
+        deps.session,
+        deps.auth_subject,
+        organization_id=[deps.organization_id],
+        is_archived=False,
+        pagination=PaginationParams(1, _MAX_RANKED_PRODUCTS),
+    )
+    if not products:
+        return "This organization has no products."
+
+    ranked: list[tuple[str, float, float]] = []
+    for product in products:
+        response = await metrics_service.get_metrics(
+            deps.session,
+            deps.auth_subject,
+            start_date=deps.today - timedelta(days=days),
+            end_date=deps.today,
+            timezone=deps.timezone,
+            interval=TimeInterval.month,
+            organization_id=[deps.organization_id],
+            product_id=[product.id],
+            metrics=["revenue", "orders"],
+            redis=deps.redis,
+        )
+        revenue = float(getattr(response.totals, "revenue", 0) or 0)
+        orders = float(getattr(response.totals, "orders", 0) or 0)
+        ranked.append((product.name, revenue, orders))
+    ranked.sort(key=lambda entry: entry[1], reverse=True)
+    ranked = ranked[:limit]
+
+    if all(revenue == 0 for _, revenue, _ in ranked):
+        return f"No product revenue was recorded in the last {days} days."
+    rows: list[Row] = [
+        {"product": name, "revenue": revenue, "orders": int(orders)}
+        for name, revenue, orders in ranked
+    ]
+    columns = [
+        DataTableColumn(key="product", label="Product"),
+        DataTableColumn(key="revenue", label="Revenue", format=ColumnFormat.currency),
+        DataTableColumn(key="orders", label="Orders"),
+    ]
+    top = rows[0]
+    summary = _emit_entities(
+        deps,
+        entity="products by revenue",
+        title=f"Top products by revenue, last {days} days",
+        columns=columns,
+        rows=rows,
+        total_count=len(rows),
+        presentation=presentation,
+    )
+    return (
+        f"Top product by revenue over the last {days} days: {top['product']} "
+        f"({top['orders']} orders). " + summary
+    )
+
+
+async def top_customers_by_revenue(
+    ctx: RunContext[AssistantDeps],
+    days: int | None = 365,
+    limit: int = 5,
+    presentation: Presentation = "table",
+) -> str:
+    """Rank customers by paid net revenue. Answers questions like "who is my
+    best customer" or "which customers bring in the most revenue".
+
+    Args:
+        days: Trailing window in days (up to 365); omit for all time.
+        limit: How many customers to rank (1 to 25).
+        presentation: `list` for a compact list (5 or fewer), else `table`.
+    """
+    deps = ctx.deps
+    if denial := _scope_denial(deps, Scope.orders_read):
+        return denial
+    start = None
+    if days is not None:
+        days = max(1, min(365, days))
+        start = datetime.combine(
+            deps.today - timedelta(days=days), time.min, deps.timezone
+        )
+    ranked = await OrderRepository.from_session(deps.session).get_revenue_by_customer(
+        deps.organization_id,
+        start=start,
+        limit=max(1, min(_MAX_LIMIT, limit)),
+    )
+    window = f"the last {days} days" if days is not None else "all time"
+    if not ranked:
+        return f"No paid orders were found for {window}."
+    rows: list[Row] = [
+        {
+            "avatar": _avatar_url_for_email(email) if email else None,
+            "customer": email or name,
+            "revenue": net_revenue,
+            "orders": order_count,
+        }
+        for _, email, name, order_count, net_revenue in ranked
+    ]
+    columns = [
+        DataTableColumn(key="avatar", label="", format=ColumnFormat.avatar),
+        DataTableColumn(key="customer", label="Customer"),
+        DataTableColumn(
+            key="revenue", label="Net revenue", format=ColumnFormat.currency
+        ),
+        DataTableColumn(key="orders", label="Orders"),
+    ]
+    top = rows[0]
+    summary = _emit_entities(
+        deps,
+        entity="customers by revenue",
+        title=f"Top customers by net revenue, {window}",
+        columns=columns,
+        rows=rows,
+        total_count=len(rows),
+        presentation=presentation,
+    )
+    return (
+        f"Best customer by paid net revenue over {window}: {top['customer']} "
+        f"({top['orders']} orders). " + summary
+    )
+
+
+async def top_customers_by_cost(
+    ctx: RunContext[AssistantDeps],
+    days: int = 30,
+    limit: int = 5,
+    presentation: Presentation = "table",
+) -> str:
+    """Rank customers by the cost they generate (from `_cost` event metadata).
+    Answers questions like "which customer drives the most cost".
+
+    Args:
+        days: Trailing window length in days (7 to 90, default 30).
+        limit: How many customers to rank (1 to 25).
+        presentation: `list` for a compact list (5 or fewer), else `table`.
+    """
+    deps = ctx.deps
+    if denial := _scope_denial(deps, Scope.events_read):
+        return denial
+    days = max(7, min(90, days))
+    stats = await event_service.list_customer_stats(
+        cast(AsyncSession, deps.session),
+        deps.auth_subject,
+        start_date=deps.today - timedelta(days=days),
+        end_date=deps.today,
+        timezone=deps.timezone,
+        organization_id=[deps.organization_id],
+        limit=max(1, min(_MAX_LIMIT, limit)),
+    )
+    ranked = [
+        stat for stat in stats.items if float(stat.totals.get("_cost_amount", 0)) > 0
+    ]
+    if not ranked:
+        return (
+            f"No customer costs were tracked in the last {days} days. Costs "
+            "come from `_cost` metadata on ingested events."
+        )
+    rows: list[Row] = [
+        {
+            "avatar": _avatar_url_for_email(stat.email) if stat.email else None,
+            "customer": stat.email or stat.name or stat.external_customer_id,
+            "cost": float(stat.totals.get("_cost_amount", 0)),
+            "share": f"{float(stat.share) * 100:.0f}%",
+            "events": stat.occurrences,
+        }
+        for stat in ranked
+    ]
+    columns = [
+        DataTableColumn(key="avatar", label="", format=ColumnFormat.avatar),
+        DataTableColumn(key="customer", label="Customer"),
+        DataTableColumn(key="cost", label="Cost", format=ColumnFormat.currency),
+        DataTableColumn(key="share", label="Share of costs"),
+        DataTableColumn(key="events", label="Events"),
+    ]
+    top = rows[0]
+    summary = _emit_entities(
+        deps,
+        entity="customers by cost",
+        title=f"Top customers by tracked cost, last {days} days",
+        columns=columns,
+        rows=rows,
+        total_count=len(rows),
+        presentation=presentation,
+    )
+    return (
+        f"Top cost driver over the last {days} days: {top['customer']} with "
+        f"{top['share']} of all tracked costs. " + summary
     )
 
 
@@ -494,4 +713,7 @@ ENTITY_TOOLS_WITH_SCOPES: Sequence[tuple[object, Scope]] = [
     (list_checkouts, Scope.checkouts_read),
     (list_refunds, Scope.refunds_read),
     (list_payouts, Scope.payouts_read),
+    (top_customers_by_cost, Scope.events_read),
+    (top_products_by_revenue, Scope.metrics_read),
+    (top_customers_by_revenue, Scope.orders_read),
 ]

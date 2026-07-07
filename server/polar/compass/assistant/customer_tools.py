@@ -15,9 +15,15 @@ from polar.kit.pagination import PaginationParams
 from polar.order.service import order as order_service
 from polar.subscription.service import subscription as subscription_service
 
-from .blocks import CustomerCardBlock, EntityListBlock, EntityListItem
+from .blocks import ColumnFormat, CustomerCardBlock, DataTableColumn, EntityListBlock
 from .deps import AssistantDeps
 from .tools import _scope_denial
+
+_SECTION_COLUMNS = [
+    DataTableColumn(key="title", label="Item"),
+    DataTableColumn(key="detail", label="Detail"),
+    DataTableColumn(key="amount", label="Amount", format=ColumnFormat.currency),
+]
 
 _SECTION_LIMIT = 5
 
@@ -47,14 +53,16 @@ async def get_customer_overview(
         return f"No customer matching {email_or_name!r} was found."
     customer = customers[0]
 
-    deps.emit(
+    card_marker = deps.emit(
         CustomerCardBlock(
             email=customer.email or "(no email)",
             name=customer.name,
+            avatar_url=customer.avatar_url,
             created_at=customer.created_at,
         )
     )
     summary = [
+        f"Customer card prepared; place it with [block:{card_marker}]. "
         f"Customer: {customer.email}"
         f" (name={customer.name!r}, since {customer.created_at.date()})."
         + (f" {count - 1} other match(es) exist." if count > 1 else "")
@@ -68,22 +76,28 @@ async def get_customer_overview(
             customer_id=[customer.id],
             pagination=PaginationParams(1, _SECTION_LIMIT),
         )
+        orders_marker = None
         if orders:
-            deps.emit(
+            orders_marker = deps.emit(
                 EntityListBlock(
                     entity="orders",
-                    items=[
-                        EntityListItem(
-                            title=order.product.name if order.product else "Order",
-                            description=order.created_at.strftime("%b %d, %Y"),
-                            meta=f"${order.net_amount / 100:,.2f}",
-                        )
+                    title="Orders",
+                    columns=_SECTION_COLUMNS,
+                    rows=[
+                        {
+                            "title": order.product.name if order.product else "Order",
+                            "detail": order.created_at.isoformat(),
+                            "amount": order.net_amount,
+                        }
                         for order in orders
                     ],
                     total_count=orders_count,
                 )
             )
-        summary.append(f"Orders: {orders_count} total, {len(orders)} rendered.")
+        summary.append(
+            f"Orders: {orders_count} total."
+            + (f" Block prepared: [block:{orders_marker}]." if orders_marker else "")
+        )
     else:
         summary.append("Orders withheld: token lacks the `orders:read` scope.")
 
@@ -95,23 +109,29 @@ async def get_customer_overview(
             customer_id=[customer.id],
             pagination=PaginationParams(1, _SECTION_LIMIT),
         )
+        subs_marker = None
         if subscriptions:
-            deps.emit(
+            subs_marker = deps.emit(
                 EntityListBlock(
                     entity="subscriptions",
-                    items=[
-                        EntityListItem(
-                            title=sub.product.name if sub.product else "Subscription",
-                            description=str(sub.status),
-                            meta=f"${sub.amount / 100:,.2f}",
-                        )
+                    title="Subscriptions",
+                    columns=_SECTION_COLUMNS,
+                    rows=[
+                        {
+                            "title": sub.product.name
+                            if sub.product
+                            else "Subscription",
+                            "detail": str(sub.status),
+                            "amount": sub.amount,
+                        }
                         for sub in subscriptions
                     ],
                     total_count=subs_count,
                 )
             )
         summary.append(
-            f"Subscriptions: {subs_count} total, {len(subscriptions)} rendered."
+            f"Subscriptions: {subs_count} total."
+            + (f" Block prepared: [block:{subs_marker}]." if subs_marker else "")
         )
     else:
         summary.append(

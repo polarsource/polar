@@ -33,7 +33,6 @@ export const CompassInputBar = forwardRef<
 
   return (
     <Box
-      pointerEvents="auto"
       width="100%"
       display="flex"
       flexDirection="row"
@@ -42,7 +41,7 @@ export const CompassInputBar = forwardRef<
       borderRadius="full"
       borderWidth={1}
       borderStyle="solid"
-      borderColor="border-secondary"
+      borderColor="border-primary"
       backgroundColor="background-secondary"
       boxShadow="xl"
     >

@@ -124,7 +124,7 @@ export const CompassBox = ({
             borderRadius="full"
             borderWidth={1}
             borderStyle="solid"
-            borderColor="border-secondary"
+            borderColor="border-primary"
             backgroundColor="background-secondary"
             boxShadow="xl"
           >

@@ -109,7 +109,7 @@ export const CompassConversation = ({
     <div
       ref={rootRef}
       className={twMerge(
-        'dark:bg-polar-900 absolute inset-0 z-40 flex flex-col items-center bg-white transition-opacity duration-300 ease-out',
+        'dark:bg-polar-900 absolute h-full inset-0 z-40 flex flex-col items-center bg-white transition-opacity duration-300 ease-out overflow-y-auto',
         active ? 'opacity-100' : 'pointer-events-none opacity-0',
       )}
     >
@@ -124,7 +124,7 @@ export const CompassConversation = ({
         </button>
       </div>
 
-      <div className="flex w-full flex-1 justify-center overflow-y-auto px-6">
+      <div className="flex w-full flex-1 justify-center px-6 pb-24">
         <div className="flex w-full max-w-[760px] flex-col gap-y-8">
           <Text variant="heading-s">Compass</Text>
           {empty ? (
@@ -197,7 +197,9 @@ export const CompassConversation = ({
                     maxWidth="85%"
                   >
                     {message.parts.length === 0 && isStreaming ? (
-                      <Text color="muted">Thinking...</Text>
+                      <span className="dark:from-polar-500 dark:via-polar-100 dark:to-polar-500 w-fit [animation:shimmer_2s_linear_infinite] bg-linear-to-r from-gray-400 via-gray-800 to-gray-400 bg-size-[200%_100%] bg-clip-text text-transparent">
+                        Thinking...
+                      </span>
                     ) : (
                       message.parts.map((part, i) => (
                         <AssistantPartView
@@ -215,7 +217,7 @@ export const CompassConversation = ({
         </div>
       </div>
 
-      <div className="flex w-full justify-center px-6 pb-8">
+      <div className="sticky right-0 bottom-0 left-0 flex w-full justify-center px-6 pb-8">
         <div className="w-full max-w-[760px]">
           <CompassInputBar
             ref={inputRef}

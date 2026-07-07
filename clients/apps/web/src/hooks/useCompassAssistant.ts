@@ -14,16 +14,10 @@ export interface MetricChartPoint {
  * backend `AssistantBlock` union; anything outside it is ignored by the
  * registry rather than rendered.
  */
-export interface EntityListItem {
-  title: string
-  description?: string | null
-  meta?: string | null
-}
-
 export interface DataTableColumn {
   key: string
   label: string
-  format: 'text' | 'currency' | 'datetime' | 'badge'
+  format: 'text' | 'currency' | 'datetime' | 'badge' | 'avatar'
 }
 
 export type DataTableRow = Record<string, string | number | null>
@@ -41,12 +35,15 @@ export type AssistantBlock =
   | {
       type: 'entity_list'
       entity: string
-      items: EntityListItem[]
+      title: string | null
+      columns: DataTableColumn[]
+      rows: DataTableRow[]
       total_count: number
     }
   | {
       type: 'data_table'
       entity: string
+      title: string | null
       columns: DataTableColumn[]
       rows: DataTableRow[]
       total_count: number
@@ -55,6 +52,7 @@ export type AssistantBlock =
       type: 'customer_card'
       email: string
       name: string | null
+      avatar_url: string | null
       created_at: string
     }
 

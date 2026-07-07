@@ -10,6 +10,7 @@ from polar.compass.detectors.base import DetectorContext, confidence_for_sample
 from polar.compass.detectors.churn import ChurnSpikeDetector
 from polar.compass.detectors.conversion import CheckoutConversionDetector
 from polar.compass.detectors.cost_per_user import CostPerUserDetector
+from polar.compass.detectors.customer_cost import CostConcentrationDetector
 from polar.compass.detectors.margin import GrossMarginDetector
 from polar.compass.detectors.mrr import MRRGrowthDetector
 from polar.compass.detectors.product_margin import ProductMarginDetector
@@ -24,7 +25,7 @@ from polar.compass.schemas import (
     InsightSeverity,
     ViewMetricAction,
 )
-from polar.compass.signals import ProductPricing
+from polar.compass.signals import CustomerCostSignal, ProductPricing
 from polar.metrics.schemas import MetricsResponse
 
 
@@ -600,6 +601,22 @@ def _product(
     )
 
 
+def _context_with_customer_costs(
+    customer_costs: list[CustomerCostSignal],
+) -> DetectorContext:
+    return DetectorContext(
+        organization_id=uuid.uuid4(),
+        timezone=ZoneInfo("UTC"),
+        today=date(2026, 2, 6),
+        metrics=_response_from(active_subscriptions=[50.0] * 36),
+        customer_costs=tuple(customer_costs),
+    )
+
+
+def _cost_signal(label: str, share: float, amount: float = 100.0) -> CustomerCostSignal:
+    return CustomerCostSignal(label=label, amount=amount, share=share)
+
+
 def _context_with_products(products: list[ProductPricing]) -> DetectorContext:
     return DetectorContext(
         organization_id=uuid.uuid4(),
@@ -681,6 +698,59 @@ class TestProductMarginDetector:
         assert insight is None
 
 
+class TestCostConcentrationDetector:
+    def test_fires_on_concentration(self) -> None:
+        signals = [_cost_signal("big@corp.com", 0.55)] + [
+            _cost_signal(f"c{i}@x.com", 0.09) for i in range(5)
+        ]
+
+        insight = CostConcentrationDetector().evaluate(
+            _context_with_customer_costs(signals)
+        )
+
+        assert insight is not None
+        assert insight.category is InsightCategory.risk
+        assert insight.severity is InsightSeverity.warning
+        assert "55% of your costs" in insight.title
+        assert "big@corp.com" in insight.body
+        assert insight.detector_id == "cost_concentration"
+
+    def test_extreme_concentration_is_critical(self) -> None:
+        signals = [_cost_signal("whale@corp.com", 0.7)] + [
+            _cost_signal(f"c{i}@x.com", 0.06) for i in range(5)
+        ]
+
+        insight = CostConcentrationDetector().evaluate(
+            _context_with_customer_costs(signals)
+        )
+
+        assert insight is not None
+        assert insight.severity is InsightSeverity.critical
+
+    def test_silent_when_costs_spread_out(self) -> None:
+        signals = [_cost_signal(f"c{i}@x.com", 0.2) for i in range(5)]
+
+        insight = CostConcentrationDetector().evaluate(
+            _context_with_customer_costs(signals)
+        )
+
+        assert insight is None
+
+    def test_suppressed_when_too_few_customers(self) -> None:
+        signals = [_cost_signal("a@x.com", 0.8), _cost_signal("b@x.com", 0.2)]
+
+        insight = CostConcentrationDetector().evaluate(
+            _context_with_customer_costs(signals)
+        )
+
+        assert insight is None
+
+    def test_silent_without_cost_data(self) -> None:
+        insight = CostConcentrationDetector().evaluate(_context_with_customer_costs([]))
+
+        assert insight is None
+
+
 class TestInsightCopy:
     def test_no_em_dashes_in_any_emitted_copy(self) -> None:
         """Em dashes are banned in user-facing copy; use comma, colon or period."""
@@ -756,6 +826,12 @@ class TestInsightCopy:
             ),
             ProductMarginDetector().evaluate(
                 _context_with_products([_product(margin=0.41)])
+            ),
+            CostConcentrationDetector().evaluate(
+                _context_with_customer_costs(
+                    [_cost_signal("big@corp.com", 0.62)]
+                    + [_cost_signal(f"c{i}@x.com", 0.076) for i in range(5)]
+                )
             ),
         ]
 

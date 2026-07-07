@@ -4,7 +4,7 @@ import { ParsedMetricPeriod } from '@/hooks/queries'
 import { AssistantBlock, AssistantPart } from '@/hooks/useCompassAssistant'
 import { getFormattedMetricValue } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
+import { Grid, GridItem, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useMemo } from 'react'
 import MetricChart from '../Metrics/MetricChart'
@@ -60,7 +60,31 @@ const MetricChartView = ({
         <Text color="muted">{block.label}</Text>
         <Text monospace>{getFormattedMetricValue(metric, latest)}</Text>
       </Box>
-      <MetricChart data={data} interval="day" metric={metric} height={140} simple />
+      <MetricChart
+        data={data}
+        interval="day"
+        metric={metric}
+        height={140}
+        simple
+      />
+    </Box>
+  )
+}
+
+/**
+ * Streamed text, split into digestible paragraphs. The model separates
+ * thoughts with newlines; HTML would collapse them, so each chunk becomes its
+ * own Text node with consistent spacing.
+ */
+const ParagraphsText = ({ text }: { text: string }) => {
+  const paragraphs = text.split(/\n+/).filter((p) => p.trim().length > 0)
+  return (
+    <Box display="flex" flexDirection="column" rowGap="m">
+      {paragraphs.map((paragraph, i) => (
+        <Text key={i} variant="body">
+          {paragraph}
+        </Text>
+      ))}
     </Box>
   )
 }
@@ -79,26 +103,31 @@ export const AssistantBlockView = ({
 }) => {
   switch (block.type) {
     case 'text':
-      return <Text>{block.text}</Text>
+      return <ParagraphsText text={block.text} />
     case 'metric_chart':
       return <MetricChartView block={block} />
     case 'insight_cards':
       return (
-        <Box display="flex" flexDirection="column" rowGap="m">
+        <Grid templateColumns="repeat(2, 1fr)" gap="m">
           {block.insights.map((insight) => (
-            <Box
-              key={insight.id}
-              padding="l"
-              borderRadius="l"
-              borderWidth={1}
-              borderStyle="solid"
-              borderColor="border-primary"
-              backgroundColor="background-card"
-            >
-              <InsightCard organization={organization} insight={insight} />
-            </Box>
+            <GridItem key={insight.id}>
+              <Box
+                padding="l"
+                borderRadius="l"
+                borderWidth={1}
+                borderStyle="solid"
+                borderColor="border-primary"
+                backgroundColor="background-card"
+              >
+                <InsightCard
+                  organization={organization}
+                  insight={insight}
+                  size="small"
+                />
+              </Box>
+            </GridItem>
           ))}
-        </Box>
+        </Grid>
       )
     case 'entity_list':
       return <EntityListView block={block} />
@@ -119,7 +148,7 @@ export const AssistantPartView = ({
   organization: schemas['Organization']
 }) => {
   if (part.kind === 'text') {
-    return <Text>{part.text}</Text>
+    return <ParagraphsText text={part.text} />
   }
   return <AssistantBlockView block={part.block} organization={organization} />
 }

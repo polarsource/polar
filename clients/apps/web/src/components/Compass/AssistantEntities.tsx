@@ -15,6 +15,13 @@ import {
 } from '@polar-sh/orbit'
 import { useMemo } from 'react'
 
+const rowName = (row: DataTableRow, columns: DataTableColumn[]): string => {
+  const nameColumn = columns.find(
+    (column) => column.format === 'text' && row[column.key] !== null,
+  )
+  return nameColumn ? String(row[nameColumn.key]) : ''
+}
+
 const formatCell = (
   value: string | number | null | undefined,
   format: DataTableColumn['format'],
@@ -40,32 +47,68 @@ export const EntityListView = ({
   block,
 }: {
   block: Extract<AssistantBlock, { type: 'entity_list' }>
-}) => (
-  <List size="small">
-    {block.items.map((item, i) => (
-      <ListItem key={i} size="small">
-        <Box
-          width="100%"
-          display="flex"
-          flexDirection="row"
-          alignItems="center"
-          justifyContent="between"
-          columnGap="l"
-        >
-          <Box display="flex" flexDirection="column">
-            <Text>{item.title}</Text>
-            {item.description ? (
-              <Text variant="caption" color="muted">
-                {item.description}
+}) => {
+  // Same columns/rows shape as the table, so currency and dates format
+  // identically in both presentations. First column is the title, the last
+  // is the right-aligned meta, anything between becomes the description.
+  const avatarColumn =
+    block.columns[0]?.format === 'avatar' ? block.columns[0] : undefined
+  const contentColumns = avatarColumn ? block.columns.slice(1) : block.columns
+  const [titleColumn, ...rest] = contentColumns
+  const metaColumn = rest.length > 0 ? rest[rest.length - 1] : undefined
+  const descriptionColumns = rest.slice(0, -1)
+  return (
+    <Box display="flex" flexDirection="column" rowGap="s">
+      {block.title ? (
+        <Text variant="caption" color="muted">
+          {block.title}
+        </Text>
+      ) : null}
+      <List size="small">
+      {block.rows.map((row, i) => (
+        <ListItem key={i} size="small">
+          <Box
+            width="100%"
+            display="flex"
+            flexDirection="row"
+            alignItems="center"
+            justifyContent="between"
+            columnGap="l"
+          >
+            {avatarColumn ? (
+              <Avatar
+                name={rowName(row, contentColumns)}
+                avatar_url={
+                  typeof row[avatarColumn.key] === 'string'
+                    ? (row[avatarColumn.key] as string)
+                    : null
+                }
+                className="size-8"
+              />
+            ) : null}
+            <Box display="flex" flexDirection="column" flexGrow={1}>
+              <Text>{formatCell(row[titleColumn.key], titleColumn.format)}</Text>
+              {descriptionColumns.length > 0 ? (
+                <Text variant="caption" color="muted">
+                  {descriptionColumns
+                    .filter((column) => row[column.key] !== null)
+                    .map((column) => formatCell(row[column.key], column.format))
+                    .join(', ')}
+                </Text>
+              ) : null}
+            </Box>
+            {metaColumn && row[metaColumn.key] !== null ? (
+              <Text color="muted">
+                {formatCell(row[metaColumn.key], metaColumn.format)}
               </Text>
             ) : null}
           </Box>
-          {item.meta ? <Text color="muted">{item.meta}</Text> : null}
-        </Box>
-      </ListItem>
-    ))}
-  </List>
-)
+        </ListItem>
+      ))}
+      </List>
+    </Box>
+  )
+}
 
 export const CustomerCardView = ({
   block,
@@ -84,7 +127,7 @@ export const CustomerCardView = ({
     borderColor="border-primary"
     backgroundColor="background-card"
   >
-    <Avatar name={block.name ?? block.email} avatar_url={null} />
+    <Avatar name={block.name ?? block.email} avatar_url={block.avatar_url} />
     <Box display="flex" flexDirection="column">
       <Text>{block.name ?? block.email}</Text>
       <Text variant="caption" color="muted">
@@ -110,6 +153,15 @@ export const EntityTableView = ({
         header: column.label,
         cell: ({ row }) => {
           const value = row.original[column.key]
+          if (column.format === 'avatar') {
+            return (
+              <Avatar
+                name={rowName(row.original, block.columns)}
+                avatar_url={typeof value === 'string' ? value : null}
+                className="size-8"
+              />
+            )
+          }
           if (column.format === 'badge' && value !== null) {
             return <Status status={String(value)} size="small" />
           }
@@ -121,6 +173,11 @@ export const EntityTableView = ({
 
   return (
     <Box display="flex" flexDirection="column" rowGap="s">
+      {block.title ? (
+        <Text variant="caption" color="muted">
+          {block.title}
+        </Text>
+      ) : null}
       <DataTable columns={columns} data={block.rows} isLoading={false} />
       {block.total_count > block.rows.length ? (
         <Text variant="caption" color="muted">

@@ -11,6 +11,7 @@ Every tool follows the same contract:
 """
 
 from datetime import timedelta
+from typing import Literal
 
 from pydantic_ai import RunContext
 
@@ -19,6 +20,7 @@ from polar.kit.time_queries import TimeInterval
 from polar.metrics.metrics import METRICS
 from polar.metrics.service import metrics as metrics_service
 
+from ..schemas import InsightCategory
 from ..service import compass as compass_service
 from .blocks import InsightCardsBlock, MetricChartBlock, MetricChartPoint
 from .deps import AssistantDeps
@@ -87,7 +89,7 @@ async def get_metrics(
             )
             for period in response.periods
         ]
-        deps.emit(
+        marker = deps.emit(
             MetricChartBlock(
                 metric=slug,
                 label=metric.display_name,
@@ -99,14 +101,27 @@ async def get_metrics(
         last = points[-1].value if points else 0
         summaries.append(
             f"{slug} ({metric.type.value}): start={first} latest={last} "
-            f"over the last {days} days. A chart was rendered for the user."
+            f"over the last {days} days. Chart prepared; place it with "
+            f"[block:{marker}]."
         )
     return "\n".join(summaries)
 
 
-async def get_insights(ctx: RunContext[AssistantDeps]) -> str:
-    """Fetch Compass insights: computed, narrated findings about the business
-    (revenue moves, churn, margins, conversion), each with a severity."""
+async def get_insights(
+    ctx: RunContext[AssistantDeps],
+    category: Literal["revenue", "retention", "growth", "risk", "cost", "product"]
+    | None = None,
+) -> str:
+    """Fetch Compass insights for your own reasoning: computed, narrated
+    findings about the business, each with a severity and an id. Renders
+    NOTHING to the user — form your assessment from the findings, then call
+    `show_insights` with the one or two ids that support it.
+
+    Args:
+        category: Only insights in this area — `revenue`, `retention` (churn),
+            `growth`, `risk`, `cost` (margins, cost to serve) or `product`
+            (conversion). Omit for a whole-business view.
+    """
     deps = ctx.deps
     if denial := _scope_denial(deps, Scope.metrics_read):
         return denial
@@ -116,20 +131,61 @@ async def get_insights(ctx: RunContext[AssistantDeps]) -> str:
         deps.auth_subject,
         timezone=deps.timezone,
         organization_id=[deps.organization_id],
+        category=[InsightCategory(category)] if category else None,
         redis=deps.redis,
     )
     if not insights:
-        return "No insights are currently firing for this organization."
+        area = f" in the {category} category" if category else ""
+        return f"No insights are currently firing{area} for this organization."
 
-    deps.emit(InsightCardsBlock(insights=insights))
     lines = [
-        f"[{insight.severity.value}] {insight.title}: {insight.body}"
+        f"[{insight.severity.value}] id={insight.id} {insight.title}: "
+        f"{insight.body}" + (f" (Method: {insight.why})" if insight.why else "")
         for insight in insights
     ]
-    return "Insight cards were rendered for the user. Findings:\n" + "\n".join(lines)
+    return (
+        "Findings (nothing rendered yet; use show_insights to display the "
+        "relevant ones, usually one or two):\n" + "\n".join(lines)
+    )
+
+
+async def show_insights(
+    ctx: RunContext[AssistantDeps],
+    insight_ids: list[str],
+) -> str:
+    """Render insight cards to the user, by id (from `get_insights`).
+
+    Default to the one or two cards that directly support your assessment;
+    render more only when the user explicitly asked to see all insights.
+
+    Args:
+        insight_ids: Ids of the insights to display, most important first.
+    """
+    deps = ctx.deps
+    if denial := _scope_denial(deps, Scope.metrics_read):
+        return denial
+
+    wanted = insight_ids
+    insights = await compass_service.list_insights(
+        deps.session,
+        deps.auth_subject,
+        timezone=deps.timezone,
+        organization_id=[deps.organization_id],
+        redis=deps.redis,
+    )
+    selected = [insight for insight in insights if insight.id in wanted]
+    if not selected:
+        return "None of those insight ids are currently firing."
+
+    marker = deps.emit(InsightCardsBlock(insights=selected))
+    return (
+        f"Prepared {len(selected)} insight card(s); place them with "
+        f"[block:{marker}]. Cards: " + ", ".join(insight.title for insight in selected)
+    )
 
 
 TOOLS_WITH_SCOPES: list[tuple[object, Scope]] = [
     (get_metrics, Scope.metrics_read),
     (get_insights, Scope.metrics_read),
+    (show_insights, Scope.metrics_read),
 ]

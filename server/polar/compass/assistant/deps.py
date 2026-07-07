@@ -30,5 +30,11 @@ class AssistantDeps:
     """Renderable blocks produced by tools during the run, in order. The
     endpoint streams them to the client interleaved with the model's text."""
 
-    def emit(self, block: AssistantBlock) -> None:
+    def emit(self, block: AssistantBlock) -> int:
+        """Queue a block for rendering; returns its placement marker index.
+
+        Blocks are not shown until the model places them in its answer with a
+        `[block:N]` marker (see `stream.py`), so UI lands under the claim it
+        supports. Unplaced blocks are appended at the end as a fallback."""
         self.blocks.append(block)
+        return len(self.blocks)

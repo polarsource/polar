@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from datetime import date, datetime, timedelta
+from typing import cast
 from zoneinfo import ZoneInfo
 
 import structlog
@@ -10,6 +11,7 @@ from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
+from polar.event.service import event as event_service
 from polar.kit.time_queries import TimeInterval
 from polar.logging import Logger
 from polar.metrics.aggregation import latest
@@ -18,7 +20,7 @@ from polar.metrics.service import metrics as metrics_service
 from polar.models import Product
 from polar.models.product_price import ProductPriceFixed
 from polar.organization.repository import OrganizationRepository
-from polar.postgres import AsyncReadSession
+from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
 from polar.redis import Redis
 from polar.subscription.repository import SubscriptionRepository
@@ -30,7 +32,7 @@ from .schemas import (
     InsightCategory,
     InsightSeverity,
 )
-from .signals import ProductPricing
+from .signals import CustomerCostSignal, ProductPricing
 
 log: Logger = structlog.get_logger()
 
@@ -49,6 +51,10 @@ _MAX_PRODUCTS = 8
 # products with a larger cohort are skipped (their margin needs a dedicated
 # product-attributed pipe) rather than silently sampled.
 _MAX_COHORT_CUSTOMERS = 150
+
+# Per-customer cost ranking window and depth for concentration detectors.
+_CUSTOMER_COSTS_WINDOW_DAYS = 30
+_MAX_COST_CUSTOMERS = 10
 
 # What the merchant should care about most, first. Detector priority and
 # confidence only break ties within a severity band.
@@ -128,12 +134,21 @@ class CompassService:
                 days=days,
                 redis=redis,
             )
+            customer_costs = await self._customer_costs(
+                session,
+                auth_subject,
+                org_id,
+                detectors,
+                today=today,
+                timezone=timezone,
+            )
             ctx = DetectorContext(
                 organization_id=org_id,
                 timezone=timezone,
                 today=today,
                 metrics=response,
                 products=products,
+                customer_costs=customer_costs,
             )
             for detector in detectors:
                 try:
@@ -261,6 +276,49 @@ class CompassService:
                 )
             )
         return pricing
+
+    async def _customer_costs(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        org_id: uuid.UUID,
+        detectors: Sequence[Detector],
+        *,
+        today: date,
+        timezone: ZoneInfo,
+    ) -> list[CustomerCostSignal]:
+        """Per-customer cost ranking for detectors that declare a need.
+
+        Backed by the events `by-customer` statistics (summing `_cost.amount`),
+        which return each customer's share of the total — exactly the shape a
+        concentration reading needs. Failures degrade to an empty ranking.
+        """
+        if not any(detector.needs_customer_costs for detector in detectors):
+            return []
+        try:
+            stats = await event_service.list_customer_stats(
+                cast(AsyncSession, session),
+                auth_subject,
+                start_date=today - timedelta(days=_CUSTOMER_COSTS_WINDOW_DAYS),
+                end_date=today,
+                timezone=timezone,
+                organization_id=[org_id],
+                limit=_MAX_COST_CUSTOMERS,
+            )
+        except Exception:
+            log.exception("compass.customer_costs_error", organization_id=str(org_id))
+            return []
+        return [
+            CustomerCostSignal(
+                label=stat.email
+                or stat.name
+                or stat.external_customer_id
+                or str(stat.customer_id),
+                amount=float(stat.totals.get("_cost_amount", 0)),
+                share=float(stat.share),
+            )
+            for stat in stats.items
+        ]
 
     async def _compass_enabled_org_ids(
         self,

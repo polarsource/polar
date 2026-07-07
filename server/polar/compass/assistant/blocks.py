@@ -57,28 +57,14 @@ class InsightCardsBlock(Schema):
     insights: list[Insight]
 
 
-class EntityListItem(Schema):
-    title: str
-    description: str | None = None
-    meta: str | None = Field(
-        default=None, description="Right-aligned detail, e.g. an amount or date."
-    )
-
-
-class EntityListBlock(Schema):
-    """A few entities as a compact list; use the table for larger sets."""
-
-    type: Literal[BlockType.entity_list] = BlockType.entity_list
-    entity: str = Field(description="What the items are, e.g. `orders`.")
-    items: list[EntityListItem]
-    total_count: int
-
-
 class ColumnFormat(StrEnum):
     text = "text"
     currency = "currency"
     datetime = "datetime"
     badge = "badge"
+    avatar = "avatar"
+    """Value is an avatar URL; the client renders it with the Avatar
+    component, using the row's first text column as the name fallback."""
 
 
 class DataTableColumn(Schema):
@@ -92,6 +78,23 @@ class DataTableBlock(Schema):
 
     type: Literal[BlockType.data_table] = BlockType.data_table
     entity: str = Field(description="What the rows are, e.g. `subscriptions`.")
+    title: str | None = Field(
+        default=None, description="Heading rendered above the table."
+    )
+    columns: list[DataTableColumn]
+    rows: list[dict[str, str | int | float | None]]
+    total_count: int
+
+
+class EntityListBlock(Schema):
+    """A few entities as a compact list; same shape as the table so the
+    client formats values (currency, dates) identically in both."""
+
+    type: Literal[BlockType.entity_list] = BlockType.entity_list
+    entity: str = Field(description="What the items are, e.g. `orders`.")
+    title: str | None = Field(
+        default=None, description="Heading rendered above the list."
+    )
     columns: list[DataTableColumn]
     rows: list[dict[str, str | int | float | None]]
     total_count: int
@@ -103,6 +106,7 @@ class CustomerCardBlock(Schema):
     type: Literal[BlockType.customer_card] = BlockType.customer_card
     email: str
     name: str | None = None
+    avatar_url: str | None = None
     created_at: datetime
 
 

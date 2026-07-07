@@ -69,6 +69,22 @@ class ProductPricing:
     cohort (cost events attach to customers, not products)."""
 
 
+@dataclass(frozen=True)
+class CustomerCostSignal:
+    """One customer's share of tracked costs over the window.
+
+    Prefetched by the service (from the events `by-customer` statistics) for
+    detectors that declare `needs_customer_costs`, keeping them pure.
+    """
+
+    label: str
+    """Customer email, name or external id — whatever identifies them best."""
+    amount: float
+    """Total `_cost.amount` over the window, in the merchant's cost unit."""
+    share: float
+    """This customer's share of all tracked costs (0-1)."""
+
+
 def format_currency(cents: float) -> str:
     return f"${cents / 100:,.0f}"
 

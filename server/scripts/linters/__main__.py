@@ -51,7 +51,7 @@ def main() -> int:
         if "migrations" in path.parts:
             continue
         checked += 1
-        source = path.read_text()
+        source = path.read_text(encoding="utf-8")
         try:
             tree = ast.parse(source, filename=str(path))
         except SyntaxError as exc:

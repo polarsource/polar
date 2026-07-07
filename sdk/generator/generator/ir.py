@@ -287,6 +287,28 @@ class APIVersion(BaseModel):
     input_unions: list[NamedUnion]
     output_unions: list[NamedUnion]
 
+    @property
+    def all_models(self) -> list[Model]:
+        """All models, deduplicated, sorted alphabetically."""
+        seen: set[str] = set()
+        result: list[Model] = []
+        for m in self.input_models + self.output_models:
+            if m.name not in seen:
+                seen.add(m.name)
+                result.append(m)
+        return sorted(result, key=lambda m: m.name)
+
+    @property
+    def all_unions(self) -> list[NamedUnion]:
+        """All unions, deduplicated, sorted alphabetically."""
+        seen: set[str] = set()
+        result: list[NamedUnion] = []
+        for u in self.input_unions + self.output_unions:
+            if u.name not in seen:
+                seen.add(u.name)
+                result.append(u)
+        return sorted(result, key=lambda u: u.name)
+
 
 class APIIR(BaseModel):
     """

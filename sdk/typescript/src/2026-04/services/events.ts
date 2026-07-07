@@ -1,14 +1,17 @@
 import type { ClientBase } from "../../base";
-import type { EventsIngest, MetadataQuery } from "../models/inputs";
-import type { EventNamesSortProperty, EventSortProperty, EventSource } from "../models/literals";
 import type {
   Event,
   EventName,
+  EventNamesSortProperty,
+  EventSortProperty,
+  EventSource,
+  EventsIngest,
   EventsIngestResponse,
   ListResourceEvent,
   ListResourceEventName,
   ListResourceWithCursorPaginationEvent,
-} from "../models/outputs";
+  MetadataQuery,
+} from "../models";
 
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 

@@ -1,7 +1,5 @@
 import type { ClientBase } from "../../base";
-import type { RefundCreate } from "../models/inputs";
-import type { RefundSortProperty } from "../models/literals";
-import type { ListResourceRefund, Refund } from "../models/outputs";
+import type { ListResourceRefund, Refund, RefundCreate, RefundSortProperty } from "../models";
 
 import { HTTPValidationError, RefundedAlready } from "../errors";
 

@@ -1,6 +1,5 @@
 import type { ClientBase } from "../../base";
-import type { DisputeSortProperty, DisputeStatus } from "../models/literals";
-import type { Dispute, ListResourceDispute } from "../models/outputs";
+import type { Dispute, DisputeSortProperty, DisputeStatus, ListResourceDispute } from "../models";
 
 import { DisputeNotOpenError, HTTPValidationError, ResourceNotFound } from "../errors";
 

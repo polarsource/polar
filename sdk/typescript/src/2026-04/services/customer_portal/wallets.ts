@@ -1,6 +1,9 @@
 import type { ClientBase } from "../../../base";
-import type { CustomerWalletSortProperty } from "../../models/literals";
-import type { CustomerWallet, ListResourceCustomerWallet } from "../../models/outputs";
+import type {
+  CustomerWallet,
+  CustomerWalletSortProperty,
+  ListResourceCustomerWallet,
+} from "../../models";
 
 import { HTTPValidationError, ResourceNotFound } from "../../errors";
 

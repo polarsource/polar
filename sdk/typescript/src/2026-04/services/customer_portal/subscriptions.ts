@@ -1,7 +1,10 @@
 import type { ClientBase } from "../../../base";
-import type { CustomerSubscriptionUpdate } from "../../models/inputs";
-import type { CustomerSubscriptionSortProperty } from "../../models/literals";
-import type { CustomerSubscription, ListResourceCustomerSubscription } from "../../models/outputs";
+import type {
+  CustomerSubscription,
+  CustomerSubscriptionSortProperty,
+  CustomerSubscriptionUpdate,
+  ListResourceCustomerSubscription,
+} from "../../models";
 
 import {
   AlreadyCanceledSubscription,

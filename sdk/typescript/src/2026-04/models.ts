@@ -1,52 +1,1913 @@
-import type {
-  BenefitType,
-  BenefitVisibility,
-  BillingAddressFieldMode,
-  CheckoutStatus,
-  CountryAlpha2,
-  CustomerCancellationReason,
-  CustomerType,
-  DiscountDuration,
-  DiscountType,
-  DisputeStatus,
-  EventSource,
-  FileServiceTypes,
-  FilterConjunction,
-  FilterOperator,
-  Func,
-  LicenseKeyStatus,
-  MemberRole,
-  MeterUnit,
-  MetricType,
-  OrderBillingReason,
-  OrderStatus,
-  OrganizationSocialPlatforms,
-  OrganizationStatus,
-  PaymentProcessor,
-  PaymentStatus,
-  PaymentTrigger,
-  Permission,
-  ProductPriceSource,
-  ProductVisibility,
-  PublicSubscriptionProrationBehavior,
-  RecurringInterval,
-  RefundReason,
-  RefundStatus,
-  Scope,
-  SeatStatus,
-  SeatTierType,
-  Status,
-  SubType,
-  SubscriptionProrationBehavior,
-  SubscriptionStatus,
-  TaxBehavior,
-  TaxBehaviorOption,
-  Timeframe,
-  TokenType,
-  TrialInterval,
-  WebhookEventType,
-  WebhookFormat,
-} from "./literals";
+/**
+ * AggregationFunction
+ */
+export type AggregationFunction = "count" | "sum" | "max" | "min" | "avg" | "unique";
+/**
+ * BenefitGrantSortProperty
+ */
+export type BenefitGrantSortProperty =
+  | "created_at"
+  | "-created_at"
+  | "granted_at"
+  | "-granted_at"
+  | "revoked_at"
+  | "-revoked_at";
+/**
+ * BenefitSortProperty
+ */
+export type BenefitSortProperty =
+  | "created_at"
+  | "-created_at"
+  | "description"
+  | "-description"
+  | "type"
+  | "-type"
+  | "user_order"
+  | "-user_order";
+/**
+ * BenefitType
+ */
+export type BenefitType =
+  | "custom"
+  | "discord"
+  | "github_repository"
+  | "downloadables"
+  | "license_keys"
+  | "meter_credit"
+  | "feature_flag"
+  | "slack_shared_channel";
+/**
+ * BenefitVisibility
+ */
+export type BenefitVisibility = "draft" | "private" | "public";
+/**
+ * BillingAddressFieldMode
+ */
+export type BillingAddressFieldMode = "required" | "optional" | "disabled";
+/**
+ * CheckoutLinkSortProperty
+ */
+export type CheckoutLinkSortProperty =
+  | "created_at"
+  | "-created_at"
+  | "label"
+  | "-label"
+  | "success_url"
+  | "-success_url"
+  | "allow_discount_codes"
+  | "-allow_discount_codes";
+/**
+ * CheckoutSortProperty
+ */
+export type CheckoutSortProperty =
+  | "created_at"
+  | "-created_at"
+  | "expires_at"
+  | "-expires_at"
+  | "status"
+  | "-status";
+/**
+ * CheckoutStatus
+ */
+export type CheckoutStatus = "open" | "expired" | "confirmed" | "succeeded" | "failed";
+/**
+ * CountryAlpha2
+ */
+export type CountryAlpha2 =
+  | "AD"
+  | "AE"
+  | "AF"
+  | "AG"
+  | "AI"
+  | "AL"
+  | "AM"
+  | "AO"
+  | "AQ"
+  | "AR"
+  | "AS"
+  | "AT"
+  | "AU"
+  | "AW"
+  | "AX"
+  | "AZ"
+  | "BA"
+  | "BB"
+  | "BD"
+  | "BE"
+  | "BF"
+  | "BG"
+  | "BH"
+  | "BI"
+  | "BJ"
+  | "BL"
+  | "BM"
+  | "BN"
+  | "BO"
+  | "BQ"
+  | "BR"
+  | "BS"
+  | "BT"
+  | "BV"
+  | "BW"
+  | "BY"
+  | "BZ"
+  | "CA"
+  | "CC"
+  | "CD"
+  | "CF"
+  | "CG"
+  | "CH"
+  | "CI"
+  | "CK"
+  | "CL"
+  | "CM"
+  | "CN"
+  | "CO"
+  | "CR"
+  | "CU"
+  | "CV"
+  | "CW"
+  | "CX"
+  | "CY"
+  | "CZ"
+  | "DE"
+  | "DJ"
+  | "DK"
+  | "DM"
+  | "DO"
+  | "DZ"
+  | "EC"
+  | "EE"
+  | "EG"
+  | "EH"
+  | "ER"
+  | "ES"
+  | "ET"
+  | "FI"
+  | "FJ"
+  | "FK"
+  | "FM"
+  | "FO"
+  | "FR"
+  | "GA"
+  | "GB"
+  | "GD"
+  | "GE"
+  | "GF"
+  | "GG"
+  | "GH"
+  | "GI"
+  | "GL"
+  | "GM"
+  | "GN"
+  | "GP"
+  | "GQ"
+  | "GR"
+  | "GS"
+  | "GT"
+  | "GU"
+  | "GW"
+  | "GY"
+  | "HK"
+  | "HM"
+  | "HN"
+  | "HR"
+  | "HT"
+  | "HU"
+  | "ID"
+  | "IE"
+  | "IL"
+  | "IM"
+  | "IN"
+  | "IO"
+  | "IQ"
+  | "IR"
+  | "IS"
+  | "IT"
+  | "JE"
+  | "JM"
+  | "JO"
+  | "JP"
+  | "KE"
+  | "KG"
+  | "KH"
+  | "KI"
+  | "KM"
+  | "KN"
+  | "KP"
+  | "KR"
+  | "KW"
+  | "KY"
+  | "KZ"
+  | "LA"
+  | "LB"
+  | "LC"
+  | "LI"
+  | "LK"
+  | "LR"
+  | "LS"
+  | "LT"
+  | "LU"
+  | "LV"
+  | "LY"
+  | "MA"
+  | "MC"
+  | "MD"
+  | "ME"
+  | "MF"
+  | "MG"
+  | "MH"
+  | "MK"
+  | "ML"
+  | "MM"
+  | "MN"
+  | "MO"
+  | "MP"
+  | "MQ"
+  | "MR"
+  | "MS"
+  | "MT"
+  | "MU"
+  | "MV"
+  | "MW"
+  | "MX"
+  | "MY"
+  | "MZ"
+  | "NA"
+  | "NC"
+  | "NE"
+  | "NF"
+  | "NG"
+  | "NI"
+  | "NL"
+  | "NO"
+  | "NP"
+  | "NR"
+  | "NU"
+  | "NZ"
+  | "OM"
+  | "PA"
+  | "PE"
+  | "PF"
+  | "PG"
+  | "PH"
+  | "PK"
+  | "PL"
+  | "PM"
+  | "PN"
+  | "PR"
+  | "PS"
+  | "PT"
+  | "PW"
+  | "PY"
+  | "QA"
+  | "RE"
+  | "RO"
+  | "RS"
+  | "RU"
+  | "RW"
+  | "SA"
+  | "SB"
+  | "SC"
+  | "SD"
+  | "SE"
+  | "SG"
+  | "SH"
+  | "SI"
+  | "SJ"
+  | "SK"
+  | "SL"
+  | "SM"
+  | "SN"
+  | "SO"
+  | "SR"
+  | "SS"
+  | "ST"
+  | "SV"
+  | "SX"
+  | "SY"
+  | "SZ"
+  | "TC"
+  | "TD"
+  | "TF"
+  | "TG"
+  | "TH"
+  | "TJ"
+  | "TK"
+  | "TL"
+  | "TM"
+  | "TN"
+  | "TO"
+  | "TR"
+  | "TT"
+  | "TV"
+  | "TW"
+  | "TZ"
+  | "UA"
+  | "UG"
+  | "UM"
+  | "US"
+  | "UY"
+  | "UZ"
+  | "VA"
+  | "VC"
+  | "VE"
+  | "VG"
+  | "VI"
+  | "VN"
+  | "VU"
+  | "WF"
+  | "WS"
+  | "YE"
+  | "YT"
+  | "ZA"
+  | "ZM"
+  | "ZW";
+/**
+ * CountryAlpha2Input
+ */
+export type CountryAlpha2Input =
+  | "AD"
+  | "AE"
+  | "AF"
+  | "AG"
+  | "AI"
+  | "AL"
+  | "AM"
+  | "AO"
+  | "AQ"
+  | "AR"
+  | "AS"
+  | "AT"
+  | "AU"
+  | "AW"
+  | "AX"
+  | "AZ"
+  | "BA"
+  | "BB"
+  | "BD"
+  | "BE"
+  | "BF"
+  | "BG"
+  | "BH"
+  | "BI"
+  | "BJ"
+  | "BL"
+  | "BM"
+  | "BN"
+  | "BO"
+  | "BQ"
+  | "BR"
+  | "BS"
+  | "BT"
+  | "BV"
+  | "BW"
+  | "BY"
+  | "BZ"
+  | "CA"
+  | "CC"
+  | "CD"
+  | "CF"
+  | "CG"
+  | "CH"
+  | "CI"
+  | "CK"
+  | "CL"
+  | "CM"
+  | "CN"
+  | "CO"
+  | "CR"
+  | "CV"
+  | "CW"
+  | "CX"
+  | "CY"
+  | "CZ"
+  | "DE"
+  | "DJ"
+  | "DK"
+  | "DM"
+  | "DO"
+  | "DZ"
+  | "EC"
+  | "EE"
+  | "EG"
+  | "EH"
+  | "ER"
+  | "ES"
+  | "ET"
+  | "FI"
+  | "FJ"
+  | "FK"
+  | "FM"
+  | "FO"
+  | "FR"
+  | "GA"
+  | "GB"
+  | "GD"
+  | "GE"
+  | "GF"
+  | "GG"
+  | "GH"
+  | "GI"
+  | "GL"
+  | "GM"
+  | "GN"
+  | "GP"
+  | "GQ"
+  | "GR"
+  | "GS"
+  | "GT"
+  | "GU"
+  | "GW"
+  | "GY"
+  | "HK"
+  | "HM"
+  | "HN"
+  | "HR"
+  | "HT"
+  | "HU"
+  | "ID"
+  | "IE"
+  | "IL"
+  | "IM"
+  | "IN"
+  | "IO"
+  | "IQ"
+  | "IS"
+  | "IT"
+  | "JE"
+  | "JM"
+  | "JO"
+  | "JP"
+  | "KE"
+  | "KG"
+  | "KH"
+  | "KI"
+  | "KM"
+  | "KN"
+  | "KR"
+  | "KW"
+  | "KY"
+  | "KZ"
+  | "LA"
+  | "LB"
+  | "LC"
+  | "LI"
+  | "LK"
+  | "LR"
+  | "LS"
+  | "LT"
+  | "LU"
+  | "LV"
+  | "LY"
+  | "MA"
+  | "MC"
+  | "MD"
+  | "ME"
+  | "MF"
+  | "MG"
+  | "MH"
+  | "MK"
+  | "ML"
+  | "MM"
+  | "MN"
+  | "MO"
+  | "MP"
+  | "MQ"
+  | "MR"
+  | "MS"
+  | "MT"
+  | "MU"
+  | "MV"
+  | "MW"
+  | "MX"
+  | "MY"
+  | "MZ"
+  | "NA"
+  | "NC"
+  | "NE"
+  | "NF"
+  | "NG"
+  | "NI"
+  | "NL"
+  | "NO"
+  | "NP"
+  | "NR"
+  | "NU"
+  | "NZ"
+  | "OM"
+  | "PA"
+  | "PE"
+  | "PF"
+  | "PG"
+  | "PH"
+  | "PK"
+  | "PL"
+  | "PM"
+  | "PN"
+  | "PR"
+  | "PS"
+  | "PT"
+  | "PW"
+  | "PY"
+  | "QA"
+  | "RE"
+  | "RO"
+  | "RS"
+  | "RW"
+  | "SA"
+  | "SB"
+  | "SC"
+  | "SD"
+  | "SE"
+  | "SG"
+  | "SH"
+  | "SI"
+  | "SJ"
+  | "SK"
+  | "SL"
+  | "SM"
+  | "SN"
+  | "SO"
+  | "SR"
+  | "SS"
+  | "ST"
+  | "SV"
+  | "SX"
+  | "SZ"
+  | "TC"
+  | "TD"
+  | "TF"
+  | "TG"
+  | "TH"
+  | "TJ"
+  | "TK"
+  | "TL"
+  | "TM"
+  | "TN"
+  | "TO"
+  | "TR"
+  | "TT"
+  | "TV"
+  | "TW"
+  | "TZ"
+  | "UA"
+  | "UG"
+  | "UM"
+  | "US"
+  | "UY"
+  | "UZ"
+  | "VA"
+  | "VC"
+  | "VE"
+  | "VG"
+  | "VI"
+  | "VN"
+  | "VU"
+  | "WF"
+  | "WS"
+  | "YE"
+  | "YT"
+  | "ZA"
+  | "ZM"
+  | "ZW";
+/**
+ * CustomFieldSortProperty
+ */
+export type CustomFieldSortProperty =
+  | "created_at"
+  | "-created_at"
+  | "slug"
+  | "-slug"
+  | "name"
+  | "-name"
+  | "type"
+  | "-type";
+/**
+ * CustomFieldType
+ */
+export type CustomFieldType = "text" | "number" | "date" | "checkbox" | "select";
+/**
+ * CustomerBenefitGrantSortProperty
+ */
+export type CustomerBenefitGrantSortProperty =
+  | "granted_at"
+  | "-granted_at"
+  | "type"
+  | "-type"
+  | "organization"
+  | "-organization"
+  | "product_benefit"
+  | "-product_benefit";
+/**
+ * CustomerCancellationReason
+ */
+export type CustomerCancellationReason =
+  | "customer_service"
+  | "low_quality"
+  | "missing_features"
+  | "switched_service"
+  | "too_complex"
+  | "too_expensive"
+  | "unused"
+  | "other";
+/**
+ * CustomerCustomerMeterSortProperty
+ */
+export type CustomerCustomerMeterSortProperty =
+  | "created_at"
+  | "-created_at"
+  | "modified_at"
+  | "-modified_at"
+  | "meter_id"
+  | "-meter_id"
+  | "meter_name"
+  | "-meter_name"
+  | "consumed_units"
+  | "-consumed_units"
+  | "credited_units"
+  | "-credited_units"
+  | "balance"
+  | "-balance";
+/**
+ * CustomerMeterSortProperty
+ */
+export type CustomerMeterSortProperty =
+  | "created_at"
+  | "-created_at"
+  | "modified_at"
+  | "-modified_at"
+  | "customer_id"
+  | "-customer_id"
+  | "customer_name"
+  | "-customer_name"
+  | "meter_id"
+  | "-meter_id"
+  | "meter_name"
+  | "-meter_name"
+  | "consumed_units"
+  | "-consumed_units"
+  | "credited_units"
+  | "-credited_units"
+  | "balance"
+  | "-balance";
+/**
+ * CustomerOrderSortProperty
+ */
+export type CustomerOrderSortProperty =
+  | "created_at"
+  | "-created_at"
+  | "amount"
+  | "-amount"
+  | "net_amount"
+  | "-net_amount"
+  | "product"
+  | "-product"
+  | "subscription"
+  | "-subscription";
+/**
+ * CustomerSortProperty
+ */
+export type CustomerSortProperty =
+  | "created_at"
+  | "-created_at"
+  | "email"
+  | "-email"
+  | "name"
+  | "-name";
+/**
+ * CustomerSubscriptionSortProperty
+ */
+export type CustomerSubscriptionSortProperty =
+  | "started_at"
+  | "-started_at"
+  | "amount"
+  | "-amount"
+  | "status"
+  | "-status"
+  | "organization"
+  | "-organization"
+  | "product"
+  | "-product";
+/**
+ * CustomerType
+ */
+export type CustomerType = "individual" | "team";
+/**
+ * CustomerWalletSortProperty
+ */
+export type CustomerWalletSortProperty = "created_at" | "-created_at" | "balance" | "-balance";
+/**
+ * DiscountDuration
+ */
+export type DiscountDuration = "once" | "forever" | "repeating";
+/**
+ * DiscountSortProperty
+ */
+export type DiscountSortProperty =
+  | "created_at"
+  | "-created_at"
+  | "name"
+  | "-name"
+  | "code"
+  | "-code"
+  | "redemptions_count"
+  | "-redemptions_count"
+  | "ends_at"
+  | "-ends_at";
+/**
+ * DiscountType
+ */
+export type DiscountType = "fixed" | "percentage";
+/**
+ * DisputeSortProperty
+ */
+export type DisputeSortProperty = "created_at" | "-created_at" | "amount" | "-amount";
+/**
+ * DisputeStatus
+ */
+export type DisputeStatus =
+  | "prevented"
+  | "early_warning"
+  | "needs_response"
+  | "under_review"
+  | "lost"
+  | "won";
+/**
+ * EventNamesSortProperty
+ */
+export type EventNamesSortProperty =
+  | "name"
+  | "-name"
+  | "occurrences"
+  | "-occurrences"
+  | "first_seen"
+  | "-first_seen"
+  | "last_seen"
+  | "-last_seen";
+/**
+ * EventSortProperty
+ */
+export type EventSortProperty = "timestamp" | "-timestamp";
+/**
+ * EventSource
+ */
+export type EventSource = "system" | "user";
+/**
+ * EventTypesSortProperty
+ */
+export type EventTypesSortProperty =
+  | "name"
+  | "-name"
+  | "label"
+  | "-label"
+  | "occurrences"
+  | "-occurrences"
+  | "first_seen"
+  | "-first_seen"
+  | "last_seen"
+  | "-last_seen";
+/**
+ * FileServiceTypes
+ */
+export type FileServiceTypes =
+  | "downloadable"
+  | "product_media"
+  | "organization_avatar"
+  | "support_case_attachment";
+/**
+ * FilterConjunction
+ */
+export type FilterConjunction = "and" | "or";
+/**
+ * FilterOperator
+ */
+export type FilterOperator = "eq" | "ne" | "gt" | "gte" | "lt" | "lte" | "like" | "not_like";
+/**
+ * Func
+ */
+export type Func = "sum" | "max" | "min" | "avg";
+/**
+ * LicenseKeyStatus
+ */
+export type LicenseKeyStatus = "granted" | "revoked" | "disabled";
+/**
+ * MemberRole
+ */
+export type MemberRole = "owner" | "billing_manager" | "member";
+/**
+ * MemberSortProperty
+ */
+export type MemberSortProperty = "created_at" | "-created_at";
+/**
+ * MeterSortProperty
+ */
+export type MeterSortProperty = "created_at" | "-created_at" | "name" | "-name";
+/**
+ * MeterUnit
+ */
+export type MeterUnit = "scalar" | "token" | "custom";
+/**
+ * MetricType
+ */
+export type MetricType = "scalar" | "currency" | "currency_sub_cent" | "percentage";
+/**
+ * OrderBillingReason
+ */
+export type OrderBillingReason =
+  | "purchase"
+  | "subscription_create"
+  | "subscription_cycle"
+  | "subscription_update";
+/**
+ * OrderSortProperty
+ */
+export type OrderSortProperty =
+  | "created_at"
+  | "-created_at"
+  | "status"
+  | "-status"
+  | "invoice_number"
+  | "-invoice_number"
+  | "amount"
+  | "-amount"
+  | "net_amount"
+  | "-net_amount"
+  | "customer"
+  | "-customer"
+  | "product"
+  | "-product"
+  | "discount"
+  | "-discount"
+  | "subscription"
+  | "-subscription";
+/**
+ * OrderStatus
+ */
+export type OrderStatus = "draft" | "pending" | "paid" | "refunded" | "partially_refunded" | "void";
+/**
+ * OrganizationSocialPlatforms
+ */
+export type OrganizationSocialPlatforms =
+  | "x"
+  | "github"
+  | "facebook"
+  | "instagram"
+  | "youtube"
+  | "tiktok"
+  | "linkedin"
+  | "threads"
+  | "discord"
+  | "other";
+/**
+ * OrganizationSortProperty
+ */
+export type OrganizationSortProperty =
+  | "created_at"
+  | "-created_at"
+  | "slug"
+  | "-slug"
+  | "name"
+  | "-name"
+  | "next_review_threshold"
+  | "-next_review_threshold"
+  | "days_in_status"
+  | "-days_in_status";
+/**
+ * OrganizationStatus
+ */
+export type OrganizationStatus =
+  | "created"
+  | "review"
+  | "snoozed"
+  | "denied"
+  | "active"
+  | "blocked"
+  | "offboarding"
+  | "offboarded";
+/**
+ * PaymentProcessor
+ */
+export type PaymentProcessor = "stripe";
+/**
+ * PaymentSortProperty
+ */
+export type PaymentSortProperty =
+  | "created_at"
+  | "-created_at"
+  | "status"
+  | "-status"
+  | "amount"
+  | "-amount"
+  | "method"
+  | "-method";
+/**
+ * PaymentStatus
+ */
+export type PaymentStatus = "pending" | "succeeded" | "failed";
+/**
+ * PaymentTrigger
+ */
+export type PaymentTrigger =
+  | "purchase"
+  | "subscription_cycle"
+  | "retry_dunning"
+  | "retry_customer"
+  | "retry_payment_method_update"
+  | "retry_admin";
+/**
+ * Permission
+ */
+export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
+/**
+ * PresentmentCurrency
+ */
+export type PresentmentCurrency =
+  | "aed"
+  | "all"
+  | "amd"
+  | "aoa"
+  | "ars"
+  | "aud"
+  | "awg"
+  | "azn"
+  | "bam"
+  | "bbd"
+  | "bdt"
+  | "bif"
+  | "bmd"
+  | "bnd"
+  | "bob"
+  | "brl"
+  | "bsd"
+  | "bwp"
+  | "bzd"
+  | "cad"
+  | "cdf"
+  | "chf"
+  | "clp"
+  | "cny"
+  | "cop"
+  | "crc"
+  | "cve"
+  | "czk"
+  | "djf"
+  | "dkk"
+  | "dop"
+  | "dzd"
+  | "egp"
+  | "etb"
+  | "eur"
+  | "fjd"
+  | "fkp"
+  | "gbp"
+  | "gel"
+  | "gip"
+  | "gmd"
+  | "gnf"
+  | "gtq"
+  | "gyd"
+  | "hkd"
+  | "hnl"
+  | "htg"
+  | "huf"
+  | "idr"
+  | "ils"
+  | "inr"
+  | "isk"
+  | "jmd"
+  | "jpy"
+  | "kes"
+  | "kgs"
+  | "khr"
+  | "kmf"
+  | "krw"
+  | "kyd"
+  | "kzt"
+  | "lak"
+  | "lkr"
+  | "lrd"
+  | "lsl"
+  | "mad"
+  | "mdl"
+  | "mga"
+  | "mkd"
+  | "mnt"
+  | "mop"
+  | "mur"
+  | "mvr"
+  | "mwk"
+  | "mxn"
+  | "myr"
+  | "mzn"
+  | "nad"
+  | "ngn"
+  | "nio"
+  | "nok"
+  | "npr"
+  | "nzd"
+  | "pab"
+  | "pen"
+  | "pgk"
+  | "php"
+  | "pkr"
+  | "pln"
+  | "pyg"
+  | "qar"
+  | "ron"
+  | "rsd"
+  | "rwf"
+  | "sar"
+  | "sbd"
+  | "scr"
+  | "sek"
+  | "sgd"
+  | "shp"
+  | "sos"
+  | "srd"
+  | "szl"
+  | "thb"
+  | "tjs"
+  | "top"
+  | "try"
+  | "ttd"
+  | "twd"
+  | "tzs"
+  | "uah"
+  | "ugx"
+  | "usd"
+  | "uyu"
+  | "uzs"
+  | "vnd"
+  | "vuv"
+  | "wst"
+  | "xaf"
+  | "xcd"
+  | "xcg"
+  | "xof"
+  | "xpf"
+  | "yer"
+  | "zar"
+  | "zmw";
+/**
+ * ProductBillingType
+ */
+export type ProductBillingType = "one_time" | "recurring";
+/**
+ * ProductPriceSource
+ */
+export type ProductPriceSource = "catalog" | "ad_hoc";
+/**
+ * ProductSortProperty
+ */
+export type ProductSortProperty =
+  | "created_at"
+  | "-created_at"
+  | "name"
+  | "-name"
+  | "price_amount_type"
+  | "-price_amount_type"
+  | "price_amount"
+  | "-price_amount";
+/**
+ * ProductVisibility
+ */
+export type ProductVisibility = "draft" | "private" | "public";
+/**
+ * PublicSubscriptionProrationBehavior
+ */
+export type PublicSubscriptionProrationBehavior = "invoice" | "prorate" | "next_period";
+/**
+ * Reason for the refund.
+ */
+export type Reason =
+  | "duplicate"
+  | "fraudulent"
+  | "customer_request"
+  | "service_disruption"
+  | "satisfaction_guarantee"
+  | "other";
+/**
+ * RecurringInterval
+ */
+export type RecurringInterval = "day" | "week" | "month" | "year";
+/**
+ * RefundReason
+ */
+export type RefundReason =
+  | "duplicate"
+  | "fraudulent"
+  | "customer_request"
+  | "service_disruption"
+  | "satisfaction_guarantee"
+  | "dispute_prevention"
+  | "other";
+/**
+ * RefundSortProperty
+ */
+export type RefundSortProperty = "created_at" | "-created_at" | "amount" | "-amount";
+/**
+ * RefundStatus
+ */
+export type RefundStatus = "pending" | "succeeded" | "failed" | "canceled";
+/**
+ * The role of the member within the customer. To assign or transfer ownership, use the member update endpoint.
+ */
+export type Role = "member" | "billing_manager";
+/**
+ * Scope
+ */
+export type Scope =
+  | "openid"
+  | "profile"
+  | "email"
+  | "user:read"
+  | "user:write"
+  | "organizations:read"
+  | "organizations:write"
+  | "custom_fields:read"
+  | "custom_fields:write"
+  | "discounts:read"
+  | "discounts:write"
+  | "checkout_links:read"
+  | "checkout_links:write"
+  | "checkouts:read"
+  | "checkouts:write"
+  | "transactions:read"
+  | "transactions:write"
+  | "payouts:read"
+  | "payouts:write"
+  | "products:read"
+  | "products:write"
+  | "benefits:read"
+  | "benefits:write"
+  | "events:read"
+  | "events:write"
+  | "meters:read"
+  | "meters:write"
+  | "files:read"
+  | "files:write"
+  | "subscriptions:read"
+  | "subscriptions:write"
+  | "customers:read"
+  | "customers:write"
+  | "members:read"
+  | "members:write"
+  | "wallets:read"
+  | "wallets:write"
+  | "disputes:read"
+  | "disputes:write"
+  | "customer_meters:read"
+  | "customer_sessions:write"
+  | "member_sessions:write"
+  | "customer_seats:read"
+  | "customer_seats:write"
+  | "orders:read"
+  | "orders:write"
+  | "refunds:read"
+  | "refunds:write"
+  | "payments:read"
+  | "metrics:read"
+  | "metrics:write"
+  | "webhooks:read"
+  | "webhooks:write"
+  | "license_keys:read"
+  | "license_keys:write"
+  | "customer_portal:read"
+  | "customer_portal:write"
+  | "notifications:read"
+  | "notifications:write"
+  | "notification_recipients:read"
+  | "notification_recipients:write"
+  | "organization_access_tokens:read"
+  | "organization_access_tokens:write";
+/**
+ * SeatStatus
+ */
+export type SeatStatus = "pending" | "claimed" | "revoked";
+/**
+ * SeatTierType
+ */
+export type SeatTierType = "volume" | "graduated";
+/**
+ * Status
+ */
+export type Status = "active" | "trialing";
+/**
+ * SubType
+ */
+export type SubType = "user" | "organization";
+/**
+ * SubscriptionProrationBehavior
+ */
+export type SubscriptionProrationBehavior = "invoice" | "prorate" | "next_period" | "reset";
+/**
+ * SubscriptionSortProperty
+ */
+export type SubscriptionSortProperty =
+  | "customer"
+  | "-customer"
+  | "status"
+  | "-status"
+  | "started_at"
+  | "-started_at"
+  | "current_period_end"
+  | "-current_period_end"
+  | "ended_at"
+  | "-ended_at"
+  | "ends_at"
+  | "-ends_at"
+  | "amount"
+  | "-amount"
+  | "product"
+  | "-product"
+  | "discount"
+  | "-discount";
+/**
+ * SubscriptionStatus
+ */
+export type SubscriptionStatus =
+  | "incomplete"
+  | "incomplete_expired"
+  | "trialing"
+  | "active"
+  | "past_due"
+  | "canceled"
+  | "unpaid";
+/**
+ * TaxBehavior
+ */
+export type TaxBehavior = "inclusive" | "exclusive";
+/**
+ * TaxBehaviorOption
+ */
+export type TaxBehaviorOption = "location" | "inclusive" | "exclusive";
+/**
+ * TimeInterval
+ */
+export type TimeInterval = "year" | "month" | "week" | "day" | "hour";
+/**
+ * Timeframe
+ */
+export type Timeframe = "year" | "month" | "day";
+/**
+ * Timezone to use for the timestamps. Default is UTC.
+ */
+export type Timezone =
+  | "Africa/Abidjan"
+  | "Africa/Accra"
+  | "Africa/Addis_Ababa"
+  | "Africa/Algiers"
+  | "Africa/Asmara"
+  | "Africa/Asmera"
+  | "Africa/Bamako"
+  | "Africa/Bangui"
+  | "Africa/Banjul"
+  | "Africa/Bissau"
+  | "Africa/Blantyre"
+  | "Africa/Brazzaville"
+  | "Africa/Bujumbura"
+  | "Africa/Cairo"
+  | "Africa/Casablanca"
+  | "Africa/Ceuta"
+  | "Africa/Conakry"
+  | "Africa/Dakar"
+  | "Africa/Dar_es_Salaam"
+  | "Africa/Djibouti"
+  | "Africa/Douala"
+  | "Africa/El_Aaiun"
+  | "Africa/Freetown"
+  | "Africa/Gaborone"
+  | "Africa/Harare"
+  | "Africa/Johannesburg"
+  | "Africa/Juba"
+  | "Africa/Kampala"
+  | "Africa/Khartoum"
+  | "Africa/Kigali"
+  | "Africa/Kinshasa"
+  | "Africa/Lagos"
+  | "Africa/Libreville"
+  | "Africa/Lome"
+  | "Africa/Luanda"
+  | "Africa/Lubumbashi"
+  | "Africa/Lusaka"
+  | "Africa/Malabo"
+  | "Africa/Maputo"
+  | "Africa/Maseru"
+  | "Africa/Mbabane"
+  | "Africa/Mogadishu"
+  | "Africa/Monrovia"
+  | "Africa/Nairobi"
+  | "Africa/Ndjamena"
+  | "Africa/Niamey"
+  | "Africa/Nouakchott"
+  | "Africa/Ouagadougou"
+  | "Africa/Porto-Novo"
+  | "Africa/Sao_Tome"
+  | "Africa/Timbuktu"
+  | "Africa/Tripoli"
+  | "Africa/Tunis"
+  | "Africa/Windhoek"
+  | "America/Adak"
+  | "America/Anchorage"
+  | "America/Anguilla"
+  | "America/Antigua"
+  | "America/Araguaina"
+  | "America/Argentina/Buenos_Aires"
+  | "America/Argentina/Catamarca"
+  | "America/Argentina/ComodRivadavia"
+  | "America/Argentina/Cordoba"
+  | "America/Argentina/Jujuy"
+  | "America/Argentina/La_Rioja"
+  | "America/Argentina/Mendoza"
+  | "America/Argentina/Rio_Gallegos"
+  | "America/Argentina/Salta"
+  | "America/Argentina/San_Juan"
+  | "America/Argentina/San_Luis"
+  | "America/Argentina/Tucuman"
+  | "America/Argentina/Ushuaia"
+  | "America/Aruba"
+  | "America/Asuncion"
+  | "America/Atikokan"
+  | "America/Atka"
+  | "America/Bahia"
+  | "America/Bahia_Banderas"
+  | "America/Barbados"
+  | "America/Belem"
+  | "America/Belize"
+  | "America/Blanc-Sablon"
+  | "America/Boa_Vista"
+  | "America/Bogota"
+  | "America/Boise"
+  | "America/Buenos_Aires"
+  | "America/Cambridge_Bay"
+  | "America/Campo_Grande"
+  | "America/Cancun"
+  | "America/Caracas"
+  | "America/Catamarca"
+  | "America/Cayenne"
+  | "America/Cayman"
+  | "America/Chicago"
+  | "America/Chihuahua"
+  | "America/Ciudad_Juarez"
+  | "America/Coral_Harbour"
+  | "America/Cordoba"
+  | "America/Costa_Rica"
+  | "America/Coyhaique"
+  | "America/Creston"
+  | "America/Cuiaba"
+  | "America/Curacao"
+  | "America/Danmarkshavn"
+  | "America/Dawson"
+  | "America/Dawson_Creek"
+  | "America/Denver"
+  | "America/Detroit"
+  | "America/Dominica"
+  | "America/Edmonton"
+  | "America/Eirunepe"
+  | "America/El_Salvador"
+  | "America/Ensenada"
+  | "America/Fort_Nelson"
+  | "America/Fort_Wayne"
+  | "America/Fortaleza"
+  | "America/Glace_Bay"
+  | "America/Godthab"
+  | "America/Goose_Bay"
+  | "America/Grand_Turk"
+  | "America/Grenada"
+  | "America/Guadeloupe"
+  | "America/Guatemala"
+  | "America/Guayaquil"
+  | "America/Guyana"
+  | "America/Halifax"
+  | "America/Havana"
+  | "America/Hermosillo"
+  | "America/Indiana/Indianapolis"
+  | "America/Indiana/Knox"
+  | "America/Indiana/Marengo"
+  | "America/Indiana/Petersburg"
+  | "America/Indiana/Tell_City"
+  | "America/Indiana/Vevay"
+  | "America/Indiana/Vincennes"
+  | "America/Indiana/Winamac"
+  | "America/Indianapolis"
+  | "America/Inuvik"
+  | "America/Iqaluit"
+  | "America/Jamaica"
+  | "America/Jujuy"
+  | "America/Juneau"
+  | "America/Kentucky/Louisville"
+  | "America/Kentucky/Monticello"
+  | "America/Knox_IN"
+  | "America/Kralendijk"
+  | "America/La_Paz"
+  | "America/Lima"
+  | "America/Los_Angeles"
+  | "America/Louisville"
+  | "America/Lower_Princes"
+  | "America/Maceio"
+  | "America/Managua"
+  | "America/Manaus"
+  | "America/Marigot"
+  | "America/Martinique"
+  | "America/Matamoros"
+  | "America/Mazatlan"
+  | "America/Mendoza"
+  | "America/Menominee"
+  | "America/Merida"
+  | "America/Metlakatla"
+  | "America/Mexico_City"
+  | "America/Miquelon"
+  | "America/Moncton"
+  | "America/Monterrey"
+  | "America/Montevideo"
+  | "America/Montreal"
+  | "America/Montserrat"
+  | "America/Nassau"
+  | "America/New_York"
+  | "America/Nipigon"
+  | "America/Nome"
+  | "America/Noronha"
+  | "America/North_Dakota/Beulah"
+  | "America/North_Dakota/Center"
+  | "America/North_Dakota/New_Salem"
+  | "America/Nuuk"
+  | "America/Ojinaga"
+  | "America/Panama"
+  | "America/Pangnirtung"
+  | "America/Paramaribo"
+  | "America/Phoenix"
+  | "America/Port-au-Prince"
+  | "America/Port_of_Spain"
+  | "America/Porto_Acre"
+  | "America/Porto_Velho"
+  | "America/Puerto_Rico"
+  | "America/Punta_Arenas"
+  | "America/Rainy_River"
+  | "America/Rankin_Inlet"
+  | "America/Recife"
+  | "America/Regina"
+  | "America/Resolute"
+  | "America/Rio_Branco"
+  | "America/Rosario"
+  | "America/Santa_Isabel"
+  | "America/Santarem"
+  | "America/Santiago"
+  | "America/Santo_Domingo"
+  | "America/Sao_Paulo"
+  | "America/Scoresbysund"
+  | "America/Shiprock"
+  | "America/Sitka"
+  | "America/St_Barthelemy"
+  | "America/St_Johns"
+  | "America/St_Kitts"
+  | "America/St_Lucia"
+  | "America/St_Thomas"
+  | "America/St_Vincent"
+  | "America/Swift_Current"
+  | "America/Tegucigalpa"
+  | "America/Thule"
+  | "America/Thunder_Bay"
+  | "America/Tijuana"
+  | "America/Toronto"
+  | "America/Tortola"
+  | "America/Vancouver"
+  | "America/Virgin"
+  | "America/Whitehorse"
+  | "America/Winnipeg"
+  | "America/Yakutat"
+  | "America/Yellowknife"
+  | "Antarctica/Casey"
+  | "Antarctica/Davis"
+  | "Antarctica/DumontDUrville"
+  | "Antarctica/Macquarie"
+  | "Antarctica/Mawson"
+  | "Antarctica/McMurdo"
+  | "Antarctica/Palmer"
+  | "Antarctica/Rothera"
+  | "Antarctica/South_Pole"
+  | "Antarctica/Syowa"
+  | "Antarctica/Troll"
+  | "Antarctica/Vostok"
+  | "Arctic/Longyearbyen"
+  | "Asia/Aden"
+  | "Asia/Almaty"
+  | "Asia/Amman"
+  | "Asia/Anadyr"
+  | "Asia/Aqtau"
+  | "Asia/Aqtobe"
+  | "Asia/Ashgabat"
+  | "Asia/Ashkhabad"
+  | "Asia/Atyrau"
+  | "Asia/Baghdad"
+  | "Asia/Bahrain"
+  | "Asia/Baku"
+  | "Asia/Bangkok"
+  | "Asia/Barnaul"
+  | "Asia/Beirut"
+  | "Asia/Bishkek"
+  | "Asia/Brunei"
+  | "Asia/Calcutta"
+  | "Asia/Chita"
+  | "Asia/Choibalsan"
+  | "Asia/Chongqing"
+  | "Asia/Chungking"
+  | "Asia/Colombo"
+  | "Asia/Dacca"
+  | "Asia/Damascus"
+  | "Asia/Dhaka"
+  | "Asia/Dili"
+  | "Asia/Dubai"
+  | "Asia/Dushanbe"
+  | "Asia/Famagusta"
+  | "Asia/Gaza"
+  | "Asia/Harbin"
+  | "Asia/Hebron"
+  | "Asia/Ho_Chi_Minh"
+  | "Asia/Hong_Kong"
+  | "Asia/Hovd"
+  | "Asia/Irkutsk"
+  | "Asia/Istanbul"
+  | "Asia/Jakarta"
+  | "Asia/Jayapura"
+  | "Asia/Jerusalem"
+  | "Asia/Kabul"
+  | "Asia/Kamchatka"
+  | "Asia/Karachi"
+  | "Asia/Kashgar"
+  | "Asia/Kathmandu"
+  | "Asia/Katmandu"
+  | "Asia/Khandyga"
+  | "Asia/Kolkata"
+  | "Asia/Krasnoyarsk"
+  | "Asia/Kuala_Lumpur"
+  | "Asia/Kuching"
+  | "Asia/Kuwait"
+  | "Asia/Macao"
+  | "Asia/Macau"
+  | "Asia/Magadan"
+  | "Asia/Makassar"
+  | "Asia/Manila"
+  | "Asia/Muscat"
+  | "Asia/Nicosia"
+  | "Asia/Novokuznetsk"
+  | "Asia/Novosibirsk"
+  | "Asia/Omsk"
+  | "Asia/Oral"
+  | "Asia/Phnom_Penh"
+  | "Asia/Pontianak"
+  | "Asia/Pyongyang"
+  | "Asia/Qatar"
+  | "Asia/Qostanay"
+  | "Asia/Qyzylorda"
+  | "Asia/Rangoon"
+  | "Asia/Riyadh"
+  | "Asia/Saigon"
+  | "Asia/Sakhalin"
+  | "Asia/Samarkand"
+  | "Asia/Seoul"
+  | "Asia/Shanghai"
+  | "Asia/Singapore"
+  | "Asia/Srednekolymsk"
+  | "Asia/Taipei"
+  | "Asia/Tashkent"
+  | "Asia/Tbilisi"
+  | "Asia/Tehran"
+  | "Asia/Tel_Aviv"
+  | "Asia/Thimbu"
+  | "Asia/Thimphu"
+  | "Asia/Tokyo"
+  | "Asia/Tomsk"
+  | "Asia/Ujung_Pandang"
+  | "Asia/Ulaanbaatar"
+  | "Asia/Ulan_Bator"
+  | "Asia/Urumqi"
+  | "Asia/Ust-Nera"
+  | "Asia/Vientiane"
+  | "Asia/Vladivostok"
+  | "Asia/Yakutsk"
+  | "Asia/Yangon"
+  | "Asia/Yekaterinburg"
+  | "Asia/Yerevan"
+  | "Atlantic/Azores"
+  | "Atlantic/Bermuda"
+  | "Atlantic/Canary"
+  | "Atlantic/Cape_Verde"
+  | "Atlantic/Faeroe"
+  | "Atlantic/Faroe"
+  | "Atlantic/Jan_Mayen"
+  | "Atlantic/Madeira"
+  | "Atlantic/Reykjavik"
+  | "Atlantic/South_Georgia"
+  | "Atlantic/St_Helena"
+  | "Atlantic/Stanley"
+  | "Australia/ACT"
+  | "Australia/Adelaide"
+  | "Australia/Brisbane"
+  | "Australia/Broken_Hill"
+  | "Australia/Canberra"
+  | "Australia/Currie"
+  | "Australia/Darwin"
+  | "Australia/Eucla"
+  | "Australia/Hobart"
+  | "Australia/LHI"
+  | "Australia/Lindeman"
+  | "Australia/Lord_Howe"
+  | "Australia/Melbourne"
+  | "Australia/NSW"
+  | "Australia/North"
+  | "Australia/Perth"
+  | "Australia/Queensland"
+  | "Australia/South"
+  | "Australia/Sydney"
+  | "Australia/Tasmania"
+  | "Australia/Victoria"
+  | "Australia/West"
+  | "Australia/Yancowinna"
+  | "Brazil/Acre"
+  | "Brazil/DeNoronha"
+  | "Brazil/East"
+  | "Brazil/West"
+  | "CET"
+  | "CST6CDT"
+  | "Canada/Atlantic"
+  | "Canada/Central"
+  | "Canada/Eastern"
+  | "Canada/Mountain"
+  | "Canada/Newfoundland"
+  | "Canada/Pacific"
+  | "Canada/Saskatchewan"
+  | "Canada/Yukon"
+  | "Chile/Continental"
+  | "Chile/EasterIsland"
+  | "Cuba"
+  | "EET"
+  | "EST"
+  | "EST5EDT"
+  | "Egypt"
+  | "Eire"
+  | "Etc/GMT"
+  | "Etc/GMT+0"
+  | "Etc/GMT+1"
+  | "Etc/GMT+10"
+  | "Etc/GMT+11"
+  | "Etc/GMT+12"
+  | "Etc/GMT+2"
+  | "Etc/GMT+3"
+  | "Etc/GMT+4"
+  | "Etc/GMT+5"
+  | "Etc/GMT+6"
+  | "Etc/GMT+7"
+  | "Etc/GMT+8"
+  | "Etc/GMT+9"
+  | "Etc/GMT-0"
+  | "Etc/GMT-1"
+  | "Etc/GMT-10"
+  | "Etc/GMT-11"
+  | "Etc/GMT-12"
+  | "Etc/GMT-13"
+  | "Etc/GMT-14"
+  | "Etc/GMT-2"
+  | "Etc/GMT-3"
+  | "Etc/GMT-4"
+  | "Etc/GMT-5"
+  | "Etc/GMT-6"
+  | "Etc/GMT-7"
+  | "Etc/GMT-8"
+  | "Etc/GMT-9"
+  | "Etc/GMT0"
+  | "Etc/Greenwich"
+  | "Etc/UCT"
+  | "Etc/UTC"
+  | "Etc/Universal"
+  | "Etc/Zulu"
+  | "Europe/Amsterdam"
+  | "Europe/Andorra"
+  | "Europe/Astrakhan"
+  | "Europe/Athens"
+  | "Europe/Belfast"
+  | "Europe/Belgrade"
+  | "Europe/Berlin"
+  | "Europe/Bratislava"
+  | "Europe/Brussels"
+  | "Europe/Bucharest"
+  | "Europe/Budapest"
+  | "Europe/Busingen"
+  | "Europe/Chisinau"
+  | "Europe/Copenhagen"
+  | "Europe/Dublin"
+  | "Europe/Gibraltar"
+  | "Europe/Guernsey"
+  | "Europe/Helsinki"
+  | "Europe/Isle_of_Man"
+  | "Europe/Istanbul"
+  | "Europe/Jersey"
+  | "Europe/Kaliningrad"
+  | "Europe/Kiev"
+  | "Europe/Kirov"
+  | "Europe/Kyiv"
+  | "Europe/Lisbon"
+  | "Europe/Ljubljana"
+  | "Europe/London"
+  | "Europe/Luxembourg"
+  | "Europe/Madrid"
+  | "Europe/Malta"
+  | "Europe/Mariehamn"
+  | "Europe/Minsk"
+  | "Europe/Monaco"
+  | "Europe/Moscow"
+  | "Europe/Nicosia"
+  | "Europe/Oslo"
+  | "Europe/Paris"
+  | "Europe/Podgorica"
+  | "Europe/Prague"
+  | "Europe/Riga"
+  | "Europe/Rome"
+  | "Europe/Samara"
+  | "Europe/San_Marino"
+  | "Europe/Sarajevo"
+  | "Europe/Saratov"
+  | "Europe/Simferopol"
+  | "Europe/Skopje"
+  | "Europe/Sofia"
+  | "Europe/Stockholm"
+  | "Europe/Tallinn"
+  | "Europe/Tirane"
+  | "Europe/Tiraspol"
+  | "Europe/Ulyanovsk"
+  | "Europe/Uzhgorod"
+  | "Europe/Vaduz"
+  | "Europe/Vatican"
+  | "Europe/Vienna"
+  | "Europe/Vilnius"
+  | "Europe/Volgograd"
+  | "Europe/Warsaw"
+  | "Europe/Zagreb"
+  | "Europe/Zaporozhye"
+  | "Europe/Zurich"
+  | "Factory"
+  | "GB"
+  | "GB-Eire"
+  | "GMT"
+  | "GMT+0"
+  | "GMT-0"
+  | "GMT0"
+  | "Greenwich"
+  | "HST"
+  | "Hongkong"
+  | "Iceland"
+  | "Indian/Antananarivo"
+  | "Indian/Chagos"
+  | "Indian/Christmas"
+  | "Indian/Cocos"
+  | "Indian/Comoro"
+  | "Indian/Kerguelen"
+  | "Indian/Mahe"
+  | "Indian/Maldives"
+  | "Indian/Mauritius"
+  | "Indian/Mayotte"
+  | "Indian/Reunion"
+  | "Iran"
+  | "Israel"
+  | "Jamaica"
+  | "Japan"
+  | "Kwajalein"
+  | "Libya"
+  | "MET"
+  | "MST"
+  | "MST7MDT"
+  | "Mexico/BajaNorte"
+  | "Mexico/BajaSur"
+  | "Mexico/General"
+  | "NZ"
+  | "NZ-CHAT"
+  | "Navajo"
+  | "PRC"
+  | "PST8PDT"
+  | "Pacific/Apia"
+  | "Pacific/Auckland"
+  | "Pacific/Bougainville"
+  | "Pacific/Chatham"
+  | "Pacific/Chuuk"
+  | "Pacific/Easter"
+  | "Pacific/Efate"
+  | "Pacific/Enderbury"
+  | "Pacific/Fakaofo"
+  | "Pacific/Fiji"
+  | "Pacific/Funafuti"
+  | "Pacific/Galapagos"
+  | "Pacific/Gambier"
+  | "Pacific/Guadalcanal"
+  | "Pacific/Guam"
+  | "Pacific/Honolulu"
+  | "Pacific/Johnston"
+  | "Pacific/Kanton"
+  | "Pacific/Kiritimati"
+  | "Pacific/Kosrae"
+  | "Pacific/Kwajalein"
+  | "Pacific/Majuro"
+  | "Pacific/Marquesas"
+  | "Pacific/Midway"
+  | "Pacific/Nauru"
+  | "Pacific/Niue"
+  | "Pacific/Norfolk"
+  | "Pacific/Noumea"
+  | "Pacific/Pago_Pago"
+  | "Pacific/Palau"
+  | "Pacific/Pitcairn"
+  | "Pacific/Pohnpei"
+  | "Pacific/Ponape"
+  | "Pacific/Port_Moresby"
+  | "Pacific/Rarotonga"
+  | "Pacific/Saipan"
+  | "Pacific/Samoa"
+  | "Pacific/Tahiti"
+  | "Pacific/Tarawa"
+  | "Pacific/Tongatapu"
+  | "Pacific/Truk"
+  | "Pacific/Wake"
+  | "Pacific/Wallis"
+  | "Pacific/Yap"
+  | "Poland"
+  | "Portugal"
+  | "ROC"
+  | "ROK"
+  | "Singapore"
+  | "Turkey"
+  | "UCT"
+  | "US/Alaska"
+  | "US/Aleutian"
+  | "US/Arizona"
+  | "US/Central"
+  | "US/East-Indiana"
+  | "US/Eastern"
+  | "US/Hawaii"
+  | "US/Indiana-Starke"
+  | "US/Michigan"
+  | "US/Mountain"
+  | "US/Pacific"
+  | "US/Samoa"
+  | "UTC"
+  | "Universal"
+  | "W-SU"
+  | "WET"
+  | "Zulu";
+/**
+ * TokenEndpointAuthMethod
+ */
+export type TokenEndpointAuthMethod = "client_secret_basic" | "client_secret_post" | "none";
+/**
+ * TokenType
+ */
+export type TokenType = "access_token" | "refresh_token";
+/**
+ * TrialInterval
+ */
+export type TrialInterval = "day" | "week" | "month" | "year";
+/**
+ * WebhookEventType
+ */
+export type WebhookEventType =
+  | "checkout.created"
+  | "checkout.updated"
+  | "checkout.expired"
+  | "customer.created"
+  | "customer.updated"
+  | "customer.deleted"
+  | "customer.state_changed"
+  | "customer_seat.assigned"
+  | "customer_seat.claimed"
+  | "customer_seat.revoked"
+  | "member.created"
+  | "member.updated"
+  | "member.deleted"
+  | "order.created"
+  | "order.updated"
+  | "order.paid"
+  | "order.refunded"
+  | "subscription.created"
+  | "subscription.updated"
+  | "subscription.active"
+  | "subscription.canceled"
+  | "subscription.uncanceled"
+  | "subscription.revoked"
+  | "subscription.past_due"
+  | "refund.created"
+  | "refund.updated"
+  | "product.created"
+  | "product.updated"
+  | "benefit.created"
+  | "benefit.updated"
+  | "benefit_grant.created"
+  | "benefit_grant.cycled"
+  | "benefit_grant.updated"
+  | "benefit_grant.revoked"
+  | "organization.updated";
+/**
+ * WebhookFormat
+ */
+export type WebhookFormat = "raw" | "discord" | "slack";
+
 /**
  * Address
  */
@@ -106,6 +1967,35 @@ export interface AddressDict {
   country: string;
 }
 /**
+ * AddressInput
+ */
+export interface AddressInput {
+  /**
+   * line1
+   */
+  line1?: string | null;
+  /**
+   * line2
+   */
+  line2?: string | null;
+  /**
+   * postal_code
+   */
+  postal_code?: string | null;
+  /**
+   * city
+   */
+  city?: string | null;
+  /**
+   * state
+   */
+  state?: string | null;
+  /**
+   * country
+   */
+  country: CountryAlpha2Input;
+}
+/**
  * AlreadyActiveSubscriptionError
  */
 export interface AlreadyActiveSubscriptionError {
@@ -160,6 +2050,19 @@ export interface AttachedCustomField {
    * Order of the custom field in the resource.
    */
   order: number;
+  /**
+   * Whether the value is required for this custom field.
+   */
+  required: boolean;
+}
+/**
+ * Schema to attach a custom field to a resource.
+ */
+export interface AttachedCustomFieldCreate {
+  /**
+   * ID of the custom field to attach.
+   */
+  custom_field_id: string;
   /**
    * Whether the value is required for this custom field.
    */
@@ -931,6 +2834,54 @@ export interface BenefitCustom {
   visibility_configurable: boolean;
 }
 /**
+ * Schema to create a benefit of type `custom`.
+ */
+export interface BenefitCustomCreate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * type
+   */
+  type: "custom";
+  /**
+   * The description of the benefit. Will be displayed on products having this benefit.
+   */
+  description: string;
+  /**
+   * The ID of the organization owning the benefit. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * The visibility of the benefit in the customer portal.
+   */
+  visibility?: BenefitVisibility | null;
+  /**
+   * properties
+   */
+  properties: BenefitCustomCreateProperties;
+}
+/**
+ * Properties for creating a benefit of type `custom`.
+ */
+export interface BenefitCustomCreateProperties {
+  /**
+   * note
+   */
+  note?: (string | null) | null;
+}
+/**
  * Properties for a benefit of type `custom`.
  */
 export interface BenefitCustomProperties {
@@ -996,6 +2947,41 @@ export interface BenefitCustomSubscriberProperties {
    * note
    */
   note: (string | null) | null;
+}
+/**
+ * BenefitCustomUpdate
+ */
+export interface BenefitCustomUpdate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The description of the benefit. Will be displayed on products having this benefit.
+   */
+  description?: string | null;
+  /**
+   * The visibility of the benefit in the customer portal.
+   */
+  visibility?: BenefitVisibility | null;
+  /**
+   * type
+   */
+  type: "custom";
+  /**
+   * properties
+   */
+  properties?: BenefitCustomProperties | null;
 }
 /**
  * An event created by Polar when a benefit is cycled.
@@ -1118,6 +3104,62 @@ export interface BenefitDiscord {
   visibility_configurable: boolean;
 }
 /**
+ * BenefitDiscordCreate
+ */
+export interface BenefitDiscordCreate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * type
+   */
+  type: "discord";
+  /**
+   * The description of the benefit. Will be displayed on products having this benefit.
+   */
+  description: string;
+  /**
+   * The ID of the organization owning the benefit. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * The visibility of the benefit in the customer portal.
+   */
+  visibility?: BenefitVisibility | null;
+  /**
+   * properties
+   */
+  properties: BenefitDiscordCreateProperties;
+}
+/**
+ * Properties to create a benefit of type `discord`.
+ */
+export interface BenefitDiscordCreateProperties {
+  /**
+   * guild_token
+   */
+  guild_token: string;
+  /**
+   * The ID of the Discord role to grant.
+   */
+  role_id: string;
+  /**
+   * Whether to kick the member from the Discord server on revocation.
+   */
+  kick_member: boolean;
+}
+/**
  * Properties for a benefit of type `discord`.
  */
 export interface BenefitDiscordProperties {
@@ -1197,6 +3239,37 @@ export interface BenefitDiscordSubscriberProperties {
   guild_id: string;
 }
 /**
+ * BenefitDiscordUpdate
+ */
+export interface BenefitDiscordUpdate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The description of the benefit. Will be displayed on products having this benefit.
+   */
+  description?: string | null;
+  /**
+   * type
+   */
+  type: "discord";
+  /**
+   * properties
+   */
+  properties?: BenefitDiscordCreateProperties | null;
+}
+/**
  * BenefitDownloadables
  */
 export interface BenefitDownloadables {
@@ -1252,6 +3325,58 @@ export interface BenefitDownloadables {
    * visibility_configurable
    */
   visibility_configurable: boolean;
+}
+/**
+ * BenefitDownloadablesCreate
+ */
+export interface BenefitDownloadablesCreate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * type
+   */
+  type: "downloadables";
+  /**
+   * The description of the benefit. Will be displayed on products having this benefit.
+   */
+  description: string;
+  /**
+   * The ID of the organization owning the benefit. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * The visibility of the benefit in the customer portal.
+   */
+  visibility?: BenefitVisibility | null;
+  /**
+   * properties
+   */
+  properties: BenefitDownloadablesCreateProperties;
+}
+/**
+ * BenefitDownloadablesCreateProperties
+ */
+export interface BenefitDownloadablesCreateProperties {
+  /**
+   * archived
+   */
+  archived?: Record<string, boolean>;
+  /**
+   * files
+   */
+  files: string[];
 }
 /**
  * BenefitDownloadablesProperties
@@ -1325,6 +3450,37 @@ export interface BenefitDownloadablesSubscriberProperties {
   active_files: string[];
 }
 /**
+ * BenefitDownloadablesUpdate
+ */
+export interface BenefitDownloadablesUpdate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The description of the benefit. Will be displayed on products having this benefit.
+   */
+  description?: string | null;
+  /**
+   * type
+   */
+  type: "downloadables";
+  /**
+   * properties
+   */
+  properties?: BenefitDownloadablesCreateProperties | null;
+}
+/**
  * A benefit of type `feature_flag`.
 
 Use it to grant feature flags with key-value metadata
@@ -1385,6 +3541,49 @@ export interface BenefitFeatureFlag {
   visibility_configurable: boolean;
 }
 /**
+ * Schema to create a benefit of type `feature_flag`.
+ */
+export interface BenefitFeatureFlagCreate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * type
+   */
+  type: "feature_flag";
+  /**
+   * The description of the benefit. Will be displayed on products having this benefit.
+   */
+  description: string;
+  /**
+   * The ID of the organization owning the benefit. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * The visibility of the benefit in the customer portal.
+   */
+  visibility?: BenefitVisibility | null;
+  /**
+   * properties
+   */
+  properties: BenefitFeatureFlagCreateProperties;
+}
+/**
+ * Properties for creating a benefit of type `feature_flag`.
+ */
+export interface BenefitFeatureFlagCreateProperties extends Record<string, never> {}
+/**
  * Properties for a benefit of type `feature_flag`.
  */
 export interface BenefitFeatureFlagProperties extends Record<string, never> {}
@@ -1441,6 +3640,41 @@ export interface BenefitFeatureFlagSubscriber {
  * Properties available to subscribers for a benefit of type `feature_flag`.
  */
 export interface BenefitFeatureFlagSubscriberProperties extends Record<string, never> {}
+/**
+ * BenefitFeatureFlagUpdate
+ */
+export interface BenefitFeatureFlagUpdate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The description of the benefit. Will be displayed on products having this benefit.
+   */
+  description?: string | null;
+  /**
+   * The visibility of the benefit in the customer portal.
+   */
+  visibility?: BenefitVisibility | null;
+  /**
+   * type
+   */
+  type: "feature_flag";
+  /**
+   * properties
+   */
+  properties?: BenefitFeatureFlagProperties | null;
+}
 /**
  * A benefit of type `github_repository`.
 
@@ -1499,6 +3733,62 @@ export interface BenefitGitHubRepository {
    * visibility_configurable
    */
   visibility_configurable: boolean;
+}
+/**
+ * BenefitGitHubRepositoryCreate
+ */
+export interface BenefitGitHubRepositoryCreate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * type
+   */
+  type: "github_repository";
+  /**
+   * The description of the benefit. Will be displayed on products having this benefit.
+   */
+  description: string;
+  /**
+   * The ID of the organization owning the benefit. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * The visibility of the benefit in the customer portal.
+   */
+  visibility?: BenefitVisibility | null;
+  /**
+   * properties
+   */
+  properties: BenefitGitHubRepositoryCreateProperties;
+}
+/**
+ * Properties to create a benefit of type `github_repository`.
+ */
+export interface BenefitGitHubRepositoryCreateProperties {
+  /**
+   * The owner of the repository.
+   */
+  repository_owner: string;
+  /**
+   * The name of the repository.
+   */
+  repository_name: string;
+  /**
+   * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
+   */
+  permission: Permission;
 }
 /**
  * Properties for a benefit of type `github_repository`.
@@ -1578,6 +3868,37 @@ export interface BenefitGitHubRepositorySubscriberProperties {
    * The name of the repository.
    */
   repository_name: string;
+}
+/**
+ * BenefitGitHubRepositoryUpdate
+ */
+export interface BenefitGitHubRepositoryUpdate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The description of the benefit. Will be displayed on products having this benefit.
+   */
+  description?: string | null;
+  /**
+   * type
+   */
+  type: "github_repository";
+  /**
+   * properties
+   */
+  properties?: BenefitGitHubRepositoryCreateProperties | null;
 }
 /**
  * BenefitGrant
@@ -1885,6 +4206,19 @@ export interface BenefitGrantedEvent {
   metadata: BenefitGrantMetadata;
 }
 /**
+ * BenefitLicenseKeyActivationCreateProperties
+ */
+export interface BenefitLicenseKeyActivationCreateProperties {
+  /**
+   * limit
+   */
+  limit: number;
+  /**
+   * enable_customer_admin
+   */
+  enable_customer_admin: boolean;
+}
+/**
  * BenefitLicenseKeyActivationProperties
  */
 export interface BenefitLicenseKeyActivationProperties {
@@ -1966,6 +4300,66 @@ export interface BenefitLicenseKeys {
    * visibility_configurable
    */
   visibility_configurable: boolean;
+}
+/**
+ * BenefitLicenseKeysCreate
+ */
+export interface BenefitLicenseKeysCreate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * type
+   */
+  type: "license_keys";
+  /**
+   * The description of the benefit. Will be displayed on products having this benefit.
+   */
+  description: string;
+  /**
+   * The ID of the organization owning the benefit. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * The visibility of the benefit in the customer portal.
+   */
+  visibility?: BenefitVisibility | null;
+  /**
+   * properties
+   */
+  properties: BenefitLicenseKeysCreateProperties;
+}
+/**
+ * BenefitLicenseKeysCreateProperties
+ */
+export interface BenefitLicenseKeysCreateProperties {
+  /**
+   * prefix
+   */
+  prefix?: string | null;
+  /**
+   * expires
+   */
+  expires?: BenefitLicenseKeyExpirationProperties | null;
+  /**
+   * activations
+   */
+  activations?: BenefitLicenseKeyActivationCreateProperties | null;
+  /**
+   * limit_usage
+   */
+  limit_usage?: number | null;
 }
 /**
  * BenefitLicenseKeysProperties
@@ -2059,6 +4453,41 @@ export interface BenefitLicenseKeysSubscriberProperties {
   limit_usage: number | null;
 }
 /**
+ * BenefitLicenseKeysUpdate
+ */
+export interface BenefitLicenseKeysUpdate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The description of the benefit. Will be displayed on products having this benefit.
+   */
+  description?: string | null;
+  /**
+   * The visibility of the benefit in the customer portal.
+   */
+  visibility?: BenefitVisibility | null;
+  /**
+   * type
+   */
+  type: "license_keys";
+  /**
+   * properties
+   */
+  properties?: BenefitLicenseKeysCreateProperties | null;
+}
+/**
  * A benefit of type `meter_unit`.
 
 Use it to grant a number of units on a specific meter.
@@ -2116,6 +4545,62 @@ export interface BenefitMeterCredit {
    * visibility_configurable
    */
   visibility_configurable: boolean;
+}
+/**
+ * Schema to create a benefit of type `meter_unit`.
+ */
+export interface BenefitMeterCreditCreate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * type
+   */
+  type: "meter_credit";
+  /**
+   * The description of the benefit. Will be displayed on products having this benefit.
+   */
+  description: string;
+  /**
+   * The ID of the organization owning the benefit. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * The visibility of the benefit in the customer portal.
+   */
+  visibility?: BenefitVisibility | null;
+  /**
+   * properties
+   */
+  properties: BenefitMeterCreditCreateProperties;
+}
+/**
+ * Properties for creating a benefit of type `meter_unit`.
+ */
+export interface BenefitMeterCreditCreateProperties {
+  /**
+   * units
+   */
+  units: number;
+  /**
+   * rollover
+   */
+  rollover: boolean;
+  /**
+   * meter_id
+   */
+  meter_id: string;
 }
 /**
  * Properties for a benefit of type `meter_unit`.
@@ -2199,6 +4684,41 @@ export interface BenefitMeterCreditSubscriberProperties {
    * meter_id
    */
   meter_id: string;
+}
+/**
+ * BenefitMeterCreditUpdate
+ */
+export interface BenefitMeterCreditUpdate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The description of the benefit. Will be displayed on products having this benefit.
+   */
+  description?: string | null;
+  /**
+   * The visibility of the benefit in the customer portal.
+   */
+  visibility?: BenefitVisibility | null;
+  /**
+   * type
+   */
+  type: "meter_credit";
+  /**
+   * properties
+   */
+  properties?: BenefitMeterCreditCreateProperties | null;
 }
 /**
  * BenefitPublic
@@ -2360,6 +4880,74 @@ export interface BenefitSlackSharedChannel {
   visibility_configurable: boolean;
 }
 /**
+ * BenefitSlackSharedChannelCreate
+ */
+export interface BenefitSlackSharedChannelCreate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * type
+   */
+  type: "slack_shared_channel";
+  /**
+   * The description of the benefit. Will be displayed on products having this benefit.
+   */
+  description: string;
+  /**
+   * The ID of the organization owning the benefit. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * The visibility of the benefit in the customer portal.
+   */
+  visibility?: BenefitVisibility | null;
+  /**
+   * properties
+   */
+  properties: BenefitSlackSharedChannelCreateProperties;
+}
+/**
+ * BenefitSlackSharedChannelCreateProperties
+ */
+export interface BenefitSlackSharedChannelCreateProperties {
+  /**
+   * Polar Slack integration to use for this benefit.
+   */
+  slack_integration_id: string;
+  /**
+   * channel_name_template
+   */
+  channel_name_template: string;
+  /**
+   * private
+   */
+  private?: boolean;
+  /**
+   * welcome_message
+   */
+  welcome_message?: string | null;
+  /**
+   * archive_on_revoke
+   */
+  archive_on_revoke?: boolean;
+  /**
+   * team_invitees
+   */
+  team_invitees?: string[];
+}
+/**
  * BenefitSlackSharedChannelProperties
  */
 export interface BenefitSlackSharedChannelProperties {
@@ -2441,6 +5029,37 @@ export interface BenefitSlackSharedChannelSubscriber {
  * BenefitSlackSharedChannelSubscriberProperties
  */
 export interface BenefitSlackSharedChannelSubscriberProperties extends Record<string, never> {}
+/**
+ * BenefitSlackSharedChannelUpdate
+ */
+export interface BenefitSlackSharedChannelUpdate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The description of the benefit. Will be displayed on products having this benefit.
+   */
+  description?: string | null;
+  /**
+   * type
+   */
+  type: "slack_shared_channel";
+  /**
+   * properties
+   */
+  properties?: BenefitSlackSharedChannelCreateProperties | null;
+}
 /**
  * BenefitSubscriberOrganization
  */
@@ -2916,6 +5535,228 @@ export interface CheckoutBillingAddressFields {
   line2: BillingAddressFieldMode;
 }
 /**
+ * Confirm a checkout session using a Stripe confirmation token.
+ */
+export interface CheckoutConfirmStripe {
+  /**
+   * Key-value object storing custom field values.
+   */
+  custom_field_data?: Record<string, string | number | boolean | string | null>;
+  /**
+   * ID of the product to checkout. Must be present in the checkout's product list.
+   */
+  product_id?: string | null;
+  /**
+   * ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
+   */
+  product_price_id?: string | null;
+  /**
+   * amount
+   */
+  amount?: number | null;
+  /**
+   * Number of seats for seat-based pricing.
+   */
+  seats?: number | null;
+  /**
+   * is_business_customer
+   */
+  is_business_customer?: boolean | null;
+  /**
+   * customer_name
+   */
+  customer_name?: string | null;
+  /**
+   * customer_email
+   */
+  customer_email?: string | null;
+  /**
+   * customer_billing_name
+   */
+  customer_billing_name?: string | null;
+  /**
+   * customer_billing_address
+   */
+  customer_billing_address?: AddressInput | null;
+  /**
+   * customer_tax_id
+   */
+  customer_tax_id?: string | null;
+  /**
+   * locale
+   */
+  locale?: string | null;
+  /**
+   * Discount code to apply to the checkout.
+   */
+  discount_code?: string | null;
+  /**
+   * Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one.
+   */
+  allow_trial?: false | null;
+  /**
+   * ID of the Stripe confirmation token. Required for fixed prices and custom prices.
+   */
+  confirmation_token_id?: string | null;
+}
+/**
+ * Create a new checkout session from a list of products.
+Customers will be able to switch between those products.
+
+Metadata set on the checkout will be copied
+to the resulting order and/or subscription.
+ */
+export interface CheckoutCreate {
+  /**
+   * The interval unit for the trial period.
+   */
+  trial_interval?: TrialInterval | null;
+  /**
+   * The number of interval units for the trial period.
+   */
+  trial_interval_count?: number | null;
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * Key-value object storing custom field values.
+   */
+  custom_field_data?: Record<string, string | number | boolean | string | null>;
+  /**
+   * ID of the discount to apply to the checkout.
+   */
+  discount_id?: string | null;
+  /**
+   * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+   */
+  allow_discount_codes?: boolean;
+  /**
+   * Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
+   */
+  require_billing_address?: boolean;
+  /**
+   * amount
+   */
+  amount?: number | null;
+  /**
+   * Predefined number of seats (works with seat-based pricing only)
+   */
+  seats?: number | null;
+  /**
+   * Minimum number of seats (works with seat-based pricing only)
+   */
+  min_seats?: number | null;
+  /**
+   * Maximum number of seats (works with seat-based pricing only)
+   */
+  max_seats?: number | null;
+  /**
+   * Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+   */
+  allow_trial?: boolean;
+  /**
+   * ID of an existing customer in the organization. The customer data will be pre-filled in the checkout form. The resulting order will be linked to this customer.
+   */
+  customer_id?: string | null;
+  /**
+   * Whether the customer is a business or an individual. If `true`, the customer will be required to fill their full billing address and billing name.
+   */
+  is_business_customer?: boolean;
+  /**
+   * ID of the customer in your system. If a matching customer exists on Polar, the resulting order will be linked to this customer. Otherwise, a new customer will be created with this external ID set.
+   */
+  external_customer_id?: string | null;
+  /**
+   * customer_name
+   */
+  customer_name?: string | null;
+  /**
+   * customer_email
+   */
+  customer_email?: string | null;
+  /**
+   * customer_ip_address
+   */
+  customer_ip_address?: string | null;
+  /**
+   * customer_billing_name
+   */
+  customer_billing_name?: string | null;
+  /**
+   * customer_billing_address
+   */
+  customer_billing_address?: AddressInput | null;
+  /**
+   * customer_tax_id
+   */
+  customer_tax_id?: string | null;
+  /**
+   * Key-value object allowing you to store additional information that'll be copied to the created customer.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  customer_metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
+   */
+  subscription_id?: string | null;
+  /**
+   * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
+   */
+  success_url?: string | null;
+  /**
+   * When set, a back button will be shown in the checkout to return to this URL.
+   */
+  return_url?: string | null;
+  /**
+   * If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
+   */
+  embed_origin?: string | null;
+  /**
+   * locale
+   */
+  locale?: string | null;
+  /**
+   * currency
+   */
+  currency?: PresentmentCurrency | null;
+  /**
+   * List of product IDs available to select at that checkout. The first one will be selected by default.
+   */
+  products: string[];
+  /**
+   * Optional mapping of product IDs to a list of ad-hoc prices to create for that product. If not set, catalog prices of the product will be used.
+   */
+  prices?: Record<
+    string,
+    (
+      | ProductPriceFixedCreate
+      | ProductPriceCustomCreate
+      | ProductPriceSeatBasedCreate
+      | ProductPriceMeteredUnitCreate
+    )[]
+  > | null;
+}
+/**
  * An event created by Polar when a checkout is created.
  */
 export interface CheckoutCreatedEvent {
@@ -3224,6 +6065,199 @@ export interface CheckoutLink {
   url: string;
 }
 /**
+ * Schema to create a new checkout link from a a single product.
+
+**Deprecated**: Use `CheckoutLinkCreateProducts` instead.
+ */
+export interface CheckoutLinkCreateProduct {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The interval unit for the trial period.
+   */
+  trial_interval?: TrialInterval | null;
+  /**
+   * The number of interval units for the trial period.
+   */
+  trial_interval_count?: number | null;
+  /**
+   * Payment processor to use. Currently only Stripe is supported.
+   */
+  payment_processor: "stripe";
+  /**
+   * Optional label to distinguish links internally
+   */
+  label?: string | null;
+  /**
+   * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+   */
+  allow_discount_codes?: boolean;
+  /**
+   * Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
+   */
+  require_billing_address?: boolean;
+  /**
+   * ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
+   */
+  discount_id?: string | null;
+  /**
+   * Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+   */
+  seats?: number | null;
+  /**
+   * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
+   */
+  success_url?: string | null;
+  /**
+   * When set, a back button will be shown in the checkout to return to this URL.
+   */
+  return_url?: string | null;
+  /**
+   * product_id
+   */
+  product_id: string;
+}
+/**
+ * Schema to create a new checkout link from a a single product price.
+
+**Deprecated**: Use `CheckoutLinkCreateProducts` instead.
+ */
+export interface CheckoutLinkCreateProductPrice {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The interval unit for the trial period.
+   */
+  trial_interval?: TrialInterval | null;
+  /**
+   * The number of interval units for the trial period.
+   */
+  trial_interval_count?: number | null;
+  /**
+   * Payment processor to use. Currently only Stripe is supported.
+   */
+  payment_processor: "stripe";
+  /**
+   * Optional label to distinguish links internally
+   */
+  label?: string | null;
+  /**
+   * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+   */
+  allow_discount_codes?: boolean;
+  /**
+   * Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
+   */
+  require_billing_address?: boolean;
+  /**
+   * ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
+   */
+  discount_id?: string | null;
+  /**
+   * Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+   */
+  seats?: number | null;
+  /**
+   * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
+   */
+  success_url?: string | null;
+  /**
+   * When set, a back button will be shown in the checkout to return to this URL.
+   */
+  return_url?: string | null;
+  /**
+   * product_price_id
+   */
+  product_price_id: string;
+}
+/**
+ * Schema to create a new checkout link.
+ */
+export interface CheckoutLinkCreateProducts {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The interval unit for the trial period.
+   */
+  trial_interval?: TrialInterval | null;
+  /**
+   * The number of interval units for the trial period.
+   */
+  trial_interval_count?: number | null;
+  /**
+   * Payment processor to use. Currently only Stripe is supported.
+   */
+  payment_processor: "stripe";
+  /**
+   * Optional label to distinguish links internally
+   */
+  label?: string | null;
+  /**
+   * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+   */
+  allow_discount_codes?: boolean;
+  /**
+   * Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
+   */
+  require_billing_address?: boolean;
+  /**
+   * ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
+   */
+  discount_id?: string | null;
+  /**
+   * Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+   */
+  seats?: number | null;
+  /**
+   * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
+   */
+  success_url?: string | null;
+  /**
+   * When set, a back button will be shown in the checkout to return to this URL.
+   */
+  return_url?: string | null;
+  /**
+   * List of products that will be available to select at checkout.
+   */
+  products: string[];
+}
+/**
  * Product data for a checkout link.
  */
 export interface CheckoutLinkProduct {
@@ -3303,6 +6337,65 @@ export interface CheckoutLinkProduct {
    * List of medias associated to the product.
    */
   medias: ProductMediaFileRead[];
+}
+/**
+ * Schema to update an existing checkout link.
+ */
+export interface CheckoutLinkUpdate {
+  /**
+   * The interval unit for the trial period.
+   */
+  trial_interval?: TrialInterval | null;
+  /**
+   * The number of interval units for the trial period.
+   */
+  trial_interval_count?: number | null;
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * List of products that will be available to select at checkout.
+   */
+  products?: string[] | null;
+  /**
+   * label
+   */
+  label?: string | null;
+  /**
+   * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+   */
+  allow_discount_codes?: boolean | null;
+  /**
+   * Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting.
+   */
+  require_billing_address?: boolean | null;
+  /**
+   * ID of the discount to apply to the checkout. If the discount is not applicable anymore when opening the checkout link, it'll be ignored.
+   */
+  discount_id?: string | null;
+  /**
+   * Preconfigured number of seats for seat-based pricing. When set, checkout sessions created from this link are locked to this number of seats and the customer won't be able to change it. All products on the link must use seat-based pricing and allow this number of seats. If the products no longer accommodate this value when the link is opened, it'll be ignored.
+   */
+  seats?: number | null;
+  /**
+   * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
+   */
+  success_url?: string | null;
+  /**
+   * When set, a back button will be shown in the checkout to return to this URL.
+   */
+  return_url?: string | null;
 }
 /**
  * CheckoutOrganization
@@ -3890,9 +6983,208 @@ export interface CheckoutPublicConfirmed {
   customer_session_token: string | null;
 }
 /**
+ * Update an existing checkout session using an access token.
+ */
+export interface CheckoutUpdate {
+  /**
+   * Key-value object storing custom field values.
+   */
+  custom_field_data?: Record<string, string | number | boolean | string | null>;
+  /**
+   * ID of the product to checkout. Must be present in the checkout's product list.
+   */
+  product_id?: string | null;
+  /**
+   * ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
+   */
+  product_price_id?: string | null;
+  /**
+   * amount
+   */
+  amount?: number | null;
+  /**
+   * Number of seats for seat-based pricing.
+   */
+  seats?: number | null;
+  /**
+   * is_business_customer
+   */
+  is_business_customer?: boolean | null;
+  /**
+   * customer_name
+   */
+  customer_name?: string | null;
+  /**
+   * customer_email
+   */
+  customer_email?: string | null;
+  /**
+   * customer_billing_name
+   */
+  customer_billing_name?: string | null;
+  /**
+   * customer_billing_address
+   */
+  customer_billing_address?: AddressInput | null;
+  /**
+   * customer_tax_id
+   */
+  customer_tax_id?: string | null;
+  /**
+   * locale
+   */
+  locale?: string | null;
+  /**
+   * The interval unit for the trial period.
+   */
+  trial_interval?: TrialInterval | null;
+  /**
+   * The number of interval units for the trial period.
+   */
+  trial_interval_count?: number | null;
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * currency
+   */
+  currency?: PresentmentCurrency | null;
+  /**
+   * ID of the discount to apply to the checkout.
+   */
+  discount_id?: string | null;
+  /**
+   * Whether to allow the customer to apply discount codes. If you apply a discount through `discount_id`, it'll still be applied, but the customer won't be able to change it.
+   */
+  allow_discount_codes?: boolean | null;
+  /**
+   * Whether to require the customer to fill their full billing address, instead of just the country. Customers in the US will always be required to fill their full address, regardless of this setting. If you preset the billing address, this setting will be automatically set to `true`.
+   */
+  require_billing_address?: boolean | null;
+  /**
+   * Whether to enable the trial period for the checkout session. If `false`, the trial period will be disabled, even if the selected product has a trial configured.
+   */
+  allow_trial?: boolean | null;
+  /**
+   * customer_ip_address
+   */
+  customer_ip_address?: string | null;
+  /**
+   * Key-value object allowing you to store additional information that'll be copied to the created customer.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  customer_metadata?: Record<string, string | number | number | boolean> | null;
+  /**
+   * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
+   */
+  success_url?: string | null;
+  /**
+   * When set, a back button will be shown in the checkout to return to this URL.
+   */
+  return_url?: string | null;
+  /**
+   * If you plan to embed the checkout session, set this to the Origin of the embedding page. It'll allow the Polar iframe to communicate with the parent page.
+   */
+  embed_origin?: string | null;
+}
+/**
+ * Update an existing checkout session using the client secret.
+ */
+export interface CheckoutUpdatePublic {
+  /**
+   * Key-value object storing custom field values.
+   */
+  custom_field_data?: Record<string, string | number | boolean | string | null>;
+  /**
+   * ID of the product to checkout. Must be present in the checkout's product list.
+   */
+  product_id?: string | null;
+  /**
+   * ID of the product price to checkout. Must correspond to a price present in the checkout's product list.
+   */
+  product_price_id?: string | null;
+  /**
+   * amount
+   */
+  amount?: number | null;
+  /**
+   * Number of seats for seat-based pricing.
+   */
+  seats?: number | null;
+  /**
+   * is_business_customer
+   */
+  is_business_customer?: boolean | null;
+  /**
+   * customer_name
+   */
+  customer_name?: string | null;
+  /**
+   * customer_email
+   */
+  customer_email?: string | null;
+  /**
+   * customer_billing_name
+   */
+  customer_billing_name?: string | null;
+  /**
+   * customer_billing_address
+   */
+  customer_billing_address?: AddressInput | null;
+  /**
+   * customer_tax_id
+   */
+  customer_tax_id?: string | null;
+  /**
+   * locale
+   */
+  locale?: string | null;
+  /**
+   * Discount code to apply to the checkout.
+   */
+  discount_code?: string | null;
+  /**
+   * Disable the trial period for the checkout session. It's mainly useful when the trial is blocked because the customer already redeemed one.
+   */
+  allow_trial?: false | null;
+}
+/**
  * Context
  */
 export interface Context extends Record<string, never> {}
+/**
+ * CostMetadataInput
+ */
+export interface CostMetadataInput {
+  /**
+   * The amount in cents.
+   */
+  amount: number | string;
+  /**
+   * The currency. Currently, only `usd` is supported.
+   */
+  currency: string;
+}
 /**
  * CostMetadataOutput
  */
@@ -3981,6 +7273,201 @@ export interface CustomFieldCheckboxProperties {
    * form_placeholder
    */
   form_placeholder?: string;
+}
+/**
+ * Schema to create a custom field of type checkbox.
+ */
+export interface CustomFieldCreateCheckbox {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * type
+   */
+  type: "checkbox";
+  /**
+   * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
+   */
+  slug: string;
+  /**
+   * Name of the custom field.
+   */
+  name: string;
+  /**
+   * The ID of the organization owning the custom field. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * properties
+   */
+  properties: CustomFieldCheckboxProperties;
+}
+/**
+ * Schema to create a custom field of type date.
+ */
+export interface CustomFieldCreateDate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * type
+   */
+  type: "date";
+  /**
+   * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
+   */
+  slug: string;
+  /**
+   * Name of the custom field.
+   */
+  name: string;
+  /**
+   * The ID of the organization owning the custom field. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * properties
+   */
+  properties: CustomFieldDateProperties;
+}
+/**
+ * Schema to create a custom field of type number.
+ */
+export interface CustomFieldCreateNumber {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * type
+   */
+  type: "number";
+  /**
+   * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
+   */
+  slug: string;
+  /**
+   * Name of the custom field.
+   */
+  name: string;
+  /**
+   * The ID of the organization owning the custom field. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * properties
+   */
+  properties: CustomFieldNumberProperties;
+}
+/**
+ * Schema to create a custom field of type select.
+ */
+export interface CustomFieldCreateSelect {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * type
+   */
+  type: "select";
+  /**
+   * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
+   */
+  slug: string;
+  /**
+   * Name of the custom field.
+   */
+  name: string;
+  /**
+   * The ID of the organization owning the custom field. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * properties
+   */
+  properties: CustomFieldSelectProperties;
+}
+/**
+ * Schema to create a custom field of type text.
+ */
+export interface CustomFieldCreateText {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * type
+   */
+  type: "text";
+  /**
+   * Identifier of the custom field. It'll be used as key when storing the value. Must be unique across the organization.It can only contain ASCII letters, numbers and hyphens.
+   */
+  slug: string;
+  /**
+   * Name of the custom field.
+   */
+  name: string;
+  /**
+   * The ID of the organization owning the custom field. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * properties
+   */
+  properties: CustomFieldTextProperties;
 }
 /**
  * Schema for a custom field of type date.
@@ -4260,6 +7747,181 @@ export interface CustomFieldTextProperties {
   max_length?: number;
 }
 /**
+ * Schema to update a custom field of type checkbox.
+ */
+export interface CustomFieldUpdateCheckbox {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * name
+   */
+  name?: string | null;
+  /**
+   * slug
+   */
+  slug?: string | null;
+  /**
+   * type
+   */
+  type: "checkbox";
+  /**
+   * properties
+   */
+  properties?: CustomFieldCheckboxProperties | null;
+}
+/**
+ * Schema to update a custom field of type date.
+ */
+export interface CustomFieldUpdateDate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * name
+   */
+  name?: string | null;
+  /**
+   * slug
+   */
+  slug?: string | null;
+  /**
+   * type
+   */
+  type: "date";
+  /**
+   * properties
+   */
+  properties?: CustomFieldDateProperties | null;
+}
+/**
+ * Schema to update a custom field of type number.
+ */
+export interface CustomFieldUpdateNumber {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * name
+   */
+  name?: string | null;
+  /**
+   * slug
+   */
+  slug?: string | null;
+  /**
+   * type
+   */
+  type: "number";
+  /**
+   * properties
+   */
+  properties?: CustomFieldNumberProperties | null;
+}
+/**
+ * Schema to update a custom field of type select.
+ */
+export interface CustomFieldUpdateSelect {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * name
+   */
+  name?: string | null;
+  /**
+   * slug
+   */
+  slug?: string | null;
+  /**
+   * type
+   */
+  type: "select";
+  /**
+   * properties
+   */
+  properties?: CustomFieldSelectProperties | null;
+}
+/**
+ * Schema to update a custom field of type text.
+ */
+export interface CustomFieldUpdateText {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * name
+   */
+  name?: string | null;
+  /**
+   * slug
+   */
+  slug?: string | null;
+  /**
+   * type
+   */
+  type: "text";
+  /**
+   * properties
+   */
+  properties?: CustomFieldTextProperties | null;
+}
+/**
  * CustomerBenefitGrantCustom
  */
 export interface CustomerBenefitGrantCustom {
@@ -4327,6 +7989,15 @@ export interface CustomerBenefitGrantCustom {
    * properties
    */
   properties: BenefitGrantCustomProperties;
+}
+/**
+ * CustomerBenefitGrantCustomUpdate
+ */
+export interface CustomerBenefitGrantCustomUpdate {
+  /**
+   * benefit_type
+   */
+  benefit_type: "custom";
 }
 /**
  * CustomerBenefitGrantDiscord
@@ -4398,6 +8069,28 @@ export interface CustomerBenefitGrantDiscord {
   properties: BenefitGrantDiscordProperties;
 }
 /**
+ * CustomerBenefitGrantDiscordPropertiesUpdate
+ */
+export interface CustomerBenefitGrantDiscordPropertiesUpdate {
+  /**
+   * account_id
+   */
+  account_id: string | null;
+}
+/**
+ * CustomerBenefitGrantDiscordUpdate
+ */
+export interface CustomerBenefitGrantDiscordUpdate {
+  /**
+   * benefit_type
+   */
+  benefit_type: "discord";
+  /**
+   * properties
+   */
+  properties: CustomerBenefitGrantDiscordPropertiesUpdate;
+}
+/**
  * CustomerBenefitGrantDownloadables
  */
 export interface CustomerBenefitGrantDownloadables {
@@ -4465,6 +8158,15 @@ export interface CustomerBenefitGrantDownloadables {
    * properties
    */
   properties: BenefitGrantDownloadablesProperties;
+}
+/**
+ * CustomerBenefitGrantDownloadablesUpdate
+ */
+export interface CustomerBenefitGrantDownloadablesUpdate {
+  /**
+   * benefit_type
+   */
+  benefit_type: "downloadables";
 }
 /**
  * CustomerBenefitGrantFeatureFlag
@@ -4536,6 +8238,15 @@ export interface CustomerBenefitGrantFeatureFlag {
   properties: BenefitGrantFeatureFlagProperties;
 }
 /**
+ * CustomerBenefitGrantFeatureFlagUpdate
+ */
+export interface CustomerBenefitGrantFeatureFlagUpdate {
+  /**
+   * benefit_type
+   */
+  benefit_type: "feature_flag";
+}
+/**
  * CustomerBenefitGrantGitHubRepository
  */
 export interface CustomerBenefitGrantGitHubRepository {
@@ -4603,6 +8314,28 @@ export interface CustomerBenefitGrantGitHubRepository {
    * properties
    */
   properties: BenefitGrantGitHubRepositoryProperties;
+}
+/**
+ * CustomerBenefitGrantGitHubRepositoryPropertiesUpdate
+ */
+export interface CustomerBenefitGrantGitHubRepositoryPropertiesUpdate {
+  /**
+   * account_id
+   */
+  account_id: string | null;
+}
+/**
+ * CustomerBenefitGrantGitHubRepositoryUpdate
+ */
+export interface CustomerBenefitGrantGitHubRepositoryUpdate {
+  /**
+   * benefit_type
+   */
+  benefit_type: "github_repository";
+  /**
+   * properties
+   */
+  properties: CustomerBenefitGrantGitHubRepositoryPropertiesUpdate;
 }
 /**
  * CustomerBenefitGrantLicenseKeys
@@ -4674,6 +8407,15 @@ export interface CustomerBenefitGrantLicenseKeys {
   properties: BenefitGrantLicenseKeysProperties;
 }
 /**
+ * CustomerBenefitGrantLicenseKeysUpdate
+ */
+export interface CustomerBenefitGrantLicenseKeysUpdate {
+  /**
+   * benefit_type
+   */
+  benefit_type: "license_keys";
+}
+/**
  * CustomerBenefitGrantMeterCredit
  */
 export interface CustomerBenefitGrantMeterCredit {
@@ -4743,6 +8485,15 @@ export interface CustomerBenefitGrantMeterCredit {
   properties: BenefitGrantMeterCreditProperties;
 }
 /**
+ * CustomerBenefitGrantMeterCreditUpdate
+ */
+export interface CustomerBenefitGrantMeterCreditUpdate {
+  /**
+   * benefit_type
+   */
+  benefit_type: "meter_credit";
+}
+/**
  * CustomerBenefitGrantSlackSharedChannel
  */
 export interface CustomerBenefitGrantSlackSharedChannel {
@@ -4810,6 +8561,28 @@ export interface CustomerBenefitGrantSlackSharedChannel {
    * properties
    */
   properties: BenefitGrantSlackSharedChannelProperties;
+}
+/**
+ * CustomerBenefitGrantSlackSharedChannelPropertiesUpdate
+ */
+export interface CustomerBenefitGrantSlackSharedChannelPropertiesUpdate {
+  /**
+   * invited_email
+   */
+  invited_email: string;
+}
+/**
+ * CustomerBenefitGrantSlackSharedChannelUpdate
+ */
+export interface CustomerBenefitGrantSlackSharedChannelUpdate {
+  /**
+   * benefit_type
+   */
+  benefit_type: "slack_shared_channel";
+  /**
+   * properties
+   */
+  properties: CustomerBenefitGrantSlackSharedChannelPropertiesUpdate;
 }
 /**
  * An event created by Polar when a customer is created.
@@ -5051,6 +8824,24 @@ export interface CustomerDeletedMetadata {
   customer_external_id: string | null;
 }
 /**
+ * CustomerEmailUpdateRequest
+ */
+export interface CustomerEmailUpdateRequest {
+  /**
+   * email
+   */
+  email: string;
+}
+/**
+ * CustomerEmailUpdateVerifyRequest
+ */
+export interface CustomerEmailUpdateVerifyRequest {
+  /**
+   * token
+   */
+  token: string;
+}
+/**
  * CustomerEmailUpdateVerifyResponse
  */
 export interface CustomerEmailUpdateVerifyResponse {
@@ -5131,6 +8922,61 @@ export interface CustomerIndividual {
    * avatar_url
    */
   avatar_url: string | null;
+}
+/**
+ * CustomerIndividualCreate
+ */
+export interface CustomerIndividualCreate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+   */
+  external_id?: string | null;
+  /**
+   * name
+   */
+  name?: string | null;
+  /**
+   * billing_address
+   */
+  billing_address?: AddressInput | null;
+  /**
+   * tax_id
+   */
+  tax_id?: string | null;
+  /**
+   * locale
+   */
+  locale?: string | null;
+  /**
+   * The ID of the organization owning the customer. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name.
+   */
+  owner?: MemberOwnerCreate | null;
+  /**
+   * type
+   */
+  type?: "individual";
+  /**
+   * The email address of the customer. This must be unique within the organization.
+   */
+  email: string;
 }
 /**
  * An active customer meter, with current consumed and credited units.
@@ -5330,6 +9176,23 @@ export interface CustomerOrder {
    * Sales tax in cents that would be refunded if the full refundable amount is refunded.
    */
   refundable_tax_amount: number;
+}
+/**
+ * Schema to confirm a retry payment using either a saved payment method or a new confirmation token.
+ */
+export interface CustomerOrderConfirmPayment {
+  /**
+   * ID of the Stripe confirmation token for new payment methods.
+   */
+  confirmation_token_id?: string | null;
+  /**
+   * ID of an existing saved payment method.
+   */
+  payment_method_id?: string | null;
+  /**
+   * payment_processor
+   */
+  payment_processor?: PaymentProcessor;
 }
 /**
  * Order's invoice data.
@@ -5574,6 +9437,19 @@ export interface CustomerOrderSubscription {
   customer_cancellation_comment: string | null;
 }
 /**
+ * Schema to update an order.
+ */
+export interface CustomerOrderUpdate {
+  /**
+   * The name of the customer that should appear on the invoice.
+   */
+  billing_name?: string | null;
+  /**
+   * The address of the customer that should appear on the invoice. Country and state fields cannot be updated.
+   */
+  billing_address?: AddressInput | null;
+}
+/**
  * CustomerOrganization
  */
 export interface CustomerOrganization {
@@ -5680,6 +9556,36 @@ export interface CustomerPaymentMethodCard {
    * Whether this payment method is the customer's default payment method.
    */
   is_default: boolean;
+}
+/**
+ * CustomerPaymentMethodConfirm
+ */
+export interface CustomerPaymentMethodConfirm {
+  /**
+   * setup_intent_id
+   */
+  setup_intent_id: string;
+  /**
+   * set_default
+   */
+  set_default: boolean;
+}
+/**
+ * CustomerPaymentMethodCreate
+ */
+export interface CustomerPaymentMethodCreate {
+  /**
+   * confirmation_token_id
+   */
+  confirmation_token_id: string;
+  /**
+   * set_default
+   */
+  set_default: boolean;
+  /**
+   * return_url
+   */
+  return_url: string;
 }
 /**
  * CustomerPaymentMethodCreateRequiresActionResponse
@@ -5807,6 +9713,27 @@ export interface CustomerPortalCustomerSettings {
   allow_email_change?: boolean;
 }
 /**
+ * CustomerPortalCustomerUpdate
+ */
+export interface CustomerPortalCustomerUpdate {
+  /**
+   * billing_name
+   */
+  billing_name?: string | null;
+  /**
+   * billing_address
+   */
+  billing_address?: AddressInput | null;
+  /**
+   * tax_id
+   */
+  tax_id?: string | null;
+  /**
+   * default_payment_method_id
+   */
+  default_payment_method_id?: string | null;
+}
+/**
  * A member of the customer's team as seen in the customer portal.
  */
 export interface CustomerPortalMember {
@@ -5834,6 +9761,36 @@ export interface CustomerPortalMember {
    * role
    */
   role: MemberRole;
+}
+/**
+ * Schema for adding a new member to the customer's team.
+ */
+export interface CustomerPortalMemberCreate {
+  /**
+   * The email address of the new member.
+   */
+  email: string;
+  /**
+   * The name of the new member (optional).
+   */
+  name?: string | null;
+  /**
+   * role
+   */
+  role?: MemberRole;
+}
+/**
+ * Schema for updating a member in the customer portal.
+ */
+export interface CustomerPortalMemberUpdate {
+  /**
+   * The new name for the member.
+   */
+  name?: string | null;
+  /**
+   * The new role for the member.
+   */
+  role?: MemberRole | null;
 }
 /**
  * CustomerPortalOAuthAccount
@@ -6013,6 +9970,51 @@ export interface CustomerSeat {
   seat_metadata: Record<string, unknown> | null;
 }
 /**
+ * CustomerSeatAssign
+ */
+export interface CustomerSeatAssign {
+  /**
+   * Subscription ID. Required if neither order_id nor checkout_id is provided.
+   */
+  subscription_id?: string | null;
+  /**
+   * Order ID for one-time purchases. Required if subscription_id is not provided.
+   */
+  order_id?: string | null;
+  /**
+   * Email of the customer to assign the seat to
+   */
+  email?: string | null;
+  /**
+   * External customer ID for the seat assignment
+   */
+  external_customer_id?: string | null;
+  /**
+   * Customer ID for the seat assignment
+   */
+  customer_id?: string | null;
+  /**
+   * External member ID for the seat assignment. Can be used alone (lookup existing member) or with email (create/validate member).
+   */
+  external_member_id?: string | null;
+  /**
+   * Member ID for the seat assignment.
+   */
+  member_id?: string | null;
+  /**
+   * Additional metadata for the seat (max 10 keys, 1KB total)
+   */
+  metadata?: Record<string, unknown> | null;
+  /**
+   * If true, the seat will be immediately claimed without sending an invitation email. API-only feature.
+   */
+  immediate_claim?: boolean;
+  /**
+   * Checkout ID. Resolves to the subscription or order produced by the checkout.
+   */
+  checkout_id?: string | null;
+}
+/**
  * Response after successfully claiming a seat.
  */
 export interface CustomerSeatClaimResponse {
@@ -6065,6 +10067,48 @@ export interface CustomerSession {
    * customer
    */
   customer: Customer;
+}
+/**
+ * Schema for creating a customer session using an external customer ID.
+ */
+export interface CustomerSessionCustomerExternalIDCreate {
+  /**
+   * ID of the member to create a session for. When not provided and the organization has `member_model_enabled`, the owner member of the customer will be used for individual customers.
+   */
+  member_id?: string | null;
+  /**
+   * External ID of the member to create a session for. Alternative to `member_id`.
+   */
+  external_member_id?: string | null;
+  /**
+   * When set, a back button will be shown in the customer portal to return to this URL.
+   */
+  return_url?: string | null;
+  /**
+   * External ID of the customer to create a session for.
+   */
+  external_customer_id: string;
+}
+/**
+ * Schema for creating a customer session using a customer ID.
+ */
+export interface CustomerSessionCustomerIDCreate {
+  /**
+   * ID of the member to create a session for. When not provided and the organization has `member_model_enabled`, the owner member of the customer will be used for individual customers.
+   */
+  member_id?: string | null;
+  /**
+   * External ID of the member to create a session for. Alternative to `member_id`.
+   */
+  external_member_id?: string | null;
+  /**
+   * When set, a back button will be shown in the customer portal to return to this URL.
+   */
+  return_url?: string | null;
+  /**
+   * ID of the customer to create a session for.
+   */
+  customer_id: string;
 }
 /**
  * An active benefit grant for a customer.
@@ -6569,6 +10613,34 @@ export interface CustomerSubscription {
   pending_update: PendingSubscriptionUpdate | null;
 }
 /**
+ * CustomerSubscriptionCancel
+ */
+export interface CustomerSubscriptionCancel {
+  /**
+   * Cancel an active subscription once the current period ends.
+
+Or uncancel a subscription currently set to be revoked at period end.
+   */
+  cancel_at_period_end?: boolean | null;
+  /**
+   * Customers reason for cancellation.
+
+* `too_expensive`: Too expensive for the customer.
+* `missing_features`: Customer is missing certain features.
+* `switched_service`: Customer switched to another service.
+* `unused`: Customer is not using it enough.
+* `customer_service`: Customer is not satisfied with the customer service.
+* `low_quality`: Customer is unhappy with the quality.
+* `too_complex`: Customer considers the service too complicated.
+* `other`: Other reason(s).
+   */
+  cancellation_reason?: CustomerCancellationReason | null;
+  /**
+   * Customer feedback and why they decided to cancel.
+   */
+  cancellation_comment?: string | null;
+}
+/**
  * CustomerSubscriptionMeter
  */
 export interface CustomerSubscriptionMeter {
@@ -6708,6 +10780,37 @@ export interface CustomerSubscriptionProduct {
   organization: CustomerOrganization;
 }
 /**
+ * CustomerSubscriptionUpdateClear
+ */
+export interface CustomerSubscriptionUpdateClear {
+  /**
+   * Clear the pending subscription update.
+   */
+  pending_update: null;
+}
+/**
+ * CustomerSubscriptionUpdateProduct
+ */
+export interface CustomerSubscriptionUpdateProduct {
+  /**
+   * Update subscription to another product.
+   */
+  product_id: string;
+}
+/**
+ * CustomerSubscriptionUpdateSeats
+ */
+export interface CustomerSubscriptionUpdateSeats {
+  /**
+   * Update the number of seats for this subscription.
+   */
+  seats: number;
+  /**
+   * Determine how to handle the proration billing. If not provided, will use the default organization setting.
+   */
+  proration_behavior?: SubscriptionProrationBehavior | null;
+}
+/**
  * A team customer in an organization.
  */
 export interface CustomerTeam {
@@ -6779,6 +10882,147 @@ export interface CustomerTeam {
    * avatar_url
    */
   avatar_url: string | null;
+}
+/**
+ * CustomerTeamCreate
+ */
+export interface CustomerTeamCreate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+   */
+  external_id?: string | null;
+  /**
+   * name
+   */
+  name?: string | null;
+  /**
+   * billing_address
+   */
+  billing_address?: AddressInput | null;
+  /**
+   * tax_id
+   */
+  tax_id?: string | null;
+  /**
+   * locale
+   */
+  locale?: string | null;
+  /**
+   * The ID of the organization owning the customer. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * Optional owner member to create with the customer. If not provided, an owner member will be automatically created using the customer's email and name.
+   */
+  owner?: MemberOwnerCreate | null;
+  /**
+   * type
+   */
+  type: "team";
+  /**
+   * The email address of the team customer. Optional for team customers — if omitted, an owner with an email must be provided.
+   */
+  email?: string | null;
+}
+/**
+ * CustomerUpdate
+ */
+export interface CustomerUpdate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The email address of the customer. This must be unique within the organization.
+   */
+  email?: string | null;
+  /**
+   * name
+   */
+  name?: string | null;
+  /**
+   * billing_address
+   */
+  billing_address?: AddressInput | null;
+  /**
+   * tax_id
+   */
+  tax_id?: string | null;
+  /**
+   * locale
+   */
+  locale?: string | null;
+  /**
+   * The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
+   */
+  external_id?: string | null;
+  /**
+   * The customer type. Can only be upgraded from 'individual' to 'team', never downgraded.
+   */
+  type?: CustomerType | null;
+}
+/**
+ * CustomerUpdateExternalID
+ */
+export interface CustomerUpdateExternalID {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The email address of the customer. This must be unique within the organization.
+   */
+  email?: string | null;
+  /**
+   * name
+   */
+  name?: string | null;
+  /**
+   * billing_address
+   */
+  billing_address?: AddressInput | null;
+  /**
+   * tax_id
+   */
+  tax_id?: string | null;
+  /**
+   * locale
+   */
+  locale?: string | null;
 }
 /**
  * An event created by Polar when a customer is updated.
@@ -6925,6 +11169,82 @@ export interface CustomerWallet {
    * The currency of the wallet.
    */
   currency: string;
+}
+/**
+ * Schema to create a fixed amount discount.
+ */
+export interface DiscountFixedCreate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * Name of the discount. Will be displayed to the customer when the discount is applied.
+   */
+  name: string;
+  /**
+   * Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
+   */
+  code?: string | null;
+  /**
+   * Optional timestamp after which the discount is redeemable.
+   */
+  starts_at?: string | null;
+  /**
+   * Optional timestamp after which the discount is no longer redeemable.
+   */
+  ends_at?: string | null;
+  /**
+   * Optional maximum number of times the discount can be redeemed.
+   */
+  max_redemptions?: number | null;
+  /**
+   * products
+   */
+  products?: string[] | null;
+  /**
+   * The ID of the organization owning the discount. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * type
+   */
+  type?: "fixed";
+  /**
+   * duration
+   */
+  duration: DiscountDuration;
+  /**
+   * Number of months the discount should be applied.
+
+Required when `duration` is `repeating`. Must be omitted otherwise.
+
+For this to work on yearly pricing, you should multiply this by 12.
+For example, to apply the discount for 2 years, set this to 24.
+   */
+  duration_in_months?: number | null;
+  /**
+   * amount
+   */
+  amount?: number | null;
+  /**
+   * currency
+   */
+  currency?: PresentmentCurrency | null;
+  /**
+   * amounts
+   */
+  amounts?: Record<string, number> | null;
 }
 /**
  * Schema for a fixed amount discount that is applied once or forever.
@@ -7218,6 +11538,77 @@ export interface DiscountFixedRepeatDurationBase {
    * The organization ID.
    */
   organization_id: string;
+}
+/**
+ * Schema to create a percentage discount.
+ */
+export interface DiscountPercentageCreate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * Name of the discount. Will be displayed to the customer when the discount is applied.
+   */
+  name: string;
+  /**
+   * Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
+   */
+  code?: string | null;
+  /**
+   * Optional timestamp after which the discount is redeemable.
+   */
+  starts_at?: string | null;
+  /**
+   * Optional timestamp after which the discount is no longer redeemable.
+   */
+  ends_at?: string | null;
+  /**
+   * Optional maximum number of times the discount can be redeemed.
+   */
+  max_redemptions?: number | null;
+  /**
+   * products
+   */
+  products?: string[] | null;
+  /**
+   * The ID of the organization owning the discount. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * type
+   */
+  type?: "percentage";
+  /**
+   * duration
+   */
+  duration: DiscountDuration;
+  /**
+   * Number of months the discount should be applied.
+
+Required when `duration` is `repeating`. Must be omitted otherwise.
+
+For this to work on yearly pricing, you should multiply this by 12.
+For example, to apply the discount for 2 years, set this to 24.
+   */
+  duration_in_months?: number | null;
+  /**
+   * Discount percentage in basis points.
+
+A basis point is 1/100th of a percent.
+For example, to create a 25.5% discount, set this to 2550.
+   */
+  basis_points: number;
 }
 /**
  * Schema for a percentage discount that is applied once or forever.
@@ -7550,6 +11941,77 @@ export interface DiscountProduct {
   organization_id: string;
 }
 /**
+ * Schema to update a discount.
+ */
+export interface DiscountUpdate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * name
+   */
+  name?: string | null;
+  /**
+   * Code customers can use to apply the discount during checkout. Must be between 3 and 256 characters long and contain only alphanumeric characters.If not provided, the discount can only be applied via the API.
+   */
+  code?: string | null;
+  /**
+   * Optional timestamp after which the discount is redeemable.
+   */
+  starts_at?: string | null;
+  /**
+   * Optional timestamp after which the discount is no longer redeemable.
+   */
+  ends_at?: string | null;
+  /**
+   * Optional maximum number of times the discount can be redeemed.
+   */
+  max_redemptions?: number | null;
+  /**
+   * duration
+   */
+  duration?: DiscountDuration | null;
+  /**
+   * duration_in_months
+   */
+  duration_in_months?: number | null;
+  /**
+   * type
+   */
+  type?: DiscountType | null;
+  /**
+   * amount
+   */
+  amount?: number | null;
+  /**
+   * currency
+   */
+  currency?: PresentmentCurrency | null;
+  /**
+   * amounts
+   */
+  amounts?: Record<string, number> | null;
+  /**
+   * basis_points
+   */
+  basis_points?: number | null;
+  /**
+   * products
+   */
+  products?: string[] | null;
+}
+/**
  * Schema representing a dispute.
 
 A dispute is a challenge raised by a customer or their bank regarding a payment.
@@ -7707,6 +12169,43 @@ export interface DisputeNotOpenError {
   detail: string;
 }
 /**
+ * Schema to create a file to be associated with the downloadables benefit.
+ */
+export interface DownloadableFileCreate {
+  /**
+   * organization_id
+   */
+  organization_id?: string | null;
+  /**
+   * name
+   */
+  name: string;
+  /**
+   * mime_type
+   */
+  mime_type: string;
+  /**
+   * size
+   */
+  size: number;
+  /**
+   * checksum_sha256_base64
+   */
+  checksum_sha256_base64?: string | null;
+  /**
+   * upload
+   */
+  upload: S3FileCreateMultipart;
+  /**
+   * service
+   */
+  service: "downloadable";
+  /**
+   * version
+   */
+  version?: string | null;
+}
+/**
  * File to be associated with the downloadables benefit.
  */
 export interface DownloadableFileRead {
@@ -7793,6 +12292,93 @@ export interface DownloadableRead {
   file: FileDownload;
 }
 /**
+ * EventCreateCustomer
+ */
+export interface EventCreateCustomer {
+  /**
+   * The timestamp of the event.
+   */
+  timestamp?: string;
+  /**
+   * The name of the event.
+   */
+  name: string;
+  /**
+   * The ID of the organization owning the event. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * Your unique identifier for this event. Useful for deduplication and parent-child relationships.
+   */
+  external_id?: string | null;
+  /**
+   * The ID of the parent event. Can be either a Polar event ID (UUID) or an external event ID.
+   */
+  parent_id?: string | null;
+  /**
+   * metadata
+   */
+  metadata?: EventMetadataInput;
+  /**
+   * ID of the customer in your Polar organization associated with the event.
+   */
+  customer_id: string;
+  /**
+   * ID of the member within the customer's organization who performed the action. Used for member-level attribution in B2B.
+   */
+  member_id?: string | null;
+}
+/**
+ * EventCreateExternalCustomer
+ */
+export interface EventCreateExternalCustomer {
+  /**
+   * The timestamp of the event.
+   */
+  timestamp?: string;
+  /**
+   * The name of the event.
+   */
+  name: string;
+  /**
+   * The ID of the organization owning the event. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * Your unique identifier for this event. Useful for deduplication and parent-child relationships.
+   */
+  external_id?: string | null;
+  /**
+   * The ID of the parent event. Can be either a Polar event ID (UUID) or an external event ID.
+   */
+  parent_id?: string | null;
+  /**
+   * metadata
+   */
+  metadata?: EventMetadataInput;
+  /**
+   * ID of the customer in your system associated with the event.
+   */
+  external_customer_id: string;
+  /**
+   * ID of the member in your system within the customer's organization who performed the action. Used for member-level attribution in B2B.
+   */
+  external_member_id?: string | null;
+}
+/**
+ * EventMetadataInput
+ */
+export interface EventMetadataInput {
+  /**
+   * _cost
+   */
+  _cost?: CostMetadataInput;
+  /**
+   * _llm
+   */
+  _llm?: LLMMetadata;
+}
+/**
  * EventMetadataOutput
  */
 export interface EventMetadataOutput {
@@ -7868,6 +12454,19 @@ export interface EventType {
   organization_id: string;
 }
 /**
+ * EventTypeUpdate
+ */
+export interface EventTypeUpdate {
+  /**
+   * The label for the event type.
+   */
+  label: string;
+  /**
+   * Property path to extract dynamic label from event metadata (e.g., 'subject' or 'metadata.subject').
+   */
+  label_property_selector?: string | null;
+}
+/**
  * EventTypeWithStats
  */
 export interface EventTypeWithStats {
@@ -7917,6 +12516,15 @@ export interface EventTypeWithStats {
   last_seen: string;
 }
 /**
+ * EventsIngest
+ */
+export interface EventsIngest {
+  /**
+   * List of events to ingest.
+   */
+  events: (EventCreateCustomer | EventCreateExternalCustomer)[];
+}
+/**
  * EventsIngestResponse
  */
 export interface EventsIngestResponse {
@@ -7928,6 +12536,17 @@ export interface EventsIngestResponse {
    * Number of duplicate events skipped.
    */
   duplicates?: number;
+}
+/**
+ * A price that already exists for this product.
+
+Useful when updating a product if you want to keep an existing price.
+ */
+export interface ExistingProductPrice {
+  /**
+   * id
+   */
+  id: string;
 }
 /**
  * ExpiredCheckoutError
@@ -8012,6 +12631,19 @@ export interface FileDownload {
   size_readable: string;
 }
 /**
+ * FilePatch
+ */
+export interface FilePatch {
+  /**
+   * name
+   */
+  name?: string | null;
+  /**
+   * version
+   */
+  version?: string | null;
+}
+/**
  * FileUpload
  */
 export interface FileUpload {
@@ -8079,6 +12711,23 @@ export interface FileUpload {
    * size_readable
    */
   size_readable: string;
+}
+/**
+ * FileUploadCompleted
+ */
+export interface FileUploadCompleted {
+  /**
+   * id
+   */
+  id: string;
+  /**
+   * path
+   */
+  path: string;
+  /**
+   * parts
+   */
+  parts: S3FileUploadCompletedPart[];
 }
 /**
  * Filter
@@ -8397,6 +13046,51 @@ export interface LegacyRecurringProductPriceFixed {
   legacy: true;
 }
 /**
+ * LicenseKeyActivate
+ */
+export interface LicenseKeyActivate {
+  /**
+   * key
+   */
+  key: string;
+  /**
+   * organization_id
+   */
+  organization_id: string;
+  /**
+   * label
+   */
+  label: string;
+  /**
+   * Key-value object allowing you to set conditions that must match when validating the license key.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  conditions?: Record<string, string | number | number | boolean>;
+  /**
+   * Key-value object allowing you to store additional information about the activation
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  meta?: Record<string, string | number | number | boolean>;
+}
+/**
  * LicenseKeyActivationBase
  */
 export interface LicenseKeyActivationBase {
@@ -8532,6 +13226,23 @@ export interface LicenseKeyCustomer {
   avatar_url: string | null;
 }
 /**
+ * LicenseKeyDeactivate
+ */
+export interface LicenseKeyDeactivate {
+  /**
+   * key
+   */
+  key: string;
+  /**
+   * organization_id
+   */
+  organization_id: string;
+  /**
+   * activation_id
+   */
+  activation_id: string;
+}
+/**
  * LicenseKeyRead
  */
 export interface LicenseKeyRead {
@@ -8599,6 +13310,74 @@ export interface LicenseKeyRead {
    * expires_at
    */
   expires_at: string | null;
+}
+/**
+ * LicenseKeyUpdate
+ */
+export interface LicenseKeyUpdate {
+  /**
+   * status
+   */
+  status?: LicenseKeyStatus | null;
+  /**
+   * usage
+   */
+  usage?: number;
+  /**
+   * limit_activations
+   */
+  limit_activations?: number | null;
+  /**
+   * limit_usage
+   */
+  limit_usage?: number | null;
+  /**
+   * expires_at
+   */
+  expires_at?: string | null;
+}
+/**
+ * LicenseKeyValidate
+ */
+export interface LicenseKeyValidate {
+  /**
+   * key
+   */
+  key: string;
+  /**
+   * organization_id
+   */
+  organization_id: string;
+  /**
+   * activation_id
+   */
+  activation_id?: string | null;
+  /**
+   * benefit_id
+   */
+  benefit_id?: string | null;
+  /**
+   * customer_id
+   */
+  customer_id?: string | null;
+  /**
+   * increment_usage
+   */
+  increment_usage?: number | null;
+  /**
+   * Key-value object allowing you to set conditions that must match when validating the license key.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  conditions?: Record<string, string | number | number | boolean>;
 }
 /**
  * LicenseKeyWithActivations
@@ -9166,6 +13945,63 @@ export interface Member {
   role: MemberRole;
 }
 /**
+ * Schema for creating a new member nested under a customer.
+
+The customer is taken from the URL path, so it's not part of the body.
+ */
+export interface MemberCreateFromCustomer {
+  /**
+   * The email address of the member.
+   */
+  email: string;
+  /**
+   * name
+   */
+  name?: string | null;
+  /**
+   * The ID of the member in your system. This must be unique within the customer.
+   */
+  external_id?: string | null;
+  /**
+   * The role of the member within the customer. To assign or transfer ownership, use the member update endpoint.
+   */
+  role?: Role;
+}
+/**
+ * Schema for creating an owner member during customer creation.
+ */
+export interface MemberOwnerCreate {
+  /**
+   * The email address of the member.
+   */
+  email: string;
+  /**
+   * name
+   */
+  name?: string | null;
+  /**
+   * The ID of the member in your system. This must be unique within the customer.
+   */
+  external_id?: string | null;
+}
+/**
+ * Schema for updating a member.
+ */
+export interface MemberUpdate {
+  /**
+   * name
+   */
+  name?: string | null;
+  /**
+   * email
+   */
+  email?: string | null;
+  /**
+   * The role of the member within the customer.
+   */
+  role?: MemberRole | null;
+}
+/**
  * MetadataOutputType
  */
 export interface MetadataOutputType extends Record<string, never> {}
@@ -9221,6 +14057,53 @@ export interface Meter {
    * Whether the meter is archived and the time it was archived.
    */
   archived_at?: string | null;
+}
+/**
+ * MeterCreate
+ */
+export interface MeterCreate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The name of the meter. Will be shown on customer's invoices and usage.
+   */
+  name: string;
+  /**
+   * unit
+   */
+  unit?: MeterUnit;
+  /**
+   * The label for the custom unit, e.g. 'request'. Required when unit is 'custom'.
+   */
+  custom_label?: string | null;
+  /**
+   * The multiplier to convert from the base unit to display scale, e.g. 1000 to display per 1000 units. Defaults to 1 when not provided.
+   */
+  custom_multiplier?: number | null;
+  /**
+   * filter
+   */
+  filter: Filter;
+  /**
+   * The aggregation to apply on the filtered events to calculate the meter.
+   */
+  aggregation: CountAggregation | PropertyAggregation | UniqueAggregation;
+  /**
+   * The ID of the organization owning the meter. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
 }
 /**
  * An event created by Polar when credits are added to a customer meter.
@@ -9397,6 +14280,53 @@ export interface MeterResetMetadata {
   meter_id: string;
 }
 /**
+ * MeterUpdate
+ */
+export interface MeterUpdate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The name of the meter. Will be shown on customer's invoices and usage.
+   */
+  name?: string | null;
+  /**
+   * The unit of the meter.
+   */
+  unit?: MeterUnit | null;
+  /**
+   * The label for the custom unit. Required when unit is 'custom'.
+   */
+  custom_label?: string | null;
+  /**
+   * The multiplier to convert from base unit to display scale. Required when unit is 'custom'.
+   */
+  custom_multiplier?: number | null;
+  /**
+   * The filter to apply on events that'll be used to calculate the meter.
+   */
+  filter?: Filter | null;
+  /**
+   * The aggregation to apply on the filtered events to calculate the meter.
+   */
+  aggregation?: (CountAggregation | PropertyAggregation | UniqueAggregation) | null;
+  /**
+   * Whether the meter is archived. Archived meters are no longer used for billing.
+   */
+  is_archived?: boolean | null;
+}
+/**
  * Information about a metric.
  */
 export interface Metric {
@@ -9412,6 +14342,23 @@ export interface Metric {
    * type
    */
   type: MetricType;
+}
+/**
+ * Schema for creating a metrics dashboard.
+ */
+export interface MetricDashboardCreate {
+  /**
+   * Display name for the dashboard.
+   */
+  name: string;
+  /**
+   * List of metric slugs to display in this dashboard.
+   */
+  metrics?: string[];
+  /**
+   * The ID of the organization owning this dashboard. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
 }
 /**
  * A user-defined metrics dashboard.
@@ -9441,6 +14388,19 @@ export interface MetricDashboardSchema {
    * The ID of the organization owning this dashboard.
    */
   organization_id: string;
+}
+/**
+ * Schema for updating a metrics dashboard.
+ */
+export interface MetricDashboardUpdate {
+  /**
+   * Display name for the dashboard.
+   */
+  name?: string | null;
+  /**
+   * List of metric slugs to display in this dashboard.
+   */
+  metrics?: string[] | null;
 }
 /**
  * MetricPeriod
@@ -10229,6 +15189,108 @@ export interface NotPermitted {
   detail: string;
 }
 /**
+ * OAuth2ClientConfiguration
+ */
+export interface OAuth2ClientConfiguration {
+  /**
+   * redirect_uris
+   */
+  redirect_uris: string[];
+  /**
+   * token_endpoint_auth_method
+   */
+  token_endpoint_auth_method?: TokenEndpointAuthMethod;
+  /**
+   * grant_types
+   */
+  grant_types?: ("authorization_code" | "refresh_token")[];
+  /**
+   * response_types
+   */
+  response_types?: "code"[];
+  /**
+   * scope
+   */
+  scope?: string;
+  /**
+   * client_name
+   */
+  client_name: string;
+  /**
+   * client_uri
+   */
+  client_uri?: string | null;
+  /**
+   * logo_uri
+   */
+  logo_uri?: string | null;
+  /**
+   * tos_uri
+   */
+  tos_uri?: string | null;
+  /**
+   * policy_uri
+   */
+  policy_uri?: string | null;
+  /**
+   * default_sub_type
+   */
+  default_sub_type?: SubType;
+}
+/**
+ * OAuth2ClientConfigurationUpdate
+ */
+export interface OAuth2ClientConfigurationUpdate {
+  /**
+   * redirect_uris
+   */
+  redirect_uris: string[];
+  /**
+   * token_endpoint_auth_method
+   */
+  token_endpoint_auth_method?: TokenEndpointAuthMethod;
+  /**
+   * grant_types
+   */
+  grant_types?: ("authorization_code" | "refresh_token")[];
+  /**
+   * response_types
+   */
+  response_types?: "code"[];
+  /**
+   * scope
+   */
+  scope?: string;
+  /**
+   * client_name
+   */
+  client_name: string;
+  /**
+   * client_uri
+   */
+  client_uri?: string | null;
+  /**
+   * logo_uri
+   */
+  logo_uri?: string | null;
+  /**
+   * tos_uri
+   */
+  tos_uri?: string | null;
+  /**
+   * policy_uri
+   */
+  policy_uri?: string | null;
+  /**
+   * default_sub_type
+   */
+  default_sub_type?: SubType;
+  /**
+   * client_id
+   */
+  client_id: string;
+}
+/**
  * OAuth2ClientPublic
  */
 export interface OAuth2ClientPublic {
@@ -10451,6 +15513,53 @@ export interface Order {
   refundable_tax_amount: number;
 }
 /**
+ * Schema to create a draft order for an off-session charge.
+ */
+export interface OrderCreate {
+  /**
+   * Key-value object storing custom field values.
+   */
+  custom_field_data?: Record<string, string | number | boolean | string | null>;
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization.
+   */
+  organization_id?: string | null;
+  /**
+   * The ID of the customer the order is for. Must belong to the order's organization.
+   */
+  customer_id: string;
+  /**
+   * The ID of the one-time product to charge for. Must belong to the order's organization. Only fixed-price and free products are supported.
+   */
+  product_id: string;
+  /**
+   * The currency to charge in (ISO 4217, lowercase, e.g. `usd`). Defaults to the organization's default currency; specify it to force a different one, or when the product isn't priced in the organization's default currency.
+   */
+  currency?: string | null;
+  /**
+   * A custom amount to charge, in the smallest currency unit. Overrides the product's price; defaults to the product's configured price (0 for free products). A positive amount must be at least the currency's minimum.
+   */
+  amount?: number | null;
+  /**
+   * A custom description for the order's line item, shown on the invoice and receipt (e.g. `5,000 tokens`). Defaults to the product name.
+   */
+  description?: string | null;
+}
+/**
  * OrderCustomer
  */
 export interface OrderCustomer {
@@ -10522,6 +15631,15 @@ export interface OrderCustomer {
    * avatar_url
    */
   avatar_url: string | null;
+}
+/**
+ * Schema to finalize a draft order and trigger an off-session charge.
+ */
+export interface OrderFinalize {
+  /**
+   * ID of the payment method to charge. Must belong to the order's customer. Falls back to the customer's default payment method when unset.
+   */
+  payment_method_id?: string | null;
 }
 /**
  * Order's invoice data.
@@ -11004,6 +16122,19 @@ export interface OrderSubscription {
   customer_cancellation_comment: string | null;
 }
 /**
+ * Schema to update an order.
+ */
+export interface OrderUpdate {
+  /**
+   * The name of the customer that should appear on the invoice.
+   */
+  billing_name?: string | null;
+  /**
+   * The address of the customer that should appear on the invoice. Country and state fields cannot be updated.
+   */
+  billing_address?: AddressInput | null;
+}
+/**
  * An event created by Polar when an order is voided.
  */
 export interface OrderVoidedEvent {
@@ -11183,6 +16314,43 @@ export interface Organization {
   capabilities: OrganizationCapabilities;
 }
 /**
+ * Schema to create a file to be used as an organization avatar.
+ */
+export interface OrganizationAvatarFileCreate {
+  /**
+   * organization_id
+   */
+  organization_id?: string | null;
+  /**
+   * name
+   */
+  name: string;
+  /**
+   * MIME type of the file. Only images are supported for this type of file.
+   */
+  mime_type: string;
+  /**
+   * Size of the file. A maximum of 1 MB is allowed for this type of file.
+   */
+  size: number;
+  /**
+   * checksum_sha256_base64
+   */
+  checksum_sha256_base64?: string | null;
+  /**
+   * upload
+   */
+  upload: S3FileCreateMultipart;
+  /**
+   * service
+   */
+  service: "organization_avatar";
+  /**
+   * version
+   */
+  version?: string | null;
+}
+/**
  * File to be used as an organization avatar.
  */
 export interface OrganizationAvatarFileRead {
@@ -11285,6 +16453,86 @@ export interface OrganizationCapabilities {
   dashboard_access: boolean;
 }
 /**
+ * OrganizationCompanyLegalEntitySchema
+ */
+export interface OrganizationCompanyLegalEntitySchema {
+  /**
+   * type
+   */
+  type: "company";
+  /**
+   * registered_name
+   */
+  registered_name: string;
+}
+/**
+ * OrganizationCreate
+ */
+export interface OrganizationCreate {
+  /**
+   * name
+   */
+  name: string;
+  /**
+   * slug
+   */
+  slug: string;
+  /**
+   * avatar_url
+   */
+  avatar_url?: string | null;
+  /**
+   * legal_entity
+   */
+  legal_entity?:
+    | (OrganizationIndividualLegalEntitySchema | OrganizationCompanyLegalEntitySchema)
+    | null;
+  /**
+   * Public support email.
+   */
+  email?: string | null;
+  /**
+   * Official website of the organization.
+   */
+  website?: string | null;
+  /**
+   * Link to social profiles.
+   */
+  socials?: OrganizationSocialLink[] | null;
+  /**
+   * Additional, private, business details Polar needs about active organizations for compliance (KYC).
+   */
+  details?: OrganizationDetails | null;
+  /**
+   * Two-letter country code (ISO 3166-1 alpha-2).
+   */
+  country?: CountryAlpha2Input | null;
+  /**
+   * feature_settings
+   */
+  feature_settings?: OrganizationFeatureSettingsUpdate | null;
+  /**
+   * subscription_settings
+   */
+  subscription_settings?: OrganizationSubscriptionSettings | null;
+  /**
+   * customer_email_settings
+   */
+  customer_email_settings?: OrganizationCustomerEmailSettings | null;
+  /**
+   * customer_portal_settings
+   */
+  customer_portal_settings?: OrganizationCustomerPortalSettings | null;
+  /**
+   * default_presentment_currency
+   */
+  default_presentment_currency?: PresentmentCurrency;
+  /**
+   * default_tax_behavior
+   */
+  default_tax_behavior?: TaxBehaviorOption;
+}
+/**
  * OrganizationCustomerEmailSettings
  */
 export interface OrganizationCustomerEmailSettings {
@@ -11351,6 +16599,51 @@ export interface OrganizationCustomerPortalSettings {
   customer?: CustomerPortalCustomerSettings;
 }
 /**
+ * OrganizationDetails
+ */
+export interface OrganizationDetails {
+  /**
+   * Brief information about you and your business.
+   */
+  about?: string | null;
+  /**
+   * Description of digital products being sold.
+   */
+  product_description?: string | null;
+  /**
+   * Categories of products being sold.
+   */
+  selling_categories?: string[];
+  /**
+   * Pricing models used by the organization.
+   */
+  pricing_models?: string[];
+  /**
+   * How the organization will integrate and use Polar.
+   */
+  intended_use?: string | null;
+  /**
+   * Main customer acquisition channels.
+   */
+  customer_acquisition?: string[];
+  /**
+   * Estimated revenue in the next 12 months
+   */
+  future_annual_revenue?: number | null;
+  /**
+   * Switching from another platform?
+   */
+  switching?: boolean;
+  /**
+   * Which platform the organization is migrating from.
+   */
+  switching_from?: ("paddle" | "lemon_squeezy" | "gumroad" | "stripe" | "other") | null;
+  /**
+   * Revenue from last year if applicable.
+   */
+  previous_annual_revenue?: number | null;
+}
+/**
  * OrganizationFeatureSettings
  */
 export interface OrganizationFeatureSettings {
@@ -11408,6 +16701,39 @@ export interface OrganizationFeatureSettings {
   compass_enabled?: boolean;
 }
 /**
+ * Feature settings that organizations can update themselves.
+
+Other feature settings are managed by Polar staff: they're ignored if
+provided and keep their current value.
+ */
+export interface OrganizationFeatureSettingsUpdate {
+  /**
+   * If this organization has seat-based pricing enabled
+   */
+  seat_based_pricing_enabled?: boolean;
+  /**
+   * If this organization has the Member model enabled
+   */
+  member_model_enabled?: boolean;
+  /**
+   * If this organization has checkout localization enabled
+   */
+  checkout_localization_enabled?: boolean;
+  /**
+   * Ordered list of metric slugs shown on the dashboard overview.
+   */
+  overview_metrics?: string[] | null;
+}
+/**
+ * OrganizationIndividualLegalEntitySchema
+ */
+export interface OrganizationIndividualLegalEntitySchema {
+  /**
+   * type
+   */
+  type: "individual";
+}
+/**
  * OrganizationNotReadyForPayments
  */
 export interface OrganizationNotReadyForPayments {
@@ -11457,6 +16783,67 @@ export interface OrganizationSubscriptionSettings {
    * allow_customer_updates
    */
   allow_customer_updates: boolean;
+}
+/**
+ * OrganizationUpdate
+ */
+export interface OrganizationUpdate {
+  /**
+   * name
+   */
+  name?: string | null;
+  /**
+   * avatar_url
+   */
+  avatar_url?: string | null;
+  /**
+   * Public support email.
+   */
+  email?: string | null;
+  /**
+   * Official website of the organization.
+   */
+  website?: string | null;
+  /**
+   * Links to social profiles.
+   */
+  socials?: OrganizationSocialLink[] | null;
+  /**
+   * Additional, private, business details Polar needs about active organizations for compliance (KYC).
+   */
+  details?: OrganizationDetails | null;
+  /**
+   * Two-letter country code (ISO 3166-1 alpha-2).
+   */
+  country?: CountryAlpha2Input | null;
+  /**
+   * feature_settings
+   */
+  feature_settings?: OrganizationFeatureSettingsUpdate | null;
+  /**
+   * subscription_settings
+   */
+  subscription_settings?: OrganizationSubscriptionSettings | null;
+  /**
+   * customer_email_settings
+   */
+  customer_email_settings?: OrganizationCustomerEmailSettings | null;
+  /**
+   * customer_portal_settings
+   */
+  customer_portal_settings?: OrganizationCustomerPortalSettings | null;
+  /**
+   * Default presentment currency for the organization
+   */
+  default_presentment_currency?: PresentmentCurrency | null;
+  /**
+   * Default tax behavior applied on products.
+   */
+  default_tax_behavior?: TaxBehaviorOption | null;
+  /**
+   * Whether members must access this organization through its SSO connection. Turning this on requires an active SSO session for this organization and at least one enabled SSO connection.
+   */
+  sso_enforced?: boolean | null;
 }
 /**
  * Pagination
@@ -11793,6 +17180,188 @@ export interface Product {
   attached_custom_fields: AttachedCustomField[];
 }
 /**
+ * Schema to update the benefits granted by a product.
+ */
+export interface ProductBenefitsUpdate {
+  /**
+   * List of benefit IDs. Each one must be on the same organization as the product.
+   */
+  benefits: string[];
+}
+/**
+ * ProductCreateOneTime
+ */
+export interface ProductCreateOneTime {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The name of the product.
+   */
+  name: string;
+  /**
+   * The description of the product.
+   */
+  description?: string | null;
+  /**
+   * visibility
+   */
+  visibility?: ProductVisibility;
+  /**
+   * List of available prices for this product. It may combine at most one fixed price with one seat-based price (billed as `fixed + seat_charge`), or contain a single custom or free price, plus any number of metered prices. A free price cannot be combined with other prices, and a custom price cannot be combined with a fixed or seat-based price. Metered prices are not supported on one-time purchase products.
+   */
+  prices: (
+    | ProductPriceFixedCreate
+    | ProductPriceCustomCreate
+    | ProductPriceSeatBasedCreate
+    | ProductPriceMeteredUnitCreate
+  )[];
+  /**
+   * List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.
+   */
+  medias?: string[] | null;
+  /**
+   * List of custom fields to attach.
+   */
+  attached_custom_fields?: AttachedCustomFieldCreate[];
+  /**
+   * The ID of the organization owning the product. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * States that the product is a one-time purchase.
+   */
+  recurring_interval?: null;
+  /**
+   * One-time products don't have a recurring interval count.
+   */
+  recurring_interval_count?: null;
+}
+/**
+ * ProductCreateRecurring
+ */
+export interface ProductCreateRecurring {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The name of the product.
+   */
+  name: string;
+  /**
+   * The description of the product.
+   */
+  description?: string | null;
+  /**
+   * visibility
+   */
+  visibility?: ProductVisibility;
+  /**
+   * List of available prices for this product. It may combine at most one fixed price with one seat-based price (billed as `fixed + seat_charge`), or contain a single custom or free price, plus any number of metered prices. A free price cannot be combined with other prices, and a custom price cannot be combined with a fixed or seat-based price. Metered prices are not supported on one-time purchase products.
+   */
+  prices: (
+    | ProductPriceFixedCreate
+    | ProductPriceCustomCreate
+    | ProductPriceSeatBasedCreate
+    | ProductPriceMeteredUnitCreate
+  )[];
+  /**
+   * List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.
+   */
+  medias?: string[] | null;
+  /**
+   * List of custom fields to attach.
+   */
+  attached_custom_fields?: AttachedCustomFieldCreate[];
+  /**
+   * The ID of the organization owning the product. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+  /**
+   * The interval unit for the trial period.
+   */
+  trial_interval?: TrialInterval | null;
+  /**
+   * The number of interval units for the trial period.
+   */
+  trial_interval_count?: number | null;
+  /**
+   * recurring_interval
+   */
+  recurring_interval: RecurringInterval;
+  /**
+   * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
+   */
+  recurring_interval_count?: number;
+  /**
+   * Optional meter cycle, independent of the billing interval. When set, overage settlement, meter resets and meter-credit grants run on this cadence rather than the billing interval — e.g. yearly billing with monthly credits. It must evenly divide the billing interval. If `None`, metered concerns follow the billing interval. **Once set, it can't be changed.**
+   */
+  meter_interval?: RecurringInterval | null;
+  /**
+   * Number of meter interval units. Defaults to 1 when `meter_interval` is set. Ignored when `meter_interval` is `None`.
+   */
+  meter_interval_count?: number | null;
+}
+/**
+ * Schema to create a file to be used as a product media file.
+ */
+export interface ProductMediaFileCreate {
+  /**
+   * organization_id
+   */
+  organization_id?: string | null;
+  /**
+   * name
+   */
+  name: string;
+  /**
+   * MIME type of the file. Only images are supported for this type of file.
+   */
+  mime_type: string;
+  /**
+   * Size of the file. A maximum of 10 MB is allowed for this type of file.
+   */
+  size: number;
+  /**
+   * checksum_sha256_base64
+   */
+  checksum_sha256_base64?: string | null;
+  /**
+   * upload
+   */
+  upload: S3FileCreateMultipart;
+  /**
+   * service
+   */
+  service: "product_media";
+  /**
+   * version
+   */
+  version?: string | null;
+}
+/**
  * File to be used as a product media file.
  */
 export interface ProductMediaFileRead {
@@ -11919,6 +17488,305 @@ export interface ProductPriceCustom {
   preset_amount: number | null;
 }
 /**
+ * Schema to create a pay-what-you-want price.
+ */
+export interface ProductPriceCustomCreate {
+  /**
+   * amount_type
+   */
+  amount_type: "custom";
+  /**
+   * price_currency
+   */
+  price_currency?: PresentmentCurrency;
+  /**
+   * The tax behavior of the price. If not set, it will default to the organization's default tax behavior.
+   */
+  tax_behavior?: TaxBehaviorOption | null;
+  /**
+   * The minimum amount the customer can pay. If set to 0, the price is 'free or pay what you want' and $0 is accepted. If set to a value below the minimum price amount for the currency, it will be rejected. Defaults to the minimum price amount for the currency. Minimum per currency:
+- USD: 0.5
+- AED: 2
+- ALL: 50
+- AMD: 200
+- AOA: 500
+- ARS: 750
+- AUD: 0.7
+- AWG: 1
+- AZN: 1
+- BAM: 1
+- BBD: 2
+- BDT: 70
+- BIF: 2,000
+- BMD: 1
+- BND: 1
+- BOB: 5
+- BRL: 2.5
+- BSD: 1
+- BWP: 10
+- BZD: 2
+- CAD: 0.7
+- CDF: 2,000
+- CHF: 0.5
+- CLP: 500
+- CNY: 5
+- COP: 2,000
+- CRC: 300
+- CVE: 50
+- CZK: 15
+- DJF: 100
+- DKK: 3.2
+- DOP: 40
+- DZD: 70
+- EGP: 30
+- ETB: 80
+- EUR: 0.5
+- FJD: 2
+- FKP: 1
+- GBP: 0.4
+- GEL: 2
+- GNF: 5,000
+- GIP: 1
+- GMD: 40
+- GTQ: 5
+- GYD: 200
+- HKD: 4
+- HNL: 20
+- HTG: 70
+- HUF: 175
+- IDR: 9,000
+- ILS: 1.5
+- INR: 60
+- ISK: 70
+- JMD: 80
+- JPY: 80
+- KES: 70
+- KGS: 50
+- KHR: 3,000
+- KMF: 500
+- KRW: 800
+- KYD: 1
+- KZT: 300
+- LAK: 20,000
+- LKR: 200
+- LRD: 100
+- LSL: 10
+- MAD: 5
+- MDL: 10
+- MGA: 3,000
+- MKD: 50
+- MNT: 2,000
+- MOP: 5
+- MUR: 50
+- MVR: 8
+- MXN: 9
+- MWK: 1,000
+- MYR: 2
+- MZN: 50
+- NAD: 10
+- NGN: 700
+- NIO: 20
+- NOK: 5
+- NPR: 80
+- NZD: 0.9
+- PAB: 1
+- PEN: 2
+- PGK: 3
+- PHP: 35
+- PKR: 200
+- PLN: 2
+- PYG: 4,000
+- QAR: 2
+- RON: 2.5
+- RSD: 60
+- RWF: 1,000
+- SAR: 2
+- SBD: 4
+- SCR: 8
+- SEK: 5
+- SGD: 0.7
+- SHP: 1
+- SOS: 500
+- SRD: 20
+- SZL: 10
+- THB: 20
+- TJS: 5
+- TOP: 2
+- TRY: 30
+- TTD: 4
+- TWD: 20
+- TZS: 2,000
+- UAH: 30
+- UGX: 2,000
+- UYU: 20
+- UZS: 7,000
+- VND: 20,000
+- VUV: 100
+- WST: 2
+- XAF: 500
+- XCD: 2
+- XCG: 1
+- XOF: 500
+- XPF: 100
+- YER: 200
+- ZAR: 9
+- ZMW: 10
+- Other currencies: 50 minor units
+   */
+  minimum_amount?: number;
+  /**
+   * The maximum amount the customer can pay. Maximum per currency:
+- USD: 999,999.99
+- EUR: 999,999.99
+- GBP: 999,999.99
+- ARS: 1,400,000
+- CDF: 2,800,000
+- COP: 4,000,000
+- IDR: 16,000,000
+- KHR: 4,000,000
+- LAK: 21,000,000
+- MNT: 3,500,000
+- MWK: 1,750,000
+- NGN: 1,550,000
+- TZS: 2,500,000
+- UGX: 3,700,000
+- UZS: 12,500,000
+- Other currencies: 99,999,999 minor units
+   */
+  maximum_amount?: number | null;
+  /**
+   * The initial amount shown to the customer. If 0, the customer will see $0 as the default. If set to a value below the minimum price amount for the currency, it will be rejected.Minimum per currency:
+- USD: 0.5
+- AED: 2
+- ALL: 50
+- AMD: 200
+- AOA: 500
+- ARS: 750
+- AUD: 0.7
+- AWG: 1
+- AZN: 1
+- BAM: 1
+- BBD: 2
+- BDT: 70
+- BIF: 2,000
+- BMD: 1
+- BND: 1
+- BOB: 5
+- BRL: 2.5
+- BSD: 1
+- BWP: 10
+- BZD: 2
+- CAD: 0.7
+- CDF: 2,000
+- CHF: 0.5
+- CLP: 500
+- CNY: 5
+- COP: 2,000
+- CRC: 300
+- CVE: 50
+- CZK: 15
+- DJF: 100
+- DKK: 3.2
+- DOP: 40
+- DZD: 70
+- EGP: 30
+- ETB: 80
+- EUR: 0.5
+- FJD: 2
+- FKP: 1
+- GBP: 0.4
+- GEL: 2
+- GNF: 5,000
+- GIP: 1
+- GMD: 40
+- GTQ: 5
+- GYD: 200
+- HKD: 4
+- HNL: 20
+- HTG: 70
+- HUF: 175
+- IDR: 9,000
+- ILS: 1.5
+- INR: 60
+- ISK: 70
+- JMD: 80
+- JPY: 80
+- KES: 70
+- KGS: 50
+- KHR: 3,000
+- KMF: 500
+- KRW: 800
+- KYD: 1
+- KZT: 300
+- LAK: 20,000
+- LKR: 200
+- LRD: 100
+- LSL: 10
+- MAD: 5
+- MDL: 10
+- MGA: 3,000
+- MKD: 50
+- MNT: 2,000
+- MOP: 5
+- MUR: 50
+- MVR: 8
+- MXN: 9
+- MWK: 1,000
+- MYR: 2
+- MZN: 50
+- NAD: 10
+- NGN: 700
+- NIO: 20
+- NOK: 5
+- NPR: 80
+- NZD: 0.9
+- PAB: 1
+- PEN: 2
+- PGK: 3
+- PHP: 35
+- PKR: 200
+- PLN: 2
+- PYG: 4,000
+- QAR: 2
+- RON: 2.5
+- RSD: 60
+- RWF: 1,000
+- SAR: 2
+- SBD: 4
+- SCR: 8
+- SEK: 5
+- SGD: 0.7
+- SHP: 1
+- SOS: 500
+- SRD: 20
+- SZL: 10
+- THB: 20
+- TJS: 5
+- TOP: 2
+- TRY: 30
+- TTD: 4
+- TWD: 20
+- TZS: 2,000
+- UAH: 30
+- UGX: 2,000
+- UYU: 20
+- UZS: 7,000
+- VND: 20,000
+- VUV: 100
+- WST: 2
+- XAF: 500
+- XCD: 2
+- XCG: 1
+- XOF: 500
+- XPF: 100
+- YER: 200
+- ZAR: 9
+- ZMW: 10
+- Other currencies: 50 minor units
+   */
+  preset_amount?: number | null;
+}
+/**
  * A fixed price for a product.
  */
 export interface ProductPriceFixed {
@@ -11960,6 +17828,155 @@ export interface ProductPriceFixed {
   product_id: string;
   /**
    * The price in cents.
+   */
+  price_amount: number;
+}
+/**
+ * Schema to create a fixed price.
+ */
+export interface ProductPriceFixedCreate {
+  /**
+   * amount_type
+   */
+  amount_type: "fixed";
+  /**
+   * price_currency
+   */
+  price_currency?: PresentmentCurrency;
+  /**
+   * The tax behavior of the price. If not set, it will default to the organization's default tax behavior.
+   */
+  tax_behavior?: TaxBehaviorOption | null;
+  /**
+   * The price in cents. Set to `0` for a free price.
+Minimum amounts per currency:
+- USD: 0.5
+- AED: 2
+- ALL: 50
+- AMD: 200
+- AOA: 500
+- ARS: 750
+- AUD: 0.7
+- AWG: 1
+- AZN: 1
+- BAM: 1
+- BBD: 2
+- BDT: 70
+- BIF: 2,000
+- BMD: 1
+- BND: 1
+- BOB: 5
+- BRL: 2.5
+- BSD: 1
+- BWP: 10
+- BZD: 2
+- CAD: 0.7
+- CDF: 2,000
+- CHF: 0.5
+- CLP: 500
+- CNY: 5
+- COP: 2,000
+- CRC: 300
+- CVE: 50
+- CZK: 15
+- DJF: 100
+- DKK: 3.2
+- DOP: 40
+- DZD: 70
+- EGP: 30
+- ETB: 80
+- EUR: 0.5
+- FJD: 2
+- FKP: 1
+- GBP: 0.4
+- GEL: 2
+- GNF: 5,000
+- GIP: 1
+- GMD: 40
+- GTQ: 5
+- GYD: 200
+- HKD: 4
+- HNL: 20
+- HTG: 70
+- HUF: 175
+- IDR: 9,000
+- ILS: 1.5
+- INR: 60
+- ISK: 70
+- JMD: 80
+- JPY: 80
+- KES: 70
+- KGS: 50
+- KHR: 3,000
+- KMF: 500
+- KRW: 800
+- KYD: 1
+- KZT: 300
+- LAK: 20,000
+- LKR: 200
+- LRD: 100
+- LSL: 10
+- MAD: 5
+- MDL: 10
+- MGA: 3,000
+- MKD: 50
+- MNT: 2,000
+- MOP: 5
+- MUR: 50
+- MVR: 8
+- MXN: 9
+- MWK: 1,000
+- MYR: 2
+- MZN: 50
+- NAD: 10
+- NGN: 700
+- NIO: 20
+- NOK: 5
+- NPR: 80
+- NZD: 0.9
+- PAB: 1
+- PEN: 2
+- PGK: 3
+- PHP: 35
+- PKR: 200
+- PLN: 2
+- PYG: 4,000
+- QAR: 2
+- RON: 2.5
+- RSD: 60
+- RWF: 1,000
+- SAR: 2
+- SBD: 4
+- SCR: 8
+- SEK: 5
+- SGD: 0.7
+- SHP: 1
+- SOS: 500
+- SRD: 20
+- SZL: 10
+- THB: 20
+- TJS: 5
+- TOP: 2
+- TRY: 30
+- TTD: 4
+- TWD: 20
+- TZS: 2,000
+- UAH: 30
+- UGX: 2,000
+- UYU: 20
+- UZS: 7,000
+- VND: 20,000
+- VUV: 100
+- WST: 2
+- XAF: 500
+- XCD: 2
+- XCG: 1
+- XOF: 500
+- XPF: 100
+- YER: 200
+- ZAR: 9
+- ZMW: 10
+- Other currencies: 50 minor units
    */
   price_amount: number;
 }
@@ -12046,6 +18063,35 @@ export interface ProductPriceMeteredUnit {
   meter: ProductPriceMeter;
 }
 /**
+ * Schema to create a metered price with a fixed unit price.
+ */
+export interface ProductPriceMeteredUnitCreate {
+  /**
+   * amount_type
+   */
+  amount_type: "metered_unit";
+  /**
+   * price_currency
+   */
+  price_currency?: PresentmentCurrency;
+  /**
+   * The tax behavior of the price. If not set, it will default to the organization's default tax behavior.
+   */
+  tax_behavior?: TaxBehaviorOption | null;
+  /**
+   * The ID of the meter associated to the price.
+   */
+  meter_id: string;
+  /**
+   * The price per unit in cents. Supports up to 12 decimal places.
+   */
+  unit_amount: number | string;
+  /**
+   * Optional maximum amount in cents that can be charged, regardless of the number of units consumed.
+   */
+  cap_amount?: number | null;
+}
+/**
  * A seat-based price for a product.
  */
 export interface ProductPriceSeatBased {
@@ -12091,6 +18137,27 @@ export interface ProductPriceSeatBased {
   seat_tiers: ProductPriceSeatTiersOutput;
 }
 /**
+ * Schema to create a seat-based price with volume-based tiers.
+ */
+export interface ProductPriceSeatBasedCreate {
+  /**
+   * amount_type
+   */
+  amount_type: "seat_based";
+  /**
+   * price_currency
+   */
+  price_currency?: PresentmentCurrency;
+  /**
+   * The tax behavior of the price. If not set, it will default to the organization's default tax behavior.
+   */
+  tax_behavior?: TaxBehaviorOption | null;
+  /**
+   * seat_tiers
+   */
+  seat_tiers: ProductPriceSeatTiersInput;
+}
+/**
  * A pricing tier for seat-based pricing.
  */
 export interface ProductPriceSeatTier {
@@ -12106,6 +18173,23 @@ export interface ProductPriceSeatTier {
    * Price per seat in cents for this tier
    */
   price_per_seat: number;
+}
+/**
+ * List of pricing tiers for seat-based pricing.
+
+The minimum and maximum seat limits are derived from the tiers:
+- minimum_seats = first tier's min_seats
+- maximum_seats = last tier's max_seats (None for unlimited)
+ */
+export interface ProductPriceSeatTiersInput {
+  /**
+   * seat_tier_type
+   */
+  seat_tier_type?: SeatTierType;
+  /**
+   * List of pricing tiers
+   */
+  tiers: ProductPriceSeatTier[];
 }
 /**
  * List of pricing tiers for seat-based pricing.
@@ -12131,6 +18215,79 @@ export interface ProductPriceSeatTiersOutput {
    * Maximum number of seats allowed for purchase, derived from last tier. None for unlimited.
    */
   maximum_seats: number | null;
+}
+/**
+ * Schema to update a product.
+ */
+export interface ProductUpdate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The interval unit for the trial period.
+   */
+  trial_interval?: TrialInterval | null;
+  /**
+   * The number of interval units for the trial period.
+   */
+  trial_interval_count?: number | null;
+  /**
+   * name
+   */
+  name?: string | null;
+  /**
+   * The description of the product.
+   */
+  description?: string | null;
+  /**
+   * The recurring interval of the product. If `None`, the product is a one-time purchase. **Can only be set on legacy recurring products. Once set, it can't be changed.**
+   */
+  recurring_interval?: RecurringInterval | null;
+  /**
+   * Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. Once set, it can't be changed.**
+   */
+  recurring_interval_count?: number | null;
+  /**
+   * Whether the product is archived. If `true`, the product won't be available for purchase anymore. Existing customers will still have access to their benefits, and subscriptions will continue normally.
+   */
+  is_archived?: boolean | null;
+  /**
+   * The visibility of the product.
+   */
+  visibility?: ProductVisibility | null;
+  /**
+   * List of available prices for this product. If you want to keep existing prices, include them in the list as an `ExistingProductPrice` object.
+   */
+  prices?:
+    | (
+        | ExistingProductPrice
+        | (
+            | ProductPriceFixedCreate
+            | ProductPriceCustomCreate
+            | ProductPriceSeatBasedCreate
+            | ProductPriceMeteredUnitCreate
+          )
+      )[]
+    | null;
+  /**
+   * List of file IDs. Each one must be on the same organization as the product, of type `product_media` and correctly uploaded.
+   */
+  medias?: string[] | null;
+  /**
+   * attached_custom_fields
+   */
+  attached_custom_fields?: AttachedCustomFieldCreate[] | null;
 }
 /**
  * PropertyAggregation
@@ -12209,6 +18366,50 @@ export interface Refund {
    * dispute
    */
   dispute: RefundDispute | null;
+}
+/**
+ * RefundCreate
+ */
+export interface RefundCreate {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * order_id
+   */
+  order_id: string;
+  /**
+   * Reason for the refund.
+   */
+  reason: Reason;
+  /**
+   * Amount to refund in cents. Minimum is 1.
+   */
+  amount: number;
+  /**
+   * An internal comment about the refund.
+   */
+  comment?: string | null;
+  /**
+   * Should this refund trigger the associated customer benefits to be revoked?
+
+**Note:**
+Only allowed in case the `order` is a one-time purchase.
+Subscriptions automatically revoke customer benefits once the
+subscription itself is revoked, i.e fully canceled.
+   */
+  revoke_benefits?: boolean;
 }
 /**
  * Dispute associated with a refund,
@@ -12320,6 +18521,53 @@ export interface S3DownloadURL {
   expires_at: string;
 }
 /**
+ * S3FileCreateMultipart
+ */
+export interface S3FileCreateMultipart {
+  /**
+   * parts
+   */
+  parts: S3FileCreatePart[];
+}
+/**
+ * S3FileCreatePart
+ */
+export interface S3FileCreatePart {
+  /**
+   * number
+   */
+  number: number;
+  /**
+   * chunk_start
+   */
+  chunk_start: number;
+  /**
+   * chunk_end
+   */
+  chunk_end: number;
+  /**
+   * checksum_sha256_base64
+   */
+  checksum_sha256_base64?: string | null;
+}
+/**
+ * S3FileUploadCompletedPart
+ */
+export interface S3FileUploadCompletedPart {
+  /**
+   * number
+   */
+  number: number;
+  /**
+   * checksum_etag
+   */
+  checksum_etag: string;
+  /**
+   * checksum_sha256_base64
+   */
+  checksum_sha256_base64: string | null;
+}
+/**
  * S3FileUploadMultipart
  */
 export interface S3FileUploadMultipart {
@@ -12381,6 +18629,56 @@ export interface SSOEnforcementRequiresConnection {
    * detail
    */
   detail: string;
+}
+/**
+ * SeatAssign
+ */
+export interface SeatAssign {
+  /**
+   * Subscription ID. Required if neither order_id nor checkout_id is provided.
+   */
+  subscription_id?: string | null;
+  /**
+   * Order ID for one-time purchases. Required if subscription_id is not provided.
+   */
+  order_id?: string | null;
+  /**
+   * Email of the customer to assign the seat to
+   */
+  email?: string | null;
+  /**
+   * External customer ID for the seat assignment
+   */
+  external_customer_id?: string | null;
+  /**
+   * Customer ID for the seat assignment
+   */
+  customer_id?: string | null;
+  /**
+   * External member ID for the seat assignment. Can be used alone (lookup existing member) or with email (create/validate member).
+   */
+  external_member_id?: string | null;
+  /**
+   * Member ID for the seat assignment.
+   */
+  member_id?: string | null;
+  /**
+   * Additional metadata for the seat (max 10 keys, 1KB total)
+   */
+  metadata?: Record<string, unknown> | null;
+  /**
+   * If true, the seat will be immediately claimed without sending an invitation email. API-only feature.
+   */
+  immediate_claim?: boolean;
+}
+/**
+ * SeatClaim
+ */
+export interface SeatClaim {
+  /**
+   * Invitation token to claim the seat
+   */
+  invitation_token: string;
 }
 /**
  * Read-only information about a seat claim invitation.
@@ -12660,6 +18958,49 @@ export interface SubscriptionBillingPeriodUpdatedMetadata {
   new_period_end: string;
 }
 /**
+ * SubscriptionCancel
+ */
+export interface SubscriptionCancel {
+  /**
+   * Customer reason for cancellation.
+
+Helpful to monitor reasons behind churn for future improvements.
+
+Only set this in case your own service is requesting the reason from the
+customer. Or you know based on direct conversations, i.e support, with
+the customer.
+
+* `too_expensive`: Too expensive for the customer.
+* `missing_features`: Customer is missing certain features.
+* `switched_service`: Customer switched to another service.
+* `unused`: Customer is not using it enough.
+* `customer_service`: Customer is not satisfied with the customer service.
+* `low_quality`: Customer is unhappy with the quality.
+* `too_complex`: Customer considers the service too complicated.
+* `other`: Other reason(s).
+   */
+  customer_cancellation_reason?: CustomerCancellationReason | null;
+  /**
+   * Customer feedback and why they decided to cancel.
+
+**IMPORTANT:**
+Do not use this to store internal notes! It's intended to be input
+from the customer and is therefore also available in their Polar
+purchases library.
+
+Only set this in case your own service is requesting the reason from the
+customer. Or you copy a message directly from a customer
+conversation, i.e support.
+   */
+  customer_cancellation_comment?: string | null;
+  /**
+   * Cancel an active subscription once the current period ends.
+
+Or uncancel a subscription currently set to be revoked at period end.
+   */
+  cancel_at_period_end: boolean;
+}
+/**
  * An event created by Polar when a subscription is canceled.
  */
 export interface SubscriptionCanceledEvent {
@@ -12768,6 +19109,60 @@ export interface SubscriptionCanceledMetadata {
    * cancel_at_period_end
    */
   cancel_at_period_end?: boolean;
+}
+/**
+ * Create a subscription for an existing customer.
+ */
+export interface SubscriptionCreateCustomer {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.
+   */
+  product_id: string;
+  /**
+   * The ID of the customer to create the subscription for.
+   */
+  customer_id: string;
+}
+/**
+ * Create a subscription for an existing customer identified by an external ID.
+ */
+export interface SubscriptionCreateExternalCustomer {
+  /**
+   * Key-value object allowing you to store additional information.
+
+The key must be a string with a maximum length of **40 characters**.
+The value must be either:
+
+* A string with a maximum length of **500 characters**
+* An integer
+* A floating-point number
+* A boolean
+
+You can store up to **50 key-value pairs**.
+   */
+  metadata?: Record<string, string | number | number | boolean>;
+  /**
+   * The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.
+   */
+  product_id: string;
+  /**
+   * The ID of the customer in your system to create the subscription for. It must already exist in Polar.
+   */
+  external_customer_id: string;
 }
 /**
  * An event created by Polar when a subscription is created.
@@ -13339,6 +19734,47 @@ export interface SubscriptionReactivatedMetadata {
   recurring_interval_count?: number;
 }
 /**
+ * SubscriptionRevoke
+ */
+export interface SubscriptionRevoke {
+  /**
+   * Customer reason for cancellation.
+
+Helpful to monitor reasons behind churn for future improvements.
+
+Only set this in case your own service is requesting the reason from the
+customer. Or you know based on direct conversations, i.e support, with
+the customer.
+
+* `too_expensive`: Too expensive for the customer.
+* `missing_features`: Customer is missing certain features.
+* `switched_service`: Customer switched to another service.
+* `unused`: Customer is not using it enough.
+* `customer_service`: Customer is not satisfied with the customer service.
+* `low_quality`: Customer is unhappy with the quality.
+* `too_complex`: Customer considers the service too complicated.
+* `other`: Other reason(s).
+   */
+  customer_cancellation_reason?: CustomerCancellationReason | null;
+  /**
+   * Customer feedback and why they decided to cancel.
+
+**IMPORTANT:**
+Do not use this to store internal notes! It's intended to be input
+from the customer and is therefore also available in their Polar
+purchases library.
+
+Only set this in case your own service is requesting the reason from the
+customer. Or you copy a message directly from a customer
+conversation, i.e support.
+   */
+  customer_cancellation_comment?: string | null;
+  /**
+   * Cancel and revoke an active subscription immediately
+   */
+  revoke: true;
+}
+/**
  * An event created by Polar when a subscription is revoked from a customer.
  */
 export interface SubscriptionRevokedEvent {
@@ -13601,6 +20037,47 @@ export interface SubscriptionUncanceledMetadata {
   recurring_interval_count: number;
 }
 /**
+ * SubscriptionUpdateBase
+ */
+export interface SubscriptionUpdateBase {
+  /**
+   * Update subscription to another product.
+   */
+  product_id?: string | null;
+  /**
+   * Determine how to handle the proration billing. If not provided, will use the default organization setting.
+   */
+  proration_behavior?: SubscriptionProrationBehavior | null;
+  /**
+   * Update the subscription to apply a new discount. If set to `null`, the discount will be removed. The change will be applied on the next billing cycle.
+   */
+  discount_id?: string | null;
+  /**
+   * Set or extend the trial period of the subscription. If set to `now`, the trial will end immediately.
+   */
+  trial_end?: string | "now" | null;
+}
+/**
+ * SubscriptionUpdateBillingPeriod
+ */
+export interface SubscriptionUpdateBillingPeriod {
+  /**
+   * Set a new date for the end of the current billing period. The subscription will renew on this date. The new date can be earlier or later than the current period end, as long as it's in the future.
+
+It is not possible to update the current billing period on a canceled subscription.
+   */
+  current_billing_period_end: string;
+}
+/**
+ * SubscriptionUpdateClear
+ */
+export interface SubscriptionUpdateClear {
+  /**
+   * Clear the pending subscription update. Set to null to remove scheduled changes.
+   */
+  pending_update: null;
+}
+/**
  * An event created by Polar when a pending subscription update is cleared without being applied.
  */
 export interface SubscriptionUpdateClearedEvent {
@@ -13669,6 +20146,19 @@ export interface SubscriptionUpdateClearedMetadata {
    * subscription_id
    */
   subscription_id: string;
+}
+/**
+ * SubscriptionUpdateSeats
+ */
+export interface SubscriptionUpdateSeats {
+  /**
+   * Update the number of seats for this subscription.
+   */
+  seats: number;
+  /**
+   * Determine how to handle the proration billing. If not provided, will use the default organization setting.
+   */
+  proration_behavior?: SubscriptionProrationBehavior | null;
 }
 /**
  * An event created by Polar when a subscription is updated.
@@ -13763,6 +20253,43 @@ export interface SubscriptionUpdatedMetadata {
    * subscription_id
    */
   subscription_id: string;
+}
+/**
+ * Schema to create a file attached to a support case.
+ */
+export interface SupportCaseAttachmentFileCreate {
+  /**
+   * organization_id
+   */
+  organization_id?: string | null;
+  /**
+   * name
+   */
+  name: string;
+  /**
+   * MIME type of the file. Images, videos, PDF, CSV, plain text, Word and Excel documents are supported.
+   */
+  mime_type: string;
+  /**
+   * Size of the file. A maximum of 250 MB is allowed for this type of file.
+   */
+  size: number;
+  /**
+   * checksum_sha256_base64
+   */
+  checksum_sha256_base64?: string | null;
+  /**
+   * upload
+   */
+  upload: S3FileCreateMultipart;
+  /**
+   * service
+   */
+  service: "support_case_attachment";
+  /**
+   * version
+   */
+  version?: string | null;
 }
 /**
  * File attached to a support case (private; fetched via presigned URL).
@@ -14173,6 +20700,56 @@ export interface WebhookEndpoint {
   enabled: boolean;
 }
 /**
+ * Schema to create a webhook endpoint.
+ */
+export interface WebhookEndpointCreate {
+  /**
+   * The URL where the webhook events will be sent.
+   */
+  url: string;
+  /**
+   * An optional name for the webhook endpoint to help organize and identify it.
+   */
+  name?: string | null;
+  /**
+   * format
+   */
+  format: WebhookFormat;
+  /**
+   * The events that will trigger the webhook.
+   */
+  events: WebhookEventType[];
+  /**
+   * The organization ID associated with the webhook endpoint. **Required unless you use an organization token.**
+   */
+  organization_id?: string | null;
+}
+/**
+ * Schema to update a webhook endpoint.
+ */
+export interface WebhookEndpointUpdate {
+  /**
+   * url
+   */
+  url?: string | null;
+  /**
+   * An optional name for the webhook endpoint to help organize and identify it.
+   */
+  name?: string | null;
+  /**
+   * format
+   */
+  format?: WebhookFormat | null;
+  /**
+   * events
+   */
+  events?: WebhookEventType[] | null;
+  /**
+   * Whether the webhook endpoint is enabled.
+   */
+  enabled?: boolean | null;
+}
+/**
  * A webhook event.
 
 An event represent something that happened in the system
@@ -14232,7 +20809,18 @@ export type Benefit =
   | BenefitMeterCredit
   | BenefitFeatureFlag
   | BenefitSlackSharedChannel;
-
+/**
+ * BenefitCreate
+ */
+export type BenefitCreate =
+  | BenefitCustomCreate
+  | BenefitDiscordCreate
+  | BenefitGitHubRepositoryCreate
+  | BenefitDownloadablesCreate
+  | BenefitLicenseKeysCreate
+  | BenefitMeterCreditCreate
+  | BenefitFeatureFlagCreate
+  | BenefitSlackSharedChannelCreate;
 /**
  * CheckoutForbiddenError
  */
@@ -14241,7 +20829,13 @@ export type CheckoutForbiddenError =
   | NotOpenCheckout
   | PaymentNotReady
   | TrialAlreadyRedeemed;
-
+/**
+ * CheckoutLinkCreate
+ */
+export type CheckoutLinkCreate =
+  | CheckoutLinkCreateProductPrice
+  | CheckoutLinkCreateProduct
+  | CheckoutLinkCreateProducts;
 /**
  * CustomField
  */
@@ -14251,12 +20845,28 @@ export type CustomField =
   | CustomFieldDate
   | CustomFieldCheckbox
   | CustomFieldSelect;
-
+/**
+ * CustomFieldCreate
+ */
+export type CustomFieldCreate =
+  | CustomFieldCreateText
+  | CustomFieldCreateNumber
+  | CustomFieldCreateDate
+  | CustomFieldCreateCheckbox
+  | CustomFieldCreateSelect;
+/**
+ * CustomFieldUpdate
+ */
+export type CustomFieldUpdate =
+  | CustomFieldUpdateText
+  | CustomFieldUpdateNumber
+  | CustomFieldUpdateDate
+  | CustomFieldUpdateCheckbox
+  | CustomFieldUpdateSelect;
 /**
  * Customer
  */
 export type Customer = CustomerIndividual | CustomerTeam;
-
 /**
  * CustomerBenefitGrant
  */
@@ -14269,24 +20879,44 @@ export type CustomerBenefitGrant =
   | CustomerBenefitGrantMeterCredit
   | CustomerBenefitGrantFeatureFlag
   | CustomerBenefitGrantSlackSharedChannel;
-
+/**
+ * CustomerBenefitGrantUpdate
+ */
+export type CustomerBenefitGrantUpdate =
+  | CustomerBenefitGrantDiscordUpdate
+  | CustomerBenefitGrantGitHubRepositoryUpdate
+  | CustomerBenefitGrantDownloadablesUpdate
+  | CustomerBenefitGrantLicenseKeysUpdate
+  | CustomerBenefitGrantCustomUpdate
+  | CustomerBenefitGrantMeterCreditUpdate
+  | CustomerBenefitGrantFeatureFlagUpdate
+  | CustomerBenefitGrantSlackSharedChannelUpdate;
+/**
+ * CustomerCreate
+ */
+export type CustomerCreate = CustomerIndividualCreate | CustomerTeamCreate;
 /**
  * CustomerPaymentMethod
  */
 export type CustomerPaymentMethod = PaymentMethodCard | PaymentMethodGeneric;
-
 /**
  * CustomerPaymentMethodCreateResponse
  */
 export type CustomerPaymentMethodCreateResponse =
   | CustomerPaymentMethodCreateSucceededResponse
   | CustomerPaymentMethodCreateRequiresActionResponse;
-
 /**
  * CustomerState
  */
 export type CustomerState = CustomerStateIndividual | CustomerStateTeam;
-
+/**
+ * CustomerSubscriptionUpdate
+ */
+export type CustomerSubscriptionUpdate =
+  | CustomerSubscriptionUpdateProduct
+  | CustomerSubscriptionUpdateSeats
+  | CustomerSubscriptionCancel
+  | CustomerSubscriptionUpdateClear;
 /**
  * Discount
  */
@@ -14295,7 +20925,22 @@ export type Discount =
   | DiscountFixedRepeatDuration
   | DiscountPercentageOnceForeverDuration
   | DiscountPercentageRepeatDuration;
-
+/**
+ * DiscountCreate
+ */
+export type DiscountCreate = DiscountFixedCreate | DiscountPercentageCreate;
+/**
+ * Event
+ */
+export type Event = SystemEvent | UserEvent;
+/**
+ * FileCreate
+ */
+export type FileCreate =
+  | DownloadableFileCreate
+  | ProductMediaFileCreate
+  | OrganizationAvatarFileCreate
+  | SupportCaseAttachmentFileCreate;
 /**
  * FileRead
  */
@@ -14304,24 +20949,31 @@ export type FileRead =
   | ProductMediaFileRead
   | OrganizationAvatarFileRead
   | SupportCaseAttachmentFileRead;
-
 /**
  * LegacyRecurringProductPrice
  */
 export type LegacyRecurringProductPrice =
   | LegacyRecurringProductPriceFixed
   | LegacyRecurringProductPriceCustom;
-
+/**
+ * MetadataQuery
+ */
+export type MetadataQuery = Record<
+  string,
+  string | number | boolean | string[] | number[] | boolean[]
+> | null;
 /**
  * Payment
  */
 export type Payment = CardPayment | GenericPayment;
-
 /**
  * PaymentMethod
  */
 export type PaymentMethod = CustomerPaymentMethodCard | CustomerPaymentMethodGeneric;
-
+/**
+ * ProductCreate
+ */
+export type ProductCreate = ProductCreateRecurring | ProductCreateOneTime;
 /**
  * ProductPrice
  */
@@ -14330,7 +20982,16 @@ export type ProductPrice =
   | ProductPriceCustom
   | ProductPriceSeatBased
   | ProductPriceMeteredUnit;
-
+/**
+ * SubscriptionUpdate
+ */
+export type SubscriptionUpdate =
+  | SubscriptionUpdateBase
+  | SubscriptionUpdateSeats
+  | SubscriptionUpdateBillingPeriod
+  | SubscriptionCancel
+  | SubscriptionRevoke
+  | SubscriptionUpdateClear;
 /**
  * SystemEvent
  */
@@ -14366,8 +21027,3 @@ export type SystemEvent =
   | BalanceRefundReversalEvent
   | BalanceDisputeEvent
   | BalanceDisputeReversalEvent;
-
-/**
- * Event
- */
-export type Event = SystemEvent | UserEvent;

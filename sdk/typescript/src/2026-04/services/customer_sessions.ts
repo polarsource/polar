@@ -1,9 +1,9 @@
 import type { ClientBase } from "../../base";
 import type {
+  CustomerSession,
   CustomerSessionCustomerExternalIDCreate,
   CustomerSessionCustomerIDCreate,
-} from "../models/inputs";
-import type { CustomerSession } from "../models/outputs";
+} from "../models";
 
 import { HTTPValidationError } from "../errors";
 

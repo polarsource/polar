@@ -1,6 +1,5 @@
 import type { ClientBase } from "../../base";
-import type { BenefitGrantSortProperty } from "../models/literals";
-import type { BenefitGrant, ListResourceBenefitGrant } from "../models/outputs";
+import type { BenefitGrant, BenefitGrantSortProperty, ListResourceBenefitGrant } from "../models";
 
 import { HTTPValidationError } from "../errors";
 

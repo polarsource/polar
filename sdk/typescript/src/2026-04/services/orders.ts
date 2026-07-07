@@ -1,7 +1,16 @@
 import type { ClientBase } from "../../base";
-import type { MetadataQuery, OrderCreate, OrderFinalize, OrderUpdate } from "../models/inputs";
-import type { OrderSortProperty, ProductBillingType } from "../models/literals";
-import type { ListResourceOrder, Order, OrderInvoice, OrderReceipt } from "../models/outputs";
+import type {
+  ListResourceOrder,
+  MetadataQuery,
+  Order,
+  OrderCreate,
+  OrderFinalize,
+  OrderInvoice,
+  OrderReceipt,
+  OrderSortProperty,
+  OrderUpdate,
+  ProductBillingType,
+} from "../models";
 
 import {
   Finalize402Error,

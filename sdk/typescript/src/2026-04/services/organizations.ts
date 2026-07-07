@@ -1,7 +1,11 @@
 import type { ClientBase } from "../../base";
-import type { OrganizationCreate, OrganizationUpdate } from "../models/inputs";
-import type { OrganizationSortProperty } from "../models/literals";
-import type { ListResourceOrganization, Organization } from "../models/outputs";
+import type {
+  ListResourceOrganization,
+  Organization,
+  OrganizationCreate,
+  OrganizationSortProperty,
+  OrganizationUpdate,
+} from "../models";
 
 import {
   CannotCreateOrganizationError,

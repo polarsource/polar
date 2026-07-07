@@ -7,7 +7,7 @@ import type {
   TokenResponse,
   UserInfoOrganization,
   UserInfoUser,
-} from "../../models/outputs";
+} from "../../models";
 
 import { createClientsService } from "./clients";
 

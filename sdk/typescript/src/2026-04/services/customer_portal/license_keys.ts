@@ -1,16 +1,14 @@
 import type { ClientBase } from "../../../base";
 import type {
   LicenseKeyActivate,
-  LicenseKeyDeactivate,
-  LicenseKeyValidate,
-} from "../../models/inputs";
-import type {
   LicenseKeyActivationRead,
+  LicenseKeyDeactivate,
   LicenseKeyRead,
+  LicenseKeyValidate,
   LicenseKeyWithActivations,
   ListResourceLicenseKeyRead,
   ValidatedLicenseKey,
-} from "../../models/outputs";
+} from "../../models";
 
 import { HTTPValidationError, NotPermitted, ResourceNotFound, Unauthorized } from "../../errors";
 

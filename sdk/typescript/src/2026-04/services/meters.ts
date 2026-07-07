@@ -1,12 +1,16 @@
 import type { ClientBase } from "../../base";
-import type { MetadataQuery, MeterCreate, MeterUpdate } from "../models/inputs";
 import type {
   AggregationFunction,
+  ListResourceMeter,
+  MetadataQuery,
+  Meter,
+  MeterCreate,
+  MeterQuantities,
   MeterSortProperty,
+  MeterUpdate,
   TimeInterval,
   Timezone,
-} from "../models/literals";
-import type { ListResourceMeter, Meter, MeterQuantities } from "../models/outputs";
+} from "../models";
 
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 

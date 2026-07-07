@@ -1,23 +1,22 @@
 import type { ClientBase } from "../../base";
 import type {
+  Benefit,
   BenefitCreate,
   BenefitCustomUpdate,
   BenefitDiscordUpdate,
   BenefitDownloadablesUpdate,
   BenefitFeatureFlagUpdate,
   BenefitGitHubRepositoryUpdate,
+  BenefitGrant,
   BenefitLicenseKeysUpdate,
   BenefitMeterCreditUpdate,
   BenefitSlackSharedChannelUpdate,
-  MetadataQuery,
-} from "../models/inputs";
-import type { BenefitSortProperty, BenefitType } from "../models/literals";
-import type {
-  Benefit,
-  BenefitGrant,
+  BenefitSortProperty,
+  BenefitType,
   ListResourceBenefit,
   ListResourceBenefitGrant,
-} from "../models/outputs";
+  MetadataQuery,
+} from "../models";
 
 import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../errors";
 

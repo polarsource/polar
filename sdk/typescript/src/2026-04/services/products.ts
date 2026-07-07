@@ -1,12 +1,14 @@
 import type { ClientBase } from "../../base";
 import type {
+  ListResourceProduct,
   MetadataQuery,
+  Product,
   ProductBenefitsUpdate,
   ProductCreate,
+  ProductSortProperty,
   ProductUpdate,
-} from "../models/inputs";
-import type { ProductSortProperty, ProductVisibility } from "../models/literals";
-import type { ListResourceProduct, Product } from "../models/outputs";
+  ProductVisibility,
+} from "../models";
 
 import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../errors";
 

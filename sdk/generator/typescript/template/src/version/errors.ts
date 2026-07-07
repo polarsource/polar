@@ -1,6 +1,6 @@
 import { PolarClientError } from "../base";
 {% if error_imports %}
-import type { {% for name in error_imports %}{{ name }} as {{ name }}Model{% if not loop.last %}, {% endif %}{% endfor %} } from "./models/outputs";
+import type { {% for name in error_imports %}{{ name }} as {{ name }}Model{% if not loop.last %}, {% endif %}{% endfor %} } from "./models";
 {% endif %}
 {% for error in errors %}
 {% if error.response_type == 'json' %}

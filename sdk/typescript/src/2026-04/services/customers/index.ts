@@ -1,18 +1,16 @@
 import type { ClientBase } from "../../../base";
 import type {
+  Customer,
   CustomerCreate,
+  CustomerSortProperty,
+  CustomerState,
   CustomerUpdate,
   CustomerUpdateExternalID,
-  MetadataQuery,
-} from "../../models/inputs";
-import type { CustomerSortProperty } from "../../models/literals";
-import type {
-  Customer,
-  CustomerState,
   ListResourceCustomer,
   ListResourcePaymentMethod,
+  MetadataQuery,
   PaymentMethod,
-} from "../../models/outputs";
+} from "../../models";
 
 import { HTTPValidationError, ResourceNotFound } from "../../errors";
 import { createMembersService } from "./members";

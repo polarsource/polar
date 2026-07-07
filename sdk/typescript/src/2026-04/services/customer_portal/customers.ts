@@ -2,17 +2,15 @@ import type { ClientBase } from "../../../base";
 import type {
   CustomerEmailUpdateRequest,
   CustomerEmailUpdateVerifyRequest,
-  CustomerPaymentMethodConfirm,
-  CustomerPaymentMethodCreate,
-  CustomerPortalCustomerUpdate,
-} from "../../models/inputs";
-import type {
   CustomerEmailUpdateVerifyResponse,
   CustomerPaymentMethod,
+  CustomerPaymentMethodConfirm,
+  CustomerPaymentMethodCreate,
   CustomerPaymentMethodCreateResponse,
   CustomerPortalCustomer,
+  CustomerPortalCustomerUpdate,
   ListResourceCustomerPaymentMethod,
-} from "../../models/outputs";
+} from "../../models";
 
 import {
   CheckEmailUpdate401Error,

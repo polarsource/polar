@@ -1,14 +1,16 @@
 import type { ClientBase } from "../../../base";
-import type { CustomerOrderConfirmPayment, CustomerOrderUpdate } from "../../models/inputs";
-import type { CustomerOrderSortProperty, ProductBillingType } from "../../models/literals";
 import type {
   CustomerOrder,
+  CustomerOrderConfirmPayment,
   CustomerOrderInvoice,
   CustomerOrderPaymentConfirmation,
   CustomerOrderPaymentStatus,
   CustomerOrderReceipt,
+  CustomerOrderSortProperty,
+  CustomerOrderUpdate,
   ListResourceCustomerOrder,
-} from "../../models/outputs";
+  ProductBillingType,
+} from "../../models";
 
 import {
   HTTPValidationError,

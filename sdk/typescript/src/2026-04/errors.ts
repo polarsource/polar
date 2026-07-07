@@ -26,7 +26,7 @@ import type {
   SSOEnforcementRequiresConnection as SSOEnforcementRequiresConnectionModel,
   SubscriptionLocked as SubscriptionLockedModel,
   Unauthorized as UnauthorizedModel,
-} from "./models/outputs";
+} from "./models";
 
 import { PolarClientError } from "../base";
 /**

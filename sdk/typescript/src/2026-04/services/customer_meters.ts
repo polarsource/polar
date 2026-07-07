@@ -1,6 +1,9 @@
 import type { ClientBase } from "../../base";
-import type { CustomerMeterSortProperty } from "../models/literals";
-import type { CustomerMeter, ListResourceCustomerMeter } from "../models/outputs";
+import type {
+  CustomerMeter,
+  CustomerMeterSortProperty,
+  ListResourceCustomerMeter,
+} from "../models";
 
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 

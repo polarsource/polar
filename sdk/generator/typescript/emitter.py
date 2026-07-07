@@ -11,7 +11,6 @@ from generator.ir import (
     UnionRef,
 )
 from typescript.types import (
-    collect_enum_imports,
     collect_enum_names,
     collect_type_imports,
     collect_union_imports,
@@ -130,46 +129,16 @@ class TypeScriptEmitter(EmitterBase):
         self.run_command("just test", cwd=root_directory)
 
     def _emit_models(self, version_dir: pathlib.Path, api: APIVersion) -> None:
-        """Emit all model files (inputs.ts, outputs.ts, literals.ts)."""
-        models_dir = version_dir / "models"
-
-        # Emit literals.ts (enums only)
+        """Emit models.ts file directly in the version directory."""
         self.render_file(
-            "src/version/models/literals.ts",
-            models_dir / "literals.ts",
+            "src/version/models.ts",
+            version_dir / "models.ts",
             {
                 **self.get_version_context(api),
                 "enums": api.enums,
+                "models": api.all_models,
+                "unions": api.all_unions,
             },
-        )
-
-        self.render_file(
-            "src/version/models/inputs.ts",
-            models_dir / "inputs.ts",
-            {
-                **self.get_version_context(api),
-                "models": api.input_models,
-                "unions": api.input_unions,
-                "enum_imports": self._get_input_enum_imports(api),
-            },
-        )
-
-        # Emit outputs.ts (output models and output unions)
-        self.render_file(
-            "src/version/models/outputs.ts",
-            models_dir / "outputs.ts",
-            {
-                **self.get_version_context(api),
-                "models": api.output_models,
-                "unions": api.output_unions,
-                "enum_imports": self._get_output_enum_imports(api),
-            },
-        )
-
-        self.render_file(
-            "src/version/models/index.ts",
-            models_dir / "index.ts",
-            self.get_version_context(api),
         )
 
     def _emit_service(
@@ -215,28 +184,6 @@ class TypeScriptEmitter(EmitterBase):
 
         self.render_file("src/version/services/service.ts", service_path, context)
 
-    def _get_input_enum_imports(self, api: APIVersion) -> list[str]:
-        """Collect all enum imports needed for input models."""
-        enum_imports: set[str] = set()
-        for model in api.input_models:
-            for field in model.fields:
-                collect_enum_imports(field.type, enum_imports, api)
-        for union in api.input_unions:
-            for variant in union.variants:
-                collect_enum_imports(variant, enum_imports, api)
-        return sorted(enum_imports)
-
-    def _get_output_enum_imports(self, api: APIVersion) -> list[str]:
-        """Collect all enum imports needed for output models."""
-        enum_imports: set[str] = set()
-        for model in api.output_models:
-            for field in model.fields:
-                collect_enum_imports(field.type, enum_imports, api)
-        for union in api.output_unions:
-            for variant in union.variants:
-                collect_enum_imports(variant, enum_imports, api)
-        return sorted(enum_imports)
-
     def _collect_all_errors(self, api: APIVersion) -> list[ErrorResponse]:
         """Collect all unique error responses from all services and methods."""
         errors: list[ErrorResponse] = []
@@ -277,35 +224,33 @@ class TypeScriptEmitter(EmitterBase):
         """Collect imports for a single service."""
 
         imports: dict[str, set[str]] = {
-            "inputs": set(),
-            "outputs": set(),
-            "literals": set(),
+            "models": set(),
             "errors": set(),
             "services": set(),
         }
 
         for method in service.methods:
-            # Collect input imports from body
+            # Collect all type imports from body
             if method.body is not None:
-                imports["inputs"].update(collect_type_imports(method.body, api))
-                imports["inputs"].update(collect_union_imports(method.body, api))
-                imports["literals"].update(collect_enum_names(method.body, api))
+                imports["models"].update(collect_type_imports(method.body, api))
+                imports["models"].update(collect_union_imports(method.body, api))
+                imports["models"].update(collect_enum_names(method.body, api))
 
-            # Collect output imports from response
+            # Collect all type imports from response
             if method.response is not None:
-                imports["outputs"].update(collect_type_imports(method.response, api))
-                imports["outputs"].update(collect_union_imports(method.response, api))
-                imports["literals"].update(collect_enum_names(method.response, api))
+                imports["models"].update(collect_type_imports(method.response, api))
+                imports["models"].update(collect_union_imports(method.response, api))
+                imports["models"].update(collect_enum_names(method.response, api))
 
-            # Collect type names and enum imports from path and query parameters
+            # Collect from path and query parameters
             for param in method.path_params + method.query_params:
-                imports["literals"].update(collect_enum_names(param.type, api))
+                imports["models"].update(collect_enum_names(param.type, api))
                 # Also collect model/union names from parameters
                 if isinstance(param.type, ModelRef):
-                    imports["inputs"].add(param.type.name)
+                    imports["models"].add(param.type.name)
                 elif isinstance(param.type, UnionRef):
-                    imports["inputs"].add(param.type.name)
-                    imports["inputs"].update(collect_union_imports(param.type, api))
+                    imports["models"].add(param.type.name)
+                    imports["models"].update(collect_union_imports(param.type, api))
 
             # Collect imports from error responses
             for error in method.errors:
@@ -313,13 +258,13 @@ class TypeScriptEmitter(EmitterBase):
 
             # Collect imports for pagination item schemas
             if method.pagination is not None:
-                imports["outputs"].update(
+                imports["models"].update(
                     collect_type_imports(method.pagination.item_schema, api)
                 )
-                imports["outputs"].update(
+                imports["models"].update(
                     collect_union_imports(method.pagination.item_schema, api)
                 )
-                imports["literals"].update(
+                imports["models"].update(
                     collect_enum_names(method.pagination.item_schema, api)
                 )
 
@@ -329,9 +274,7 @@ class TypeScriptEmitter(EmitterBase):
 
         # Convert sets to sorted lists for Jinja compatibility
         return {
-            "inputs": sorted(imports["inputs"]),
-            "outputs": sorted(imports["outputs"]),
-            "literals": sorted(imports["literals"]),
+            "models": sorted(imports["models"]),
             "errors": sorted(imports["errors"]),
             "services": sorted(imports["services"]),
         }

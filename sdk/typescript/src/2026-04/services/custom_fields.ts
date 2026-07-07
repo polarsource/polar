@@ -1,7 +1,12 @@
 import type { ClientBase } from "../../base";
-import type { CustomFieldCreate, CustomFieldUpdate } from "../models/inputs";
-import type { CustomFieldSortProperty, CustomFieldType } from "../models/literals";
-import type { CustomField, ListResourceCustomField } from "../models/outputs";
+import type {
+  CustomField,
+  CustomFieldCreate,
+  CustomFieldSortProperty,
+  CustomFieldType,
+  CustomFieldUpdate,
+  ListResourceCustomField,
+} from "../models";
 
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 

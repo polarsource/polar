@@ -1,5 +1,5 @@
 import type { ClientBase } from "../../../base";
-import type { DownloadableRead, ListResourceDownloadableRead } from "../../models/outputs";
+import type { DownloadableRead, ListResourceDownloadableRead } from "../../models";
 
 import { HTTPValidationError } from "../../errors";
 

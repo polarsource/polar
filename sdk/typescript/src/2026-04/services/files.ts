@@ -1,6 +1,12 @@
 import type { ClientBase } from "../../base";
-import type { FileCreate, FilePatch, FileUploadCompleted } from "../models/inputs";
-import type { FileRead, FileUpload, ListResourceFileRead } from "../models/outputs";
+import type {
+  FileCreate,
+  FilePatch,
+  FileRead,
+  FileUpload,
+  FileUploadCompleted,
+  ListResourceFileRead,
+} from "../models";
 
 import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../errors";
 

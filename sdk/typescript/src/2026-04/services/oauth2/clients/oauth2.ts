@@ -1,8 +1,5 @@
 import type { ClientBase } from "../../../../base";
-import type {
-  OAuth2ClientConfiguration,
-  OAuth2ClientConfigurationUpdate,
-} from "../../../models/inputs";
+import type { OAuth2ClientConfiguration, OAuth2ClientConfigurationUpdate } from "../../../models";
 
 import { HTTPValidationError } from "../../../errors";
 

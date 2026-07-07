@@ -1,6 +1,5 @@
 import type { ClientBase } from "../../../base";
-import type { MemberCreateFromCustomer, MemberUpdate } from "../../models/inputs";
-import type { Member } from "../../models/outputs";
+import type { Member, MemberCreateFromCustomer, MemberUpdate } from "../../models";
 
 import {
   AmbiguousExternalCustomerID,

@@ -1,7 +1,11 @@
 import type { ClientBase } from "../../base";
-import type { DiscountCreate, DiscountUpdate } from "../models/inputs";
-import type { DiscountSortProperty } from "../models/literals";
-import type { Discount, ListResourceDiscount } from "../models/outputs";
+import type {
+  Discount,
+  DiscountCreate,
+  DiscountSortProperty,
+  DiscountUpdate,
+  ListResourceDiscount,
+} from "../models";
 
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 

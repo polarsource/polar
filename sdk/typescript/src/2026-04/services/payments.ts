@@ -1,6 +1,5 @@
 import type { ClientBase } from "../../base";
-import type { PaymentSortProperty, PaymentStatus } from "../models/literals";
-import type { ListResourcePayment, Payment } from "../models/outputs";
+import type { ListResourcePayment, Payment, PaymentSortProperty, PaymentStatus } from "../models";
 
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 

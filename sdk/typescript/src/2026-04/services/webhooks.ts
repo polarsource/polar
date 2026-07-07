@@ -1,12 +1,13 @@
 import type { ClientBase } from "../../base";
-import type { WebhookEndpointCreate, WebhookEndpointUpdate } from "../models/inputs";
-import type { WebhookEventType } from "../models/literals";
 import type {
   ListResourceWebhookDelivery,
   ListResourceWebhookEndpoint,
   WebhookDelivery,
   WebhookEndpoint,
-} from "../models/outputs";
+  WebhookEndpointCreate,
+  WebhookEndpointUpdate,
+  WebhookEventType,
+} from "../models";
 
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 

@@ -1,7 +1,11 @@
 import type { ClientBase } from "../../base";
-import type { CheckoutLinkCreate, CheckoutLinkUpdate } from "../models/inputs";
-import type { CheckoutLinkSortProperty } from "../models/literals";
-import type { CheckoutLink, ListResourceCheckoutLink } from "../models/outputs";
+import type {
+  CheckoutLink,
+  CheckoutLinkCreate,
+  CheckoutLinkSortProperty,
+  CheckoutLinkUpdate,
+  ListResourceCheckoutLink,
+} from "../models";
 
 import { HTTPValidationError, ResourceNotFound } from "../errors";
 

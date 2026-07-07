@@ -1,5 +1,5 @@
 import type { ClientBase } from "../../../base";
-import type { CustomerOrganizationData } from "../../models/outputs";
+import type { CustomerOrganizationData } from "../../models";
 
 import { HTTPValidationError, ResourceNotFound } from "../../errors";
 

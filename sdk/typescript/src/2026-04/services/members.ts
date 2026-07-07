@@ -1,6 +1,5 @@
 import type { ClientBase } from "../../base";
-import type { MemberRole, MemberSortProperty } from "../models/literals";
-import type { ListResourceMember, Member } from "../models/outputs";
+import type { ListResourceMember, Member, MemberRole, MemberSortProperty } from "../models";
 
 import { HTTPValidationError } from "../errors";
 

@@ -1,5 +1,5 @@
 import type { ClientBase } from "../../../base";
-import type { CustomerCustomerSession, PortalAuthenticatedUser } from "../../models/outputs";
+import type { CustomerCustomerSession, PortalAuthenticatedUser } from "../../models";
 
 export const introspectCustomerSession = (client: ClientBase) => {
   /**

@@ -1,6 +1,10 @@
 import type { ClientBase } from "../../../base";
-import type { CustomerPortalMemberCreate, CustomerPortalMemberUpdate } from "../../models/inputs";
-import type { CustomerPortalMember, ListResourceCustomerPortalMember } from "../../models/outputs";
+import type {
+  CustomerPortalMember,
+  CustomerPortalMemberCreate,
+  CustomerPortalMemberUpdate,
+  ListResourceCustomerPortalMember,
+} from "../../models";
 
 import {
   AddMember400Error,

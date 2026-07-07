@@ -1,7 +1,11 @@
 import type { ClientBase } from "../../../base";
-import type { CustomerBenefitGrantUpdate } from "../../models/inputs";
-import type { BenefitType, CustomerBenefitGrantSortProperty } from "../../models/literals";
-import type { CustomerBenefitGrant, ListResourceCustomerBenefitGrant } from "../../models/outputs";
+import type {
+  BenefitType,
+  CustomerBenefitGrant,
+  CustomerBenefitGrantSortProperty,
+  CustomerBenefitGrantUpdate,
+  ListResourceCustomerBenefitGrant,
+} from "../../models";
 
 import { HTTPValidationError, NotPermitted, ResourceNotFound } from "../../errors";
 

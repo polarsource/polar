@@ -1,12 +1,6 @@
 import type { ClientBase } from "{{ base_import }}";
-{% if imports.inputs %}
-import type { {% for name in imports.inputs %}{{ name }}{% if not loop.last %}, {% endif %}{% endfor %}} from "{{ models_import }}/inputs";
-{% endif %}
-{% if imports.outputs %}
-import type { {% for name in imports.outputs %}{{ name }}{% if not loop.last %}, {% endif %}{% endfor %}} from "{{ models_import }}/outputs";
-{% endif %}
-{% if imports.literals %}
-import type { {% for name in imports.literals %}{{ name }}{% if not loop.last %}, {% endif %}{% endfor %}} from "{{ models_import }}/literals";
+{% if imports.models %}
+import type { {% for name in imports.models %}{{ name }}{% if not loop.last %}, {% endif %}{% endfor %} } from "{{ models_import }}";
 {% endif %}
 {% if imports.errors %}
 import { {% for name in imports.errors %}{{ name }}{% if not loop.last %}, {% endif %}{% endfor %}} from "{{ errors_import }}";

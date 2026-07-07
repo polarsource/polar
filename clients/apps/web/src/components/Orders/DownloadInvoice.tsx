@@ -175,7 +175,11 @@ const DownloadInvoice = ({
         // billing field changed, so skip the wait for an unchanged re-submit.
         const expectGeneration = !order.is_invoice_generated || isDirty
         const generation = expectGeneration
-          ? waitForInvoice(eventEmitter, order.id, INVOICE_GENERATION_TIMEOUT_MS)
+          ? waitForInvoice(
+              eventEmitter,
+              order.id,
+              INVOICE_GENERATION_TIMEOUT_MS,
+            )
           : null
 
         const { error: generateError } = await api.POST(invoiceURL, {

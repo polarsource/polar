@@ -6,6 +6,7 @@ import {
   useGitHubAccount,
   useGoogleAccount,
 } from '@/hooks'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import {
   getGitHubAuthorizeLinkURL,
   getGoogleAuthorizeLinkURL,
@@ -19,6 +20,7 @@ import { ListGroup } from '@polar-sh/orbit'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import EmailUpdateForm from '../Form/EmailUpdateForm'
+import { toast } from '../Toast/use-toast'
 import { useSessionRefreshPrompt } from './SessionRefreshModal'
 import { twMerge } from 'tailwind-merge'
 
@@ -167,9 +169,24 @@ const AuthenticationSettings = () => {
     useSessionRefreshPrompt()
 
   const handleDisconnect = async (platform: schemas['OAuthPlatform']) => {
-    const { error } = await disconnectOAuth.mutateAsync(platform)
-    if (error) {
-      promptIfSessionNotFresh(error)
+    try {
+      const { error } = await disconnectOAuth.mutateAsync(platform)
+      if (error) {
+        if (promptIfSessionNotFresh(error)) {
+          return
+        }
+        toast({
+          title: 'Error',
+          description: extractApiErrorMessage(error),
+          variant: 'error',
+        })
+      }
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to disconnect account. Please try again.',
+        variant: 'error',
+      })
     }
   }
 

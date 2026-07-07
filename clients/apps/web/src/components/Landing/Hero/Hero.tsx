@@ -6,9 +6,8 @@ import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'motion/react'
 
 const containerVariants = {
-  hidden: { opacity: 0 },
+  hidden: {},
   visible: {
-    opacity: 1,
     transition: {
       staggerChildren: 0.1,
     },

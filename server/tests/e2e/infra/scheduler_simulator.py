@@ -30,7 +30,7 @@ from sqlalchemy import func
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models import Subscription
-from polar.subscription.scheduler import SubscriptionJobStore
+from polar.subscription.scheduler import SubscriptionJobStore, _next_run_time
 from polar.worker import JobQueueManager
 from tests.e2e.infra.task_drain import DrainFn, DrainResult
 
@@ -53,7 +53,7 @@ class SchedulerSimulator:
 
         statement = (
             SubscriptionJobStore.scheduling_statement()
-            .where(Subscription.current_period_end <= now)
+            .where(_next_run_time() <= now)
             .order_by(None)  # strip ORDER BY — incompatible with count()
             .with_only_columns(func.count())
         )
@@ -84,7 +84,7 @@ class SchedulerSimulator:
 
         statement = (
             SubscriptionJobStore.scheduling_statement()
-            .where(Subscription.current_period_end <= now)
+            .where(_next_run_time() <= now)
             .with_only_columns(Subscription.id)
         )
         result = await self._session.execute(statement)

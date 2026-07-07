@@ -79,6 +79,7 @@ from polar.models import (
     User,
     WalletTransaction,
 )
+from polar.models.discount import DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.payment import PaymentTrigger
 from polar.models.product import ProductBillingType
@@ -1340,6 +1341,16 @@ class OrderService:
         subtotal_amount = sum(item.amount for item in items)
 
         discount = subscription.discount
+        # Fixed discounts are per-order, so applying one to every meter-cycle settlement
+        # would multiply the giveaway by the settlement frequency (e.g. $10 off ×12
+        # monthly meter-cycle orders on an annual plan). Percentage discounts are
+        # settlement-cadence-invariant and still apply. See issue #154.
+        if (
+            billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
+            and discount is not None
+            and discount.type != DiscountType.percentage
+        ):
+            discount = None
         discount_amount = 0
         if discount is not None:
             # Discount only applies to cycle and meter items, as prorations
@@ -1507,6 +1518,23 @@ class OrderService:
         await self._on_order_created(session, order)
 
         return order
+
+    async def settle_meter_cycle_order(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> Order | None:
+        async with billing_entry_service.create_metered_order_items_from_pending(
+            session, subscription
+        ) as items:
+            if len(items) == 0:
+                return None
+            return await self._create_order(
+                session,
+                subscription,
+                list(items),
+                OrderBillingReasonInternal.subscription_meter_cycle,
+            )
 
     async def create_trial_order(
         self,
@@ -2336,6 +2364,15 @@ class OrderService:
                     "id": "{subscription}",
                     "email": "{email}",
                 }
+            case OrderBillingReasonInternal.subscription_meter_cycle:
+                template_name = "subscription_cycled"
+                subject_template = "Your {description} usage invoice"
+                url_path_template = "/{organization}/portal"
+                url_params = {
+                    "customer_session_token": "{token}",
+                    "id": "{subscription}",
+                    "email": "{email}",
+                }
 
         # Final invoice uses the same email setting as subscription_cycled
         email_setting_name = (
@@ -2853,6 +2890,14 @@ class OrderService:
             )
             return order
 
+        # Meter-cycle settlement failures retry the payment but never escalate the
+        # subscription: a small mid-term overage charge must not drive a prepaid
+        # plan to past_due or revoke it. We still dun the order on the standard
+        # retry schedule, capping at `void` once retries are exhausted so it never
+        # lingers pending.
+        if order.billing_reason == OrderBillingReasonInternal.subscription_meter_cycle:
+            return await self._handle_meter_cycle_dunning_attempt(session, order)
+
         if order.subscription is None:
             return order
 
@@ -2981,6 +3026,41 @@ class OrderService:
             await subscription_service.enqueue_benefits_grants(session, subscription)
 
         return order
+
+    async def _handle_meter_cycle_dunning_attempt(
+        self, session: AsyncSession, order: Order
+    ) -> Order:
+        """Retry-only dunning for meter-cycle orders.
+
+        Reschedules payment on the standard dunning intervals without touching
+        the subscription (no past_due, no revoke) — overage debt can't cancel a
+        prepaid plan. Once retries are exhausted the order is voided so it never
+        lingers pending.
+        """
+        repository = OrderRepository.from_session(session)
+
+        if order.is_void:
+            return await repository.update(
+                order, update_dict={"next_payment_attempt_at": None}
+            )
+
+        payment_repository = PaymentRepository.from_session(session)
+        failed_attempts = await payment_repository.count_failed_payments_for_order(
+            order.id
+        )
+
+        # failed_attempts counts every failure so far, including this one; once it
+        # exceeds the configured intervals there are no retries left. Void through
+        # the canonical path so the merchant is notified that we've stopped trying
+        # to collect this overage (order.updated webhook + order_voided event).
+        if failed_attempts > len(settings.DUNNING_RETRY_INTERVALS):
+            return await self.void(session, order)
+
+        next_interval = settings.DUNNING_RETRY_INTERVALS[max(failed_attempts - 1, 0)]
+        return await repository.update(
+            order,
+            update_dict={"next_payment_attempt_at": utc_now() + next_interval},
+        )
 
     async def _calculate_tax(
         self,

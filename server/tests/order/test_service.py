@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime, timedelta
+from decimal import Decimal
 from types import SimpleNamespace
 from typing import cast
 from unittest.mock import ANY, AsyncMock, MagicMock, call
@@ -120,6 +121,7 @@ from tests.fixtures.random_objects import (
     create_customer,
     create_discount,
     create_event,
+    create_meter,
     create_order,
     create_payment,
     create_payment_method,
@@ -2237,6 +2239,223 @@ class TestCreateSubscriptionOrder:
 
 
 @pytest.mark.asyncio
+class TestSettleMeterCycleOrder:
+    async def _metered_subscription(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        *,
+        unit_amount: Decimal,
+        payment_method: PaymentMethod | None = None,
+    ) -> Subscription:
+        meter = await create_meter(save_fixture, organization=organization)
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, unit_amount, None, "usd")],
+        )
+        return await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+        )
+
+    async def _add_metered_usage(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        subscription: Subscription,
+        *,
+        units: int,
+    ) -> None:
+        # The default meter counts events named METER_TEST_EVENT, so each event is
+        # one unit. Each usage event gets a pending metered billing entry.
+        metered_price = subscription.subscription_product_prices[0]
+        for _ in range(units):
+            event = await create_event(
+                save_fixture, organization=organization, customer=customer
+            )
+            await save_fixture(
+                BillingEntry.from_metered_event(customer, metered_price, event)
+            )
+
+    async def test_settles_usage(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        payment_method: PaymentMethod,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        # 30 cents / unit; 2 units = $0.60.
+        subscription = await self._metered_subscription(
+            save_fixture,
+            organization,
+            customer,
+            unit_amount=Decimal(30),
+            payment_method=payment_method,
+        )
+        await self._add_metered_usage(
+            save_fixture, organization, customer, subscription, units=2
+        )
+
+        order = await order_service.settle_meter_cycle_order(session, subscription)
+
+        assert order is not None
+        assert (
+            order.billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
+        )
+        assert order.subtotal_amount == 60
+
+    async def test_sub_minimum_still_creates_order(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        payment_method: PaymentMethod,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        # 10 cents / unit; 2 units = $0.20, below the $0.50 minimum. It's no longer
+        # carried — the order is still created, and the standard order flow routes
+        # the sub-minimum amount to the customer balance.
+        subscription = await self._metered_subscription(
+            save_fixture,
+            organization,
+            customer,
+            unit_amount=Decimal(10),
+            payment_method=payment_method,
+        )
+        await self._add_metered_usage(
+            save_fixture, organization, customer, subscription, units=2
+        )
+
+        order = await order_service.settle_meter_cycle_order(session, subscription)
+
+        assert order is not None
+        assert (
+            order.billing_reason == OrderBillingReasonInternal.subscription_meter_cycle
+        )
+        assert order.subtotal_amount == 20
+
+    async def test_no_pending_usage_returns_none(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        subscription = await self._metered_subscription(
+            save_fixture, organization, customer, unit_amount=Decimal(30)
+        )
+
+        order = await order_service.settle_meter_cycle_order(session, subscription)
+
+        assert order is None
+
+    async def test_percentage_discount_applies_to_meter_cycle_order(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        payment_method: PaymentMethod,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await self._metered_subscription(
+            save_fixture,
+            organization,
+            customer,
+            unit_amount=Decimal(30),
+            payment_method=payment_method,
+        )
+        await self._add_metered_usage(
+            save_fixture, organization, customer, subscription, units=2
+        )
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        subscription.discount = discount
+        await save_fixture(subscription)
+
+        order = await order_service.settle_meter_cycle_order(session, subscription)
+
+        assert order is not None
+        assert order.subtotal_amount == 60
+        # Percentage discounts are settlement-cadence-invariant, so they apply.
+        assert order.discount_id == discount.id
+        assert order.discount_amount == 30
+
+    async def test_fixed_discount_excluded_from_meter_cycle_order(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        payment_method: PaymentMethod,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await self._metered_subscription(
+            save_fixture,
+            organization,
+            customer,
+            unit_amount=Decimal(30),
+            payment_method=payment_method,
+        )
+        await self._add_metered_usage(
+            save_fixture, organization, customer, subscription, units=2
+        )
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 10},
+            duration=DiscountDuration.forever,
+            organization=organization,
+        )
+        subscription.discount = discount
+        await save_fixture(subscription)
+
+        order = await order_service.settle_meter_cycle_order(session, subscription)
+
+        assert order is not None
+        assert order.subtotal_amount == 60
+        # Fixed discounts are per-order; applying them per meter-cycle settlement would
+        # multiply the giveaway by the settlement frequency, so they're excluded.
+        assert order.discount_id is None
+        assert order.discount_amount == 0
+
+
+@pytest.mark.asyncio
 class TestCreateTrialOrder:
     async def test_not_trial(
         self,
@@ -3006,6 +3225,106 @@ class TestHandlePaymentFailure:
         assert result_order.next_payment_attempt_at == expected_retry_date
 
         mock_mark_past_due.assert_called_once_with(session, subscription)
+
+    @freeze_time("2024-01-01 12:00:00")
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_meter_cycle_order_retries_without_escalating_subscription(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """A failed meter-cycle (overage) charge retries the payment but must not
+        drive the subscription to past_due — overage can't cancel a prepaid plan."""
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+        )
+        order.next_payment_attempt_at = None
+        await save_fixture(order)
+        await create_payment(
+            save_fixture,
+            order.organization,
+            status=PaymentStatus.failed,
+            trigger=PaymentTrigger.purchase,
+            order=order,
+        )
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        # Subscription untouched, but the payment is rescheduled on the first
+        # dunning interval — the order stays pending and in-flight.
+        mock_mark_past_due.assert_not_called()
+        assert result_order.status == OrderStatus.pending
+        assert (
+            result_order.next_payment_attempt_at
+            == utc_now() + settings.DUNNING_RETRY_INTERVALS[0]
+        )
+
+    async def test_meter_cycle_order_voids_when_retries_exhausted(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        mocker: MockerFixture,
+    ) -> None:
+        """Once the dunning intervals are exhausted, a meter-cycle order is voided
+        so it doesn't linger pending — still without touching the subscription."""
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            billing_reason=OrderBillingReasonInternal.subscription_meter_cycle,
+        )
+        await save_fixture(order)
+        # One failure beyond the retry intervals exhausts dunning.
+        for _ in range(len(settings.DUNNING_RETRY_INTERVALS) + 1):
+            await create_payment(
+                save_fixture,
+                order.organization,
+                status=PaymentStatus.failed,
+                trigger=PaymentTrigger.purchase,
+                order=order,
+            )
+
+        mock_mark_past_due = mocker.patch(
+            "polar.subscription.service.subscription.mark_past_due"
+        )
+
+        result_order = await order_service.handle_payment_failure(session, order)
+
+        mock_mark_past_due.assert_not_called()
+        assert result_order.status == OrderStatus.void
+        assert result_order.next_payment_attempt_at is None
+
+        # Giving up is voided through the canonical path, so the merchant is
+        # notified via the order_voided event (and the order.updated webhook).
+        events = await get_all_by_name(session, SystemEvent.order_voided)
+        assert len(events) == 1
+        assert events[0].user_metadata["order_id"] == str(order.id)
 
     @freeze_time("2024-01-01 12:00:00")
     async def test_first_dunning_enqueues_benefit_revocation(

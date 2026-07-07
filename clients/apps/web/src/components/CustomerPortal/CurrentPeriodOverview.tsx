@@ -56,7 +56,10 @@ export const CurrentPeriodOverview = ({
     !isCancelingAtPeriodEnd
   const isPausingIndefinitely =
     (subscription.pause_at_period_end || isPaused) && !subscription.resumes_at
-  if ((!isActive && !isTrialing && !isResumingCharge) || isPausingIndefinitely) {
+  if (
+    (!isActive && !isTrialing && !isResumingCharge) ||
+    isPausingIndefinitely
+  ) {
     return null
   }
 

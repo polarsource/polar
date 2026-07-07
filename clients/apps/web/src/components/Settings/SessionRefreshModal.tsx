@@ -3,12 +3,13 @@
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { isSessionNotFreshError } from '@/utils/api/errors'
-import { usePathname, useRouter } from 'next/navigation'
+import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback } from 'react'
 
 export const useSessionRefreshPrompt = () => {
   const router = useRouter()
   const pathname = usePathname()
+  const searchParams = useSearchParams()
   const { isShown, show, hide } = useModal()
 
   const promptIfSessionNotFresh = useCallback(
@@ -28,9 +29,11 @@ export const useSessionRefreshPrompt = () => {
       hide={hide}
       title="Please sign in again"
       description="For your security, this action requires that you signed in recently. Sign in again to continue."
-      onConfirm={() =>
-        router.push(`/auth?return_to=${encodeURIComponent(pathname ?? '/')}`)
-      }
+      onConfirm={() => {
+        const query = searchParams?.toString()
+        const returnTo = `${pathname ?? '/'}${query ? `?${query}` : ''}`
+        router.push(`/auth?return_to=${encodeURIComponent(returnTo)}`)
+      }}
     />
   )
 

@@ -485,8 +485,7 @@ class CompassService:
         signals: list[CostAnomalySignal] = []
         for name, events in grouped.items():
             priced = [
-                (event, float(event.values.get("_cost_amount", 0)))
-                for event in events
+                (event, float(event.values.get("_cost_amount", 0))) for event in events
             ]
             total = sum(amount for _, amount in priced)
             if total <= 0:

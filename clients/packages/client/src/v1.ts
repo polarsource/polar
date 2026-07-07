@@ -17179,6 +17179,8 @@ export interface components {
       update_seats: boolean
       /** Update Plan */
       update_plan: boolean
+      /** Pause */
+      pause?: boolean
     }
     /** CustomerPortalUsageSettings */
     CustomerPortalUsageSettings: {
@@ -18408,6 +18410,22 @@ export interface components {
        */
       name: string
     }
+    /** CustomerSubscriptionPause */
+    CustomerSubscriptionPause: {
+      /**
+       * Pause At Period End
+       * @description Pause an active subscription at the end of the current period.
+       *
+       *     Or cancel a scheduled pause on a subscription set to be paused at
+       *     period end.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Resumes At
+       * @description Date at which the paused subscription should automatically resume. If not set, it stays paused until resumed. Must be after the current period end.
+       */
+      resumes_at?: string | null
+    }
     /** CustomerSubscriptionProduct */
     CustomerSubscriptionProduct: {
       /**
@@ -18496,6 +18514,15 @@ export interface components {
       medias: components['schemas']['ProductMediaFileRead'][]
       organization: components['schemas']['CustomerOrganization']
     }
+    /** CustomerSubscriptionResume */
+    CustomerSubscriptionResume: {
+      /**
+       * Resume
+       * @description Resume a paused subscription immediately, starting a new billing period and charging the customer.
+       * @constant
+       */
+      resume: true
+    }
     /**
      * CustomerSubscriptionSortProperty
      * @enum {string}
@@ -18515,6 +18542,8 @@ export interface components {
       | components['schemas']['CustomerSubscriptionUpdateProduct']
       | components['schemas']['CustomerSubscriptionUpdateSeats']
       | components['schemas']['CustomerSubscriptionCancel']
+      | components['schemas']['CustomerSubscriptionPause']
+      | components['schemas']['CustomerSubscriptionResume']
       | components['schemas']['CustomerSubscriptionUpdateClear']
     /** CustomerSubscriptionUpdateClear */
     CustomerSubscriptionUpdateClear: {
@@ -27861,6 +27890,17 @@ export interface components {
       total_count: number
       /** Max Page */
       max_page: number
+    }
+    /** PauseResumeNotAllowed */
+    PauseResumeNotAllowed: {
+      /**
+       * Error
+       * @example PauseResumeNotAllowed
+       * @constant
+       */
+      error: 'PauseResumeNotAllowed'
+      /** Detail */
+      detail: string
     }
     Payment:
       | components['schemas']['CardPayment']
@@ -48837,13 +48877,15 @@ export interface operations {
           'application/json': components['schemas']['PaymentFailed']
         }
       }
-      /** @description Customer subscription is already canceled or will be at the end of the period, or the user lacks billing permissions. */
+      /** @description Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization. */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['AlreadyCanceledSubscription']
+          'application/json':
+            | components['schemas']['AlreadyCanceledSubscription']
+            | components['schemas']['PauseResumeNotAllowed']
         }
       }
       /** @description Customer subscription was not found. */

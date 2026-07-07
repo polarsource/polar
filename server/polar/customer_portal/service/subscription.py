@@ -24,6 +24,8 @@ from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 
 from ..schemas.subscription import (
+    CustomerSubscriptionPause,
+    CustomerSubscriptionResume,
     CustomerSubscriptionUpdate,
     CustomerSubscriptionUpdateClear,
     CustomerSubscriptionUpdateProduct,
@@ -43,6 +45,11 @@ class UpdateSubscriptionPlanNotAllowed(CustomerSubscriptionError):
 class UpdateSubscriptionSeatsNotAllowed(CustomerSubscriptionError):
     def __init__(self) -> None:
         super().__init__("Updating subscription seats is not allowed.", 403)
+
+
+class PauseResumeNotAllowed(CustomerSubscriptionError):
+    def __init__(self) -> None:
+        super().__init__("Pausing or resuming a subscription is not allowed.", 403)
 
 
 class CustomerSubscriptionSortProperty(StrEnum):
@@ -183,6 +190,30 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                 return await subscription_service.clear_pending_update(
                     session, ctx, subscription
                 )
+
+        if isinstance(updates, CustomerSubscriptionPause):
+            if not organization.customer_portal_subscription_pause:
+                raise PauseResumeNotAllowed()
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                if updates.pause_at_period_end:
+                    return await subscription_service.pause(
+                        session, ctx, subscription, resumes_at=updates.resumes_at
+                    )
+                return await subscription_service.cancel_scheduled_pause(
+                    session, ctx, subscription
+                )
+
+        if isinstance(updates, CustomerSubscriptionResume):
+            if not organization.customer_portal_subscription_pause:
+                raise PauseResumeNotAllowed()
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                return await subscription_service.resume(session, ctx, subscription)
 
         cancel = updates.cancel_at_period_end is True
         uncancel = updates.cancel_at_period_end is False

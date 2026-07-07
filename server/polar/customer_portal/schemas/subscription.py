@@ -1,7 +1,7 @@
 import inspect
-from typing import Annotated
+from typing import Annotated, Literal
 
-from pydantic import UUID4, AliasChoices, AliasPath, Field
+from pydantic import UUID4, AliasChoices, AliasPath, Field, FutureDatetime
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.enums import SubscriptionProrationBehavior
@@ -127,6 +127,36 @@ class CustomerSubscriptionCancel(Schema):
     )
 
 
+class CustomerSubscriptionPause(Schema):
+    pause_at_period_end: bool = Field(
+        description=inspect.cleandoc(
+            """
+        Pause an active subscription at the end of the current period.
+
+        Or cancel a scheduled pause on a subscription set to be paused at
+        period end.
+        """
+        ),
+    )
+    resumes_at: FutureDatetime | None = Field(
+        None,
+        description=(
+            "Date at which the paused subscription should automatically resume. "
+            "If not set, it stays paused until resumed. Must be after the current "
+            "period end."
+        ),
+    )
+
+
+class CustomerSubscriptionResume(Schema):
+    resume: Literal[True] = Field(
+        description=(
+            "Resume a paused subscription immediately, "
+            "starting a new billing period and charging the customer."
+        )
+    )
+
+
 class CustomerSubscriptionUpdateClear(Schema):
     pending_update: None = Field(description="Clear the pending subscription update.")
 
@@ -135,6 +165,8 @@ CustomerSubscriptionUpdate = Annotated[
     CustomerSubscriptionUpdateProduct
     | CustomerSubscriptionUpdateSeats
     | CustomerSubscriptionCancel
+    | CustomerSubscriptionPause
+    | CustomerSubscriptionResume
     | CustomerSubscriptionUpdateClear,
     SetSchemaReference("CustomerSubscriptionUpdate"),
 ]

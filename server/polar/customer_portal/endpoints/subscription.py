@@ -20,7 +20,10 @@ from polar.subscription.service import subscription as subscription_service
 
 from .. import auth
 from ..schemas.subscription import CustomerSubscription, CustomerSubscriptionUpdate
-from ..service.subscription import CustomerSubscriptionSortProperty
+from ..service.subscription import (
+    CustomerSubscriptionSortProperty,
+    PauseResumeNotAllowed,
+)
 from ..service.subscription import (
     customer_subscription as customer_subscription_service,
 )
@@ -147,9 +150,11 @@ async def get_charge_preview(
             "description": (
                 "Customer subscription is already canceled "
                 "or will be at the end of the period, "
-                "or the user lacks billing permissions."
+                "the user lacks billing permissions, "
+                "or pausing/resuming is not enabled for the organization."
             ),
-            "model": AlreadyCanceledSubscription.schema(),
+            "model": AlreadyCanceledSubscription.schema()
+            | PauseResumeNotAllowed.schema(),
         },
         404: SubscriptionNotFound,
     },

@@ -88,4 +88,9 @@ class MRRGrowthDetector(Detector):
                 label="View MRR trend",
                 metric="monthly_recurring_revenue",
             ),
+            suggested_prompt=(
+                "What's driving my MRR growth this month?"
+                if grew
+                else "Why did my MRR fall this month?"
+            ),
         )

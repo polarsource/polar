@@ -89,4 +89,9 @@ class CostPerUserDetector(Detector):
                 label="View cost per user",
                 metric="cost_per_user",
             ),
+            suggested_prompt=(
+                "Why is my cost per subscriber rising?"
+                if rose
+                else "How did I bring my cost per subscriber down?"
+            ),
         )

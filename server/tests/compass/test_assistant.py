@@ -1,5 +1,5 @@
 import uuid
-from datetime import date
+from datetime import date, timedelta
 from types import SimpleNamespace
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -7,10 +7,12 @@ from zoneinfo import ZoneInfo
 import pytest
 from pydantic import TypeAdapter
 
+from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
 from polar.compass.assistant.agent import tools_for_scopes
 from polar.compass.assistant.blocks import (
     AssistantBlock,
+    DataTableBlock,
     InsightCardsBlock,
     MetricChartBlock,
     MetricChartPoint,
@@ -20,6 +22,7 @@ from polar.compass.assistant.customer_tools import get_customer_overview
 from polar.compass.assistant.deps import AssistantDeps
 from polar.compass.assistant.entity_tools import (
     list_checkouts,
+    list_churned_subscriptions,
     list_customers,
     list_disputes,
     list_orders,
@@ -32,11 +35,21 @@ from polar.compass.assistant.entity_tools import (
     top_products_by_revenue,
 )
 from polar.compass.assistant.tools import get_insights, get_metrics, show_insights
+from polar.kit.utils import utc_now
+from polar.models import Customer, Organization, Product, User, UserOrganization
+from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
+from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import (
+    create_active_subscription,
+    create_subscription,
+    create_trialing_subscription,
+)
 
 
 def _deps(scopes: set[Scope]) -> AssistantDeps:
     return AssistantDeps(
-        session=None,  # type: ignore[arg-type] — denial paths never touch it
+        session=None,  # type: ignore[arg-type]  # denial paths never touch it
         auth_subject=SimpleNamespace(scopes=scopes),  # type: ignore[arg-type]
         organization_id=uuid.uuid4(),
         timezone=ZoneInfo("UTC"),
@@ -64,7 +77,10 @@ class TestToolsForScopes:
 
     def test_each_entity_scope_maps_to_its_tool(self) -> None:
         cases: dict[Scope, list[object]] = {
-            Scope.subscriptions_read: [list_subscriptions],
+            Scope.subscriptions_read: [
+                list_subscriptions,
+                list_churned_subscriptions,
+            ],
             Scope.customers_read: [list_customers, get_customer_overview],
             Scope.products_read: [list_products],
             Scope.disputes_read: [list_disputes],
@@ -113,6 +129,7 @@ class TestToolScopeGuards:
         for tool in (
             list_orders,
             list_subscriptions,
+            list_churned_subscriptions,
             list_customers,
             list_products,
             list_disputes,
@@ -128,6 +145,159 @@ class TestToolScopeGuards:
 
         assert "Unknown metric slugs" in result
         assert deps.blocks == []
+
+
+def _live_deps(
+    session: AsyncSession,
+    auth_subject: AuthSubject[User],
+    organization: Organization,
+) -> AssistantDeps:
+    return AssistantDeps(
+        session=session,
+        auth_subject=auth_subject,
+        organization_id=organization.id,
+        timezone=ZoneInfo("UTC"),
+        today=utc_now().date(),
+    )
+
+
+@pytest.mark.asyncio
+class TestListChurnedSubscriptions:
+    @pytest.mark.auth
+    async def test_reasons_and_window(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        now = utc_now()
+        voluntary = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+            started_at=now - timedelta(days=60),
+            ended_at=now - timedelta(days=3),
+        )
+        voluntary.customer_cancellation_reason = (
+            CustomerCancellationReason.too_expensive
+        )
+        voluntary.customer_cancellation_comment = "Price doubled"
+        await save_fixture(voluntary)
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.unpaid,
+            started_at=now - timedelta(days=90),
+            ended_at=now - timedelta(days=5),
+            past_due_at=now - timedelta(days=12),
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+            started_at=now - timedelta(days=200),
+            ended_at=now - timedelta(days=120),
+        )
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        deps = _live_deps(session, auth_subject, organization)
+        result = await list_churned_subscriptions(_ctx(deps), days=30)
+
+        assert "payment failure" in result
+        assert "too expensive" in result
+        assert "Price doubled" in result
+        assert "1 ended past due" in result
+        assert len(deps.blocks) == 1
+        block = deps.blocks[0]
+        assert isinstance(block, DataTableBlock)
+        assert block.total_count == 2
+
+    @pytest.mark.auth
+    async def test_nothing_churned(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        deps = _live_deps(session, auth_subject, organization)
+        result = await list_churned_subscriptions(_ctx(deps))
+
+        assert "No subscriptions ended" in result
+        assert deps.blocks == []
+
+
+@pytest.mark.asyncio
+class TestListSubscriptionsLive:
+    @pytest.mark.auth
+    async def test_ended_filter(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        now = utc_now()
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=now - timedelta(days=30),
+            revoke=True,
+        )
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        deps = _live_deps(session, auth_subject, organization)
+        result = await list_subscriptions(_ctx(deps), active=False)
+
+        assert "1 of 1 subscriptions" in result
+        assert len(deps.blocks) == 1
+
+    @pytest.mark.auth
+    async def test_status_filter(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        deps = _live_deps(session, auth_subject, organization)
+        result = await list_subscriptions(_ctx(deps), status="trialing")
+
+        assert "1 of 1 subscriptions" in result
+        assert "trialing" in result
+        assert len(deps.blocks) == 1
 
 
 class TestAssistantBlocks:

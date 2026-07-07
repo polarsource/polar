@@ -85,4 +85,5 @@ class ChurnSpikeDetector(Detector):
                 label="View churn",
                 metric="churned_subscriptions",
             ),
+            suggested_prompt="Which subscriptions churned recently, and why?",
         )

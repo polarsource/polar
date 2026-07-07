@@ -99,4 +99,9 @@ class GrossMarginDetector(Detector):
                 label="View margin",
                 metric="gross_margin_percentage",
             ),
+            suggested_prompt=(
+                "How can I keep improving my gross margin?"
+                if improved
+                else "What's pushing my gross margin down?"
+            ),
         )

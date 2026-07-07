@@ -70,4 +70,5 @@ class CurrencyOpportunityDetector(Detector):
             primary_action=AddCurrencyAction(
                 label=f"Add {currency} pricing", currency=top.currency
             ),
+            suggested_prompt=f"Should I add {currency} pricing?",
         )

@@ -74,4 +74,5 @@ class TrialConversionDetector(Detector):
                 label="View trials",
                 metric="trial_monthly_recurring_revenue",
             ),
+            suggested_prompt="How can I convert more of my trialing revenue?",
         )

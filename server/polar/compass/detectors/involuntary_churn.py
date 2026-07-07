@@ -76,4 +76,5 @@ class InvoluntaryChurnDetector(Detector):
             primary_action=ViewMetricAction(
                 label="View churn", metric="churned_subscriptions"
             ),
+            suggested_prompt="How can I recover these failed payments?",
         )

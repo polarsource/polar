@@ -92,4 +92,9 @@ class CheckoutConversionDetector(Detector):
                 label="View conversion",
                 metric="checkouts_conversion",
             ),
+            suggested_prompt=(
+                "What's hurting my checkout conversion?"
+                if dropped
+                else "What improved my checkout conversion?"
+            ),
         )

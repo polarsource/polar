@@ -114,6 +114,7 @@ class Detector(abc.ABC):
         confidence: ConfidenceLevel,
         why: str | None = None,
         primary_action: InsightAction | None = None,
+        suggested_prompt: str | None = None,
         drivers: list[InsightDriver] | None = None,
     ) -> Insight:
         return Insight(
@@ -127,5 +128,6 @@ class Detector(abc.ABC):
             why=why,
             confidence=confidence,
             primary_action=primary_action,
+            suggested_prompt=suggested_prompt,
             drivers=drivers or [],
         )

@@ -8,8 +8,10 @@ import CropFreeRounded from '@mui/icons-material/CropFreeRounded'
 import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded'
 import ViewInArOutlined from '@mui/icons-material/ViewInArOutlined'
 import { ChevronRight } from 'lucide-react'
+import { schemas } from '@polar-sh/client'
 import { useEffect, useRef, useState } from 'react'
-import { CompassConversation, CompassMessage } from './CompassConversation'
+import { useCompassAssistant } from '@/hooks/useCompassAssistant'
+import { CompassConversation } from './CompassConversation'
 
 /**
  * Exploration: the Compass agentic chat entry point.
@@ -20,35 +22,27 @@ import { CompassConversation, CompassMessage } from './CompassConversation'
  * overlay in over the page and hands focus to it, so typing flows straight
  * into the thread.
  */
-export const CompassBox = () => {
+export const CompassBox = ({
+  organization,
+}: {
+  organization: schemas['Organization']
+}) => {
   const [value, setValue] = useState('')
   const [active, setActive] = useState(false)
-  const [messages, setMessages] = useState<CompassMessage[]>([])
-  const idRef = useRef(0)
+  const { messages, send, isStreaming } = useCompassAssistant(organization.id)
   const conversationInputRef = useRef<HTMLTextAreaElement | null>(null)
 
   useEffect(() => {
+    // Focusing the idle box fades the conversation over the page; hand
+    // focus to the conversation input so typing flows straight into it.
     if (active) conversationInputRef.current?.focus()
   }, [active])
 
-  const nextId = () => `m${(idRef.current += 1)}`
-
-  // Focusing the idle box fades the conversation over the page and hands
-  // focus to it (see the [active] effect above).
-
   const handleAsk = (question: string) => {
     const content = question.trim()
-    if (!content) return
+    if (!content || isStreaming) return
     setActive(true)
-    setMessages((prev) => [
-      ...prev,
-      { id: nextId(), role: 'user', content },
-      {
-        id: nextId(),
-        role: 'assistant',
-        content: 'Looking through your metrics…',
-      },
-    ])
+    void send(content)
     setValue('')
   }
 
@@ -58,7 +52,9 @@ export const CompassBox = () => {
     <>
       <CompassConversation
         active={active}
+        organization={organization}
         messages={messages}
+        isStreaming={isStreaming}
         value={value}
         onValueChange={setValue}
         onSubmit={handleSubmit}
@@ -122,13 +118,13 @@ export const CompassBox = () => {
             width="100%"
             maxWidth={760}
             display="flex"
-            flexDirection="column"
-            rowGap="s"
+            flexDirection="row"
+            columnGap="l"
             padding="l"
-            borderRadius="xl"
+            borderRadius="full"
             borderWidth={1}
             borderStyle="solid"
-            borderColor="border-secondary"
+            borderColor="border-primary"
             backgroundColor="background-secondary"
             boxShadow="xl"
           >
@@ -153,15 +149,6 @@ export const CompassBox = () => {
               alignItems="center"
               justifyContent="between"
             >
-              <button
-                type="button"
-                className="dark:text-polar-300 dark:hover:bg-polar-700 flex items-center gap-x-1.5 rounded-full px-2.5 py-1.5 text-gray-600 transition-colors hover:bg-gray-100"
-              >
-                <ViewInArOutlined style={{ fontSize: '1rem' }} />
-                <Text>Skills</Text>
-                <KeyboardArrowDownRounded style={{ fontSize: '1.125rem' }} />
-              </button>
-
               <Box display="flex" alignItems="center" columnGap="s">
                 <button
                   type="button"

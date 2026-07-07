@@ -33,16 +33,15 @@ export const CompassInputBar = forwardRef<
 
   return (
     <Box
-      pointerEvents="auto"
       width="100%"
       display="flex"
-      flexDirection="column"
-      rowGap="s"
+      flexDirection="row"
+      columnGap="l"
       padding="l"
-      borderRadius="xl"
+      borderRadius="full"
       borderWidth={1}
       borderStyle="solid"
-      borderColor="border-secondary"
+      borderColor="border-primary"
       backgroundColor="background-secondary"
       boxShadow="xl"
     >
@@ -59,7 +58,7 @@ export const CompassInputBar = forwardRef<
         }}
         rows={1}
         placeholder={placeholder}
-        className="dark:text-polar-50 dark:placeholder:text-polar-500 w-full resize-none border-0 bg-transparent px-1 text-sm caret-gray-900 dark:caret-polar-50 text-gray-900 outline-none placeholder:text-gray-400 focus:outline-none focus-visible:outline-none focus:ring-0 focus-visible:ring-0"
+        className="dark:text-polar-50 dark:placeholder:text-polar-500 dark:caret-polar-50 w-full resize-none border-0 bg-transparent px-1 text-sm text-gray-900 caret-gray-900 outline-none placeholder:text-gray-400 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
       />
 
       <Box
@@ -68,15 +67,6 @@ export const CompassInputBar = forwardRef<
         alignItems="center"
         justifyContent="between"
       >
-        <button
-          type="button"
-          className="dark:text-polar-300 dark:hover:bg-polar-700 flex items-center gap-x-1.5 rounded-full px-2.5 py-1.5 text-gray-600 transition-colors hover:bg-gray-100"
-        >
-          <ViewInArOutlined style={{ fontSize: '1rem' }} />
-          <Text>Skills</Text>
-          <KeyboardArrowDownRounded style={{ fontSize: '1.125rem' }} />
-        </button>
-
         <Box display="flex" alignItems="center" columnGap="s">
           <button
             type="button"

@@ -25,6 +25,9 @@ interface CompassWidgetProps {
    * rather than showing an "all caught up" placeholder; the dedicated /compass
    * page keeps its empty state. */
   hideWhenEmpty?: boolean
+  /** `small` tightens cell padding and card typography for compact surfaces
+   * (e.g. the assistant conversation's empty state). */
+  size?: 'default' | 'small'
 }
 
 /**
@@ -42,6 +45,7 @@ export const CompassWidget = ({
   hideHeader = false,
   layout = 'grid',
   hideWhenEmpty = false,
+  size = 'default',
 }: CompassWidgetProps) => {
   const compassEnabled = !!organization.feature_settings?.compass_enabled
   const { data: insights, isLoading } = useCompassInsights(
@@ -114,7 +118,7 @@ export const CompassWidget = ({
             return (
               <Box
                 key={insight.id}
-                padding="2xl"
+                padding={size === 'small' ? 'l' : '2xl'}
                 borderStyle="solid"
                 borderColor="border-primary"
                 borderLeftWidth={
@@ -128,7 +132,11 @@ export const CompassWidget = ({
                     : { base: idx === 0 ? 0 : 1, lg: row === 0 ? 0 : 1 }
                 }
               >
-                <InsightCard organization={organization} insight={insight} />
+                <InsightCard
+                  organization={organization}
+                  insight={insight}
+                  size={size}
+                />
               </Box>
             )
           })}

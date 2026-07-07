@@ -223,28 +223,33 @@ export default {
       getFree: 'Ücretsiz al',
       paymentsUnavailable: 'Ödemeler şu anda kullanılamıyor',
     },
+    trialUnavailable: {
+      title: 'Bu satın alma için ücretsiz deneme yok',
+      description:
+        'Bu ürün için ücretsiz denemeyi zaten kullandınız, bu yüzden bugün ücretlendirileceksiniz. Satın alma işleminizi tamamlamak için aşağıdan devam edin.',
+    },
   },
   intervals: {
     short: {
       day: {
-        _mode: 'plural',
         '=1': 'g',
         other: '# gün',
+        _mode: 'plural',
       },
       week: {
-        _mode: 'plural',
         '=1': 'h',
         other: '# hafta',
+        _mode: 'plural',
       },
       month: {
-        _mode: 'plural',
         '=1': 'a',
         other: '# ay',
+        _mode: 'plural',
       },
       year: {
-        _mode: 'plural',
         '=1': 'y',
         other: '# yıl',
+        _mode: 'plural',
       },
     },
   },

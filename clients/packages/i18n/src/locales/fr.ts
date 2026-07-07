@@ -226,28 +226,33 @@ export default {
     productDescription: {
       readMore: 'Lire la suite',
     },
+    trialUnavailable: {
+      title: 'Aucun essai gratuit pour cet achat',
+      description:
+        "Vous avez déjà utilisé un essai gratuit pour ce produit, vous serez donc facturé aujourd'hui. Continuez ci-dessous pour finaliser votre achat.",
+    },
   },
   intervals: {
     short: {
       day: {
-        _mode: 'plural',
         '=1': 'j',
         other: '# j',
+        _mode: 'plural',
       },
       week: {
-        _mode: 'plural',
         '=1': 'sem',
         other: '# sem',
+        _mode: 'plural',
       },
       month: {
-        _mode: 'plural',
         '=1': 'mois',
         other: '# mois',
+        _mode: 'plural',
       },
       year: {
-        _mode: 'plural',
         '=1': 'an',
         other: '# ans',
+        _mode: 'plural',
       },
     },
   },

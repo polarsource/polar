@@ -225,28 +225,33 @@ export default {
     productDescription: {
       readMore: 'Lees meer',
     },
+    trialUnavailable: {
+      title: 'Geen gratis proefperiode voor deze aankoop',
+      description:
+        'Je hebt al een gratis proefperiode voor dit product gebruikt, dus er wordt vandaag kosten in rekening gebracht. Ga hieronder verder om je aankoop af te ronden.',
+    },
   },
   intervals: {
     short: {
       day: {
-        _mode: 'plural',
         '=1': 'dg',
         other: '# dg',
+        _mode: 'plural',
       },
       week: {
-        _mode: 'plural',
         '=1': 'wk',
         other: '# wk',
+        _mode: 'plural',
       },
       month: {
-        _mode: 'plural',
         '=1': 'mnd',
         other: '# mnd',
+        _mode: 'plural',
       },
       year: {
-        _mode: 'plural',
         '=1': 'jr',
         other: '# jr',
+        _mode: 'plural',
       },
     },
   },

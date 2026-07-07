@@ -228,28 +228,33 @@ export default {
     productDescription: {
       readMore: 'Mehr anzeigen',
     },
+    trialUnavailable: {
+      title: 'Keine kostenlose Testversion für diesen Kauf',
+      description:
+        'Sie haben bereits eine kostenlose Testversion für dieses Produkt genutzt, daher wird Ihnen heute der Preis berechnet. Fahren Sie unten fort, um Ihren Kauf abzuschließen.',
+    },
   },
   intervals: {
     short: {
       day: {
-        _mode: 'plural',
         '=1': 'T.',
         other: '# T.',
+        _mode: 'plural',
       },
       week: {
-        _mode: 'plural',
         '=1': 'W.',
         other: '# W.',
+        _mode: 'plural',
       },
       month: {
-        _mode: 'plural',
         '=1': 'M.',
         other: '# M.',
+        _mode: 'plural',
       },
       year: {
-        _mode: 'plural',
         '=1': 'J',
         other: '# J.',
+        _mode: 'plural',
       },
     },
   },

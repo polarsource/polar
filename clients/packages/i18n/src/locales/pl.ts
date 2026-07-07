@@ -225,28 +225,33 @@ export default {
     productDescription: {
       readMore: 'Czytaj więcej',
     },
+    trialUnavailable: {
+      title: 'Brak bezpłatnego okresu próbnego dla tego zakupu',
+      description:
+        'Już skorzystano z bezpłatnego okresu próbnego tego produktu, więc opłata zostanie naliczona dzisiaj. Kontynuuj poniżej, aby dokończyć zakup.',
+    },
   },
   intervals: {
     short: {
       day: {
-        _mode: 'plural',
         '=1': 'dz.',
         other: '# dz.',
+        _mode: 'plural',
       },
       week: {
-        _mode: 'plural',
         '=1': 'tyg.',
         other: '# tyg.',
+        _mode: 'plural',
       },
       month: {
-        _mode: 'plural',
         '=1': 'mies.',
         other: '# mies.',
+        _mode: 'plural',
       },
       year: {
-        _mode: 'plural',
         '=1': 'r.',
         other: '# l.',
+        _mode: 'plural',
       },
     },
   },

@@ -221,28 +221,33 @@ export default {
     productDescription: {
       readMore: '더 보기',
     },
+    trialUnavailable: {
+      title: '이 구매에는 무료 체험이 제공되지 않습니다',
+      description:
+        '이 제품의 무료 체험을 이미 사용하셨으므로 오늘 결제가 진행됩니다. 아래에서 계속하여 구매를 완료하세요.',
+    },
   },
   intervals: {
     short: {
       day: {
-        _mode: 'plural',
         '=1': '일',
         other: '#일',
+        _mode: 'plural',
       },
       week: {
-        _mode: 'plural',
         '=1': '주',
         other: '#주',
+        _mode: 'plural',
       },
       month: {
-        _mode: 'plural',
         '=1': '월',
         other: '#개월',
+        _mode: 'plural',
       },
       year: {
-        _mode: 'plural',
         '=1': '년',
         other: '#년',
+        _mode: 'plural',
       },
     },
   },

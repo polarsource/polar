@@ -273,6 +273,11 @@ export default {
       getFree: 'Get for free',
       paymentsUnavailable: 'Payments are currently unavailable',
     },
+    trialUnavailable: {
+      title: 'No free trial for this purchase',
+      description:
+        "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    },
   },
   intervals: {
     short: {

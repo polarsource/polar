@@ -39,8 +39,10 @@ import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
 import { isDisplayedField, isRequiredField } from '../utils/address'
 import { convertLocaleToStripeElementLocale } from '../utils/locale'
+import { useCheckoutForm } from '../providers/CheckoutFormProvider'
 import CustomFieldInput from './CustomFieldInput'
 import PolarLogo from './PolarLogo'
+import { CheckoutBanner } from './CheckoutBanner'
 
 const WALLET_PAYMENT_METHODS = ['apple_pay', 'google_pay', 'link']
 
@@ -111,6 +113,8 @@ const BaseCheckoutForm = ({
     resetField,
     formState: { errors },
   } = form
+
+  const { trialUnavailable } = useCheckoutForm()
 
   const discount = checkout.discount
   const isDiscountWithoutCode = discount && discount.code === null
@@ -681,6 +685,13 @@ const BaseCheckoutForm = ({
                 )}
             </div>
             {beforeSubmit}
+            {trialUnavailable && (
+              <CheckoutBanner
+                title={t('checkout.trialUnavailable.title')}
+                description={t('checkout.trialUnavailable.description')}
+                className={embed ? '-my-4' : '-my-6'}
+              />
+            )}
             <div className="flex w-full flex-col items-center justify-center gap-y-2">
               <Button
                 type="submit"

@@ -223,28 +223,33 @@ export default {
     productDescription: {
       readMore: 'Ler mais',
     },
+    trialUnavailable: {
+      title: 'Não há avaliação gratuita para esta compra',
+      description:
+        'Já utilizou uma avaliação gratuita para este produto, por isso será cobrado hoje. Continue abaixo para concluir a compra.',
+    },
   },
   intervals: {
     short: {
       day: {
-        _mode: 'plural',
         '=1': 'dia',
         other: '# dias',
+        _mode: 'plural',
       },
       week: {
-        _mode: 'plural',
         '=1': 'sem',
         other: '# sem',
+        _mode: 'plural',
       },
       month: {
-        _mode: 'plural',
         '=1': 'mês',
         other: '# meses',
+        _mode: 'plural',
       },
       year: {
-        _mode: 'plural',
         '=1': 'ano',
         other: '# anos',
+        _mode: 'plural',
       },
     },
   },

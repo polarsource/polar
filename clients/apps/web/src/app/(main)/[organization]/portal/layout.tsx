@@ -1,7 +1,16 @@
+import { Metadata } from 'next'
+
 import { Toaster } from '@/components/Toast/Toaster'
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { getOrganizationOrNotFound } from '@/utils/customerPortal'
 import { CustomerPortalLayoutWrapper } from './CustomerPortalLayoutWrapper'
+
+export const metadata: Metadata = {
+  robots: {
+    index: false,
+    follow: false,
+  },
+}
 
 export const dynamic = 'force-dynamic'
 

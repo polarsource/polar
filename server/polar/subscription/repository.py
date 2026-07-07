@@ -174,6 +174,34 @@ class SubscriptionRepository(
         involuntary_count, total = int(row[0]), int(row[1])
         return total - involuntary_count, involuntary_count
 
+    async def list_recently_ended(
+        self,
+        organization_id: UUID,
+        *,
+        since: datetime,
+        limit: int,
+    ) -> tuple[Sequence[Subscription], int]:
+        """Subscriptions that ended since the cutoff, most recent first, with
+        customer and product loaded. Second element is the window's total, so
+        callers can say "showing N of M" when the limit truncates."""
+        window = (
+            Subscription.organization_id == organization_id,
+            Subscription.ended_at.is_not(None),
+            Subscription.ended_at >= since,
+        )
+        statement = (
+            self.get_base_statement()
+            .where(*window)
+            .options(
+                joinedload(Subscription.customer),
+                joinedload(Subscription.product),
+            )
+            .order_by(Subscription.ended_at.desc())
+            .limit(limit)
+        )
+        count = await self.count(self.get_base_statement().where(*window))
+        return await self.get_all(statement), count
+
     async def get_active_customer_ids_by_product(
         self, product_id: UUID, *, limit: int | None = None
     ) -> Sequence[UUID]:

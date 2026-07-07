@@ -1,11 +1,13 @@
 'use client'
 
+import { useCompassInsights } from '@/hooks/queries'
 import { AssistantMessage } from '@/hooks/useCompassAssistant'
 import { useStickToBottom } from '@/hooks/useStickToBottom'
 import PercentRounded from '@mui/icons-material/PercentRounded'
 import ShowChartRounded from '@mui/icons-material/ShowChartRounded'
 import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
 import TrendingUpRounded from '@mui/icons-material/TrendingUpRounded'
+import WarningAmberRounded from '@mui/icons-material/WarningAmberRounded'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -30,30 +32,58 @@ interface CompassConversationProps {
 
 const PRESETS: {
   question: string
-  action: string
   Icon: ComponentType<{ className?: string; style?: object }>
 }[] = [
   {
     question: 'How is my MRR trending this month?',
-    action: 'MRR trend',
     Icon: TrendingUpRounded,
   },
   {
     question: 'Which product has the weakest margin?',
-    action: 'Product margins',
     Icon: PercentRounded,
   },
   {
     question: 'Why did churn go up recently?',
-    action: 'Churn breakdown',
+
     Icon: TrendingDownRounded,
   },
   {
     question: 'What is driving my revenue growth?',
-    action: 'Revenue drivers',
     Icon: ShowChartRounded,
   },
 ]
+
+const CATEGORY_ICON: Record<
+  schemas['InsightCategory'],
+  ComponentType<{ className?: string; style?: object }>
+> = {
+  revenue: TrendingUpRounded,
+  retention: TrendingDownRounded,
+  growth: ShowChartRounded,
+  risk: WarningAmberRounded,
+  cost: PercentRounded,
+  product: PercentRounded,
+}
+
+/**
+ * Turn the live insights feed into launchpad prompts: each firing insight that
+ * carries a `suggested_prompt` becomes a one-tap question phrased for that exact
+ * finding. Falls back to the static starters when nothing is firing yet (cold
+ * start), so the empty state is never blank.
+ */
+const presetsFromInsights = (
+  insights: schemas['Insight'][] | undefined,
+): typeof PRESETS => {
+  const dynamic = (insights ?? [])
+    .filter((insight) => insight.suggested_prompt)
+    .slice(0, 4)
+    .map((insight) => ({
+      question: insight.suggested_prompt as string,
+      action: insight.category_label,
+      Icon: CATEGORY_ICON[insight.category] ?? ShowChartRounded,
+    }))
+  return dynamic.length > 0 ? dynamic : PRESETS
+}
 
 /**
  * The Compass conversation, laid out as page content on the /compass route.
@@ -73,6 +103,22 @@ export const CompassConversation = ({
 }: CompassConversationProps) => {
   const empty = messages.length === 0
   const { contentRef, scrollToBottom } = useStickToBottom<HTMLDivElement>()
+
+  // The "Insights" header lives here rather than in the widget, so the whole
+  // section (header included) must collapse when there is nothing to show.
+  // Same query key as the widget's own fetch, so this doesn't hit the API
+  // twice. Errors keep the section: the widget renders its failure alert there.
+  const compassEnabled = !!organization.feature_settings?.compass_enabled
+  const {
+    data: insights,
+    isLoading: insightsLoading,
+    isError: insightsError,
+  } = useCompassInsights(organization.id, compassEnabled)
+  const showInsights =
+    compassEnabled &&
+    !insightsLoading &&
+    (insightsError || (insights ?? []).length > 0)
+  const presets = presetsFromInsights(insights)
 
   // Sending always re-follows the bottom, even if the user had scrolled up
   // in the previous answer. Streamed growth is handled by the hook itself.
@@ -96,67 +142,71 @@ export const CompassConversation = ({
       >
         {empty ? (
           <Box display="flex" flexDirection="column" rowGap="xl">
-            <div className="grid grid-cols-2 grid-rows-2 gap-4">
-              {PRESETS.map(({ question, action, Icon }) => (
+            <div className="grid grid-cols-2 gap-4">
+              {presets.map(({ question, Icon }) => (
                 <button
                   key={question}
                   type="button"
                   onClick={() => onAsk(question)}
                   className="dark:border-polar-700 dark:hover:border-polar-600 dark:hover:bg-polar-700 flex cursor-pointer flex-col gap-3 rounded-2xl border border-gray-200 p-4 text-left transition-colors hover:border-gray-300 hover:bg-gray-50"
                 >
-                  <Box columnGap="m" alignItems="center">
+                  <Box columnGap="m" alignItems="start">
                     <Icon
                       className="dark:text-polar-500 text-gray-400"
-                      style={{ fontSize: '1rem' }}
+                      style={{ fontSize: '1rem', marginTop: '.2rem' }}
                     />
-                    <Text>{question}</Text>
-                  </Box>
-                  <Box
-                    color="text-secondary"
-                    flexDirection="row"
-                    alignItems="center"
-                    columnGap="xs"
-                  >
-                    <Text variant="caption" color="muted">
-                      {action}
-                    </Text>
-                    <ChevronRight size={14} />
+
+                    <Box flexDirection="column" rowGap="xs">
+                      <Text>{question}</Text>
+                      <Box
+                        color="text-secondary"
+                        flexDirection="row"
+                        alignItems="center"
+                        columnGap="xs"
+                      >
+                        <Text variant="caption" color="muted">
+                          Ask Compass
+                        </Text>
+                        <ChevronRight size={14} />
+                      </Box>
+                    </Box>
                   </Box>
                 </button>
               ))}
             </div>
-            <Box display="flex" flexDirection="column" rowGap="m">
-              <Box flexDirection="row" justifyContent="between" gap="l">
-                <Text variant="heading-xxs">Insights</Text>
-                <Link
-                  href={`/dashboard/${organization.slug}/compass/insights`}
-                  className="self-end"
-                >
-                  <Box
-                    color={{ base: 'text-secondary', hover: 'text-primary' }}
-                    transitionProperty="colors"
-                    transitionDuration="fast"
-                    flexDirection="row"
-                    alignItems="center"
-                    columnGap="xs"
+            {showInsights && (
+              <Box display="flex" flexDirection="column" rowGap="m">
+                <Box flexDirection="row" justifyContent="between" gap="l">
+                  <Text variant="heading-xxs">Insights</Text>
+                  <Link
+                    href={`/dashboard/${organization.slug}/compass/insights`}
+                    className="self-end"
                   >
-                    <Text variant="caption" color="inherit">
-                      View all insights
-                    </Text>
-                    <ChevronRight size={14} />
-                  </Box>
-                </Link>
+                    <Box
+                      color={{ base: 'text-secondary', hover: 'text-primary' }}
+                      transitionProperty="colors"
+                      transitionDuration="fast"
+                      flexDirection="row"
+                      alignItems="center"
+                      columnGap="xs"
+                    >
+                      <Text variant="caption" color="inherit">
+                        View all insights
+                      </Text>
+                      <ChevronRight size={14} />
+                    </Box>
+                  </Link>
+                </Box>
+                <CompassWidget
+                  organization={organization}
+                  limit={2}
+                  columns={2}
+                  hideHeader
+                  layout="grid"
+                  size="small"
+                />
               </Box>
-              <CompassWidget
-                organization={organization}
-                limit={2}
-                columns={2}
-                hideHeader
-                hideWhenEmpty
-                layout="grid"
-                size="small"
-              />
-            </Box>
+            )}
           </Box>
         ) : (
           <Box display="flex" flexDirection="column" rowGap="2xl">

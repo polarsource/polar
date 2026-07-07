@@ -80,4 +80,9 @@ class SubscriberGrowthDetector(Detector):
                 label="View subscriptions",
                 metric="active_subscriptions",
             ),
+            suggested_prompt=(
+                "What's behind my subscriber growth?"
+                if grew
+                else "Why is my subscriber base shrinking?"
+            ),
         )

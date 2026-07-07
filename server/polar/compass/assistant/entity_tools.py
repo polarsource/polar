@@ -23,10 +23,11 @@ from polar.event.service import event as event_service
 from polar.kit.pagination import PaginationParams
 from polar.kit.time_queries import TimeInterval
 from polar.metrics.service import metrics as metrics_service
-from polar.models import Product
+from polar.models import Product, Subscription
 from polar.models.checkout import CheckoutStatus
 from polar.models.customer import _avatar_url_for_email
 from polar.models.product_price import ProductPriceFixed
+from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
@@ -35,6 +36,7 @@ from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
 from polar.refund.service import refund as refund_service
+from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 
 from .blocks import (
@@ -149,13 +151,20 @@ async def list_subscriptions(
     ctx: RunContext[AssistantDeps],
     limit: int = 10,
     active: bool | None = None,
+    status: Literal["trialing", "active", "past_due", "canceled", "unpaid"]
+    | None = None,
     presentation: Presentation = "table",
 ) -> str:
     """List subscriptions: customer, product, amount, status and start date.
+    For churned subscriptions and their reasons, prefer
+    `list_churned_subscriptions`.
 
     Args:
         limit: How many to fetch (1 to 25).
         active: Only active (true) or only ended (false); omit for all.
+        status: Only this lifecycle status, e.g. `trialing` (in a free trial)
+            or `past_due` (payment failing but still recoverable); omit for
+            all.
         presentation: `list` for a compact list (5 or fewer), else `table`.
     """
     deps = ctx.deps
@@ -166,6 +175,7 @@ async def list_subscriptions(
         deps.auth_subject,
         organization_id=[deps.organization_id],
         active=active,
+        status=[SubscriptionStatus(status)] if status else None,
         pagination=_clamp(limit),
     )
     rows: list[Row] = [
@@ -194,6 +204,91 @@ async def list_subscriptions(
         total_count=count,
         presentation=presentation,
     )
+
+
+def _churn_reason(subscription: Subscription) -> str:
+    # Mirrors the churn-breakdown definition: ending while past due on payment
+    # is involuntary churn; everything else is a customer choice, with the
+    # stated cancellation reason when one was given.
+    if subscription.past_due_at is not None:
+        return "payment failure"
+    if subscription.customer_cancellation_reason is not None:
+        return str(subscription.customer_cancellation_reason.value).replace("_", " ")
+    return "no reason given"
+
+
+async def list_churned_subscriptions(
+    ctx: RunContext[AssistantDeps],
+    days: int = 30,
+    limit: int = 10,
+    presentation: Presentation = "table",
+) -> str:
+    """List subscriptions that ended recently and why each one ended: the
+    customer's stated cancellation reason, or `payment failure` when the
+    subscription ended while past due (involuntary churn). Answers questions
+    like "which subscriptions churned recently, and why".
+
+    Args:
+        days: Trailing window in days (7 to 90, default 30).
+        limit: How many to fetch (1 to 25).
+        presentation: `list` for a compact list (5 or fewer), else `table`.
+    """
+    deps = ctx.deps
+    if denial := _scope_denial(deps, Scope.subscriptions_read):
+        return denial
+    days = max(7, min(90, days))
+    since = datetime.combine(
+        deps.today - timedelta(days=days - 1), time.min, deps.timezone
+    )
+    items, count = await SubscriptionRepository.from_session(
+        deps.session
+    ).list_recently_ended(
+        deps.organization_id,
+        since=since,
+        limit=max(1, min(_MAX_LIMIT, limit)),
+    )
+    if not items:
+        return f"No subscriptions ended in the last {days} days."
+
+    rows: list[Row] = [
+        {
+            "customer": sub.customer.email if sub.customer else None,
+            "product": sub.product.name if sub.product else None,
+            "amount": sub.amount,
+            "reason": _churn_reason(sub),
+            "ended": sub.ended_at.isoformat() if sub.ended_at else None,
+        }
+        for sub in items
+    ]
+    columns = [
+        DataTableColumn(key="customer", label="Customer"),
+        DataTableColumn(key="product", label="Product"),
+        DataTableColumn(key="amount", label="Amount", format=ColumnFormat.currency),
+        DataTableColumn(key="reason", label="Reason", format=ColumnFormat.badge),
+        DataTableColumn(key="ended", label="Ended", format=ColumnFormat.datetime),
+    ]
+    summary = _emit_entities(
+        deps,
+        entity="churned subscriptions",
+        title=f"Churned subscriptions, last {days} days",
+        columns=columns,
+        rows=rows,
+        total_count=count,
+        presentation=presentation,
+    )
+    involuntary = sum(1 for sub in items if sub.past_due_at is not None)
+    breakdown = (
+        f"Of the {len(items)} shown, {involuntary} ended past due on payment "
+        "(involuntary churn) and the rest were customer cancellations. "
+    )
+    comments = [
+        f"{sub.customer.email}: {sub.customer_cancellation_comment!r}"
+        for sub in items
+        if sub.customer_cancellation_comment and sub.customer
+    ]
+    if comments:
+        breakdown += "Customer comments: " + "; ".join(comments) + ". "
+    return breakdown + summary
 
 
 async def list_customers(
@@ -738,6 +833,7 @@ async def top_customers_by_cost(
 ENTITY_TOOLS_WITH_SCOPES: Sequence[tuple[object, Scope]] = [
     (list_orders, Scope.orders_read),
     (list_subscriptions, Scope.subscriptions_read),
+    (list_churned_subscriptions, Scope.subscriptions_read),
     (list_customers, Scope.customers_read),
     (list_products, Scope.products_read),
     (list_disputes, Scope.disputes_read),

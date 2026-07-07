@@ -79,4 +79,5 @@ class MarginRunwayDetector(Detector):
             primary_action=ViewMetricAction(
                 label="View margin", metric="gross_margin_percentage"
             ),
+            suggested_prompt="What can I do to stop my margin from declining?",
         )

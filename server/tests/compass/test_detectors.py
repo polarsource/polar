@@ -131,6 +131,8 @@ class TestMRRGrowthDetector:
         # Deterministic key: detector:org:period_bucket (monthly).
         assert insight.id.endswith(":2026-02")
         assert insight.primary_action is not None
+        # A firing insight offers a one-tap follow-up, phrased for the direction.
+        assert insight.suggested_prompt == "What's driving my MRR growth this month?"
 
     def test_decline_is_a_warning(self) -> None:
         # Mirror of the growth case: $1200 baseline down to $1000.
@@ -142,6 +144,7 @@ class TestMRRGrowthDetector:
         assert insight is not None
         assert insight.severity is InsightSeverity.warning
         assert "fell 17%" in insight.title
+        assert insight.suggested_prompt == "Why did my MRR fall this month?"
 
     def test_suppressed_when_sample_too_small(self) -> None:
         mrr = [100_000.0] * 6 + [110_000.0] * 29 + [120_000.0]

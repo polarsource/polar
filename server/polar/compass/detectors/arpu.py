@@ -84,4 +84,9 @@ class ARPUMovementDetector(Detector):
                 label="View ARPU trend",
                 metric="average_revenue_per_user",
             ),
+            suggested_prompt=(
+                "How can I keep growing revenue per subscriber?"
+                if grew
+                else "Why is my revenue per subscriber falling?"
+            ),
         )

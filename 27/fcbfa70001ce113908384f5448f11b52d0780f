@@ -1,0 +1,38 @@
+server/tests/merchant_migration/test_precheck.py
+  s_7debf674f53741::t_a0495bb9872430 416-503
+  s_7debf674f53741::t_8bffb2718dab96 2
+server/polar/merchant_migration/precheck.py
+  s_7debf674f53741::t_f036e487fa4166 75-81
+  s_7debf674f53741::t_caa0ee8d973888 523-524
+  s_7debf674f53741::t_951dabe6d1ca8e 385
+  s_7debf674f53741::t_52d47c25bd14a5 646
+  s_7debf674f53741::t_bbaa438d2c34b8 421-491,495,498,515,518-521,525-530,547,550-554,570,573-577,584-594
+  s_7debf674f53741::t_fe069b0d698a9e 15
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/reasons.ts
+  s_7debf674f53741::t_455431e33e53f3 1-3
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/PrecheckRecordsDrawer.tsx
+  s_7debf674f53741::t_9dd7229242e21e 41
+  s_7debf674f53741::t_0aeb1c83a94675 131
+  s_7debf674f53741::t_6ab872015a834d 6
+  s_7debf674f53741::t_63b340f8b0a7c6 80-85
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_7debf674f53741::t_0ad6441976af92 59-61
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/PrecheckSummary.tsx
+  s_7debf674f53741::t_1816b6200ea45b 95,97-98,100-109
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "27fcbfa70001ce113908384f5448f11b52d0780f",
+  "prompts": {},
+  "sessions": {
+    "s_7debf674f53741": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "362e7a6e-f287-4300-b636-9e222c4dbce3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

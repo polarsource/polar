@@ -576,6 +576,52 @@ class TestCustomerUpdateGrant:
         assert lk.status == preserved_status
         assert lk.limit_activations == 5
 
+    @pytest.mark.parametrize(
+        ("initial_status", "expected_status"),
+        [
+            (LicenseKeyStatus.revoked, LicenseKeyStatus.granted),
+            (LicenseKeyStatus.disabled, LicenseKeyStatus.disabled),
+        ],
+    )
+    async def test_regrant_only_unrevokes_revoked(
+        self,
+        initial_status: LicenseKeyStatus,
+        expected_status: LicenseKeyStatus,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        benefit, granted = await TestLicenseKey.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitLicenseKeysCreateProperties(prefix="testing"),
+        )
+
+        repository = LicenseKeyRepository.from_session(session)
+        lk = await repository.get_by_id(UUID(granted["license_key_id"]))
+        assert lk is not None
+        lk.status = initial_status
+        session.add(lk)
+        await session.flush()
+
+        await license_key_service.customer_grant(
+            session,
+            customer=customer,
+            benefit=benefit,
+            license_key_id=lk.id,
+            regrant=True,
+        )
+
+        await session.refresh(lk)
+        assert lk.status == expected_status
+
 
 @pytest_asyncio.fixture
 async def license_key_organization_second(

@@ -16,6 +16,7 @@ from polar.kit.utils import utc_now
 from polar.license_key.repository import LicenseKeyRepository
 from polar.models import BenefitGrant, Customer, LicenseKey, Organization, Product
 from polar.models.benefit import BenefitType
+from polar.models.license_key import LicenseKeyStatus
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
@@ -125,3 +126,44 @@ class TestGrantExpiration:
 
         license_key = await _get_license_key(session, grant)
         assert license_key.expires_at is None
+
+
+@pytest.mark.asyncio
+class TestRevokeRegrant:
+    async def test_reuses_and_unrevokes_key(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        benefit = await create_benefit(
+            save_fixture,
+            type=BenefitType.license_keys,
+            organization=organization,
+            properties=EXPIRING_PROPERTIES,
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        grant = await benefit_grant_service.grant_benefit(
+            session, redis, customer, benefit, subscription=subscription
+        )
+        original_key = await _get_license_key(session, grant)
+
+        revoked = await benefit_grant_service.revoke_benefit(
+            session, redis, customer, benefit, subscription=subscription
+        )
+        revoked_key = await _get_license_key(session, revoked)
+        assert revoked_key.id == original_key.id
+        assert revoked_key.status == LicenseKeyStatus.revoked
+
+        regranted = await benefit_grant_service.grant_benefit(
+            session, redis, customer, benefit, subscription=subscription
+        )
+        regranted_key = await _get_license_key(session, regranted)
+        assert regranted_key.id == original_key.id
+        assert regranted_key.status == LicenseKeyStatus.granted

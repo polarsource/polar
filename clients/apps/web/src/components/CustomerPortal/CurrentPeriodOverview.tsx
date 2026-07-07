@@ -46,8 +46,9 @@ export const CurrentPeriodOverview = ({
   const isCancelingAtPeriodEnd =
     subscription.cancel_at_period_end && !subscription.ended_at
 
-  // Show for active, trialing, or subscriptions set to cancel at period end
-  if (!isActive && !isTrialing) {
+  // Show for active, trialing, or subscriptions set to cancel at period end.
+  // A scheduled pause has no next charge (it pauses instead), so hide it.
+  if ((!isActive && !isTrialing) || subscription.pause_at_period_end) {
     return null
   }
 

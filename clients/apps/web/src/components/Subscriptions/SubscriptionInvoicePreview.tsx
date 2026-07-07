@@ -45,7 +45,12 @@ const SubscriptionInvoicePreview = ({
   const hasMeters = subscription.meters.length > 0
   const hasNextInvoice = !isFreeProduct || hasMeters
 
-  if ((!isActive && !isTrialing) || !hasNextInvoice || !chargePreview) {
+  if (
+    (!isActive && !isTrialing) ||
+    subscription.pause_at_period_end ||
+    !hasNextInvoice ||
+    !chargePreview
+  ) {
     return null
   }
 

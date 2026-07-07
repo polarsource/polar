@@ -168,6 +168,102 @@ export const useUncancelSubscription = (id: string) =>
     },
   })
 
+const applySubscriptionUpdateToCache = (
+  id: string,
+  data: schemas['Subscription'],
+) => {
+  const queryClient = getQueryClient()
+  queryClient.setQueriesData<schemas['Subscription']>(
+    {
+      queryKey: ['subscriptions', { id }],
+      exact: true,
+    },
+    data,
+  )
+  queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
+    {
+      queryKey: [
+        'subscriptions',
+        { organizationId: data.product.organization_id },
+      ],
+    },
+    (old) =>
+      old
+        ? {
+            items: old.items.map((item) => (item.id === data.id ? data : item)),
+            pagination: old.pagination,
+          }
+        : {
+            items: [data],
+            pagination: {
+              total_count: 1,
+              max_page: 1,
+            },
+          },
+  )
+  queryClient.invalidateQueries({
+    queryKey: ['subscriptions', { id }, 'charge-preview'],
+  })
+}
+
+export const usePauseSubscription = (id: string) =>
+  useMutation({
+    mutationFn: (body: { resumes_at?: string | null }) => {
+      return api.PATCH('/v1/subscriptions/{id}', {
+        params: { path: { id } },
+        body: {
+          pause_at_period_end: true,
+          resumes_at: body.resumes_at ?? null,
+        },
+      })
+    },
+    onSuccess: (result) => {
+      const { data, error } = result
+      if (error) {
+        return
+      }
+      applySubscriptionUpdateToCache(id, data)
+    },
+  })
+
+export const useCancelScheduledPause = (id: string) =>
+  useMutation({
+    mutationFn: () => {
+      return api.PATCH('/v1/subscriptions/{id}', {
+        params: { path: { id } },
+        body: {
+          pause_at_period_end: false,
+        },
+      })
+    },
+    onSuccess: (result) => {
+      const { data, error } = result
+      if (error) {
+        return
+      }
+      applySubscriptionUpdateToCache(id, data)
+    },
+  })
+
+export const useResumeSubscription = (id: string) =>
+  useMutation({
+    mutationFn: () => {
+      return api.PATCH('/v1/subscriptions/{id}', {
+        params: { path: { id } },
+        body: {
+          resume: true,
+        },
+      })
+    },
+    onSuccess: (result) => {
+      const { data, error } = result
+      if (error) {
+        return
+      }
+      applySubscriptionUpdateToCache(id, data)
+    },
+  })
+
 export const useClearPendingSubscriptionUpdate = (id: string) =>
   useMutation({
     mutationFn: () => {

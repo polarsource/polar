@@ -10,6 +10,7 @@ from polar.benefit.strategies.slack_shared_channel.endpoints import (
 from polar.checkout.endpoints import router as checkout_router
 from polar.checkout_link.endpoints import router as checkout_link_router
 from polar.cli.endpoints import router as cli_router
+from polar.compass.endpoints import router as compass_router
 from polar.custom_field.endpoints import router as custom_field_router
 from polar.customer.endpoints import router as customer_router
 from polar.customer_meter.endpoints import router as customer_meter_router
@@ -127,6 +128,8 @@ router.include_router(cli_router)
 router.include_router(files_router)
 # /metrics
 router.include_router(metrics_router)
+# /compass
+router.include_router(compass_router)
 # /license-keys
 router.include_router(license_key_router)
 # /checkout-links

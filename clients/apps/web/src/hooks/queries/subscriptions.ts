@@ -75,6 +75,7 @@ export const useUpdateSubscription = (id: string) =>
       queryClient.setQueriesData<schemas['Subscription']>(
         {
           queryKey: ['subscriptions', { id }],
+          exact: true,
         },
         data,
       )
@@ -130,6 +131,7 @@ export const useUncancelSubscription = (id: string) =>
       queryClient.setQueriesData<schemas['Subscription']>(
         {
           queryKey: ['subscriptions', { id }],
+          exact: true,
         },
         data,
       )
@@ -185,6 +187,7 @@ export const useClearPendingSubscriptionUpdate = (id: string) =>
       queryClient.setQueriesData<schemas['Subscription']>(
         {
           queryKey: ['subscriptions', { id }],
+          exact: true,
         },
         data,
       )
@@ -214,5 +217,9 @@ export const useClearPendingSubscriptionUpdate = (id: string) =>
           }
         },
       )
+
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'charge-preview'],
+      })
     },
   })

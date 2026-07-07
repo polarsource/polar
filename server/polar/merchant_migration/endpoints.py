@@ -16,7 +16,13 @@ from polar.routing import APIRouter
 
 from .auth import MerchantMigrationRead, MerchantMigrationWrite
 from .schemas import MerchantMigration as MerchantMigrationSchema
-from .schemas import MerchantMigrationCreate, PrecheckReport
+from .schemas import (
+    MerchantMigrationCreate,
+    MerchantMigrationRecordItem,
+    PrecheckEntity,
+    PrecheckRecordStatus,
+    PrecheckReport,
+)
 from .service import (
     MerchantMigrationNotFound,
     SourceNotConnected,
@@ -154,3 +160,41 @@ async def precheck(
     session: AsyncSession = Depends(get_db_session),
 ) -> PrecheckReport:
     return await merchant_migration_service.run_precheck(session, auth_subject, id)
+
+
+@router.get(
+    "/{id}/records",
+    response_model=ListResource[MerchantMigrationRecordItem],
+    summary="List Merchant Migration Records",
+    responses={
+        400: {
+            "description": "The source is not connected or isn't supported.",
+            "model": SourceNotConnected.schema() | UnsupportedMigrationSource.schema(),
+        },
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+    },
+)
+async def records(
+    id: UUID4,
+    auth_subject: MerchantMigrationWrite,
+    pagination: PaginationParamsQuery,
+    entity: Annotated[PrecheckEntity, Query()],
+    status: Annotated[PrecheckRecordStatus | None, Query()] = None,
+    session: AsyncSession = Depends(get_db_session),
+) -> ListResource[MerchantMigrationRecordItem]:
+    items, count = await merchant_migration_service.list_records(
+        session,
+        auth_subject,
+        id,
+        entity=entity,
+        status=status,
+        pagination=pagination,
+    )
+    return ListResource.from_paginated_results(items, count, pagination)

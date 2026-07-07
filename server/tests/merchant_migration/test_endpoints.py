@@ -9,7 +9,13 @@ from pytest_mock import MockerFixture
 from polar.auth.scope import Scope
 from polar.config import settings
 from polar.kit import jwt
-from polar.merchant_migration.canonical import CanonicalAccount
+from polar.merchant_migration.canonical import (
+    CanonicalAccount,
+    CanonicalPrice,
+    CanonicalPricingScheme,
+    CanonicalProduct,
+    CanonicalRecord,
+)
 from polar.merchant_migration.repository import MerchantMigrationRepository
 from polar.merchant_migration.stripe_oauth import StripeOAuthError
 from polar.models import MerchantMigration, Organization, UserOrganization
@@ -398,6 +404,86 @@ class TestPrecheck:
 async def _empty_extract() -> AsyncIterator[object]:
     return
     yield
+
+
+async def _catalog_extract() -> AsyncIterator[CanonicalRecord]:
+    yield CanonicalProduct(
+        source_id="prod_1:month:1",
+        product_source_id="prod_1",
+        name="Pro",
+        recurring_interval="month",
+        recurring_interval_count=1,
+        prices=[
+            CanonicalPrice(
+                source_id="price_1",
+                currency="usd",
+                amount=1000,
+                pricing_scheme=CanonicalPricingScheme.fixed,
+            )
+        ],
+    )
+
+
+@pytest.mark.asyncio
+class TestRecords:
+    async def test_anonymous(
+        self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        response = await client.get(
+            f"/v1/merchant-migrations/{migration.id}/records",
+            params={"entity": "products"},
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_lists_classified_records(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        _configure_app(mocker)
+        migration = await _create_migration(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.stripe_oauth.exchange_code",
+            return_value=build_stripe_oauth_token(),
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.stripe_oauth.refresh",
+            return_value=build_stripe_oauth_token("rt_new"),
+        )
+        adapter = mocker.MagicMock()
+        adapter.extract.return_value = _catalog_extract()
+        adapter.get_source_account = mocker.AsyncMock(
+            return_value=CanonicalAccount(country="US", is_connect_platform=False)
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
+        )
+
+        authorize = await client.get(
+            "/v1/merchant-migrations/stripe/authorize",
+            params={"migration_id": str(migration.id), "return_to": "/dashboard"},
+        )
+        state = parse_qs(urlparse(authorize.headers["location"]).query)["state"][0]
+        await client.get(
+            "/v1/merchant-migrations/stripe/callback",
+            params={"state": state, "code": "ac_test"},
+        )
+
+        response = await client.get(
+            f"/v1/merchant-migrations/{migration.id}/records",
+            params={"entity": "products"},
+        )
+        assert response.status_code == 200
+        json_body = response.json()
+        assert json_body["pagination"]["total_count"] == 1
+        assert json_body["items"][0]["source_id"] == "prod_1"
+        assert json_body["items"][0]["status"] == "importable"
 
 
 async def _create_migration(

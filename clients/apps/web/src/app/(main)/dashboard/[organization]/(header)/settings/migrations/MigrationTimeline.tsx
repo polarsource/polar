@@ -2,6 +2,7 @@ import { schemas } from '@polar-sh/client'
 import { Button, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Check } from 'lucide-react'
+import { PrecheckPanel } from './PrecheckPanel'
 import {
   MIGRATION_STEPS,
   OWNER_LABELS,
@@ -35,6 +36,8 @@ export function MigrationTimeline({
         const ownerLabel = OWNER_LABELS[def.owner]
         const showConnect =
           state === 'current' && def.step === 'source_setup' && !connected
+        const showPrecheck =
+          state === 'current' && def.step === 'pre_check' && connected
 
         return (
           <Box as="li" key={def.step} display="flex" columnGap="m">
@@ -82,6 +85,7 @@ export function MigrationTimeline({
                   </Button>
                 </Box>
               )}
+              {showPrecheck && <PrecheckPanel migrationId={migration.id} />}
             </Box>
           </Box>
         )

@@ -23,9 +23,15 @@ from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 
 from .adapters import SourceAdapter, StripeAdapter
-from .precheck import precheck_engine
+from .precheck import classify_records, precheck_engine
 from .repository import MerchantMigrationRepository
-from .schemas import MerchantMigrationCreate, PrecheckReport
+from .schemas import (
+    MerchantMigrationCreate,
+    MerchantMigrationRecordItem,
+    PrecheckEntity,
+    PrecheckRecordStatus,
+    PrecheckReport,
+)
 from .stripe_oauth import (
     StripeAppNotConfigured,
     StripeOAuthError,
@@ -199,6 +205,41 @@ class MerchantMigrationService:
             migration, update_dict={"step": MerchantMigrationStep.pre_check}
         )
         return report
+
+    async def list_records(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+        *,
+        entity: PrecheckEntity,
+        status: PrecheckRecordStatus | None,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[MerchantMigrationRecordItem], int]:
+        """Read the connected source on demand and return the records of one
+        entity type, classified importable/skipped and paginated in memory."""
+        repository = MerchantMigrationRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject).where(
+            MerchantMigration.id == migration_id
+        )
+        migration = await repository.get_one_or_none(statement)
+        if migration is None:
+            raise MerchantMigrationNotFound()
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            migration.organization_id,
+            OrganizationPermission.organization_manage,
+        )
+
+        adapter = await self._build_adapter(session, migration)
+        records = [record async for record in adapter.extract()]
+        items = classify_records(records, entity)
+        if status is not None:
+            items = [item for item in items if item.status == status]
+
+        start = (pagination.page - 1) * pagination.limit
+        return items[start : start + pagination.limit], len(items)
 
     async def _build_adapter(
         self, session: AsyncSession, migration: MerchantMigration

@@ -28,9 +28,6 @@ export async function generateMetadata(): Promise<Metadata> {
         'Create digital products and SaaS billing with flexible pricing models and seamless payment processing.',
     },
     metadataBase: new URL('https://polar.sh/'),
-    alternates: {
-      canonical: 'https://polar.sh/',
-    },
   }
 
   if (CONFIG.IS_SANDBOX) {

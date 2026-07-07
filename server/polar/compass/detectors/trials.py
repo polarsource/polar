@@ -1,6 +1,6 @@
 from polar.metrics.aggregation import latest
 
-from ..schemas import Insight, InsightAction, InsightCategory, InsightSeverity
+from ..schemas import Insight, InsightCategory, InsightSeverity, ViewMetricAction
 from ..signals import format_currency, format_pct
 from .base import Detector, DetectorContext, confidence_for_sample
 
@@ -70,7 +70,7 @@ class TrialConversionDetector(Detector):
             body=body,
             why=why,
             confidence=confidence,
-            primary_action=InsightAction(
+            primary_action=ViewMetricAction(
                 label="View trials",
                 metric="trial_monthly_recurring_revenue",
             ),

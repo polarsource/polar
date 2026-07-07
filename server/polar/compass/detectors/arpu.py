@@ -1,6 +1,6 @@
 from polar.metrics.aggregation import latest, value_n_periods_ago
 
-from ..schemas import Insight, InsightAction, InsightCategory, InsightSeverity
+from ..schemas import Insight, InsightCategory, InsightSeverity, ViewMetricAction
 from ..signals import MetricSignal, format_currency, format_pct
 from .base import Detector, DetectorContext, confidence_for_sample
 
@@ -80,7 +80,7 @@ class ARPUMovementDetector(Detector):
             body=body,
             why=why,
             confidence=confidence,
-            primary_action=InsightAction(
+            primary_action=ViewMetricAction(
                 label="View ARPU trend",
                 metric="average_revenue_per_user",
             ),

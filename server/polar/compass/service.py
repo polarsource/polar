@@ -393,7 +393,14 @@ class CompassService:
         try:
             by_country = await OrderRepository.from_session(
                 session
-            ).get_paid_revenue_by_country(org_id, since=since)
+            ).get_paid_revenue_by_country(
+                org_id,
+                since=since,
+                # The revenue-share denominator sums these rows, so the fetch
+                # must cover every possible billing country (ISO has ~250);
+                # a truncated fetch would overstate each currency's share.
+                limit=250,
+            )
             configured = await ProductRepository.from_session(
                 session
             ).get_price_currencies(org_id)

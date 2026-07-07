@@ -10,10 +10,10 @@ const findScrollParent = (el: HTMLElement | null): HTMLElement | null => {
   let node = el?.parentElement ?? null
   while (node) {
     const overflowY = getComputedStyle(node).overflowY
-    if (
-      (overflowY === 'auto' || overflowY === 'scroll') &&
-      node.scrollHeight > node.clientHeight
-    ) {
+    // Match on overflow intent, not current scrollability: a short thread's
+    // container doesn't overflow yet at mount, but it is still the element
+    // that must be followed once streaming makes it overflow.
+    if (overflowY === 'auto' || overflowY === 'scroll') {
       return node
     }
     node = node.parentElement

@@ -146,23 +146,19 @@ class SubscriptionRepository(
         """(voluntary, involuntary) counts of subscriptions ended since the
         cutoff.
 
-        Voluntary means the customer chose to end it (a cancellation reason or
-        a scheduled cancel); everything else ended by the platform, which in
-        practice is payment failure and dunning exhaustion.
+        Involuntary means the subscription ended while past due on payment
+        (`past_due_at` is set on entering dunning and cleared on recovery, so
+        it survives on subscriptions revoked for payment failure). Everything
+        else counts as voluntary, including immediate cancellations without a
+        stated reason.
         """
-        voluntary = case(
-            (
-                or_(
-                    Subscription.customer_cancellation_reason.is_not(None),
-                    Subscription.cancel_at_period_end.is_(True),
-                ),
-                1,
-            ),
+        involuntary = case(
+            (Subscription.past_due_at.is_not(None), 1),
             else_=0,
         )
         statement = (
             select(
-                func.coalesce(func.sum(voluntary), 0),
+                func.coalesce(func.sum(involuntary), 0),
                 func.count(Subscription.id),
             )
             .join(Product, Product.id == Subscription.product_id)
@@ -175,8 +171,8 @@ class SubscriptionRepository(
         )
         result = await self.session.execute(statement)
         row = result.one()
-        voluntary_count, total = int(row[0]), int(row[1])
-        return voluntary_count, total - voluntary_count
+        involuntary_count, total = int(row[0]), int(row[1])
+        return total - involuntary_count, involuntary_count
 
     async def get_active_customer_ids_by_product(
         self, product_id: UUID, *, limit: int | None = None

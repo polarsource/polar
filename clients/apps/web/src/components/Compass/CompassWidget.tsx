@@ -2,7 +2,7 @@
 
 import { useCompassInsights } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
+import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { InsightCard } from './InsightCard'
@@ -51,10 +51,11 @@ export const CompassWidget = ({
   columns = 3,
 }: CompassWidgetProps) => {
   const compassEnabled = !!organization.feature_settings?.compass_enabled
-  const { data: insights, isLoading } = useCompassInsights(
-    organization.id,
-    compassEnabled,
-  )
+  const {
+    data: insights,
+    isLoading,
+    isError,
+  } = useCompassInsights(organization.id, compassEnabled)
 
   const shown =
     limit != null ? (insights ?? []).slice(0, limit) : (insights ?? [])
@@ -63,6 +64,18 @@ export const CompassWidget = ({
   // it's off so neither the home preview nor the dedicated page leaks through.
   if (!compassEnabled) {
     return null
+  }
+
+  // A failed fetch must not masquerade as "all caught up" (or vanish on
+  // surfaces that hide the empty state) — say that loading failed.
+  if (isError) {
+    return (
+      <Alert
+        variant="warning"
+        title="Insights could not be loaded"
+        description="Compass is temporarily unavailable. Refresh to try again."
+      />
+    )
   }
 
   // On the home overview the section shows up only once there's something to

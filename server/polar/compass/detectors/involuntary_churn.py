@@ -58,7 +58,7 @@ class InvoluntaryChurnDetector(Detector):
             f"{format_pct(_SHARE_WARNING)} of ended subscriptions, over "
             f"{breakdown.total} ended subscriptions ({confidence.value} "
             "confidence). A subscription counts as involuntary when it ended "
-            "without a customer cancellation."
+            "while past due on payment."
         )
 
         return self.build_insight(

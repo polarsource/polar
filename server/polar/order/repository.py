@@ -1,8 +1,9 @@
 from collections.abc import Sequence
+from datetime import datetime
 from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
-from sqlalchemy import CursorResult, Select, case, select, update
+from sqlalchemy import CursorResult, Select, case, func, select, update
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import (
@@ -52,6 +53,46 @@ class OrderRepository(
     RepositoryBase[Order],
 ):
     model = Order
+
+    async def get_revenue_by_customer(
+        self,
+        organization_id: UUID,
+        *,
+        start: datetime | None = None,
+        limit: int = 10,
+    ) -> Sequence[tuple[UUID, str | None, str | None, int, int]]:
+        """Customers ranked by paid net revenue: (customer_id, email, name,
+        order count, net revenue in cents), descending.
+
+        A repository aggregation (not the metrics layer) on purpose: ranking
+        across all customers cannot be expressed as bounded per-entity metric
+        queries the way products can.
+        """
+        net_revenue = func.coalesce(func.sum(Order.net_amount), 0)
+        statement = (
+            select(
+                Customer.id,
+                Customer.email,
+                Customer.name,
+                func.count(Order.id),
+                net_revenue,
+            )
+            .join(Customer, Customer.id == Order.customer_id)
+            .where(
+                Order.organization_id == organization_id,
+                Order.status.in_(OrderStatus.paid_statuses()),
+                Order.is_deleted.is_(False),
+            )
+            .group_by(Customer.id, Customer.email, Customer.name)
+            .order_by(net_revenue.desc())
+            .limit(limit)
+        )
+        if start is not None:
+            statement = statement.where(Order.created_at >= start)
+        result = await self.session.execute(statement)
+        return [
+            (row[0], row[1], row[2], int(row[3]), int(row[4])) for row in result.all()
+        ]
 
     async def get_all_by_customer(
         self,

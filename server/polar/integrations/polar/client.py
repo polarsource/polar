@@ -667,25 +667,28 @@ class PolarSelfClient:
             except httpx.RequestError as e:
                 _raise_network_error(span, e, "track_event_ingestion")
 
-    async def track_organization_review_usage(
+    async def _track_llm_span_usage(
         self,
         *,
+        operation: str,
+        root_name: str,
+        child_name: str,
         external_customer_id: str,
-        review_context: str,
         vendor: str,
         model: str,
         input_tokens: int,
         output_tokens: int,
         cost_usd: Decimal,
     ) -> None:
+        """Ingest one LLM usage reading as a cost span: a per-customer root
+        event plus a child carrying `_llm` and `_cost` (cents) metadata."""
         total_tokens = input_tokens + output_tokens
         cost_cents = (cost_usd * Decimal(100)).quantize(Decimal("0.000001"))
-        root_external_id = f"organization_review-{external_customer_id}"
+        root_external_id = f"{root_name}-{external_customer_id}"
 
         with logfire.span(
-            "polar.track_organization_review_usage",
+            f"polar.{operation}",
             external_customer_id=external_customer_id,
-            review_context=review_context,
             vendor=vendor,
             model=model,
             input_tokens=input_tokens,
@@ -697,12 +700,12 @@ class PolarSelfClient:
                     request=EventsIngest(
                         events=[
                             EventCreateExternalCustomer(
-                                name="organization_review",
+                                name=root_name,
                                 external_customer_id=external_customer_id,
                                 external_id=root_external_id,
                             ),
                             EventCreateExternalCustomer(
-                                name=f"organization_review.{review_context}",
+                                name=child_name,
                                 external_customer_id=external_customer_id,
                                 parent_id=root_external_id,
                                 metadata={
@@ -726,9 +729,54 @@ class PolarSelfClient:
                 if e.status_code == 409:
                     span.set_attribute("conflict", True)
                     return
-                _raise_error(span, e, "track_organization_review_usage")
+                _raise_error(span, e, operation)
             except httpx.RequestError as e:
-                _raise_network_error(span, e, "track_organization_review_usage")
+                _raise_network_error(span, e, operation)
+
+    async def track_organization_review_usage(
+        self,
+        *,
+        external_customer_id: str,
+        review_context: str,
+        vendor: str,
+        model: str,
+        input_tokens: int,
+        output_tokens: int,
+        cost_usd: Decimal,
+    ) -> None:
+        await self._track_llm_span_usage(
+            operation="track_organization_review_usage",
+            root_name="organization_review",
+            child_name=f"organization_review.{review_context}",
+            external_customer_id=external_customer_id,
+            vendor=vendor,
+            model=model,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_usd=cost_usd,
+        )
+
+    async def track_compass_assistant_usage(
+        self,
+        *,
+        external_customer_id: str,
+        vendor: str,
+        model: str,
+        input_tokens: int,
+        output_tokens: int,
+        cost_usd: Decimal,
+    ) -> None:
+        await self._track_llm_span_usage(
+            operation="track_compass_assistant_usage",
+            root_name="compass_assistant",
+            child_name="compass_assistant.chat",
+            external_customer_id=external_customer_id,
+            vendor=vendor,
+            model=model,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_usd=cost_usd,
+        )
 
     # Customer-portal-scoped operations: create a per-call customer session
     # and act AS THE CUSTOMER. Used for fields the admin API doesn't expose.

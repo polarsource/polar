@@ -49,6 +49,26 @@ class ProductRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_all_by_organization(
+        self,
+        organization_id: UUID,
+        *,
+        options: Options = (),
+        limit: int | None = None,
+    ) -> Sequence[Product]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Product.organization_id == organization_id,
+                Product.is_archived.is_(False),
+            )
+            .order_by(Product.created_at.asc())
+            .options(*options)
+        )
+        if limit is not None:
+            statement = statement.limit(limit)
+        return await self.get_all(statement)
+
     async def get_by_id_and_checkout(
         self,
         id: UUID,

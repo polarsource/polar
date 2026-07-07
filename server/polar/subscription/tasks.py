@@ -149,24 +149,10 @@ async def subscription_cancel_customer(customer_id: uuid.UUID) -> None:
         await subscription_service.cancel_customer(session, customer_id)
 
 
-@actor(
-    actor_name="subscription.scan_paused_resumptions",
-    cron_trigger=CronTrigger.from_crontab("15 * * * *"),
-    priority=TaskPriority.LOW,
-)
-async def scan_paused_resumptions() -> None:
-    """Scan for paused subscriptions due to resume and fan out."""
-    now = utc_now()
-    async with AsyncSessionMaker() as session:
-        repository = SubscriptionRepository.from_session(session)
-        subscriptions = await repository.get_subscriptions_to_resume(now)
-
-    for sub in subscriptions:
-        enqueue_job("subscription.resume", sub.id)
-
-
 @actor(actor_name="subscription.resume", priority=TaskPriority.MEDIUM)
 async def subscription_resume(subscription_id: uuid.UUID) -> None:
+    """Resume a paused subscription. Enqueued by the resume scheduler once its
+    ``resumes_at`` is reached (see ``SubscriptionResumeJobStore``)."""
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)
         subscription = await repository.get_by_id(
@@ -177,10 +163,19 @@ async def subscription_resume(subscription_id: uuid.UUID) -> None:
         if subscription is None:
             raise SubscriptionDoesNotExist(subscription_id)
 
-        if not subscription.can_resume():
+        now = utc_now()
+        is_due = (
+            subscription.can_resume()
+            and subscription.resumes_at is not None
+            and subscription.resumes_at <= now
+        )
+        if not is_due:
             log.info(
-                "Subscription is no longer paused, skipping resume",
+                "Subscription is not due for resume, skipping",
                 subscription_id=subscription_id,
+            )
+            await repository.update(
+                subscription, update_dict={"scheduler_locked_at": None}
             )
             return
 

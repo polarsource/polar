@@ -78,13 +78,24 @@ locals {
         Action = [
           "s3:PutObject",
           "s3:PutObjectTagging",
-          "s3:DeleteObjectTagging",
         ]
         Resource = "${bucket_arn}/*"
         Condition = {
           "ForAnyValue:StringEquals" = {
             "s3:RequestObjectTagKeys" = "GuardDutyMalwareScanStatus"
           }
+          ArnNotLike = {
+            "aws:PrincipalArn" = var.malware_protection_role_arn
+          }
+        }
+      },
+      {
+        Sid       = "DenyScanStatusTagDeletion"
+        Effect    = "Deny"
+        Principal = "*"
+        Action    = "s3:DeleteObjectTagging"
+        Resource  = "${bucket_arn}/*"
+        Condition = {
           ArnNotLike = {
             "aws:PrincipalArn" = var.malware_protection_role_arn
           }

@@ -39,12 +39,21 @@ export const InsightCard = ({
       as="article"
       display="flex"
       flexDirection="column"
-      rowGap={small ? 'm' : 'xl'}
+      rowGap={small ? 'l' : 'xl'}
       height="100%"
       justifyContent="between"
     >
       <Box display="flex" flexDirection="column" rowGap={small ? 's' : 'l'}>
-        <Box display="flex" alignItems="center" columnGap={small ? 's' : 'm'}>
+        <Box
+          display="flex"
+          alignItems="center"
+          columnGap={small ? 's' : 'm'}
+          backgroundColor="background-card"
+          alignSelf="start"
+          paddingHorizontal="m"
+          paddingVertical="xs"
+          borderRadius="full"
+        >
           <div
             className={twMerge(
               'size-2 rounded-full',

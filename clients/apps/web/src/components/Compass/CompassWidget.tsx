@@ -123,7 +123,7 @@ export const CompassWidget = ({
             return (
               <Box
                 key={insight.id}
-                padding={size === 'small' ? 'l' : '2xl'}
+                padding={size === 'small' ? 'xl' : '2xl'}
                 borderStyle="solid"
                 borderColor="border-primary"
                 borderLeftWidth={

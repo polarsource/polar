@@ -1,6 +1,7 @@
 'use client'
 
 import { AssistantMessage } from '@/hooks/useCompassAssistant'
+import { useStickToBottom } from '@/hooks/useStickToBottom'
 import PercentRounded from '@mui/icons-material/PercentRounded'
 import ShowChartRounded from '@mui/icons-material/ShowChartRounded'
 import TrendingDownRounded from '@mui/icons-material/TrendingDownRounded'
@@ -11,7 +12,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { ChevronRight } from 'lucide-react'
 import Link from 'next/link'
 import { AnimatePresence, motion } from 'motion/react'
-import { ComponentType, RefObject } from 'react'
+import { ComponentType, RefObject, useEffect } from 'react'
 import { AssistantPartView } from './AssistantBlocks'
 import { CompassInputBar } from './CompassInputBar'
 import { CompassWidget } from './CompassWidget'
@@ -71,6 +72,16 @@ export const CompassConversation = ({
   inputRef,
 }: CompassConversationProps) => {
   const empty = messages.length === 0
+  const { contentRef, scrollToBottom } = useStickToBottom<HTMLDivElement>()
+
+  // Sending always re-follows the bottom, even if the user had scrolled up
+  // in the previous answer. Streamed growth is handled by the hook itself.
+  const lastMessage = messages[messages.length - 1]
+  useEffect(() => {
+    if (lastMessage?.role === 'user') {
+      scrollToBottom()
+    }
+  }, [lastMessage, scrollToBottom])
 
   return (
     <motion.div
@@ -79,7 +90,10 @@ export const CompassConversation = ({
       transition={{ duration: 0.3, ease: 'easeOut' }}
       className="flex min-h-full w-full flex-col items-center"
     >
-      <div className="flex w-full flex-1 flex-col gap-y-12 pb-6">
+      <div
+        ref={contentRef}
+        className="flex w-full flex-1 flex-col gap-y-12 pb-6"
+      >
         {empty ? (
           <Box display="flex" flexDirection="column" rowGap="xl">
             <div className="grid grid-cols-2 grid-rows-2 gap-4">
@@ -88,7 +102,7 @@ export const CompassConversation = ({
                   key={question}
                   type="button"
                   onClick={() => onAsk(question)}
-                  className="dark:border-polar-700 dark:hover:border-polar-600 dark:hover:bg-polar-700 flex flex-col gap-3 rounded-2xl border border-gray-200 p-4 text-left transition-colors hover:border-gray-300 hover:bg-gray-50"
+                  className="dark:border-polar-700 dark:hover:border-polar-600 dark:hover:bg-polar-700 flex cursor-pointer flex-col gap-3 rounded-2xl border border-gray-200 p-4 text-left transition-colors hover:border-gray-300 hover:bg-gray-50"
                 >
                   <Box columnGap="m" alignItems="center">
                     <Icon
@@ -112,33 +126,36 @@ export const CompassConversation = ({
               ))}
             </div>
             <Box display="flex" flexDirection="column" rowGap="m">
+              <Box flexDirection="row" justifyContent="between" gap="l">
+                <Text variant="heading-xxs">Insights</Text>
+                <Link
+                  href={`/dashboard/${organization.slug}/compass/insights`}
+                  className="self-end"
+                >
+                  <Box
+                    color={{ base: 'text-secondary', hover: 'text-primary' }}
+                    transitionProperty="colors"
+                    transitionDuration="fast"
+                    flexDirection="row"
+                    alignItems="center"
+                    columnGap="xs"
+                  >
+                    <Text variant="caption" color="inherit">
+                      View all insights
+                    </Text>
+                    <ChevronRight size={14} />
+                  </Box>
+                </Link>
+              </Box>
               <CompassWidget
                 organization={organization}
-                limit={4}
+                limit={2}
                 columns={2}
                 hideHeader
                 hideWhenEmpty
                 layout="grid"
                 size="small"
               />
-              <Link
-                href={`/dashboard/${organization.slug}/compass/insights`}
-                className="self-end"
-              >
-                <Box
-                  color={{ base: 'text-secondary', hover: 'text-primary' }}
-                  transitionProperty="colors"
-                  transitionDuration="fast"
-                  flexDirection="row"
-                  alignItems="center"
-                  columnGap="xs"
-                >
-                  <Text variant="caption" color="inherit">
-                    View all insights
-                  </Text>
-                  <ChevronRight size={14} />
-                </Box>
-              </Link>
             </Box>
           </Box>
         ) : (

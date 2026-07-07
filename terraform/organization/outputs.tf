@@ -52,6 +52,7 @@ output "terraform_cloud_run_roles" {
     sandbox    = module.terraform_cloud_run_role_sandbox.role_arn
     test       = module.terraform_cloud_run_role_test.role_arn
     identity   = module.terraform_cloud_run_role_identity.role_arn
+    security   = module.terraform_cloud_run_role_security.role_arn
   }
 }
 

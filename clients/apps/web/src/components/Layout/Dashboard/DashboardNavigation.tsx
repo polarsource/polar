@@ -14,13 +14,11 @@ import {
   useOrganizationRoutes,
 } from '../../Dashboard/navigation'
 import {
-  useCurrentProduct,
-  useCustomersRoutes,
+  useBillingRoutes,
+  useInsightsRoutes,
   useProductNavigationEnabled,
-  useProductRoutes,
 } from '../../Dashboard/navigationProducts'
 import { NavList } from './NavList'
-import { ProductSwitcher } from './ProductSwitcher'
 
 export const OrganizationNavigation = ({
   organization,
@@ -53,23 +51,24 @@ const ProductNavigation = ({
 }: {
   organization: schemas['Organization']
 }) => {
-  const product = useCurrentProduct(organization)
-  const productRoutes = useProductRoutes(product, organization)
+  const insightsRoutes = useInsightsRoutes(organization)
+  const billingRoutes = useBillingRoutes(organization)
   const settingsRoutes = useOrganizationRoutes(organization).filter(
     (route) => route.id === 'settings',
   )
-  const persistentRoutes = [
-    ...useCustomersRoutes(organization),
-    ...settingsRoutes,
-  ]
 
   return (
-    <div className="flex w-full flex-col gap-4">
-      <ProductSwitcher organization={organization} />
-      <NavList
-        routes={[...productRoutes, ...persistentRoutes]}
-        navType="organization"
-      />
+    <div className="flex w-full flex-col gap-6">
+      <NavList routes={insightsRoutes} navType="organization" />
+      <div className="flex w-full flex-col gap-2">
+        <span className="dark:text-polar-500 px-2 text-xs font-medium text-gray-400">
+          Billing
+        </span>
+        <NavList
+          routes={[...billingRoutes, ...settingsRoutes]}
+          navType="organization"
+        />
+      </div>
     </div>
   )
 }

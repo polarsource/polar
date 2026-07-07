@@ -10,14 +10,18 @@ from polar.compass.detectors.base import DetectorContext, confidence_for_sample
 from polar.compass.detectors.churn import ChurnSpikeDetector
 from polar.compass.detectors.conversion import CheckoutConversionDetector
 from polar.compass.detectors.cost_per_user import CostPerUserDetector
+from polar.compass.detectors.currency import CurrencyOpportunityDetector
 from polar.compass.detectors.customer_cost import CostConcentrationDetector
+from polar.compass.detectors.involuntary_churn import InvoluntaryChurnDetector
 from polar.compass.detectors.margin import GrossMarginDetector
 from polar.compass.detectors.mrr import MRRGrowthDetector
 from polar.compass.detectors.product_margin import ProductMarginDetector
+from polar.compass.detectors.runway import MarginRunwayDetector
 from polar.compass.detectors.subscribers import SubscriberGrowthDetector
 from polar.compass.detectors.trials import TrialConversionDetector
 from polar.compass.keys import build_insight_key, parse_insight_key
 from polar.compass.schemas import (
+    AddCurrencyAction,
     AdjustPriceAction,
     ConfidenceLevel,
     Insight,
@@ -27,6 +31,8 @@ from polar.compass.schemas import (
 )
 from polar.compass.signals import (
     CUSTOMER_COSTS_SAMPLE_LIMIT,
+    ChurnBreakdown,
+    CurrencyOpportunitySignal,
     CustomerCostSignal,
     ProductPricing,
 )
@@ -810,6 +816,162 @@ class TestSuggestedPriceRounding:
         assert "$50" not in insight.body
 
 
+def _runway_response(start: float, end: float) -> MetricsResponse:
+    # 36 daily points interpolating margin from start to end.
+    step = (end - start) / 35
+    return _response_from(
+        gross_margin_percentage=[start + step * i for i in range(36)],
+        active_subscriptions=[60.0] * 36,
+    )
+
+
+def _context_with_churn(voluntary: int, involuntary: int) -> DetectorContext:
+    return DetectorContext(
+        organization_id=uuid.uuid4(),
+        timezone=ZoneInfo("UTC"),
+        today=date(2026, 2, 6),
+        metrics=_response_from(active_subscriptions=[50.0] * 36),
+        churn_breakdown=ChurnBreakdown(voluntary=voluntary, involuntary=involuntary),
+    )
+
+
+def _context_with_currencies(
+    *signals: CurrencyOpportunitySignal,
+) -> DetectorContext:
+    return DetectorContext(
+        organization_id=uuid.uuid4(),
+        timezone=ZoneInfo("UTC"),
+        today=date(2026, 2, 6),
+        metrics=_response_from(active_subscriptions=[50.0] * 36),
+        currency_signals=signals,
+    )
+
+
+def _currency_signal(
+    currency: str = "eur", share: float = 0.31, orders: int = 24
+) -> CurrencyOpportunitySignal:
+    return CurrencyOpportunitySignal(
+        currency=currency,
+        revenue_share=share,
+        order_count=orders,
+        countries=("DE", "FR", "NL"),
+    )
+
+
+class TestMarginRunwayDetector:
+    def test_fires_on_projected_zero_within_horizon(self) -> None:
+        # The 30-day baseline reads ~0.529 on the interpolated series, so the
+        # trajectory reaches zero in ~93 days, about 13 weeks.
+        insight = MarginRunwayDetector().evaluate(
+            _context(_runway_response(0.55, 0.40))
+        )
+
+        assert insight is not None
+        assert insight.severity is InsightSeverity.warning
+        assert "reaches zero in about 13 weeks" in insight.title
+        assert insight.why is not None
+        assert "trajectory" in insight.why
+
+    def test_short_runway_is_critical(self) -> None:
+        # 0.50 -> 0.20 over 30 days: runway = 0.20 / 0.01 = 20 days.
+        insight = MarginRunwayDetector().evaluate(
+            _context(_runway_response(0.50, 0.20))
+        )
+
+        assert insight is not None
+        assert insight.severity is InsightSeverity.critical
+
+    def test_silent_when_projection_beyond_horizon(self) -> None:
+        # 0.71 -> 0.70 over 30 days: runway far beyond 180 days.
+        insight = MarginRunwayDetector().evaluate(
+            _context(_runway_response(0.71, 0.70))
+        )
+
+        assert insight is None
+
+    def test_silent_when_margin_improving(self) -> None:
+        insight = MarginRunwayDetector().evaluate(
+            _context(_runway_response(0.40, 0.55))
+        )
+
+        assert insight is None
+
+    def test_silent_without_cost_data(self) -> None:
+        insight = MarginRunwayDetector().evaluate(_context(_runway_response(0.0, 0.0)))
+
+        assert insight is None
+
+
+class TestInvoluntaryChurnDetector:
+    def test_fires_on_meaningful_failed_payment_share(self) -> None:
+        insight = InvoluntaryChurnDetector().evaluate(_context_with_churn(5, 4))
+
+        assert insight is not None
+        assert insight.category is InsightCategory.retention
+        assert insight.severity is InsightSeverity.warning
+        assert "Failed payments drove 4 of 9" in insight.title
+
+    def test_dominant_share_is_critical(self) -> None:
+        insight = InvoluntaryChurnDetector().evaluate(_context_with_churn(2, 6))
+
+        assert insight is not None
+        assert insight.severity is InsightSeverity.critical
+
+    def test_silent_when_share_is_noise(self) -> None:
+        insight = InvoluntaryChurnDetector().evaluate(_context_with_churn(9, 1))
+
+        assert insight is None
+
+    def test_suppressed_below_sample_gate(self) -> None:
+        insight = InvoluntaryChurnDetector().evaluate(_context_with_churn(2, 2))
+
+        assert insight is None
+
+    def test_silent_without_breakdown(self) -> None:
+        insight = InvoluntaryChurnDetector().evaluate(
+            _context(_response_from(active_subscriptions=[50.0] * 36))
+        )
+
+        assert insight is None
+
+
+class TestCurrencyOpportunityDetector:
+    def test_fires_on_meaningful_unpriced_currency(self) -> None:
+        insight = CurrencyOpportunityDetector().evaluate(
+            _context_with_currencies(_currency_signal())
+        )
+
+        assert insight is not None
+        assert insight.severity is InsightSeverity.opportunity
+        assert "31% of revenue comes from EUR countries" in insight.title
+        assert "DE, FR, NL" in insight.body
+        action = insight.primary_action
+        assert isinstance(action, AddCurrencyAction)
+        assert action.currency == "eur"
+        assert action.label == "Add EUR pricing"
+
+    def test_silent_below_revenue_share(self) -> None:
+        insight = CurrencyOpportunityDetector().evaluate(
+            _context_with_currencies(_currency_signal(share=0.08))
+        )
+
+        assert insight is None
+
+    def test_suppressed_below_order_sample(self) -> None:
+        insight = CurrencyOpportunityDetector().evaluate(
+            _context_with_currencies(_currency_signal(orders=3))
+        )
+
+        assert insight is None
+
+    def test_silent_without_signals(self) -> None:
+        insight = CurrencyOpportunityDetector().evaluate(
+            _context(_response_from(active_subscriptions=[50.0] * 36))
+        )
+
+        assert insight is None
+
+
 class TestInsightCopy:
     def test_no_em_dashes_in_any_emitted_copy(self) -> None:
         """Em dashes are banned in user-facing copy; use comma, colon or period."""
@@ -885,6 +1047,11 @@ class TestInsightCopy:
             ),
             ProductMarginDetector().evaluate(
                 _context_with_products([_product(margin=0.41)])
+            ),
+            MarginRunwayDetector().evaluate(_context(_runway_response(0.50, 0.20))),
+            InvoluntaryChurnDetector().evaluate(_context_with_churn(5, 4)),
+            CurrencyOpportunityDetector().evaluate(
+                _context_with_currencies(_currency_signal())
             ),
             CostConcentrationDetector().evaluate(
                 _context_with_customer_costs(

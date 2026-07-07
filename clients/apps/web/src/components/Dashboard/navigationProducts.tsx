@@ -15,34 +15,8 @@ import SignalCellularAltOutlined from '@mui/icons-material/SignalCellularAltOutl
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined'
 import TrendingDown from '@mui/icons-material/TrendingDown'
 import { schemas } from '@polar-sh/client'
-import { usePathname } from 'next/navigation'
-import { ReactNode } from 'react'
 import { ShoppingCart } from 'lucide-react'
 import { Route, RouteWithActive, useResolveRoutes } from './navigation'
-
-export type DashboardProduct = 'billing' | 'compass'
-
-export type ProductMeta = {
-  readonly id: DashboardProduct
-  readonly label: string
-  readonly icon: ReactNode
-  readonly landing: (slug?: string) => string
-}
-
-export const DASHBOARD_PRODUCTS: readonly ProductMeta[] = [
-  {
-    id: 'compass',
-    label: 'Compass',
-    icon: <ExploreOutlined fontSize="inherit" />,
-    landing: (slug) => `/dashboard/${slug}`,
-  },
-  {
-    id: 'billing',
-    label: 'Billing',
-    icon: <HiveOutlined fontSize="inherit" />,
-    landing: (slug) => `/dashboard/${slug}/products`,
-  },
-]
 
 const billingRoutesList = (org?: schemas['Organization']): Route[] => [
   {
@@ -51,14 +25,18 @@ const billingRoutesList = (org?: schemas['Organization']): Route[] => [
     icon: <HiveOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/products`,
     checkIsActive: (path) =>
-      path.startsWith(`/dashboard/${org?.slug}/products`) &&
-      !path.startsWith(`/dashboard/${org?.slug}/products/meters`),
+      path.startsWith(`/dashboard/${org?.slug}/products`),
     if: true,
     subs: [
       {
         title: 'Catalogue',
         link: `/dashboard/${org?.slug}/products`,
         icon: <HiveOutlined fontSize="inherit" />,
+      },
+      {
+        title: 'Meters',
+        link: `/dashboard/${org?.slug}/products/meters`,
+        icon: <DonutLargeOutlined fontSize="inherit" />,
       },
       {
         title: 'Checkout Links',
@@ -128,7 +106,7 @@ const billingRoutesList = (org?: schemas['Organization']): Route[] => [
   },
 ]
 
-const compassRoutesList = (org?: schemas['Organization']): Route[] => [
+const insightsRoutesList = (org?: schemas['Organization']): Route[] => [
   {
     id: 'home',
     title: 'Home',
@@ -138,17 +116,18 @@ const compassRoutesList = (org?: schemas['Organization']): Route[] => [
     if: true,
   },
   {
+    id: 'compass',
+    title: 'Compass',
+    icon: <ExploreOutlined fontSize="inherit" />,
+    link: `/dashboard/${org?.slug}/compass`,
+    checkIsActive: (path) => path.startsWith(`/dashboard/${org?.slug}/compass`),
+    if: !!org?.feature_settings?.compass_enabled,
+  },
+  {
     id: 'metrics',
     title: 'Metrics',
     icon: <SignalCellularAltOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/analytics/metrics`,
-    if: true,
-  },
-  {
-    id: 'events',
-    title: 'Events',
-    icon: <BoltOutlined fontSize="inherit" />,
-    link: `/dashboard/${org?.slug}/analytics/events`,
     if: true,
   },
   {
@@ -159,15 +138,12 @@ const compassRoutesList = (org?: schemas['Organization']): Route[] => [
     if: true,
   },
   {
-    id: 'meters',
-    title: 'Meters',
-    icon: <DonutLargeOutlined fontSize="inherit" />,
-    link: `/dashboard/${org?.slug}/products/meters`,
+    id: 'events',
+    title: 'Events',
+    icon: <BoltOutlined fontSize="inherit" />,
+    link: `/dashboard/${org?.slug}/analytics/events`,
     if: true,
   },
-]
-
-const customersRoutesList = (org?: schemas['Organization']): Route[] => [
   {
     id: 'customers',
     title: 'Customers',
@@ -183,37 +159,9 @@ export const useBillingRoutes = (
   org?: schemas['Organization'],
 ): RouteWithActive[] => useResolveRoutes(() => billingRoutesList(org), org)
 
-export const useCompassRoutes = (
+export const useInsightsRoutes = (
   org?: schemas['Organization'],
-): RouteWithActive[] => useResolveRoutes(() => compassRoutesList(org), org)
-
-export const useCustomersRoutes = (
-  org?: schemas['Organization'],
-): RouteWithActive[] => useResolveRoutes(() => customersRoutesList(org), org)
-
-export const useProductRoutes = (
-  product: DashboardProduct,
-  org?: schemas['Organization'],
-): RouteWithActive[] => {
-  const billing = useBillingRoutes(org)
-  const compass = useCompassRoutes(org)
-  return product === 'compass' ? compass : billing
-}
-
-export const useCurrentProduct = (
-  org?: schemas['Organization'],
-): DashboardProduct => {
-  const path = usePathname()
-  const base = `/dashboard/${org?.slug}`
-  if (
-    path === base ||
-    path.startsWith(`${base}/analytics`) ||
-    path.startsWith(`${base}/products/meters`)
-  ) {
-    return 'compass'
-  }
-  return 'billing'
-}
+): RouteWithActive[] => useResolveRoutes(() => insightsRoutesList(org), org)
 
 export const useProductNavigationEnabled = (
   org?: schemas['Organization'],

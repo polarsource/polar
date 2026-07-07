@@ -92,6 +92,36 @@ class CustomerCostSignal:
     """This customer's share of all tracked costs (0-1)."""
 
 
+@dataclass(frozen=True)
+class ChurnBreakdown:
+    """Ended subscriptions in the window, split by why they ended.
+
+    Involuntary means the platform ended the subscription (payment failure,
+    dunning exhaustion); voluntary means the customer chose to cancel.
+    """
+
+    voluntary: int
+    involuntary: int
+
+    @property
+    def total(self) -> int:
+        return self.voluntary + self.involuntary
+
+
+@dataclass(frozen=True)
+class CurrencyOpportunitySignal:
+    """Paid revenue attributable to a presentment currency the merchant does
+    not price in, derived from order billing countries."""
+
+    currency: str
+    """Lowercase ISO currency code, e.g. `eur`."""
+    revenue_share: float
+    """Share of the window's total paid revenue from this currency's countries."""
+    order_count: int
+    countries: tuple[str, ...]
+    """Top contributing alpha-2 country codes, largest first."""
+
+
 def format_currency(cents: float) -> str:
     return f"${cents / 100:,.0f}"
 

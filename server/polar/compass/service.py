@@ -12,6 +12,7 @@ from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
 from polar.event.service import event as event_service
+from polar.kit.currency import get_presentment_currency
 from polar.kit.time_queries import TimeInterval
 from polar.logging import Logger
 from polar.metrics.aggregation import latest
@@ -19,6 +20,7 @@ from polar.metrics.schemas import MetricsResponse
 from polar.metrics.service import metrics as metrics_service
 from polar.models import Product
 from polar.models.product_price import ProductPriceFixed
+from polar.order.repository import OrderRepository
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
@@ -34,11 +36,17 @@ from .schemas import (
 )
 from .signals import (
     CUSTOMER_COSTS_SAMPLE_LIMIT,
+    ChurnBreakdown,
+    CurrencyOpportunitySignal,
     CustomerCostSignal,
     ProductPricing,
 )
 
 log: Logger = structlog.get_logger()
+
+# Windows for the churn-breakdown and currency-opportunity prefetches.
+_CHURN_BREAKDOWN_WINDOW_DAYS = 30
+_CURRENCY_WINDOW_DAYS = 30
 
 # Extra days beyond the longest detector lookback so a `value_n_periods_ago`
 # baseline is always present in the fetched series.
@@ -147,6 +155,12 @@ class CompassService:
                 today=today,
                 timezone=timezone,
             )
+            churn_breakdown = await self._churn_breakdown(
+                session, org_id, detectors, today=today, timezone=timezone
+            )
+            currency_signals = await self._currency_signals(
+                session, org_id, detectors, today=today, timezone=timezone
+            )
             ctx = DetectorContext(
                 organization_id=org_id,
                 timezone=timezone,
@@ -154,6 +168,8 @@ class CompassService:
                 metrics=response,
                 products=products,
                 customer_costs=customer_costs,
+                churn_breakdown=churn_breakdown,
+                currency_signals=currency_signals,
             )
             for detector in detectors:
                 try:
@@ -324,6 +340,101 @@ class CompassService:
             )
             for stat in stats.items
         ]
+
+    async def _churn_breakdown(
+        self,
+        session: AsyncReadSession,
+        org_id: uuid.UUID,
+        detectors: Sequence[Detector],
+        *,
+        today: date,
+        timezone: ZoneInfo,
+    ) -> ChurnBreakdown | None:
+        """Voluntary/involuntary split of the window's ended subscriptions,
+        for detectors that declare a need. Failures degrade to None."""
+        if not any(detector.needs_churn_breakdown for detector in detectors):
+            return None
+        since = datetime.combine(
+            today - timedelta(days=_CHURN_BREAKDOWN_WINDOW_DAYS),
+            datetime.min.time(),
+            timezone,
+        )
+        try:
+            voluntary, involuntary = await SubscriptionRepository.from_session(
+                session
+            ).get_churn_breakdown(org_id, since=since)
+        except Exception:
+            log.exception("compass.churn_breakdown_error", organization_id=str(org_id))
+            return None
+        return ChurnBreakdown(voluntary=voluntary, involuntary=involuntary)
+
+    async def _currency_signals(
+        self,
+        session: AsyncReadSession,
+        org_id: uuid.UUID,
+        detectors: Sequence[Detector],
+        *,
+        today: date,
+        timezone: ZoneInfo,
+    ) -> list[CurrencyOpportunitySignal]:
+        """Paid revenue attributable to presentment currencies the merchant
+        does not price in, for detectors that declare a need.
+
+        Orders are grouped by billing country, countries resolve to their
+        presentment currency, and configured currencies drop out — what
+        remains is the opportunity. Failures degrade to an empty list."""
+        if not any(detector.needs_currency_signals for detector in detectors):
+            return []
+        since = datetime.combine(
+            today - timedelta(days=_CURRENCY_WINDOW_DAYS),
+            datetime.min.time(),
+            timezone,
+        )
+        try:
+            by_country = await OrderRepository.from_session(
+                session
+            ).get_paid_revenue_by_country(
+                org_id,
+                since=since,
+                # The revenue-share denominator sums these rows, so the fetch
+                # must cover every possible billing country (ISO has ~250);
+                # a truncated fetch would overstate each currency's share.
+                limit=250,
+            )
+            configured = await ProductRepository.from_session(
+                session
+            ).get_price_currencies(org_id)
+        except Exception:
+            log.exception("compass.currency_signals_error", organization_id=str(org_id))
+            return []
+        total_revenue = sum(revenue for _, _, revenue in by_country)
+        if total_revenue <= 0:
+            return []
+        by_currency: dict[str, tuple[int, int, list[str]]] = {}
+        for country, orders, revenue in by_country:
+            presentment = get_presentment_currency(country)
+            if presentment is None:
+                continue
+            currency = str(presentment).lower()
+            if currency in configured:
+                continue
+            prev_orders, prev_revenue, countries = by_currency.get(currency, (0, 0, []))
+            by_currency[currency] = (
+                prev_orders + orders,
+                prev_revenue + revenue,
+                countries + [country],
+            )
+        signals = [
+            CurrencyOpportunitySignal(
+                currency=currency,
+                revenue_share=revenue / total_revenue,
+                order_count=orders,
+                countries=tuple(countries[:3]),
+            )
+            for currency, (orders, revenue, countries) in by_currency.items()
+        ]
+        signals.sort(key=lambda signal: signal.revenue_share, reverse=True)
+        return signals
 
     async def _compass_enabled_org_ids(
         self,

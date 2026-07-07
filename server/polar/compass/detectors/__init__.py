@@ -11,10 +11,13 @@ from .base import Detector, DetectorContext
 from .churn import ChurnSpikeDetector
 from .conversion import CheckoutConversionDetector
 from .cost_per_user import CostPerUserDetector
+from .currency import CurrencyOpportunityDetector
 from .customer_cost import CostConcentrationDetector
+from .involuntary_churn import InvoluntaryChurnDetector
 from .margin import GrossMarginDetector
 from .mrr import MRRGrowthDetector
 from .product_margin import ProductMarginDetector
+from .runway import MarginRunwayDetector
 from .subscribers import SubscriberGrowthDetector
 from .trials import TrialConversionDetector
 
@@ -29,6 +32,9 @@ DETECTORS: list[Detector] = [
     CheckoutConversionDetector(),
     ProductMarginDetector(),
     CostConcentrationDetector(),
+    MarginRunwayDetector(),
+    InvoluntaryChurnDetector(),
+    CurrencyOpportunityDetector(),
 ]
 
 DETECTOR_IDS: frozenset[str] = frozenset(detector.id for detector in DETECTORS)

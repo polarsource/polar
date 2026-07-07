@@ -27,5 +27,9 @@ export const resolveInsightActionHref = (
     }
     case 'adjust_price':
       return `${dashboard}/products/${action.product_id}`
+    case 'add_currency':
+      // Pricing is edited per product; the products list is the entry point
+      // for adding a currency across the catalog.
+      return `${dashboard}/products`
   }
 }

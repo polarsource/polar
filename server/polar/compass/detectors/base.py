@@ -16,7 +16,12 @@ from ..schemas import (
     InsightDriver,
     InsightSeverity,
 )
-from ..signals import CustomerCostSignal, ProductPricing
+from ..signals import (
+    ChurnBreakdown,
+    CurrencyOpportunitySignal,
+    CustomerCostSignal,
+    ProductPricing,
+)
 
 # Minimum population before an insight is trustworthy enough to surface at all.
 _MIN_SAMPLE = 5
@@ -54,6 +59,12 @@ class DetectorContext:
     customer_costs: Sequence[CustomerCostSignal] = ()
     """Customers ranked by tracked cost over the window. Prefetched only when a
     selected detector declares `needs_customer_costs`."""
+    churn_breakdown: ChurnBreakdown | None = None
+    """Voluntary/involuntary split of the window's ended subscriptions.
+    Prefetched only when a selected detector declares `needs_churn_breakdown`."""
+    currency_signals: Sequence[CurrencyOpportunitySignal] = ()
+    """Revenue attributable to unconfigured presentment currencies. Prefetched
+    only when a selected detector declares `needs_currency_signals`."""
 
 
 class Detector(abc.ABC):
@@ -80,6 +91,10 @@ class Detector(abc.ABC):
     needs_customer_costs: bool = False
     """When true, the service prefetches `ctx.customer_costs` (per-customer
     cost ranking from the events statistics)."""
+    needs_churn_breakdown: bool = False
+    """When true, the service prefetches `ctx.churn_breakdown`."""
+    needs_currency_signals: bool = False
+    """When true, the service prefetches `ctx.currency_signals`."""
     lookback_days: int = 30
     """History `evaluate` needs. The service fetches the longest lookback."""
 

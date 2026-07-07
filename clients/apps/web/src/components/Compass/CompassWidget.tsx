@@ -2,7 +2,7 @@
 
 import { useCompassInsights } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
+import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { InsightCard } from './InsightCard'
@@ -28,6 +28,8 @@ interface CompassWidgetProps {
   /** `small` tightens cell padding and card typography for compact surfaces
    * (e.g. the assistant conversation's empty state). */
   size?: 'default' | 'small'
+  /** Grid column count on large screens (grid layout only). */
+  columns?: 2 | 3
 }
 
 /**
@@ -46,12 +48,14 @@ export const CompassWidget = ({
   layout = 'grid',
   hideWhenEmpty = false,
   size = 'default',
+  columns = 3,
 }: CompassWidgetProps) => {
   const compassEnabled = !!organization.feature_settings?.compass_enabled
-  const { data: insights, isLoading } = useCompassInsights(
-    organization.id,
-    compassEnabled,
-  )
+  const {
+    data: insights,
+    isLoading,
+    isError,
+  } = useCompassInsights(organization.id, compassEnabled)
 
   const shown =
     limit != null ? (insights ?? []).slice(0, limit) : (insights ?? [])
@@ -60,6 +64,18 @@ export const CompassWidget = ({
   // it's off so neither the home preview nor the dedicated page leaks through.
   if (!compassEnabled) {
     return null
+  }
+
+  // A failed fetch must not masquerade as "all caught up" (or vanish on
+  // surfaces that hide the empty state) — say that loading failed.
+  if (isError) {
+    return (
+      <Alert
+        variant="warning"
+        title="Insights could not be loaded"
+        description="Compass is temporarily unavailable. Refresh to try again."
+      />
+    )
   }
 
   // On the home overview the section shows up only once there's something to
@@ -103,7 +119,9 @@ export const CompassWidget = ({
         <Box
           display="grid"
           gridTemplateColumns={
-            layout === 'column' ? '1fr' : { base: '1fr', lg: 'repeat(3, 1fr)' }
+            layout === 'column'
+              ? '1fr'
+              : { base: '1fr', lg: `repeat(${columns}, 1fr)` }
           }
           alignItems="stretch"
           overflow="hidden"
@@ -113,12 +131,12 @@ export const CompassWidget = ({
           borderColor="border-primary"
         >
           {shown.map((insight, idx) => {
-            const col = idx % 3
-            const row = Math.floor(idx / 3)
+            const col = idx % columns
+            const row = Math.floor(idx / columns)
             return (
               <Box
                 key={insight.id}
-                padding={size === 'small' ? 'l' : '2xl'}
+                padding={size === 'small' ? 'xl' : '2xl'}
                 borderStyle="solid"
                 borderColor="border-primary"
                 borderLeftWidth={

@@ -22,6 +22,20 @@ resource "aws_guardduty_detector_feature" "management_us_east_2_s3_data_events" 
   status      = "ENABLED"
 }
 
+resource "aws_guardduty_organization_admin_account" "us_east_1" {
+  admin_account_id = aws_organizations_account.security.id
+
+  depends_on = [aws_guardduty_detector.management]
+}
+
+resource "aws_guardduty_organization_admin_account" "us_east_2" {
+  provider = aws.us_east_2
+
+  admin_account_id = aws_organizations_account.security.id
+
+  depends_on = [aws_guardduty_detector.management_us_east_2]
+}
+
 resource "aws_cloudwatch_event_rule" "malware_scan_threats_found" {
   provider = aws.us_east_2
 

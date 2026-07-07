@@ -30542,6 +30542,17 @@ export interface components {
        */
       total_seats: number
     }
+    /** SessionNotFreshError */
+    SessionNotFreshError: {
+      /**
+       * Error
+       * @example SessionNotFreshError
+       * @constant
+       */
+      error: 'SessionNotFreshError'
+      /** Detail */
+      detail: string
+    }
     /** SlackIntegration */
     SlackIntegration: {
       /**
@@ -35523,6 +35534,15 @@ export interface operations {
         }
         content?: never
       }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
+        }
+      }
       /** @description OAuth account not found */
       404: {
         headers: {
@@ -39166,6 +39186,15 @@ export interface operations {
           'application/json': components['schemas']['TOTPEnrollment']
         }
       }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
+        }
+      }
     }
   }
   'auth:totp_delete': {
@@ -39183,6 +39212,15 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
+        }
       }
     }
   }
@@ -39206,6 +39244,15 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
         }
       }
       /** @description Validation Error */
@@ -39295,6 +39342,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['BackupCodesEnrollment']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
         }
       }
     }
@@ -49208,6 +49264,15 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
         }
       }
       /** @description Validation Error */

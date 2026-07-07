@@ -10,15 +10,22 @@ the userinfo delimiter). Request-derived paths must go through
 Rules (per function, intra-procedural):
 - A parameter is *tainted* when declared with a FastAPI request marker
   (`Query`/`Path`/`Form`/`Header`/`Cookie`/`Body`), either as a default value
-  or inside `Annotated[...]` metadata. Assigning an expression that references
-  a tainted name to a local taints that local (fixed-point propagation).
-  References inside comparisons don't propagate — comparing against user input
-  selects a value, it doesn't let the input construct it.
+  or inside `Annotated[...]` metadata. In route handlers (functions decorated
+  with `@router.get(...)` etc.) every parameter is tainted unless it is a
+  dependency (`Depends`/`Security`) or a framework object (`Request`, ...) —
+  FastAPI treats bare `param: str` as a query parameter. Assigning an
+  expression that references a tainted name to a local taints that local
+  (fixed-point propagation). References inside comparisons don't propagate —
+  comparing against user input selects a value, it doesn't let the input
+  construct it.
 - Flag `generate_frontend_url(...)` calls whose arguments reference a tainted
   name.
 - Flag f-strings or `+` concatenations that combine `FRONTEND_BASE_URL` with a
   tainted name — the inlined form of the same bug.
-- `# noqa: frontend-url` on the offending line is an explicit escape for
+- *Anchored* constructions are safe and not flagged: when the tainted value
+  can only appear after a literal starting with "/" (`f"/auth/sso/{slug}"`),
+  the resulting URL stays on the frontend origin no matter the value.
+- `# lint-skip: frontend-url` on the offending line is an explicit escape for
   values already validated upstream.
 """
 
@@ -31,6 +38,23 @@ from .base import Rule, Violation
 TARGET_CALL = "generate_frontend_url"
 BASE_URL_SETTING = "FRONTEND_BASE_URL"
 FASTAPI_PARAM_MARKERS = frozenset({"Query", "Path", "Form", "Header", "Cookie", "Body"})
+ROUTE_METHODS = frozenset(
+    {
+        "get",
+        "post",
+        "put",
+        "patch",
+        "delete",
+        "head",
+        "options",
+        "api_route",
+        "websocket",
+    }
+)
+DEPENDENCY_MARKERS = frozenset({"Depends", "Security"})
+FRAMEWORK_PARAM_TYPES = frozenset(
+    {"Request", "WebSocket", "Response", "BackgroundTasks"}
+)
 
 CALL_MESSAGE = (
     "request-derived value passed to generate_frontend_url — it concatenates "
@@ -64,8 +88,29 @@ def _annotation_has_marker(node: ast.AST | None) -> bool:
     return any(_is_fastapi_marker(child) for child in ast.walk(node))
 
 
+def _is_route_handler(func: FunctionNode) -> bool:
+    return any(
+        isinstance(decorator, ast.Call)
+        and isinstance(decorator.func, ast.Attribute)
+        and decorator.func.attr in ROUTE_METHODS
+        for decorator in func.decorator_list
+    )
+
+
+def _mentions(node: ast.AST | None, names: frozenset[str]) -> bool:
+    if node is None:
+        return False
+    return any(
+        (isinstance(child, ast.Name) and child.id in names)
+        or (isinstance(child, ast.Attribute) and child.attr in names)
+        for child in ast.walk(node)
+    )
+
+
 def _tainted_params(func: FunctionNode) -> set[str]:
-    """Parameters declared with a FastAPI request marker."""
+    """Parameters carrying request input: FastAPI-marker-declared ones, and in
+    route handlers every non-dependency, non-framework parameter."""
+    route_handler = _is_route_handler(func)
     args = func.args
     positional = args.posonlyargs + args.args
     defaults: list[ast.expr | None] = [None] * (
@@ -77,6 +122,14 @@ def _tainted_params(func: FunctionNode) -> set[str]:
     ):
         if _is_fastapi_marker(default) or _annotation_has_marker(arg.annotation):
             tainted.add(arg.arg)
+            continue
+        if not route_handler or arg.arg in ("self", "cls"):
+            continue
+        if _mentions(default, DEPENDENCY_MARKERS):
+            continue
+        if _mentions(arg.annotation, DEPENDENCY_MARKERS | FRAMEWORK_PARAM_TYPES):
+            continue
+        tainted.add(arg.arg)
     return tainted
 
 
@@ -115,7 +168,9 @@ def _propagate(func: FunctionNode, tainted: set[str]) -> set[str]:
                 value, targets = node.value, [node.target]
             else:
                 continue
-            if value is None or not _references_any_outside_compare(value, tainted):
+            if value is None or _is_anchored(value):
+                continue
+            if not _references_any_outside_compare(value, tainted):
                 continue
             for target in targets:
                 for child in ast.walk(target):
@@ -123,6 +178,44 @@ def _propagate(func: FunctionNode, tainted: set[str]) -> set[str]:
                         tainted.add(child.id)
                         changed = True
     return tainted
+
+
+def _concat_terms(node: ast.expr) -> list[ast.expr]:
+    """Flatten a string construction into its ordered terms: f-string parts
+    (formatted values unwrapped) and `+` concatenation operands."""
+    if isinstance(node, ast.JoinedStr):
+        return [
+            term
+            for value in node.values
+            for term in _concat_terms(
+                value.value if isinstance(value, ast.FormattedValue) else value
+            )
+        ]
+    if isinstance(node, ast.BinOp) and isinstance(node.op, ast.Add):
+        return _concat_terms(node.left) + _concat_terms(node.right)
+    return [node]
+
+
+def _is_path_literal(node: ast.expr) -> bool:
+    return (
+        isinstance(node, ast.Constant)
+        and isinstance(node.value, str)
+        and node.value.startswith("/")
+    )
+
+
+def _is_anchored(node: ast.expr) -> bool:
+    terms = _concat_terms(node)
+    return bool(terms) and _is_path_literal(terms[0])
+
+
+def _is_anchored_after_base_url(node: ast.expr) -> bool:
+    terms = _concat_terms(node)
+    for index, term in enumerate(terms):
+        if _references_base_url(term):
+            rest = terms[index + 1 :]
+            return bool(rest) and _is_path_literal(rest[0])
+    return False
 
 
 def _is_target_call(node: ast.Call) -> bool:
@@ -149,11 +242,17 @@ def _check_function(func: FunctionNode) -> list[Violation]:
     seen_lines: set[int] = set()
     for node in ast.walk(func):
         if isinstance(node, ast.Call) and _is_target_call(node):
-            if not any(_references_any(arg, tainted) for arg in node.args):
+            operands = [*node.args, *(keyword.value for keyword in node.keywords)]
+            if not any(
+                not _is_anchored(operand) and _references_any(operand, tainted)
+                for operand in operands
+            ):
                 continue
             message = CALL_MESSAGE
         elif isinstance(node, (ast.JoinedStr, ast.BinOp)):
             if not (_references_base_url(node) and _references_any(node, tainted)):
+                continue
+            if _is_anchored_after_base_url(node):
                 continue
             message = CONCAT_MESSAGE
         else:

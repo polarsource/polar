@@ -1,6 +1,6 @@
 import math
 
-from polar.kit.currency import get_currency_decimal_factor
+from polar.kit.currency import format_currency, get_currency_decimal_factor
 from polar.metrics.aggregation import latest
 
 from ..schemas import (
@@ -9,7 +9,7 @@ from ..schemas import (
     InsightCategory,
     InsightSeverity,
 )
-from ..signals import ProductPricing, format_currency, format_pct
+from ..signals import ProductPricing, format_pct
 from .base import Detector, DetectorContext, confidence_for_sample
 
 # Below this a product's margin is thin enough to flag; below the critical bar
@@ -95,13 +95,15 @@ class ProductMarginDetector(Detector):
         title = f"{worst.name} margin is down to {margin_str}"
         body = (
             f"{worst.name} keeps {margin_str} of its "
-            f"{format_currency(worst.price_amount)} price after costs. "
-            f"Roughly {format_currency(cost_to_serve)} per customer goes to "
-            f"serving it, across {worst_subs} active subscriptions."
+            f"{format_currency(worst.price_amount, worst.currency)} price "
+            f"after costs. Roughly "
+            f"{format_currency(cost_to_serve, worst.currency)} per customer "
+            f"goes to serving it, across {worst_subs} active subscriptions."
         )
         if suggested is not None:
             body += (
-                f" A list price around {format_currency(suggested)} would "
+                f" A list price around "
+                f"{format_currency(suggested, worst.currency)} would "
                 f"restore a {format_pct(_TARGET_MARGIN)} margin for new "
                 "customers."
             )

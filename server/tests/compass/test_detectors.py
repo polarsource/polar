@@ -772,6 +772,9 @@ class TestSuggestedPriceRounding:
         assert isinstance(insight.primary_action, AdjustPriceAction)
         # same target, but JPY's smallest unit IS the display unit -> next yen
         assert insight.primary_action.suggested_price_amount == 9167
+        # copy formats in the product's currency, not hardcoded USD cents
+        assert "¥5,000" in insight.body
+        assert "$50" not in insight.body
 
 
 class TestInsightCopy:

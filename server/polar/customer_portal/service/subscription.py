@@ -47,9 +47,9 @@ class UpdateSubscriptionSeatsNotAllowed(CustomerSubscriptionError):
         super().__init__("Updating subscription seats is not allowed.", 403)
 
 
-class PauseSubscriptionNotAllowed(CustomerSubscriptionError):
+class PauseResumeNotAllowed(CustomerSubscriptionError):
     def __init__(self) -> None:
-        super().__init__("Pausing a subscription is not allowed.", 403)
+        super().__init__("Pausing or resuming a subscription is not allowed.", 403)
 
 
 class CustomerSubscriptionSortProperty(StrEnum):
@@ -193,7 +193,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
 
         if isinstance(updates, CustomerSubscriptionPause):
             if not organization.customer_portal_subscription_pause:
-                raise PauseSubscriptionNotAllowed()
+                raise PauseResumeNotAllowed()
 
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service
@@ -208,7 +208,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
 
         if isinstance(updates, CustomerSubscriptionResume):
             if not organization.customer_portal_subscription_pause:
-                raise PauseSubscriptionNotAllowed()
+                raise PauseResumeNotAllowed()
 
             async with SubscriptionUpdateContext(
                 session, subscription, subscription_service

@@ -12,7 +12,7 @@ from polar.customer_portal.schemas.subscription import (
     CustomerSubscriptionUpdateSeats,
 )
 from polar.customer_portal.service.subscription import (
-    PauseSubscriptionNotAllowed,
+    PauseResumeNotAllowed,
     UpdateSubscriptionPlanNotAllowed,
     UpdateSubscriptionSeatsNotAllowed,
 )
@@ -468,7 +468,7 @@ class TestUpdatePause:
             save_fixture, product=product, customer=customer
         )
 
-        with pytest.raises(PauseSubscriptionNotAllowed):
+        with pytest.raises(PauseResumeNotAllowed):
             await customer_subscription_service.update(
                 session,
                 subscription,
@@ -517,7 +517,7 @@ class TestUpdatePause:
             status=SubscriptionStatus.paused,
         )
 
-        with pytest.raises(PauseSubscriptionNotAllowed):
+        with pytest.raises(PauseResumeNotAllowed):
             await customer_subscription_service.update(
                 session,
                 subscription,

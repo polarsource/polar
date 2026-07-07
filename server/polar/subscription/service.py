@@ -41,7 +41,9 @@ from polar.event.system import (
     SubscriptionCreatedMetadata,
     SubscriptionCycledMetadata,
     SubscriptionPastDueMetadata,
+    SubscriptionPausedMetadata,
     SubscriptionReactivatedMetadata,
+    SubscriptionResumedMetadata,
     SubscriptionRevokedMetadata,
     SubscriptionUncanceledMetadata,
     SubscriptionUpdatedMetadataFields,
@@ -1928,6 +1930,12 @@ class SubscriptionService:
         subscription.pause_at_period_end = True
         subscription.resumes_at = resumes_at
         session.add(subscription)
+
+        # Notify the customer at request time, while the subscription is still
+        # active until the end of the current period.
+        # The actual`paused` transition happens later in `cycle()`.
+        await self.send_paused_email(session, subscription)
+
         return subscription
 
     async def cancel_scheduled_pause(
@@ -2303,11 +2311,22 @@ class SubscriptionService:
     ) -> None:
         await self._on_subscription_updated(session, subscription)
 
-        became_activated = subscription.active and not SubscriptionStatus.is_active(
-            previous_status
+        became_resumed = (
+            subscription.active and previous_status == SubscriptionStatus.paused
+        )
+        # A resume re-activates the subscription but is not a first activation:
+        # exclude it so the "new subscription" notification isn't sent again.
+        became_activated = (
+            subscription.active
+            and not SubscriptionStatus.is_active(previous_status)
+            and not became_resumed
         )
         became_reactivated = (
             became_activated and previous_status == SubscriptionStatus.past_due
+        )
+        became_paused = (
+            subscription.status == SubscriptionStatus.paused
+            and previous_status != SubscriptionStatus.paused
         )
         became_past_due = (
             subscription.status == SubscriptionStatus.past_due
@@ -2323,6 +2342,12 @@ class SubscriptionService:
             await self._on_subscription_activated(
                 session, subscription, became_reactivated
             )
+
+        if became_paused:
+            await self._on_subscription_paused(session, subscription)
+
+        if became_resumed:
+            await self._on_subscription_resumed(session, subscription)
 
         if became_uncanceled:
             await self._on_subscription_uncanceled(session, subscription)
@@ -2389,6 +2414,62 @@ class SubscriptionService:
                     ),
                 ),
             )
+
+    async def _on_subscription_paused(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        await self._send_webhook(
+            session, subscription, WebhookEventType.subscription_paused
+        )
+
+        assert subscription.paused_at is not None
+        metadata = SubscriptionPausedMetadata(
+            subscription_id=str(subscription.id),
+            product_id=str(subscription.product_id),
+            amount=subscription.amount,
+            currency=subscription.currency,
+            recurring_interval=subscription.recurring_interval.value,
+            recurring_interval_count=subscription.recurring_interval_count,
+            paused_at=subscription.paused_at.isoformat(),
+        )
+        if subscription.resumes_at is not None:
+            metadata["resumes_at"] = subscription.resumes_at.isoformat()
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_paused,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata=metadata,
+            ),
+        )
+
+    async def _on_subscription_resumed(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        await self._send_webhook(
+            session, subscription, WebhookEventType.subscription_resumed
+        )
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_resumed,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata=SubscriptionResumedMetadata(
+                    subscription_id=str(subscription.id),
+                    product_id=str(subscription.product_id),
+                    amount=subscription.amount,
+                    currency=subscription.currency,
+                    recurring_interval=subscription.recurring_interval.value,
+                    recurring_interval_count=subscription.recurring_interval_count,
+                ),
+            ),
+        )
+
+        await self.send_resumed_email(session, subscription)
 
     async def _on_subscription_past_due(
         self, session: AsyncSession, subscription: Subscription
@@ -2566,6 +2647,8 @@ class SubscriptionService:
             WebhookEventType.subscription_uncanceled,
             WebhookEventType.subscription_revoked,
             WebhookEventType.subscription_past_due,
+            WebhookEventType.subscription_paused,
+            WebhookEventType.subscription_resumed,
         ],
     ) -> None:
         repository = SubscriptionRepository.from_session(session)
@@ -2736,6 +2819,26 @@ class SubscriptionService:
             template_name="subscription_past_due",
         )
 
+    async def send_paused_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {product.name} subscription is paused",
+            template_name="subscription_paused",
+        )
+
+    async def send_resumed_email(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> None:
+        return await self._send_customer_email(
+            session,
+            subscription,
+            subject_template="Your {product.name} subscription has resumed",
+            template_name="subscription_resumed",
+        )
+
     async def send_subscription_updated_email(
         self,
         session: AsyncSession,
@@ -2807,6 +2910,8 @@ class SubscriptionService:
         template_name: Literal[
             "subscription_cancellation",
             "subscription_past_due",
+            "subscription_paused",
+            "subscription_resumed",
             "subscription_renewal_reminder",
             "subscription_revoked",
             "subscription_trial_conversion_reminder",
@@ -2832,7 +2937,10 @@ class SubscriptionService:
         )
         assert organization is not None
 
-        if not organization.customer_email_settings[template_name]:
+        # Read-default to enabled: the key is absent from the stored settings of
+        # organizations created before this template existed, and is materialized
+        # only when an admin next edits their notification settings.
+        if not organization.customer_email_settings.get(template_name, True):
             return
 
         customer = subscription.customer

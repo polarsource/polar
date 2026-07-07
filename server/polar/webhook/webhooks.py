@@ -682,8 +682,98 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
         | Literal[WebhookEventType.subscription_uncanceled]
         | Literal[WebhookEventType.subscription_revoked]
         | Literal[WebhookEventType.subscription_past_due]
+        | Literal[WebhookEventType.subscription_paused]
+        | Literal[WebhookEventType.subscription_resumed]
     )
     data: SubscriptionSchema
+
+    def _get_paused_discord_payload(self, target: User | Organization) -> str:
+        fields = self._get_discord_fields(target)
+        if self.data.resumes_at:
+            fields.append(
+                {
+                    "name": "Resumes At",
+                    "value": format_date(self.data.resumes_at, locale="en_US"),
+                }
+            )
+        payload: DiscordPayload = {
+            "content": "Subscription has been paused.",
+            "embeds": [
+                get_branded_discord_embed(
+                    {
+                        "title": "Paused Subscription",
+                        "description": "Subscription has been paused.",
+                        "fields": fields,
+                    }
+                )
+            ],
+        }
+
+        return json.dumps(payload)
+
+    def _get_paused_slack_payload(self, target: User | Organization) -> str:
+        fields = self._get_slack_fields(target)
+        if self.data.resumes_at:
+            fields.append(
+                {
+                    "type": "mrkdwn",
+                    "text": f"*Resumes At*\n{format_date(self.data.resumes_at, locale='en_US')}",
+                }
+            )
+        payload: SlackPayload = get_branded_slack_payload(
+            {
+                "text": "Subscription has been paused.",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "Subscription has been paused.",
+                        },
+                        "fields": fields,
+                    }
+                ],
+            }
+        )
+
+        return json.dumps(payload)
+
+    def _get_resumed_discord_payload(self, target: User | Organization) -> str:
+        fields = self._get_discord_fields(target)
+        payload: DiscordPayload = {
+            "content": "Subscription has resumed.",
+            "embeds": [
+                get_branded_discord_embed(
+                    {
+                        "title": "Resumed Subscription",
+                        "description": "Subscription has resumed.",
+                        "fields": fields,
+                    }
+                )
+            ],
+        }
+
+        return json.dumps(payload)
+
+    def _get_resumed_slack_payload(self, target: User | Organization) -> str:
+        fields = self._get_slack_fields(target)
+        payload: SlackPayload = get_branded_slack_payload(
+            {
+                "text": "Subscription has resumed.",
+                "blocks": [
+                    {
+                        "type": "section",
+                        "text": {
+                            "type": "mrkdwn",
+                            "text": "Subscription has resumed.",
+                        },
+                        "fields": fields,
+                    }
+                ],
+            }
+        )
+
+        return json.dumps(payload)
 
     def _get_active_discord_payload(self, target: User | Organization) -> str:
         fields = self._get_discord_fields(target)
@@ -1085,6 +1175,57 @@ class WebhookSubscriptionPastDuePayload(WebhookSubscriptionUpdatedPayloadBase):
         return self._get_past_due_slack_payload(target)
 
 
+class WebhookSubscriptionPausedPayload(WebhookSubscriptionUpdatedPayloadBase):
+    """
+    Sent when a subscription is paused and the customer temporarily loses access.
+
+    No order is created while paused. The subscription resumes either on its
+    scheduled resume date or when resumed manually, starting a new billing period.
+
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.subscription_paused]
+    data: SubscriptionSchema
+
+    def get_discord_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
+
+        return self._get_paused_discord_payload(target)
+
+    def get_slack_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
+
+        return self._get_paused_slack_payload(target)
+
+
+class WebhookSubscriptionResumedPayload(WebhookSubscriptionUpdatedPayloadBase):
+    """
+    Sent when a paused subscription resumes, restoring the customer's access.
+
+    Resuming starts a new billing period and charges the customer immediately.
+
+    **Discord & Slack support:** Full
+    """
+
+    type: Literal[WebhookEventType.subscription_resumed]
+    data: SubscriptionSchema
+
+    def get_discord_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.discord)
+
+        return self._get_resumed_discord_payload(target)
+
+    def get_slack_payload(self, target: User | Organization) -> str:
+        if isinstance(target, User):
+            raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
+
+        return self._get_resumed_slack_payload(target)
+
+
 class WebhookRefundBase(BaseWebhookPayload):
     """
     Base Refund
@@ -1340,6 +1481,8 @@ WebhookPayload = Annotated[
     | WebhookSubscriptionUncanceledPayload
     | WebhookSubscriptionRevokedPayload
     | WebhookSubscriptionPastDuePayload
+    | WebhookSubscriptionPausedPayload
+    | WebhookSubscriptionResumedPayload
     | WebhookRefundCreatedPayload
     | WebhookRefundUpdatedPayload
     | WebhookProductCreatedPayload

@@ -1985,6 +1985,10 @@ export interface components {
       subscription_cycled_after_trial: boolean
       /** Subscription Past Due */
       subscription_past_due: boolean
+      /** Subscription Paused */
+      subscription_paused: boolean
+      /** Subscription Resumed */
+      subscription_resumed: boolean
       /** Subscription Renewal Reminder */
       subscription_renewal_reminder: boolean
       /** Subscription Revoked */
@@ -2704,6 +2708,26 @@ export interface components {
        */
       payment_url: string | null
     }
+    /** SubscriptionPausedEmail */
+    SubscriptionPausedEmail: {
+      /**
+       * Template
+       * @default subscription_paused
+       * @constant
+       */
+      template: 'subscription_paused'
+      props: components['schemas']['SubscriptionPausedProps']
+    }
+    /** SubscriptionPausedProps */
+    SubscriptionPausedProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
+      product: components['schemas']['ProductEmail']
+      subscription: components['schemas']['SubscriptionEmail']
+      /** Url */
+      url: string
+    }
     /**
      * SubscriptionProrationBehavior
      * @enum {string}
@@ -2734,6 +2758,26 @@ export interface components {
       url: string
       /** Renewal Date */
       renewal_date: string
+    }
+    /** SubscriptionResumedEmail */
+    SubscriptionResumedEmail: {
+      /**
+       * Template
+       * @default subscription_resumed
+       * @constant
+       */
+      template: 'subscription_resumed'
+      props: components['schemas']['SubscriptionResumedProps']
+    }
+    /** SubscriptionResumedProps */
+    SubscriptionResumedProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
+      product: components['schemas']['ProductEmail']
+      subscription: components['schemas']['SubscriptionEmail']
+      /** Url */
+      url: string
     }
     /** SubscriptionRevokedEmail */
     SubscriptionRevokedEmail: {

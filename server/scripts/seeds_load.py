@@ -1595,6 +1595,8 @@ async def create_seed_data(
                 "subscription_trial_conversion_reminder": False,
                 "subscription_uncanceled": False,
                 "subscription_updated": False,
+                "subscription_paused": False,
+                "subscription_resumed": False,
             },
             "products": [],
         },

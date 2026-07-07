@@ -26,14 +26,18 @@ const billingRoutesList = (org?: schemas['Organization']): Route[] => [
     icon: <HiveOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/products`,
     checkIsActive: (path) =>
-      path.startsWith(`/dashboard/${org?.slug}/products`) &&
-      !path.startsWith(`/dashboard/${org?.slug}/products/meters`),
+      path.startsWith(`/dashboard/${org?.slug}/products`),
     if: true,
     subs: [
       {
         title: 'Catalogue',
         link: `/dashboard/${org?.slug}/products`,
         icon: <HiveOutlined fontSize="inherit" />,
+      },
+      {
+        title: 'Meters',
+        link: `/dashboard/${org?.slug}/products/meters`,
+        icon: <DonutLargeOutlined fontSize="inherit" />,
       },
       {
         title: 'Checkout Links',
@@ -51,13 +55,6 @@ const billingRoutesList = (org?: schemas['Organization']): Route[] => [
         icon: <DiamondOutlined fontSize="inherit" />,
       },
     ],
-  },
-  {
-    id: 'meters',
-    title: 'Meters',
-    icon: <DonutLargeOutlined fontSize="inherit" />,
-    link: `/dashboard/${org?.slug}/products/meters`,
-    if: true,
   },
   {
     id: 'sales',

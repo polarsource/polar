@@ -8,6 +8,7 @@ def to_snake_case(name: str) -> str:
         if (
             c.isupper()
             and i > 0
+            and name[i - 1] != "-"
             and (name[i - 1].islower() or (i + 1 < len(name) and name[i + 1].islower()))
         ):
             result.append("_")

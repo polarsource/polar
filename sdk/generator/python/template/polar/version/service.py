@@ -528,7 +528,7 @@ Raises:
         {% endif %}
         {% endfor %}
         **kwargs: typing.Unpack[{{ variant.name }}],
-    ) -> typing.AsyncGenerator[{{ method.pagination.item_schema | type_annotation }}], None: ...
+    ) -> typing.AsyncGenerator[{{ method.pagination.item_schema | type_annotation }}, None]: ...
 
 {% endif %}
 {% endfor %}

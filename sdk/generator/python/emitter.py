@@ -21,6 +21,7 @@ from python.types import (
     wrap_nullable_type,
 )
 from python.utils import format_default_value, format_default_value_dataclass
+from typescript.types import collect_enum_names
 
 EMITTER_DIRECTORY = pathlib.Path(__file__).parent
 
@@ -60,17 +61,6 @@ def _collect_type_ref_names(
                 names.update(_collect_type_ref_names(type_ref.key_type, api))
 
     return names
-
-
-def _collect_enum_names(type_ref: TypeRef | None, api: APIVersion) -> set[str]:
-    """Collect all enum names from a TypeRef."""
-    if type_ref is None:
-        return set()
-
-    enum_imports: set[str] = set()
-    collect_enum_imports(type_ref, enum_imports, api)
-
-    return enum_imports
 
 
 class PythonEmitter(EmitterBase):
@@ -155,7 +145,7 @@ class PythonEmitter(EmitterBase):
 
     def get_version_string(self, api: APIVersion) -> str:
         """Return the version string for a given APIVersion."""
-        return f"v{to_snake_case(api.version)}"
+        return f"v{to_snake_case(api.version).replace('.', '_')}"
 
     def run_post_actions(self, root_directory: pathlib.Path | str) -> None:
         super().run_post_actions(root_directory)
@@ -257,24 +247,24 @@ class PythonEmitter(EmitterBase):
                 imports["input"].update(
                     _collect_type_ref_names(method.body, api, explode_union_ref=True)
                 )
-                imports["enum"].update(_collect_enum_names(method.body, api))
+                imports["enum"].update(collect_enum_names(method.body, api))
 
             # Collect output imports from response
             if method.response is not None:
                 imports["output"].update(_collect_type_ref_names(method.response, api))
-                imports["enum"].update(_collect_enum_names(method.response, api))
+                imports["enum"].update(collect_enum_names(method.response, api))
 
             if method.pagination is not None:
                 imports["output"].update(
                     _collect_type_ref_names(method.pagination.item_schema, api)
                 )
                 imports["enum"].update(
-                    _collect_enum_names(method.pagination.item_schema, api)
+                    collect_enum_names(method.pagination.item_schema, api)
                 )
 
             # Collect type names and enum imports from path and query parameters
             for param in method.path_params + method.query_params:
-                imports["enum"].update(_collect_enum_names(param.type, api))
+                imports["enum"].update(collect_enum_names(param.type, api))
                 # Also collect model/union names from parameters
                 if isinstance(param.type, (ModelRef, UnionRef)):
                     imports["input"].add(param.type.name)

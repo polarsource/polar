@@ -672,7 +672,7 @@ class TestProductMarginDetector:
         assert insight.category is InsightCategory.cost
         assert insight.severity is InsightSeverity.warning
         assert "Pro margin is down to 41%" in insight.title
-        assert "$24 per customer" in insight.body
+        assert "$23.60 per customer" in insight.body
         action = insight.primary_action
         assert isinstance(action, AdjustPriceAction)
         assert action.product_id == product.product_id

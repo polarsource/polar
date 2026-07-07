@@ -47,11 +47,32 @@ async def get_customer_overview(
         deps.auth_subject,
         organization_id=[deps.organization_id],
         query=email_or_name,
-        pagination=PaginationParams(1, 3),
+        pagination=PaginationParams(1, 5),
     )
     if not customers:
         return f"No customer matching {email_or_name!r} was found."
-    customer = customers[0]
+    # The search is recency-sorted, so "first match" would be the newest
+    # customer, not the best one. Prefer an exact email/name match; with
+    # several inexact matches, ask instead of guessing.
+    needle = email_or_name.strip().lower()
+    exact = [
+        c
+        for c in customers
+        if (c.email or "").lower() == needle or (c.name or "").lower() == needle
+    ]
+    if exact:
+        customer = exact[0]
+    elif count == 1:
+        customer = customers[0]
+    else:
+        options = "; ".join(
+            f"{c.email or c.name} (since {c.created_at.date()})" for c in customers
+        )
+        return (
+            f"{count} customers match {email_or_name!r}: {options}. Nothing "
+            "was rendered. Ask the user which one they mean, or call this "
+            "tool again with the exact email."
+        )
 
     card_marker = deps.emit(
         CustomerCardBlock(

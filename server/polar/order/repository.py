@@ -64,11 +64,16 @@ class OrderRepository(
         """Customers ranked by paid net revenue: (customer_id, email, name,
         order count, net revenue in cents), descending.
 
+        Partially refunded orders count with the refunded portion subtracted,
+        so the ranking reflects money actually kept.
+
         A repository aggregation (not the metrics layer) on purpose: ranking
         across all customers cannot be expressed as bounded per-entity metric
         queries the way products can.
         """
-        net_revenue = func.coalesce(func.sum(Order.net_amount), 0)
+        net_revenue = func.coalesce(
+            func.sum(Order.net_amount - Order.refunded_amount), 0
+        )
         statement = (
             select(
                 Customer.id,
@@ -93,6 +98,38 @@ class OrderRepository(
         return [
             (row[0], row[1], row[2], int(row[3]), int(row[4])) for row in result.all()
         ]
+
+    async def get_top_product_ids_by_revenue(
+        self,
+        organization_id: UUID,
+        *,
+        start: datetime | None = None,
+        limit: int = 10,
+    ) -> Sequence[UUID]:
+        """Product ids ordered by kept net revenue, descending.
+
+        Candidate *selection* only: the assistant reports revenue numbers from
+        the metrics layer so they match the dashboard; this narrows which
+        products are worth those per-product metric queries.
+        """
+        net_revenue = func.coalesce(
+            func.sum(Order.net_amount - Order.refunded_amount), 0
+        )
+        statement = (
+            select(Order.product_id)
+            .where(
+                Order.organization_id == organization_id,
+                Order.status.in_(OrderStatus.paid_statuses()),
+                Order.is_deleted.is_(False),
+            )
+            .group_by(Order.product_id)
+            .order_by(net_revenue.desc())
+            .limit(limit)
+        )
+        if start is not None:
+            statement = statement.where(Order.created_at >= start)
+        result = await self.session.execute(statement)
+        return [row[0] for row in result.all()]
 
     async def get_all_by_customer(
         self,

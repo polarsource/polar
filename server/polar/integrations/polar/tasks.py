@@ -215,6 +215,7 @@ async def track_compass_assistant_usage(
     input_tokens: int,
     output_tokens: int,
     cost_usd: str,
+    usage_id: str,
 ) -> None:
     await get_client().track_compass_assistant_usage(
         external_customer_id=external_customer_id,
@@ -223,6 +224,7 @@ async def track_compass_assistant_usage(
         input_tokens=input_tokens,
         output_tokens=output_tokens,
         cost_usd=Decimal(cost_usd),
+        usage_id=usage_id,
     )
 
 

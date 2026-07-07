@@ -679,12 +679,19 @@ class PolarSelfClient:
         input_tokens: int,
         output_tokens: int,
         cost_usd: Decimal,
+        usage_id: str | None = None,
     ) -> None:
         """Ingest one LLM usage reading as a cost span: a per-customer root
-        event plus a child carrying `_llm` and `_cost` (cents) metadata."""
+        event plus a child carrying `_llm` and `_cost` (cents) metadata.
+
+        `usage_id` makes the cost-carrying child idempotent: ingestion
+        deduplicates on `external_id`, so a task retry after a successful
+        ingest with a lost response doesn't double-count the cost.
+        """
         total_tokens = input_tokens + output_tokens
         cost_cents = (cost_usd * Decimal(100)).quantize(Decimal("0.000001"))
         root_external_id = f"{root_name}-{external_customer_id}"
+        child_external_id = f"{child_name}-{usage_id}" if usage_id else None
 
         with logfire.span(
             f"polar.{operation}",
@@ -707,6 +714,7 @@ class PolarSelfClient:
                             EventCreateExternalCustomer(
                                 name=child_name,
                                 external_customer_id=external_customer_id,
+                                external_id=child_external_id,
                                 parent_id=root_external_id,
                                 metadata={
                                     "_llm": LLMMetadata(
@@ -765,6 +773,7 @@ class PolarSelfClient:
         input_tokens: int,
         output_tokens: int,
         cost_usd: Decimal,
+        usage_id: str,
     ) -> None:
         await self._track_llm_span_usage(
             operation="track_compass_assistant_usage",
@@ -776,6 +785,7 @@ class PolarSelfClient:
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             cost_usd=cost_usd,
+            usage_id=usage_id,
         )
 
     # Customer-portal-scoped operations: create a per-call customer session

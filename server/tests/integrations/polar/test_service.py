@@ -381,6 +381,7 @@ class TestEnqueueTrackCompassAssistantUsage:
             input_tokens=1200,
             output_tokens=300,
             cost_usd=cost_usd,
+            usage_id="run-1",
         )
 
     def test_noop_when_not_configured(self, mocker: MockerFixture) -> None:
@@ -425,7 +426,25 @@ class TestEnqueueTrackCompassAssistantUsage:
             input_tokens=1200,
             output_tokens=300,
             cost_usd="0.0042",
+            usage_id="run-1",
         )
+
+    def test_noop_when_cost_is_zero(
+        self, configured: None, mocker: MockerFixture
+    ) -> None:
+        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
+
+        self._call(cost_usd=Decimal(0))
+
+        enqueue.assert_not_called()
+
+    def test_accepts_float_cost(self, configured: None, mocker: MockerFixture) -> None:
+        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
+
+        self._call(cost_usd=0.5)
+
+        assert enqueue.call_count == 1
+        assert enqueue.call_args.kwargs["cost_usd"] == "0.5"
 
 
 @pytest.mark.asyncio

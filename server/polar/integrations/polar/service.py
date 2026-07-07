@@ -233,6 +233,7 @@ class PolarSelfService:
         input_tokens: int,
         output_tokens: int,
         cost_usd: Decimal | float | None,
+        usage_id: str,
     ) -> None:
         if not self.is_configured:
             return
@@ -251,6 +252,7 @@ class PolarSelfService:
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             cost_usd=str(cost_decimal),
+            usage_id=usage_id,
         )
 
     async def list_plans(self) -> list["Product"]:

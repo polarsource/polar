@@ -269,12 +269,18 @@ async def list_products(
     # Loaded via the repository with prices eager-loaded: the price column
     # reads `all_prices`, which is lazy="raise" and not loaded by the
     # service's list query.
-    items = await ProductRepository.from_session(deps.session).get_all_by_organization(
+    product_repository = ProductRepository.from_session(deps.session)
+    items = await product_repository.get_all_by_organization(
         deps.organization_id,
         options=(selectinload(Product.all_prices),),
         limit=max(1, min(_MAX_LIMIT, limit)),
     )
-    count = len(items)
+    count = await product_repository.count(
+        product_repository.get_base_statement().where(
+            Product.organization_id == deps.organization_id,
+            Product.is_archived.is_(False),
+        )
+    )
     rows: list[Row] = [
         {
             "name": item.name,
@@ -515,13 +521,35 @@ async def top_products_by_revenue(
     days = max(7, min(365, days))
     limit = max(1, min(_MAX_RANKED_PRODUCTS, limit))
 
-    products, _ = await product_service.list(
-        deps.session,
-        deps.auth_subject,
-        organization_id=[deps.organization_id],
-        is_archived=False,
-        pagination=PaginationParams(1, _MAX_RANKED_PRODUCTS),
+    # Candidate selection is revenue-based (order aggregation, ids only) so
+    # orgs with more products than the metric-query budget still rank their
+    # actual top sellers; the displayed numbers below come from the metrics
+    # layer and match the dashboard.
+    candidate_ids = await OrderRepository.from_session(
+        deps.session
+    ).get_top_product_ids_by_revenue(
+        deps.organization_id,
+        start=datetime.combine(
+            deps.today - timedelta(days=days - 1), time.min, deps.timezone
+        ),
+        limit=_MAX_RANKED_PRODUCTS,
     )
+    if candidate_ids:
+        products, _ = await product_service.list(
+            deps.session,
+            deps.auth_subject,
+            id=list(candidate_ids),
+            organization_id=[deps.organization_id],
+            pagination=PaginationParams(1, _MAX_RANKED_PRODUCTS),
+        )
+    else:
+        products, _ = await product_service.list(
+            deps.session,
+            deps.auth_subject,
+            organization_id=[deps.organization_id],
+            is_archived=False,
+            pagination=PaginationParams(1, _MAX_RANKED_PRODUCTS),
+        )
     if not products:
         return "This organization has no products."
 

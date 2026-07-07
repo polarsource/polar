@@ -12,6 +12,7 @@ import hashlib
 import hmac
 import json
 import re
+import uuid
 from collections.abc import AsyncGenerator
 from typing import Any
 
@@ -54,6 +55,9 @@ def _track_usage(
             input_tokens=info.input_tokens,
             output_tokens=info.output_tokens,
             cost_usd=info.estimated_cost_usd,
+            # Idempotency key: a task retry after a lost response re-ingests
+            # the same child event instead of double-counting the cost.
+            usage_id=str(uuid.uuid4()),
         )
     except Exception:
         log.exception(

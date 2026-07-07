@@ -1,4 +1,5 @@
 import uuid
+from collections import defaultdict
 from collections.abc import Sequence
 from datetime import date, datetime, timedelta
 from typing import cast
@@ -11,6 +12,7 @@ from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
+from polar.event.schemas import VarianceEvent
 from polar.event.service import event as event_service
 from polar.kit.currency import get_presentment_currency
 from polar.kit.time_queries import TimeInterval
@@ -37,6 +39,7 @@ from .schemas import (
 from .signals import (
     CUSTOMER_COSTS_SAMPLE_LIMIT,
     ChurnBreakdown,
+    CostAnomalySignal,
     CurrencyOpportunitySignal,
     CustomerCostSignal,
     ProductPricing,
@@ -68,6 +71,9 @@ _MAX_COHORT_CUSTOMERS = 150
 # depth is CUSTOMER_COSTS_SAMPLE_LIMIT so confidence tiers aren't capped by
 # a truncated ranking.
 _CUSTOMER_COSTS_WINDOW_DAYS = 30
+
+# Window for the cost-anomaly prefetch, matching the costs page's variance view.
+_COST_ANOMALY_WINDOW_DAYS = 30
 
 # What the merchant should care about most, first. Detector priority and
 # confidence only break ties within a severity band.
@@ -161,6 +167,9 @@ class CompassService:
             currency_signals = await self._currency_signals(
                 session, org_id, detectors, today=today, timezone=timezone
             )
+            cost_anomalies = await self._cost_anomalies(
+                session, auth_subject, org_id, detectors, today=today, timezone=timezone
+            )
             ctx = DetectorContext(
                 organization_id=org_id,
                 timezone=timezone,
@@ -170,6 +179,7 @@ class CompassService:
                 customer_costs=customer_costs,
                 churn_breakdown=churn_breakdown,
                 currency_signals=currency_signals,
+                cost_anomalies=cost_anomalies,
             )
             for detector in detectors:
                 try:
@@ -434,6 +444,68 @@ class CompassService:
             for currency, (orders, revenue, countries) in by_currency.items()
         ]
         signals.sort(key=lambda signal: signal.revenue_share, reverse=True)
+        return signals
+
+    async def _cost_anomalies(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        org_id: uuid.UUID,
+        detectors: Sequence[Detector],
+        *,
+        today: date,
+        timezone: ZoneInfo,
+    ) -> list[CostAnomalySignal]:
+        """Outlier cost traces grouped by event name, for detectors that declare
+        a need.
+
+        Backed by the events `by-variance` statistics — root events at or above
+        the p99 cost for their event name, the same source as the costs page's
+        anomalies. Grouped by name so a detector reads one signal per spiking
+        event. Failures degrade to an empty list."""
+        if not any(detector.needs_cost_anomalies for detector in detectors):
+            return []
+        try:
+            variance = await event_service.list_variance_events(
+                cast(AsyncSession, session),
+                auth_subject,
+                start_date=today - timedelta(days=_COST_ANOMALY_WINDOW_DAYS),
+                end_date=today,
+                timezone=timezone,
+                organization_id=[org_id],
+            )
+        except Exception:
+            log.exception("compass.cost_anomalies_error", organization_id=str(org_id))
+            return []
+
+        grouped: dict[str, list[VarianceEvent]] = defaultdict(list)
+        for event in variance.items:
+            grouped[event.name].append(event)
+
+        signals: list[CostAnomalySignal] = []
+        for name, events in grouped.items():
+            priced = [
+                (event, float(event.values.get("_cost_amount", 0)))
+                for event in events
+            ]
+            total = sum(amount for _, amount in priced)
+            if total <= 0:
+                continue
+            max_event, max_amount = max(priced, key=lambda pair: pair[1])
+            signals.append(
+                CostAnomalySignal(
+                    event_name=name,
+                    anomaly_count=len(events),
+                    total_amount=total,
+                    max_amount=max_amount,
+                    max_event_id=max_event.event_id,
+                    # p99 and average are per-event-name, identical across its
+                    # outlier rows, so read them off the first.
+                    average_amount=float(events[0].averages.get("_cost_amount", 0)),
+                    p99_amount=float(events[0].p99.get("_cost_amount", 0)),
+                )
+            )
+        signals.sort(key=lambda signal: signal.total_amount, reverse=True)
         return signals
 
     async def _compass_enabled_org_ids(

@@ -61,6 +61,7 @@ class InsightActionType(StrEnum):
     """
 
     view_metric = "view_metric"
+    view_costs = "view_costs"
     adjust_price = "adjust_price"
     add_currency = "add_currency"
 
@@ -76,6 +77,26 @@ class ViewMetricAction(Schema):
             "`monthly_recurring_revenue`). The client owns the routing and "
             "resolves it to the matching analytics page."
         )
+    )
+
+
+class ViewCostsAction(Schema):
+    """A drill-down to the cost analytics, where per-trace anomalies live.
+
+    Unlike `view_metric`, costs are not a single metric slug: they have their
+    own analytics with a p99 anomaly breakdown. When `event_id` is set, the
+    client deep-links to that specific outlier event's span; otherwise it lands
+    on the costs overview. The client owns the routing either way.
+    """
+
+    type: Literal[InsightActionType.view_costs] = InsightActionType.view_costs
+    label: str = Field(description="Button label.")
+    event_id: UUID4 | None = Field(
+        default=None,
+        description=(
+            "Root event id of the single largest outlier trace, deep-linked to "
+            "its span. Null routes to the costs overview instead."
+        ),
     )
 
 
@@ -122,7 +143,7 @@ class AddCurrencyAction(Schema):
 
 
 InsightAction = Annotated[
-    ViewMetricAction | AdjustPriceAction | AddCurrencyAction,
+    ViewMetricAction | ViewCostsAction | AdjustPriceAction | AddCurrencyAction,
     Discriminator("type"),
 ]
 

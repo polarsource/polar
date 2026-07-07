@@ -21237,6 +21237,7 @@ export interface components {
       primary_action?:
         | (
             | components['schemas']['ViewMetricAction']
+            | components['schemas']['ViewCostsAction']
             | components['schemas']['AdjustPriceAction']
             | components['schemas']['AddCurrencyAction']
           )
@@ -34523,6 +34524,32 @@ export interface components {
       p99?: {
         [key: string]: string
       }
+    }
+    /**
+     * ViewCostsAction
+     * @description A drill-down to the cost analytics, where per-trace anomalies live.
+     *
+     *     Unlike `view_metric`, costs are not a single metric slug: they have their
+     *     own analytics with a p99 anomaly breakdown. When `event_id` is set, the
+     *     client deep-links to that specific outlier event's span; otherwise it lands
+     *     on the costs overview. The client owns the routing either way.
+     */
+    ViewCostsAction: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'view_costs'
+      /**
+       * Label
+       * @description Button label.
+       */
+      label: string
+      /**
+       * Event Id
+       * @description Root event id of the single largest outlier trace, deep-linked to its span. Null routes to the costs overview instead.
+       */
+      event_id?: string | null
     }
     /**
      * ViewMetricAction
@@ -64784,6 +64811,9 @@ export const userUpdateCountryAnyOf0Values: ReadonlyArray<
   'ZM',
   'ZW',
 ]
+export const viewCostsActionTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ViewCostsAction']['type']
+> = ['view_costs']
 export const viewMetricActionTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ViewMetricAction']['type']
 > = ['view_metric']

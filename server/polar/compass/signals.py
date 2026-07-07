@@ -122,6 +122,41 @@ class CurrencyOpportunitySignal:
     """Top contributing alpha-2 country codes, largest first."""
 
 
+@dataclass(frozen=True)
+class CostAnomalySignal:
+    """Outlier cost traces for one event name, aggregated from the events
+    variance statistics (root events at or above the p99 cost for their name).
+
+    Prefetched by the service for detectors that declare `needs_cost_anomalies`,
+    keeping them pure.
+    """
+
+    event_name: str
+    anomaly_count: int
+    """Number of outlier traces for this event name in the window."""
+    total_amount: float
+    """Summed `_cost.amount` across the outlier traces, in the cost unit."""
+    max_amount: float
+    """The single largest outlier trace's cost."""
+    max_event_id: uuid.UUID
+    """Root event id of that largest trace, for a deep-link to its span."""
+    average_amount: float
+    """Typical per-trace cost for this event name."""
+    p99_amount: float
+    """p99 per-trace cost for this event name."""
+
+    @property
+    def spike_ratio(self) -> float:
+        """How many times the largest outlier exceeds the typical trace.
+
+        A p99 outlier always exists, so this magnitude — not membership — is
+        what makes a spike newsworthy.
+        """
+        if self.average_amount <= 0:
+            return 0.0
+        return self.max_amount / self.average_amount
+
+
 def format_currency(cents: float) -> str:
     return f"${cents / 100:,.0f}"
 

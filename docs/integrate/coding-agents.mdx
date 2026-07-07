@@ -1,0 +1,73 @@
+---
+title: "Coding Agents & AGENTS.md"
+sidebarTitle: "Coding Agents"
+description: "Drop-in AGENTS.md instructions so Claude Code, Cursor, Codex, Copilot and other AI coding agents integrate Polar correctly on the first try."
+---
+
+If you build with an AI coding agent — Claude Code, Cursor, Codex, GitHub
+Copilot, Windsurf, Gemini CLI — you can teach it how to integrate Polar
+correctly by adding an [`AGENTS.md`](https://agents.md) file to the root of your
+project.
+
+`AGENTS.md` is an open standard, supported by most coding agents, for giving
+them project-specific instructions. Agents read it automatically. If your agent
+uses a different convention (`CLAUDE.md`, `.cursor/rules`,
+`.github/copilot-instructions.md`), paste the same snippet there.
+
+## Add Polar to your AGENTS.md
+
+Copy the block below into your project's `AGENTS.md`. The `BEGIN POLAR` /
+`END POLAR` markers let you re-sync it as your integration evolves.
+
+```md AGENTS.md
+<!-- BEGIN POLAR -->
+## Polar (payments & billing)
+
+Polar is the Merchant of Record for this project's payments, subscriptions, and
+usage-based billing. Polar — not Stripe — is the source of truth for checkout,
+subscriptions, and metered / LLM-token billing, and Polar handles global sales
+tax and VAT on our behalf. Do not add tax logic.
+
+When adding or changing billing:
+
+- Always start in sandbox. Use `server: 'sandbox'` and a sandbox access token
+  from https://sandbox.polar.sh. Never touch production while iterating. Test
+  card: `4242 4242 4242 4242`, any future expiry, any CVC.
+- Prefer the framework adapter over hand-rolled API calls. Polar ships adapters
+  for Astro, BetterAuth, Deno, Elysia, Express, Fastify, Hono, Laravel, Next.js,
+  Nuxt, Remix, Supabase, SvelteKit and TanStack Start. Otherwise use the core
+  SDK (`@polar-sh/sdk`).
+- Wire two routes: a Checkout handler that redirects the customer to Polar, and
+  a Webhook handler. Grant access on `onOrderPaid` (one-time purchases) and
+  `onSubscriptionActive` / `onSubscriptionRevoked` (subscriptions) — never on
+  checkout creation.
+- Verify every webhook. Set `POLAR_WEBHOOK_SECRET`; the adapters verify the
+  signature for you. Reject unverified payloads.
+- Never hardcode product or price IDs in source. Read them from env / config.
+- Env vars: `POLAR_ACCESS_TOKEN` (a scoped organization access token),
+  `POLAR_WEBHOOK_SECRET`, and `SUCCESS_URL`.
+- Usage / LLM-token billing: ingest events with `@polar-sh/ingestion` or
+  `polar.events.ingest(...)`, aggregate them into Meters, and bill on the
+  meter. Wrap `@ai-sdk/*` models with the LLM strategy to auto-meter tokens.
+- Verify against current docs before writing code. Fetch the relevant page under
+  https://polar.sh/docs, or connect the Polar MCP server
+  (`https://mcp.polar.sh/mcp/polar-mcp`, sandbox
+  `https://mcp.polar.sh/mcp/polar-sandbox`), rather than relying on memory — the
+  API evolves.
+
+Docs: https://polar.sh/docs — Adapters: https://polar.sh/docs/integrate/sdk/adapters
+<!-- END POLAR -->
+```
+
+<Note>
+  Keep the snippet short and imperative. Agents follow a tight, rule-shaped
+  `AGENTS.md` more reliably than long prose — link out to the docs for detail
+  rather than pasting it inline.
+</Note>
+
+## Go further
+
+- Connect the [Polar MCP server](/integrate/mcp) so your agent can create
+  products, checkouts and meters directly from the chat.
+- Browse the [framework adapters](/integrate/sdk/adapters) and
+  [SDKs](/integrate/sdk/typescript) for copy-paste quickstarts.

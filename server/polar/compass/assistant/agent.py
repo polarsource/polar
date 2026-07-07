@@ -7,11 +7,15 @@ from pydantic_ai import Agent
 from polar.auth.scope import Scope
 from polar.config import settings
 
+from .customer_tools import CUSTOMER_TOOLS_WITH_SCOPES
 from .deps import AssistantDeps
+from .entity_tools import ENTITY_TOOLS_WITH_SCOPES
 from .tools import TOOLS_WITH_SCOPES
 
 _ALL_TOOLS_WITH_SCOPES: list[tuple[object, Scope]] = [
     *TOOLS_WITH_SCOPES,
+    *ENTITY_TOOLS_WITH_SCOPES,
+    *CUSTOMER_TOOLS_WITH_SCOPES,
 ]
 
 SYSTEM_PROMPT = """\
@@ -111,7 +115,9 @@ def _safe(tool: Any) -> Any:
     return wrapper
 
 
-def build_assistant_agent(scopes: set[Scope]) -> Agent[AssistantDeps, str]:
+def build_assistant_agent(
+    scopes: set[Scope],
+) -> tuple[Agent[AssistantDeps, str], str, str]:
     """Build the assistant for one request, with the caller's capabilities.
 
     The toolset is derived from the caller's granted scopes: a tool whose scope
@@ -119,9 +125,9 @@ def build_assistant_agent(scopes: set[Scope]) -> Agent[AssistantDeps, str]:
     reach data outside its grants even if the model asks. Runtime checks inside
     each tool back this up.
     """
-    model_instance, _, model_name = settings.get_pydantic_gateway_model()
+    model_instance, model_provider, model_name = settings.get_pydantic_gateway_model()
     tools = [_safe(tool) for tool in tools_for_scopes(scopes)]
-    return Agent(
+    agent: Agent[AssistantDeps, str] = Agent(
         model_instance,
         deps_type=AssistantDeps,
         system_prompt=SYSTEM_PROMPT,
@@ -129,3 +135,4 @@ def build_assistant_agent(scopes: set[Scope]) -> Agent[AssistantDeps, str]:
         # gpt-5.5+ reasoning models reject any non-default temperature.
         model_settings=({} if model_name.startswith("gpt-5.5") else {"temperature": 0}),
     )
+    return agent, model_provider, model_name

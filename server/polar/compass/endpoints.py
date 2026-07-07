@@ -93,7 +93,7 @@ async def assistant_chat(
         raise ResourceNotFound()
 
     tz = ZoneInfo(timezone)
-    agent = build_assistant_agent(auth_subject.scopes)
+    agent, model_provider, model_name = build_assistant_agent(auth_subject.scopes)
     # The request-scoped session closes when this handler returns, before the
     # response streams — the generator opens its own session for tool calls.
     read_sessionmaker = request.state.async_read_sessionmaker
@@ -109,7 +109,12 @@ async def assistant_chat(
                 redis=redis,
             )
             async for event in stream_assistant_run(
-                agent, deps, body.prompt, body.message_history
+                agent,
+                deps,
+                body.prompt,
+                body.message_history,
+                model_provider=model_provider,
+                model_name=model_name,
             ):
                 yield event
 

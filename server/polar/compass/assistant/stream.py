@@ -26,7 +26,9 @@ from pydantic_ai.messages import (
 )
 
 from polar.config import settings
+from polar.integrations.polar.service import polar_self
 from polar.logging import Logger
+from polar.organization_review.schemas import UsageInfo
 
 from .deps import AssistantDeps
 
@@ -35,6 +37,29 @@ log: Logger = structlog.get_logger()
 
 def _event(event: str, data: Any) -> dict[str, str]:
     return {"event": event, "data": json.dumps(data)}
+
+
+def _track_usage(
+    deps: AssistantDeps, usage: Any, model_provider: str, model_name: str
+) -> None:
+    """Polar-for-Polar dogfooding: ingest this run's inference cost as a span
+    on the Polar organization, mirroring organization reviews. Best-effort —
+    tracking must never break the conversation."""
+    try:
+        info = UsageInfo.from_agent_usage(usage, model_provider, model_name)
+        polar_self.enqueue_track_compass_assistant_usage(
+            external_customer_id=str(deps.organization_id),
+            vendor=model_provider,
+            model=model_name,
+            input_tokens=info.input_tokens,
+            output_tokens=info.output_tokens,
+            cost_usd=info.estimated_cost_usd,
+        )
+    except Exception:
+        log.exception(
+            "compass.assistant_usage_tracking_error",
+            organization_id=str(deps.organization_id),
+        )
 
 
 def _scopes_digest(deps: AssistantDeps) -> str:
@@ -140,6 +165,9 @@ async def stream_assistant_run(
     deps: AssistantDeps,
     prompt: str,
     message_history_json: str | None,
+    *,
+    model_provider: str,
+    model_name: str,
 ) -> AsyncGenerator[dict[str, str]]:
     history = None
     if message_history_json:
@@ -210,6 +238,7 @@ async def stream_assistant_run(
 
             result = run.result
             assert result is not None
+            _track_usage(deps, result.usage, model_provider, model_name)
             yield _event(
                 "done",
                 {

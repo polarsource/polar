@@ -16,7 +16,21 @@ from polar.compass.assistant.blocks import (
     MetricChartPoint,
     TextBlock,
 )
+from polar.compass.assistant.customer_tools import get_customer_overview
 from polar.compass.assistant.deps import AssistantDeps
+from polar.compass.assistant.entity_tools import (
+    list_checkouts,
+    list_customers,
+    list_disputes,
+    list_orders,
+    list_payouts,
+    list_products,
+    list_refunds,
+    list_subscriptions,
+    top_customers_by_cost,
+    top_customers_by_revenue,
+    top_products_by_revenue,
+)
 from polar.compass.assistant.tools import get_insights, get_metrics, show_insights
 
 
@@ -41,9 +55,26 @@ class TestToolsForScopes:
         assert get_metrics in tools
         assert get_insights in tools
         assert show_insights in tools
+        assert top_products_by_revenue in tools
 
-    def test_unrelated_scopes_grant_nothing(self) -> None:
-        assert tools_for_scopes({Scope.webhooks_read}) == []
+    def test_scopes_grant_exactly_their_tools(self) -> None:
+        tools = tools_for_scopes({Scope.orders_read})
+
+        assert tools == [list_orders, top_customers_by_revenue]
+
+    def test_each_entity_scope_maps_to_its_tool(self) -> None:
+        cases: dict[Scope, list[object]] = {
+            Scope.subscriptions_read: [list_subscriptions],
+            Scope.customers_read: [list_customers, get_customer_overview],
+            Scope.products_read: [list_products],
+            Scope.disputes_read: [list_disputes],
+            Scope.checkouts_read: [list_checkouts],
+            Scope.refunds_read: [list_refunds],
+            Scope.payouts_read: [list_payouts],
+            Scope.events_read: [top_customers_by_cost],
+        }
+        for scope, tools in cases.items():
+            assert tools_for_scopes({scope}) == tools
 
     def test_no_scopes_grant_nothing(self) -> None:
         assert tools_for_scopes(set()) == []
@@ -74,6 +105,20 @@ class TestToolScopeGuards:
         result = await show_insights(_ctx(deps), ["x"])
 
         assert "Permission denied" in result
+        assert deps.blocks == []
+
+    async def test_entity_tools_deny_without_their_scope(self) -> None:
+        deps = _deps(scopes={Scope.metrics_read})
+
+        for tool in (
+            list_orders,
+            list_subscriptions,
+            list_customers,
+            list_products,
+            list_disputes,
+        ):
+            result = await tool(_ctx(deps))
+            assert "Permission denied" in result
         assert deps.blocks == []
 
     async def test_get_metrics_rejects_unknown_slugs_before_fetching(self) -> None:

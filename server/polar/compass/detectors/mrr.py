@@ -1,6 +1,6 @@
 from polar.metrics.aggregation import latest, value_n_periods_ago
 
-from ..schemas import Insight, InsightAction, InsightCategory, InsightSeverity
+from ..schemas import Insight, InsightCategory, InsightSeverity, ViewMetricAction
 from ..signals import MetricSignal
 from .base import Detector, DetectorContext, confidence_for_sample
 
@@ -84,7 +84,7 @@ class MRRGrowthDetector(Detector):
             body=body,
             why=why,
             confidence=confidence,
-            primary_action=InsightAction(
+            primary_action=ViewMetricAction(
                 label="View MRR trend",
                 metric="monthly_recurring_revenue",
             ),

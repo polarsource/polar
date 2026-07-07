@@ -4,17 +4,32 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
+from polar.compass.detectors import DETECTORS
 from polar.compass.detectors.arpu import ARPUMovementDetector
 from polar.compass.detectors.base import DetectorContext, confidence_for_sample
 from polar.compass.detectors.churn import ChurnSpikeDetector
 from polar.compass.detectors.conversion import CheckoutConversionDetector
 from polar.compass.detectors.cost_per_user import CostPerUserDetector
+from polar.compass.detectors.customer_cost import CostConcentrationDetector
 from polar.compass.detectors.margin import GrossMarginDetector
 from polar.compass.detectors.mrr import MRRGrowthDetector
+from polar.compass.detectors.product_margin import ProductMarginDetector
 from polar.compass.detectors.subscribers import SubscriberGrowthDetector
 from polar.compass.detectors.trials import TrialConversionDetector
 from polar.compass.keys import build_insight_key, parse_insight_key
-from polar.compass.schemas import ConfidenceLevel, InsightCategory, InsightSeverity
+from polar.compass.schemas import (
+    AdjustPriceAction,
+    ConfidenceLevel,
+    Insight,
+    InsightCategory,
+    InsightSeverity,
+    ViewMetricAction,
+)
+from polar.compass.signals import (
+    CUSTOMER_COSTS_SAMPLE_LIMIT,
+    CustomerCostSignal,
+    ProductPricing,
+)
 from polar.metrics.schemas import MetricsResponse
 
 
@@ -413,6 +428,35 @@ class TestGrossMarginDetector:
         assert insight.severity is InsightSeverity.opportunity
         assert "improved to 90%" in insight.title
 
+    def test_confidence_scales_with_cost_bearing_customers(self) -> None:
+        # 60 customers with costs: past the medium threshold (20), so the
+        # insight must not be capped at low confidence by a truncated fetch.
+        signals = [_cost_signal("whale@corp.com", 0.45)] + [
+            _cost_signal(f"c{i}@x.com", 0.009) for i in range(59)
+        ]
+
+        insight = CostConcentrationDetector().evaluate(
+            _context_with_customer_costs(signals)
+        )
+
+        assert insight is not None
+        assert insight.confidence is ConfidenceLevel.medium
+        assert "across 60 customers" in insight.body
+
+    def test_copy_says_at_least_when_sample_is_capped(self) -> None:
+        signals = [_cost_signal("whale@corp.com", 0.45)] + [
+            _cost_signal(f"c{i}@x.com", 0.005)
+            for i in range(CUSTOMER_COSTS_SAMPLE_LIMIT - 1)
+        ]
+
+        insight = CostConcentrationDetector().evaluate(
+            _context_with_customer_costs(signals)
+        )
+
+        assert insight is not None
+        assert insight.confidence is ConfidenceLevel.high
+        assert f"at least {CUSTOMER_COSTS_SAMPLE_LIMIT} customers" in insight.body
+
     def test_silent_without_cost_data(self) -> None:
         # No Tinybird cost/revenue data resolves margin to 0 — stay quiet.
         margin = [0.0] * 36
@@ -474,6 +518,18 @@ class TestCostPerUserDetector:
     def test_silent_when_cost_negligible(self) -> None:
         # Sub-dollar cost per user is noise, not a signal.
         cpu = [3.0] * 6 + [4.0] * 29 + [6.0]
+        subs = [50.0] * 36
+
+        insight = CostPerUserDetector().evaluate(
+            _context(_response_from(cost_per_user=cpu, active_subscriptions=subs))
+        )
+
+        assert insight is None
+
+    def test_silent_when_baseline_negligible(self) -> None:
+        # Cost tracking just started: a near-zero baseline against real costs
+        # would read as an absurd million-percent increase, not a trend.
+        cpu = [1.0] * 6 + [1.0] * 29 + [13_750.0]
         subs = [50.0] * 36
 
         insight = CostPerUserDetector().evaluate(
@@ -558,3 +614,314 @@ class TestCheckoutConversionDetector:
         )
 
         assert insight is None
+
+
+def _product(
+    name: str = "Pro",
+    price_amount: int = 4000,
+    margin: float = 0.5,
+    subs: float = 50.0,
+    currency: str = "usd",
+) -> ProductPricing:
+    return ProductPricing(
+        product_id=uuid.uuid4(),
+        name=name,
+        price_amount=price_amount,
+        currency=currency,
+        metrics=_response_from(
+            gross_margin_percentage=[margin] * 36,
+            active_subscriptions=[subs] * 36,
+        ),
+    )
+
+
+def _context_with_customer_costs(
+    customer_costs: list[CustomerCostSignal],
+) -> DetectorContext:
+    return DetectorContext(
+        organization_id=uuid.uuid4(),
+        timezone=ZoneInfo("UTC"),
+        today=date(2026, 2, 6),
+        metrics=_response_from(active_subscriptions=[50.0] * 36),
+        customer_costs=tuple(customer_costs),
+    )
+
+
+def _cost_signal(label: str, share: float, amount: float = 100.0) -> CustomerCostSignal:
+    return CustomerCostSignal(label=label, amount=amount, share=share)
+
+
+def _context_with_products(products: list[ProductPricing]) -> DetectorContext:
+    return DetectorContext(
+        organization_id=uuid.uuid4(),
+        timezone=ZoneInfo("UTC"),
+        today=date(2026, 2, 6),
+        metrics=_response_from(gross_margin_percentage=[0.5] * 36),
+        products=tuple(products),
+    )
+
+
+class TestProductMarginDetector:
+    def test_fires_with_price_suggestion(self) -> None:
+        # $40 product at 41% margin: ~$23.60 goes to serving each customer.
+        product = _product(price_amount=4000, margin=0.41)
+
+        insight = ProductMarginDetector().evaluate(_context_with_products([product]))
+
+        assert insight is not None
+        assert insight.category is InsightCategory.cost
+        assert insight.severity is InsightSeverity.warning
+        assert "Pro margin is down to 41%" in insight.title
+        assert "$23.60 per customer" in insight.body
+        action = insight.primary_action
+        assert isinstance(action, AdjustPriceAction)
+        assert action.product_id == product.product_id
+        assert action.current_price_amount == 4000
+        # ceil(4000 * 0.59 / 0.30 / 100) * 100 — the price restoring 70% margin.
+        assert action.suggested_price_amount == 7900
+        assert "$79" in insight.body
+
+    def test_deep_margin_loss_is_critical(self) -> None:
+        insight = ProductMarginDetector().evaluate(
+            _context_with_products([_product(margin=0.30)])
+        )
+
+        assert insight is not None
+        assert insight.severity is InsightSeverity.critical
+
+    def test_picks_the_worst_product(self) -> None:
+        healthy = _product(name="Starter", margin=0.85)
+        thin = _product(name="Pro", margin=0.55)
+        thinner = _product(name="Enterprise", margin=0.45)
+
+        insight = ProductMarginDetector().evaluate(
+            _context_with_products([healthy, thin, thinner])
+        )
+
+        assert insight is not None
+        assert "Enterprise" in insight.title
+        action = insight.primary_action
+        assert isinstance(action, AdjustPriceAction)
+        assert action.product_id == thinner.product_id
+
+    def test_no_insight_when_margins_healthy(self) -> None:
+        insight = ProductMarginDetector().evaluate(
+            _context_with_products([_product(margin=0.85)])
+        )
+
+        assert insight is None
+
+    def test_silent_without_cost_data(self) -> None:
+        # Margin of 0 means no cost data for the product, not a 0% business.
+        insight = ProductMarginDetector().evaluate(
+            _context_with_products([_product(margin=0.0)])
+        )
+
+        assert insight is None
+
+    def test_suppressed_when_sample_too_small(self) -> None:
+        insight = ProductMarginDetector().evaluate(
+            _context_with_products([_product(margin=0.41, subs=3.0)])
+        )
+
+        assert insight is None
+
+    def test_no_insight_without_products(self) -> None:
+        insight = ProductMarginDetector().evaluate(_context_with_products([]))
+
+        assert insight is None
+
+
+class TestCostConcentrationDetector:
+    def test_fires_on_concentration(self) -> None:
+        signals = [_cost_signal("big@corp.com", 0.55)] + [
+            _cost_signal(f"c{i}@x.com", 0.09) for i in range(5)
+        ]
+
+        insight = CostConcentrationDetector().evaluate(
+            _context_with_customer_costs(signals)
+        )
+
+        assert insight is not None
+        assert insight.category is InsightCategory.risk
+        assert insight.severity is InsightSeverity.warning
+        assert "55% of your costs" in insight.title
+        assert "big@corp.com" in insight.body
+        assert insight.detector_id == "cost_concentration"
+
+    def test_extreme_concentration_is_critical(self) -> None:
+        signals = [_cost_signal("whale@corp.com", 0.7)] + [
+            _cost_signal(f"c{i}@x.com", 0.06) for i in range(5)
+        ]
+
+        insight = CostConcentrationDetector().evaluate(
+            _context_with_customer_costs(signals)
+        )
+
+        assert insight is not None
+        assert insight.severity is InsightSeverity.critical
+
+    def test_silent_when_costs_spread_out(self) -> None:
+        signals = [_cost_signal(f"c{i}@x.com", 0.2) for i in range(5)]
+
+        insight = CostConcentrationDetector().evaluate(
+            _context_with_customer_costs(signals)
+        )
+
+        assert insight is None
+
+    def test_suppressed_when_too_few_customers(self) -> None:
+        signals = [_cost_signal("a@x.com", 0.8), _cost_signal("b@x.com", 0.2)]
+
+        insight = CostConcentrationDetector().evaluate(
+            _context_with_customer_costs(signals)
+        )
+
+        assert insight is None
+
+    def test_silent_without_cost_data(self) -> None:
+        insight = CostConcentrationDetector().evaluate(_context_with_customer_costs([]))
+
+        assert insight is None
+
+
+class TestSuggestedPriceRounding:
+    def test_cent_currency_rounds_to_next_dollar(self) -> None:
+        product = _product(price_amount=5000, margin=0.45, currency="usd")
+
+        insight = ProductMarginDetector().evaluate(_context_with_products([product]))
+
+        assert insight is not None
+        assert isinstance(insight.primary_action, AdjustPriceAction)
+        # target = 5000 * 0.55 / 0.30 = 9166.67 -> next dollar
+        assert insight.primary_action.suggested_price_amount == 9200
+
+    def test_zero_decimal_currency_rounds_to_next_unit(self) -> None:
+        product = _product(price_amount=5000, margin=0.45, currency="jpy")
+
+        insight = ProductMarginDetector().evaluate(_context_with_products([product]))
+
+        assert insight is not None
+        assert isinstance(insight.primary_action, AdjustPriceAction)
+        # same target, but JPY's smallest unit IS the display unit -> next yen
+        assert insight.primary_action.suggested_price_amount == 9167
+        # copy formats in the product's currency, not hardcoded USD cents
+        assert "¥5,000" in insight.body
+        assert "$50" not in insight.body
+
+
+class TestInsightCopy:
+    def test_no_em_dashes_in_any_emitted_copy(self) -> None:
+        """Em dashes are banned in user-facing copy; use comma, colon or period."""
+        subs = [50.0] * 36
+        firing: list[Insight | None] = [
+            MRRGrowthDetector().evaluate(
+                _context(
+                    _response([100_000.0] * 6 + [110_000.0] * 29 + [120_000.0], subs)
+                )
+            ),
+            SubscriberGrowthDetector().evaluate(
+                _context(
+                    _response_from(
+                        active_subscriptions=[10.0] * 6 + [12.0] * 29 + [16.0]
+                    )
+                )
+            ),
+            ARPUMovementDetector().evaluate(
+                _context(
+                    _response_from(
+                        average_revenue_per_user=[25_000.0] * 6
+                        + [22_000.0] * 29
+                        + [19_400.0],
+                        active_subscriptions=subs,
+                    )
+                )
+            ),
+            # Churn with a rising prior window, so the extra sentence renders too.
+            ChurnSpikeDetector().evaluate(
+                _context(
+                    _response_from(
+                        churned_subscriptions=[0.0] * 6 + [1.0] * 30 + [2.0] * 30,
+                        active_subscriptions=[50.0] * 66,
+                    )
+                )
+            ),
+            TrialConversionDetector().evaluate(
+                _context(
+                    _response_from(
+                        trial_monthly_recurring_revenue=[0.0] * 35 + [100_000.0],
+                        monthly_recurring_revenue=[900_000.0] * 36,
+                        active_subscriptions=subs,
+                    )
+                )
+            ),
+            GrossMarginDetector().evaluate(
+                _context(
+                    _response_from(
+                        gross_margin_percentage=[0.8] * 6 + [0.75] * 29 + [0.55],
+                        active_subscriptions=subs,
+                    )
+                )
+            ),
+            CostPerUserDetector().evaluate(
+                _context(
+                    _response_from(
+                        cost_per_user=[200.0] * 6 + [250.0] * 29 + [300.0],
+                        active_subscriptions=subs,
+                    )
+                )
+            ),
+            CheckoutConversionDetector().evaluate(
+                _context(
+                    _response_from(
+                        checkouts=[0.0] * 6 + [20.0] + [0.0] * 29 + [20.0] + [0.0] * 29,
+                        succeeded_checkouts=[0.0] * 6
+                        + [16.0]
+                        + [0.0] * 29
+                        + [11.0]
+                        + [0.0] * 29,
+                    )
+                )
+            ),
+            ProductMarginDetector().evaluate(
+                _context_with_products([_product(margin=0.41)])
+            ),
+            CostConcentrationDetector().evaluate(
+                _context_with_customer_costs(
+                    [_cost_signal("big@corp.com", 0.62)]
+                    + [_cost_signal(f"c{i}@x.com", 0.076) for i in range(5)]
+                )
+            ),
+        ]
+
+        assert len(firing) == len(DETECTORS)
+        for insight in firing:
+            assert insight is not None, "every registered detector must fire here"
+            copy = [insight.title, insight.body, insight.why or ""]
+            if insight.primary_action is not None:
+                copy.append(insight.primary_action.label)
+            for text in copy:
+                assert "—" not in text, f"em dash in {insight.detector_id}: {text!r}"
+
+
+class TestInsightActionUnion:
+    def test_adjust_price_round_trips_through_the_wire_format(self) -> None:
+        insight = ProductMarginDetector().evaluate(
+            _context_with_products([_product(margin=0.41)])
+        )
+        assert insight is not None
+
+        parsed = Insight.model_validate(insight.model_dump())
+
+        assert isinstance(parsed.primary_action, AdjustPriceAction)
+        assert parsed.primary_action.type == "adjust_price"
+
+    def test_view_metric_round_trips_through_the_wire_format(self) -> None:
+        mrr = [100_000.0] * 6 + [110_000.0] * 29 + [120_000.0]
+        insight = MRRGrowthDetector().evaluate(_context(_response(mrr, [50.0] * 36)))
+        assert insight is not None
+
+        parsed = Insight.model_validate(insight.model_dump())
+
+        assert isinstance(parsed.primary_action, ViewMetricAction)
+        assert parsed.primary_action.type == "view_metric"

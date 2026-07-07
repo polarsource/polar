@@ -1,20 +1,29 @@
 import uuid
 from collections.abc import Sequence
-from datetime import datetime, timedelta
+from datetime import date, datetime, timedelta
+from typing import cast
 from zoneinfo import ZoneInfo
 
 import structlog
+from sqlalchemy.orm import selectinload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
+from polar.event.service import event as event_service
 from polar.kit.time_queries import TimeInterval
 from polar.logging import Logger
+from polar.metrics.aggregation import latest
+from polar.metrics.schemas import MetricsResponse
 from polar.metrics.service import metrics as metrics_service
+from polar.models import Product
+from polar.models.product_price import ProductPriceFixed
 from polar.organization.repository import OrganizationRepository
-from polar.postgres import AsyncReadSession
+from polar.postgres import AsyncReadSession, AsyncSession
+from polar.product.repository import ProductRepository
 from polar.redis import Redis
+from polar.subscription.repository import SubscriptionRepository
 
 from .detectors import DETECTORS, Detector, DetectorContext
 from .schemas import (
@@ -23,12 +32,34 @@ from .schemas import (
     InsightCategory,
     InsightSeverity,
 )
+from .signals import (
+    CUSTOMER_COSTS_SAMPLE_LIMIT,
+    CustomerCostSignal,
+    ProductPricing,
+)
 
 log: Logger = structlog.get_logger()
 
 # Extra days beyond the longest detector lookback so a `value_n_periods_ago`
 # baseline is always present in the fetched series.
 _LOOKBACK_HEADROOM_DAYS = 5
+
+# Per-product metrics cost one metrics query each; cap how many products the
+# per-product detectors read so the feed stays a bounded number of queries.
+_MAX_PRODUCTS = 8
+
+# Cost events are attributed to customers, not products (the Tinybird costs
+# pipe has no product filter), so per-product cost reads go through the
+# product's active-customer cohort as a `customer_id` filter. The filter is a
+# GET query param, which bounds how many customer UUIDs fit in the URL —
+# products with a larger cohort are skipped (their margin needs a dedicated
+# product-attributed pipe) rather than silently sampled.
+_MAX_COHORT_CUSTOMERS = 150
+
+# Per-customer cost ranking window for concentration detectors. The fetch
+# depth is CUSTOMER_COSTS_SAMPLE_LIMIT so confidence tiers aren't capped by
+# a truncated ranking.
+_CUSTOMER_COSTS_WINDOW_DAYS = 30
 
 # What the merchant should care about most, first. Detector priority and
 # confidence only break ties within a severity band.
@@ -97,11 +128,32 @@ class CompassService:
                 log.exception("compass.metrics_error", organization_id=str(org_id))
                 continue
 
+            products = await self._product_pricing(
+                session,
+                auth_subject,
+                org_id,
+                detectors,
+                org_metrics=response,
+                today=today,
+                timezone=timezone,
+                days=days,
+                redis=redis,
+            )
+            customer_costs = await self._customer_costs(
+                session,
+                auth_subject,
+                org_id,
+                detectors,
+                today=today,
+                timezone=timezone,
+            )
             ctx = DetectorContext(
                 organization_id=org_id,
                 timezone=timezone,
                 today=today,
                 metrics=response,
+                products=products,
+                customer_costs=customer_costs,
             )
             for detector in detectors:
                 try:
@@ -129,6 +181,149 @@ class CompassService:
             )
         )
         return insights
+
+    async def _product_pricing(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        org_id: uuid.UUID,
+        detectors: Sequence[Detector],
+        *,
+        org_metrics: MetricsResponse,
+        today: date,
+        timezone: ZoneInfo,
+        days: int,
+        redis: Redis | None,
+    ) -> list[ProductPricing]:
+        """Per-product pricing + metrics for detectors that declare a need.
+
+        Skipped entirely unless a selected detector declares
+        `product_metric_slugs` AND the organization emits cost data — the
+        org-level gross margin reading 0 means no costs were ingested, so
+        per-product margins would be meaningless (and N wasted queries).
+        """
+        slugs = sorted({s for d in detectors for s in d.product_metric_slugs})
+        if not slugs:
+            return []
+        if latest(org_metrics, "gross_margin_percentage") <= 0:
+            return []
+
+        repository = ProductRepository.from_session(session)
+        products = await repository.get_all_by_organization(
+            org_id,
+            options=(selectinload(Product.all_prices),),
+            limit=_MAX_PRODUCTS,
+        )
+
+        subscription_repository = SubscriptionRepository.from_session(session)
+        pricing: list[ProductPricing] = []
+        for product in products:
+            price = next(
+                (
+                    p
+                    for p in product.all_prices
+                    if isinstance(p, ProductPriceFixed)
+                    and not p.is_archived
+                    and p.price_amount
+                ),
+                None,
+            )
+            if price is None:
+                continue
+            # Cost attribution goes through the product's active-customer
+            # cohort: revenue is filtered by product, costs by these customers
+            # (see _MAX_COHORT_CUSTOMERS). Fetch one past the cap to detect
+            # oversized cohorts and skip them instead of mis-sampling.
+            cohort = list(
+                await subscription_repository.get_active_customer_ids_by_product(
+                    product.id, limit=_MAX_COHORT_CUSTOMERS + 1
+                )
+            )
+            if not cohort:
+                continue
+            if len(cohort) > _MAX_COHORT_CUSTOMERS:
+                log.warning(
+                    "compass.product_cohort_too_large",
+                    organization_id=str(org_id),
+                    product_id=str(product.id),
+                    cap=_MAX_COHORT_CUSTOMERS,
+                )
+                continue
+            try:
+                response = await metrics_service.get_metrics(
+                    session,
+                    auth_subject,
+                    start_date=today - timedelta(days=days),
+                    end_date=today,
+                    timezone=timezone,
+                    interval=TimeInterval.day,
+                    organization_id=[org_id],
+                    product_id=[product.id],
+                    customer_id=cohort,
+                    metrics=slugs,
+                    redis=redis,
+                )
+            except Exception:
+                # One product's metrics failing shouldn't drop the others.
+                log.exception(
+                    "compass.product_metrics_error",
+                    organization_id=str(org_id),
+                    product_id=str(product.id),
+                )
+                continue
+            pricing.append(
+                ProductPricing(
+                    product_id=product.id,
+                    name=product.name,
+                    price_amount=price.price_amount,
+                    currency=price.price_currency,
+                    metrics=response,
+                )
+            )
+        return pricing
+
+    async def _customer_costs(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        org_id: uuid.UUID,
+        detectors: Sequence[Detector],
+        *,
+        today: date,
+        timezone: ZoneInfo,
+    ) -> list[CustomerCostSignal]:
+        """Per-customer cost ranking for detectors that declare a need.
+
+        Backed by the events `by-customer` statistics (summing `_cost.amount`),
+        which return each customer's share of the total — exactly the shape a
+        concentration reading needs. Failures degrade to an empty ranking.
+        """
+        if not any(detector.needs_customer_costs for detector in detectors):
+            return []
+        try:
+            stats = await event_service.list_customer_stats(
+                cast(AsyncSession, session),
+                auth_subject,
+                start_date=today - timedelta(days=_CUSTOMER_COSTS_WINDOW_DAYS),
+                end_date=today,
+                timezone=timezone,
+                organization_id=[org_id],
+                limit=CUSTOMER_COSTS_SAMPLE_LIMIT,
+            )
+        except Exception:
+            log.exception("compass.customer_costs_error", organization_id=str(org_id))
+            return []
+        return [
+            CustomerCostSignal(
+                label=stat.email
+                or stat.name
+                or stat.external_customer_id
+                or str(stat.customer_id),
+                amount=float(stat.totals.get("_cost_amount", 0)),
+                share=float(stat.share),
+            )
+            for stat in stats.items
+        ]
 
     async def _compass_enabled_org_ids(
         self,

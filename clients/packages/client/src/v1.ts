@@ -7276,6 +7276,54 @@ export interface components {
         | 'ZM'
         | 'ZW'
     }
+    /**
+     * AdjustPriceAction
+     * @description A recommendation to review a product's pricing, with a reference point.
+     *
+     *     The suggested amount is a *reference*, not a mandate: it's the list price
+     *     that would restore the target gross margin at the current cost to serve,
+     *     ignoring demand elasticity. It applies to new customers only — existing
+     *     subscriptions keep their price. The client routes to the product's pricing
+     *     editor; nothing is ever applied automatically.
+     */
+    AdjustPriceAction: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'adjust_price'
+      /**
+       * Label
+       * @description Button label.
+       */
+      label: string
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The product whose pricing to review.
+       */
+      product_id: string
+      /**
+       * Product Name
+       * @description Display name of the product.
+       */
+      product_name: string
+      /**
+       * Current Price Amount
+       * @description The product's current list price, in cents.
+       */
+      current_price_amount: number
+      /**
+       * Suggested Price Amount
+       * @description Reference list price (cents) that would restore the target gross margin at the current cost to serve. Null when no meaningful suggestion can be computed.
+       */
+      suggested_price_amount: number | null
+      /**
+       * Currency
+       * @description ISO currency code of the amounts.
+       */
+      currency: string
+    }
     AggregateField: string
     /**
      * AggregationFunction
@@ -21140,28 +21188,18 @@ export interface components {
        */
       why?: string | null
       confidence: components['schemas']['ConfidenceLevel']
-      primary_action?: components['schemas']['InsightAction'] | null
+      /** Primary Action */
+      primary_action?:
+        | (
+            | components['schemas']['ViewMetricAction']
+            | components['schemas']['AdjustPriceAction']
+          )
+        | null
       /**
        * Drivers
        * @description Top contributors to the headline change.
        */
       drivers?: components['schemas']['InsightDriver'][]
-    }
-    /**
-     * InsightAction
-     * @description A drill-down that points at the metric behind the insight.
-     */
-    InsightAction: {
-      /**
-       * Label
-       * @description Button label.
-       */
-      label: string
-      /**
-       * Metric
-       * @description Slug of the metric this insight is about (e.g. `monthly_recurring_revenue`). The client owns the routing and resolves it to the matching analytics page.
-       */
-      metric: string
     }
     /**
      * InsightCategory
@@ -34339,6 +34377,27 @@ export interface components {
       p99?: {
         [key: string]: string
       }
+    }
+    /**
+     * ViewMetricAction
+     * @description A drill-down that points at the metric behind the insight.
+     */
+    ViewMetricAction: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'view_metric'
+      /**
+       * Label
+       * @description Button label.
+       */
+      label: string
+      /**
+       * Metric
+       * @description Slug of the metric this insight is about (e.g. `monthly_recurring_revenue`). The client owns the routing and resolves it to the matching analytics page.
+       */
+      metric: string
     }
     /**
      * Visibility
@@ -60786,6 +60845,9 @@ export const addressInputCountryValues: ReadonlyArray<
   'ZM',
   'ZW',
 ]
+export const adjustPriceActionTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['AdjustPriceAction']['type']
+> = ['adjust_price']
 export const aggregationFunctionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AggregationFunction']
 > = ['count', 'sum', 'max', 'min', 'avg', 'unique']
@@ -64444,6 +64506,9 @@ export const userUpdateCountryAnyOf0Values: ReadonlyArray<
   'ZM',
   'ZW',
 ]
+export const viewMetricActionTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ViewMetricAction']['type']
+> = ['view_metric']
 export const visibilityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Visibility']
 > = ['draft', 'private', 'public']

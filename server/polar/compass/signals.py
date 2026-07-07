@@ -13,8 +13,11 @@ signals-layer change, not a detector change.
 The per-period readers (`series`, `latest`, …) live in `polar.metrics.aggregation`.
 """
 
+import uuid
 from dataclasses import dataclass, field
 from enum import StrEnum
+
+from polar.metrics.schemas import MetricsResponse
 
 
 class DriverDimension(StrEnum):
@@ -45,6 +48,48 @@ class MetricSignal:
         if self.baseline == 0:
             return None
         return (self.current - self.baseline) / abs(self.baseline)
+
+
+@dataclass(frozen=True)
+class ProductPricing:
+    """A product's current list price plus its product-filtered metrics window.
+
+    Prefetched by the service for detectors that declare `product_metric_slugs`,
+    so per-product detectors stay pure: pricing + signals in, insight out.
+    """
+
+    product_id: uuid.UUID
+    name: str
+    price_amount: int
+    """Current list price in cents."""
+    currency: str
+    metrics: MetricsResponse
+    """The same metrics window as the organization's, scoped to this product:
+    revenue metrics filtered by product, cost metrics by its active-customer
+    cohort (cost events attach to customers, not products)."""
+
+
+# How many cost-ranked customers the service prefetches. Covers the highest
+# confidence threshold (see `confidence_for_sample`), so the cost-bearing
+# customer count is exact up to this depth; at the cap the copy says
+# "at least".
+CUSTOMER_COSTS_SAMPLE_LIMIT = 100
+
+
+@dataclass(frozen=True)
+class CustomerCostSignal:
+    """One customer's share of tracked costs over the window.
+
+    Prefetched by the service (from the events `by-customer` statistics) for
+    detectors that declare `needs_customer_costs`, keeping them pure.
+    """
+
+    label: str
+    """Customer email, name or external id — whatever identifies them best."""
+    amount: float
+    """Total `_cost.amount` over the window, in the merchant's cost unit."""
+    share: float
+    """This customer's share of all tracked costs (0-1)."""
 
 
 def format_currency(cents: float) -> str:

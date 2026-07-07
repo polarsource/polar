@@ -1,6 +1,7 @@
 from enum import StrEnum
+from typing import Annotated, Literal
 
-from pydantic import Field
+from pydantic import UUID4, Discriminator, Field
 
 from polar.kit.schemas import Schema
 
@@ -49,9 +50,24 @@ class InsightSeverity(StrEnum):
     """Notable movement; no action required."""
 
 
-class InsightAction(Schema):
+class InsightActionType(StrEnum):
+    """
+    What kind of action an insight offers.
+
+    Actions are a discriminated union on this type: adding a new kind of action
+    is adding one enum member, one schema below (folded into `InsightAction`),
+    and one resolver entry on the client — the client owns all routing, the
+    backend only names the domain object the action concerns.
+    """
+
+    view_metric = "view_metric"
+    adjust_price = "adjust_price"
+
+
+class ViewMetricAction(Schema):
     """A drill-down that points at the metric behind the insight."""
 
+    type: Literal[InsightActionType.view_metric] = InsightActionType.view_metric
     label: str = Field(description="Button label.")
     metric: str = Field(
         description=(
@@ -60,6 +76,40 @@ class InsightAction(Schema):
             "resolves it to the matching analytics page."
         )
     )
+
+
+class AdjustPriceAction(Schema):
+    """
+    A recommendation to review a product's pricing, with a reference point.
+
+    The suggested amount is a *reference*, not a mandate: it's the list price
+    that would restore the target gross margin at the current cost to serve,
+    ignoring demand elasticity. It applies to new customers only — existing
+    subscriptions keep their price. The client routes to the product's pricing
+    editor; nothing is ever applied automatically.
+    """
+
+    type: Literal[InsightActionType.adjust_price] = InsightActionType.adjust_price
+    label: str = Field(description="Button label.")
+    product_id: UUID4 = Field(description="The product whose pricing to review.")
+    product_name: str = Field(description="Display name of the product.")
+    current_price_amount: int = Field(
+        description="The product's current list price, in cents."
+    )
+    suggested_price_amount: int | None = Field(
+        description=(
+            "Reference list price (cents) that would restore the target gross "
+            "margin at the current cost to serve. Null when no meaningful "
+            "suggestion can be computed."
+        ),
+    )
+    currency: str = Field(description="ISO currency code of the amounts.")
+
+
+InsightAction = Annotated[
+    ViewMetricAction | AdjustPriceAction,
+    Discriminator("type"),
+]
 
 
 class InsightDriver(Schema):

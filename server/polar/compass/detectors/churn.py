@@ -1,6 +1,6 @@
 from polar.metrics.aggregation import latest, series
 
-from ..schemas import Insight, InsightAction, InsightCategory, InsightSeverity
+from ..schemas import Insight, InsightCategory, InsightSeverity, ViewMetricAction
 from ..signals import format_pct
 from .base import Detector, DetectorContext, confidence_for_sample
 
@@ -60,7 +60,7 @@ class ChurnSpikeDetector(Detector):
         title = f"{churned_n} {subscriptions} churned this month"
         body = (
             f"{churned_n} {subscriptions} ended in the last 30 days, "
-            f"{rate_str} of an at-risk base of {at_risk} — you have {active_n} "
+            f"{rate_str} of an at-risk base of {at_risk}. You have {active_n} "
             f"active subscriptions today."
         )
 
@@ -81,7 +81,7 @@ class ChurnSpikeDetector(Detector):
             body=body,
             why=why,
             confidence=confidence,
-            primary_action=InsightAction(
+            primary_action=ViewMetricAction(
                 label="View churn",
                 metric="churned_subscriptions",
             ),

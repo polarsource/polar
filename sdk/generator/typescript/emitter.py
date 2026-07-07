@@ -3,19 +3,16 @@ import pathlib
 from generator.casing import to_camel_case, to_pascal_case, to_snake_case
 from generator.emitter import EmitterBase
 from generator.ir import (
-    ArrayType,
-    EnumRef,
+    APIIR,
+    APIVersion,
     ErrorResponse,
-    MapType,
     ModelRef,
-    NullableType,
-    OpenAPIIR,
     Service,
     UnionRef,
-    UnionType,
 )
 from typescript.types import (
     collect_enum_imports,
+    collect_enum_names,
     collect_type_imports,
     collect_union_imports,
     convert_type_to_typescript,
@@ -25,87 +22,17 @@ from typescript.utils import format_default_value_ts, format_description
 EMITTER_DIRECTORY = pathlib.Path(__file__).parent
 
 
-def _collect_type_ref_names(type_ref: object | None, ir: OpenAPIIR) -> set[str]:
-    """Collect all model names from a TypeRef."""
-
-    if type_ref is None:
-        return set()
-
-    names: set[str] = set()
-
-    if isinstance(type_ref, (ModelRef, UnionRef)):
-        names.add(type_ref.name)
-    elif isinstance(type_ref, NullableType):
-        names.update(_collect_type_ref_names(type_ref.inner, ir))
-    elif isinstance(type_ref, ArrayType):
-        names.update(_collect_type_ref_names(type_ref.items, ir))
-    elif isinstance(type_ref, MapType):
-        names.update(_collect_type_ref_names(type_ref.value_type, ir))
-        if type_ref.key_type is not None:
-            names.update(_collect_type_ref_names(type_ref.key_type, ir))
-    elif isinstance(type_ref, UnionType):
-        for variant in type_ref.variants:
-            names.update(_collect_type_ref_names(variant, ir))
-
-    return names
-
-
-def _collect_enum_names(type_ref: object | None, ir: OpenAPIIR) -> set[str]:
-    """Collect all enum names from a TypeRef."""
-
-    if type_ref is None:
-        return set()
-
-    enum_imports: set[str] = set()
-
-    if isinstance(type_ref, EnumRef):
-        enum_imports.add(type_ref.name)
-    elif isinstance(type_ref, NullableType):
-        enum_imports.update(_collect_enum_names(type_ref.inner, ir))
-    elif isinstance(type_ref, ArrayType):
-        enum_imports.update(_collect_enum_names(type_ref.items, ir))
-    elif isinstance(type_ref, MapType):
-        enum_imports.update(_collect_enum_names(type_ref.value_type, ir))
-        if type_ref.key_type is not None:
-            enum_imports.update(_collect_enum_names(type_ref.key_type, ir))
-    elif isinstance(type_ref, UnionType):
-        for variant in type_ref.variants:
-            enum_imports.update(_collect_enum_names(variant, ir))
-    elif isinstance(type_ref, UnionRef):
-        for union in ir.input_unions + ir.output_unions:
-            if union.name == type_ref.name:
-                for variant in union.variants:
-                    enum_imports.update(_collect_enum_names(variant, ir))
-                break
-
-    return enum_imports
-
-
 class TypeScriptEmitter(EmitterBase):
-    def __init__(self, ir: OpenAPIIR) -> None:
+    def __init__(self, ir: APIIR) -> None:
         super().__init__(ir, EMITTER_DIRECTORY / "template")
 
     def emit(self, root_directory: pathlib.Path | str) -> None:
         """Emit the TypeScript SDK files to the specified root directory."""
         root_directory = self.ensure_directory(root_directory)
-
-        # Create src directory
         src_dir = root_directory / "src"
-        self.ensure_directory(src_dir)
-
-        # Create models directory
-        models_dir = src_dir / "models"
-        self.ensure_directory(models_dir)
-
-        # Create services directory
-        services_dir = src_dir / "services"
-        self.ensure_directory(services_dir)
 
         # Emit root configuration files
         self.copy_file(self.templates_dir / ".gitignore", root_directory / ".gitignore")
-        self.copy_file(
-            self.templates_dir / "package.json", root_directory / "package.json"
-        )
         self.copy_file(
             self.templates_dir / "pnpm-workspace.yaml",
             root_directory / "pnpm-workspace.yaml",
@@ -113,19 +40,21 @@ class TypeScriptEmitter(EmitterBase):
         self.copy_file(
             self.templates_dir / "tsconfig.json", root_directory / "tsconfig.json"
         )
-        self.copy_file(
-            self.templates_dir / "tsdown.config.ts", root_directory / "tsdown.config.ts"
-        )
+
         self.copy_file(
             self.templates_dir / "oxfmt.config.ts", root_directory / "oxfmt.config.ts"
         )
         self.copy_file(self.templates_dir / "justfile", root_directory / "justfile")
         self.copy_file(self.templates_dir / "README.md", root_directory / "README.md")
 
-        # Emit src files
         self.render_file(
-            "src/index.ts",
-            src_dir / "index.ts",
+            "package.json",
+            root_directory / "package.json",
+            self.get_context(),
+        )
+        self.render_file(
+            "tsdown.config.ts",
+            root_directory / "tsdown.config.ts",
             self.get_context(),
         )
         self.render_file(
@@ -139,34 +68,51 @@ class TypeScriptEmitter(EmitterBase):
             self.get_context(),
         )
         self.render_file(
-            "src/client.ts",
-            src_dir / "client.ts",
+            "src/index.ts",
+            src_dir / "index.ts",
             self.get_context(),
         )
 
-        errors = self._collect_all_errors()
-        self.render_file(
-            "src/errors.ts",
-            src_dir / "errors.ts",
-            {
-                **self.get_context(),
-                "errors": errors,
-                "error_imports": self._get_error_type_imports(errors),
-            },
-        )
+        for api in self.ir.versions:
+            version_dir = src_dir / self.get_version_string(api)
+            self.render_file(
+                "src/version/index.ts",
+                version_dir / "index.ts",
+                self.get_version_context(api),
+            )
+            self.render_file(
+                "src/version/client.ts",
+                version_dir / "client.ts",
+                self.get_version_context(api),
+            )
 
-        # Emit models
-        self._emit_models(src_dir)
+            errors = self._collect_all_errors(api)
+            self.render_file(
+                "src/version/errors.ts",
+                version_dir / "errors.ts",
+                {
+                    **self.get_version_context(api),
+                    "errors": errors,
+                    "error_imports": self._get_error_type_imports(errors, api),
+                },
+            )
 
-        # Emit services
-        for service in self.ir.services:
-            self._emit_service(service, services_dir)
+            # Emit models
+            self._emit_models(version_dir, api)
+
+            # Emit services
+            for service in api.services:
+                self._emit_service(service, api, version_dir / "services")
+
+    def get_version_string(self, api: APIVersion) -> str:
+        """Return the version string for a given API version."""
+        return api.version
 
     def setup_environment(self) -> None:
         """Add TypeScript-specific filters to the Jinja2 environment."""
         super().setup_environment()
         self.env.filters["ts_type"] = lambda type_ref, ref_suffix="": (
-            convert_type_to_typescript(type_ref, self.ir, ref_suffix)
+            convert_type_to_typescript(type_ref, ref_suffix)
         )
         self.env.filters["camel"] = to_camel_case
         self.env.filters["pascal"] = to_pascal_case
@@ -183,50 +129,60 @@ class TypeScriptEmitter(EmitterBase):
         self.run_command("just build", cwd=root_directory)
         self.run_command("just test", cwd=root_directory)
 
-    def _emit_models(self, src_dir: pathlib.Path) -> None:
+    def _emit_models(self, version_dir: pathlib.Path, api: APIVersion) -> None:
         """Emit all model files (inputs.ts, outputs.ts, literals.ts)."""
-        models_dir = src_dir / "models"
+        models_dir = version_dir / "models"
 
         # Emit literals.ts (enums only)
         self.render_file(
-            "src/models/literals.ts",
+            "src/version/models/literals.ts",
             models_dir / "literals.ts",
             {
-                **self.get_context(),
-                "enums": self.ir.enums,
+                **self.get_version_context(api),
+                "enums": api.enums,
             },
         )
 
         self.render_file(
-            "src/models/inputs.ts",
+            "src/version/models/inputs.ts",
             models_dir / "inputs.ts",
             {
-                **self.get_context(),
-                "models": self.ir.input_models,
-                "unions": self.ir.input_unions,
-                "enum_imports": self._get_input_enum_imports(),
+                **self.get_version_context(api),
+                "models": api.input_models,
+                "unions": api.input_unions,
+                "enum_imports": self._get_input_enum_imports(api),
             },
         )
 
         # Emit outputs.ts (output models and output unions)
         self.render_file(
-            "src/models/outputs.ts",
+            "src/version/models/outputs.ts",
             models_dir / "outputs.ts",
             {
-                **self.get_context(),
-                "models": self.ir.output_models,
-                "unions": self.ir.output_unions,
-                "enum_imports": self._get_output_enum_imports(),
+                **self.get_version_context(api),
+                "models": api.output_models,
+                "unions": api.output_unions,
+                "enum_imports": self._get_output_enum_imports(api),
             },
         )
 
+        self.render_file(
+            "src/version/models/index.ts",
+            models_dir / "index.ts",
+            self.get_version_context(api),
+        )
+
     def _emit_service(
-        self, service: Service, output_path: pathlib.Path, depth: int = 0
+        self,
+        service: Service,
+        api: APIVersion,
+        output_path: pathlib.Path,
+        depth: int = 0,
     ) -> None:
         """Emit a single service file, recursively handling nested services."""
 
         # Collect imports for this service
-        imports = self._get_service_imports(service)
+        imports = self._get_service_imports(service, api)
 
         # For nested services, create subdirectory
         if service.services:
@@ -235,7 +191,7 @@ class TypeScriptEmitter(EmitterBase):
 
             # Emit sub-services first
             for sub_service in service.services:
-                self._emit_service(sub_service, sub_service_path, depth + 1)
+                self._emit_service(sub_service, api, sub_service_path, depth + 1)
 
             # Emit the parent service file
             import_depth = depth + 2
@@ -244,12 +200,12 @@ class TypeScriptEmitter(EmitterBase):
             import_depth = depth + 1
             service_path = output_path / f"{to_snake_case(service.name)}.ts"
 
-        base_import = "../" * import_depth + "base"
+        base_import = "../" + "../" * import_depth + "base"
         models_import = "../" * import_depth + "models"
         errors_import = "../" * import_depth + "errors"
 
         context = {
-            **self.get_context(),
+            **self.get_version_context(api),
             "service": service,
             "imports": imports,
             "base_import": base_import,
@@ -257,31 +213,31 @@ class TypeScriptEmitter(EmitterBase):
             "errors_import": errors_import,
         }
 
-        self.render_file("src/services/service.ts", service_path, context)
+        self.render_file("src/version/services/service.ts", service_path, context)
 
-    def _get_input_enum_imports(self) -> list[str]:
+    def _get_input_enum_imports(self, api: APIVersion) -> list[str]:
         """Collect all enum imports needed for input models."""
         enum_imports: set[str] = set()
-        for model in self.ir.input_models:
+        for model in api.input_models:
             for field in model.fields:
-                collect_enum_imports(field.type, enum_imports, self.ir)
-        for union in self.ir.input_unions:
+                collect_enum_imports(field.type, enum_imports, api)
+        for union in api.input_unions:
             for variant in union.variants:
-                collect_enum_imports(variant, enum_imports, self.ir)
+                collect_enum_imports(variant, enum_imports, api)
         return sorted(enum_imports)
 
-    def _get_output_enum_imports(self) -> list[str]:
+    def _get_output_enum_imports(self, api: APIVersion) -> list[str]:
         """Collect all enum imports needed for output models."""
         enum_imports: set[str] = set()
-        for model in self.ir.output_models:
+        for model in api.output_models:
             for field in model.fields:
-                collect_enum_imports(field.type, enum_imports, self.ir)
-        for union in self.ir.output_unions:
+                collect_enum_imports(field.type, enum_imports, api)
+        for union in api.output_unions:
             for variant in union.variants:
-                collect_enum_imports(variant, enum_imports, self.ir)
+                collect_enum_imports(variant, enum_imports, api)
         return sorted(enum_imports)
 
-    def _collect_all_errors(self) -> list[ErrorResponse]:
+    def _collect_all_errors(self, api: APIVersion) -> list[ErrorResponse]:
         """Collect all unique error responses from all services and methods."""
         errors: list[ErrorResponse] = []
         error_names: set[str] = set()
@@ -297,23 +253,27 @@ class TypeScriptEmitter(EmitterBase):
             for sub_service in service.services:
                 _collect_error_names_from_service(sub_service)
 
-        for service in self.ir.services:
+        for service in api.services:
             _collect_error_names_from_service(service)
 
         return errors
 
-    def _get_error_type_imports(self, errors: list[ErrorResponse]) -> list[str]:
+    def _get_error_type_imports(
+        self, errors: list[ErrorResponse], api: APIVersion
+    ) -> list[str]:
         """Collect imports for the errors module."""
         imports: set[str] = set()
 
         for error in errors:
             if error.type is not None:
-                for name in collect_type_imports(error.type, self.ir):
+                for name in collect_type_imports(error.type, api):
                     imports.add(name)
 
         return sorted(imports)
 
-    def _get_service_imports(self, service: Service) -> dict[str, list[str]]:
+    def _get_service_imports(
+        self, service: Service, api: APIVersion
+    ) -> dict[str, list[str]]:
         """Collect imports for a single service."""
 
         imports: dict[str, set[str]] = {
@@ -327,31 +287,25 @@ class TypeScriptEmitter(EmitterBase):
         for method in service.methods:
             # Collect input imports from body
             if method.body is not None:
-                imports["inputs"].update(_collect_type_ref_names(method.body, self.ir))
-                imports["inputs"].update(collect_union_imports(method.body, self.ir))
-                imports["literals"].update(_collect_enum_names(method.body, self.ir))
+                imports["inputs"].update(collect_type_imports(method.body, api))
+                imports["inputs"].update(collect_union_imports(method.body, api))
+                imports["literals"].update(collect_enum_names(method.body, api))
 
             # Collect output imports from response
             if method.response is not None:
-                imports["outputs"].update(
-                    _collect_type_ref_names(method.response, self.ir)
-                )
-                imports["outputs"].update(
-                    collect_union_imports(method.response, self.ir)
-                )
-                imports["literals"].update(
-                    _collect_enum_names(method.response, self.ir)
-                )
+                imports["outputs"].update(collect_type_imports(method.response, api))
+                imports["outputs"].update(collect_union_imports(method.response, api))
+                imports["literals"].update(collect_enum_names(method.response, api))
 
             # Collect type names and enum imports from path and query parameters
             for param in method.path_params + method.query_params:
-                imports["literals"].update(_collect_enum_names(param.type, self.ir))
+                imports["literals"].update(collect_enum_names(param.type, api))
                 # Also collect model/union names from parameters
                 if isinstance(param.type, ModelRef):
                     imports["inputs"].add(param.type.name)
                 elif isinstance(param.type, UnionRef):
                     imports["inputs"].add(param.type.name)
-                    imports["inputs"].update(collect_union_imports(param.type, self.ir))
+                    imports["inputs"].update(collect_union_imports(param.type, api))
 
             # Collect imports from error responses
             for error in method.errors:
@@ -360,13 +314,13 @@ class TypeScriptEmitter(EmitterBase):
             # Collect imports for pagination item schemas
             if method.pagination is not None:
                 imports["outputs"].update(
-                    _collect_type_ref_names(method.pagination.item_schema, self.ir)
+                    collect_type_imports(method.pagination.item_schema, api)
                 )
                 imports["outputs"].update(
-                    collect_union_imports(method.pagination.item_schema, self.ir)
+                    collect_union_imports(method.pagination.item_schema, api)
                 )
                 imports["literals"].update(
-                    _collect_enum_names(method.pagination.item_schema, self.ir)
+                    collect_enum_names(method.pagination.item_schema, api)
                 )
 
         # Collect sub-service imports

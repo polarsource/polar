@@ -713,6 +713,13 @@ class WebhookSubscriptionUpdatedPayloadBase(BaseWebhookPayload):
 
     def _get_paused_slack_payload(self, target: User | Organization) -> str:
         fields = self._get_slack_fields(target)
+        if self.data.resumes_at:
+            fields.append(
+                {
+                    "type": "mrkdwn",
+                    "text": f"*Resumes At*\n{format_date(self.data.resumes_at, locale='en_US')}",
+                }
+            )
         payload: SlackPayload = get_branded_slack_payload(
             {
                 "text": "Subscription has been paused.",

@@ -6346,6 +6346,55 @@ export interface webhooks {
     patch?: never
     trace?: never
   }
+  'subscription.paused': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * subscription.paused
+     * @description Sent when a subscription is paused and the customer temporarily loses access.
+     *
+     *     No order is created while paused. The subscription resumes either on its
+     *     scheduled resume date or when resumed manually, starting a new billing period.
+     *
+     *     **Discord & Slack support:** Full
+     */
+    post: operations['_endpointsubscription_paused_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'subscription.resumed': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * subscription.resumed
+     * @description Sent when a paused subscription resumes, restoring the customer's access.
+     *
+     *     Resuming starts a new billing period and charges the customer immediately.
+     *
+     *     **Discord & Slack support:** Full
+     */
+    post: operations['_endpointsubscription_resumed_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   'refund.created': {
     parameters: {
       query?: never
@@ -25803,6 +25852,10 @@ export interface components {
       subscription_cycled_after_trial: boolean
       /** Subscription Past Due */
       subscription_past_due: boolean
+      /** Subscription Paused */
+      subscription_paused: boolean
+      /** Subscription Resumed */
+      subscription_resumed: boolean
       /** Subscription Renewal Reminder */
       subscription_renewal_reminder: boolean
       /** Subscription Revoked */
@@ -31891,6 +31944,100 @@ export interface components {
       resumes_at?: string | null
     }
     /**
+     * SubscriptionPausedEvent
+     * @description An event created by Polar when a subscription is paused.
+     */
+    SubscriptionPausedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'subscription.paused'
+      metadata: components['schemas']['SubscriptionPausedMetadata']
+    }
+    /** SubscriptionPausedMetadata */
+    SubscriptionPausedMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Product Id */
+      product_id?: string
+      /** Amount */
+      amount?: number
+      /** Currency */
+      currency?: string
+      /** Recurring Interval */
+      recurring_interval?: string
+      /** Recurring Interval Count */
+      recurring_interval_count?: number
+      /** Paused At */
+      paused_at: string
+      /** Resumes At */
+      resumes_at?: string
+    }
+    /**
      * SubscriptionProductUpdatedEvent
      * @description An event created by Polar when a subscription changes the product.
      */
@@ -32081,6 +32228,96 @@ export interface components {
        * @constant
        */
       resume: true
+    }
+    /**
+     * SubscriptionResumedEvent
+     * @description An event created by Polar when a paused subscription is resumed.
+     */
+    SubscriptionResumedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'subscription.resumed'
+      metadata: components['schemas']['SubscriptionResumedMetadata']
+    }
+    /** SubscriptionResumedMetadata */
+    SubscriptionResumedMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Product Id */
+      product_id?: string
+      /** Amount */
+      amount?: number
+      /** Currency */
+      currency?: string
+      /** Recurring Interval */
+      recurring_interval?: string
+      /** Recurring Interval Count */
+      recurring_interval_count?: number
     }
     /** SubscriptionRevoke */
     SubscriptionRevoke: {
@@ -32906,6 +33143,8 @@ export interface components {
       | components['schemas']['SubscriptionRevokedEvent']
       | components['schemas']['SubscriptionPastDueEvent']
       | components['schemas']['SubscriptionReactivatedEvent']
+      | components['schemas']['SubscriptionPausedEvent']
+      | components['schemas']['SubscriptionResumedEvent']
       | components['schemas']['SubscriptionUncanceledEvent']
       | components['schemas']['SubscriptionProductUpdatedEvent']
       | components['schemas']['SubscriptionSeatsUpdatedEvent']
@@ -34717,6 +34956,8 @@ export interface components {
       | 'subscription.uncanceled'
       | 'subscription.revoked'
       | 'subscription.past_due'
+      | 'subscription.paused'
+      | 'subscription.resumed'
       | 'refund.created'
       | 'refund.updated'
       | 'product.created'
@@ -35083,6 +35324,51 @@ export interface components {
        * @constant
        */
       type: 'subscription.past_due'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Subscription']
+    }
+    /**
+     * WebhookSubscriptionPausedPayload
+     * @description Sent when a subscription is paused and the customer temporarily loses access.
+     *
+     *     No order is created while paused. The subscription resumes either on its
+     *     scheduled resume date or when resumed manually, starting a new billing period.
+     *
+     *     **Discord & Slack support:** Full
+     */
+    WebhookSubscriptionPausedPayload: {
+      /**
+       * Type
+       * @example subscription.paused
+       * @constant
+       */
+      type: 'subscription.paused'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Subscription']
+    }
+    /**
+     * WebhookSubscriptionResumedPayload
+     * @description Sent when a paused subscription resumes, restoring the customer's access.
+     *
+     *     Resuming starts a new billing period and charges the customer immediately.
+     *
+     *     **Discord & Slack support:** Full
+     */
+    WebhookSubscriptionResumedPayload: {
+      /**
+       * Type
+       * @example subscription.resumed
+       * @constant
+       */
+      type: 'subscription.resumed'
       /**
        * Timestamp
        * Format: date-time
@@ -54698,6 +54984,72 @@ export interface operations {
       }
     }
   }
+  _endpointsubscription_paused_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookSubscriptionPausedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointsubscription_resumed_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookSubscriptionResumedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   _endpointrefund_created_post: {
     parameters: {
       query?: never
@@ -63579,6 +63931,9 @@ export const subscriptionCycledEventNameValues: ReadonlyArray<
 export const subscriptionPastDueEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionPastDueEvent']['name']
 > = ['subscription.past_due']
+export const subscriptionPausedEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SubscriptionPausedEvent']['name']
+> = ['subscription.paused']
 export const subscriptionProductUpdatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionProductUpdatedEvent']['name']
 > = ['subscription.product_updated']
@@ -63588,6 +63943,9 @@ export const subscriptionProrationBehaviorValues: ReadonlyArray<
 export const subscriptionReactivatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionReactivatedEvent']['name']
 > = ['subscription.reactivated']
+export const subscriptionResumedEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SubscriptionResumedEvent']['name']
+> = ['subscription.resumed']
 export const subscriptionRevokedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionRevokedEvent']['name']
 > = ['subscription.revoked']
@@ -64080,6 +64438,8 @@ export const webhookEventTypeValues: ReadonlyArray<
   'subscription.uncanceled',
   'subscription.revoked',
   'subscription.past_due',
+  'subscription.paused',
+  'subscription.resumed',
   'refund.created',
   'refund.updated',
   'product.created',

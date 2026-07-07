@@ -43,15 +43,20 @@ export const CurrentPeriodOverview = ({
 
   const isTrialing = subscription.status === 'trialing'
   const isActive = subscription.status === 'active'
+  const isPaused = subscription.status === 'paused'
   const isCancelingAtPeriodEnd =
     subscription.cancel_at_period_end && !subscription.ended_at
 
   // Show for active, trialing, or subscriptions set to cancel at period end.
   // An indefinite pause has no next charge; a pause with a resume date still
   // bills on resume, so keep showing it (dated at the resume).
+  const isResumingCharge =
+    (subscription.pause_at_period_end || isPaused) &&
+    subscription.resumes_at !== null &&
+    !isCancelingAtPeriodEnd
   const isPausingIndefinitely =
-    subscription.pause_at_period_end && !subscription.resumes_at
-  if ((!isActive && !isTrialing) || isPausingIndefinitely) {
+    (subscription.pause_at_period_end || isPaused) && !subscription.resumes_at
+  if ((!isActive && !isTrialing && !isResumingCharge) || isPausingIndefinitely) {
     return null
   }
 
@@ -80,9 +85,6 @@ export const CurrentPeriodOverview = ({
   if (!hasNextInvoice) {
     return null
   }
-
-  const isResumingCharge =
-    subscription.pause_at_period_end && !isCancelingAtPeriodEnd
 
   const chargeDate = isTrialing
     ? subscription.trial_end

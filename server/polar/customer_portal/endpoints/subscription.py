@@ -123,8 +123,12 @@ async def get_charge_preview(
     if subscription is None:
         raise ResourceNotFound()
 
-    # Allow active, trialing, and subscriptions set to cancel at period end
-    if subscription.status not in ("active", "trialing"):
+    # Allow active/trialing subscriptions, and paused subscriptions scheduled to
+    # auto-resume — they still have an upcoming charge when they resume.
+    is_resumable_pause = (
+        subscription.status == "paused" and subscription.resumes_at is not None
+    )
+    if subscription.status not in ("active", "trialing") and not is_resumable_pause:
         raise ResourceNotFound()
 
     # If subscription will end (cancel_at_period_end or ends_at), ensure there's still a charge coming

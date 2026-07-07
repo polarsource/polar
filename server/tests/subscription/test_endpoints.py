@@ -1405,6 +1405,56 @@ class TestGetChargePreview:
 
         assert response.status_code == 404
 
+    @pytest.mark.auth
+    async def test_paused_with_resume(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        current_period_end = utc_now() + timedelta(days=30)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=current_period_end,
+        )
+        subscription.status = SubscriptionStatus.paused
+        subscription.paused_at = utc_now()
+        subscription.resumes_at = current_period_end + timedelta(days=30)
+        await save_fixture(subscription)
+
+        response = await client.get(
+            f"/v1/subscriptions/{subscription.id}/charge-preview"
+        )
+
+        assert response.status_code == 200
+
+    @pytest.mark.auth
+    async def test_paused_indefinitely_not_found(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.status = SubscriptionStatus.paused
+        subscription.paused_at = utc_now()
+        subscription.resumes_at = None
+        await save_fixture(subscription)
+
+        response = await client.get(
+            f"/v1/subscriptions/{subscription.id}/charge-preview"
+        )
+
+        assert response.status_code == 404
+
 
 @pytest.mark.asyncio
 class TestSubscriptionUpdatePause:

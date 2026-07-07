@@ -95,6 +95,19 @@ const CustomerPortalSubscription = ({
   const showSeatManagement = portalSettings.subscription.update_seats === true
   const showPauseResume = portalSettings.subscription.pause === true
 
+  const pauseAction: 'resume' | 'cancel_scheduled_pause' | 'pause' | null =
+    subscription.status === 'paused'
+      ? 'resume'
+      : subscription.pause_at_period_end && !isCancelled
+        ? 'cancel_scheduled_pause'
+        : !isCancelled && subscription.status === 'active'
+          ? 'pause'
+          : null
+
+  const showCancelAction = !isCancelled && canManageBilling
+  const showPauseAction =
+    showPauseResume && canManageBilling && pauseAction !== null
+
   const handleCancelScheduledPause = async () => {
     try {
       await pauseSubscription.mutateAsync({
@@ -271,51 +284,52 @@ const CustomerPortalSubscription = ({
         </div>
       )}
 
-      {/* Cancel button - only shown for users with billing permissions */}
-      {!isCancelled && canManageBilling && (
-        <Button
-          variant="secondary"
-          fullWidth
-          onClick={showCancelModal}
-          aria-label="Cancel subscription"
-        >
-          Cancel Subscription
-        </Button>
+      {/* Cancel + pause/resume actions, gated by billing permissions */}
+      {(showCancelAction || showPauseAction) && (
+        <div className="flex flex-col gap-2">
+          {showCancelAction && (
+            <Button
+              variant="secondary"
+              fullWidth
+              onClick={showCancelModal}
+              aria-label="Cancel subscription"
+            >
+              Cancel Subscription
+            </Button>
+          )}
+          {showPauseAction &&
+            (pauseAction === 'resume' ? (
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={handleResume}
+                loading={resumeSubscription.isPending}
+                aria-label="Resume subscription"
+              >
+                Resume Subscription
+              </Button>
+            ) : pauseAction === 'cancel_scheduled_pause' ? (
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={handleCancelScheduledPause}
+                loading={pauseSubscription.isPending}
+                aria-label="Cancel scheduled pause"
+              >
+                Cancel Scheduled Pause
+              </Button>
+            ) : (
+              <Button
+                variant="secondary"
+                fullWidth
+                onClick={showPauseModal}
+                aria-label="Pause subscription"
+              >
+                Pause Subscription
+              </Button>
+            ))}
+        </div>
       )}
-
-      {/* Pause/resume - gated by the org setting + billing permissions */}
-      {showPauseResume &&
-        canManageBilling &&
-        (subscription.status === 'paused' ? (
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={handleResume}
-            loading={resumeSubscription.isPending}
-            aria-label="Resume subscription"
-          >
-            Resume Subscription
-          </Button>
-        ) : subscription.pause_at_period_end && !isCancelled ? (
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={handleCancelScheduledPause}
-            loading={pauseSubscription.isPending}
-            aria-label="Cancel scheduled pause"
-          >
-            Cancel Scheduled Pause
-          </Button>
-        ) : !isCancelled && subscription.status === 'active' ? (
-          <Button
-            variant="secondary"
-            fullWidth
-            onClick={showPauseModal}
-            aria-label="Pause subscription"
-          >
-            Pause Subscription
-          </Button>
-        ) : null)}
 
       {/* Seat management - only shown for users with billing permissions */}
       {hasSeatBasedPricing && showSeatManagement && canManageBilling && (

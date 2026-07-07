@@ -70,7 +70,9 @@ async def get_metrics(
     response = await metrics_service.get_metrics(
         deps.session,
         deps.auth_subject,
-        start_date=today - timedelta(days=days),
+        # The metrics range is inclusive of both endpoints, so a trailing
+        # window of N days starts N-1 days before today.
+        start_date=today - timedelta(days=days - 1),
         end_date=today,
         timezone=deps.timezone,
         interval=TimeInterval.day,

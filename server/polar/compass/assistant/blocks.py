@@ -78,9 +78,7 @@ class DataTableBlock(Schema):
 
     type: Literal[BlockType.data_table] = BlockType.data_table
     entity: str = Field(description="What the rows are, e.g. `subscriptions`.")
-    title: str | None = Field(
-        default=None, description="Heading rendered above the table."
-    )
+    title: str | None = Field(description="Heading rendered above the table.")
     columns: list[DataTableColumn]
     rows: list[dict[str, str | int | float | None]]
     total_count: int
@@ -92,9 +90,7 @@ class EntityListBlock(Schema):
 
     type: Literal[BlockType.entity_list] = BlockType.entity_list
     entity: str = Field(description="What the items are, e.g. `orders`.")
-    title: str | None = Field(
-        default=None, description="Heading rendered above the list."
-    )
+    title: str | None = Field(description="Heading rendered above the list.")
     columns: list[DataTableColumn]
     rows: list[dict[str, str | int | float | None]]
     total_count: int
@@ -105,8 +101,8 @@ class CustomerCardBlock(Schema):
 
     type: Literal[BlockType.customer_card] = BlockType.customer_card
     email: str
-    name: str | None = None
-    avatar_url: str | None = None
+    name: str | None
+    avatar_url: str | None
     created_at: datetime
 
 

@@ -8,6 +8,8 @@ Events, in order of appearance:
 - `error`  {"message": str}
 """
 
+import hashlib
+import hmac
 import json
 import re
 from collections.abc import AsyncGenerator
@@ -23,6 +25,7 @@ from pydantic_ai.messages import (
     TextPartDelta,
 )
 
+from polar.config import settings
 from polar.logging import Logger
 
 from .deps import AssistantDeps
@@ -32,6 +35,55 @@ log: Logger = structlog.get_logger()
 
 def _event(event: str, data: Any) -> dict[str, str]:
     return {"event": event, "data": json.dumps(data)}
+
+
+def _scopes_digest(deps: AssistantDeps) -> str:
+    joined = ",".join(sorted(scope.value for scope in deps.auth_subject.scopes))
+    return hashlib.sha256(joined.encode()).hexdigest()
+
+
+def _history_mac(organization_id: str, scopes: str, messages: str) -> str:
+    payload = f"{organization_id}|{scopes}|{messages}".encode()
+    return hmac.new(settings.SECRET.encode(), payload, hashlib.sha256).hexdigest()
+
+
+def seal_history(deps: AssistantDeps, messages_json: str) -> str:
+    """Bind conversation state to the caller's organization and scopes.
+
+    The state round-trips through the client, so it is signed with claims:
+    replaying it against another organization, or after the token's scopes
+    changed, fails verification instead of leaking prior context (including
+    old tool results) into a conversation it does not belong to.
+    """
+    organization_id = str(deps.organization_id)
+    scopes = _scopes_digest(deps)
+    return json.dumps(
+        {
+            "org": organization_id,
+            "scopes": scopes,
+            "messages": messages_json,
+            "mac": _history_mac(organization_id, scopes, messages_json),
+        }
+    )
+
+
+def open_history(deps: AssistantDeps, sealed: str) -> str | None:
+    """The messages JSON if the seal verifies for this caller, else None."""
+    try:
+        envelope = json.loads(sealed)
+        organization_id = envelope["org"]
+        scopes = envelope["scopes"]
+        messages = envelope["messages"]
+        mac = envelope["mac"]
+    except (ValueError, TypeError, KeyError):
+        return None
+    if not hmac.compare_digest(mac, _history_mac(organization_id, scopes, messages)):
+        return None
+    if organization_id != str(deps.organization_id):
+        return None
+    if scopes != _scopes_digest(deps):
+        return None
+    return str(messages)
 
 
 _MARKER_RE = re.compile(r"\s*\[block:(\d+)\]\s*")
@@ -91,8 +143,18 @@ async def stream_assistant_run(
 ) -> AsyncGenerator[dict[str, str]]:
     history = None
     if message_history_json:
+        messages_json = open_history(deps, message_history_json)
+        if messages_json is None:
+            yield _event(
+                "error",
+                {
+                    "message": "This conversation state is invalid or from a "
+                    "different context. Start a new conversation."
+                },
+            )
+            return
         try:
-            history = ModelMessagesTypeAdapter.validate_json(message_history_json)
+            history = ModelMessagesTypeAdapter.validate_json(messages_json)
         except ValueError:
             yield _event("error", {"message": "Invalid message history."})
             return
@@ -151,9 +213,12 @@ async def stream_assistant_run(
             yield _event(
                 "done",
                 {
-                    "message_history": ModelMessagesTypeAdapter.dump_json(
-                        result.all_messages()
-                    ).decode()
+                    "message_history": seal_history(
+                        deps,
+                        ModelMessagesTypeAdapter.dump_json(
+                            result.all_messages()
+                        ).decode(),
+                    )
                 },
             )
     except Exception:

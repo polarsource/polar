@@ -27891,6 +27891,17 @@ export interface components {
       /** Max Page */
       max_page: number
     }
+    /** PauseResumeNotAllowed */
+    PauseResumeNotAllowed: {
+      /**
+       * Error
+       * @example PauseResumeNotAllowed
+       * @constant
+       */
+      error: 'PauseResumeNotAllowed'
+      /** Detail */
+      detail: string
+    }
     Payment:
       | components['schemas']['CardPayment']
       | components['schemas']['GenericPayment']
@@ -48866,13 +48877,15 @@ export interface operations {
           'application/json': components['schemas']['PaymentFailed']
         }
       }
-      /** @description Customer subscription is already canceled or will be at the end of the period, or the user lacks billing permissions. */
+      /** @description Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization. */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['AlreadyCanceledSubscription']
+          'application/json':
+            | components['schemas']['AlreadyCanceledSubscription']
+            | components['schemas']['PauseResumeNotAllowed']
         }
       }
       /** @description Customer subscription was not found. */

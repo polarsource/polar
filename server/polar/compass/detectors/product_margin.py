@@ -72,6 +72,13 @@ class ProductMarginDetector(Detector):
             margin = latest(product.metrics, "gross_margin_percentage")
             # 0 margin means no cost/revenue data for this product, not a
             # zero-margin business — stay silent rather than mislead.
+            # Negative margins are excluded on purpose too: with cohort-based
+            # cost attribution (a customer's full cost counts toward every
+            # product they hold), a cheap product whose customers also run
+            # expensive workloads reads deeply negative as an artifact, and a
+            # price recommendation built on that would be wrong. Once costs
+            # are product-attributed, negatives should fire as critical with
+            # money-losing copy instead of being skipped.
             if margin <= 0 or margin >= worst_margin:
                 continue
             subs = int(latest(product.metrics, "active_subscriptions"))

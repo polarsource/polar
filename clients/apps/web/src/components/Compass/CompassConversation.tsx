@@ -215,7 +215,7 @@ export const CompassConversation = ({
         )}
       </div>
 
-      <div className="sticky bottom-0 z-30 w-full max-w-[760px] pb-6">
+      <div className="sticky bottom-0 z-30 w-full pb-6">
         <div className="dark:from-polar-900 dark:via-polar-900/90 pointer-events-none absolute inset-x-0 -top-12 bottom-0 bg-gradient-to-t from-white via-white/90 to-transparent" />
         <div className="relative">
           <CompassInputBar

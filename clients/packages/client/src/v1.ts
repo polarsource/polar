@@ -32249,6 +32249,7 @@ export interface components {
       | 'past_due'
       | 'canceled'
       | 'unpaid'
+      | 'paused'
     /**
      * SubscriptionUncanceledEvent
      * @description An event created by Polar when a subscription cancellation is reversed.
@@ -63535,6 +63536,7 @@ export const subscriptionStatusValues: ReadonlyArray<
   'past_due',
   'canceled',
   'unpaid',
+  'paused',
 ]
 export const subscriptionUncanceledEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionUncanceledEvent']['name']

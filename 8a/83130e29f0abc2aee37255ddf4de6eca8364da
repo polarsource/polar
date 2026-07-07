@@ -1,0 +1,67 @@
+server/polar/integrations/stripe/endpoints.py
+  s_a708218e2a68df::t_a3e785cc36244d 13
+  s_a708218e2a68df::t_1fb8b87749aedb 115-127
+  s_a708218e2a68df::t_e29fcfcaf90c2d 128
+  s_a708218e2a68df::t_85189e89ba6df2 52-58
+  s_a708218e2a68df::t_e460b1e3a029df 14
+  s_a708218e2a68df::t_0535155787e848 78-83
+  s_a708218e2a68df::t_b636d840086636 129
+server/polar/config.py
+  s_a708218e2a68df::t_286930cfe1123e 267-269
+server/polar/integrations/stripe/account_risk.py
+  s_a708218e2a68df::t_21de2f866b61bb 1-123
+server/polar/models/organization.py
+  s_a708218e2a68df::t_02f6be0119a176 225-229
+server/tests/integrations/stripe/test_endpoints.py
+  s_a708218e2a68df::t_05f9af07a294b7 45-60
+server/polar/integrations/stripe/tasks.py
+  s_a708218e2a68df::t_8f5233c31ccc04 14-15
+  s_a708218e2a68df::t_220760daf7d2f7 20,80
+  s_a708218e2a68df::t_68b7bd47bdc8dc 88-98,100-106
+  s_a708218e2a68df::t_d7cedc5ec735f9 99
+  s_a708218e2a68df::t_c6b85bfcac071f 75-79,81-87,107-133
+  s_a708218e2a68df::t_bdee1c6d6c4981 33-37
+server/tests/organization/test_service.py
+  s_a708218e2a68df::t_1492603a67fabc 1592-1667,1691-1710
+  s_a708218e2a68df::t_fa6b040d5581fa 1668-1690
+  s_a708218e2a68df::t_220760daf7d2f7 20-23,74-75
+server/tests/integrations/stripe/test_tasks.py
+  s_a708218e2a68df::t_3cba7105d5e88c 124-126
+  s_a708218e2a68df::t_82e61f0b663a4f 10-13,18,20-21,28
+  s_a708218e2a68df::t_8191315445fb37 65-123,127-133
+  s_a708218e2a68df::t_49a5176ecc1fef 64
+server/.env.template
+  s_a708218e2a68df::t_5c67d7d9cd4676 43-44
+dev/secrets.env.template
+  s_a708218e2a68df::t_303da2c8ea1f9b 28
+dev/docker/.env.docker.template
+  s_a708218e2a68df::t_72650051aaee33 36
+server/polar/organization/service.py
+  s_a708218e2a68df::t_220760daf7d2f7 29-33
+  s_a708218e2a68df::t_e4ac75c20b47ba 1562-1564
+  s_a708218e2a68df::t_01ba1d87a056f2 1544-1550,1552-1561,1565-1567,1569-1572,1580
+  s_a708218e2a68df::t_5ffc735a36f8b2 1551
+  s_a708218e2a68df::t_d0155cb6b506cd 1568
+  s_a708218e2a68df::t_3eac3b708a372b 1573-1579,1581
+  s_a708218e2a68df::t_0aec8fb4220add 1524-1527
+  s_a708218e2a68df::t_486ead04ad0d04 1582-1583
+server/tests/integrations/stripe/test_account_risk.py
+  s_a708218e2a68df::t_dce7a07564e445 1-27,29-40,42-59,61-72,74-82,84-92,94-95
+  s_a708218e2a68df::t_8cdf321b919332 28,41,60,73,83,93
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "8a83130e29f0abc2aee37255ddf4de6eca8364da",
+  "prompts": {},
+  "sessions": {
+    "s_a708218e2a68df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6e245698-ccbc-4607-a33c-cd991533bd54",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -97,7 +97,6 @@ class AdjustPriceAction(Schema):
         description="The product's current list price, in cents."
     )
     suggested_price_amount: int | None = Field(
-        default=None,
         description=(
             "Reference list price (cents) that would restore the target gross "
             "margin at the current cost to serve. Null when no meaningful "

@@ -379,12 +379,6 @@ def _interval_label(product: CanonicalProduct) -> str:
     return f"Every {count} {product.recurring_interval}s"
 
 
-def _amount_label(amount: int | None, currency: str) -> str:
-    if amount is None:
-        return "No amount"
-    return format_currency(amount, currency)
-
-
 def _drop_reason(
     issues: Iterable[PrecheckIssue], codes: set[str]
 ) -> tuple[str | None, str | None]:
@@ -532,12 +526,17 @@ def _price_items(
                 code, reason = _drop_reason(
                     precheck_engine._check_price(product, price), PRICE_DROP_CODES
                 )
+            subtitle = (
+                "No amount"
+                if price.amount is None
+                else format_currency(price.amount, price.currency)
+            )
             items.append(
                 _item(
                     PrecheckEntity.prices,
                     price.source_id,
                     product.name,
-                    _amount_label(price.amount, price.currency),
+                    subtitle,
                     reason_code=code,
                     reason=reason,
                 )

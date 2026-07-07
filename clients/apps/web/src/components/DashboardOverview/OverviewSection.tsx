@@ -31,13 +31,11 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
   const { isShown, show, hide } = useMetricSelectorModal()
 
   const initialMetrics = React.useMemo<(keyof schemas['Metrics'])[]>(() => {
-    const stored = organization.feature_settings?.overview_metrics
-    if (stored?.length === 5) {
-      return stored.filter((slug) =>
-        ALL_METRICS.some((m) => m.slug === slug),
-      ) as (keyof schemas['Metrics'])[]
-    }
-    return DEFAULT_OVERVIEW_METRICS
+    const stored = organization.feature_settings?.overview_metrics ?? []
+    const valid = stored.filter((slug) =>
+      ALL_METRICS.some((m) => m.slug === slug),
+    ) as (keyof schemas['Metrics'])[]
+    return valid.length > 0 ? valid : DEFAULT_OVERVIEW_METRICS
   }, [organization.feature_settings?.overview_metrics])
 
   const [activeMetrics, setActiveMetrics] =

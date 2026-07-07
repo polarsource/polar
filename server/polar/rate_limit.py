@@ -172,6 +172,16 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
             zone="auth-backup-codes",
         ),
     ],
+    "^/v1/email-update/(request|verify)": [
+        Rule(minute=6, hour=12, block_time=900, zone="email-update"),
+        Rule(
+            group=RateLimitGroup.web,
+            minute=6,
+            hour=12,
+            block_time=900,
+            zone="email-update",
+        ),
+    ],
     "^/v1/customer-portal/customer-session/(request|authenticate)": [
         Rule(minute=6, hour=12, block_time=900, zone="customer-session-login"),
         Rule(

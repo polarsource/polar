@@ -270,3 +270,21 @@ class TestSensitiveEndpointZoneIsolation:
             f"Path {path!r} for group {group.value!r} resolved to "
             f"zone {rule.zone!r}, expected {expected_zone!r}"
         )
+
+
+@pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
+@pytest.mark.parametrize(
+    "path", ["/v1/email-update/request", "/v1/email-update/verify"]
+)
+@pytest.mark.parametrize("group", [RateLimitGroup.default, RateLimitGroup.web])
+class TestEmailUpdateZone:
+    """Email update is a web-session-only endpoint, so its callers resolve to
+    the `web` group; without a dedicated `web` rule they would fall through to
+    the catch-all "api" zone and its permissive per-second limits."""
+
+    def test_resolves_to_email_update_zone(
+        self, rules: dict[str, Sequence[Rule]], path: str, group: RateLimitGroup
+    ) -> None:
+        rule = _select_rule(rules, path, group)
+        assert rule is not None
+        assert rule.zone == "email-update"

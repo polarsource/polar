@@ -3,6 +3,11 @@
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { Button, Input, Modal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import {
+  InputOTP,
+  InputOTPGroup,
+  InputOTPSlot,
+} from '@polar-sh/ui/components/atoms/InputOTP'
 import { useState } from 'react'
 
 export interface TwoFactorCodeModalProps {
@@ -23,12 +28,15 @@ const TwoFactorCodeContent = ({
   onConfirm,
 }: Omit<TwoFactorCodeModalProps, 'isShown' | 'title'>) => {
   const [code, setCode] = useState('')
+  const [useBackupCode, setUseBackupCode] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
 
+  const canSubmit = useBackupCode ? code.length > 0 : code.length === 6
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!code) return
+    if (!canSubmit || submitting) return
     setError(null)
     setSubmitting(true)
     const result = await onConfirm(code.trim().toUpperCase())
@@ -40,6 +48,12 @@ const TwoFactorCodeContent = ({
     hide()
   }
 
+  const toggleBackupCode = () => {
+    setUseBackupCode(!useBackupCode)
+    setCode('')
+    setError(null)
+  }
+
   return (
     <Box
       as="form"
@@ -49,18 +63,62 @@ const TwoFactorCodeContent = ({
       onSubmit={handleSubmit}
     >
       <Text color="muted">{description}</Text>
-      <Text color="muted">
-        Enter the 6-digit code from your authenticator app, or one of your
-        backup codes.
-      </Text>
-      <Input
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        placeholder="Authenticator code or backup code"
-        autoComplete="one-time-code"
-        autoFocus
-      />
-      {error && <Text color="danger">{error}</Text>}
+      {useBackupCode ? (
+        <Input
+          value={code}
+          onChange={(e) => {
+            setCode(e.target.value)
+            if (error) setError(null)
+          }}
+          placeholder="Backup code"
+          autoComplete="one-time-code"
+          autoFocus
+        />
+      ) : (
+        <Box flexDirection="column" gap="m">
+          <Text color="muted" align="center">
+            Enter the 6-digit code from your authenticator app.
+          </Text>
+          <Box justifyContent="center">
+            <InputOTP
+              maxLength={6}
+              minLength={6}
+              inputMode="numeric"
+              autoComplete="one-time-code"
+              autoFocus
+              value={code}
+              onChange={(value) => {
+                setCode(value)
+                if (error) setError(null)
+              }}
+            >
+              <InputOTPGroup>
+                {Array.from({ length: 6 }).map((_, index) => (
+                  <InputOTPSlot
+                    key={index}
+                    index={index}
+                    className="dark:border-polar-600 h-12 w-12 border-gray-300 text-xl"
+                  />
+                ))}
+              </InputOTPGroup>
+            </InputOTP>
+          </Box>
+        </Box>
+      )}
+      <button
+        type="button"
+        className="dark:text-polar-500 dark:hover:text-polar-400 mx-auto cursor-pointer appearance-none text-center text-xs text-gray-500 hover:text-gray-700"
+        onClick={toggleBackupCode}
+      >
+        {useBackupCode
+          ? 'Use an authenticator code instead'
+          : 'Use a backup code instead'}
+      </button>
+      {error && (
+        <Text color="danger" align="center">
+          {error}
+        </Text>
+      )}
       <Box justifyContent="end" gap="m">
         <Button type="button" variant="ghost" onClick={hide}>
           Cancel
@@ -69,7 +127,7 @@ const TwoFactorCodeContent = ({
           type="submit"
           variant={destructive ? 'destructive' : 'default'}
           loading={submitting}
-          disabled={!code}
+          disabled={!canSubmit}
         >
           {confirmLabel}
         </Button>

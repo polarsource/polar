@@ -1,5 +1,6 @@
 import math
 
+from polar.kit.currency import get_currency_decimal_factor
 from polar.metrics.aggregation import latest
 
 from ..schemas import (
@@ -19,19 +20,21 @@ _CRITICAL_MARGIN = 0.40
 _TARGET_MARGIN = 0.70
 
 
-def _suggested_price(price_amount: int, margin: float) -> int | None:
-    """List price (cents) that restores the target margin, or None.
+def _suggested_price(price_amount: int, margin: float, currency: str) -> int | None:
+    """List price (smallest currency unit) restoring the target margin, or None.
 
     Derived from the unitless margin — `price * (1 - margin)` is the cost to
     serve in the price's own currency unit — so it never depends on the raw
-    cost metric's unit. Rounded up to a whole dollar; only a raise is ever
-    suggested (a lower price never *restores* margin).
+    cost metric's unit. Rounded up to a whole major unit (the next dollar for
+    cent-based currencies, the next yen for zero-decimal ones); only a raise
+    is ever suggested (a lower price never *restores* margin).
     """
     cost_share = 1 - margin
     if cost_share <= 0:
         return None
     target = price_amount * cost_share / (1 - _TARGET_MARGIN)
-    suggested = math.ceil(target / 100) * 100
+    factor = get_currency_decimal_factor(currency)
+    suggested = math.ceil(target / factor) * factor
     return suggested if suggested > price_amount else None
 
 
@@ -86,7 +89,7 @@ class ProductMarginDetector(Detector):
             return None
 
         cost_to_serve = round(worst.price_amount * (1 - worst_margin))
-        suggested = _suggested_price(worst.price_amount, worst_margin)
+        suggested = _suggested_price(worst.price_amount, worst_margin, worst.currency)
         margin_str = format_pct(worst_margin)
 
         title = f"{worst.name} margin is down to {margin_str}"

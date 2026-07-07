@@ -20,7 +20,7 @@ from rich.progress import Progress
 from sqlalchemy import and_, or_, select
 from sqlalchemy.orm import contains_eager
 
-from polar.kit.currency import _get_currency_decimal_factor
+from polar.kit.currency import get_currency_decimal_factor
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.models import Order, Refund, Transaction
 from polar.models.transaction import TransactionType
@@ -97,7 +97,7 @@ def typer_async(f):  # type: ignore
 
 
 def normalize(amount: str, currency: str) -> int:
-    return int(Decimal(amount) * _get_currency_decimal_factor(currency))
+    return int(Decimal(amount) * get_currency_decimal_factor(currency))
 
 
 async def load_transactions_batch(

@@ -588,12 +588,13 @@ def _product(
     price_amount: int = 4000,
     margin: float = 0.5,
     subs: float = 50.0,
+    currency: str = "usd",
 ) -> ProductPricing:
     return ProductPricing(
         product_id=uuid.uuid4(),
         name=name,
         price_amount=price_amount,
-        currency="usd",
+        currency=currency,
         metrics=_response_from(
             gross_margin_percentage=[margin] * 36,
             active_subscriptions=[subs] * 36,
@@ -749,6 +750,28 @@ class TestCostConcentrationDetector:
         insight = CostConcentrationDetector().evaluate(_context_with_customer_costs([]))
 
         assert insight is None
+
+
+class TestSuggestedPriceRounding:
+    def test_cent_currency_rounds_to_next_dollar(self) -> None:
+        product = _product(price_amount=5000, margin=0.45, currency="usd")
+
+        insight = ProductMarginDetector().evaluate(_context_with_products([product]))
+
+        assert insight is not None
+        assert isinstance(insight.primary_action, AdjustPriceAction)
+        # target = 5000 * 0.55 / 0.30 = 9166.67 -> next dollar
+        assert insight.primary_action.suggested_price_amount == 9200
+
+    def test_zero_decimal_currency_rounds_to_next_unit(self) -> None:
+        product = _product(price_amount=5000, margin=0.45, currency="jpy")
+
+        insight = ProductMarginDetector().evaluate(_context_with_products([product]))
+
+        assert insight is not None
+        assert isinstance(insight.primary_action, AdjustPriceAction)
+        # same target, but JPY's smallest unit IS the display unit -> next yen
+        assert insight.primary_action.suggested_price_amount == 9167
 
 
 class TestInsightCopy:

@@ -1,4 +1,5 @@
 import { getAllContent } from '@/utils/blog'
+import { buildMetadata } from '@/utils/metadata'
 import type { Metadata } from 'next'
 
 export const dynamic = 'force-static'
@@ -16,26 +17,15 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { slug } = await params
   const post = getAllContent().find((p) => p.slug === slug)
-  const imageUrl = post?.image ?? undefined
 
-  return {
+  return buildMetadata({
+    path: `/blog/${slug}`,
     title: post?.title,
     description: post?.description,
-    ...(post?.date && { publishedTime: post.date }),
-    openGraph: {
-      type: 'article',
-      title: post?.title,
-      description: post?.description,
-      ...(post?.date && { publishedTime: post.date }),
-      ...(imageUrl && { images: [imageUrl] }),
-    },
-    twitter: {
-      card: 'summary_large_image',
-      title: post?.title,
-      description: post?.description,
-      ...(imageUrl && { images: [imageUrl] }),
-    },
-  }
+    type: 'article',
+    ...(post?.image ? { image: post.image } : {}),
+    ...(post?.date ? { publishedTime: post.date } : {}),
+  })
 }
 
 export default async function BlogPost({

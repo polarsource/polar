@@ -80,6 +80,12 @@ export default [
     },
   },
   {
+    files: ['src/app/(main)/(website)/**/*.{ts,tsx}'],
+    rules: {
+      'polar/require-canonical-metadata': 'error',
+    },
+  },
+  {
     ignores: [
       'node_modules/**',
       '.next/**',

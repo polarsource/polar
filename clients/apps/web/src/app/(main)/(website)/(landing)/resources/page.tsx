@@ -1,35 +1,14 @@
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
-import { Metadata } from 'next'
+import { buildMetadata } from '@/utils/metadata'
 import Link from 'next/link'
 
-export const metadata: Metadata = {
+export const metadata = buildMetadata({
+  path: '/resources',
   title: 'Resources',
   description: 'Handy links related to the Polar platform',
   keywords:
     'monetization, merchant of record, saas, digital products, platform, developer, open source, funding, open source, economy',
-  openGraph: {
-    siteName: 'Polar',
-    type: 'website',
-    images: [
-      {
-        url: 'https://polar.sh/assets/brand/polar_og.jpg',
-        width: 1200,
-        height: 630,
-      },
-    ],
-  },
-  twitter: {
-    card: 'summary_large_image',
-    images: [
-      {
-        url: 'https://polar.sh/assets/brand/polar_og.jpg',
-        width: 1200,
-        height: 630,
-        alt: 'Polar',
-      },
-    ],
-  },
-}
+})
 
 const resourceLinks = [
   {

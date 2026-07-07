@@ -31,6 +31,19 @@ export default function CompassPage({ organization }: CompassPageProps) {
     }
   }, [ask, send, router, pathname])
 
+  // Escape returns to wherever Compass was invoked from, mirroring the old
+  // overlay's close behavior. The ?ask= handoff uses router.replace, so back
+  // lands on the true previous page, not an intermediate ask URL.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && !e.isComposing) {
+        router.back()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [router])
+
   const handleAsk = (question: string) => {
     const content = question.trim()
     if (!content || isStreaming) return

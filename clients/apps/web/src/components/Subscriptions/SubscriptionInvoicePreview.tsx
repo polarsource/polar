@@ -62,7 +62,7 @@ const SubscriptionInvoicePreview = ({
 
   const items: InvoiceLineItem[] = [
     { id: 'base', label: baseLabel, amount: chargePreview.base_amount },
-    ...chargePreview.prorations.map((proration, index) => ({
+    ...(chargePreview.prorations ?? []).map((proration, index) => ({
       id: `proration-${index}`,
       label: proration.label,
       amount: proration.amount,

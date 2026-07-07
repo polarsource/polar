@@ -66,7 +66,10 @@ export interface AssistantMessage {
   parts: AssistantPart[]
 }
 
-const appendDelta = (parts: AssistantPart[], delta: string): AssistantPart[] => {
+const appendDelta = (
+  parts: AssistantPart[],
+  delta: string,
+): AssistantPart[] => {
   const last = parts[parts.length - 1]
   if (last && last.kind === 'text') {
     return [...parts.slice(0, -1), { kind: 'text', text: last.text + delta }]
@@ -86,7 +89,10 @@ export const useCompassAssistant = (organizationId: string) => {
   const idRef = useRef(0)
 
   const appendToAssistant = useCallback(
-    (assistantId: string, apply: (parts: AssistantPart[]) => AssistantPart[]) => {
+    (
+      assistantId: string,
+      apply: (parts: AssistantPart[]) => AssistantPart[],
+    ) => {
       setMessages((prev) =>
         prev.map((message) =>
           message.id === assistantId

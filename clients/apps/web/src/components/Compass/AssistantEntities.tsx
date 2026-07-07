@@ -7,12 +7,7 @@ import {
 } from '@/hooks/useCompassAssistant'
 import { Avatar, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import {
-  DataTable,
-  DataTableColumnDef,
-  List,
-  ListItem,
-} from '@polar-sh/orbit'
+import { DataTable, DataTableColumnDef, List, ListItem } from '@polar-sh/orbit'
 import { useMemo } from 'react'
 
 const rowName = (row: DataTableRow, columns: DataTableColumn[]): string => {
@@ -65,46 +60,50 @@ export const EntityListView = ({
         </Text>
       ) : null}
       <List size="small">
-      {block.rows.map((row, i) => (
-        <ListItem key={i} size="small">
-          <Box
-            width="100%"
-            display="flex"
-            flexDirection="row"
-            alignItems="center"
-            justifyContent="between"
-            columnGap="l"
-          >
-            {avatarColumn ? (
-              <Avatar
-                name={rowName(row, contentColumns)}
-                avatar_url={
-                  typeof row[avatarColumn.key] === 'string'
-                    ? (row[avatarColumn.key] as string)
-                    : null
-                }
-                className="size-8"
-              />
-            ) : null}
-            <Box display="flex" flexDirection="column" flexGrow={1}>
-              <Text>{formatCell(row[titleColumn.key], titleColumn.format)}</Text>
-              {descriptionColumns.length > 0 ? (
-                <Text variant="caption" color="muted">
-                  {descriptionColumns
-                    .filter((column) => row[column.key] !== null)
-                    .map((column) => formatCell(row[column.key], column.format))
-                    .join(', ')}
+        {block.rows.map((row, i) => (
+          <ListItem key={i} size="small">
+            <Box
+              width="100%"
+              display="flex"
+              flexDirection="row"
+              alignItems="center"
+              justifyContent="between"
+              columnGap="l"
+            >
+              {avatarColumn ? (
+                <Avatar
+                  name={rowName(row, contentColumns)}
+                  avatar_url={
+                    typeof row[avatarColumn.key] === 'string'
+                      ? (row[avatarColumn.key] as string)
+                      : null
+                  }
+                  className="size-8"
+                />
+              ) : null}
+              <Box display="flex" flexDirection="column" flexGrow={1}>
+                <Text>
+                  {formatCell(row[titleColumn.key], titleColumn.format)}
+                </Text>
+                {descriptionColumns.length > 0 ? (
+                  <Text variant="caption" color="muted">
+                    {descriptionColumns
+                      .filter((column) => row[column.key] !== null)
+                      .map((column) =>
+                        formatCell(row[column.key], column.format),
+                      )
+                      .join(', ')}
+                  </Text>
+                ) : null}
+              </Box>
+              {metaColumn && row[metaColumn.key] !== null ? (
+                <Text color="muted">
+                  {formatCell(row[metaColumn.key], metaColumn.format)}
                 </Text>
               ) : null}
             </Box>
-            {metaColumn && row[metaColumn.key] !== null ? (
-              <Text color="muted">
-                {formatCell(row[metaColumn.key], metaColumn.format)}
-              </Text>
-            ) : null}
-          </Box>
-        </ListItem>
-      ))}
+          </ListItem>
+        ))}
       </List>
     </Box>
   )

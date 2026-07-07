@@ -138,7 +138,7 @@ const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
       onSuccess: (response) => {
         if (response.data) {
           setEnrollment(response.data)
-        } else if (!promptIfSessionNotFresh(response.error)) {
+        } else if (!promptIfSessionNotFresh(response.error, handleEnroll)) {
           setError('Failed to start TOTP setup. Please try again.')
         }
       },
@@ -155,7 +155,7 @@ const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
     setError(null)
     const { error } = await totpEnable.mutateAsync(code)
     if (error) {
-      if (promptIfSessionNotFresh(error)) {
+      if (promptIfSessionNotFresh(error, handleVerify)) {
         return
       }
       setError('Invalid code. Please try again.')

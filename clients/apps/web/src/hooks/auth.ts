@@ -89,6 +89,16 @@ export const useBackupCodesVerify = () =>
       api.POST('/v1/auth/backup-codes/verify', { body }),
   })
 
+export const useStepUpStart = () =>
+  useMutation({
+    mutationFn: () => api.POST('/v1/auth/step-up', {}),
+  })
+
+export const useStepUpComplete = () =>
+  useMutation({
+    mutationFn: () => api.POST('/v1/auth/step-up/complete', {}),
+  })
+
 export const useTOTPStatus = () =>
   useQuery({
     queryKey: ['totp', 'status'],

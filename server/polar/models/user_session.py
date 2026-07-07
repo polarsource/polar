@@ -28,6 +28,9 @@ class UserSession(RecordModel):
     expires_at: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, index=True, default=get_expires_at
     )
+    last_authenticated_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=utc_now
+    )
     user_agent: Mapped[str] = mapped_column(Text, nullable=False)
     scopes: Mapped[list[Scope]] = mapped_column(
         ARRAY(StringEnum(Scope)), nullable=False, default=list

@@ -169,7 +169,7 @@ const AuthenticationSettings = () => {
   const handleDisconnect = async (platform: schemas['OAuthPlatform']) => {
     const { error } = await disconnectOAuth.mutateAsync(platform)
     if (error) {
-      promptIfSessionNotFresh(error)
+      promptIfSessionNotFresh(error, () => handleDisconnect(platform))
     }
   }
 

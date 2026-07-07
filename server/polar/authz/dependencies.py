@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from datetime import datetime
 from typing import Annotated, Any
 from uuid import UUID
 
@@ -242,18 +243,27 @@ def WebUserAuthorizer(required_scopes: set[Scope]) -> Any:
     return dependency
 
 
-def ensure_session_fresh(auth_subject: AuthSubject[User]) -> None:
-    """Require a recently authenticated web session for sensitive operations.
-
-    Logging in always creates a new ``UserSession``, so ``created_at`` is the
-    time of the last authentication.
-    """
+def get_last_authenticated_at(auth_subject: AuthSubject[User]) -> datetime:
     assert isinstance(auth_subject.session, UserSession)
+    return auth_subject.session.last_authenticated_at or auth_subject.session.created_at
+
+
+def ensure_session_fresh(auth_subject: AuthSubject[User]) -> None:
+    """Require a recently authenticated web session for sensitive operations."""
     if (
-        utc_now() - auth_subject.session.created_at
+        utc_now() - get_last_authenticated_at(auth_subject)
         > settings.USER_SESSION_FRESHNESS_TTL
     ):
         raise SessionNotFreshError()
+
+
+def is_step_up_allowed(auth_subject: AuthSubject[User]) -> bool:
+    """Whether the session can regain freshness through a second-factor
+    step-up, as opposed to requiring a full re-login."""
+    return (
+        utc_now() - get_last_authenticated_at(auth_subject)
+        <= settings.USER_SESSION_FRESHNESS_TTL + settings.USER_SESSION_STEP_UP_GRACE
+    )
 
 
 def WebUserAuthorizerFresh(required_scopes: set[Scope]) -> Any:

@@ -81,10 +81,31 @@ const TwoFactorSettings = () => {
   const { promptIfSessionNotFresh, sessionRefreshModal } =
     useSessionRefreshPrompt()
 
+  const handleGenerateBackupCodes = async () => {
+    const { data, error } = await backupCodesEnroll.mutateAsync()
+    if (error) {
+      if (!promptIfSessionNotFresh(error, handleGenerateBackupCodes)) {
+        toast({
+          title: 'Error',
+          description: extractApiErrorMessage(error),
+          variant: 'error',
+        })
+      }
+      return null
+    }
+    if (data?.codes) {
+      setNewBackupCodes(data.codes)
+      await backupCodesStatus.refetch()
+      showBackupCodesModal()
+      return data
+    }
+    return null
+  }
+
   const handleDeleteTOTP = async () => {
     const { error } = await totpDelete.mutateAsync()
     if (error) {
-      if (promptIfSessionNotFresh(error)) {
+      if (promptIfSessionNotFresh(error, handleDeleteTOTP)) {
         return
       }
       toast({
@@ -149,26 +170,7 @@ const TwoFactorSettings = () => {
                   </Button>
                 ) : (
                   <Button
-                    onClick={async () => {
-                      const { data, error } =
-                        await backupCodesEnroll.mutateAsync()
-                      if (error) {
-                        if (promptIfSessionNotFresh(error)) {
-                          return
-                        }
-                        toast({
-                          title: 'Error',
-                          description: extractApiErrorMessage(error),
-                          variant: 'error',
-                        })
-                        return
-                      }
-                      if (data?.codes) {
-                        setNewBackupCodes(data.codes)
-                        await backupCodesStatus.refetch()
-                        showBackupCodesModal()
-                      }
-                    }}
+                    onClick={() => handleGenerateBackupCodes()}
                     loading={backupCodesEnroll.isPending}
                   >
                     Generate
@@ -186,23 +188,7 @@ const TwoFactorSettings = () => {
         onEnabled={async () => {
           hideTOTPModal()
           await totpStatus.refetch()
-          const { data, error } = await backupCodesEnroll.mutateAsync()
-          if (error) {
-            if (promptIfSessionNotFresh(error)) {
-              return
-            }
-            toast({
-              title: 'Error',
-              description: extractApiErrorMessage(error),
-              variant: 'error',
-            })
-            return
-          }
-          if (data?.codes) {
-            setNewBackupCodes(data.codes)
-            await backupCodesStatus.refetch()
-            showBackupCodesModal()
-          }
+          await handleGenerateBackupCodes()
         }}
       />
 
@@ -222,7 +208,7 @@ const TwoFactorSettings = () => {
         onRegenerate={async () => {
           const { data, error } = await backupCodesEnroll.mutateAsync()
           if (error) {
-            if (promptIfSessionNotFresh(error)) {
+            if (promptIfSessionNotFresh(error, handleGenerateBackupCodes)) {
               hideBackupCodesRegenerateModal()
               return null
             }

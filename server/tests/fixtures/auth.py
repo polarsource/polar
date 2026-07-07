@@ -111,6 +111,7 @@ def auth_subject(
 
         session = MagicMock(spec=UserSession)
         session.created_at = utc_now()
+        session.last_authenticated_at = None
 
     return AuthSubject(subject, auth_subject_fixture.scopes, session)
 

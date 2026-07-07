@@ -37,7 +37,7 @@ const EmailUpdateForm = ({
     const { error } = await sendEmailUpdate(email, returnTo)
     setLoading(false)
     if (error) {
-      if (promptIfSessionNotFresh(error)) {
+      if (promptIfSessionNotFresh(error, () => onSubmit({ email }))) {
         return
       }
       let errMsg = 'An error occurred while updating your email.'

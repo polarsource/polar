@@ -28,8 +28,14 @@ from polar.auth.exceptions import (
 )
 from polar.auth.oauth2.github import get_github_factor
 from polar.auth.oauth2.google import get_google_factor
-from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWriteFresh
+from polar.authz.dependencies import (
+    AuthorizeWebUserRead,
+    AuthorizeWebUserWrite,
+    AuthorizeWebUserWriteFresh,
+    is_step_up_allowed,
+)
 from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.kit.utils import utc_now
 from polar.models import UserSession as UserSession
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
@@ -69,6 +75,8 @@ from .schemas import (
 )
 from .service import auth as auth_service
 from .sso.endpoints import router as sso_login_router
+
+STEP_UP_SESSION_CONTEXT_KEY = "step_up_user_session_id"
 
 router = APIRouter(prefix="/auth", tags=["auth", APITag.private])
 router.include_router(
@@ -134,6 +142,11 @@ async def complete(
     ),
     session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
+    if (authentication_session.context or {}).get(
+        STEP_UP_SESSION_CONTEXT_KEY
+    ) is not None:
+        raise PolarAuthRedirectionError("Authentication session cannot be completed")
+
     try:
         identity_id, _ = await authentication_session_service.complete(
             authentication_session
@@ -178,6 +191,77 @@ async def complete(
     )
     await authentication_session_service.set_cookie(request, response, "", 0)
     return response
+
+
+@router.post(
+    "/step-up",
+    status_code=201,
+    responses={403: {"model": SessionNotFreshError.schema()}},
+)
+async def step_up_start(
+    request: Request,
+    response: Response,
+    auth_subject: AuthorizeWebUserWrite,
+    authentication_session_service: AuthenticationSessionService = Depends(
+        get_authentication_session_service
+    ),
+) -> AuthenticationSessionSchema:
+    assert isinstance(auth_subject.session, UserSession)
+    if not is_step_up_allowed(auth_subject):
+        raise SessionNotFreshError()
+
+    token, authentication_session = await authentication_session_service.start(
+        **{STEP_UP_SESSION_CONTEXT_KEY: str(auth_subject.session.id)}
+    )
+    authentication_session.identity_id = auth_subject.subject.id
+    authentication_session.step = 1
+    await authentication_session_service.update(authentication_session)
+
+    factors = await authentication_session_service.get_available_factors(
+        authentication_session
+    )
+    if not factors:
+        await authentication_session_service.delete(authentication_session)
+        raise SessionNotFreshError()
+
+    await authentication_session_service.set_cookie(
+        request, response, token, authentication_session.expires_at
+    )
+    return await authentication_session_service.to_schema(authentication_session)
+
+
+@router.post(
+    "/step-up/complete",
+    status_code=204,
+    responses={403: {"model": SessionNotFreshError.schema()}},
+)
+async def step_up_complete(
+    request: Request,
+    response: Response,
+    auth_subject: AuthorizeWebUserWrite,
+    authentication_session: AuthenticationSession = Depends(get_authentication_session),
+    authentication_session_service: AuthenticationSessionService = Depends(
+        get_authentication_session_service
+    ),
+) -> None:
+    assert isinstance(auth_subject.session, UserSession)
+    context = authentication_session.context or {}
+    if (
+        context.get(STEP_UP_SESSION_CONTEXT_KEY) != str(auth_subject.session.id)
+        or authentication_session.identity_id != auth_subject.subject.id
+        or not authentication_session.amr
+    ):
+        raise NotPermitted()
+    if not is_step_up_allowed(auth_subject):
+        raise SessionNotFreshError()
+
+    try:
+        await authentication_session_service.complete(authentication_session)
+    except FactorsRemainingException as e:
+        raise NotPermitted() from e
+
+    auth_subject.session.last_authenticated_at = utc_now()
+    await authentication_session_service.set_cookie(request, response, "", 0)
 
 
 @router.post("/email-otp/request", status_code=202)

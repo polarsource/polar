@@ -9,6 +9,7 @@ import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ChevronRight } from 'lucide-react'
+import Link from 'next/link'
 import { AnimatePresence, motion } from 'motion/react'
 import { ComponentType, RefObject } from 'react'
 import { AssistantPartView } from './AssistantBlocks'
@@ -78,7 +79,7 @@ export const CompassConversation = ({
       transition={{ duration: 0.3, ease: 'easeOut' }}
       className="flex min-h-full w-full flex-col items-center"
     >
-      <div className="flex w-full max-w-[760px] flex-1 flex-col gap-y-12 pb-6">
+      <div className="flex w-full flex-1 flex-col gap-y-12 pb-6">
         {empty ? (
           <Box display="flex" flexDirection="column" rowGap="xl">
             <div className="grid grid-cols-2 grid-rows-2 gap-4">
@@ -110,14 +111,35 @@ export const CompassConversation = ({
                 </button>
               ))}
             </div>
-            <CompassWidget
-              organization={organization}
-              limit={3}
-              hideHeader
-              hideWhenEmpty
-              layout="column"
-              size="small"
-            />
+            <Box display="flex" flexDirection="column" rowGap="m">
+              <CompassWidget
+                organization={organization}
+                limit={4}
+                columns={2}
+                hideHeader
+                hideWhenEmpty
+                layout="grid"
+                size="small"
+              />
+              <Link
+                href={`/dashboard/${organization.slug}/compass/insights`}
+                className="self-end"
+              >
+                <Box
+                  color={{ base: 'text-secondary', hover: 'text-primary' }}
+                  transitionProperty="colors"
+                  transitionDuration="fast"
+                  flexDirection="row"
+                  alignItems="center"
+                  columnGap="xs"
+                >
+                  <Text variant="caption" color="inherit">
+                    View all insights
+                  </Text>
+                  <ChevronRight size={14} />
+                </Box>
+              </Link>
+            </Box>
           </Box>
         ) : (
           <Box display="flex" flexDirection="column" rowGap="2xl">
@@ -155,7 +177,7 @@ export const CompassConversation = ({
                       maxWidth="85%"
                     >
                       {message.parts.length === 0 && isStreaming ? (
-                        <span className="dark:from-polar-500 dark:via-polar-100 dark:to-polar-500 w-fit bg-linear-to-r from-gray-400 via-gray-800 to-gray-400 bg-size-[200%_100%] bg-clip-text text-sm text-transparent [animation:shimmer_2s_linear_infinite]">
+                        <span className="dark:from-polar-500 dark:via-polar-100 dark:to-polar-500 w-fit [animation:shimmer_2s_linear_infinite] bg-linear-to-r from-gray-400 via-gray-800 to-gray-400 bg-size-[200%_100%] bg-clip-text text-sm text-transparent">
                           Thinking...
                         </span>
                       ) : (

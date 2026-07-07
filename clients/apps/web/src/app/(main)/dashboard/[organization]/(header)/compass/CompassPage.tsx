@@ -1,6 +1,7 @@
 'use client'
 
 import { CompassConversation } from '@/components/Compass/CompassConversation'
+import { CompassTabs } from '@/components/Compass/CompassTabs'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useCompassAssistant } from '@/hooks/useCompassAssistant'
 import { schemas } from '@polar-sh/client'
@@ -47,12 +48,21 @@ export default function CompassPage({ organization }: CompassPageProps) {
   const handleAsk = (question: string) => {
     const content = question.trim()
     if (!content || isStreaming) return
+    // Prefill so the input mirrors what is being asked, then send; the
+    // submit clears it like a hand-typed question.
+    setValue(content)
     void send(content)
     setValue('')
+    inputRef.current?.focus()
   }
 
   return (
-    <DashboardBody title="Compass" className="h-full">
+    <DashboardBody
+      title="Compass"
+      header={<CompassTabs organization={organization} active="assistant" />}
+      className="h-full"
+      wrapperClassName="max-w-3xl!"
+    >
       <CompassConversation
         organization={organization}
         messages={messages}

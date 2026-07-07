@@ -28,6 +28,8 @@ interface CompassWidgetProps {
   /** `small` tightens cell padding and card typography for compact surfaces
    * (e.g. the assistant conversation's empty state). */
   size?: 'default' | 'small'
+  /** Grid column count on large screens (grid layout only). */
+  columns?: 2 | 3
 }
 
 /**
@@ -46,6 +48,7 @@ export const CompassWidget = ({
   layout = 'grid',
   hideWhenEmpty = false,
   size = 'default',
+  columns = 3,
 }: CompassWidgetProps) => {
   const compassEnabled = !!organization.feature_settings?.compass_enabled
   const { data: insights, isLoading } = useCompassInsights(
@@ -103,7 +106,9 @@ export const CompassWidget = ({
         <Box
           display="grid"
           gridTemplateColumns={
-            layout === 'column' ? '1fr' : { base: '1fr', lg: 'repeat(3, 1fr)' }
+            layout === 'column'
+              ? '1fr'
+              : { base: '1fr', lg: `repeat(${columns}, 1fr)` }
           }
           alignItems="stretch"
           overflow="hidden"
@@ -113,8 +118,8 @@ export const CompassWidget = ({
           borderColor="border-primary"
         >
           {shown.map((insight, idx) => {
-            const col = idx % 3
-            const row = Math.floor(idx / 3)
+            const col = idx % columns
+            const row = Math.floor(idx / columns)
             return (
               <Box
                 key={insight.id}

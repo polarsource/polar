@@ -2429,7 +2429,9 @@ class TestPause:
         product: Product,
         customer: Customer,
     ) -> None:
-        mocker.patch.object(subscription_service, "send_paused_email")
+        send_paused_email_mock = mocker.patch.object(
+            subscription_service, "send_paused_email"
+        )
         subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer
         )
@@ -2441,6 +2443,7 @@ class TestPause:
 
         assert updated.pause_at_period_end is True
         assert updated.resumes_at is None
+        send_paused_email_mock.assert_called_once()
 
     async def test_cycle_pauses_at_period_end(
         self,

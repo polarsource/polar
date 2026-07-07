@@ -329,6 +329,7 @@ class LicenseKeyService:
         key: str | None = None,
         member_id: UUID | None = None,
         set_expiration: bool = True,
+        regrant: bool = False,
     ) -> LicenseKey:
         props = cast(BenefitLicenseKeysProperties, benefit.properties)
         expires = props.get("expires", None) if set_expiration else None
@@ -365,6 +366,7 @@ class LicenseKeyService:
                 create_schema=create_schema,
                 license_key_id=license_key_id,
                 member_id=member_id,
+                regrant=regrant,
             )
 
         return await self.customer_create_grant(
@@ -380,6 +382,7 @@ class LicenseKeyService:
         license_key_id: UUID,
         create_schema: LicenseKeyCreate,
         member_id: UUID | None = None,
+        regrant: bool = False,
     ) -> LicenseKey:
         key = await self.get_by_grant_or_raise(
             session,
@@ -388,6 +391,9 @@ class LicenseKeyService:
             customer_id=create_schema.customer_id,
             benefit_id=create_schema.benefit_id,
         )
+
+        if regrant and key.status == LicenseKeyStatus.revoked:
+            key.mark_granted()
 
         if member_id is not None and key.member_id is None:
             key.member_id = member_id

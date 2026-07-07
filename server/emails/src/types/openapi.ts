@@ -1476,6 +1476,12 @@ export interface components {
       subscription_id: string | null
       /** Checkout Id */
       checkout_id: string | null
+      /**
+       * Next Payment Attempt At
+       * @description When the next automatic payment retry is scheduled. `null` if the order is not in dunning or all retries have been exhausted.
+       * @default null
+       */
+      next_payment_attempt_at: string | null
       /** Description */
       description: string
       /** Items */
@@ -1619,6 +1625,11 @@ export interface components {
        * @description When the business details were submitted for review.
        */
       details_submitted_at: string | null
+      /**
+       * Sso Enforced
+       * @description Whether members must access this organization through its SSO connection.
+       */
+      sso_enforced: boolean
       /**
        * Default Presentment Currency
        * @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available.
@@ -1927,25 +1938,6 @@ export interface components {
       /** Url */
       url: string
     }
-    /** OrganizationAccountUnlinkEmail */
-    OrganizationAccountUnlinkEmail: {
-      /**
-       * Template
-       * @default organization_account_unlink
-       * @constant
-       */
-      template: 'organization_account_unlink'
-      props: components['schemas']['OrganizationAccountUnlinkProps']
-    }
-    /** OrganizationAccountUnlinkProps */
-    OrganizationAccountUnlinkProps: {
-      /** Email */
-      email: string
-      /** Organization Kept Name */
-      organization_kept_name: string
-      /** Organizations Unlinked */
-      organizations_unlinked: string[]
-    }
     /** OrganizationCapabilities */
     OrganizationCapabilities: {
       /**
@@ -2072,6 +2064,30 @@ export interface components {
        * @default false
        */
       preview_access_enabled: boolean
+      /**
+       * Disputes Enabled
+       * @description If this organization has the disputes dashboard enabled
+       * @default false
+       */
+      disputes_enabled: boolean
+      /**
+       * Sso Enabled
+       * @description If this organization has single sign-on configuration enabled
+       * @default false
+       */
+      sso_enabled: boolean
+      /**
+       * Compass Enabled
+       * @description If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard
+       * @default false
+       */
+      compass_enabled: boolean
+      /**
+       * Merchant Migration Enabled
+       * @description If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.
+       * @default false
+       */
+      merchant_migration_enabled: boolean
     }
     /** OrganizationInviteEmail */
     OrganizationInviteEmail: {
@@ -2337,14 +2353,19 @@ export interface components {
       /** @description The visibility of the product. */
       visibility: components['schemas']['ProductVisibility']
       /** @description The recurring interval of the product. If `None`, the product is a one-time purchase. */
-      recurring_interval:
-        | components['schemas']['SubscriptionRecurringInterval']
-        | null
+      recurring_interval: components['schemas']['RecurringInterval'] | null
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on. None for one-time products.
        */
       recurring_interval_count: number | null
+      /** @description The meter cycle of the product, independent of the billing interval. If `None`, metered concerns follow the billing interval. */
+      meter_interval: components['schemas']['RecurringInterval'] | null
+      /**
+       * Meter Interval Count
+       * @description Number of meter interval units. None when no meter cycle is set.
+       */
+      meter_interval_count: number | null
       /**
        * Is Recurring
        * @description Whether the product is a subscription.
@@ -2372,6 +2393,11 @@ export interface components {
      * @enum {string}
      */
     ProductVisibility: 'draft' | 'private' | 'public'
+    /**
+     * RecurringInterval
+     * @enum {string}
+     */
+    RecurringInterval: 'day' | 'week' | 'month' | 'year'
     /** SeatInvitationEmail */
     SeatInvitationEmail: {
       /**
@@ -2512,7 +2538,7 @@ export interface components {
        * @description The interval at which the subscription recurs.
        * @example month
        */
-      recurring_interval: components['schemas']['SubscriptionRecurringInterval']
+      recurring_interval: components['schemas']['RecurringInterval']
       /**
        * Recurring Interval Count
        * @description Number of interval units of the subscription. If this is set to 1 the charge will happen every interval (e.g. every month), if set to 2 it will be every other month, and so on.
@@ -2535,6 +2561,16 @@ export interface components {
        * @description The end timestamp of the current billing period.
        */
       current_period_end: string
+      /**
+       * Current Meter Period Start
+       * @description The start timestamp of the current meter period, if the product has a meter cycle set. Metered credits are granted and overage is settled on this cadence.
+       */
+      current_meter_period_start: string | null
+      /**
+       * Current Meter Period End
+       * @description The end timestamp of the current meter period, if the product has a meter cycle set. This is when credits next renew.
+       */
+      current_meter_period_end: string | null
       /**
        * Trial Start
        * @description The start timestamp of the trial period, if any.
@@ -2570,6 +2606,27 @@ export interface components {
        * @description The timestamp when the subscription ended.
        */
       ended_at: string | null
+      /**
+       * Past Due At
+       * @description The timestamp when the subscription entered `past_due` status.
+       * @default null
+       */
+      past_due_at: string | null
+      /**
+       * Pause At Period End
+       * @description Whether the subscription will be paused at the end of the current period.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Paused At
+       * @description The timestamp when the subscription was paused.
+       */
+      paused_at: string | null
+      /**
+       * Resumes At
+       * @description The timestamp when a paused subscription is scheduled to automatically resume, if set.
+       */
+      resumes_at: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -2656,11 +2713,6 @@ export interface components {
       | 'prorate'
       | 'next_period'
       | 'reset'
-    /**
-     * SubscriptionRecurringInterval
-     * @enum {string}
-     */
-    SubscriptionRecurringInterval: 'day' | 'week' | 'month' | 'year'
     /** SubscriptionRenewalReminderEmail */
     SubscriptionRenewalReminderEmail: {
       /**
@@ -2715,6 +2767,7 @@ export interface components {
       | 'past_due'
       | 'canceled'
       | 'unpaid'
+      | 'paused'
     /** SubscriptionTrialConversionReminderEmail */
     SubscriptionTrialConversionReminderEmail: {
       /**

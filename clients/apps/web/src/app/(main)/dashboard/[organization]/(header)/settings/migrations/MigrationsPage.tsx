@@ -4,7 +4,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useModal } from '@/components/Modal/useModal'
 import { useMerchantMigrations } from '@/hooks/queries/merchantMigrations'
 import { schemas } from '@polar-sh/client'
-import { Button, Grid, InlineModal, Text } from '@polar-sh/orbit'
+import { Alert, Button, Grid, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import { useRouter } from 'next/navigation'
@@ -24,7 +24,7 @@ interface Props {
 
 export default function MigrationsPage({ organization }: Props) {
   const router = useRouter()
-  const { data, isLoading } = useMerchantMigrations(organization.id)
+  const { data, isLoading, isError } = useMerchantMigrations(organization.id)
   const { isShown, show, hide } = useModal()
 
   const migrations = data?.items ?? []
@@ -62,6 +62,12 @@ export default function MigrationsPage({ organization }: Props) {
 
         {isLoading ? (
           <SkeletonGrid />
+        ) : isError ? (
+          <Alert
+            variant="danger"
+            title="We couldn't load your migrations"
+            description="Something went wrong. Please refresh the page and try again."
+          />
         ) : migrations.length === 0 ? (
           <EmptyState onStart={show} />
         ) : (

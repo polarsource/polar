@@ -18,18 +18,22 @@ export function CreateMigrationModal({
   const createMigration = useCreateMerchantMigration(organizationId)
 
   const create = async () => {
-    const result = await createMigration.mutateAsync({
-      organization_id: organizationId,
-      source_platform: 'stripe',
-    })
-    if (result.data) {
-      onCreated(result.data)
-    } else {
-      toast({
-        title: 'Could not start migration',
-        description: 'Something went wrong. Please try again.',
+    try {
+      const result = await createMigration.mutateAsync({
+        organization_id: organizationId,
+        source_platform: 'stripe',
       })
+      if (result.data) {
+        onCreated(result.data)
+        return
+      }
+    } catch {
+      // fall through to the error toast below
     }
+    toast({
+      title: 'Could not start migration',
+      description: 'Something went wrong. Please try again.',
+    })
   }
 
   return (

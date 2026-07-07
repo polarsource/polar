@@ -103,7 +103,7 @@ function StepNode({ state, index }: { state: StepState; index: number }) {
         backgroundColor="background-success"
         color="text-success"
       >
-        <Check size={13} strokeWidth={2.5} />
+        <Check size={13} strokeWidth={2.5} aria-hidden="true" />
       </Box>
     )
   }

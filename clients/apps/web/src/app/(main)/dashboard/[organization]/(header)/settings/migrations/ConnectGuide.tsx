@@ -35,7 +35,7 @@ export function ConnectGuide() {
               alignItems="center"
               columnGap="s"
             >
-              <Check size={14} strokeWidth={2.5} />
+              <Check size={14} strokeWidth={2.5} aria-hidden="true" />
               <Text variant="caption" color="muted">
                 {scope}
               </Text>

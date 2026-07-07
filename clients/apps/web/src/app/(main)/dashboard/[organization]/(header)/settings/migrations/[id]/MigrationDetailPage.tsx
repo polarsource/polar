@@ -23,7 +23,11 @@ export default function MigrationDetailPage({
   migrationId,
   error,
 }: Props) {
-  const { data: migration, isLoading } = useMerchantMigration(migrationId)
+  const {
+    data: migration,
+    isLoading,
+    isError,
+  } = useMerchantMigration(migrationId)
 
   const basePath = `/dashboard/${organization.slug}/settings/migrations`
   const connected = migration?.source_connected ?? false
@@ -31,7 +35,8 @@ export default function MigrationDetailPage({
   const connect = useCallback(() => {
     const returnTo = `${basePath}/${migrationId}`
     window.location.href = getPublicServerURL(
-      `/v1/merchant-migrations/stripe/authorize?migration_id=${migrationId}` +
+      `/v1/merchant-migrations/stripe/authorize` +
+        `?migration_id=${encodeURIComponent(migrationId)}` +
         `&return_to=${encodeURIComponent(returnTo)}`,
     )
   }, [basePath, migrationId])
@@ -65,6 +70,12 @@ export default function MigrationDetailPage({
           <Box padding="3xl" alignItems="center" justifyContent="center">
             <Spinner />
           </Box>
+        ) : isError ? (
+          <Alert
+            variant="danger"
+            title="We couldn't load this migration"
+            description="Something went wrong. Please refresh the page and try again."
+          />
         ) : !migration ? (
           <Text color="muted">This migration no longer exists.</Text>
         ) : (

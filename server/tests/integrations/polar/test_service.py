@@ -367,6 +367,86 @@ class TestEnqueueTrackOrganizationReviewUsage:
         assert enqueue.call_args.kwargs["cost_usd"] == "0.5"
 
 
+class TestEnqueueTrackCompassAssistantUsage:
+    def _call(
+        self,
+        *,
+        external_customer_id: str = str(ORG_A),
+        cost_usd: Decimal | float | None = Decimal("0.0042"),
+    ) -> None:
+        polar_self.enqueue_track_compass_assistant_usage(
+            external_customer_id=external_customer_id,
+            vendor="openai",
+            model="gpt-5.5",
+            input_tokens=1200,
+            output_tokens=300,
+            cost_usd=cost_usd,
+            usage_id="run-1",
+        )
+
+    def test_noop_when_not_configured(self, mocker: MockerFixture) -> None:
+        settings = mocker.patch("polar.integrations.polar.service.settings")
+        settings.POLAR_SELF_ENABLED = False
+        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
+
+        self._call()
+
+        enqueue.assert_not_called()
+
+    def test_noop_for_self_organization(
+        self, configured: None, mocker: MockerFixture
+    ) -> None:
+        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
+
+        self._call(external_customer_id=str(SELF_ORG_ID))
+
+        enqueue.assert_not_called()
+
+    def test_noop_when_cost_is_none(
+        self, configured: None, mocker: MockerFixture
+    ) -> None:
+        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
+
+        self._call(cost_usd=None)
+
+        enqueue.assert_not_called()
+
+    def test_enqueues_job_with_serialized_cost(
+        self, configured: None, mocker: MockerFixture
+    ) -> None:
+        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
+
+        self._call(cost_usd=Decimal("0.0042"))
+
+        enqueue.assert_called_once_with(
+            "polar_self.track_compass_assistant_usage",
+            external_customer_id=str(ORG_A),
+            vendor="openai",
+            model="gpt-5.5",
+            input_tokens=1200,
+            output_tokens=300,
+            cost_usd="0.0042",
+            usage_id="run-1",
+        )
+
+    def test_noop_when_cost_is_zero(
+        self, configured: None, mocker: MockerFixture
+    ) -> None:
+        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
+
+        self._call(cost_usd=Decimal(0))
+
+        enqueue.assert_not_called()
+
+    def test_accepts_float_cost(self, configured: None, mocker: MockerFixture) -> None:
+        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
+
+        self._call(cost_usd=0.5)
+
+        assert enqueue.call_count == 1
+        assert enqueue.call_args.kwargs["cost_usd"] == "0.5"
+
+
 @pytest.mark.asyncio
 class TestResolveFreePlan:
     async def test_subscribed_org_gets_standard_free(

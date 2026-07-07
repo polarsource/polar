@@ -12,30 +12,26 @@ using them where an `auth_subject` is in play silently leaks other orgs (see the
 Rules:
 - Flag `select(UserOrganization.organization_id)` — hand-building the
   user→accessible-orgs subquery. `select_user_org_ids` is the sole blessed
-  definition and marks itself with `# noqa: org-scope`.
+  definition and marks itself with `# lint-skip: org-scope`.
 - Flag a comparison where one operand is `UserOrganization.<col>` and another
   references `auth_subject` — the join-form bypass.
 - Flag a **call** to a raw membership helper (`select_user_org_ids`,
   `get_organizations_with_role`). Prefer the scope-aware helpers; if the raw use
   is intentional (composing the scope-aware helper, manual intersection, or
-  membership management on a plain `user_id`), mark it `# noqa: org-scope`.
+  membership management on a plain `user_id`), mark it `# lint-skip: org-scope`.
 - Membership *management* code (filtering by a plain `user_id`/`user.id`
   parameter, not `auth_subject`, and not projecting `organization_id`) is NOT
   flagged by the first two rules.
-- `# noqa: org-scope` on the offending line is an explicit escape.
-
-Exits 1 on any violation.
+- `# lint-skip: org-scope` on the offending line is an explicit escape.
 """
 
 from __future__ import annotations
 
 import ast
-import re
-import sys
-from pathlib import Path
 from typing import TypeGuard
 
-NOQA_MARKER = "org-scope"
+from .base import Rule, Violation
+
 MODEL_NAME = "UserOrganization"
 SUBJECT_NAME = "auth_subject"
 
@@ -47,7 +43,7 @@ EXPANSION_MESSAGE = (
     "hand-rolled UserOrganization membership expansion bypasses org-scope "
     "enforcement. Use select_accessible_org_ids(auth_subject) from "
     "polar.authz.repository (or get_accessible_org_ids). Escape with "
-    "`# noqa: org-scope` if intentional."
+    "`# lint-skip: org-scope` if intentional."
 )
 
 RAW_CALL_MESSAGE = (
@@ -55,12 +51,8 @@ RAW_CALL_MESSAGE = (
     "select_accessible_org_ids / get_accessible_org_ids / "
     "get_accessible_organization. If the raw use is intentional (composing the "
     "scope-aware helper, manual intersection, or membership management), mark it "
-    "`# noqa: org-scope`."
+    "`# lint-skip: org-scope`."
 )
-
-# Matches `# noqa` optionally followed by `: code1, code2`. A bare `# noqa`
-# suppresses everything; a coded form only suppresses the listed codes.
-_NOQA_RE = re.compile(r"#\s*noqa(?::\s*(?P<codes>[^#]*))?", re.IGNORECASE)
 
 
 def _is_model_attr(node: ast.AST) -> TypeGuard[ast.Attribute]:
@@ -116,29 +108,8 @@ def _is_raw_membership_call(node: ast.Call) -> bool:
     return False
 
 
-def _line_has_noqa(source_lines: list[str], lineno: int) -> bool:
-    idx = lineno - 1
-    if not (0 <= idx < len(source_lines)):
-        return False
-    match = _NOQA_RE.search(source_lines[idx])
-    if match is None:
-        return False
-    codes = match.group("codes")
-    if codes is None:  # bare `# noqa` suppresses everything
-        return True
-    return NOQA_MARKER in {code.strip() for code in codes.split(",")}
-
-
-def check_file(path: Path) -> list[tuple[Path, int, str]]:
-    """Return a list of (path, lineno, message) violations."""
-    source = path.read_text()
-    try:
-        tree = ast.parse(source, filename=str(path))
-    except SyntaxError as exc:
-        return [(path, exc.lineno or 0, f"syntax error: {exc.msg}")]
-
-    source_lines = source.splitlines()
-    violations: list[tuple[Path, int, str]] = []
+def check(tree: ast.Module) -> list[Violation]:
+    violations: list[Violation] = []
     seen_lines: set[int] = set()
 
     for node in ast.walk(tree):
@@ -160,45 +131,18 @@ def check_file(path: Path) -> list[tuple[Path, int, str]]:
         else:
             continue
 
-        if _line_has_noqa(source_lines, node.lineno):
-            continue
-
         if node.lineno in seen_lines:  # one query can match multiple branches
             continue
         seen_lines.add(node.lineno)
 
-        violations.append((path, node.lineno, message))
+        violations.append((node.lineno, message))
 
     return violations
 
 
-def main() -> int:
-    root = Path(__file__).resolve().parent.parent / "polar"
-    if not root.exists():
-        print(f"error: {root} not found", file=sys.stderr)
-        return 2
-
-    checked = 0
-    violations: list[tuple[Path, int, str]] = []
-    for path in sorted(root.rglob("*.py")):
-        if "migrations" in path.parts:
-            continue
-        checked += 1
-        violations.extend(check_file(path))
-
-    if violations:
-        for path, lineno, message in violations:
-            try:
-                rel = path.relative_to(Path.cwd())
-            except ValueError:
-                rel = path
-            print(f"{rel}:{lineno}: {message}")
-        print(f"\n{len(violations)} violation(s) across {checked} file(s).")
-        return 1
-
-    print(f"OK: {checked} file(s) checked, no org-scope violations.")
-    return 0
-
-
-if __name__ == "__main__":
-    sys.exit(main())
+RULE = Rule(
+    name="org-scope",
+    skip_code="org-scope",
+    summary="flag inline UserOrganization filters that bypass select_user_org_ids",
+    check=check,
+)

@@ -111,10 +111,11 @@ worker = { cmd = "dramatiq -p 1 -t 1 --watch polar -f polar.worker.scheduler:sta
 test = { cmd = "POLAR_ENV=testing python -m pytest --cov polar/ --cov-report=term-missing", help = "run all tests" }
 test_fast = { cmd = "POLAR_ENV=testing python -m pytest -n auto -p no:sugar --no-cov", help = "run all tests, but fast" }
 loadtest = { cmd = "locust -f load_tests/locustfile.py --host=http://127.0.0.1:8000", help = "run load tests (interactive)" }
-lint = { cmd = "ruff format . && ruff check --fix . && task lint_subquery && task lint_org_scope", help = "run linters with autofix" }
-lint_check = { cmd = "ruff format --check . && ruff check . && task lint_subquery && task lint_org_scope", help = "run ruff linter" }
-lint_subquery = { cmd = "python scripts/lint_subquery.py", help = "flag .subquery() calls that don't narrow columns" }
-lint_org_scope = { cmd = "python scripts/lint_org_scope.py", help = "flag inline UserOrganization filters that bypass select_user_org_ids" }
+lint = { cmd = "ruff format . && ruff check --fix . && task lint_ast", help = "run linters with autofix" }
+lint_check = { cmd = "ruff format --check . && ruff check . && task lint_ast", help = "run ruff linter" }
+lint_ast = { cmd = "python -m scripts.linters", help = "run all custom AST lint rules" }
+lint_subquery = { cmd = "python -m scripts.linters --only subquery", help = "flag .subquery() calls that don't narrow columns" }
+lint_org_scope = { cmd = "python -m scripts.linters --only org-scope", help = "flag inline UserOrganization filters that bypass select_user_org_ids" }
 lint_types = { cmd = "mypy --num-workers 2 polar scripts tests", help = "run mypy type verify" }
 db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade" }
 db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate database" }

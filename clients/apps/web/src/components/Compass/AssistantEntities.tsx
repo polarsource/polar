@@ -52,6 +52,11 @@ export const EntityListView = ({
   const [titleColumn, ...rest] = contentColumns
   const metaColumn = rest.length > 0 ? rest[rest.length - 1] : undefined
   const descriptionColumns = rest.slice(0, -1)
+  // Blocks stream from the server without runtime schema validation; a block
+  // with no non-avatar columns would otherwise crash on titleColumn.key.
+  if (!titleColumn || block.rows.length === 0) {
+    return null
+  }
   return (
     <Box display="flex" flexDirection="column" rowGap="s">
       {block.title ? (
@@ -105,6 +110,11 @@ export const EntityListView = ({
           </ListItem>
         ))}
       </List>
+      {block.total_count > block.rows.length ? (
+        <Text variant="caption" color="muted">
+          Showing {block.rows.length} of {block.total_count} {block.entity}
+        </Text>
+      ) : null}
     </Box>
   )
 }

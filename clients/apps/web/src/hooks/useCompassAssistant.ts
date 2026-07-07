@@ -2,7 +2,7 @@
 
 import { getServerURL } from '@/utils/api'
 import { schemas } from '@polar-sh/client'
-import { useCallback, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 export interface MetricChartPoint {
   timestamp: string
@@ -87,6 +87,13 @@ export const useCompassAssistant = (organizationId: string) => {
   const [isStreaming, setIsStreaming] = useState(false)
   const historyRef = useRef<string | null>(null)
   const idRef = useRef(0)
+  const controllerRef = useRef<AbortController | null>(null)
+
+  useEffect(() => {
+    // Abort the in-flight stream on unmount so the SSE connection closes and
+    // no further state updates fire.
+    return () => controllerRef.current?.abort()
+  }, [])
 
   const appendToAssistant = useCallback(
     (
@@ -115,11 +122,18 @@ export const useCompassAssistant = (organizationId: string) => {
       ])
       setIsStreaming(true)
 
+      // One live stream at a time: a new send supersedes the previous one,
+      // which would otherwise race it for historyRef and isStreaming.
+      controllerRef.current?.abort()
+      const controller = new AbortController()
+      controllerRef.current = controller
+
       try {
         const response = await fetch(getServerURL('/v1/compass/assistant'), {
           method: 'POST',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
+          signal: controller.signal,
           body: JSON.stringify({
             organization_id: organizationId,
             prompt,
@@ -172,12 +186,20 @@ export const useCompassAssistant = (organizationId: string) => {
             if (rawEvent.trim() && !rawEvent.startsWith(':')) handle(rawEvent)
           }
         }
-      } catch {
-        appendToAssistant(assistantId, (parts) =>
-          appendDelta(parts, 'Something went wrong. Please try again.'),
-        )
+      } catch (error) {
+        // An aborted stream (unmount or superseding send) is not a failure.
+        if (!(error instanceof DOMException && error.name === 'AbortError')) {
+          appendToAssistant(assistantId, (parts) =>
+            appendDelta(parts, 'Something went wrong. Please try again.'),
+          )
+        }
       } finally {
-        setIsStreaming(false)
+        // A superseding send owns isStreaming now; only the current stream
+        // may clear it.
+        if (controllerRef.current === controller) {
+          setIsStreaming(false)
+          controllerRef.current = null
+        }
       }
     },
     [appendToAssistant, organizationId],

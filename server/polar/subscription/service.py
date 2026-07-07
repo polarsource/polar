@@ -1961,6 +1961,17 @@ class SubscriptionService:
         if not subscription.can_resume():
             raise NotPausedSubscription(subscription)
 
+        # Defensive: renewals may have been disabled while the subscription was
+        # paused. Resuming starts a fresh period and charges immediately, so skip
+        # rather than bill a subscription the organization can no longer renew.
+        if not subscription.organization.can_renew_subscriptions:
+            log.info(
+                "Subscription renewals disabled for organization, skipping resume",
+                subscription_id=subscription.id,
+                organization_id=subscription.organization.id,
+            )
+            return subscription
+
         now = utc_now()
         subscription.status = SubscriptionStatus.active
         subscription.paused_at = None

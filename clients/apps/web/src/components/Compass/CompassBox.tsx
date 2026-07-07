@@ -2,14 +2,12 @@
 
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import ArrowUpwardRounded from '@mui/icons-material/ArrowUpwardRounded'
-import AttachFileRounded from '@mui/icons-material/AttachFileRounded'
-import CropFreeRounded from '@mui/icons-material/CropFreeRounded'
 import { ChevronRight } from 'lucide-react'
 import { schemas } from '@polar-sh/client'
 import { useEffect, useRef, useState } from 'react'
 import { useCompassAssistant } from '@/hooks/useCompassAssistant'
 import { CompassConversation } from './CompassConversation'
+import { CompassInputBar } from './CompassInputBar'
 
 /**
  * Exploration: the Compass agentic chat entry point.
@@ -109,71 +107,13 @@ export const CompassBox = ({
             pointerEvents="auto"
             width="100%"
             maxWidth={760}
-            display="flex"
-            flexDirection="row"
-            columnGap="l"
-            paddingVertical="m"
-            paddingLeft="l"
-            paddingRight="m"
-            borderRadius="full"
-            borderWidth={1}
-            borderStyle="solid"
-            borderColor="border-primary"
-            backgroundColor="background-secondary"
-            boxShadow="xl"
           >
-            <textarea
+            <CompassInputBar
               value={value}
-              aria-label="Ask Compass"
+              onValueChange={setValue}
+              onSubmit={handleSubmit}
               onFocus={() => setActive(true)}
-              onChange={(e) => setValue(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey) {
-                  e.preventDefault()
-                  handleSubmit()
-                }
-              }}
-              rows={1}
-              placeholder="Ask Compass..."
-              className="dark:text-polar-50 dark:placeholder:text-polar-500 dark:caret-polar-50 z-10 w-full resize-none border-0 bg-transparent px-1 text-sm text-gray-900 caret-gray-900 outline-none placeholder:text-gray-400 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
             />
-
-            <Box
-              display="flex"
-              flexDirection="row"
-              alignItems="center"
-              justifyContent="between"
-            >
-              <Box display="flex" alignItems="center" columnGap="s">
-                {/* Planned affordances, not wired up yet: disabled so
-                    they aren't focusable controls that do nothing. */}
-                <button
-                  type="button"
-                  aria-label="Expand (coming soon)"
-                  disabled
-                  className="dark:text-polar-500 flex size-9 cursor-not-allowed items-center justify-center rounded-full text-gray-400 opacity-60"
-                >
-                  <CropFreeRounded style={{ fontSize: '1.125rem' }} />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Attach (coming soon)"
-                  disabled
-                  className="dark:text-polar-500 flex size-9 cursor-not-allowed items-center justify-center rounded-full text-gray-400 opacity-60"
-                >
-                  <AttachFileRounded style={{ fontSize: '1.125rem' }} />
-                </button>
-                <button
-                  type="button"
-                  aria-label="Send"
-                  disabled={value.trim().length === 0}
-                  onClick={handleSubmit}
-                  className="dark:bg-polar-50 flex size-9 items-center justify-center rounded-full bg-gray-900 text-white transition-opacity disabled:opacity-40 dark:text-gray-900"
-                >
-                  <ArrowUpwardRounded style={{ fontSize: '1.125rem' }} />
-                </button>
-              </Box>
-            </Box>
           </Box>
         </Box>
       )}

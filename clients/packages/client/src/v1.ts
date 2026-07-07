@@ -7317,7 +7317,7 @@ export interface components {
        * Suggested Price Amount
        * @description Reference list price (cents) that would restore the target gross margin at the current cost to serve. Null when no meaningful suggestion can be computed.
        */
-      suggested_price_amount?: number | null
+      suggested_price_amount: number | null
       /**
        * Currency
        * @description ISO currency code of the amounts.

@@ -2,9 +2,13 @@ def to_snake_case(name: str) -> str:
     """Convert a string to snake_case."""
     result = []
     for i, c in enumerate(name):
+        if c == "-":
+            result.append("_")
+            continue
         if (
             c.isupper()
             and i > 0
+            and name[i - 1] != "-"
             and (name[i - 1].islower() or (i + 1 < len(name) and name[i + 1].islower()))
         ):
             result.append("_")

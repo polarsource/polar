@@ -1,13 +1,9 @@
 import { defineConfig } from "tsdown";
 
 export default defineConfig({
-  entry: ["src/index.ts"],
-  format: ["esm", "cjs", "iife"],
+  entry: ["src/index.ts", "src/2026-04/index.ts"],
+  format: ["esm", "cjs"],
   dts: true,
-  minify: true,
   sourcemap: true,
   clean: true,
-  outputOptions: {
-    name: "PolarSDK",
-  },
 });

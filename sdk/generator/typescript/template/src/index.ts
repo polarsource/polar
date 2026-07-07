@@ -3,7 +3,5 @@ export {
   PolarNetworkError,
   PolarServerError,
   PolarClientError,
+  PolarRateLimitError,
 } from "./base";
-
-export { createPolar } from "./client";
-export type { Polar } from "./client";

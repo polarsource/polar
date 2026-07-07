@@ -4,15 +4,24 @@
   "description": "Polar TypeScript SDK - Auto-generated from OpenAPI specification",
   "type": "module",
   "sideEffects": false,
+  "files": [
+    "dist", "README.md"
+  ],
+  "engines": { "node": ">=18" },
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.cjs",
-      "import": "./dist/index.mjs"
+      "import": { "types": "./dist/index.d.mts", "default": "./dist/index.mjs" },
+      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
     }
+{% for version in ir.versions %}
+    ,
+    "./{{version.version}}": {
+      "import": { "types": "./dist/{{version.version}}/index.d.mts", "default": "./dist/{{version.version}}/index.mjs" },
+      "require": { "types": "./dist/{{version.version}}/index.d.cts", "default": "./dist/{{version.version}}/index.cjs" }
+    }
+{% endfor %}
   },
   "scripts": {
     "build": "tsdown",
@@ -21,7 +30,6 @@
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "typecheck": "tsc --noEmit",
-    "postbuild": "cp dist/index.d.mts dist/index.d.ts",
     "test": "vitest run"
   },
   "devDependencies": {

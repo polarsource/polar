@@ -311,7 +311,11 @@ export const useCustomerOrders = (
     retry: defaultRetry,
   })
 
-export const useCustomerSubscriptionChargePreview = (api: Client, id: string) =>
+export const useCustomerSubscriptionChargePreview = (
+  api: Client,
+  id: string,
+  enabled = true,
+) =>
   useQuery({
     queryKey: ['customer_subscription_charge_preview', { id }],
     queryFn: () =>
@@ -321,6 +325,7 @@ export const useCustomerSubscriptionChargePreview = (api: Client, id: string) =>
         }),
       ),
     retry: defaultRetry,
+    enabled,
   })
 
 export const useCustomerUpdateSubscription = (api: Client) =>

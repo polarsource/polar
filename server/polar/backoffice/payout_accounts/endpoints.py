@@ -327,7 +327,7 @@ async def delete(
             account_type = payout_account.type
             stripe_id = payout_account.stripe_id
 
-            await payout_account_service.delete(session, payout_account)
+            await payout_account_service.delete(session, payout_account, unlink=True)
 
             timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
             note = (

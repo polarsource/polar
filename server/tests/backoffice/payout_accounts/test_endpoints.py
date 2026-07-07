@@ -1,3 +1,4 @@
+import uuid
 from collections.abc import AsyncGenerator
 
 import httpx
@@ -103,9 +104,7 @@ class TestGet:
     async def test_returns_404_for_unknown_id(
         self, backoffice_client: httpx.AsyncClient
     ) -> None:
-        response = await backoffice_client.get(
-            "/payout-accounts/00000000-0000-0000-0000-000000000000"
-        )
+        response = await backoffice_client.get(f"/payout-accounts/{uuid.uuid4()}")
 
         assert response.status_code == 404
 
@@ -130,7 +129,7 @@ class TestDelete:
         self, backoffice_client: httpx.AsyncClient
     ) -> None:
         response = await backoffice_client.get(
-            "/payout-accounts/00000000-0000-0000-0000-000000000000/delete"
+            f"/payout-accounts/{uuid.uuid4()}/delete"
         )
 
         assert response.status_code == 404
@@ -142,12 +141,9 @@ class TestDelete:
         organization: Organization,
         user: User,
     ) -> None:
-        # Payout account that's unlinked from the organization.
         payout_account = await create_payout_account(
             save_fixture, organization, user, stripe_id="acct_todelete"
         )
-        organization.payout_account = None
-        await save_fixture(organization)
 
         response = await backoffice_client.get(
             f"/payout-accounts/{payout_account.id}/delete"
@@ -156,7 +152,7 @@ class TestDelete:
         assert response.status_code == 200
         assert "Delete Payout Account" in response.text
 
-    async def test_post_deletes_unlinked_payout_account(
+    async def test_post_deletes_payout_account(
         self,
         backoffice_client: httpx.AsyncClient,
         mocker: MockerFixture,
@@ -167,8 +163,6 @@ class TestDelete:
         payout_account = await create_payout_account(
             save_fixture, organization, user, stripe_id="acct_todelete"
         )
-        organization.payout_account = None
-        await save_fixture(organization)
 
         stripe_mock = mocker.patch("polar.payout_account.service.stripe")
         stripe_mock.account_exists = mocker.AsyncMock(return_value=True)
@@ -182,16 +176,3 @@ class TestDelete:
 
         assert response.status_code in (200, 303)
         stripe_mock.delete_account.assert_awaited_once_with(payout_account.stripe_id)
-
-    async def test_post_rejects_when_still_linked(
-        self,
-        backoffice_client: httpx.AsyncClient,
-        stripe_payout_account: PayoutAccount,
-    ) -> None:
-        response = await backoffice_client.post(
-            f"/payout-accounts/{stripe_payout_account.id}/delete",
-            data={"reason": "Trying to delete linked account"},
-        )
-
-        # Linked payout account cannot be deleted; service raises 422.
-        assert response.status_code == 422

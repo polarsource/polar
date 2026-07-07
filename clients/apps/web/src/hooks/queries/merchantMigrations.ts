@@ -56,6 +56,9 @@ export const useRunMerchantMigrationPrecheck = (id: string) =>
       getQueryClient().invalidateQueries({
         queryKey: ['merchantMigration', { id }],
       })
+      getQueryClient().invalidateQueries({
+        queryKey: ['merchantMigrationRecords'],
+      })
     },
   })
 

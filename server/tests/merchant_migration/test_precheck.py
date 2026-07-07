@@ -1,4 +1,5 @@
 from collections.abc import AsyncIterator
+from dataclasses import replace
 
 import pytest
 
@@ -412,3 +413,91 @@ class TestSummarizeRecords:
             assert summary.total == len(items)
             assert summary.importable == importable
             assert summary.skipped == len(items) - importable
+
+
+class TestClassifyCascade:
+    def test_same_product_multiple_intervals_not_duplicate(self) -> None:
+        # One source product split into two interval rows keeps its source id and
+        # must not be flagged as a duplicate name.
+        records: list[CanonicalRecord] = [
+            build_product(
+                source_id="prod_1:month:1",
+                product_source_id="prod_1",
+                name="Pro",
+                recurring_interval="month",
+            ),
+            build_product(
+                source_id="prod_1:year:1",
+                product_source_id="prod_1",
+                name="Pro",
+                recurring_interval="year",
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.products)
+
+        assert len(items) == 2
+        assert all(i.status == PrecheckRecordStatus.importable for i in items)
+
+    def test_distinct_products_same_name_duplicate(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(product_source_id="prod_1", name="Pro"),
+            build_product(product_source_id="prod_2", name="Pro"),
+        ]
+
+        items = classify_records(records, PrecheckEntity.products)
+
+        by_id = {item.source_id: item for item in items}
+        assert by_id["prod_1"].status == PrecheckRecordStatus.importable
+        assert by_id["prod_2"].status == PrecheckRecordStatus.skipped
+        assert by_id["prod_2"].reason_code == "duplicate_product_name"
+
+    def test_price_skipped_when_parent_product_skipped(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                name="Legacy",
+                recurring_interval=None,
+                prices=[build_price(source_id="price_1")],
+            ),
+        ]
+
+        items = classify_records(records, PrecheckEntity.prices)
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "one_time_product"
+
+    def test_subscription_skipped_when_product_skipped(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                name="Legacy",
+                recurring_interval=None,
+                prices=[build_price(source_id="price_1")],
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            build_subscription(source_id="sub_1"),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions)
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "subscription_product_not_importable"
+
+    def test_subscription_skipped_when_customer_skipped(self) -> None:
+        duplicate_customer_subscription = replace(
+            build_subscription(source_id="sub_2"), customer_source_id="cus_2"
+        )
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="dup@example.com"),
+            build_customer(source_id="cus_2", email="dup@example.com"),
+            duplicate_customer_subscription,
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions)
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "subscription_customer_not_importable"

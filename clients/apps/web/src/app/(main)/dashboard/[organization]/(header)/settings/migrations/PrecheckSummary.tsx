@@ -92,8 +92,21 @@ function EntityCell({
     <Box
       flexDirection="column"
       rowGap="xs"
+      textAlign="left"
       cursor={clickable ? 'pointer' : 'default'}
+      role={clickable ? 'button' : undefined}
+      tabIndex={clickable ? 0 : undefined}
       onClick={clickable ? onOpen : undefined}
+      onKeyDown={
+        clickable
+          ? (event) => {
+              if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault()
+                onOpen()
+              }
+            }
+          : undefined
+      }
     >
       <Text variant="heading-m">{summary.importable}</Text>
       <Text variant="caption" color="muted">

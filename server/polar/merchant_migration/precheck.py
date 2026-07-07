@@ -12,6 +12,7 @@ from collections.abc import AsyncIterable, Iterable, Sequence
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.currency import (
     PresentmentCurrency,
+    format_currency,
     get_maximum_currency_amount,
     get_minimum_currency_amount,
 )
@@ -70,6 +71,13 @@ _DUPLICATE_PRODUCT_NAME_REASON = (
 )
 _DUPLICATE_CUSTOMER_EMAIL_REASON = (
     "Another customer already uses this email; the duplicate stays on the source."
+)
+_SUBSCRIPTION_PRODUCT_REASON = (
+    "The product or price for this subscription won't be imported, so it stays "
+    "on the source."
+)
+_SUBSCRIPTION_CUSTOMER_REASON = (
+    "The customer for this subscription won't be imported, so it stays on the source."
 )
 
 
@@ -374,7 +382,7 @@ def _interval_label(product: CanonicalProduct) -> str:
 def _amount_label(amount: int | None, currency: str) -> str:
     if amount is None:
         return "No amount"
-    return f"{amount / 100:.2f} {currency.upper()}"
+    return format_currency(amount, currency)
 
 
 def _drop_reason(
@@ -410,19 +418,84 @@ def _item(
     )
 
 
+def _duplicate_product_names(
+    products: Sequence[CanonicalProduct],
+) -> tuple[dict[str, str], set[str]]:
+    """A name is a duplicate only when two *distinct* source products share it;
+    one product split into several interval rows keeps the same source id and is
+    not a duplicate.
+    """
+    first_source_id_by_name: dict[str, str] = {}
+    duplicate_names: set[str] = set()
+    for product in products:
+        first = first_source_id_by_name.setdefault(
+            product.name, product.product_source_id
+        )
+        if first != product.product_source_id:
+            duplicate_names.add(product.name)
+    return first_source_id_by_name, duplicate_names
+
+
+def _product_drop(
+    product: CanonicalProduct,
+    first_source_id_by_name: dict[str, str],
+    duplicate_names: set[str],
+) -> tuple[str | None, str | None]:
+    code, reason = _drop_reason(
+        precheck_engine._check_product(product), PRODUCT_DROP_CODES
+    )
+    if (
+        code is None
+        and product.name in duplicate_names
+        and product.product_source_id != first_source_id_by_name[product.name]
+    ):
+        return "duplicate_product_name", _DUPLICATE_PRODUCT_NAME_REASON
+    return code, reason
+
+
+def _duplicate_customer_source_ids(
+    customers: Sequence[CanonicalCustomer],
+) -> set[str]:
+    email_counts = Counter(c.email.lower() for c in customers if c.email)
+    seen: set[str] = set()
+    duplicates: set[str] = set()
+    for customer in customers:
+        key = customer.email.lower() if customer.email else ""
+        if key and email_counts[key] > 1 and key in seen:
+            duplicates.add(customer.source_id)
+        if key:
+            seen.add(key)
+    return duplicates
+
+
+def _skipped_price_source_ids(
+    products: Sequence[CanonicalProduct],
+    first_source_id_by_name: dict[str, str],
+    duplicate_names: set[str],
+) -> set[str]:
+    """Prices that won't import: their product is dropped, or the price itself
+    fails a check."""
+    skipped: set[str] = set()
+    for product in products:
+        product_code, _ = _product_drop(
+            product, first_source_id_by_name, duplicate_names
+        )
+        for price in product.prices:
+            price_code, _ = _drop_reason(
+                precheck_engine._check_price(product, price), PRICE_DROP_CODES
+            )
+            if product_code is not None or price_code is not None:
+                skipped.add(price.source_id)
+    return skipped
+
+
 def _product_items(
     products: Sequence[CanonicalProduct],
 ) -> list[MerchantMigrationRecordItem]:
-    name_counts = Counter(product.name for product in products)
-    seen: set[str] = set()
+    first_source_id_by_name, duplicate_names = _duplicate_product_names(products)
     items: list[MerchantMigrationRecordItem] = []
     for product in products:
-        code, reason = _drop_reason(
-            precheck_engine._check_product(product), PRODUCT_DROP_CODES
-        )
-        if code is None and name_counts[product.name] > 1 and product.name in seen:
-            code, reason = "duplicate_product_name", _DUPLICATE_PRODUCT_NAME_REASON
-        seen.add(product.name)
+        code, reason = _product_drop(product, first_source_id_by_name, duplicate_names)
         items.append(
             _item(
                 PrecheckEntity.products,
@@ -439,12 +512,22 @@ def _product_items(
 def _price_items(
     products: Sequence[CanonicalProduct],
 ) -> list[MerchantMigrationRecordItem]:
+    first_source_id_by_name, duplicate_names = _duplicate_product_names(products)
     items: list[MerchantMigrationRecordItem] = []
     for product in products:
+        # A price under a product that won't import can't import either.
+        product_code, product_reason = _product_drop(
+            product, first_source_id_by_name, duplicate_names
+        )
         for price in product.prices:
-            code, reason = _drop_reason(
-                precheck_engine._check_price(product, price), PRICE_DROP_CODES
-            )
+            code: str | None
+            reason: str | None
+            if product_code is not None:
+                code, reason = product_code, product_reason
+            else:
+                code, reason = _drop_reason(
+                    precheck_engine._check_price(product, price), PRICE_DROP_CODES
+                )
             items.append(
                 _item(
                     PrecheckEntity.prices,
@@ -461,17 +544,14 @@ def _price_items(
 def _customer_items(
     customers: Sequence[CanonicalCustomer],
 ) -> list[MerchantMigrationRecordItem]:
-    email_counts = Counter(c.email.lower() for c in customers if c.email)
-    seen: set[str] = set()
+    duplicates = _duplicate_customer_source_ids(customers)
     items: list[MerchantMigrationRecordItem] = []
     for customer in customers:
-        code: str | None = None
-        reason: str | None = None
-        key = customer.email.lower() if customer.email else ""
-        if key and email_counts[key] > 1 and key in seen:
-            code, reason = "duplicate_customer_email", _DUPLICATE_CUSTOMER_EMAIL_REASON
-        if key:
-            seen.add(key)
+        if customer.source_id in duplicates:
+            code: str | None = "duplicate_customer_email"
+            reason: str | None = _DUPLICATE_CUSTOMER_EMAIL_REASON
+        else:
+            code, reason = None, None
         items.append(
             _item(
                 PrecheckEntity.customers,
@@ -487,14 +567,31 @@ def _customer_items(
 
 def _subscription_items(
     subscriptions: Sequence[CanonicalSubscription],
+    products: Sequence[CanonicalProduct],
     customers: Sequence[CanonicalCustomer],
 ) -> list[MerchantMigrationRecordItem]:
+    first_source_id_by_name, duplicate_names = _duplicate_product_names(products)
+    skipped_prices = _skipped_price_source_ids(
+        products, first_source_id_by_name, duplicate_names
+    )
+    skipped_customers = _duplicate_customer_source_ids(customers)
     email_by_source = {c.source_id: c.email for c in customers if c.email}
     items: list[MerchantMigrationRecordItem] = []
     for subscription in subscriptions:
         code, reason = _drop_reason(
             precheck_engine._check_subscription(subscription), SUBSCRIPTION_DROP_CODES
         )
+        # A subscription can't import if the records it depends on won't either.
+        if code is None and subscription.price_source_id in skipped_prices:
+            code, reason = (
+                "subscription_product_not_importable",
+                _SUBSCRIPTION_PRODUCT_REASON,
+            )
+        elif code is None and subscription.customer_source_id in skipped_customers:
+            code, reason = (
+                "subscription_customer_not_importable",
+                _SUBSCRIPTION_CUSTOMER_REASON,
+            )
         title = email_by_source.get(
             subscription.customer_source_id, subscription.customer_source_id
         )
@@ -546,7 +643,7 @@ def classify_records(
         return _price_items(products)
     if entity == PrecheckEntity.customers:
         return _customer_items(customers)
-    return _subscription_items(subscriptions, customers)
+    return _subscription_items(subscriptions, products, customers)
 
 
 def summarize_records(

@@ -3,6 +3,7 @@
 import { useMigrationRecords } from '@/hooks/queries/merchantMigrations'
 import { schemas } from '@polar-sh/client'
 import {
+  Alert,
   Button,
   InlineModalHeader,
   SegmentedControl,
@@ -37,7 +38,7 @@ export function PrecheckRecordsDrawer({
 }) {
   const [filter, setFilter] = useState<Filter>('')
   const [page, setPage] = useState(1)
-  const { data, isLoading } = useMigrationRecords(migrationId, {
+  const { data, isLoading, isError } = useMigrationRecords(migrationId, {
     entity,
     status: filter || undefined,
     page,
@@ -76,6 +77,12 @@ export function PrecheckRecordsDrawer({
           <Box padding="2xl" alignItems="center" justifyContent="center">
             <Spinner />
           </Box>
+        ) : isError ? (
+          <Alert
+            variant="danger"
+            title="We couldn't load these records"
+            description="Something went wrong. Please try again."
+          />
         ) : items.length === 0 ? (
           <Text variant="caption" color="muted">
             No {ENTITY_LABELS[entity]?.toLowerCase() ?? 'records'} here.
@@ -121,6 +128,7 @@ function RecordRow({ item }: { item: schemas['MerchantMigrationRecordItem'] }) {
   return (
     <Box
       as="li"
+      display="flex"
       flexDirection="column"
       rowGap="xs"
       paddingVertical="m"

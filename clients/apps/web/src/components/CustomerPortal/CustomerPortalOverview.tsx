@@ -37,11 +37,14 @@ export const CustomerPortalOverview = ({
   const { data: authenticatedUser } = usePortalAuthenticatedUser(api)
   const canManageBilling = hasBillingPermission(authenticatedUser)
 
-  const activeOwnedSubscriptions = subscriptions.filter(
-    (s) => s.status === 'active' || s.status === 'trialing',
-  )
+  // A paused subscription is an ongoing relationship (it will resume), so it
+  // belongs with the current subscriptions rather than the inactive ones.
+  const isCurrentSubscription = (s: schemas['CustomerSubscription']) =>
+    s.status === 'active' || s.status === 'trialing' || s.status === 'paused'
+
+  const activeOwnedSubscriptions = subscriptions.filter(isCurrentSubscription)
   const inactiveOwnedSubscriptions = subscriptions.filter(
-    (s) => s.status !== 'active' && s.status !== 'trialing',
+    (s) => !isCurrentSubscription(s),
   )
 
   const activeClaimedSubscriptions = claimedSubscriptions.filter(

@@ -21244,7 +21244,7 @@ export interface components {
        * Suggested Prompt
        * @description A natural follow-up question this finding invites, offered to the merchant as a one-tap prompt for the assistant. None when the finding has no obvious next question.
        */
-      suggested_prompt?: string | null
+      suggested_prompt: string | null
       /**
        * Drivers
        * @description Top contributors to the headline change.

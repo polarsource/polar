@@ -170,7 +170,6 @@ class Insight(Schema):
     confidence: ConfidenceLevel
     primary_action: InsightAction | None = None
     suggested_prompt: str | None = Field(
-        default=None,
         description=(
             "A natural follow-up question this finding invites, offered to the "
             "merchant as a one-tap prompt for the assistant. None when the "

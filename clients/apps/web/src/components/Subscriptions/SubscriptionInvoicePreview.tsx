@@ -45,9 +45,12 @@ const SubscriptionInvoicePreview = ({
   const hasMeters = subscription.meters.length > 0
   const hasNextInvoice = !isFreeProduct || hasMeters
 
+  const isPausingIndefinitely =
+    subscription.pause_at_period_end && !subscription.resumes_at
+
   if (
     (!isActive && !isTrialing) ||
-    subscription.pause_at_period_end ||
+    isPausingIndefinitely ||
     !hasNextInvoice ||
     !chargePreview
   ) {
@@ -79,9 +82,14 @@ const SubscriptionInvoicePreview = ({
     })),
   ]
 
+  const isResumingCharge =
+    subscription.pause_at_period_end && !isCancelingAtPeriodEnd
+
   const chargeDate = isTrialing
     ? subscription.trial_end
-    : subscription.current_period_end
+    : isResumingCharge
+      ? subscription.resumes_at
+      : subscription.current_period_end
 
   let title = 'Upcoming charge'
   let dateLabel = 'Next invoice'
@@ -91,6 +99,9 @@ const SubscriptionInvoicePreview = ({
   } else if (isCancelingAtPeriodEnd) {
     title = 'Final charge'
     dateLabel = 'Subscription ends'
+  } else if (isResumingCharge) {
+    title = 'Charge on resume'
+    dateLabel = 'Resumes'
   }
 
   const note = isCancelingAtPeriodEnd

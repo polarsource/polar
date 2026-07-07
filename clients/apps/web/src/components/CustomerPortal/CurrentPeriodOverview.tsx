@@ -47,8 +47,11 @@ export const CurrentPeriodOverview = ({
     subscription.cancel_at_period_end && !subscription.ended_at
 
   // Show for active, trialing, or subscriptions set to cancel at period end.
-  // A scheduled pause has no next charge (it pauses instead), so hide it.
-  if ((!isActive && !isTrialing) || subscription.pause_at_period_end) {
+  // An indefinite pause has no next charge; a pause with a resume date still
+  // bills on resume, so keep showing it (dated at the resume).
+  const isPausingIndefinitely =
+    subscription.pause_at_period_end && !subscription.resumes_at
+  if ((!isActive && !isTrialing) || isPausingIndefinitely) {
     return null
   }
 
@@ -78,9 +81,14 @@ export const CurrentPeriodOverview = ({
     return null
   }
 
+  const isResumingCharge =
+    subscription.pause_at_period_end && !isCancelingAtPeriodEnd
+
   const chargeDate = isTrialing
     ? subscription.trial_end
-    : subscription.current_period_end
+    : isResumingCharge
+      ? subscription.resumes_at
+      : subscription.current_period_end
 
   // Determine header and label based on subscription state
   let headerTitle = 'Next Charge'
@@ -92,6 +100,9 @@ export const CurrentPeriodOverview = ({
   } else if (isCancelingAtPeriodEnd) {
     headerTitle = 'Final Charge'
     dateLabel = 'Subscription Ends'
+  } else if (isResumingCharge) {
+    headerTitle = 'Charge on Resume'
+    dateLabel = 'Resumes'
   }
 
   const chargeDateLabel = `${dateLabel} — ${

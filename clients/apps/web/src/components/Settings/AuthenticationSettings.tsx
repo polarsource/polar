@@ -19,6 +19,7 @@ import { ListGroup } from '@polar-sh/orbit'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import EmailUpdateForm from '../Form/EmailUpdateForm'
+import { useSessionRefreshPrompt } from './SessionRefreshModal'
 import { twMerge } from 'tailwind-merge'
 
 const AuthenticationMethod = ({
@@ -162,6 +163,15 @@ const AuthenticationSettings = () => {
   const googleAccount = useGoogleAccount()
   const disconnectOAuth = useDisconnectOAuthAccount()
   const listGroupRef = useRef<HTMLDivElement>(null)
+  const { promptIfSessionNotFresh, sessionRefreshModal } =
+    useSessionRefreshPrompt()
+
+  const handleDisconnect = async (platform: schemas['OAuthPlatform']) => {
+    const { error } = await disconnectOAuth.mutateAsync(platform)
+    if (error) {
+      promptIfSessionNotFresh(error)
+    }
+  }
 
   const searchParams = useSearchParams()
   const [updateEmailStage, setUpdateEmailStage] = useState<
@@ -230,7 +240,7 @@ const AuthenticationSettings = () => {
           <GitHubAuthenticationMethod
             oauthAccount={githubAccount}
             returnTo={pathname || '/start'}
-            onDisconnect={() => disconnectOAuth.mutate('github')}
+            onDisconnect={() => handleDisconnect('github')}
             isDisconnecting={disconnectOAuth.isPending}
             error={
               oauthLinkError && oauthLinkFactor === 'github'
@@ -244,7 +254,7 @@ const AuthenticationSettings = () => {
           <GoogleAuthenticationMethod
             oauthAccount={googleAccount}
             returnTo={pathname || '/start'}
-            onDisconnect={() => disconnectOAuth.mutate('google')}
+            onDisconnect={() => handleDisconnect('google')}
             isDisconnecting={disconnectOAuth.isPending}
             error={
               oauthLinkError && oauthLinkFactor === 'google'
@@ -264,6 +274,8 @@ const AuthenticationSettings = () => {
           />
         </ListGroup.Item>
       </ListGroup>
+
+      {sessionRefreshModal}
     </div>
   )
 }

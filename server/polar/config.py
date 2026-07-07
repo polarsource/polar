@@ -142,6 +142,7 @@ class Settings(BaseSettings):
 
     # User session
     USER_SESSION_TTL: timedelta = timedelta(days=31)
+    USER_SESSION_FRESHNESS_TTL: timedelta = timedelta(minutes=5)
     USER_SESSION_COOKIE_KEY: str = "polar_session"
     USER_SESSION_COOKIE_DOMAIN: str = "127.0.0.1"
 

@@ -106,9 +106,11 @@ def auth_subject(
     if isinstance(subject, User):
         from unittest.mock import MagicMock
 
+        from polar.kit.utils import utc_now
         from polar.models import UserSession
 
         session = MagicMock(spec=UserSession)
+        session.created_at = utc_now()
 
     return AuthSubject(subject, auth_subject_fixture.scopes, session)
 

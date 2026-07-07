@@ -6,11 +6,15 @@ from fastapi import Depends
 
 from polar.account.repository import AccountRepository
 from polar.auth.dependencies import Authenticator, WebUserSession
+from polar.auth.exceptions import SessionNotFreshError
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.scope import Scope
+from polar.config import settings
 from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.kit.utils import utc_now
 from polar.models import Organization as OrganizationModel
 from polar.models import PayoutAccount as PayoutAccountModel
+from polar.models import UserSession
 from polar.models.account import Account as AccountModel
 from polar.oauth2.exceptions import InsufficientScopeError
 from polar.organization.repository import OrganizationRepository
@@ -238,6 +242,34 @@ def WebUserAuthorizer(required_scopes: set[Scope]) -> Any:
     return dependency
 
 
+def ensure_session_fresh(auth_subject: AuthSubject[User]) -> None:
+    """Require a recently authenticated web session for sensitive operations.
+
+    Logging in always creates a new ``UserSession``, so ``created_at`` is the
+    time of the last authentication.
+    """
+    assert isinstance(auth_subject.session, UserSession)
+    if (
+        utc_now() - auth_subject.session.created_at
+        > settings.USER_SESSION_FRESHNESS_TTL
+    ):
+        raise SessionNotFreshError()
+
+
+def WebUserAuthorizerFresh(required_scopes: set[Scope]) -> Any:
+    """Like ``WebUserAuthorizer``, but additionally requires a fresh session."""
+
+    async def dependency(
+        auth_subject: Annotated[
+            AuthSubject[User], Depends(WebUserAuthorizer(required_scopes))
+        ],
+    ) -> AuthSubject[User]:
+        ensure_session_fresh(auth_subject)
+        return auth_subject
+
+    return dependency
+
+
 AuthorizeWebUserRead = Annotated[
     AuthSubject[User],
     Depends(WebUserAuthorizer({Scope.user_read, Scope.user_write})),
@@ -245,6 +277,10 @@ AuthorizeWebUserRead = Annotated[
 AuthorizeWebUserWrite = Annotated[
     AuthSubject[User],
     Depends(WebUserAuthorizer({Scope.user_write})),
+]
+AuthorizeWebUserWriteFresh = Annotated[
+    AuthSubject[User],
+    Depends(WebUserAuthorizerFresh({Scope.user_write})),
 ]
 AuthorizeWebPayoutsRead = Annotated[
     AuthSubject[User],

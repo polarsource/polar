@@ -15,7 +15,7 @@ from reauth.factors.oauth2.base import (
 from reauth.factors.oauth2.oidc import OIDCException
 from reauth.factors.oauth2.state import ExpiredStateException, InvalidStateException
 
-from polar.authz.dependencies import AuthorizeWebUserWrite
+from polar.authz.dependencies import AuthorizeWebUserWrite, ensure_session_fresh
 from polar.config import settings
 from polar.kit.http import ReturnTo
 from polar.user.service import user as user_service
@@ -26,7 +26,11 @@ from ..authentication_session import (
     get_authentication_session_service,
     get_optional_authentication_session,
 )
-from ..exceptions import GetEmailError, PolarAuthRedirectionError
+from ..exceptions import (
+    GetEmailError,
+    PolarAuthRedirectionError,
+    SessionNotFreshError,
+)
 from ..helpers import OIDC_ERROR_MESSAGE, check_factor, set_state_cookie
 from .factor import OAuth2FactorMixin
 
@@ -186,6 +190,16 @@ def get_oauth_link_router(
         return_to: ReturnTo,
         factor: OAuth2Factor[typing.Any] = Depends(factor_dependency),
     ) -> RedirectResponse:
+        try:
+            ensure_session_fresh(auth_subject)
+        except SessionNotFreshError as e:
+            raise PolarAuthRedirectionError(
+                e.message,
+                url=return_to,
+                type="oauth_link_error",
+                factor=identifier,
+            ) from e
+
         redirect_uri = str(request.url_for(f"auth.{identifier}.link_callback"))
 
         try:

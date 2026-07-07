@@ -11,6 +11,7 @@ export const subscriptionStatusDisplayNames: {
   trialing: 'Trialing',
   active: 'Active',
   past_due: 'Past due',
+  paused: 'Paused',
   canceled: 'Canceled',
   unpaid: 'Unpaid',
 }

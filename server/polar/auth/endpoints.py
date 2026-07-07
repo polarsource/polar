@@ -279,7 +279,15 @@ async def totp_enroll(
 @router.post(
     "/totp/enable",
     status_code=202,
-    responses={403: {"model": SessionNotFreshError.schema()}},
+    responses={
+        403: {
+            "description": (
+                "Session is not fresh, TOTP factor not enrolled, "
+                "or invalid TOTP code."
+            ),
+            "model": SessionNotFreshError.schema() | PolarAuthError.schema(),
+        }
+    },
 )
 async def totp_enable(
     enable: TOTPEnable,

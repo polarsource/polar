@@ -28317,6 +28317,17 @@ export interface components {
       | 'disputed'
       | 'charge_disputed'
       | 'cancelled'
+    /** PolarAuthError */
+    PolarAuthError: {
+      /**
+       * Error
+       * @example PolarAuthError
+       * @constant
+       */
+      error: 'PolarAuthError'
+      /** Detail */
+      detail: string
+    }
     /** PolarSelfPaymentMethodInUse */
     PolarSelfPaymentMethodInUse: {
       /**
@@ -39246,13 +39257,15 @@ export interface operations {
           'application/json': unknown
         }
       }
-      /** @description Forbidden */
+      /** @description Session is not fresh, TOTP factor not enrolled, or invalid TOTP code. */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['SessionNotFreshError']
+          'application/json':
+            | components['schemas']['SessionNotFreshError']
+            | components['schemas']['PolarAuthError']
         }
       }
       /** @description Validation Error */

@@ -59,7 +59,7 @@ def _token_hash(token: str) -> str:
 
 
 def _identity_cache_key(token: str) -> str:
-    digest = hashlib.blake2b(token.encode("ascii"), digest_size=16).hexdigest()
+    digest = hashlib.blake2b(token.encode(), digest_size=16).hexdigest()
     return f"{_IDENTITY_KEY_PREFIX}{digest}"
 
 

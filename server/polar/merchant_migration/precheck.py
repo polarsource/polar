@@ -468,25 +468,29 @@ def _duplicate_customer_source_ids(
     return duplicates
 
 
-def _skipped_price_source_ids(
+def _importable_price_source_ids(
     products: Sequence[CanonicalProduct],
     first_source_id_by_name: dict[str, str],
     duplicate_names: set[str],
 ) -> set[str]:
-    """Prices that won't import: their product is dropped, or the price itself
-    fails a check."""
-    skipped: set[str] = set()
+    """Prices that will import: their product imports and the price passes its
+    own checks. A subscription whose price is *not* in this set can't import
+    either — whether the price was dropped or never extracted at all (e.g. the
+    subscription runs on an archived price the source no longer lists)."""
+    importable: set[str] = set()
     for product in products:
         product_code, _ = _product_drop(
             product, first_source_id_by_name, duplicate_names
         )
+        if product_code is not None:
+            continue
         for price in product.prices:
             price_code, _ = _drop_reason(
                 precheck_engine._check_price(product, price), PRICE_DROP_CODES
             )
-            if product_code is not None or price_code is not None:
-                skipped.add(price.source_id)
-    return skipped
+            if price_code is None:
+                importable.add(price.source_id)
+    return importable
 
 
 def _product_items(
@@ -571,7 +575,7 @@ def _subscription_items(
     customers: Sequence[CanonicalCustomer],
 ) -> list[MerchantMigrationRecordItem]:
     first_source_id_by_name, duplicate_names = _duplicate_product_names(products)
-    skipped_prices = _skipped_price_source_ids(
+    importable_prices = _importable_price_source_ids(
         products, first_source_id_by_name, duplicate_names
     )
     skipped_customers = _duplicate_customer_source_ids(customers)
@@ -582,7 +586,9 @@ def _subscription_items(
             precheck_engine._check_subscription(subscription), SUBSCRIPTION_DROP_CODES
         )
         # A subscription can't import if the records it depends on won't either.
-        if code is None and subscription.price_source_id in skipped_prices:
+        # `not in importable_prices` also catches prices never extracted (e.g.
+        # the subscription runs on an archived price).
+        if code is None and subscription.price_source_id not in importable_prices:
             code, reason = (
                 "subscription_product_not_importable",
                 _SUBSCRIPTION_PRODUCT_REASON,

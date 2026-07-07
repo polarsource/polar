@@ -371,6 +371,9 @@ class TestClassifyRecords:
 
     def test_subscription_status_drop(self) -> None:
         records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
             build_customer(source_id="cus_1", email="a@example.com"),
             build_subscription(source_id="sub_1"),
             build_subscription(
@@ -501,3 +504,23 @@ class TestClassifyCascade:
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_customer_not_importable"
+
+    def test_subscription_skipped_when_price_not_extracted(self) -> None:
+        # The subscription runs on a price the source no longer lists (archived),
+        # so no product carrying that price id was extracted.
+        subscription = replace(
+            build_subscription(source_id="sub_1"),
+            price_source_id="price_archived",
+        )
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            subscription,
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions)
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "subscription_product_not_importable"

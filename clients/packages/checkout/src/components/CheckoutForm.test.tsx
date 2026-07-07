@@ -6,6 +6,10 @@ import type { UseFormReturn } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
 import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest'
 import type { ProductCheckoutPublic } from '../guards'
+import {
+  CheckoutFormContext,
+  type CheckoutFormContextProps,
+} from '../providers/CheckoutFormProvider'
 import { createCheckout } from '../test-utils/makeCheckout'
 import CheckoutForm from './CheckoutForm'
 
@@ -263,6 +267,40 @@ describe('CheckoutForm', () => {
       )
 
       expect(screen.getByRole('button')).toBeDisabled()
+    })
+  })
+
+  describe('trial unavailable notice', () => {
+    const renderWithTrialUnavailable = (trialUnavailable: boolean) => {
+      const checkout = createCheckout({
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        payment_processor: 'dummy' as any,
+      })
+
+      render(
+        <CheckoutFormContext.Provider
+          value={{ trialUnavailable } as CheckoutFormContextProps}
+        >
+          <FormWrapper checkout={checkout} {...defaultProps} locale="en" />
+        </CheckoutFormContext.Provider>,
+      )
+    }
+
+    it('shows the banner when trialUnavailable is true', () => {
+      renderWithTrialUnavailable(true)
+
+      expect(
+        screen.getByText('No free trial for this purchase'),
+      ).toBeInTheDocument()
+      expect(screen.getByText(/you'll be charged today/i)).toBeInTheDocument()
+    })
+
+    it('does not show the banner when trialUnavailable is false', () => {
+      renderWithTrialUnavailable(false)
+
+      expect(
+        screen.queryByText('No free trial for this purchase'),
+      ).not.toBeInTheDocument()
     })
   })
 

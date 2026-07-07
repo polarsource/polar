@@ -121,6 +121,9 @@ class OrderRepository(
                 Order.organization_id == organization_id,
                 Order.status.in_(OrderStatus.paid_statuses()),
                 Order.is_deleted.is_(False),
+                # product_id is nullable; a NULL revenue group would waste a
+                # candidate slot and poison the returned id list.
+                Order.product_id.is_not(None),
             )
             .group_by(Order.product_id)
             .order_by(net_revenue.desc())

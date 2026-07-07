@@ -558,7 +558,10 @@ async def top_products_by_revenue(
         response = await metrics_service.get_metrics(
             deps.session,
             deps.auth_subject,
-            start_date=deps.today - timedelta(days=days),
+            # Inclusive range: the same days-1 window as candidate selection,
+            # so a product's boundary-day revenue can't rank it without also
+            # being counted (or vice versa).
+            start_date=deps.today - timedelta(days=days - 1),
             end_date=deps.today,
             timezone=deps.timezone,
             interval=TimeInterval.month,
@@ -621,7 +624,7 @@ async def top_customers_by_revenue(
     if days is not None:
         days = max(1, min(365, days))
         start = datetime.combine(
-            deps.today - timedelta(days=days), time.min, deps.timezone
+            deps.today - timedelta(days=days - 1), time.min, deps.timezone
         )
     ranked = await OrderRepository.from_session(deps.session).get_revenue_by_customer(
         deps.organization_id,
@@ -685,7 +688,7 @@ async def top_customers_by_cost(
     stats = await event_service.list_customer_stats(
         cast(AsyncSession, deps.session),
         deps.auth_subject,
-        start_date=deps.today - timedelta(days=days),
+        start_date=deps.today - timedelta(days=days - 1),
         end_date=deps.today,
         timezone=deps.timezone,
         organization_id=[deps.organization_id],

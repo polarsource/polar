@@ -2,7 +2,7 @@ import { SeatsPage } from '@/components/Landing/features/SeatsPage'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Seats — Polar',
+  title: 'Seat-Based Billing',
   description:
     'Pricing that scales with the team. Sell seat-based products with assignable seats, claim links, and automatic proration.',
   keywords:

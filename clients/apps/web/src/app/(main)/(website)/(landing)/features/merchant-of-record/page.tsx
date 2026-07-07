@@ -2,7 +2,7 @@ import { MerchantOfRecordPage } from '@/components/Landing/features/MerchantOfRe
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Merchant of Record — Polar',
+  title: 'Merchant of Record',
   description:
     'Polar is your reseller. We handle international sales taxes globally so you can focus on the product.',
   keywords:

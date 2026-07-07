@@ -2,7 +2,7 @@ import { SubscriptionsPage } from '@/components/Landing/features/SubscriptionsPa
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Subscriptions — Polar',
+  title: 'Subscriptions',
   description:
     'Recurring revenue on autopilot. Renewals, proration, dunning, and customer self-service — all handled.',
   keywords:

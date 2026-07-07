@@ -3,9 +3,10 @@ import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Polar vs Paddle',
-  description: 'Comparing Polar and Paddle',
+  description:
+    'Polar vs Paddle: compare two Merchant of Record platforms for SaaS and digital products, including billing models, usage-based pricing and transaction fees.',
   keywords:
-    'polar vs paddle, paddle, polar, comparison, pricing, pricing for polar, pricing for polar, pricing for polar',
+    'polar vs paddle, paddle alternative, merchant of record, saas billing, subscriptions, usage-based billing',
   openGraph: {
     siteName: 'Polar',
     type: 'website',

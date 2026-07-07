@@ -15,7 +15,6 @@ import SignalCellularAltOutlined from '@mui/icons-material/SignalCellularAltOutl
 import SpaceDashboardOutlined from '@mui/icons-material/SpaceDashboardOutlined'
 import TrendingDown from '@mui/icons-material/TrendingDown'
 import { schemas } from '@polar-sh/client'
-import { ReactNode } from 'react'
 import { ShoppingCart } from 'lucide-react'
 import { Route, RouteWithActive, useResolveRoutes } from './navigation'
 

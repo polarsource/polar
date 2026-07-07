@@ -25,7 +25,6 @@ import { DashboardProvider } from '../Dashboard/DashboardProvider'
 import { useRoute } from '../Navigation/useRoute'
 import { DashboardSidebar } from './Dashboard/DashboardSidebar'
 import TopbarRight from './Public/TopbarRight'
-import { CompassBox } from '../Compass/CompassBox'
 
 const DashboardLayout = (
   props: PropsWithChildren<{

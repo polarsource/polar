@@ -4091,7 +4091,9 @@ async def delete_payout_account(
 ) -> HXRedirectResponse | None:
     """Show modal to confirm and process payout account deletion."""
     repository = OrganizationRepository(session)
-    organization = await repository.get_by_id_with_payout_account(organization_id)
+    organization = await repository.get_by_id_with_payout_account(
+        organization_id, include_deleted=True
+    )
 
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
@@ -4112,7 +4114,7 @@ async def delete_payout_account(
             account_type = payout_account.type
             stripe_id = payout_account.stripe_id
 
-            await payout_account_service.delete(session, payout_account)
+            await payout_account_service.delete(session, payout_account, unlink=True)
 
             timestamp = datetime.now(UTC).strftime("%Y-%m-%d %H:%M UTC")
             delete_note = (

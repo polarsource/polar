@@ -145,15 +145,22 @@ class PayoutAccountService:
                 raise PayoutAccountExternalLinkUnsupported(payout_account.type)
 
     async def delete(
-        self, session: AsyncSession, payout_account: PayoutAccount
+        self,
+        session: AsyncSession,
+        payout_account: PayoutAccount,
+        *,
+        unlink: bool = False,
     ) -> None:
         # Verify the account is not linked to any organization
-        organization_repository = OrganizationRepository.from_session(session)
-        linked_organizations = await organization_repository.get_all_by_payout_account(
-            payout_account.id
-        )
-        if linked_organizations:
-            raise PayoutAccountLinkedToOrganization(payout_account.id)
+        if not unlink:
+            organization_repository = OrganizationRepository.from_session(session)
+            linked_organizations = (
+                await organization_repository.get_all_by_payout_account(
+                    payout_account.id
+                )
+            )
+            if linked_organizations:
+                raise PayoutAccountLinkedToOrganization(payout_account.id)
 
         # Verify there are no pending payouts for this account
         payout_repository = PayoutRepository.from_session(session)
@@ -174,6 +181,11 @@ class PayoutAccountService:
             if balance != 0:
                 raise PayoutAccountNonZeroBalance(payout_account.stripe_id)
             await stripe.delete_account(payout_account.stripe_id)
+
+        # Unlink the payout account from the organization before deleting
+        if unlink:
+            organization_repository = OrganizationRepository.from_session(session)
+            await organization_repository.delete_payout_account(payout_account.id)
 
         repository = PayoutAccountRepository.from_session(session)
         await repository.soft_delete(payout_account)

@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator
+from datetime import UTC, datetime
 
 import httpx
 import pytest
@@ -6,12 +7,14 @@ import pytest_asyncio
 
 from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
+from polar.models import PayoutAccount
 from polar.models.organization import Organization
 from polar.models.user import User
 from polar.models.user_session import UserSession
 from polar.organization_review.repository import OrganizationReviewRepository
 from polar.organization_review.schemas import AUPSection
 from polar.postgres import AsyncSession, get_db_session
+from tests.fixtures.database import SaveFixture
 
 
 @pytest_asyncio.fixture
@@ -121,3 +124,23 @@ class TestOffboardDialog:
         ).get_current_decision(organization.id)
         assert current is None
         assert organization.status == previous_status
+
+
+@pytest.mark.asyncio
+class TestDeletePayoutAccount:
+    async def test_soft_deleted_organization_can_open_delete_modal(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        stripe_payout_account: PayoutAccount,
+    ) -> None:
+        organization.deleted_at = datetime.now(UTC)
+        await save_fixture(organization)
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/delete-payout-account"
+        )
+
+        assert response.status_code == 200
+        assert "Delete Payout Account" in response.text

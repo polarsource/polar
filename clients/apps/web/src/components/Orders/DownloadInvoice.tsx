@@ -54,8 +54,9 @@ const waitForInvoice = (
   eventEmitter: EventEmitter,
   orderId: string,
   timeoutMs: number,
-) =>
-  new Promise<boolean>((resolve) => {
+): { promise: Promise<boolean>; cancel: () => void } => {
+  let cleanup = () => {}
+  const promise = new Promise<boolean>((resolve) => {
     const listener = ({ order_id }: { order_id: string }) => {
       if (order_id !== orderId) return
       cleanup()
@@ -65,12 +66,14 @@ const waitForInvoice = (
       cleanup()
       resolve(false)
     }, timeoutMs)
-    const cleanup = () => {
+    cleanup = () => {
       clearTimeout(timer)
       eventEmitter.off(INVOICE_GENERATED_EVENT, listener)
     }
     eventEmitter.on(INVOICE_GENERATED_EVENT, listener)
   })
+  return { promise, cancel: () => cleanup() }
+}
 
 const DownloadInvoice = ({
   order,
@@ -166,10 +169,20 @@ const DownloadInvoice = ({
           return
         }
 
+        // Subscribe to the generation event before triggering it, so a fast
+        // backend can't emit before we're listening. The backend only
+        // regenerates (and emits) when the invoice doesn't exist yet or a
+        // billing field changed, so skip the wait for an unchanged re-submit.
+        const expectGeneration = !order.is_invoice_generated || isDirty
+        const generation = expectGeneration
+          ? waitForInvoice(eventEmitter, order.id, INVOICE_GENERATION_TIMEOUT_MS)
+          : null
+
         const { error: generateError } = await api.POST(invoiceURL, {
           params: { path: { id: order.id } },
         })
         if (generateError) {
+          generation?.cancel()
           if (isValidationError(generateError.detail)) {
             setValidationErrors(generateError.detail, setError)
           } else {
@@ -178,16 +191,8 @@ const DownloadInvoice = ({
           return
         }
 
-        // The backend only regenerates (and emits an event) when the invoice
-        // doesn't exist yet or a billing field changed; an unchanged re-submit
-        // is a no-op with no event, so only wait when we expect one.
-        const expectGeneration = !order.is_invoice_generated || isDirty
-        if (expectGeneration) {
-          const arrived = await waitForInvoice(
-            eventEmitter,
-            order.id,
-            INVOICE_GENERATION_TIMEOUT_MS,
-          )
+        if (generation) {
+          const arrived = await generation.promise
           if (!arrived) {
             setError('root', {
               message:

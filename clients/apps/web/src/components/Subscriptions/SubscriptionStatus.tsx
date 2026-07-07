@@ -47,7 +47,9 @@ const StatusLabel = ({
         <Pill color="gray">
           {icon}
           <span>
-            {eventLabel ? `${eventLabel} ${prettyEventDate}` : prettyEventDate}
+            {eventLabel
+              ? `${eventLabel} on ${prettyEventDate}`
+              : prettyEventDate}
           </span>
         </Pill>
       )}
@@ -70,8 +72,9 @@ export const SubscriptionStatus = ({
   const isEnding = useMemo(() => ends_at !== null, [ends_at])
 
   const color = useMemo(
-    () => getSubscriptionStatusBorderColor(status, isEnding),
-    [status, isEnding],
+    () =>
+      getSubscriptionStatusBorderColor(status, isEnding || pause_at_period_end),
+    [status, isEnding, pause_at_period_end],
   )
 
   // A scheduled cancellation takes precedence; otherwise surface the pause

@@ -36,7 +36,7 @@ const PauseSubscriptionModal = ({
 
   const onSubmit = async ({ resumes_at }: { resumes_at?: string }) => {
     try {
-      await pauseSubscription.mutateAsync({ resumes_at: resumes_at ?? null })
+      await pauseSubscription.mutateAsync({ resumes_at: resumes_at || null })
       toast({
         title: 'Subscription Paused',
         description:

@@ -42,7 +42,7 @@ const CustomerPauseSubscriptionModal = ({
     try {
       await pauseSubscription.mutateAsync({
         id: subscription.id,
-        body: { pause_at_period_end: true, resumes_at: resumes_at ?? null },
+        body: { pause_at_period_end: true, resumes_at: resumes_at || null },
       })
       router.refresh()
       toast({

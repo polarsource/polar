@@ -398,14 +398,21 @@ export const useCustomerUncancelSubscription = (api: Client) =>
 
 export const useCustomerPauseSubscription = (api: Client) =>
   useMutation({
-    mutationFn: (variables: {
+    mutationFn: async (variables: {
       id: string
       body: schemas['CustomerSubscriptionPause']
-    }) =>
-      api.PATCH('/v1/customer-portal/subscriptions/{id}', {
+    }) => {
+      const result = await api.PATCH('/v1/customer-portal/subscriptions/{id}', {
         params: { path: { id: variables.id } },
         body: variables.body,
-      }),
+      })
+      if (result.error) {
+        throw new Error(
+          extractApiErrorMessage(result.error, 'Failed to pause subscription'),
+        )
+      }
+      return result
+    },
     onSuccess: (result) => {
       if (result.error) {
         return
@@ -422,13 +429,20 @@ export const useCustomerPauseSubscription = (api: Client) =>
 
 export const useCustomerResumeSubscription = (api: Client) =>
   useMutation({
-    mutationFn: (variables: { id: string }) =>
-      api.PATCH('/v1/customer-portal/subscriptions/{id}', {
+    mutationFn: async (variables: { id: string }) => {
+      const result = await api.PATCH('/v1/customer-portal/subscriptions/{id}', {
         params: { path: { id: variables.id } },
         body: {
           resume: true,
         },
-      }),
+      })
+      if (result.error) {
+        throw new Error(
+          extractApiErrorMessage(result.error, 'Failed to resume subscription'),
+        )
+      }
+      return result
+    },
     onSuccess: (result) => {
       if (result.error) {
         return

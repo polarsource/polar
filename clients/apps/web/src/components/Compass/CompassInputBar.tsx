@@ -1,12 +1,9 @@
 'use client'
 
-import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import ArrowUpwardRounded from '@mui/icons-material/ArrowUpwardRounded'
 import AttachFileRounded from '@mui/icons-material/AttachFileRounded'
 import CropFreeRounded from '@mui/icons-material/CropFreeRounded'
-import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded'
-import ViewInArOutlined from '@mui/icons-material/ViewInArOutlined'
 import { forwardRef } from 'react'
 
 interface CompassInputBarProps {
@@ -57,6 +54,7 @@ export const CompassInputBar = forwardRef<
           }
         }}
         rows={1}
+        aria-label={placeholder}
         placeholder={placeholder}
         className="dark:text-polar-50 dark:placeholder:text-polar-500 dark:caret-polar-50 w-full resize-none border-0 bg-transparent px-1 text-sm text-gray-900 caret-gray-900 outline-none placeholder:text-gray-400 focus:ring-0 focus:outline-none focus-visible:ring-0 focus-visible:outline-none"
       />

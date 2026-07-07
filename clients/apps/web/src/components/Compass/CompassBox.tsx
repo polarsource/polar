@@ -5,8 +5,6 @@ import { Box } from '@polar-sh/orbit/Box'
 import ArrowUpwardRounded from '@mui/icons-material/ArrowUpwardRounded'
 import AttachFileRounded from '@mui/icons-material/AttachFileRounded'
 import CropFreeRounded from '@mui/icons-material/CropFreeRounded'
-import KeyboardArrowDownRounded from '@mui/icons-material/KeyboardArrowDownRounded'
-import ViewInArOutlined from '@mui/icons-material/ViewInArOutlined'
 import { ChevronRight } from 'lucide-react'
 import { schemas } from '@polar-sh/client'
 import { useEffect, useRef, useState } from 'react'
@@ -94,13 +92,7 @@ export const CompassBox = ({
             marginHorizontal="auto"
           >
             <Box
-              color={{
-                base: 'text-secondary',
-                hover: 'text-primary',
-              }}
-              transitionProperty="colors"
-              transitionDuration="fast"
-              cursor="pointer"
+              color="text-secondary"
               flexDirection="row"
               alignItems="center"
               columnGap="xs"
@@ -130,6 +122,7 @@ export const CompassBox = ({
           >
             <textarea
               value={value}
+              aria-label="Ask Compass"
               onFocus={() => setActive(true)}
               onChange={(e) => setValue(e.target.value)}
               onKeyDown={(e) => {
@@ -150,17 +143,21 @@ export const CompassBox = ({
               justifyContent="between"
             >
               <Box display="flex" alignItems="center" columnGap="s">
+                {/* Planned affordances, not wired up yet: disabled so
+                    they aren't focusable controls that do nothing. */}
                 <button
                   type="button"
-                  aria-label="Expand"
-                  className="dark:text-polar-400 dark:hover:bg-polar-700 dark:hover:text-polar-200 flex size-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                  aria-label="Expand (coming soon)"
+                  disabled
+                  className="dark:text-polar-500 flex size-9 cursor-not-allowed items-center justify-center rounded-full text-gray-400 opacity-60"
                 >
                   <CropFreeRounded style={{ fontSize: '1.125rem' }} />
                 </button>
                 <button
                   type="button"
-                  aria-label="Attach"
-                  className="dark:text-polar-400 dark:hover:bg-polar-700 dark:hover:text-polar-200 flex size-9 items-center justify-center rounded-full text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700"
+                  aria-label="Attach (coming soon)"
+                  disabled
+                  className="dark:text-polar-500 flex size-9 cursor-not-allowed items-center justify-center rounded-full text-gray-400 opacity-60"
                 >
                   <AttachFileRounded style={{ fontSize: '1.125rem' }} />
                 </button>

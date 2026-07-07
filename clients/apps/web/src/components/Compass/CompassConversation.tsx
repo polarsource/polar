@@ -92,16 +92,23 @@ export const CompassConversation = ({
   inputRef,
 }: CompassConversationProps) => {
   const rootRef = useRef<HTMLDivElement>(null)
+  // Read through a ref so the open effect depends only on `active`: an inline
+  // onClose prop would otherwise re-run it on every parent render, re-snapping
+  // the scroll position mid-conversation.
+  const onCloseRef = useRef(onClose)
+  useEffect(() => {
+    onCloseRef.current = onClose
+  }, [onClose])
 
   useEffect(() => {
     if (!active) return
     findScrollParent(rootRef.current)?.scrollTo({ top: 0 })
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
+      if (e.key === 'Escape') onCloseRef.current()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [active, onClose])
+  }, [active])
 
   const empty = messages.length === 0
 

@@ -23,7 +23,13 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
   return (
     <DashboardBody
       className="gap-y-8 md:gap-y-16"
-      wrapperClassName=" pb-40 md:pb-48"
+      wrapperClassName={
+        // Room for the sticky Compass box; without it the page would end in
+        // a large blank strip for organizations without the feature.
+        organization.feature_settings?.compass_enabled
+          ? 'pb-40 md:pb-48'
+          : undefined
+      }
       title={null}
     >
       <PlanUpsell organization={organization} />

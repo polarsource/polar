@@ -7,9 +7,15 @@ type CompassTimezone = NonNullable<
   paths['/v1/compass/insights']['get']['parameters']['query']
 >['timezone']
 
-export const useCompassInsights = (organizationId: string, enabled = true) =>
-  useQuery({
-    queryKey: ['compass_insights', { organizationId }],
+export const useCompassInsights = (organizationId: string, enabled = true) => {
+  // The runtime value is always a valid IANA name; the generated param type
+  // is a literal union the DOM API can't express. Part of the cache key: the
+  // response varies by timezone, so a timezone change must not serve stale
+  // insights.
+  const timezone = Intl.DateTimeFormat().resolvedOptions()
+    .timeZone as CompassTimezone
+  return useQuery({
+    queryKey: ['compass_insights', { organizationId, timezone }],
     enabled,
     queryFn: () =>
       unwrap(
@@ -17,13 +23,11 @@ export const useCompassInsights = (organizationId: string, enabled = true) =>
           params: {
             query: {
               organization_id: organizationId,
-              // The runtime value is always a valid IANA name; the generated
-              // param type is a literal union the DOM API can't express.
-              timezone: Intl.DateTimeFormat().resolvedOptions()
-                .timeZone as CompassTimezone,
+              timezone,
             },
           },
         }),
       ),
     retry: defaultRetry,
   })
+}

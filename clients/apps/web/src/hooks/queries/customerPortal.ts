@@ -396,6 +396,53 @@ export const useCustomerUncancelSubscription = (api: Client) =>
     },
   })
 
+export const useCustomerPauseSubscription = (api: Client) =>
+  useMutation({
+    mutationFn: (variables: {
+      id: string
+      body: schemas['CustomerSubscriptionPause']
+    }) =>
+      api.PATCH('/v1/customer-portal/subscriptions/{id}', {
+        params: { path: { id: variables.id } },
+        body: variables.body,
+      }),
+    onSuccess: (result) => {
+      if (result.error) {
+        return
+      }
+      const queryClient = getQueryClient()
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscriptions'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_charge_preview'],
+      })
+    },
+  })
+
+export const useCustomerResumeSubscription = (api: Client) =>
+  useMutation({
+    mutationFn: (variables: { id: string }) =>
+      api.PATCH('/v1/customer-portal/subscriptions/{id}', {
+        params: { path: { id: variables.id } },
+        body: {
+          resume: true,
+        },
+      }),
+    onSuccess: (result) => {
+      if (result.error) {
+        return
+      }
+      const queryClient = getQueryClient()
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscriptions'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_charge_preview'],
+      })
+    },
+  })
+
 export const useCustomerCustomerMeters = (
   api: Client,
   parameters?: operations['customer_portal:customer_meters:list']['parameters']['query'],

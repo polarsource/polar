@@ -71,6 +71,58 @@ const logos = [
   },
 ]
 
+const FAQS = [
+  {
+    number: '01',
+    question: 'Do I still pay Stripe fees if I use Polar?',
+    answer:
+      "Polar's platform fee covers Stripe's processing costs. Stripe's additional fees, like +1.5% for international cards, are passed through at cost. Your platform fee depends on your plan; see the pricing guide for details.",
+  },
+  {
+    number: '02',
+    question: 'Is Polar built on Stripe? Why not just use Stripe directly?',
+    answer:
+      "We use Stripe rails for processing reliability and coverage. Processing ≠ the business layer. Polar is the MoR + billing + entitlements + unit-economics layer you'd otherwise build or buy on top of Stripe.",
+  },
+  {
+    number: '03',
+    question: 'How are payouts handled internationally?',
+    answer:
+      'All payments are made to Polar as the Merchant of Record. We use Stripe Connect Express to make payouts across more countries than Stripe Payments supports directly.',
+  },
+  {
+    number: '04',
+    question: 'Do you handle EU VAT reverse charge for B2B?',
+    answer:
+      'Yes, EU B2B reverse charge is handled correctly under our MoR model, ensuring compliance with EU tax regulations.',
+  },
+  {
+    number: '05',
+    question: 'What about lock-in? Can I leave later?',
+    answer:
+      'We deliberately architect for continuity (Stripe on the inside) and provide import/export plus migration tooling, so you always retain a pragmatic exit path.',
+  },
+  {
+    number: '06',
+    question: 'What happens during account reviews or disputes?',
+    answer:
+      "We run standard MoR/KYC reviews (typically within a week) and follow card-network norms: disputes cost $15 and gateway fees aren't refunded on refunds.",
+  },
+]
+
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQS.map((faq) => ({
+    '@type': 'Question',
+    name: faq.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: faq.answer,
+    },
+  })),
+}
+
 export const WhyPolarPage = () => {
   const tocItems = [
     { id: 'introduction', title: 'Introduction' },
@@ -277,38 +329,17 @@ export const WhyPolarPage = () => {
         </div>
       </ResourceSection>
 
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(faqJsonLd).replace(/</g, '\\u003c'),
+        }}
+      />
       <div className="dark:border-polar-700 flex flex-col border-t border-gray-200 pt-16">
-        <FAQItem
-          number="01"
-          question="Do I still pay Stripe fees if I use Polar?"
-          answer="Polar's platform fee covers Stripe's processing costs. Stripe's additional fees, like +1.5% for international cards, are passed through at cost. Your platform fee depends on your plan; see the pricing guide for details."
-        />
-        <FAQItem
-          number="02"
-          question="Is Polar built on Stripe? Why not just use Stripe directly?"
-          answer="We use Stripe rails for processing reliability and coverage. Processing ≠ the business layer. Polar is the MoR + billing + entitlements + unit-economics layer you'd otherwise build or buy on top of Stripe."
-        />
-        <FAQItem
-          number="03"
-          question="How are payouts handled internationally?"
-          answer="All payments are made to Polar as the Merchant of Record. We use Stripe Connect Express to make payouts across more countries than Stripe Payments supports directly."
-        />
-        <FAQItem
-          number="04"
-          question="Do you handle EU VAT reverse charge for B2B?"
-          answer="Yes, EU B2B reverse charge is handled correctly under our MoR model, ensuring compliance with EU tax regulations."
-        />
-        <FAQItem
-          number="05"
-          question="What about lock-in? Can I leave later?"
-          answer="We deliberately architect for continuity (Stripe on the inside) and provide import/export plus migration tooling, so you always retain a pragmatic exit path."
-        />
-
-        <FAQItem
-          number="06"
-          question="What happens during account reviews or disputes?"
-          answer="We run standard MoR/KYC reviews (typically within a week) and follow card-network norms: disputes cost $15 and gateway fees aren't refunded on refunds."
-        />
+        {FAQS.map((faq) => (
+          <FAQItem key={faq.number} {...faq} />
+        ))}
       </div>
 
       {/* Call to Action */}

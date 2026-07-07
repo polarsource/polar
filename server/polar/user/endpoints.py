@@ -71,7 +71,11 @@ async def get_authenticated(
     # set (session scope + SSO enforcement) via the shared authz chokepoint,
     # while `member_organizations` exposes every membership so the frontend can
     # tell "no access" apart from "not a member".
-    org_with_roles = await repository.get_organizations_with_role(user.id)  # noqa: org-scope
+    org_with_roles = (
+        await repository.get_organizations_with_role(  # lint-skip: org-scope
+            user.id
+        )
+    )
     accessible_ids = await AuthzRepository.from_session(session).get_user_org_ids(
         auth_subject
     )

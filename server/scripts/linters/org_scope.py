@@ -12,17 +12,17 @@ using them where an `auth_subject` is in play silently leaks other orgs (see the
 Rules:
 - Flag `select(UserOrganization.organization_id)` — hand-building the
   user→accessible-orgs subquery. `select_user_org_ids` is the sole blessed
-  definition and marks itself with `# noqa: org-scope`.
+  definition and marks itself with `# lint-skip: org-scope`.
 - Flag a comparison where one operand is `UserOrganization.<col>` and another
   references `auth_subject` — the join-form bypass.
 - Flag a **call** to a raw membership helper (`select_user_org_ids`,
   `get_organizations_with_role`). Prefer the scope-aware helpers; if the raw use
   is intentional (composing the scope-aware helper, manual intersection, or
-  membership management on a plain `user_id`), mark it `# noqa: org-scope`.
+  membership management on a plain `user_id`), mark it `# lint-skip: org-scope`.
 - Membership *management* code (filtering by a plain `user_id`/`user.id`
   parameter, not `auth_subject`, and not projecting `organization_id`) is NOT
   flagged by the first two rules.
-- `# noqa: org-scope` on the offending line is an explicit escape.
+- `# lint-skip: org-scope` on the offending line is an explicit escape.
 """
 
 from __future__ import annotations
@@ -43,7 +43,7 @@ EXPANSION_MESSAGE = (
     "hand-rolled UserOrganization membership expansion bypasses org-scope "
     "enforcement. Use select_accessible_org_ids(auth_subject) from "
     "polar.authz.repository (or get_accessible_org_ids). Escape with "
-    "`# noqa: org-scope` if intentional."
+    "`# lint-skip: org-scope` if intentional."
 )
 
 RAW_CALL_MESSAGE = (
@@ -51,7 +51,7 @@ RAW_CALL_MESSAGE = (
     "select_accessible_org_ids / get_accessible_org_ids / "
     "get_accessible_organization. If the raw use is intentional (composing the "
     "scope-aware helper, manual intersection, or membership management), mark it "
-    "`# noqa: org-scope`."
+    "`# lint-skip: org-scope`."
 )
 
 
@@ -142,7 +142,7 @@ def check(tree: ast.Module) -> list[Violation]:
 
 RULE = Rule(
     name="org-scope",
-    noqa_code="org-scope",
+    skip_code="org-scope",
     summary="flag inline UserOrganization filters that bypass select_user_org_ids",
     check=check,
 )

@@ -15,7 +15,7 @@ Rules:
   statically determine the root. Those cases rely on the CLAUDE.md rule and
   code review. If you introduce a new variable-rooted `.subquery()` on an
   entity select, call `.with_only_columns(...)` explicitly.
-- `# noqa: subquery-all-columns` on the call line is an explicit escape for
+- `# lint-skip: subquery-all-columns` on the call line is an explicit escape for
   cases where full-column projection is intentional.
 """
 
@@ -31,7 +31,7 @@ MESSAGE = (
     "call .with_only_columns(...) before .subquery(), or use "
     "count_subquery() from polar.kit.pagination. "
     "`deferred=True` does not propagate into .subquery(). "
-    "Escape with `# noqa: subquery-all-columns` if full-column "
+    "Escape with `# lint-skip: subquery-all-columns` if full-column "
     "projection is intentional."
 )
 
@@ -81,7 +81,7 @@ def _chain_is_safe(receiver: ast.AST) -> bool:
 
     # Find the root of the chain. If the root isn't a recognizable
     # `select(...)` on a single model-like Name, we can't confidently flag —
-    # default to safe and let code review / noqa handle rare cases.
+    # default to safe and let code review / lint-skip handle rare cases.
     if not calls:
         return True
     root = calls[-1]
@@ -119,7 +119,7 @@ def check(tree: ast.Module) -> list[Violation]:
 
 RULE = Rule(
     name="subquery",
-    noqa_code="subquery-all-columns",
+    skip_code="subquery-all-columns",
     summary="flag .subquery() calls that don't narrow columns",
     check=check,
 )

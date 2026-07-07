@@ -28,7 +28,7 @@ def select_user_org_ids(
     stmt = (
         # The one blessed place that expands user memberships into org ids;
         # every other caller must go through this helper.
-        select(UserOrganization.organization_id)  # noqa: org-scope
+        select(UserOrganization.organization_id)  # lint-skip: org-scope
         .join(Organization, UserOrganization.organization_id == Organization.id)
         .where(
             UserOrganization.user_id == user_id,
@@ -63,7 +63,9 @@ def select_accessible_org_ids(
     Personal access tokens remain exempt from SSO enforcement.
     """
     # Composes the raw helper, then applies the session down-scope right below.
-    stmt = select_user_org_ids(auth_subject.subject.id, permission=permission)  # noqa: org-scope
+    stmt = select_user_org_ids(  # lint-skip: org-scope
+        auth_subject.subject.id, permission=permission
+    )
     if auth_subject.organization_ids is not None:
         stmt = stmt.where(
             UserOrganization.organization_id.in_(auth_subject.organization_ids)

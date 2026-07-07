@@ -59,13 +59,13 @@ FRAMEWORK_PARAM_TYPES = frozenset(
 CALL_MESSAGE = (
     "request-derived value passed to generate_frontend_url — it concatenates "
     "without validation (open redirect). Route it through get_safe_return_url "
-    "(polar.kit.http). Escape with `# noqa: frontend-url` if already validated."
+    "(polar.kit.http). Escape with `# lint-skip: frontend-url` if already validated."
 )
 
 CONCAT_MESSAGE = (
     "request-derived value concatenated with FRONTEND_BASE_URL — open "
     "redirect. Route it through get_safe_return_url (polar.kit.http). Escape "
-    "with `# noqa: frontend-url` if already validated."
+    "with `# lint-skip: frontend-url` if already validated."
 )
 
 FunctionNode = ast.FunctionDef | ast.AsyncFunctionDef
@@ -274,7 +274,7 @@ def check(tree: ast.Module) -> list[Violation]:
 
 RULE = Rule(
     name="frontend-url",
-    noqa_code="frontend-url",
+    skip_code="frontend-url",
     summary="flag request-derived values passed to generate_frontend_url",
     check=check,
 )

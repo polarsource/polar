@@ -1,8 +1,9 @@
 """Run the custom AST lint rules over polar/ with a single shared parse.
 
 Each rule lives in its own module and registers a `Rule` with a name (for
-`--only`), a noqa code, and a `check(tree)` callable. Suppress a violation
-with `# noqa: <code>` on the offending line. Exits 1 on any violation.
+`--only`), a skip code, and a `check(tree)` callable. Suppress a violation
+with `# lint-skip: <code>` on the offending line (`# noqa` is ruff's directive
+and rejects our hyphenated codes). Exits 1 on any violation.
 """
 
 from __future__ import annotations
@@ -13,7 +14,7 @@ import sys
 from pathlib import Path
 
 from . import frontend_url, org_scope, subquery
-from .base import Rule, line_has_noqa
+from .base import Rule, line_has_skip
 
 RULES: tuple[Rule, ...] = (subquery.RULE, org_scope.RULE, frontend_url.RULE)
 
@@ -61,7 +62,7 @@ def main() -> int:
         source_lines = source.splitlines()
         for rule in rules:
             for lineno, message in rule.check(tree):
-                if line_has_noqa(source_lines, lineno, rule.noqa_code):
+                if line_has_skip(source_lines, lineno, rule.skip_code):
                     continue
                 violations.append((path, lineno, rule.name, message))
 

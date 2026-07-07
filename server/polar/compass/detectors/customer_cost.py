@@ -1,5 +1,5 @@
 from ..schemas import Insight, InsightCategory, InsightSeverity, ViewMetricAction
-from ..signals import format_pct
+from ..signals import CUSTOMER_COSTS_SAMPLE_LIMIT, format_pct
 from .base import Detector, DetectorContext, confidence_for_sample
 
 # Below this share, cost skew is normal; above the critical bar one outage or
@@ -43,17 +43,22 @@ class CostConcentrationDetector(Detector):
             return None
 
         share_str = format_pct(top.share)
+        count_str = (
+            f"at least {len(ranked)}"
+            if len(ranked) >= CUSTOMER_COSTS_SAMPLE_LIMIT
+            else str(len(ranked))
+        )
         title = f"One customer drives {share_str} of your costs"
         body = (
             f"{top.label} generated {share_str} of all tracked costs in the "
-            f"last {_LOOKBACK_DAYS} days, across {len(ranked)} customers with "
+            f"last {_LOOKBACK_DAYS} days, across {count_str} customers with "
             "costs. A single workload change or churn event would move most "
             "of your cost base."
         )
         why = (
             f"Triggered when one customer exceeds "
             f"{format_pct(_CONCENTRATION_WARNING)} of tracked costs, across "
-            f"{len(ranked)} customers with cost data ({confidence.value} "
+            f"{count_str} customers with cost data ({confidence.value} "
             "confidence). Costs come from `_cost` event metadata."
         )
 

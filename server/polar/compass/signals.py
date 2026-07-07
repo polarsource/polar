@@ -69,6 +69,13 @@ class ProductPricing:
     cohort (cost events attach to customers, not products)."""
 
 
+# How many cost-ranked customers the service prefetches. Covers the highest
+# confidence threshold (see `confidence_for_sample`), so the cost-bearing
+# customer count is exact up to this depth; at the cap the copy says
+# "at least".
+CUSTOMER_COSTS_SAMPLE_LIMIT = 100
+
+
 @dataclass(frozen=True)
 class CustomerCostSignal:
     """One customer's share of tracked costs over the window.

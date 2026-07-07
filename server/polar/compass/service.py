@@ -32,7 +32,11 @@ from .schemas import (
     InsightCategory,
     InsightSeverity,
 )
-from .signals import CustomerCostSignal, ProductPricing
+from .signals import (
+    CUSTOMER_COSTS_SAMPLE_LIMIT,
+    CustomerCostSignal,
+    ProductPricing,
+)
 
 log: Logger = structlog.get_logger()
 
@@ -52,9 +56,10 @@ _MAX_PRODUCTS = 8
 # product-attributed pipe) rather than silently sampled.
 _MAX_COHORT_CUSTOMERS = 150
 
-# Per-customer cost ranking window and depth for concentration detectors.
+# Per-customer cost ranking window for concentration detectors. The fetch
+# depth is CUSTOMER_COSTS_SAMPLE_LIMIT so confidence tiers aren't capped by
+# a truncated ranking.
 _CUSTOMER_COSTS_WINDOW_DAYS = 30
-_MAX_COST_CUSTOMERS = 10
 
 # What the merchant should care about most, first. Detector priority and
 # confidence only break ties within a severity band.
@@ -303,7 +308,7 @@ class CompassService:
                 end_date=today,
                 timezone=timezone,
                 organization_id=[org_id],
-                limit=_MAX_COST_CUSTOMERS,
+                limit=CUSTOMER_COSTS_SAMPLE_LIMIT,
             )
         except Exception:
             log.exception("compass.customer_costs_error", organization_id=str(org_id))

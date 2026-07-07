@@ -25,7 +25,11 @@ from polar.compass.schemas import (
     InsightSeverity,
     ViewMetricAction,
 )
-from polar.compass.signals import CustomerCostSignal, ProductPricing
+from polar.compass.signals import (
+    CUSTOMER_COSTS_SAMPLE_LIMIT,
+    CustomerCostSignal,
+    ProductPricing,
+)
 from polar.metrics.schemas import MetricsResponse
 
 
@@ -423,6 +427,35 @@ class TestGrossMarginDetector:
         assert insight is not None
         assert insight.severity is InsightSeverity.opportunity
         assert "improved to 90%" in insight.title
+
+    def test_confidence_scales_with_cost_bearing_customers(self) -> None:
+        # 60 customers with costs: past the medium threshold (20), so the
+        # insight must not be capped at low confidence by a truncated fetch.
+        signals = [_cost_signal("whale@corp.com", 0.45)] + [
+            _cost_signal(f"c{i}@x.com", 0.009) for i in range(59)
+        ]
+
+        insight = CostConcentrationDetector().evaluate(
+            _context_with_customer_costs(signals)
+        )
+
+        assert insight is not None
+        assert insight.confidence is ConfidenceLevel.medium
+        assert "across 60 customers" in insight.body
+
+    def test_copy_says_at_least_when_sample_is_capped(self) -> None:
+        signals = [_cost_signal("whale@corp.com", 0.45)] + [
+            _cost_signal(f"c{i}@x.com", 0.005)
+            for i in range(CUSTOMER_COSTS_SAMPLE_LIMIT - 1)
+        ]
+
+        insight = CostConcentrationDetector().evaluate(
+            _context_with_customer_costs(signals)
+        )
+
+        assert insight is not None
+        assert insight.confidence is ConfidenceLevel.high
+        assert f"at least {CUSTOMER_COSTS_SAMPLE_LIMIT} customers" in insight.body
 
     def test_silent_without_cost_data(self) -> None:
         # No Tinybird cost/revenue data resolves margin to 0 — stay quiet.

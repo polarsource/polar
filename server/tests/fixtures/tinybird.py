@@ -97,11 +97,7 @@ def tinybird_workspace() -> Generator[str, None, None]:
                 },
                 timeout=2,
             )
-            # Ready only when a probe ingest actually succeeds: 403 means
-            # the token hasn't propagated yet, 404 means the deploy hasn't
-            # materialized the datasource yet. Treating 404 as ready let the
-            # first real ingest fail on slow CI runners.
-            if r.status_code < 400:
+            if r.status_code != 403:
                 break
         except httpx.RequestError:
             pass

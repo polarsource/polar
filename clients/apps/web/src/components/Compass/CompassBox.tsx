@@ -79,12 +79,7 @@ export const CompassBox = ({
         </Link>
       </Box>
 
-      <Box
-        position="relative"
-        pointerEvents="auto"
-        width="100%"
-        maxWidth={760}
-      >
+      <Box position="relative" pointerEvents="auto" width="100%" maxWidth={760}>
         <CompassInputBar
           value={value}
           onValueChange={setValue}

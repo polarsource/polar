@@ -22,6 +22,19 @@ class UnavailableFactorError(PolarAuthError):
         super().__init__(message, 403)
 
 
+class SessionNotFreshError(PolarAuthError):
+    """
+    Exception raised when an operation requires a recently authenticated session.
+    """
+
+    def __init__(self) -> None:
+        message = (
+            "This action requires a recently authenticated session. "
+            "Please sign in again."
+        )
+        super().__init__(message, 403)
+
+
 class GetEmailError(PolarAuthError):
     """
     Exception raised when there's an error getting the email from an OAuth2 provider.

@@ -3,12 +3,14 @@ from uuid import UUID
 from fastapi import Depends, Request
 
 from polar.auth.dependencies import Authenticator
+from polar.auth.exceptions import SessionNotFreshError
 from polar.auth.models import AuthSubject
 from polar.authz.dependencies import (
     AuthorizeUserRead,
     AuthorizeUserWrite,
     AuthorizeWebUserRead,
     AuthorizeWebUserWrite,
+    AuthorizeWebUserWriteFresh,
 )
 from polar.authz.repository import AuthzRepository
 from polar.customer_portal.endpoints.downloadables import router as downloadables_router
@@ -227,11 +229,12 @@ async def delete_authenticated_user(
     responses={
         404: {"description": "OAuth account not found"},
         400: {"description": "Cannot disconnect last authentication method"},
+        403: {"model": SessionNotFreshError.schema()},
     },
 )
 async def disconnect_oauth_account(
     platform: OAuthPlatform,
-    auth_subject: AuthorizeWebUserWrite,
+    auth_subject: AuthorizeWebUserWriteFresh,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """

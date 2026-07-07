@@ -2086,6 +2086,12 @@ export interface components {
        * @default false
        */
       compass_enabled: boolean
+      /**
+       * Merchant Migration Enabled
+       * @description If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.
+       * @default false
+       */
+      merchant_migration_enabled: boolean
     }
     /** OrganizationInviteEmail */
     OrganizationInviteEmail: {
@@ -2618,13 +2624,11 @@ export interface components {
       /**
        * Paused At
        * @description The timestamp when the subscription was paused.
-       * @default null
        */
       paused_at: string | null
       /**
        * Resumes At
        * @description The timestamp when a paused subscription is scheduled to automatically resume, if set.
-       * @default null
        */
       resumes_at: string | null
       /**

@@ -16742,6 +16742,21 @@ export interface components {
        */
       past_due_at?: string | null
       /**
+       * Pause At Period End
+       * @description Whether the subscription will be paused at the end of the current period.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Paused At
+       * @description The timestamp when the subscription was paused.
+       */
+      paused_at: string | null
+      /**
+       * Resumes At
+       * @description The timestamp when a paused subscription is scheduled to automatically resume, if set.
+       */
+      resumes_at: string | null
+      /**
        * Customer Id
        * Format: uuid4
        * @description The ID of the subscribed customer.
@@ -18182,6 +18197,21 @@ export interface components {
        * @description The timestamp when the subscription entered `past_due` status.
        */
       past_due_at?: string | null
+      /**
+       * Pause At Period End
+       * @description Whether the subscription will be paused at the end of the current period.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Paused At
+       * @description The timestamp when the subscription was paused.
+       */
+      paused_at: string | null
+      /**
+       * Resumes At
+       * @description The timestamp when a paused subscription is scheduled to automatically resume, if set.
+       */
+      resumes_at: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -24630,6 +24660,21 @@ export interface components {
        */
       past_due_at?: string | null
       /**
+       * Pause At Period End
+       * @description Whether the subscription will be paused at the end of the current period.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Paused At
+       * @description The timestamp when the subscription was paused.
+       */
+      paused_at: string | null
+      /**
+       * Resumes At
+       * @description The timestamp when a paused subscription is scheduled to automatically resume, if set.
+       */
+      resumes_at: string | null
+      /**
        * Customer Id
        * Format: uuid4
        * @description The ID of the subscribed customer.
@@ -30961,6 +31006,21 @@ export interface components {
        */
       past_due_at?: string | null
       /**
+       * Pause At Period End
+       * @description Whether the subscription will be paused at the end of the current period.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Paused At
+       * @description The timestamp when the subscription was paused.
+       */
+      paused_at: string | null
+      /**
+       * Resumes At
+       * @description The timestamp when a paused subscription is scheduled to automatically resume, if set.
+       */
+      resumes_at: string | null
+      /**
        * Customer Id
        * Format: uuid4
        * @description The ID of the subscribed customer.
@@ -31811,6 +31871,25 @@ export interface components {
       /** Recurring Interval Count */
       recurring_interval_count?: number
     }
+    /** SubscriptionPause */
+    SubscriptionPause: {
+      /**
+       * Pause At Period End
+       * @description Pause an active subscription at the end of the current period.
+       *
+       *     Or cancel a scheduled pause on a subscription set to be paused at
+       *     period end.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Resumes At
+       * @description Date at which the paused subscription should automatically resume.
+       *
+       *     If not set, the subscription stays paused until it is resumed manually.
+       *     Must be after the current period end.
+       */
+      resumes_at?: string | null
+    }
     /**
      * SubscriptionProductUpdatedEvent
      * @description An event created by Polar when a subscription changes the product.
@@ -31993,6 +32072,15 @@ export interface components {
       recurring_interval?: string
       /** Recurring Interval Count */
       recurring_interval_count?: number
+    }
+    /** SubscriptionResume */
+    SubscriptionResume: {
+      /**
+       * Resume
+       * @description Resume a paused subscription immediately, starting a new billing period and charging the customer.
+       * @constant
+       */
+      resume: true
     }
     /** SubscriptionRevoke */
     SubscriptionRevoke: {
@@ -32346,6 +32434,8 @@ export interface components {
       | components['schemas']['SubscriptionUpdateBillingPeriod']
       | components['schemas']['SubscriptionCancel']
       | components['schemas']['SubscriptionRevoke']
+      | components['schemas']['SubscriptionPause']
+      | components['schemas']['SubscriptionResume']
       | components['schemas']['SubscriptionUpdateClear']
     /** SubscriptionUpdateBase */
     SubscriptionUpdateBase: {

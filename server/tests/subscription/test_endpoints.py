@@ -1454,7 +1454,7 @@ class TestSubscriptionUpdatePause:
         data = response.json()
         assert data["status"] == SubscriptionStatus.active
         assert data["pause_at_period_end"] is True
-        assert data["resumes_at"] is not None
+        assert datetime.fromisoformat(data["resumes_at"]) == resumes_at
 
     @pytest.mark.auth
     async def test_cancel_scheduled_pause(
@@ -1526,6 +1526,7 @@ class TestSubscriptionUpdateResume:
             status=SubscriptionStatus.paused,
         )
         subscription.paused_at = utc_now() - timedelta(days=10)
+        subscription.resumes_at = utc_now() + timedelta(days=20)
         await save_fixture(subscription)
 
         response = await client.patch(
@@ -1536,6 +1537,8 @@ class TestSubscriptionUpdateResume:
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == SubscriptionStatus.active
+        assert data["paused_at"] is None
+        assert data["resumes_at"] is None
 
     @pytest.mark.auth
     async def test_not_paused(

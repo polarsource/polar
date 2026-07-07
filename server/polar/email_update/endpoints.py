@@ -23,11 +23,14 @@ async def request_email_update(
     auth_subject: AuthorizeWebUserWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    email_update_record, token = await email_update_service.request_email_update(
+    result = await email_update_service.request_email_update(
         email_update_request.email,
         session,
         auth_subject,
     )
+    if result is None:
+        return
+    email_update_record, token = result
 
     await email_update_service.send_email(
         email_update_record,

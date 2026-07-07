@@ -6,9 +6,14 @@ from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
-from polar.email.schemas import EmailUpdateEmail, EmailUpdateProps
+from polar.email.schemas import (
+    EmailUpdateAlreadyRegisteredEmail,
+    EmailUpdateAlreadyRegisteredProps,
+    EmailUpdateEmail,
+    EmailUpdateProps,
+)
 from polar.email.sender import enqueue_email_template
-from polar.exceptions import PolarError, PolarRequestValidationError
+from polar.exceptions import PolarError
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.extensions.sqlalchemy import sql
 from polar.kit.services import ResourceServiceReader
@@ -31,28 +36,34 @@ class InvalidEmailUpdate(EmailUpdateError):
         )
 
 
+class EmailAlreadyInUse(EmailUpdateError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This email address is already in use by another account.",
+            status_code=409,
+        )
+
+
 class EmailUpdateService(ResourceServiceReader[EmailVerification]):
     async def request_email_update(
         self,
         email: str,
         session: AsyncSession,
         auth_subject: AuthSubject[User],
-    ) -> tuple[EmailVerification, str]:
+    ) -> tuple[EmailVerification, str] | None:
         user = auth_subject.subject
 
         user_repository = UserRepository.from_session(session)
         existing_user = await user_repository.get_by_email(email)
         if existing_user is not None and existing_user.id != user.id:
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "email"),
-                        "msg": "Another user is already using this email.",
-                        "input": email,
-                    }
-                ]
+            enqueue_email_template(
+                EmailUpdateAlreadyRegisteredEmail(
+                    props=EmailUpdateAlreadyRegisteredProps(email=email)
+                ),
+                to_email_addr=email,
+                subject="Someone tried to use your email address on Polar",
             )
+            return None
 
         token, token_hash = generate_token_hash_pair(
             secret=settings.SECRET, prefix=TOKEN_PREFIX
@@ -99,6 +110,11 @@ class EmailUpdateService(ResourceServiceReader[EmailVerification]):
 
         if email_update_record is None or email_update_record.user_id != user.id:
             raise InvalidEmailUpdate()
+
+        user_repository = UserRepository.from_session(session)
+        existing_user = await user_repository.get_by_email(email_update_record.email)
+        if existing_user is not None and existing_user.id != user.id:
+            raise EmailAlreadyInUse()
 
         user = email_update_record.user
         user.email = email_update_record.email

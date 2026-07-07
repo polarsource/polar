@@ -31,6 +31,7 @@ class EmailTemplate(StrEnum):
     customer_email_update_verification = "customer_email_update_verification"
     customer_session_code = "customer_session_code"
     email_update = "email_update"
+    email_update_already_registered = "email_update_already_registered"
     oauth2_leaked_client = "oauth2_leaked_client"
     oauth2_leaked_token = "oauth2_leaked_token"
     order_confirmation = "order_confirmation"
@@ -124,6 +125,16 @@ class EmailUpdateProps(EmailProps):
 class EmailUpdateEmail(BaseModel):
     template: Literal[EmailTemplate.email_update] = EmailTemplate.email_update
     props: EmailUpdateProps
+
+
+class EmailUpdateAlreadyRegisteredProps(EmailProps): ...
+
+
+class EmailUpdateAlreadyRegisteredEmail(BaseModel):
+    template: Literal[EmailTemplate.email_update_already_registered] = (
+        EmailTemplate.email_update_already_registered
+    )
+    props: EmailUpdateAlreadyRegisteredProps
 
 
 class CustomerEmailUpdateVerificationProps(EmailProps):
@@ -523,6 +534,7 @@ Email = Annotated[
     | CustomerEmailUpdateVerificationEmail
     | CustomerSessionCodeEmail
     | EmailUpdateEmail
+    | EmailUpdateAlreadyRegisteredEmail
     | OAuth2LeakedClientEmail
     | OAuth2LeakedTokenEmail
     | OrderConfirmationEmail

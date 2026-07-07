@@ -3,6 +3,7 @@ import { CustomerEmailChangedNotification } from './customer_email_changed_notif
 import { CustomerEmailUpdateVerification } from './customer_email_update_verification'
 import { CustomerSessionCode } from './customer_session_code'
 import { EmailUpdate } from './email_update'
+import { EmailUpdateAlreadyRegistered } from './email_update_already_registered'
 import { LoginCode } from './login_code'
 import { NotificationCreditsGranted } from './notification_credits_granted'
 import { NotificationNewSale } from './notification_new_sale'
@@ -41,6 +42,7 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   customer_email_update_verification: CustomerEmailUpdateVerification,
   customer_session_code: CustomerSessionCode,
   email_update: EmailUpdate,
+  email_update_already_registered: EmailUpdateAlreadyRegistered,
   oauth2_leaked_client: OAuth2LeakedClient,
   oauth2_leaked_token: OAuth2LeakedToken,
   order_confirmation: OrderConfirmation,

@@ -1,0 +1,58 @@
+server/polar/merchant_migration/precheck.py
+  s_7debf674f53741::t_cb78659473877f 1-3,5-6
+  s_7debf674f53741::t_044c6907904618 10,32-40,51-73
+  s_7debf674f53741::t_490267917b52a6 91-92,100,123
+  s_7debf674f53741::t_7b7c69f1c80e75 363-571
+  s_7debf674f53741::t_c95b945ae96549 74
+server/polar/merchant_migration/endpoints.py
+  s_7debf674f53741::t_0e790fc06838fc 19-25
+  s_7debf674f53741::t_9550d75d26eb49 163-200
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/PrecheckSummary.tsx
+  s_7debf674f53741::t_9f091268baa64f 1-117
+server/tests/merchant_migration/test_precheck.py
+  s_7debf674f53741::t_6192f08902b614 315-414
+  s_7debf674f53741::t_8ef51a2a7f48fd 18-28
+server/tests/merchant_migration/test_service.py
+  s_7debf674f53741::t_c09010b826b1ae 302-404
+  s_7debf674f53741::t_227f832eb6864a 10
+  s_7debf674f53741::t_b81540c809d8eb 19-23
+server/tests/merchant_migration/test_endpoints.py
+  s_7debf674f53741::t_bd7adb4ba5fd87 409-488
+  s_7debf674f53741::t_6b625665cd5fdf 12-18
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/reasons.ts
+  s_7debf674f53741::t_ea52297562cd2d 1-6
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/PrecheckPanel.tsx
+  s_7debf674f53741::t_37099251a15639 1-90
+server/polar/merchant_migration/schemas.py
+  s_7debf674f53741::t_55d1083f854bd9 34-54,58-64,66-76
+  s_7debf674f53741::t_9b3e2225cc2c23 65
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/PrecheckRecordsDrawer.tsx
+  s_7debf674f53741::t_7c9f1c625904ac 1-156
+server/polar/merchant_migration/service.py
+  s_7debf674f53741::t_e16503ea997feb 209-243
+  s_7debf674f53741::t_93a2664f82f2fa 26,28-34
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_7debf674f53741::t_93c505b4fb5b83 46-89
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationTimeline.tsx
+  s_7debf674f53741::t_daf839a849f293 5
+  s_7debf674f53741::t_66b1e3476e97ac 88
+  s_7debf674f53741::t_1d7378c3611043 39-40
+clients/packages/client/src/v1.ts
+  s_7debf674f53741::t_8720ddf69ccb78 4967-4986,21790-21795,22388-22419,28238-28262,28278-28282,28289-28293,48413-48479,61802-61804,61808-61810
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "cc58797e13d5182619ffa07c57bf51e56f04a545",
+  "prompts": {},
+  "sessions": {
+    "s_7debf674f53741": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "362e7a6e-f287-4300-b636-9e222c4dbce3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

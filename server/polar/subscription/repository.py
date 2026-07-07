@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 import sqlalchemy as sa
-from sqlalchemy import Select, and_, case, cast, or_, select
+from sqlalchemy import Select, and_, case, cast, func, or_, select
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm.strategy_options import joinedload, selectinload
 
@@ -136,6 +136,47 @@ class SubscriptionRepository(
         )
         result = await self.session.execute(statement)
         return result.scalars().all()
+
+    async def get_churn_breakdown(
+        self,
+        organization_id: UUID,
+        *,
+        since: datetime,
+    ) -> tuple[int, int]:
+        """(voluntary, involuntary) counts of subscriptions ended since the
+        cutoff.
+
+        Voluntary means the customer chose to end it (a cancellation reason or
+        a scheduled cancel); everything else ended by the platform, which in
+        practice is payment failure and dunning exhaustion.
+        """
+        voluntary = case(
+            (
+                or_(
+                    Subscription.customer_cancellation_reason.is_not(None),
+                    Subscription.cancel_at_period_end.is_(True),
+                ),
+                1,
+            ),
+            else_=0,
+        )
+        statement = (
+            select(
+                func.coalesce(func.sum(voluntary), 0),
+                func.count(Subscription.id),
+            )
+            .join(Product, Product.id == Subscription.product_id)
+            .where(
+                Product.organization_id == organization_id,
+                Subscription.ended_at.is_not(None),
+                Subscription.ended_at >= since,
+                Subscription.is_deleted.is_(False),
+            )
+        )
+        result = await self.session.execute(statement)
+        row = result.one()
+        voluntary_count, total = int(row[0]), int(row[1])
+        return voluntary_count, total - voluntary_count
 
     async def get_active_customer_ids_by_product(
         self, product_id: UUID, *, limit: int | None = None

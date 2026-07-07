@@ -99,6 +99,36 @@ class OrderRepository(
             (row[0], row[1], row[2], int(row[3]), int(row[4])) for row in result.all()
         ]
 
+    async def get_paid_revenue_by_country(
+        self,
+        organization_id: UUID,
+        *,
+        since: datetime,
+        limit: int = 30,
+    ) -> Sequence[tuple[str, int, int]]:
+        """(country, order count, kept net revenue in cents) for paid orders
+        since the cutoff, largest revenue first. Orders without a billing
+        country are excluded."""
+        country = Order.billing_address["country"].astext
+        net_revenue = func.coalesce(
+            func.sum(Order.net_amount - Order.refunded_amount), 0
+        )
+        statement = (
+            select(country, func.count(Order.id), net_revenue)
+            .where(
+                Order.organization_id == organization_id,
+                Order.status.in_(OrderStatus.paid_statuses()),
+                Order.is_deleted.is_(False),
+                Order.created_at >= since,
+                country.is_not(None),
+            )
+            .group_by(country)
+            .order_by(net_revenue.desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(statement)
+        return [(row[0], int(row[1]), int(row[2])) for row in result.all()]
+
     async def get_top_product_ids_by_revenue(
         self,
         organization_id: UUID,

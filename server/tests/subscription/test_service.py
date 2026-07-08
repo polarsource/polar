@@ -5284,8 +5284,6 @@ class TestMarkPastDue:
 
 @pytest.mark.asyncio
 class TestMarkActive:
-    """Test subscription service dunning recovery functionality"""
-
     async def test_recovery_re_grants_benefits(
         self,
         session: AsyncSession,

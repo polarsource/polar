@@ -137,7 +137,7 @@ jobs:
         uses: astral-sh/setup-uv@v8.2.0
 
       - name: 🐦 Install Tinybird CLI
-        run: uv tool install "tinybird==4.6.7" && echo "$HOME/.local/bin" >> $GITHUB_PATH
+        run: uv tool install "tinybird==4.6.7" --python 3.11 && echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: 🐦 Validate Tinybird schema
         working-directory: ./server/tinybird
@@ -352,7 +352,7 @@ jobs:
           uv run task generate_dev_jwks
 
       - name: 🐦 Install Tinybird CLI
-        run: uv tool install "tinybird==4.6.7" && echo "$HOME/.local/bin" >> $GITHUB_PATH
+        run: uv tool install "tinybird==4.6.7" --python 3.11 && echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: ⚗️ alembic migrate
         working-directory: ./server

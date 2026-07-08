@@ -28,6 +28,12 @@ parser_generate.add_argument(
     help="Language to emit the SDK in (default: python).",
 )
 parser_generate.add_argument(
+    "--version",
+    type=str,
+    default="0.0.0",
+    help="Version of the SDK to emit (default: 0.0.0).",
+)
+parser_generate.add_argument(
     "--clear",
     action="store_true",
     help="Clear the output directory before emitting the SDK (default: false).",
@@ -80,11 +86,11 @@ if args.command == "generate":
     language = args.language
     match language:
         case "python":
-            emitter = PythonEmitter(ir)
+            emitter = PythonEmitter(ir, args.version)
         case "typescript":
             from typescript.emitter import TypeScriptEmitter
 
-            emitter = TypeScriptEmitter(ir)
+            emitter = TypeScriptEmitter(ir, args.version)
         case _:
             print(f"Error: Unsupported language {language}.", file=sys.stderr)
             sys.exit(1)

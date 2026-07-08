@@ -22,8 +22,8 @@ EMITTER_DIRECTORY = pathlib.Path(__file__).parent
 
 
 class TypeScriptEmitter(EmitterBase):
-    def __init__(self, ir: APIIR) -> None:
-        super().__init__(ir, EMITTER_DIRECTORY / "template")
+    def __init__(self, ir: APIIR, version: str) -> None:
+        super().__init__(ir, version, EMITTER_DIRECTORY / "template")
 
     def emit(self, root_directory: pathlib.Path | str) -> None:
         """Emit the TypeScript SDK files to the specified root directory."""

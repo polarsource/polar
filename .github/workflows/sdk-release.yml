@@ -1,4 +1,5 @@
 name: SDK Release
+concurrency: sdk-release
 
 on:
   push:

@@ -29,33 +29,7 @@ def regenerate_openapi() -> None:
     (GENERATOR_DIR / "openapi.json").write_text(result.stdout)
 
 
-def update_version_single_language(language: str, version: str) -> None:
-    print(f"Updating {language} template version...")
-    subprocess.run(
-        [sys.executable, "-m", f"{language}.version", version],
-        cwd=GENERATOR_DIR,
-        check=True,
-    )
-
-
-def update_language_versions(version: str) -> None:
-    with concurrent.futures.ThreadPoolExecutor() as executor:
-        futures = {
-            executor.submit(update_version_single_language, language, version): language
-            for language in LANGUAGES
-        }
-        for future in concurrent.futures.as_completed(futures):
-            language = futures[future]
-            try:
-                future.result()
-            except Exception as e:
-                print(
-                    f"Error updating {language} template version: {e}", file=sys.stderr
-                )
-                raise
-
-
-def generate_sdk(language: str) -> None:
+def generate_sdk(language: str, version: str) -> None:
     cmd = [
         sys.executable,
         "-m",
@@ -65,15 +39,18 @@ def generate_sdk(language: str) -> None:
         str(GENERATOR_DIR.parent / language),
         "--language",
         language,
+        "--version",
+        version,
         "--clear",
     ]
     subprocess.run(cmd, cwd=GENERATOR_DIR, check=True)
 
 
-def generate_all_sdks() -> None:
+def generate_all_sdks(version: str) -> None:
     with concurrent.futures.ThreadPoolExecutor() as executor:
         futures = {
-            executor.submit(generate_sdk, language): language for language in LANGUAGES
+            executor.submit(generate_sdk, language, version): language
+            for language in LANGUAGES
         }
         for future in concurrent.futures.as_completed(futures):
             language = futures[future]
@@ -112,8 +89,6 @@ def release_sdk(
         print("[DRY RUN] Would perform:")
         if not skip_openapi:
             print("  - Regenerate OpenAPI spec")
-        print("  - Update Python template version")
-        print("  - Update TypeScript template version")
         print("  - Regenerate Python SDK")
         print("  - Regenerate TypeScript SDK")
         if not skip_commit:
@@ -125,8 +100,7 @@ def release_sdk(
             print("Regenerating OpenAPI spec...")
             regenerate_openapi()
 
-        update_language_versions(version)
-        generate_all_sdks()
+        generate_all_sdks(version)
 
         if not skip_commit:
             print("Creating git commit...")

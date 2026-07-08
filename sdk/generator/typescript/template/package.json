@@ -1,6 +1,6 @@
 {
   "name": "@polar/sdk",
-  "version": "0.0.0",
+  "version": "{{ version }}",
   "description": "Polar TypeScript SDK - Auto-generated from OpenAPI specification",
   "type": "module",
   "sideEffects": false,

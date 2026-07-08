@@ -20,4 +20,10 @@ openapi:
   uv run -m --directory ../../server scripts.generate_openapi | jq -r > openapi.json
 
 generate language:
-  uv run -m cli --language {{language}} --clear openapi.json ../{{language}}
+  uv run -m cli generate openapi.json ../{{language}} --language {{language}} --clear
+
+release version:
+  uv run -m cli release {{version}}
+
+release-dry version:
+  uv run -m cli release --dry-run {{version}}

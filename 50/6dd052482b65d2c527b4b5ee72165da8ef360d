@@ -1,0 +1,19 @@
+server/tests/merchant_migration/test_endpoints.py
+  s_99ecc0a8ca0004::t_47ff3fa12d8809 478
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "506dd052482b65d2c527b4b5ee72165da8ef360d",
+  "prompts": {},
+  "sessions": {
+    "s_99ecc0a8ca0004": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "89dd1fec-b689-4953-b1e1-328d7c5b0281",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

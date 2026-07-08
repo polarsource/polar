@@ -237,8 +237,6 @@ class PolarSelfService:
     ) -> None:
         if not self.is_configured:
             return
-        if external_customer_id == settings.POLAR_ORGANIZATION_ID:
-            return
         if cost_usd is None:
             return
         cost_decimal = Decimal(str(cost_usd))

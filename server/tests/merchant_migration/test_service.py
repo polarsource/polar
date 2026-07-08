@@ -15,7 +15,10 @@ from polar.merchant_migration.canonical import (
     CanonicalProduct,
     CanonicalRecord,
 )
-from polar.merchant_migration.repository import MerchantMigrationRepository
+from polar.merchant_migration.repository import (
+    MerchantMigrationRecordRepository,
+    MerchantMigrationRepository,
+)
 from polar.merchant_migration.schemas import (
     MerchantMigrationCreate,
     PrecheckEntity,
@@ -262,6 +265,16 @@ class TestRunPrecheck:
         # the rotated refresh token is re-persisted as fresh ciphertext
         assert updated.source_credentials["refresh_token_encrypted"] != old_ciphertext
 
+        # the extracted canonical records are staged in the ledger
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        records = await record_repository.get_all(
+            record_repository.get_base_statement()
+        )
+        assert len(records) == 1
+        assert records[0].source_id == "prod_1:month:1"
+        assert records[0].merchant_migration_id == migration.id
+        assert records[0].canonical["name"] == "Pro"
+
     @pytest.mark.auth
     async def test_source_not_connected(
         self,
@@ -358,6 +371,7 @@ class TestListRecords:
             return_value=_FakeAdapter(_catalog()),
         )
 
+        await service.run_precheck(session, auth_subject, migration.id)
         items, count = await service.list_records(
             session,
             auth_subject,
@@ -390,6 +404,7 @@ class TestListRecords:
             return_value=_FakeAdapter(_catalog()),
         )
 
+        await service.run_precheck(session, auth_subject, migration.id)
         items, count = await service.list_records(
             session,
             auth_subject,

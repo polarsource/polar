@@ -475,6 +475,11 @@ class TestRecords:
             params={"state": state, "code": "ac_test"},
         )
 
+        precheck = await client.post(
+            f"/v1/merchant-migrations/{migration.id}/precheck"
+        )
+        assert precheck.status_code == 200
+
         response = await client.get(
             f"/v1/merchant-migrations/{migration.id}/records",
             params={"entity": "products"},

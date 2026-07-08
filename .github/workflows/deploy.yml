@@ -132,11 +132,11 @@ jobs:
           echo "test_enabled=${enabled:-false}"
 
       # Four paths-filter invocations: one per component per env. We can't
-      # combine them because dorny/paths-filter@v4 uses a single base for
+      # combine them because dorny/paths-filter@v4.0.1 uses a single base for
       # all filters in one invocation, but our design requires the frontend
       # filter to diff against the frontend tag, not the backend tag.
       - name: Detect backend changes since last sandbox backend deploy
-        uses: dorny/paths-filter@v4
+        uses: dorny/paths-filter@v4.0.1
         id: filter-backend-sandbox
         with:
           base: ${{ steps.bases.outputs.backend-sandbox }}
@@ -150,7 +150,7 @@ jobs:
               - 'server/migrations/**'
 
       - name: Detect frontend changes since last sandbox frontend deploy
-        uses: dorny/paths-filter@v4
+        uses: dorny/paths-filter@v4.0.1
         id: filter-frontend-sandbox
         with:
           base: ${{ steps.bases.outputs.frontend-sandbox }}
@@ -161,7 +161,7 @@ jobs:
               - '.github/workflows/deploy-environment.yml'
 
       - name: Detect backend changes since last production backend deploy
-        uses: dorny/paths-filter@v4
+        uses: dorny/paths-filter@v4.0.1
         id: filter-backend-production
         with:
           base: ${{ steps.bases.outputs.backend-production }}
@@ -175,7 +175,7 @@ jobs:
               - 'server/migrations/**'
 
       - name: Detect frontend changes since last production frontend deploy
-        uses: dorny/paths-filter@v4
+        uses: dorny/paths-filter@v4.0.1
         id: filter-frontend-production
         with:
           base: ${{ steps.bases.outputs.frontend-production }}
@@ -213,7 +213,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v6
+        uses: docker/metadata-action@v6.1.0
         with:
           images: |
             ghcr.io/polarsource/polar
@@ -263,7 +263,7 @@ jobs:
         run: cp "clients/apps/web/src/app/(main)/(website)/(landing)/(mdx)/legal/acceptable-use-policy/page.mdx" "server/polar/organization_review/acceptable-use-policy.mdx"
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6.2.0
+        uses: aws-actions/configure-aws-credentials@v6.2.1
         with:
           role-to-assume: ${{ secrets.SANDBOX_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -301,7 +301,7 @@ jobs:
       id-token: write
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6.2.0
+        uses: aws-actions/configure-aws-credentials@v6.2.1
         with:
           role-to-assume: ${{ secrets.SANDBOX_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -325,7 +325,7 @@ jobs:
   #     id-token: write
   #   steps:
   #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@v6.2.0
+  #       uses: aws-actions/configure-aws-credentials@v6.2.1
   #       with:
   #         role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
   #         aws-region: us-east-2

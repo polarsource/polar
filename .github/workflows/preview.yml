@@ -71,7 +71,7 @@ jobs:
         run: curl https://tinybird.co | sh
 
       - name: Connect to Tailscale
-        uses: tailscale/github-action@v4.1.2
+        uses: tailscale/github-action@v4.1.3
         with:
           oauth-client-id: ${{ secrets.POLAR_TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.POLAR_TAILSCALE_OAUTH_SECRET }}

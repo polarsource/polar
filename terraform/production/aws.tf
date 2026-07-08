@@ -10,3 +10,135 @@ module "secrets_kms" {
   render_environment_id    = render_project.polar.environments["Production"].id
   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 }
+
+module "lambda_worker_ecr" {
+  source = "../modules/ecr_repository"
+
+  name = "polar-production-lambda-worker"
+}
+
+module "redis" {
+  source = "../modules/aws_redis"
+
+  name       = "polar-production-worker"
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnet_ids
+}
+
+resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
+  security_group_id            = module.redis.security_group_id
+  referenced_security_group_id = aws_security_group.lambda.id
+  from_port                    = module.redis.port
+  to_port                      = module.redis.port
+  ip_protocol                  = "tcp"
+}
+
+locals {
+  lambda_worker_environment = {
+    POLAR_ENV                     = "production"
+    POLAR_BASE_URL                = "https://api.polar.sh"
+    POLAR_FRONTEND_BASE_URL       = "https://polar.sh"
+    POLAR_CHECKOUT_BASE_URL       = "https://buy.polar.sh/{client_secret}"
+    POLAR_JWKS                    = "/tmp/jwks.json"
+    POLAR_LOG_LEVEL               = "INFO"
+    POLAR_TESTING                 = "0"
+    POLAR_POSTGRES_DATABASE       = "polar_cpit_p9lf"
+    POLAR_POSTGRES_HOST           = local.db_external_host
+    POLAR_POSTGRES_PORT           = local.db_port
+    POLAR_POSTGRES_USER           = local.db_user
+    POLAR_POSTGRES_SSL            = "true"
+    POLAR_REDIS_HOST              = module.redis.host
+    POLAR_REDIS_PORT              = tostring(module.redis.port)
+    POLAR_REDIS_DB                = "1"
+    POLAR_AWS_REGION              = "us-east-2"
+    POLAR_EMAIL_SENDER            = "resend"
+    POLAR_EMAIL_FROM_NAME         = "Polar"
+    POLAR_EMAIL_FROM_DOMAIN       = "notifications.polar.sh"
+    POLAR_WORKER_SQS_ENABLED      = "true"
+    POLAR_WORKER_SQS_QUEUE_PREFIX = "polar-production-tasks"
+  }
+
+  lambda_worker_secrets = {
+    POLAR_CURRENT_JWK_KID = var.backend_current_jwk_kid_production
+    POLAR_JWKS_CONTENT    = var.backend_jwks_production
+    POLAR_LOGFIRE_TOKEN   = var.logfire_token
+    POLAR_POSTGRES_PWD    = local.db_password
+    POLAR_RESEND_API_KEY  = var.backend_resend_api_key_production
+    POLAR_SECRET          = var.backend_secret_production
+    POLAR_SENTRY_DSN      = var.backend_sentry_dsn_production
+    TAILSCALE_AUTHKEY     = var.lambda_worker_tailscale_token
+  }
+
+  lambda_worker_name                 = "default"
+  lambda_worker_reserved_concurrency = null
+}
+
+module "lambda_worker" {
+  source = "../modules/aws_task_worker"
+
+  environment              = "production"
+  name                     = local.lambda_worker_name
+  queue_name               = "polar-production-tasks-${local.lambda_worker_name}"
+  image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
+  enabled                  = true
+  reserved_concurrency     = local.lambda_worker_reserved_concurrency
+  subnet_ids               = local.lambda_subnet_ids
+  security_group_ids       = local.lambda_security_group_ids
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+
+  environment_variables        = local.lambda_worker_environment
+  secret_environment_variables = local.lambda_worker_secrets
+}
+
+# =============================================================================
+# GitHub Actions OIDC role (builds the task-worker image and deploys it)
+# =============================================================================
+
+data "aws_caller_identity" "current" {}
+
+data "aws_iam_policy_document" "lambda_worker_deploy" {
+  statement {
+    sid       = "EcrAuthorization"
+    actions   = ["ecr:GetAuthorizationToken"]
+    resources = ["*"]
+  }
+
+  statement {
+    sid = "EcrPush"
+    actions = [
+      "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
+      "ecr:CompleteLayerUpload",
+      "ecr:GetDownloadUrlForLayer",
+      "ecr:InitiateLayerUpload",
+      "ecr:PutImage",
+      "ecr:UploadLayerPart",
+    ]
+    resources = [module.lambda_worker_ecr.repository_arn]
+  }
+
+  statement {
+    sid       = "UpdateFunctionCode"
+    actions   = ["lambda:UpdateFunctionCode"]
+    resources = ["arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:${module.lambda_worker.function_name}"]
+  }
+}
+
+resource "aws_iam_policy" "lambda_worker_deploy" {
+  name   = "github-actions-lambda-worker-deploy-production"
+  policy = data.aws_iam_policy_document.lambda_worker_deploy.json
+}
+
+module "github_oidc_lambda_worker" {
+  source = "../modules/github_oidc"
+
+  role_name       = "github-actions-lambda-worker-production"
+  github_org      = "polarsource"
+  github_repo     = "polar"
+  github_subjects = ["ref:refs/heads/main"]
+  policy_arns = {
+    deploy = aws_iam_policy.lambda_worker_deploy.arn
+  }
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+}
+

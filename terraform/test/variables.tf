@@ -100,11 +100,11 @@ variable "backend_jwks" {
   sensitive   = true
 }
 
-# variable "lambda_worker_tailscale_token" {
-#   description = "Tailscale auth token for test Lambda workers"
-#   type        = string
-#   sensitive   = true
-# }
+variable "lambda_worker_tailscale_token" {
+  description = "Tailscale auth token for test Lambda workers"
+  type        = string
+  sensitive   = true
+}
 
 # AWS S3
 variable "aws_access_key_id" {

@@ -6746,6 +6746,30 @@ export interface components {
        */
       billing_notes?: string | null
     }
+    /**
+     * AddCurrencyAction
+     * @description A nudge to offer prices in an additional presentment currency.
+     *
+     *     The client routes to the products list, where per-product pricing can be
+     *     extended. Nothing is ever applied automatically.
+     */
+    AddCurrencyAction: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'add_currency'
+      /**
+       * Label
+       * @description Button label.
+       */
+      label: string
+      /**
+       * Currency
+       * @description Lowercase ISO code of the suggested currency, e.g. `eur`.
+       */
+      currency: string
+    }
     /** Address */
     Address: {
       /** Line1 */
@@ -21213,8 +21237,14 @@ export interface components {
         | (
             | components['schemas']['ViewMetricAction']
             | components['schemas']['AdjustPriceAction']
+            | components['schemas']['AddCurrencyAction']
           )
         | null
+      /**
+       * Suggested Prompt
+       * @description A natural follow-up question this finding invites, offered to the merchant as a one-tap prompt for the assistant. None when the finding has no obvious next question.
+       */
+      suggested_prompt: string | null
       /**
        * Drivers
        * @description Top contributors to the headline change.
@@ -60582,6 +60612,9 @@ export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: Readonly
   'WET',
   'Zulu',
 ]
+export const addCurrencyActionTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['AddCurrencyAction']['type']
+> = ['add_currency']
 export const addressCountryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Address']['country']
 > = [

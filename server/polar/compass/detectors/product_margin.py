@@ -145,4 +145,5 @@ class ProductMarginDetector(Detector):
                 suggested_price_amount=suggested,
                 currency=worst.currency,
             ),
+            suggested_prompt=f"How should I price {worst.name} to fix its margin?",
         )

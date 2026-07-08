@@ -1,5 +1,5 @@
 import uuid
-from datetime import timedelta
+from datetime import datetime, timedelta
 
 import pytest
 from pytest_mock import MockerFixture
@@ -9,11 +9,11 @@ from polar.models import Customer, Organization, Product, Subscription
 from polar.models.organization import OrganizationStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
+from polar.subscription.scheduler import SubscriptionResumeJobStore
 from polar.subscription.service import SubscriptionService
 from polar.subscription.tasks import (  # type: ignore[attr-defined]
     SubscriptionDoesNotExist,
     SubscriptionTierDoesNotExist,
-    scan_paused_resumptions,
     subscription_cancel_for_organization,
     subscription_enqueue_benefits_grants,
     subscription_resume,
@@ -153,16 +153,25 @@ class TestSubscriptionEnqueueBenefitsGrants:
 
 
 @pytest.mark.asyncio
-class TestScanPausedResumptions:
-    async def test_enqueues_only_due_subscriptions(
+class TestSubscriptionResumeJobStore:
+    async def _due_ids(self, session: AsyncSession, now: datetime) -> set[uuid.UUID]:
+        statement = (
+            SubscriptionResumeJobStore.scheduling_statement()
+            .where(Subscription.resumes_at <= now)
+            .with_only_columns(Subscription.id)
+        )
+        result = await session.execute(statement)
+        return set(result.scalars().all())
+
+    async def test_selects_only_due_paused_subscriptions(
         self,
-        mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product: Product,
         customer: Customer,
     ) -> None:
         now = utc_now()
+
         due = await create_subscription(
             save_fixture,
             product=product,
@@ -189,12 +198,39 @@ class TestScanPausedResumptions:
             status=SubscriptionStatus.paused,
         )
 
-        enqueue_job_mock = mocker.patch("polar.subscription.tasks.enqueue_job")
-        session.expunge_all()
+        # Active — not a resume candidate.
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
 
-        await scan_paused_resumptions()
+        assert await self._due_ids(session, now) == {due.id}
 
-        enqueue_job_mock.assert_called_once_with("subscription.resume", due.id)
+    async def test_excludes_renewals_disabled_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.capabilities = {
+            **organization.capabilities,
+            "subscription_renewals": False,
+        }
+        await save_fixture(organization)
+
+        now = utc_now()
+        due = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        due.resumes_at = now - timedelta(hours=1)
+        await save_fixture(due)
+
+        # Renewals disabled → the org's paused sub is never auto-resumed.
+        assert await self._due_ids(session, now) == set()
 
 
 @pytest.mark.asyncio
@@ -205,7 +241,7 @@ class TestSubscriptionResume:
         with pytest.raises(SubscriptionDoesNotExist):
             await subscription_resume(uuid.uuid4())
 
-    async def test_paused_subscription_is_resumed(
+    async def test_due_paused_subscription_is_resumed(
         self,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
@@ -219,6 +255,8 @@ class TestSubscriptionResume:
             customer=customer,
             status=SubscriptionStatus.paused,
         )
+        subscription.resumes_at = utc_now() - timedelta(hours=1)
+        await save_fixture(subscription)
         resume_mock = mocker.patch.object(
             subscription_service, "resume", spec=SubscriptionService.resume
         )
@@ -239,6 +277,55 @@ class TestSubscriptionResume:
         subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer
         )
+        resume_mock = mocker.patch.object(
+            subscription_service, "resume", spec=SubscriptionService.resume
+        )
+        session.expunge_all()
+
+        await subscription_resume(subscription.id)
+
+        resume_mock.assert_not_called()
+
+    async def test_indefinite_pause_is_skipped(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        resume_mock = mocker.patch.object(
+            subscription_service, "resume", spec=SubscriptionService.resume
+        )
+        session.expunge_all()
+
+        await subscription_resume(subscription.id)
+
+        resume_mock.assert_not_called()
+
+    async def test_postponed_resume_is_skipped(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription.resumes_at = utc_now() + timedelta(days=1)
+        await save_fixture(subscription)
         resume_mock = mocker.patch.object(
             subscription_service, "resume", spec=SubscriptionService.resume
         )

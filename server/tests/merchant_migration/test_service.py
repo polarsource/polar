@@ -5,6 +5,7 @@ import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
+from polar.config import settings
 from polar.kit.pagination import PaginationParams
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
@@ -25,6 +26,7 @@ from polar.merchant_migration.schemas import (
 from polar.merchant_migration.service import (
     InvalidSourceCredentials,
     MissingStripeScopes,
+    SourceKeyModeMismatch,
     SourceNotConnected,
     SourceVerificationUnavailable,
     UnsupportedMigrationSource,
@@ -204,6 +206,62 @@ class TestCreate:
             )
         )
         assert len(migrations) == 0
+
+    @pytest.mark.auth
+    async def test_sandbox_rejects_a_live_key(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # The test environment is not production, so a live-mode key is rejected
+        # before Stripe is ever contacted.
+        await _enable_feature(save_fixture, organization)
+        with pytest.raises(SourceKeyModeMismatch):
+            await service.create(
+                session,
+                auth_subject,
+                MerchantMigrationCreate(
+                    organization_id=organization.id,
+                    source_platform=MerchantMigrationSourcePlatform.stripe,
+                    api_key="rk_live_123",
+                ),
+            )
+
+    @pytest.mark.auth
+    async def test_production_requires_a_live_key(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        mocker.patch.object(settings, "is_production", return_value=True)
+
+        # A test-mode key is rejected in production...
+        with pytest.raises(SourceKeyModeMismatch):
+            await service.create(session, auth_subject, _create_schema(organization))
+
+        # ...and a live key is accepted, stored as livemode.
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(),
+        )
+        migration = await service.create(
+            session,
+            auth_subject,
+            MerchantMigrationCreate(
+                organization_id=organization.id,
+                source_platform=MerchantMigrationSourcePlatform.stripe,
+                api_key="rk_live_123",
+            ),
+        )
+        assert migration.source_credentials["livemode"] is True
 
 
 @pytest.mark.asyncio

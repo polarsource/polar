@@ -25,6 +25,7 @@ from .service import (
     InvalidSourceCredentials,
     MerchantMigrationNotFound,
     MissingStripeScopes,
+    SourceKeyModeMismatch,
     SourceNotConnected,
     SourceVerificationUnavailable,
     UnsupportedMigrationSource,
@@ -68,9 +69,11 @@ async def list(
     summary="Create Merchant Migration",
     responses={
         400: {
-            "description": "The Stripe API key is invalid or missing permissions.",
+            "description": "The Stripe API key is invalid, wrong mode, or missing "
+            "permissions.",
             "model": InvalidSourceCredentials.schema()
             | MissingStripeScopes.schema()
+            | SourceKeyModeMismatch.schema()
             | UnsupportedMigrationSource.schema(),
         },
         403: {

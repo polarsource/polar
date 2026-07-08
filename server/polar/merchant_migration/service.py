@@ -7,6 +7,7 @@ import stripe as stripe_lib
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
+from polar.config import settings
 from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
@@ -105,6 +106,21 @@ class SourceVerificationUnavailable(MerchantMigrationError):
         )
 
 
+class SourceKeyModeMismatch(MerchantMigrationError):
+    def __init__(self, *, expect_live: bool) -> None:
+        mode = "live" if expect_live else "test"
+        super().__init__(
+            f"This Polar environment needs a {mode}-mode Stripe key "
+            f"(e.g. `rk_{mode}_…`), so the migration runs against {mode} data.",
+            400,
+        )
+
+
+def _is_live_key(api_key: str) -> bool:
+    # `*_live_` keys operate on live Stripe data; everything else is test mode.
+    return api_key.startswith(("rk_live_", "sk_live_"))
+
+
 class MerchantMigrationService:
     async def get(
         self,
@@ -154,6 +170,12 @@ class MerchantMigrationService:
         await self._assert_feature_enabled(session, create_schema.organization_id)
         if create_schema.source_platform != MerchantMigrationSourcePlatform.stripe:
             raise UnsupportedMigrationSource(create_schema.source_platform)
+
+        # The key's mode must match the Polar environment, so a live cutover never
+        # runs against Stripe test data (and a sandbox run never touches live data).
+        expect_live = settings.is_production()
+        if _is_live_key(create_schema.api_key) != expect_live:
+            raise SourceKeyModeMismatch(expect_live=expect_live)
 
         adapter = StripeAdapter(create_schema.api_key)
         try:
@@ -302,8 +324,7 @@ class MerchantMigrationService:
         return StripeSourceCredentials(
             api_key_encrypted=encrypted.encrypted_value,
             stripe_user_id=await adapter.get_account_id(),
-            # `*_live_` keys operate on live data; everything else is test mode.
-            livemode=api_key.startswith(("rk_live_", "sk_live_")),
+            livemode=_is_live_key(api_key),
         )
 
     async def _assert_feature_enabled(

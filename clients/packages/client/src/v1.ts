@@ -31033,6 +31033,17 @@ export interface components {
        */
       users: components['schemas']['SlackWorkspaceUser'][]
     }
+    /** SourceKeyModeMismatch */
+    SourceKeyModeMismatch: {
+      /**
+       * Error
+       * @example SourceKeyModeMismatch
+       * @constant
+       */
+      error: 'SourceKeyModeMismatch'
+      /** Detail */
+      detail: string
+    }
     /** SourceNotConnected */
     SourceNotConnected: {
       /**
@@ -49724,7 +49735,7 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigration']
         }
       }
-      /** @description The Stripe API key is invalid or missing permissions. */
+      /** @description The Stripe API key is invalid, wrong mode, or missing permissions. */
       400: {
         headers: {
           [name: string]: unknown
@@ -49733,6 +49744,7 @@ export interface operations {
           'application/json':
             | components['schemas']['InvalidSourceCredentials']
             | components['schemas']['MissingStripeScopes']
+            | components['schemas']['SourceKeyModeMismatch']
             | components['schemas']['UnsupportedMigrationSource']
         }
       }

@@ -20,8 +20,8 @@ export function ConnectGuide() {
       <Box flexDirection="column" rowGap="m">
         <Text variant="label">1. Create a restricted key in Stripe</Text>
         <Text variant="caption" color="muted">
-          Name it e.g. &ldquo;Polar migration&rdquo;. Test mode for a trial run,
-          live for the real thing.
+          Name it e.g. &ldquo;Polar migration&rdquo;. Its mode must match this
+          environment &mdash; a live key in production, a test key in sandbox.
         </Text>
         <Button variant="secondary" fullWidth asChild>
           <a

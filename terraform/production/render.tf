@@ -23,6 +23,8 @@ locals {
   db_user     = render_postgres.db.database_user
   db_password = render_postgres.db.connection_info.password
 
+  db_external_host = nonsensitive(regex("@([^/:]+)", render_postgres.db.connection_info.external_connection_string)[0])
+
   # Read replica connection info
   read_replica = [for r in render_postgres.db.read_replicas : r if r.name == "polar-read"][0]
 

@@ -122,9 +122,10 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
         hide={hideEnforceModal}
         onConfirm={() => applyEnforced(true)}
         title="Enforce SSO"
-        description="Members will have to sign in through SSO to access this organization. Third-party apps they authorized for this organization will be disconnected and must be re-authorized through SSO."
+        description="All members and authorized third-party apps will be disconnected and must be re-authorized through SSO."
         destructive
         destructiveText="Enforce"
+        confirmPrompt={org.slug}
       />
       <InlineModal
         isShown={isShown}

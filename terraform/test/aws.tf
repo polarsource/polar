@@ -175,3 +175,18 @@ module "github_oidc_lambda_worker" {
   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 }
 
+# =============================================================================
+# GuardDuty malware scan results → tasks queue
+# =============================================================================
+
+module "guardduty_scan_events" {
+  source = "../modules/guardduty_scan_events"
+  count  = local.test_enabled ? 1 : 0
+
+  environment  = "test"
+  bucket_names = ["polar-test-files", "polar-test-public-files"]
+  queue_arn    = module.lambda_worker[0].queue_arn
+  queue_url    = module.lambda_worker[0].queue_url
+  dlq_arn      = module.lambda_worker[0].dlq_arn
+  dlq_url      = module.lambda_worker[0].dlq_url
+}

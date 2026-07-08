@@ -22711,6 +22711,17 @@ export interface components {
        */
       api_key: string
     }
+    /** MerchantMigrationNotEnabled */
+    MerchantMigrationNotEnabled: {
+      /**
+       * Error
+       * @example MerchantMigrationNotEnabled
+       * @constant
+       */
+      error: 'MerchantMigrationNotEnabled'
+      /** Detail */
+      detail: string
+    }
     /** MerchantMigrationNotFound */
     MerchantMigrationNotFound: {
       /**
@@ -49748,13 +49759,15 @@ export interface operations {
             | components['schemas']['UnsupportedMigrationSource']
         }
       }
-      /** @description Not allowed to manage this organization. */
+      /** @description Not allowed to manage this organization, or migrations aren't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['MerchantMigrationNotEnabled']
         }
       }
       /** @description Validation Error */

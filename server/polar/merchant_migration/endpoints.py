@@ -23,6 +23,7 @@ from .schemas import (
 )
 from .service import (
     InvalidSourceCredentials,
+    MerchantMigrationNotEnabled,
     MerchantMigrationNotFound,
     MissingStripeScopes,
     SourceKeyModeMismatch,
@@ -77,8 +78,9 @@ async def list(
             | UnsupportedMigrationSource.schema(),
         },
         403: {
-            "description": "Not allowed to manage this organization.",
-            "model": NotPermitted.schema(),
+            "description": "Not allowed to manage this organization, or "
+            "migrations aren't enabled for it.",
+            "model": NotPermitted.schema() | MerchantMigrationNotEnabled.schema(),
         },
         502: {
             "description": "Couldn't reach Stripe to validate the key.",

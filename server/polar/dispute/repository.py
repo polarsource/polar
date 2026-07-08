@@ -66,6 +66,12 @@ class DisputeRepository(
         assert dispute is not None
         return dispute, inserted_id is not None
 
+    async def lock_and_refresh_status(self, dispute: Dispute) -> None:
+        """Lock the row and re-read status so concurrent dispute events serialize."""
+        await self.session.refresh(
+            dispute, attribute_names=["status"], with_for_update=True
+        )
+
     async def get_by_payment_processor_dispute_id(
         self, processor: PaymentProcessor, processor_id: str, *, options: Options = ()
     ) -> Dispute | None:

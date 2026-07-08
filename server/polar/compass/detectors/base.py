@@ -18,6 +18,7 @@ from ..schemas import (
 )
 from ..signals import (
     ChurnBreakdown,
+    CostAnomalySignal,
     CurrencyOpportunitySignal,
     CustomerCostSignal,
     ProductPricing,
@@ -65,6 +66,9 @@ class DetectorContext:
     currency_signals: Sequence[CurrencyOpportunitySignal] = ()
     """Revenue attributable to unconfigured presentment currencies. Prefetched
     only when a selected detector declares `needs_currency_signals`."""
+    cost_anomalies: Sequence[CostAnomalySignal] = ()
+    """Outlier cost traces grouped by event name, largest total first.
+    Prefetched only when a selected detector declares `needs_cost_anomalies`."""
 
 
 class Detector(abc.ABC):
@@ -95,6 +99,8 @@ class Detector(abc.ABC):
     """When true, the service prefetches `ctx.churn_breakdown`."""
     needs_currency_signals: bool = False
     """When true, the service prefetches `ctx.currency_signals`."""
+    needs_cost_anomalies: bool = False
+    """When true, the service prefetches `ctx.cost_anomalies`."""
     lookback_days: int = 30
     """History `evaluate` needs. The service fetches the longest lookback."""
 

@@ -25,6 +25,13 @@ export const resolveInsightActionHref = (
         ? `${dashboard}/analytics/metrics/${group}`
         : `${dashboard}/analytics/metrics`
     }
+    case 'view_costs':
+      // Costs have their own analytics with the p99 anomaly breakdown, not a
+      // metrics-dashboard slug. Deep-link to the specific outlier event's span
+      // when named, else land on the costs overview.
+      return action.event_id
+        ? `${dashboard}/analytics/events/${action.event_id}`
+        : `${dashboard}/analytics/costs`
     case 'adjust_price':
       return `${dashboard}/products/${action.product_id}`
     case 'add_currency':

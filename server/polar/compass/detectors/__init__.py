@@ -6,6 +6,7 @@ Adding an insight is adding one entry here (and its detector module) — mirrori
 each organization and collects whatever fires.
 """
 
+from .anomaly import CostAnomalyDetector
 from .arpu import ARPUMovementDetector
 from .base import Detector, DetectorContext
 from .churn import ChurnSpikeDetector
@@ -35,6 +36,7 @@ DETECTORS: list[Detector] = [
     MarginRunwayDetector(),
     InvoluntaryChurnDetector(),
     CurrencyOpportunityDetector(),
+    CostAnomalyDetector(),
 ]
 
 DETECTOR_IDS: frozenset[str] = frozenset(detector.id for detector in DETECTORS)

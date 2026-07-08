@@ -5,6 +5,7 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from polar.compass.detectors import DETECTORS
+from polar.compass.detectors.anomaly import CostAnomalyDetector
 from polar.compass.detectors.arpu import ARPUMovementDetector
 from polar.compass.detectors.base import DetectorContext, confidence_for_sample
 from polar.compass.detectors.churn import ChurnSpikeDetector
@@ -27,11 +28,13 @@ from polar.compass.schemas import (
     Insight,
     InsightCategory,
     InsightSeverity,
+    ViewCostsAction,
     ViewMetricAction,
 )
 from polar.compass.signals import (
     CUSTOMER_COSTS_SAMPLE_LIMIT,
     ChurnBreakdown,
+    CostAnomalySignal,
     CurrencyOpportunitySignal,
     CustomerCostSignal,
     ProductPricing,
@@ -861,6 +864,36 @@ def _currency_signal(
     )
 
 
+def _context_with_cost_anomalies(
+    *signals: CostAnomalySignal,
+) -> DetectorContext:
+    return DetectorContext(
+        organization_id=uuid.uuid4(),
+        timezone=ZoneInfo("UTC"),
+        today=date(2026, 2, 6),
+        metrics=_response_from(active_subscriptions=[50.0] * 36),
+        cost_anomalies=signals,
+    )
+
+
+def _cost_anomaly(
+    event_name: str = "openai.completion",
+    count: int = 3,
+    total: float = 4_800.0,
+    max_amount: float = 3_200.0,
+    average: float = 800.0,
+    max_event_id: uuid.UUID | None = None,
+) -> CostAnomalySignal:
+    return CostAnomalySignal(
+        event_name=event_name,
+        anomaly_count=count,
+        total_amount=total,
+        max_amount=max_amount,
+        max_event_id=max_event_id or uuid.uuid4(),
+        average_amount=average,
+    )
+
+
 class TestMarginRunwayDetector:
     def test_fires_on_projected_zero_within_horizon(self) -> None:
         # The 30-day baseline reads ~0.529 on the interpolated series, so the
@@ -975,6 +1008,85 @@ class TestCurrencyOpportunityDetector:
         assert insight is None
 
 
+class TestCostAnomalyDetector:
+    def test_fires_on_spike_well_past_typical(self) -> None:
+        event_id = uuid.uuid4()
+        insight = CostAnomalyDetector().evaluate(
+            _context_with_cost_anomalies(_cost_anomaly(max_event_id=event_id))
+        )
+
+        assert insight is not None
+        assert insight.category is InsightCategory.cost
+        assert insight.severity is InsightSeverity.warning
+        assert "Cost spike in openai.completion" in insight.title
+        assert "4x the typical" in insight.body
+        action = insight.primary_action
+        assert isinstance(action, ViewCostsAction)
+        assert action.label == "View cost event"
+        assert action.event_id == event_id
+
+    def test_extreme_spike_is_critical(self) -> None:
+        insight = CostAnomalyDetector().evaluate(
+            _context_with_cost_anomalies(
+                _cost_anomaly(max_amount=6_400.0, average=800.0)
+            )
+        )
+
+        assert insight is not None
+        assert insight.severity is InsightSeverity.critical
+
+    def test_single_outlier_is_low_confidence(self) -> None:
+        insight = CostAnomalyDetector().evaluate(
+            _context_with_cost_anomalies(_cost_anomaly(count=1))
+        )
+
+        assert insight is not None
+        assert insight.confidence is ConfidenceLevel.low
+        assert "1 openai.completion event " in insight.body
+
+    def test_silent_when_spike_is_within_normal_spread(self) -> None:
+        # Largest trace only ~1.5x the average: a p99 outlier, but not news.
+        insight = CostAnomalyDetector().evaluate(
+            _context_with_cost_anomalies(
+                _cost_anomaly(max_amount=1_200.0, average=800.0)
+            )
+        )
+
+        assert insight is None
+
+    def test_silent_when_total_is_negligible(self) -> None:
+        insight = CostAnomalyDetector().evaluate(
+            _context_with_cost_anomalies(
+                _cost_anomaly(total=30.0, max_amount=20.0, average=4.0)
+            )
+        )
+
+        assert insight is None
+
+    def test_skips_to_the_first_genuine_spike(self) -> None:
+        # The service sorts by total desc, but the top signal may be a p99
+        # outlier within normal spread; the detector skips it for the first
+        # that actually spiked.
+        insight = CostAnomalyDetector().evaluate(
+            _context_with_cost_anomalies(
+                _cost_anomaly(
+                    event_name="within.spread", max_amount=1_200.0, average=800.0
+                ),
+                _cost_anomaly(event_name="real.spike"),
+            )
+        )
+
+        assert insight is not None
+        assert "real.spike" in insight.title
+
+    def test_silent_without_anomalies(self) -> None:
+        insight = CostAnomalyDetector().evaluate(
+            _context(_response_from(active_subscriptions=[50.0] * 36))
+        )
+
+        assert insight is None
+
+
 class TestInsightCopy:
     def test_no_em_dashes_in_any_emitted_copy(self) -> None:
         """Em dashes are banned in user-facing copy; use comma, colon or period."""
@@ -1062,6 +1174,9 @@ class TestInsightCopy:
                     + [_cost_signal(f"c{i}@x.com", 0.076) for i in range(5)]
                 )
             ),
+            CostAnomalyDetector().evaluate(
+                _context_with_cost_anomalies(_cost_anomaly())
+            ),
         ]
 
         assert len(firing) == len(DETECTORS)
@@ -1095,3 +1210,14 @@ class TestInsightActionUnion:
 
         assert isinstance(parsed.primary_action, ViewMetricAction)
         assert parsed.primary_action.type == "view_metric"
+
+    def test_view_costs_round_trips_through_the_wire_format(self) -> None:
+        insight = CostAnomalyDetector().evaluate(
+            _context_with_cost_anomalies(_cost_anomaly())
+        )
+        assert insight is not None
+
+        parsed = Insight.model_validate(insight.model_dump())
+
+        assert isinstance(parsed.primary_action, ViewCostsAction)
+        assert parsed.primary_action.type == "view_costs"

@@ -5,7 +5,26 @@ import { schemas } from '@polar-sh/client'
 import { Alert, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
-import { InsightCard } from './InsightCard'
+import { InsightCardGrid } from './InsightCardGrid'
+
+const SEVERITY_SECTIONS: {
+  severity: schemas['InsightSeverity']
+  label: string
+  dotClassName: string
+}[] = [
+  { severity: 'critical', label: 'Needs action', dotClassName: 'bg-red-500' },
+  {
+    severity: 'warning',
+    label: 'Worth attention',
+    dotClassName: 'bg-amber-500',
+  },
+  {
+    severity: 'opportunity',
+    label: 'Opportunities',
+    dotClassName: 'bg-green-500',
+  },
+  { severity: 'info', label: 'Good to know', dotClassName: 'bg-gray-400' },
+]
 
 interface CompassWidgetProps {
   organization: schemas['Organization']
@@ -30,6 +49,10 @@ interface CompassWidgetProps {
   size?: 'default' | 'small'
   /** Grid column count on large screens (grid layout only). */
   columns?: 2 | 3
+  /** Split the feed into one titled section per severity (needs action,
+   * worth attention, opportunities, good to know). The dedicated insights
+   * page passes this; previews keep the flat severity-ordered list. */
+  groupBySeverity?: boolean
 }
 
 /**
@@ -49,6 +72,7 @@ export const CompassWidget = ({
   hideWhenEmpty = false,
   size = 'default',
   columns = 3,
+  groupBySeverity = false,
 }: CompassWidgetProps) => {
   const compassEnabled = !!organization.feature_settings?.compass_enabled
   const {
@@ -116,49 +140,51 @@ export const CompassWidget = ({
           />
         </div>
       ) : shown.length > 0 ? (
-        <Box
-          display="grid"
-          gridTemplateColumns={
-            layout === 'column'
-              ? '1fr'
-              : { base: '1fr', lg: `repeat(${columns}, 1fr)` }
-          }
-          alignItems="stretch"
-          overflow="hidden"
-          borderRadius="l"
-          borderWidth={1}
-          borderStyle="solid"
-          borderColor="border-primary"
-        >
-          {shown.map((insight, idx) => {
-            const col = idx % columns
-            const row = Math.floor(idx / columns)
-            return (
-              <Box
-                key={insight.id}
-                padding={size === 'small' ? 'xl' : '2xl'}
-                borderStyle="solid"
-                borderColor="border-primary"
-                borderLeftWidth={
-                  layout === 'column' ? 0 : { base: 0, lg: col === 0 ? 0 : 1 }
-                }
-                borderTopWidth={
-                  layout === 'column'
-                    ? idx === 0
-                      ? 0
-                      : 1
-                    : { base: idx === 0 ? 0 : 1, lg: row === 0 ? 0 : 1 }
-                }
-              >
-                <InsightCard
-                  organization={organization}
-                  insight={insight}
-                  size={size}
-                />
-              </Box>
-            )
-          })}
-        </Box>
+        groupBySeverity ? (
+          <Box display="flex" flexDirection="column" rowGap="4xl">
+            {SEVERITY_SECTIONS.map(({ severity, label, dotClassName }) => {
+              const group = shown.filter(
+                (insight) => insight.severity === severity,
+              )
+              if (group.length === 0) {
+                return null
+              }
+              return (
+                <Box
+                  key={severity}
+                  display="flex"
+                  flexDirection="column"
+                  rowGap="xl"
+                >
+                  <Box alignItems="center" columnGap="l">
+                    <div className={`size-2 rounded-full ${dotClassName}`} />
+                    <Text variant="heading-xxs" as="h3">
+                      {label}
+                    </Text>
+                    <Text variant="heading-xxs" color="muted">
+                      {group.length}
+                    </Text>
+                  </Box>
+                  <InsightCardGrid
+                    organization={organization}
+                    insights={group}
+                    layout={layout}
+                    columns={columns}
+                    size={size}
+                  />
+                </Box>
+              )
+            })}
+          </Box>
+        ) : (
+          <InsightCardGrid
+            organization={organization}
+            insights={shown}
+            layout={layout}
+            columns={columns}
+            size={size}
+          />
+        )
       ) : (
         <Box
           display="flex"

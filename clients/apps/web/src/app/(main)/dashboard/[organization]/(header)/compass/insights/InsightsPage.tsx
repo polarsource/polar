@@ -22,7 +22,12 @@ export default function InsightsPage({ organization }: InsightsPageProps) {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.3, ease: 'easeOut' }}
       >
-        <CompassWidget organization={organization} hideHeader layout="column" />
+        <CompassWidget
+          organization={organization}
+          hideHeader
+          layout="column"
+          groupBySeverity
+        />
       </motion.div>
     </DashboardBody>
   )

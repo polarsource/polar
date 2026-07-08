@@ -26,5 +26,5 @@ The Python generator is located in the `sdk/generator/python` folder. It generat
 Generate the Python SDK by running the following command:
 
 ```bash
-uv run -m cli --language python --clear openapi.json ../python
+uv run -m cli generate openapi.json ../python --language python --clear
 ```

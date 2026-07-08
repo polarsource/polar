@@ -6,8 +6,10 @@ TEMPLATE_PATH = pathlib.Path(__file__).parent / "template/package.json"
 
 def update_version(version: str) -> None:
     content = TEMPLATE_PATH.read_text()
-    content = content.replace('"version": "0.0.0"', f'"version": "{version}"')
-    TEMPLATE_PATH.write_text(content)
+    new_content = content.replace('"version": "0.0.0"', f'"version": "{version}"')
+    if new_content == content:
+        raise ValueError(f"Version placeholder '0.0.0' not found in {TEMPLATE_PATH}")
+    TEMPLATE_PATH.write_text(new_content)
 
 
 def main() -> None:

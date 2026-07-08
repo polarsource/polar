@@ -7,18 +7,20 @@ import sys
 GENERATOR_DIR = pathlib.Path(__file__).parent.parent
 ROOT = GENERATOR_DIR.parent.parent
 LANGUAGES = ["python", "typescript"]
+GENERATED_SDK_PATHS = ["sdk/python", "sdk/typescript"]
 
 
 def validate_version(version: str) -> bool:
-    pattern = r"^\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?$"
+    pattern = r"^\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$"
     return bool(re.match(pattern, version))
 
 
 def regenerate_openapi() -> None:
-    cmd = "uv run -m --directory ../../server scripts.generate_openapi | jq -r"
+    cmd = "set -o pipefail && uv run -m --directory ../../server scripts.generate_openapi | jq -r"
     result = subprocess.run(
         cmd,
         shell=True,
+        executable="/bin/bash",
         cwd=GENERATOR_DIR,
         capture_output=True,
         text=True,
@@ -84,7 +86,8 @@ def generate_all_sdks() -> None:
 
 
 def create_git_commit(version: str) -> None:
-    subprocess.run(["git", "add", "."], cwd=ROOT, check=True)
+    for path in GENERATED_SDK_PATHS:
+        subprocess.run(["git", "add", path], cwd=ROOT, check=True)
     subprocess.run(
         ["git", "commit", "-m", f"sdk[release]: {version}"],
         cwd=ROOT,

@@ -45,12 +45,12 @@ jobs:
             exit 1
           fi
 
-    # Only continue if this is a release commit
-    if: steps.check.outputs.release == 'true'
-
   tag:
     needs: detect-release
+    if: needs.detect-release.outputs.version != ''
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
         with:
@@ -65,7 +65,8 @@ jobs:
           git push origin "sdk/$version"
 
   publish-python:
-    needs: tag
+    needs: [detect-release, tag]
+    if: needs.detect-release.outputs.version != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -86,7 +87,8 @@ jobs:
         run: uv publish
 
   publish-typescript:
-    needs: tag
+    needs: [detect-release, tag]
+    if: needs.detect-release.outputs.version != ''
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -99,9 +101,12 @@ jobs:
       - name: Setup Node.js (v22+ required for trusted publishing)
         uses: actions/setup-node@v4
         with:
-          node-version: '22'
-          registry-url: 'https://registry.npmjs.org'
-          cache: 'pnpm'
+          node-version: "22"
+          registry-url: "https://registry.npmjs.org"
+          cache: "pnpm"
+
+      - name: Upgrade npm
+        run: npm install -g npm@latest
 
       - name: Install dependencies
         working-directory: sdk/typescript
@@ -117,8 +122,11 @@ jobs:
         run: npm publish --access public
 
   create-github-release:
-    needs: [publish-python, publish-typescript]
+    needs: [detect-release, publish-python, publish-typescript]
+    if: needs.detect-release.outputs.version != ''
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
       - name: Create GitHub Release

@@ -1,0 +1,30 @@
+handbook/docs.json
+  s_0f7743d4fc007d::t_4665d09b69225e 106-107
+  s_0f7743d4fc007d::t_6d8afb604263dc 108
+handbook/engineering/design-documents/secrets-encryption.mdx
+  s_0f7743d4fc007d::t_921d53582ee6d9 286-298,300-303
+  s_0f7743d4fc007d::t_abce1a07398812 299
+  s_0f7743d4fc007d::t_4d07d03a18d515 6
+handbook/engineering/decisions/index.mdx
+  s_0f7743d4fc007d::t_27906b08d61efb 90
+  s_0f7743d4fc007d::t_cfaac5a4395dfb 91
+handbook/engineering/decisions/0008-encrypt-secrets-at-rest.mdx
+  s_0f7743d4fc007d::t_5580567a9170fa 3,16-21,25-40,45-51,55,58-59,64-68
+  s_0f7743d4fc007d::t_fef9f54632806c 1-2,4-15,22-24,41-44,52-54,56-57,60-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "2e7e7988d424be8bd71a9eb218caf02dd588fd31",
+  "prompts": {},
+  "sessions": {
+    "s_0f7743d4fc007d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "299594a3-6ad8-4b90-9ec6-26f9be57e324",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

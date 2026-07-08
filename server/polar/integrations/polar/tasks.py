@@ -204,6 +204,30 @@ async def track_organization_review_usage(
     )
 
 
+@actor(
+    actor_name="polar_self.track_compass_assistant_usage",
+    priority=TaskPriority.LOW,
+)
+async def track_compass_assistant_usage(
+    external_customer_id: str,
+    vendor: str,
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    cost_usd: str,
+    usage_id: str,
+) -> None:
+    await get_client().track_compass_assistant_usage(
+        external_customer_id=external_customer_id,
+        vendor=vendor,
+        model=model,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        cost_usd=Decimal(cost_usd),
+        usage_id=usage_id,
+    )
+
+
 @actor(actor_name="polar_self.webhook.benefit_grant.created", priority=TaskPriority.LOW)
 async def webhook_benefit_grant_created(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:

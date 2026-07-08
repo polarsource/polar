@@ -143,6 +143,20 @@ class TestAuthenticate:
             RateLimitGroup.pending_auth,
         )
 
+    async def test_non_ascii_token_uses_token_hash_pending_auth(
+        self, redis: Redis
+    ) -> None:
+        header = "Bearer polar_pat_abc…".encode()
+        token = header.decode("latin-1").removeprefix("Bearer ")
+        identity = await _authenticate(
+            _http_scope(headers=[(b"authorization", header)], client=("8.8.8.8", 1234)),
+            redis=redis,
+        )
+        assert identity == (
+            f"token:{_token_hash(token)}",
+            RateLimitGroup.pending_auth,
+        )
+
     async def test_no_token_uses_client_ip(self, redis: Redis) -> None:
         identity = await _authenticate(_http_scope(client=("1.1.1.1", 80)), redis=redis)
         assert identity == ("1.1.1.1", RateLimitGroup.default)

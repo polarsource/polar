@@ -7,6 +7,7 @@ from pytest_mock import MockerFixture
 from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.kit import jwt
+from polar.kit.pagination import PaginationParams
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalPrice,
@@ -15,7 +16,11 @@ from polar.merchant_migration.canonical import (
     CanonicalRecord,
 )
 from polar.merchant_migration.repository import MerchantMigrationRepository
-from polar.merchant_migration.schemas import MerchantMigrationCreate
+from polar.merchant_migration.schemas import (
+    MerchantMigrationCreate,
+    PrecheckEntity,
+    PrecheckRecordStatus,
+)
 from polar.merchant_migration.service import (
     SourceNotConnected,
     UnsupportedMigrationSource,
@@ -294,3 +299,106 @@ class TestRunPrecheck:
 
         with pytest.raises(UnsupportedMigrationSource):
             await service.run_precheck(session, auth_subject, migration.id)
+
+
+def _catalog() -> list[CanonicalRecord]:
+    return [
+        CanonicalProduct(
+            source_id="prod_1:month:1",
+            product_source_id="prod_1",
+            name="Pro",
+            recurring_interval="month",
+            recurring_interval_count=1,
+            prices=[
+                CanonicalPrice(
+                    source_id="price_1",
+                    currency="usd",
+                    amount=1000,
+                    pricing_scheme=CanonicalPricingScheme.fixed,
+                )
+            ],
+        ),
+        CanonicalProduct(
+            source_id="prod_2:one_time",
+            product_source_id="prod_2",
+            name="Legacy",
+            recurring_interval=None,
+            recurring_interval_count=1,
+            prices=[
+                CanonicalPrice(
+                    source_id="price_2",
+                    currency="usd",
+                    amount=500,
+                    pricing_scheme=CanonicalPricingScheme.fixed,
+                )
+            ],
+        ),
+    ]
+
+
+@pytest.mark.asyncio
+class TestListRecords:
+    @pytest.mark.auth
+    async def test_classifies_and_paginates(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_connected_migration(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.stripe_oauth.refresh",
+            return_value=build_stripe_oauth_token("rt_new"),
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(_catalog()),
+        )
+
+        items, count = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.products,
+            status=None,
+            pagination=PaginationParams(page=1, limit=1),
+        )
+
+        assert count == 2
+        assert len(items) == 1
+
+    @pytest.mark.auth
+    async def test_status_filter(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_connected_migration(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.stripe_oauth.refresh",
+            return_value=build_stripe_oauth_token("rt_new"),
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(_catalog()),
+        )
+
+        items, count = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.products,
+            status=PrecheckRecordStatus.skipped,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+
+        assert count == 1
+        assert items[0].source_id == "prod_2"
+        assert items[0].reason_code == "one_time_product"

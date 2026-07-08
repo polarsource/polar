@@ -43,3 +43,50 @@ export const useCreateMerchantMigration = (organizationId: string) =>
       })
     },
   })
+
+export const useRunMerchantMigrationPrecheck = (id: string) =>
+  useMutation({
+    mutationFn: () =>
+      unwrap(
+        api.POST('/v1/merchant-migrations/{id}/precheck', {
+          params: { path: { id } },
+        }),
+      ),
+    onSuccess: () => {
+      getQueryClient().invalidateQueries({
+        queryKey: ['merchantMigration', { id }],
+      })
+      getQueryClient().invalidateQueries({
+        queryKey: ['merchantMigrationRecords'],
+      })
+    },
+  })
+
+export const useMigrationRecords = (
+  id: string,
+  params: {
+    entity: schemas['PrecheckEntity']
+    status?: schemas['PrecheckRecordStatus']
+    page: number
+    limit: number
+  },
+) =>
+  useQuery({
+    queryKey: ['merchantMigrationRecords', { id, ...params }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/merchant-migrations/{id}/records', {
+          params: {
+            path: { id },
+            query: {
+              entity: params.entity,
+              ...(params.status ? { status: params.status } : {}),
+              page: params.page,
+              limit: params.limit,
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!id,
+  })

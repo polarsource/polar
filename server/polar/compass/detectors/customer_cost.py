@@ -75,4 +75,5 @@ class CostConcentrationDetector(Detector):
             why=why,
             confidence=confidence,
             primary_action=ViewMetricAction(label="View costs", metric="costs"),
+            suggested_prompt="Which customers drive most of my costs?",
         )

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 import sqlalchemy as sa
-from sqlalchemy import Select, and_, case, cast, or_, select
+from sqlalchemy import Select, and_, case, cast, func, or_, select
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm.strategy_options import joinedload, selectinload
 
@@ -136,6 +136,71 @@ class SubscriptionRepository(
         )
         result = await self.session.execute(statement)
         return result.scalars().all()
+
+    async def get_churn_breakdown(
+        self,
+        organization_id: UUID,
+        *,
+        since: datetime,
+    ) -> tuple[int, int]:
+        """(voluntary, involuntary) counts of subscriptions ended since the
+        cutoff.
+
+        Involuntary means the subscription ended while past due on payment
+        (`past_due_at` is set on entering dunning and cleared on recovery, so
+        it survives on subscriptions revoked for payment failure). Everything
+        else counts as voluntary, including immediate cancellations without a
+        stated reason.
+        """
+        involuntary = case(
+            (Subscription.past_due_at.is_not(None), 1),
+            else_=0,
+        )
+        statement = (
+            select(
+                func.coalesce(func.sum(involuntary), 0),
+                func.count(Subscription.id),
+            )
+            .join(Product, Product.id == Subscription.product_id)
+            .where(
+                Product.organization_id == organization_id,
+                Subscription.ended_at.is_not(None),
+                Subscription.ended_at >= since,
+                Subscription.is_deleted.is_(False),
+            )
+        )
+        result = await self.session.execute(statement)
+        row = result.one()
+        involuntary_count, total = int(row[0]), int(row[1])
+        return total - involuntary_count, involuntary_count
+
+    async def list_recently_ended(
+        self,
+        organization_id: UUID,
+        *,
+        since: datetime,
+        limit: int,
+    ) -> tuple[Sequence[Subscription], int]:
+        """Subscriptions that ended since the cutoff, most recent first, with
+        customer and product loaded. Second element is the window's total, so
+        callers can say "showing N of M" when the limit truncates."""
+        window = (
+            Subscription.organization_id == organization_id,
+            Subscription.ended_at.is_not(None),
+            Subscription.ended_at >= since,
+        )
+        statement = (
+            self.get_base_statement()
+            .where(*window)
+            .options(
+                joinedload(Subscription.customer),
+                joinedload(Subscription.product),
+            )
+            .order_by(Subscription.ended_at.desc())
+            .limit(limit)
+        )
+        count = await self.count(self.get_base_statement().where(*window))
+        return await self.get_all(statement), count
 
     async def get_active_customer_ids_by_product(
         self, product_id: UUID, *, limit: int | None = None

@@ -91,6 +91,8 @@ locals {
   db_user          = render_postgres.db.database_user
   db_password      = render_postgres.db.connection_info.password
 
+  db_external_host = nonsensitive(regex("@([^/:]+)", render_postgres.db.connection_info.external_connection_string)[0])
+
   # Extract actual database name from internal connection string
   # Render appends a suffix to database_name, so we parse it from the connection string
   # Format: postgresql://user:pass@host/dbname

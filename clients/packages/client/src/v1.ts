@@ -4990,6 +4990,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/records': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Merchant Migration Records
+     * @description **Scopes**: `organizations:write`
+     */
+    get: operations['merchant-migrations:records']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/email-update/request': {
     parameters: {
       query?: never
@@ -6726,6 +6746,30 @@ export interface components {
        * @description Notes that should appear on the reverse invoice.
        */
       billing_notes?: string | null
+    }
+    /**
+     * AddCurrencyAction
+     * @description A nudge to offer prices in an additional presentment currency.
+     *
+     *     The client routes to the products list, where per-product pricing can be
+     *     extended. Nothing is ever applied automatically.
+     */
+    AddCurrencyAction: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'add_currency'
+      /**
+       * Label
+       * @description Button label.
+       */
+      label: string
+      /**
+       * Currency
+       * @description Lowercase ISO code of the suggested currency, e.g. `eur`.
+       */
+      currency: string
     }
     /** Address */
     Address: {
@@ -21194,8 +21238,14 @@ export interface components {
         | (
             | components['schemas']['ViewMetricAction']
             | components['schemas']['AdjustPriceAction']
+            | components['schemas']['AddCurrencyAction']
           )
         | null
+      /**
+       * Suggested Prompt
+       * @description A natural follow-up question this finding invites, offered to the merchant as a one-tap prompt for the assistant. None when the finding has no obvious next question.
+       */
+      suggested_prompt: string | null
       /**
        * Drivers
        * @description Top contributors to the headline change.
@@ -22057,6 +22107,12 @@ export interface components {
       items: components['schemas']['Member'][]
       pagination: components['schemas']['Pagination']
     }
+    /** ListResource[MerchantMigrationRecordItem] */
+    ListResource_MerchantMigrationRecordItem_: {
+      /** Items */
+      items: components['schemas']['MerchantMigrationRecordItem'][]
+      pagination: components['schemas']['Pagination']
+    }
     /** ListResource[MerchantMigration] */
     ListResource_MerchantMigration_: {
       /** Items */
@@ -22648,6 +22704,38 @@ export interface components {
       error: 'MerchantMigrationNotFound'
       /** Detail */
       detail: string
+    }
+    /** MerchantMigrationRecordItem */
+    MerchantMigrationRecordItem: {
+      /** @description The source entity type. */
+      entity: components['schemas']['PrecheckEntity']
+      /**
+       * Source Id
+       * @description The source identifier (e.g. Stripe `sub_…`).
+       */
+      source_id: string
+      /**
+       * Title
+       * @description Primary label (name, email or product).
+       */
+      title: string
+      /**
+       * Subtitle
+       * @description Secondary detail (interval, amount, country, status).
+       */
+      subtitle: string | null
+      /** @description Whether this record will be imported or stays on the source. */
+      status: components['schemas']['PrecheckRecordStatus']
+      /**
+       * Reason
+       * @description Why the record is skipped, if it is.
+       */
+      reason: string | null
+      /**
+       * Reason Code
+       * @description Stable code for the skip reason, if any.
+       */
+      reason_code: string | null
     }
     /**
      * MerchantMigrationSourcePlatform
@@ -28449,6 +28537,17 @@ export interface components {
       | 'disputed'
       | 'charge_disputed'
       | 'cancelled'
+    /** PolarAuthError */
+    PolarAuthError: {
+      /**
+       * Error
+       * @example PolarAuthError
+       * @constant
+       */
+      error: 'PolarAuthError'
+      /** Detail */
+      detail: string
+    }
     /** PolarSelfPaymentMethodInUse */
     PolarSelfPaymentMethodInUse: {
       /**
@@ -28497,6 +28596,31 @@ export interface components {
        */
       role?: string | null
     }
+    /**
+     * PrecheckEntity
+     * @enum {string}
+     */
+    PrecheckEntity: 'products' | 'prices' | 'customers' | 'subscriptions'
+    /** PrecheckEntitySummary */
+    PrecheckEntitySummary: {
+      /** @description The source entity type. */
+      entity: components['schemas']['PrecheckEntity']
+      /**
+       * Total
+       * @description How many were read from the source.
+       */
+      total: number
+      /**
+       * Importable
+       * @description How many will be imported into Polar.
+       */
+      importable: number
+      /**
+       * Skipped
+       * @description How many won't be imported and stay on the source.
+       */
+      skipped: number
+    }
     /** PrecheckIssue */
     PrecheckIssue: {
       level: components['schemas']['PrecheckIssueLevel']
@@ -28512,12 +28636,22 @@ export interface components {
      * @enum {string}
      */
     PrecheckIssueLevel: 'blocker' | 'warning'
+    /**
+     * PrecheckRecordStatus
+     * @enum {string}
+     */
+    PrecheckRecordStatus: 'importable' | 'skipped'
     /** PrecheckReport */
     PrecheckReport: {
       /** Can Start */
       can_start: boolean
       /** Issues */
       issues: components['schemas']['PrecheckIssue'][]
+      /**
+       * Entities
+       * @description Per-entity counts of what will be imported vs stay on the source.
+       */
+      entities: components['schemas']['PrecheckEntitySummary'][]
     }
     /**
      * PresentmentCurrency
@@ -30673,6 +30807,17 @@ export interface components {
        * @description Total number of seats for the subscription
        */
       total_seats: number
+    }
+    /** SessionNotFreshError */
+    SessionNotFreshError: {
+      /**
+       * Error
+       * @example SessionNotFreshError
+       * @constant
+       */
+      error: 'SessionNotFreshError'
+      /** Detail */
+      detail: string
     }
     /** SlackIntegration */
     SlackIntegration: {
@@ -35909,6 +36054,15 @@ export interface operations {
         }
         content?: never
       }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
+        }
+      }
       /** @description OAuth account not found */
       404: {
         headers: {
@@ -39552,6 +39706,15 @@ export interface operations {
           'application/json': components['schemas']['TOTPEnrollment']
         }
       }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
+        }
+      }
     }
   }
   'auth:totp_delete': {
@@ -39569,6 +39732,15 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
+        }
       }
     }
   }
@@ -39592,6 +39764,17 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+      /** @description Session is not fresh, TOTP factor not enrolled, or invalid TOTP code. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['SessionNotFreshError']
+            | components['schemas']['PolarAuthError']
         }
       }
       /** @description Validation Error */
@@ -39681,6 +39864,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['BackupCodesEnrollment']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
         }
       }
     }
@@ -49576,6 +49768,73 @@ export interface operations {
       }
     }
   }
+  'merchant-migrations:records': {
+    parameters: {
+      query: {
+        entity: components['schemas']['PrecheckEntity']
+        status?: components['schemas']['PrecheckRecordStatus'] | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_MerchantMigrationRecordItem_']
+        }
+      }
+      /** @description The source is not connected or isn't supported. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['SourceNotConnected']
+            | components['schemas']['UnsupportedMigrationSource']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'email-update:request_email_update': {
     parameters: {
       query?: never
@@ -49596,6 +49855,15 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
         }
       }
       /** @description Validation Error */
@@ -60345,6 +60613,9 @@ export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: Readonly
   'WET',
   'Zulu',
 ]
+export const addCurrencyActionTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['AddCurrencyAction']['type']
+> = ['add_currency']
 export const addressCountryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Address']['country']
 > = [
@@ -63578,9 +63849,15 @@ export const pledgeStateValues: ReadonlyArray<
   'charge_disputed',
   'cancelled',
 ]
+export const precheckEntityValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PrecheckEntity']
+> = ['products', 'prices', 'customers', 'subscriptions']
 export const precheckIssueLevelValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckIssueLevel']
 > = ['blocker', 'warning']
+export const precheckRecordStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PrecheckRecordStatus']
+> = ['importable', 'skipped']
 export const presentmentCurrencyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PresentmentCurrency']
 > = [

@@ -6,6 +6,7 @@ import {
   useGitHubAccount,
   useGoogleAccount,
 } from '@/hooks'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import {
   getGitHubAuthorizeLinkURL,
   getGoogleAuthorizeLinkURL,
@@ -19,6 +20,8 @@ import { ListGroup } from '@polar-sh/orbit'
 import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import EmailUpdateForm from '../Form/EmailUpdateForm'
+import { toast } from '../Toast/use-toast'
+import { useSessionRefreshPrompt } from './SessionRefreshModal'
 import { twMerge } from 'tailwind-merge'
 
 const AuthenticationMethod = ({
@@ -162,6 +165,30 @@ const AuthenticationSettings = () => {
   const googleAccount = useGoogleAccount()
   const disconnectOAuth = useDisconnectOAuthAccount()
   const listGroupRef = useRef<HTMLDivElement>(null)
+  const { promptIfSessionNotFresh, sessionRefreshModal } =
+    useSessionRefreshPrompt()
+
+  const handleDisconnect = async (platform: schemas['OAuthPlatform']) => {
+    try {
+      const { error } = await disconnectOAuth.mutateAsync(platform)
+      if (error) {
+        if (promptIfSessionNotFresh(error)) {
+          return
+        }
+        toast({
+          title: 'Error',
+          description: extractApiErrorMessage(error),
+          variant: 'error',
+        })
+      }
+    } catch {
+      toast({
+        title: 'Error',
+        description: 'Failed to disconnect account. Please try again.',
+        variant: 'error',
+      })
+    }
+  }
 
   const searchParams = useSearchParams()
   const [updateEmailStage, setUpdateEmailStage] = useState<
@@ -230,7 +257,7 @@ const AuthenticationSettings = () => {
           <GitHubAuthenticationMethod
             oauthAccount={githubAccount}
             returnTo={pathname || '/start'}
-            onDisconnect={() => disconnectOAuth.mutate('github')}
+            onDisconnect={() => handleDisconnect('github')}
             isDisconnecting={disconnectOAuth.isPending}
             error={
               oauthLinkError && oauthLinkFactor === 'github'
@@ -244,7 +271,7 @@ const AuthenticationSettings = () => {
           <GoogleAuthenticationMethod
             oauthAccount={googleAccount}
             returnTo={pathname || '/start'}
-            onDisconnect={() => disconnectOAuth.mutate('google')}
+            onDisconnect={() => handleDisconnect('google')}
             isDisconnecting={disconnectOAuth.isPending}
             error={
               oauthLinkError && oauthLinkFactor === 'google'
@@ -264,6 +291,8 @@ const AuthenticationSettings = () => {
           />
         </ListGroup.Item>
       </ListGroup>
+
+      {sessionRefreshModal}
     </div>
   )
 }

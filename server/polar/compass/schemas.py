@@ -62,6 +62,7 @@ class InsightActionType(StrEnum):
 
     view_metric = "view_metric"
     adjust_price = "adjust_price"
+    add_currency = "add_currency"
 
 
 class ViewMetricAction(Schema):
@@ -106,8 +107,22 @@ class AdjustPriceAction(Schema):
     currency: str = Field(description="ISO currency code of the amounts.")
 
 
+class AddCurrencyAction(Schema):
+    """A nudge to offer prices in an additional presentment currency.
+
+    The client routes to the products list, where per-product pricing can be
+    extended. Nothing is ever applied automatically.
+    """
+
+    type: Literal[InsightActionType.add_currency] = InsightActionType.add_currency
+    label: str = Field(description="Button label.")
+    currency: str = Field(
+        description="Lowercase ISO code of the suggested currency, e.g. `eur`."
+    )
+
+
 InsightAction = Annotated[
-    ViewMetricAction | AdjustPriceAction,
+    ViewMetricAction | AdjustPriceAction | AddCurrencyAction,
     Discriminator("type"),
 ]
 
@@ -154,6 +169,13 @@ class Insight(Schema):
     )
     confidence: ConfidenceLevel
     primary_action: InsightAction | None = None
+    suggested_prompt: str | None = Field(
+        description=(
+            "A natural follow-up question this finding invites, offered to the "
+            "merchant as a one-tap prompt for the assistant. None when the "
+            "finding has no obvious next question."
+        ),
+    )
     drivers: list[InsightDriver] = Field(
         default_factory=list,
         description="Top contributors to the headline change.",

@@ -161,8 +161,9 @@ module "test" {
   }
 
   google_secrets = {
-    client_id     = var.google_client_id
-    client_secret = var.google_client_secret
+    client_id            = var.google_client_id
+    client_secret        = var.google_client_secret
+    service_account_json = var.google_service_account_json
   }
 
   openai_secrets = {

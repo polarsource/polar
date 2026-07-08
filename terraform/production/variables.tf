@@ -27,6 +27,12 @@ variable "google_client_secret_production" {
   sensitive   = true
 }
 
+variable "google_service_account_json" {
+  description = "Google service account JSON key for fetching the organization review AUP"
+  type        = string
+  sensitive   = true
+}
+
 # OpenAI
 variable "openai_api_key_production" {
   description = "OpenAI API Key for production"

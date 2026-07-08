@@ -88,8 +88,9 @@ variable "redis_config" {
 variable "google_secrets" {
   description = "Google secrets (sensitive)"
   type = object({
-    client_id     = string
-    client_secret = string
+    client_id            = string
+    client_secret        = string
+    service_account_json = string
   })
   sensitive = true
 }

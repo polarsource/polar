@@ -28,6 +28,14 @@ resource "tfe_variable" "google_client_secret_production" {
   variable_set_id = tfe_variable_set.production.id
 }
 
+resource "tfe_variable" "google_service_account_json_production" {
+  key             = "google_service_account_json"
+  category        = "terraform"
+  description     = "Google service account JSON key for fetching the organization review AUP for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
 resource "tfe_variable" "openai_api_key_production" {
   key             = "openai_api_key_production"
   category        = "terraform"

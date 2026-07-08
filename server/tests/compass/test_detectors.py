@@ -882,7 +882,6 @@ def _cost_anomaly(
     total: float = 4_800.0,
     max_amount: float = 3_200.0,
     average: float = 800.0,
-    p99: float = 2_400.0,
     max_event_id: uuid.UUID | None = None,
 ) -> CostAnomalySignal:
     return CostAnomalySignal(
@@ -892,7 +891,6 @@ def _cost_anomaly(
         max_amount=max_amount,
         max_event_id=max_event_id or uuid.uuid4(),
         average_amount=average,
-        p99_amount=p99,
     )
 
 

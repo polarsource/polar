@@ -498,10 +498,9 @@ class CompassService:
                     total_amount=total,
                     max_amount=max_amount,
                     max_event_id=max_event.event_id,
-                    # p99 and average are per-event-name, identical across its
-                    # outlier rows, so read them off the first.
+                    # The average is per-event-name, identical across its
+                    # outlier rows, so read it off the first.
                     average_amount=float(events[0].averages.get("_cost_amount", 0)),
-                    p99_amount=float(events[0].p99.get("_cost_amount", 0)),
                 )
             )
         signals.sort(key=lambda signal: signal.total_amount, reverse=True)

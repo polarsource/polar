@@ -34549,7 +34549,7 @@ export interface components {
        * Event Id
        * @description Root event id of the single largest outlier trace, deep-linked to its span. Null routes to the costs overview instead.
        */
-      event_id?: string | null
+      event_id: string | null
     }
     /**
      * ViewMetricAction

@@ -135,15 +135,14 @@ class CostAnomalySignal:
     anomaly_count: int
     """Number of outlier traces for this event name in the window."""
     total_amount: float
-    """Summed `_cost.amount` across the outlier traces, in the cost unit."""
+    """Summed `_cost.amount` across the outlier traces, in cents (the
+    documented unit of `_cost.amount`; fractional cents allowed)."""
     max_amount: float
-    """The single largest outlier trace's cost."""
+    """The single largest outlier trace's cost, in cents."""
     max_event_id: uuid.UUID
     """Root event id of that largest trace, for a deep-link to its span."""
     average_amount: float
-    """Typical per-trace cost for this event name."""
-    p99_amount: float
-    """p99 per-trace cost for this event name."""
+    """Typical per-trace cost for this event name, in cents."""
 
     @property
     def spike_ratio(self) -> float:

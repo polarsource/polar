@@ -92,7 +92,6 @@ class ViewCostsAction(Schema):
     type: Literal[InsightActionType.view_costs] = InsightActionType.view_costs
     label: str = Field(description="Button label.")
     event_id: UUID4 | None = Field(
-        default=None,
         description=(
             "Root event id of the single largest outlier trace, deep-linked to "
             "its span. Null routes to the costs overview instead."

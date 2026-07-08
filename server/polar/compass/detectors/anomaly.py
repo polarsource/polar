@@ -80,9 +80,14 @@ class CostAnomalyDetector(Detector):
             "above the p99 cost for its name."
         )
 
+        # One key per event name per month: a different event spiking later in
+        # the same month is a different finding and must not inherit this one's
+        # dismissal or feedback. The key separator (`:`) is reserved, so it is
+        # replaced in the name.
+        bucket = f"{ctx.today.strftime('%Y-%m')}/{top.event_name.replace(':', '_')}"
         return self.build_insight(
             ctx,
-            period_bucket=ctx.today.strftime("%Y-%m"),
+            period_bucket=bucket,
             severity=(
                 InsightSeverity.critical
                 if top.spike_ratio >= _CRITICAL_SPIKE_RATIO

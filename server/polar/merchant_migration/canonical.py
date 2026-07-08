@@ -137,49 +137,51 @@ def deserialize(
     """Rebuild a canonical record from a stored ``canonical`` dict, the inverse
     of ``serialize``. Lets consumers work off the staged ledger instead of
     re-reading the source."""
-    if type == MerchantMigrationRecordType.product:
-        return CanonicalProduct(
-            source_id=data["source_id"],
-            product_source_id=data["product_source_id"],
-            name=data["name"],
-            recurring_interval=data["recurring_interval"],
-            recurring_interval_count=data["recurring_interval_count"],
-            prices=[
-                CanonicalPrice(
-                    source_id=price["source_id"],
-                    currency=price["currency"],
-                    amount=price["amount"],
-                    pricing_scheme=CanonicalPricingScheme(price["pricing_scheme"]),
-                )
-                for price in data["prices"]
-            ],
-        )
-    if type == MerchantMigrationRecordType.customer:
-        return CanonicalCustomer(
-            source_id=data["source_id"],
-            email=data["email"],
-            name=data["name"],
-            country=data["country"],
-        )
-    if type == MerchantMigrationRecordType.subscription:
-        payment_method = data["payment_method"]
-        return CanonicalSubscription(
-            source_id=data["source_id"],
-            customer_source_id=data["customer_source_id"],
-            price_source_id=data["price_source_id"],
-            status=CanonicalSubscriptionStatus(data["status"]),
-            collection_method=CanonicalCollectionMethod(data["collection_method"]),
-            current_period_start=_parse_datetime(data["current_period_start"]),
-            current_period_end=_parse_datetime(data["current_period_end"]),
-            trialing=data["trialing"],
-            paused_collection=data["paused_collection"],
-            line_item_count=data["line_item_count"],
-            quantity=data["quantity"],
-            payment_method=CanonicalPaymentMethod(
-                source_id=payment_method["source_id"],
-                type=CanonicalPaymentMethodType(payment_method["type"]),
+    match type:
+        case MerchantMigrationRecordType.product:
+            return CanonicalProduct(
+                source_id=data["source_id"],
+                product_source_id=data["product_source_id"],
+                name=data["name"],
+                recurring_interval=data["recurring_interval"],
+                recurring_interval_count=data["recurring_interval_count"],
+                prices=[
+                    CanonicalPrice(
+                        source_id=price["source_id"],
+                        currency=price["currency"],
+                        amount=price["amount"],
+                        pricing_scheme=CanonicalPricingScheme(price["pricing_scheme"]),
+                    )
+                    for price in data["prices"]
+                ],
             )
-            if payment_method is not None
-            else None,
-        )
-    raise ValueError(f"Cannot deserialize record of type {type}")
+        case MerchantMigrationRecordType.customer:
+            return CanonicalCustomer(
+                source_id=data["source_id"],
+                email=data["email"],
+                name=data["name"],
+                country=data["country"],
+            )
+        case MerchantMigrationRecordType.subscription:
+            payment_method = data["payment_method"]
+            return CanonicalSubscription(
+                source_id=data["source_id"],
+                customer_source_id=data["customer_source_id"],
+                price_source_id=data["price_source_id"],
+                status=CanonicalSubscriptionStatus(data["status"]),
+                collection_method=CanonicalCollectionMethod(data["collection_method"]),
+                current_period_start=_parse_datetime(data["current_period_start"]),
+                current_period_end=_parse_datetime(data["current_period_end"]),
+                trialing=data["trialing"],
+                paused_collection=data["paused_collection"],
+                line_item_count=data["line_item_count"],
+                quantity=data["quantity"],
+                payment_method=CanonicalPaymentMethod(
+                    source_id=payment_method["source_id"],
+                    type=CanonicalPaymentMethodType(payment_method["type"]),
+                )
+                if payment_method is not None
+                else None,
+            )
+        case _:
+            raise ValueError(f"Cannot deserialize record of type {type}")

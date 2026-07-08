@@ -86,7 +86,7 @@ def generate_all_sdks() -> None:
 def create_git_commit(version: str) -> None:
     subprocess.run(["git", "add", "."], cwd=ROOT, check=True)
     subprocess.run(
-        ["git", "commit", "-m", f"polar: Update SDK version to {version}"],
+        ["git", "commit", "-m", f"sdk[release]: {version}"],
         cwd=ROOT,
         check=True,
     )

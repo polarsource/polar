@@ -8,9 +8,10 @@ locals {
     sandbox    = local.workload_accounts.sandbox.id
     test       = local.workload_accounts.test.id
     identity   = local.identity_account.id
+    security   = local.security_account.id
   }
 
-  staff_default_accounts = setsubtract(keys(local.staff_target_accounts), ["identity"])
+  staff_default_accounts = setsubtract(keys(local.staff_target_accounts), ["identity", "security"])
 
   identity_center_groups = {
     awsadmins    = { display_name = "AWS Access" }

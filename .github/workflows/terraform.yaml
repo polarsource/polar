@@ -31,7 +31,7 @@ jobs:
         run: terraform fmt -check -recursive -diff
 
       - name: Setup TFLint
-        uses: terraform-linters/setup-tflint@v6.2.2
+        uses: terraform-linters/setup-tflint@v6.3.0
         with:
           tflint_version: latest
           cache: true

@@ -326,6 +326,12 @@ async def charge_dispute_updated(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             dispute = cast(stripe_lib.Dispute, event.stripe_data.data.object)
+            # Discard a stale event already superseded by a newer status (e.g. RDR close).
+            current = await stripe_service.get_dispute(dispute.id)
+            if DisputeStatus.from_stripe(dispute.status) != DisputeStatus.from_stripe(
+                current.status
+            ):
+                return
             await dispute_service.upsert_from_stripe(session, dispute)
 
 

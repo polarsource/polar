@@ -11,6 +11,7 @@ from polar.benefit.strategies.downloadables.schemas import (
     BenefitDownloadablesCreateProperties,
 )
 from polar.customer_portal.schemas.downloadables import DownloadableRead
+from polar.kit.utils import utc_now
 from polar.models import Customer, File, Organization, Product
 from polar.postgres import AsyncSession, sql
 from polar.redis import Redis

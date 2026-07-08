@@ -187,7 +187,6 @@ class DisputeService:
         if created:
             was_closed, previous_status = False, None
         else:
-            await repository.lock_and_refresh_status(dispute)
             was_closed, previous_status = dispute.closed, dispute.status
         dispute.payment_processor = PaymentProcessor.stripe
         dispute.payment_processor_id = stripe_dispute.id

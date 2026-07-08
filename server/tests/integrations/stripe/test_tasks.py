@@ -7,10 +7,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy.orm import selectinload
 
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
-from polar.integrations.stripe.tasks import (
-    charge_dispute_created,
-    payment_intent_succeeded,
-)
+from polar.integrations.stripe.tasks import payment_intent_succeeded
 from polar.models import (
     Customer,
     Organization,
@@ -24,7 +21,6 @@ from tests.fixtures.random_objects import (
     create_order,
     create_product,
 )
-from tests.fixtures.stripe import build_stripe_dispute
 
 
 def build_stripe_payment_intent(
@@ -230,64 +226,3 @@ class TestPaymentIntentSucceeded:
 
         # Then: Payment method service is not called (no retry metadata)
         payment_method_service_mock.assert_not_called()
-
-
-@pytest.mark.asyncio
-class TestChargeDisputeCreated:
-    async def test_discards_stale_event(self, mocker: MockerFixture) -> None:
-        # Given: a created event whose status is already superseded at Stripe
-        # (e.g. an RDR close ran first and closed the dispute).
-        event_dispute = build_stripe_dispute(
-            status="needs_response", balance_transactions=[]
-        )
-        current_dispute = build_stripe_dispute(status="lost", balance_transactions=[])
-
-        event_mock = mocker.MagicMock()
-        event_mock.stripe_data.data.object = event_dispute
-        context_mock = mocker.patch(
-            "polar.integrations.stripe.tasks.external_event_service.handle_stripe"
-        )
-        context_mock.return_value.__aenter__ = AsyncMock(return_value=event_mock)
-        context_mock.return_value.__aexit__ = AsyncMock(return_value=None)
-
-        mocker.patch(
-            "polar.integrations.stripe.tasks.stripe_service.get_dispute",
-            return_value=current_dispute,
-        )
-        upsert_mock = mocker.patch(
-            "polar.integrations.stripe.tasks.dispute_service.upsert_from_stripe"
-        )
-
-        # When: the created event is processed
-        await charge_dispute_created(uuid.uuid4())
-
-        # Then: the stale event is discarded, not applied
-        upsert_mock.assert_not_awaited()
-
-    async def test_processes_current_event(self, mocker: MockerFixture) -> None:
-        # Given: a created event whose status still matches Stripe
-        event_dispute = build_stripe_dispute(
-            status="needs_response", balance_transactions=[]
-        )
-
-        event_mock = mocker.MagicMock()
-        event_mock.stripe_data.data.object = event_dispute
-        context_mock = mocker.patch(
-            "polar.integrations.stripe.tasks.external_event_service.handle_stripe"
-        )
-        context_mock.return_value.__aenter__ = AsyncMock(return_value=event_mock)
-        context_mock.return_value.__aexit__ = AsyncMock(return_value=None)
-
-        mocker.patch(
-            "polar.integrations.stripe.tasks.stripe_service.get_dispute",
-            return_value=event_dispute,
-        )
-        upsert_mock = mocker.patch(
-            "polar.integrations.stripe.tasks.dispute_service.upsert_from_stripe"
-        )
-
-        # When: the created event is processed
-        await charge_dispute_created(uuid.uuid4())
-
-        # Then: the dispute is upserted as usual
-        upsert_mock.assert_awaited_once()

@@ -356,6 +356,12 @@ module "production" {
     role_arn = module.secrets_kms.role_arn
   }
 
+  worker_sqs_config = {
+    enabled      = "true"
+    actors       = var.worker_sqs_actors
+    queue_prefix = "polar-production-tasks"
+  }
+
   github_secrets = {
     client_id                           = var.github_client_id_production
     client_secret                       = var.github_client_secret_production

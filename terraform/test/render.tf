@@ -236,6 +236,12 @@ module "test" {
     role_arn = one(module.secrets_kms[*].role_arn)
   }
 
+  worker_sqs_config = {
+    enabled      = "true"
+    actors       = var.worker_sqs_actors
+    queue_prefix = "polar-test-tasks"
+  }
+
   github_secrets = {
     client_id                           = var.github_client_id
     client_secret                       = var.github_client_secret

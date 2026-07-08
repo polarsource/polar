@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import AsyncIterator, Sequence
 from dataclasses import dataclass
 from typing import Any, Literal, TypedDict
 from uuid import UUID
@@ -23,8 +23,12 @@ from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 
 from .adapters import SourceAdapter, StripeAdapter
+from .canonical import CanonicalRecord, deserialize
 from .precheck import classify_records, precheck_engine
-from .repository import MerchantMigrationRepository
+from .repository import (
+    MerchantMigrationRecordRepository,
+    MerchantMigrationRepository,
+)
 from .schemas import (
     MerchantMigrationCreate,
     MerchantMigrationRecordItem,
@@ -197,8 +201,13 @@ class MerchantMigrationService:
 
         adapter = await self._build_adapter(session, migration)
         source_account = await adapter.get_source_account()
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
         report = await precheck_engine.run(
-            adapter.extract(), organization, source_account
+            self._stage_records(
+                record_repository, migration, organization, adapter.extract()
+            ),
+            organization,
+            source_account,
         )
 
         await repository.update(
@@ -216,8 +225,9 @@ class MerchantMigrationService:
         status: PrecheckRecordStatus | None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[MerchantMigrationRecordItem], int]:
-        """Read the connected source on demand and return the records of one
-        entity type, classified importable/skipped and paginated in memory."""
+        """Return the records of one entity type from the staged ledger,
+        classified importable/skipped and paginated in memory. Reads what
+        ``run_precheck`` persisted, so it never re-reads the source."""
         repository = MerchantMigrationRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).where(
             MerchantMigration.id == migration_id
@@ -232,14 +242,28 @@ class MerchantMigrationService:
             OrganizationPermission.organization_manage,
         )
 
-        adapter = await self._build_adapter(session, migration)
-        records = [record async for record in adapter.extract()]
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        staged = await record_repository.list_by_migration(migration.id)
+        records = [deserialize(record.type, record.canonical) for record in staged]
         items = classify_records(records, entity)
         if status is not None:
             items = [item for item in items if item.status == status]
 
         start = (pagination.page - 1) * pagination.limit
         return items[start : start + pagination.limit], len(items)
+
+    async def _stage_records(
+        self,
+        record_repository: MerchantMigrationRecordRepository,
+        migration: MerchantMigration,
+        organization: Organization,
+        records: AsyncIterator[CanonicalRecord],
+    ) -> AsyncIterator[CanonicalRecord]:
+        """Stage each record as it streams past, so we persist the catalog in
+        the same single pass the precheck reads (extraction stays incremental)."""
+        async for record in records:
+            await record_repository.upsert(migration, organization, record)
+            yield record
 
     async def _build_adapter(
         self, session: AsyncSession, migration: MerchantMigration

@@ -10,7 +10,9 @@ from dramatiq import Retry
 from polar.checkout.service import NotConfirmedCheckout
 from polar.dispute.service import dispute as dispute_service
 from polar.external_event.service import external_event as external_event_service
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.logging import Logger
+from polar.models.dispute import DisputeStatus
 from polar.payment.service import UnhandledPaymentIntent
 from polar.payment.service import payment as payment_service
 from polar.payment_method.service import payment_method as payment_method_service
@@ -309,6 +311,12 @@ async def charge_dispute_created(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             dispute = cast(stripe_lib.Dispute, event.stripe_data.data.object)
+            # Discard a stale event already superseded by a newer status (e.g. RDR close).
+            current = await stripe_service.get_dispute(dispute.id)
+            if DisputeStatus.from_stripe(dispute.status) != DisputeStatus.from_stripe(
+                current.status
+            ):
+                return
             await dispute_service.upsert_from_stripe(session, dispute)
 
 
@@ -318,6 +326,12 @@ async def charge_dispute_updated(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             dispute = cast(stripe_lib.Dispute, event.stripe_data.data.object)
+            # Discard a stale event already superseded by a newer status (e.g. RDR close).
+            current = await stripe_service.get_dispute(dispute.id)
+            if DisputeStatus.from_stripe(dispute.status) != DisputeStatus.from_stripe(
+                current.status
+            ):
+                return
             await dispute_service.upsert_from_stripe(session, dispute)
 
 

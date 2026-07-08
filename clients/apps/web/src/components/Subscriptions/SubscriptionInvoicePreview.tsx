@@ -21,10 +21,16 @@ const SubscriptionInvoicePreview = ({
 }) => {
   const isTrialing = subscription.status === 'trialing'
   const isActive = subscription.status === 'active'
+  const isPaused = subscription.status === 'paused'
 
   const { data: chargePreview } = useSubscriptionChargePreview(
     subscription.id,
-    { enabled: isActive || isTrialing },
+    {
+      enabled:
+        isActive ||
+        isTrialing ||
+        (isPaused && subscription.resumes_at !== null),
+    },
   )
 
   const productId = useMemo(
@@ -45,7 +51,19 @@ const SubscriptionInvoicePreview = ({
   const hasMeters = subscription.meters.length > 0
   const hasNextInvoice = !isFreeProduct || hasMeters
 
-  if ((!isActive && !isTrialing) || !hasNextInvoice || !chargePreview) {
+  const isResumingCharge =
+    (subscription.pause_at_period_end || isPaused) &&
+    subscription.resumes_at !== null &&
+    !isCancelingAtPeriodEnd
+  const isPausingIndefinitely =
+    (subscription.pause_at_period_end || isPaused) && !subscription.resumes_at
+
+  if (
+    (!isActive && !isTrialing && !isResumingCharge) ||
+    isPausingIndefinitely ||
+    !hasNextInvoice ||
+    !chargePreview
+  ) {
     return null
   }
 
@@ -76,7 +94,9 @@ const SubscriptionInvoicePreview = ({
 
   const chargeDate = isTrialing
     ? subscription.trial_end
-    : subscription.current_period_end
+    : isResumingCharge
+      ? subscription.resumes_at
+      : subscription.current_period_end
 
   let title = 'Upcoming charge'
   let dateLabel = 'Next invoice'
@@ -86,6 +106,9 @@ const SubscriptionInvoicePreview = ({
   } else if (isCancelingAtPeriodEnd) {
     title = 'Final charge'
     dateLabel = 'Subscription ends'
+  } else if (isResumingCharge) {
+    title = 'Charge on resume'
+    dateLabel = 'Resumes'
   }
 
   const note = isCancelingAtPeriodEnd

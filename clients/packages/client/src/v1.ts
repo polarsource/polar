@@ -1584,7 +1584,8 @@ export interface paths {
      *
      *     For trialing subscriptions, shows what the first charge will be when the trial ends.
      *     For subscriptions set to cancel at period end, shows the final charge.
-     *     Only available for active or trialing subscriptions, including those set to cancel.
+     *     For paused subscriptions scheduled to auto-resume, shows the charge on resume.
+     *     Available for active, trialing, and paused-with-resume subscriptions.
      *
      *     **Scopes**: `subscriptions:read` `subscriptions:write`
      */

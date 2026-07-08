@@ -11,6 +11,7 @@ from polar.auth.service import USER_SESSION_TOKEN_PREFIX
 from polar.config import settings
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.db.postgres import Session
+from polar.kit.encryption import EncryptedString
 from polar.kit.utils import utc_now
 from polar.models import (
     OAuth2AuthorizationCode,
@@ -229,6 +230,52 @@ class TestOAuth2Register:
         assert "client_id" in json
         assert "registration_access_token" in json
         assert json["scope"] == "openid email"
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user"))
+    async def test_writes_hashed_and_encrypted_secrets(
+        self, client: AsyncClient, sync_session: Session
+    ) -> None:
+        response = await client.post(
+            "/v1/oauth2/register",
+            json={
+                "client_name": "Test Client",
+                "redirect_uris": ["https://example.com/callback"],
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+
+        oauth2_client = (
+            sync_session.execute(
+                select(OAuth2Client).where(OAuth2Client.client_id == data["client_id"])
+            )
+            .unique()
+            .scalar_one()
+        )
+
+        assert oauth2_client.client_secret_hash == OAuth2Client.hash_secret(
+            data["client_secret"]
+        )
+        assert oauth2_client.registration_access_token_hash == OAuth2Client.hash_secret(
+            data["registration_access_token"]
+        )
+        assert isinstance(oauth2_client.client_secret_encrypted, EncryptedString)
+        assert isinstance(
+            oauth2_client.registration_access_token_encrypted, EncryptedString
+        )
+        assert (
+            await oauth2_client.client_secret_encrypted.decrypt(
+                id=str(oauth2_client.id)
+            )
+            == data["client_secret"]
+        )
+        assert (
+            await oauth2_client.registration_access_token_encrypted.decrypt(
+                id=str(oauth2_client.id)
+            )
+            == data["registration_access_token"]
+        )
 
 
 @pytest.mark.asyncio

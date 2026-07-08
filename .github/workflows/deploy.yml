@@ -262,25 +262,49 @@ jobs:
       - name: Sync AUP to server
         run: cp "clients/apps/web/src/app/(main)/(website)/(landing)/(mdx)/legal/acceptable-use-policy/page.mdx" "server/polar/organization_review/acceptable-use-policy.mdx"
 
-      - name: Configure AWS credentials
+      - name: Configure AWS credentials (test)
+        if: needs.changes.outputs.test-enabled == 'true'
+        uses: aws-actions/configure-aws-credentials@v6.2.1
+        with:
+          role-to-assume: ${{ secrets.TEST_AWS_ROLE_ARN }}
+          aws-region: us-east-2
+
+      - name: Log in to Amazon ECR (test)
+        if: needs.changes.outputs.test-enabled == 'true'
+        id: login-ecr-test
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Configure AWS credentials (sandbox)
         uses: aws-actions/configure-aws-credentials@v6.2.1
         with:
           role-to-assume: ${{ secrets.SANDBOX_AWS_ROLE_ARN }}
           aws-region: us-east-2
 
-      - name: Log in to Amazon ECR
-        id: login-ecr
+      - name: Log in to Amazon ECR (sandbox)
+        id: login-ecr-sandbox
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Configure AWS credentials (production)
+        uses: aws-actions/configure-aws-credentials@v6.2.1
+        with:
+          role-to-assume: ${{ secrets.PRODUCTION_AWS_ROLE_ARN }}
+          aws-region: us-east-2
+
+      - name: Log in to Amazon ECR (production)
+        id: login-ecr-production
         uses: aws-actions/amazon-ecr-login@v2
 
       - uses: useblacksmith/build-push-action@v2
         id: push-lambda-worker
         with:
           push: true
-          # Prod repo — add into the tags block once it exists:
-          #   ${{ steps.login-ecr.outputs.registry }}/polar-production-lambda-worker:sha-${{ github.sha }}
           tags: |
-            ${{ steps.login-ecr.outputs.registry }}/polar-sandbox-lambda-worker:sha-${{ github.sha }}
-            ${{ steps.login-ecr.outputs.registry }}/polar-sandbox-lambda-worker:latest
+            ${{ needs.changes.outputs.test-enabled == 'true' && format('{0}/polar-test-lambda-worker:sha-{1}', steps.login-ecr-test.outputs.registry, github.sha) || '' }}
+            ${{ needs.changes.outputs.test-enabled == 'true' && format('{0}/polar-test-lambda-worker:latest', steps.login-ecr-test.outputs.registry) || '' }}
+            ${{ steps.login-ecr-sandbox.outputs.registry }}/polar-sandbox-lambda-worker:sha-${{ github.sha }}
+            ${{ steps.login-ecr-sandbox.outputs.registry }}/polar-sandbox-lambda-worker:latest
+            ${{ steps.login-ecr-production.outputs.registry }}/polar-production-lambda-worker:sha-${{ github.sha }}
+            ${{ steps.login-ecr-production.outputs.registry }}/polar-production-lambda-worker:latest
           context: ./server
           target: lambda
           platforms: linux/amd64
@@ -290,6 +314,30 @@ jobs:
             RELEASE_VERSION=${{ github.sha }}
           secrets: |
             IPINFO_ACCESS_TOKEN=${{ secrets.IPINFO_ACCESS_TOKEN }}
+
+  deploy-lambda-test:
+    name: "Deploy Lambda Worker to Test 🧰"
+    needs: [changes, build-lambda-worker]
+    if: always() && !failure() && !cancelled() && needs.build-lambda-worker.result == 'success' && needs.changes.outputs.test-enabled == 'true' && (needs.changes.outputs.backend-sandbox == 'true' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.2.1
+        with:
+          role-to-assume: ${{ secrets.TEST_AWS_ROLE_ARN }}
+          aws-region: us-east-2
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Update test Lambda function code
+        run: |
+          aws lambda update-function-code \
+            --function-name polar-test-worker-default \
+            --image-uri "${{ steps.login-ecr.outputs.registry }}/polar-test-lambda-worker:sha-${{ github.sha }}" \
+            --publish
 
   deploy-lambda-sandbox:
     name: "Deploy Lambda Worker to Sandbox 🧪"
@@ -315,29 +363,29 @@ jobs:
             --image-uri "${{ steps.login-ecr.outputs.registry }}/polar-sandbox-lambda-worker:sha-${{ github.sha }}" \
             --publish
 
-  # deploy-lambda-production:
-  #   name: "Deploy Lambda Worker to Production 🚀"
-  #   needs: [changes, build-lambda-worker, deploy-lambda-sandbox]
-  #   if: always() && !failure() && !cancelled() && needs.build-lambda-worker.result == 'success' && (needs.changes.outputs.backend-production == 'true' || github.event_name == 'workflow_dispatch')
-  #   runs-on: ubuntu-latest
-  #   permissions:
-  #     contents: read
-  #     id-token: write
-  #   steps:
-  #     - name: Configure AWS credentials
-  #       uses: aws-actions/configure-aws-credentials@v6.2.1
-  #       with:
-  #         role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
-  #         aws-region: us-east-2
-  #     - name: Log in to Amazon ECR
-  #       id: login-ecr
-  #       uses: aws-actions/amazon-ecr-login@v2
-  #     - name: Update production Lambda function code
-  #       run: |
-  #         aws lambda update-function-code \
-  #           --function-name polar-production-lambda-worker \
-  #           --image-uri "${{ steps.login-ecr.outputs.registry }}/polar-production-lambda-worker:sha-${{ github.sha }}" \
-  #           --publish
+  deploy-lambda-production:
+    name: "Deploy Lambda Worker to Production 🚀"
+    needs: [changes, build-lambda-worker, deploy-lambda-sandbox]
+    if: always() && !failure() && !cancelled() && needs.build-lambda-worker.result == 'success' && (needs.changes.outputs.backend-production == 'true' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6.2.1
+        with:
+          role-to-assume: ${{ secrets.PRODUCTION_AWS_ROLE_ARN }}
+          aws-region: us-east-2
+      - name: Log in to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+      - name: Update production Lambda function code
+        run: |
+          aws lambda update-function-code \
+            --function-name polar-production-worker-default \
+            --image-uri "${{ steps.login-ecr.outputs.registry }}/polar-production-lambda-worker:sha-${{ github.sha }}" \
+            --publish
 
   deploy-sandbox:
     name: "Deploy to Sandbox 🧪"

@@ -509,6 +509,12 @@ variable "next_public_stripe_payment_method_configuration" {
   sensitive   = true
 }
 
+variable "worker_sqs_actors" {
+  description = "JSON array of Dramatiq actor names routed to the SQS execution engine"
+  type        = string
+  default     = "[\"dummy\"]"
+}
+
 variable "stripe_app_client_id" {
   description = "Stripe App OAuth client ID"
   type        = string

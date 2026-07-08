@@ -145,6 +145,7 @@ class DisputeService:
     ) -> Dispute:
         repository = DisputeRepository.from_session(session)
         charge_id = get_expandable_id(stripe_dispute.charge)
+        new_status = DisputeStatus.from_stripe(stripe_dispute.status)
 
         # First try to find by Stripe Dispute ID
         dispute = await repository.get_by_payment_processor_dispute_id(
@@ -164,6 +165,7 @@ class DisputeService:
             )
             from_alert = dispute is not None
 
+        created = False
         if dispute is None:
             payment, order = await self._get_payment_and_order_from_processor_id(
                 session, PaymentProcessor.stripe, charge_id
@@ -171,18 +173,21 @@ class DisputeService:
             amount, tax_amount = order.calculate_refunded_tax_from_total(
                 stripe_dispute.amount
             )
-            dispute = await repository.create(
-                Dispute(
-                    amount=amount,
-                    tax_amount=tax_amount,
-                    currency=stripe_dispute.currency,
-                    order=order,
-                    payment=payment,
-                )
+
+            dispute, created = await repository.get_or_create_from_stripe(
+                stripe_dispute_id=stripe_dispute.id,
+                status=new_status,
+                amount=amount,
+                tax_amount=tax_amount,
+                currency=stripe_dispute.currency,
+                order=order,
+                payment=payment,
             )
 
-        was_closed = dispute.closed
-        previous_status = dispute.status
+        if created:
+            was_closed, previous_status = False, None
+        else:
+            was_closed, previous_status = dispute.closed, dispute.status
         dispute.payment_processor = PaymentProcessor.stripe
         dispute.payment_processor_id = stripe_dispute.id
 
@@ -200,8 +205,6 @@ class DisputeService:
         dispute.has_evidence = evidence_details.has_evidence
         dispute.past_due = evidence_details.past_due
         dispute.submission_count = evidence_details.submission_count
-
-        new_status = DisputeStatus.from_stripe(stripe_dispute.status)
 
         # Dispute that we tried to prevent but too late: we need to reopen it
         # The associated refund will be marked as failed through refund.failed

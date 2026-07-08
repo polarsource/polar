@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from typing import Annotated
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
@@ -49,14 +50,34 @@ router = APIRouter()
 
 
 def _list_url(
-    request: Request, *, status: str, assigned: str, sort: str, case_type: str
+    request: Request,
+    *,
+    status: str,
+    assigned: str,
+    sort: str,
+    case_type: str,
+    self_service: str,
 ) -> str:
     base = str(request.url_for("support_cases:list"))
-    return f"{base}?status={status}&assigned={assigned}&sort={sort}&type={case_type}"
+    query = urlencode(
+        {
+            "status": status,
+            "assigned": assigned,
+            "sort": sort,
+            "type": case_type,
+            "self_service": self_service,
+        }
+    )
+    return f"{base}?{query}"
 
 
 def _list_tabs(
-    request: Request, status: str, assigned: str, sort: str, case_type: str
+    request: Request,
+    status: str,
+    assigned: str,
+    sort: str,
+    case_type: str,
+    self_service: str,
 ) -> list[Tab]:
     def url(new_status: str, new_assigned: str) -> str:
         return _list_url(
@@ -65,6 +86,7 @@ def _list_tabs(
             assigned=new_assigned,
             sort=sort,
             case_type=case_type,
+            self_service=self_service,
         )
 
     # Status (left) filters preserve the current assignment. The assignment
@@ -89,7 +111,12 @@ def _list_tabs(
 
 
 def _type_tabs(
-    request: Request, status: str, assigned: str, sort: str, case_type: str
+    request: Request,
+    status: str,
+    assigned: str,
+    sort: str,
+    case_type: str,
+    self_service: str,
 ) -> list[Tab]:
     def url(new_type: str) -> str:
         return _list_url(
@@ -98,6 +125,7 @@ def _type_tabs(
             assigned=assigned,
             sort=sort,
             case_type=new_type,
+            self_service=self_service,
         )
 
     return [
@@ -111,6 +139,40 @@ def _type_tabs(
             "Disputes",
             url=url(SupportCaseType.dispute.value),
             active=case_type == SupportCaseType.dispute.value,
+        ),
+    ]
+
+
+def _self_service_tabs(
+    request: Request,
+    status: str,
+    assigned: str,
+    sort: str,
+    case_type: str,
+    self_service: str,
+) -> list[Tab]:
+    def url(new_self_service: str) -> str:
+        return _list_url(
+            request,
+            status=status,
+            assigned=assigned,
+            sort=sort,
+            case_type=case_type,
+            self_service=new_self_service,
+        )
+
+    return [
+        Tab(
+            "All merchants",
+            url=url("all"),
+            active=self_service not in ("enabled", "disabled"),
+            extra_classes="ml-auto",
+        ),
+        Tab("Self-service", url=url("enabled"), active=self_service == "enabled"),
+        Tab(
+            "No self-service",
+            url=url("disabled"),
+            active=self_service == "disabled",
         ),
     ]
 
@@ -131,8 +193,7 @@ def _tier_sort_header(request: Request, sort: str) -> None:
     the current tab/assignment filters."""
     params = dict(request.query_params)
     params["sort"] = "recency" if sort == "tier" else "tier"
-    query = "&".join(f"{k}={v}" for k, v in params.items())
-    href = f"{request.url_for('support_cases:list')}?{query}"
+    href = f"{request.url_for('support_cases:list')}?{urlencode(params)}"
     with tag.a(href=href, classes="link link-hover"):
         text("Tier ↓" if sort == "tier" else "Tier")
 
@@ -505,6 +566,7 @@ async def list_cases(
     assigned: Annotated[str, Query()] = "all",
     sort: Annotated[str, Query()] = "recency",
     type: Annotated[str, Query()] = "all",
+    self_service: Annotated[str, Query()] = "all",
     session: AsyncSession = Depends(get_db_read_session),
     user_session: UserSession = Depends(get_admin),
 ) -> None:
@@ -514,6 +576,7 @@ async def list_cases(
         assigned_user_id=user_session.user_id,
         viewer_user_id=user_session.user_id,
         case_type=type,
+        self_service=self_service,
         sort=sort,
     )
     count = (
@@ -537,9 +600,16 @@ async def list_cases(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.h1(classes="text-4xl"):
                 text("Cases")
-            with tab_nav(_list_tabs(request, status, assigned, sort, type)):
+            with tab_nav(
+                _list_tabs(request, status, assigned, sort, type, self_service)
+            ):
                 pass
-            with tab_nav(_type_tabs(request, status, assigned, sort, type)):
+            with tab_nav(
+                _type_tabs(request, status, assigned, sort, type, self_service)
+                + _self_service_tabs(
+                    request, status, assigned, sort, type, self_service
+                )
+            ):
                 pass
             if rows:
                 _render_table(request, rows, sort)

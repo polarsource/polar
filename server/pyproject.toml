@@ -68,6 +68,7 @@ dependencies = [
   "reauth==0.2.0",
   "langcodes>=3.5.1",
   "pypdf>=6.14.2",
+  "google-auth>=2.38.0",
 ]
 
 [dependency-groups]

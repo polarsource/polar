@@ -63,6 +63,7 @@ class DownloadableRepository(RepositoryBase[Downloadable]):
                 File.is_deleted.is_(False),
                 File.is_uploaded == True,  # noqa: E712
                 File.is_enabled == True,  # noqa: E712
+                File.flagged_malicious_at.is_(None),
                 Benefit.is_deleted.is_(False),
             )
             .order_by(Downloadable.created_at.desc())

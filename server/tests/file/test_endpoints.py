@@ -6,6 +6,7 @@ from httpx import AsyncClient, ReadError
 from polar.file.repository import FileRepository
 from polar.file.s3 import S3_SERVICES
 from polar.integrations.aws.s3.exceptions import S3FileError
+from polar.kit.utils import utc_now
 from polar.models import Organization, UserOrganization
 from polar.models.file import FileServiceTypes
 from polar.postgres import AsyncSession
@@ -160,6 +161,40 @@ class TestList:
         user_organization: UserOrganization,
     ) -> None:
         await create_support_case_attachment_file(save_fixture, organization)
+        visible = await create_support_case_attachment_file(
+            save_fixture,
+            organization,
+            name="media.jpg",
+            service=FileServiceTypes.product_media,
+        )
+
+        response = await client.get(
+            "/v1/files/", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert [item["id"] for item in json["items"]] == [str(visible.id)]
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_excludes_flagged_malicious(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        flagged = await create_support_case_attachment_file(
+            save_fixture,
+            organization,
+            name="malware.jpg",
+            service=FileServiceTypes.product_media,
+        )
+        flagged.flagged_malicious_at = utc_now()
+        await save_fixture(flagged)
         visible = await create_support_case_attachment_file(
             save_fixture,
             organization,

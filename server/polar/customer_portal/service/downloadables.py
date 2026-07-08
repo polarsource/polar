@@ -208,6 +208,9 @@ class DownloadableService(
         if not downloadable:
             raise ResourceNotFound()
 
+        if downloadable.file.flagged_malicious_at is not None:
+            raise ResourceUnavailable()
+
         await self.increment_download_count(session, downloadable)
         return downloadable
 

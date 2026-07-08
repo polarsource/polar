@@ -9,21 +9,22 @@ everything touched is eager-loaded.
 """
 
 from collections.abc import Sequence
-from datetime import datetime, time, timedelta
+from datetime import date, datetime, time, timedelta
 from typing import Any, Literal, cast
 
 from pydantic_ai import RunContext
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.scope import Scope
 from polar.checkout.service import checkout as checkout_service
 from polar.customer.service import customer as customer_service
 from polar.dispute.service import dispute as dispute_service
 from polar.event.service import event as event_service
+from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams
 from polar.kit.time_queries import TimeInterval
 from polar.metrics.service import metrics as metrics_service
-from polar.models import Product, Subscription
+from polar.models import Organization, Product, Subscription
 from polar.models.checkout import CheckoutStatus
 from polar.models.customer import _avatar_url_for_email
 from polar.models.product_price import ProductPriceFixed
@@ -31,6 +32,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.organization.repository import OrganizationRepository
+from polar.payout.service import InsufficientBalance
 from polar.payout.service import payout as payout_service
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
@@ -46,7 +48,7 @@ from .blocks import (
     EntityListBlock,
 )
 from .deps import AssistantDeps
-from .tools import _scope_denial
+from .tools import _resolve_window, _scope_denial
 
 _MAX_LIMIT = 25
 # Each ranked product costs one metrics query; keep the fan-out small.
@@ -221,6 +223,8 @@ async def list_churned_subscriptions(
     ctx: RunContext[AssistantDeps],
     days: int = 30,
     limit: int = 10,
+    start_date: date | None = None,
+    end_date: date | None = None,
     presentation: Presentation = "table",
 ) -> str:
     """List subscriptions that ended recently and why each one ended: the
@@ -229,26 +233,43 @@ async def list_churned_subscriptions(
     like "which subscriptions churned recently, and why".
 
     Args:
-        days: Trailing window in days (7 to 90, default 30).
+        days: Trailing window ending today, in days (7 to 90, default 30).
+            Ignored when `start_date` is set.
         limit: How many to fetch (1 to 25).
+        start_date: First day of an explicit window (inclusive). Set it for
+            questions about a specific day or calendar period, e.g. yesterday
+            or one month. A single day is `start_date` equal to `end_date`.
+        end_date: Last day of the explicit window (inclusive, defaults to
+            today).
         presentation: `list` for a compact list (5 or fewer), else `table`.
     """
     deps = ctx.deps
     if denial := _scope_denial(deps, Scope.subscriptions_read):
         return denial
     days = max(7, min(90, days))
-    since = datetime.combine(
-        deps.today - timedelta(days=days - 1), time.min, deps.timezone
+    window = _resolve_window(
+        deps,
+        days=days,
+        start_date=start_date,
+        end_date=end_date,
+        max_span_days=90,
     )
+    if isinstance(window, str):
+        return window
+    start, end = window
+    explicit = start_date is not None or end_date is not None
+    window_str = f"{start} to {end}" if explicit else f"last {days} days"
     items, count = await SubscriptionRepository.from_session(
         deps.session
     ).list_recently_ended(
         deps.organization_id,
-        since=since,
+        since=datetime.combine(start, time.min, deps.timezone),
+        # Inclusive of the whole end day: bound below the next midnight.
+        until=datetime.combine(end + timedelta(days=1), time.min, deps.timezone),
         limit=max(1, min(_MAX_LIMIT, limit)),
     )
     if not items:
-        return f"No subscriptions ended in the last {days} days."
+        return f"No subscriptions ended in the window {window_str}."
 
     rows: list[Row] = [
         {
@@ -270,7 +291,7 @@ async def list_churned_subscriptions(
     summary = _emit_entities(
         deps,
         entity="churned subscriptions",
-        title=f"Churned subscriptions, last {days} days",
+        title=f"Churned subscriptions, {window_str}",
         columns=columns,
         rows=rows,
         total_count=count,
@@ -456,6 +477,8 @@ async def list_checkouts(
     limit: int = 10,
     status: Literal["open", "expired", "confirmed", "succeeded", "failed"]
     | None = None,
+    start_date: date | None = None,
+    end_date: date | None = None,
     presentation: Presentation = "table",
 ) -> str:
     """List checkout sessions: who opened them, amount and outcome. Useful to
@@ -464,16 +487,43 @@ async def list_checkouts(
     Args:
         limit: How many to fetch (1 to 25).
         status: Only checkouts with this status; omit for all.
+        start_date: First day of an explicit window (inclusive). Set it for
+            questions about a specific day or calendar period, e.g. yesterday
+            or one week. A single day is `start_date` equal to `end_date`.
+        end_date: Last day of the explicit window (inclusive, defaults to
+            today).
         presentation: `list` for a compact list (5 or fewer), else `table`.
     """
     deps = ctx.deps
     if denial := _scope_denial(deps, Scope.checkouts_read):
         return denial
+    created_after: datetime | None = None
+    created_before: datetime | None = None
+    window_note = ""
+    if start_date is not None or end_date is not None:
+        window = _resolve_window(
+            deps,
+            days=365,
+            start_date=start_date,
+            end_date=end_date,
+            max_span_days=365,
+        )
+        if isinstance(window, str):
+            return window
+        start, end = window
+        created_after = datetime.combine(start, time.min, deps.timezone)
+        # Inclusive of the whole end day: bound below the next midnight.
+        created_before = datetime.combine(
+            end + timedelta(days=1), time.min, deps.timezone
+        )
+        window_note = f" from {start} to {end} (inclusive)"
     items, count = await checkout_service.list(
         deps.session,
         deps.auth_subject,
         organization_id=[deps.organization_id],
         status=[CheckoutStatus(status)] if status else None,
+        created_at_after=created_after,
+        created_at_before=created_before,
         pagination=_clamp(limit),
     )
     rows: list[Row] = [
@@ -494,7 +544,7 @@ async def list_checkouts(
     return _emit_entities(
         deps,
         entity="checkouts",
-        title="Checkouts",
+        title=f"Checkouts{window_note}",
         columns=columns,
         rows=rows,
         total_count=count,
@@ -602,19 +652,83 @@ async def list_payouts(
     )
 
 
+async def get_payout_summary(ctx: RunContext[AssistantDeps]) -> str:
+    """When the merchant gets paid next and how much: the estimated gross,
+    fees and net amount of the next payout, and the earliest time it can
+    happen. Answers "when do I get paid" and "how much is my next payout".
+    """
+    deps = ctx.deps
+    if denial := _scope_denial(deps, Scope.payouts_read):
+        return denial
+    organization = await OrganizationRepository.from_session(deps.session).get_by_id(
+        deps.organization_id,
+        options=(
+            joinedload(Organization.account),
+            joinedload(Organization.payout_account),
+        ),
+    )
+    if organization is None or organization.account is None:
+        return "This organization has no payout account set up yet."
+
+    lines: list[str] = []
+    try:
+        estimate = await payout_service.estimate(
+            cast(AsyncSession, deps.session), organization
+        )
+        lines.append(
+            f"Next payout estimate (amounts in cents): gross "
+            f"{estimate.gross_amount}, payout fees {estimate.fees_amount}, "
+            f"net paid out {estimate.net_amount}."
+        )
+    except InsufficientBalance as e:
+        # Not a failure: the balance simply hasn't reached the payout minimum.
+        lines.append(
+            f"No payout is possible yet: the available balance is {e.balance} "
+            f"cents. {e.message}"
+        )
+    except PolarError as e:
+        # Payout errors carry merchant-appropriate messages (organization not
+        # approved, payout account setup incomplete, ...). Relay them.
+        return f"No payout is possible right now. {e.message}"
+
+    next_at = await payout_service.get_next_payout_at(
+        deps.session, organization.account
+    )
+    if next_at is None:
+        lines.append("A new payout can be requested now.")
+    else:
+        lines.append(
+            f"The earliest next payout is {next_at.date().isoformat()}; payouts "
+            "are spaced by the account's payout interval."
+        )
+    return " ".join(lines)
+
+
 async def top_products_by_revenue(
     ctx: RunContext[AssistantDeps],
     days: int = 365,
     limit: int = 5,
+    start_date: date | None = None,
+    end_date: date | None = None,
+    query: str | None = None,
     presentation: Presentation = "table",
 ) -> str:
-    """Rank products by revenue over a trailing window, via the revenue metric
+    """Rank products by revenue over a date window, via the revenue metric
     filtered per product. Answers questions like "what is my most successful
-    product" or "which product sells best".
+    product", "which product sold best yesterday", or, with `query`, "how much
+    revenue did product X make".
 
     Args:
-        days: Trailing window in days (7 to 365, default 365).
+        days: Trailing window ending today, in days (7 to 365, default 365).
+            Ignored when `start_date` is set.
         limit: How many products to rank (1 to 8; one metrics query each).
+        start_date: First day of an explicit window (inclusive). Set it for
+            questions about a specific day or calendar period, e.g. yesterday
+            or one month. A single day is `start_date` equal to `end_date`.
+        end_date: Last day of the explicit window (inclusive, defaults to
+            today).
+        query: Search over product names; only matching products are ranked.
+            Set it when the question is about one specific product.
         presentation: `list` for a compact list (5 or fewer), else `table`.
     """
     deps = ctx.deps
@@ -622,49 +736,74 @@ async def top_products_by_revenue(
         return denial
     days = max(7, min(365, days))
     limit = max(1, min(_MAX_RANKED_PRODUCTS, limit))
-
-    # Candidate selection is revenue-based (order aggregation, ids only) so
-    # orgs with more products than the metric-query budget still rank their
-    # actual top sellers; the displayed numbers below come from the metrics
-    # layer and match the dashboard.
-    candidate_ids = await OrderRepository.from_session(
-        deps.session
-    ).get_top_product_ids_by_revenue(
-        deps.organization_id,
-        start=datetime.combine(
-            deps.today - timedelta(days=days - 1), time.min, deps.timezone
-        ),
-        limit=_MAX_RANKED_PRODUCTS,
+    window = _resolve_window(
+        deps,
+        days=days,
+        start_date=start_date,
+        end_date=end_date,
+        max_span_days=365,
     )
-    if candidate_ids:
+    if isinstance(window, str):
+        return window
+    start, end = window
+    explicit = start_date is not None or end_date is not None
+    window_str = f"{start} to {end}" if explicit else f"last {days} days"
+
+    if query is not None:
+        # A name search replaces revenue-based candidate selection: the
+        # question is about specific products, not the overall top sellers.
         products, _ = await product_service.list(
             deps.session,
             deps.auth_subject,
-            id=list(candidate_ids),
             organization_id=[deps.organization_id],
+            query=query,
             pagination=PaginationParams(1, _MAX_RANKED_PRODUCTS),
         )
+        if not products:
+            return f"No products match {query!r}."
     else:
-        products, _ = await product_service.list(
-            deps.session,
-            deps.auth_subject,
-            organization_id=[deps.organization_id],
-            is_archived=False,
-            pagination=PaginationParams(1, _MAX_RANKED_PRODUCTS),
+        # Candidate selection is revenue-based (order aggregation, ids only) so
+        # orgs with more products than the metric-query budget still rank their
+        # actual top sellers; the displayed numbers below come from the metrics
+        # layer and match the dashboard.
+        candidate_ids = await OrderRepository.from_session(
+            deps.session
+        ).get_top_product_ids_by_revenue(
+            deps.organization_id,
+            start=datetime.combine(start, time.min, deps.timezone),
+            # Inclusive of the whole end day: bound below the next midnight.
+            end=datetime.combine(end + timedelta(days=1), time.min, deps.timezone),
+            limit=_MAX_RANKED_PRODUCTS,
         )
-    if not products:
-        return "This organization has no products."
+        if candidate_ids:
+            products, _ = await product_service.list(
+                deps.session,
+                deps.auth_subject,
+                id=list(candidate_ids),
+                organization_id=[deps.organization_id],
+                pagination=PaginationParams(1, _MAX_RANKED_PRODUCTS),
+            )
+        else:
+            products, _ = await product_service.list(
+                deps.session,
+                deps.auth_subject,
+                organization_id=[deps.organization_id],
+                is_archived=False,
+                pagination=PaginationParams(1, _MAX_RANKED_PRODUCTS),
+            )
+        if not products:
+            return "This organization has no products."
 
     ranked: list[tuple[str, float, float]] = []
     for product in products:
         response = await metrics_service.get_metrics(
             deps.session,
             deps.auth_subject,
-            # Inclusive range: the same days-1 window as candidate selection,
-            # so a product's boundary-day revenue can't rank it without also
-            # being counted (or vice versa).
-            start_date=deps.today - timedelta(days=days - 1),
-            end_date=deps.today,
+            # Inclusive range: the same window as candidate selection, so a
+            # product's boundary-day revenue can't rank it without also being
+            # counted (or vice versa).
+            start_date=start,
+            end_date=end,
             timezone=deps.timezone,
             interval=TimeInterval.month,
             organization_id=[deps.organization_id],
@@ -679,7 +818,7 @@ async def top_products_by_revenue(
     ranked = ranked[:limit]
 
     if all(revenue == 0 for _, revenue, _ in ranked):
-        return f"No product revenue was recorded in the last {days} days."
+        return f"No product revenue was recorded in the window {window_str}."
     rows: list[Row] = [
         {"product": name, "revenue": revenue, "orders": int(orders)}
         for name, revenue, orders in ranked
@@ -693,14 +832,14 @@ async def top_products_by_revenue(
     summary = _emit_entities(
         deps,
         entity="products by revenue",
-        title=f"Top products by revenue, last {days} days",
+        title=f"Top products by revenue, {window_str}",
         columns=columns,
         rows=rows,
         total_count=len(rows),
         presentation=presentation,
     )
     return (
-        f"Top product by revenue over the last {days} days: {top['product']} "
+        f"Top product by revenue, {window_str}: {top['product']} "
         f"({top['orders']} orders). " + summary
     )
 
@@ -709,31 +848,58 @@ async def top_customers_by_revenue(
     ctx: RunContext[AssistantDeps],
     days: int | None = 365,
     limit: int = 5,
+    start_date: date | None = None,
+    end_date: date | None = None,
     presentation: Presentation = "table",
 ) -> str:
     """Rank customers by paid net revenue. Answers questions like "who is my
-    best customer" or "which customers bring in the most revenue".
+    best customer" or "which customer bought the most yesterday".
 
     Args:
-        days: Trailing window in days (up to 365); omit for all time.
+        days: Trailing window ending today, in days (up to 365); omit for all
+            time. Ignored when `start_date` is set.
         limit: How many customers to rank (1 to 25).
+        start_date: First day of an explicit window (inclusive). Set it for
+            questions about a specific day or calendar period, e.g. yesterday
+            or one month. A single day is `start_date` equal to `end_date`.
+        end_date: Last day of the explicit window (inclusive, defaults to
+            today).
         presentation: `list` for a compact list (5 or fewer), else `table`.
     """
     deps = ctx.deps
     if denial := _scope_denial(deps, Scope.orders_read):
         return denial
-    start = None
-    if days is not None:
+    start_dt: datetime | None = None
+    end_dt: datetime | None = None
+    if start_date is not None or end_date is not None:
+        resolved = _resolve_window(
+            deps,
+            days=days if days is not None else 365,
+            start_date=start_date,
+            end_date=end_date,
+            max_span_days=365,
+        )
+        if isinstance(resolved, str):
+            return resolved
+        start, end = resolved
+        start_dt = datetime.combine(start, time.min, deps.timezone)
+        # Inclusive of the whole end day: bound below the next midnight.
+        end_dt = datetime.combine(end + timedelta(days=1), time.min, deps.timezone)
+        window = f"{start} to {end}"
+    elif days is not None:
         days = max(1, min(365, days))
-        start = datetime.combine(
+        start_dt = datetime.combine(
             deps.today - timedelta(days=days - 1), time.min, deps.timezone
         )
+        window = f"the last {days} days"
+    else:
+        window = "all time"
     ranked = await OrderRepository.from_session(deps.session).get_revenue_by_customer(
         deps.organization_id,
-        start=start,
+        start=start_dt,
+        end=end_dt,
         limit=max(1, min(_MAX_LIMIT, limit)),
     )
-    window = f"the last {days} days" if days is not None else "all time"
     if not ranked:
         return f"No paid orders were found for {window}."
     rows: list[Row] = [
@@ -773,25 +939,45 @@ async def top_customers_by_cost(
     ctx: RunContext[AssistantDeps],
     days: int = 30,
     limit: int = 5,
+    start_date: date | None = None,
+    end_date: date | None = None,
     presentation: Presentation = "table",
 ) -> str:
     """Rank customers by the cost they generate (from `_cost` event metadata).
     Answers questions like "which customer drives the most cost".
 
     Args:
-        days: Trailing window length in days (7 to 90, default 30).
+        days: Trailing window ending today, in days (7 to 90, default 30).
+            Ignored when `start_date` is set.
         limit: How many customers to rank (1 to 25).
+        start_date: First day of an explicit window (inclusive). Set it for
+            questions about a specific day or calendar period, e.g. yesterday
+            or one month. A single day is `start_date` equal to `end_date`.
+        end_date: Last day of the explicit window (inclusive, defaults to
+            today).
         presentation: `list` for a compact list (5 or fewer), else `table`.
     """
     deps = ctx.deps
     if denial := _scope_denial(deps, Scope.events_read):
         return denial
     days = max(7, min(90, days))
+    resolved = _resolve_window(
+        deps,
+        days=days,
+        start_date=start_date,
+        end_date=end_date,
+        max_span_days=90,
+    )
+    if isinstance(resolved, str):
+        return resolved
+    start, end = resolved
+    explicit = start_date is not None or end_date is not None
+    window_str = f"{start} to {end}" if explicit else f"last {days} days"
     stats = await event_service.list_customer_stats(
         cast(AsyncSession, deps.session),
         deps.auth_subject,
-        start_date=deps.today - timedelta(days=days - 1),
-        end_date=deps.today,
+        start_date=start,
+        end_date=end,
         timezone=deps.timezone,
         organization_id=[deps.organization_id],
         limit=max(1, min(_MAX_LIMIT, limit)),
@@ -801,8 +987,8 @@ async def top_customers_by_cost(
     ]
     if not ranked:
         return (
-            f"No customer costs were tracked in the last {days} days. Costs "
-            "come from `_cost` metadata on ingested events."
+            f"No customer costs were tracked in the window {window_str}. "
+            "Costs come from `_cost` metadata on ingested events."
         )
     rows: list[Row] = [
         {
@@ -825,14 +1011,14 @@ async def top_customers_by_cost(
     summary = _emit_entities(
         deps,
         entity="customers by cost",
-        title=f"Top customers by tracked cost, last {days} days",
+        title=f"Top customers by tracked cost, {window_str}",
         columns=columns,
         rows=rows,
         total_count=len(rows),
         presentation=presentation,
     )
     return (
-        f"Top cost driver over the last {days} days: {top['customer']} with "
+        f"Top cost driver, {window_str}: {top['customer']} with "
         f"{top['share']} of all tracked costs. " + summary
     )
 
@@ -847,6 +1033,7 @@ ENTITY_TOOLS_WITH_SCOPES: Sequence[tuple[object, Scope]] = [
     (list_checkouts, Scope.checkouts_read),
     (list_refunds, Scope.refunds_read),
     (list_payouts, Scope.payouts_read),
+    (get_payout_summary, Scope.payouts_read),
     (top_customers_by_cost, Scope.events_read),
     (top_products_by_revenue, Scope.metrics_read),
     (top_customers_by_revenue, Scope.orders_read),

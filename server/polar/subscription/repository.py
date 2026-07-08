@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 import sqlalchemy as sa
-from sqlalchemy import Select, and_, case, cast, func, or_, select
+from sqlalchemy import ColumnElement, Select, and_, case, cast, func, or_, select
 from sqlalchemy.orm import contains_eager
 from sqlalchemy.orm.strategy_options import joinedload, selectinload
 
@@ -179,16 +179,19 @@ class SubscriptionRepository(
         organization_id: UUID,
         *,
         since: datetime,
+        until: datetime | None = None,
         limit: int,
     ) -> tuple[Sequence[Subscription], int]:
-        """Subscriptions that ended since the cutoff, most recent first, with
+        """Subscriptions that ended in [since, until), most recent first, with
         customer and product loaded. Second element is the window's total, so
         callers can say "showing N of M" when the limit truncates."""
-        window = (
+        window: tuple[ColumnElement[bool], ...] = (
             Subscription.organization_id == organization_id,
             Subscription.ended_at.is_not(None),
             Subscription.ended_at >= since,
         )
+        if until is not None:
+            window = (*window, Subscription.ended_at < until)
         statement = (
             self.get_base_statement()
             .where(*window)

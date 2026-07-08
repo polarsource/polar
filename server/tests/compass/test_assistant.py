@@ -21,6 +21,7 @@ from polar.compass.assistant.blocks import (
 from polar.compass.assistant.customer_tools import get_customer_overview
 from polar.compass.assistant.deps import AssistantDeps
 from polar.compass.assistant.entity_tools import (
+    get_payout_summary,
     list_checkouts,
     list_churned_subscriptions,
     list_customers,
@@ -42,6 +43,8 @@ from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_checkout,
+    create_order,
     create_subscription,
     create_trialing_subscription,
 )
@@ -86,7 +89,7 @@ class TestToolsForScopes:
             Scope.disputes_read: [list_disputes],
             Scope.checkouts_read: [list_checkouts],
             Scope.refunds_read: [list_refunds],
-            Scope.payouts_read: [list_payouts],
+            Scope.payouts_read: [list_payouts, get_payout_summary],
             Scope.events_read: [top_customers_by_cost],
         }
         for scope, tools in cases.items():
@@ -146,6 +149,32 @@ class TestToolScopeGuards:
         assert "Unknown metric slugs" in result
         assert deps.blocks == []
 
+    async def test_get_metrics_rejects_inverted_date_range(self) -> None:
+        deps = _deps(scopes={Scope.metrics_read})
+
+        result = await get_metrics(
+            _ctx(deps),
+            ["monthly_recurring_revenue"],
+            start_date=date(2026, 7, 5),
+            end_date=date(2026, 7, 1),
+        )
+
+        assert "Invalid date range" in result
+        assert deps.blocks == []
+
+    async def test_get_metrics_rejects_overlong_date_range(self) -> None:
+        deps = _deps(scopes={Scope.metrics_read})
+
+        result = await get_metrics(
+            _ctx(deps),
+            ["monthly_recurring_revenue"],
+            start_date=date(2025, 1, 1),
+            end_date=date(2026, 7, 1),
+        )
+
+        assert "Date range too long" in result
+        assert deps.blocks == []
+
 
 def _live_deps(
     session: AsyncSession,
@@ -159,6 +188,30 @@ def _live_deps(
         timezone=ZoneInfo("UTC"),
         today=utc_now().date(),
     )
+
+
+@pytest.mark.asyncio
+class TestGetMetricsExplicitWindow:
+    @pytest.mark.auth
+    async def test_single_day_window(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        deps = _live_deps(session, auth_subject, organization)
+        yesterday = deps.today - timedelta(days=1)
+
+        result = await get_metrics(
+            _ctx(deps), ["revenue"], start_date=yesterday, end_date=yesterday
+        )
+
+        assert f"from {yesterday} to {yesterday}" in result
+        assert len(deps.blocks) == 1
+        block = deps.blocks[0]
+        assert isinstance(block, MetricChartBlock)
+        assert len(block.points) == 1
 
 
 @pytest.mark.asyncio
@@ -241,6 +294,137 @@ class TestListChurnedSubscriptions:
 
         assert "No subscriptions ended" in result
         assert deps.blocks == []
+
+    @pytest.mark.auth
+    async def test_explicit_window(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        now = utc_now()
+        recent = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+            started_at=now - timedelta(days=60),
+            ended_at=now - timedelta(days=3),
+        )
+        recent.customer_cancellation_reason = CustomerCancellationReason.too_expensive
+        await save_fixture(recent)
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.unpaid,
+            started_at=now - timedelta(days=90),
+            ended_at=now - timedelta(days=10),
+            past_due_at=now - timedelta(days=15),
+        )
+
+        deps = _live_deps(session, auth_subject, organization)
+        day = deps.today - timedelta(days=10)
+        result = await list_churned_subscriptions(
+            _ctx(deps), start_date=day, end_date=day
+        )
+
+        assert "payment failure" in result
+        assert "too expensive" not in result
+        assert len(deps.blocks) == 1
+        block = deps.blocks[0]
+        assert isinstance(block, DataTableBlock)
+        assert block.total_count == 1
+
+
+@pytest.mark.asyncio
+class TestGetPayoutSummary:
+    @pytest.mark.auth
+    async def test_returns_a_payout_answer(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        deps = _live_deps(session, auth_subject, organization)
+
+        result = await get_payout_summary(_ctx(deps))
+
+        # Whichever branch applies (estimate, below minimum, or not payable
+        # yet), the tool must answer in payout terms and never render blocks.
+        assert "payout" in result.lower()
+        assert deps.blocks == []
+
+
+@pytest.mark.asyncio
+class TestListCheckoutsWindow:
+    @pytest.mark.auth
+    async def test_explicit_window(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        await create_checkout(save_fixture, products=[product])
+        old = await create_checkout(save_fixture, products=[product])
+        old.created_at = utc_now() - timedelta(days=10)
+        await save_fixture(old)
+
+        deps = _live_deps(session, auth_subject, organization)
+        result = await list_checkouts(
+            _ctx(deps), start_date=deps.today, end_date=deps.today
+        )
+
+        assert "1 of 1 checkouts" in result
+        assert len(deps.blocks) == 1
+
+
+@pytest.mark.asyncio
+class TestTopCustomersByRevenueWindow:
+    @pytest.mark.auth
+    async def test_single_day_window(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        now = utc_now()
+        await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subtotal_amount=500,
+            created_at=now - timedelta(days=1),
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subtotal_amount=9000,
+            created_at=now - timedelta(days=40),
+        )
+
+        deps = _live_deps(session, auth_subject, organization)
+        yesterday = deps.today - timedelta(days=1)
+        result = await top_customers_by_revenue(
+            _ctx(deps), start_date=yesterday, end_date=yesterday
+        )
+
+        assert f"{yesterday} to {yesterday}" in result
+        assert "(1 orders)" in result
+        assert len(deps.blocks) == 1
 
 
 @pytest.mark.asyncio

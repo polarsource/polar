@@ -5283,6 +5283,37 @@ class TestMarkPastDue:
 
 
 @pytest.mark.asyncio
+class TestMarkActive:
+    async def test_recovery_re_grants_benefits(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        enqueue_job_mock: MagicMock,
+    ) -> None:
+        # Given
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+
+        # When
+        result_subscription = await subscription_service.mark_active(
+            session, subscription
+        )
+
+        # Then
+        assert result_subscription.status == SubscriptionStatus.active
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=subscription.customer.id,
+            product_id=subscription.product.id,
+            subscription_id=subscription.id,
+            delay=None,
+        )
+
+
+@pytest.mark.asyncio
 class TestUpdatePaymentMethodFromRetry:
     async def test_existing_method(
         self,

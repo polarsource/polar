@@ -36,11 +36,15 @@ class BenefitLicenseKeysService(
         **scope: Unpack[BenefitGrantScopeArgs],
     ) -> BenefitGrantLicenseKeysProperties:
         current_lk_id = None
-        if update and "license_key_id" in grant_properties:
+        if "license_key_id" in grant_properties:
             current_lk_id = UUID(grant_properties["license_key_id"])
 
         user_provided_key: str | None = None
-        if not update and "user_provided_key" in grant_properties:
+        if (
+            not update
+            and current_lk_id is None
+            and "user_provided_key" in grant_properties
+        ):
             user_provided_key = grant_properties["user_provided_key"]
 
         license_key = await license_key_service.customer_grant(
@@ -52,6 +56,7 @@ class BenefitLicenseKeysService(
             member_id=member.id if member else None,
             # Subscription-backed keys never expire; they follow the subscription.
             set_expiration=scope.get("subscription_id") is None,
+            regrant=not update,
         )
         return {
             **grant_properties,

@@ -44,6 +44,7 @@ class FileService:
 
         statement = repository.get_statement_by_org_ids(org_ids).where(
             File.is_uploaded.is_(True),
+            File.flagged_malicious_at.is_(None),
             File.service != FileServiceTypes.support_case_attachment,
         )
 
@@ -191,6 +192,7 @@ class FileService:
             File.is_uploaded.is_(True),
             File.is_enabled.is_(True),
             File.is_deleted.is_(False),
+            File.flagged_malicious_at.is_(None),
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()

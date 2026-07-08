@@ -50319,7 +50319,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Expired signature */
+      /** @description Expired signature or file no longer available */
       410: {
         headers: {
           [name: string]: unknown

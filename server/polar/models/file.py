@@ -50,7 +50,7 @@ class File(RecordModel):
 
     name: Mapped[str] = mapped_column(String, nullable=False)
     version: Mapped[str | None] = mapped_column(String, nullable=True)
-    path: Mapped[str] = mapped_column(String, nullable=False)
+    path: Mapped[str] = mapped_column(String, nullable=False, index=True)
     mime_type: Mapped[str] = mapped_column(String, nullable=False)
     size: Mapped[int] = mapped_column(BigInteger, nullable=False)
 

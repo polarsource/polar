@@ -219,6 +219,52 @@ class TestDownloadablesEndpoints:
         assert len(downloadable_list) == 0
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_flagged_malicious_file_vanishes(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        uploaded_logo_jpg: File,
+    ) -> None:
+        _, granted = await TestDownloadable.create_benefit_and_grant(
+            session,
+            redis,
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            product=product,
+            properties=BenefitDownloadablesCreateProperties(
+                files=[uploaded_logo_jpg.id]
+            ),
+        )
+
+        response = await client.get("/v1/customer-portal/downloadables/")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total_count"] == 1
+        polar_download_url = data["items"][0]["file"]["download"]["url"]
+
+        statement = (
+            sql.update(File)
+            .where(File.id == uploaded_logo_jpg.id)
+            .values(flagged_malicious_at=utc_now())
+        )
+        await session.execute(statement)
+
+        response = await client.get("/v1/customer-portal/downloadables/")
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total_count"] == 0
+        assert len(data["items"]) == 0
+
+        response = await client.get(polar_download_url, follow_redirects=False)
+        assert response.status_code == 410
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_download(
         self,
         session: AsyncSession,

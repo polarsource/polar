@@ -50,6 +50,7 @@ class FileRepository(
         statement = self.get_base_statement().where(
             File.organization_id == organization_id,
             File.is_uploaded.is_(True),
+            File.flagged_malicious_at.is_(None),
         )
 
         if service is not None:
@@ -74,6 +75,7 @@ class FileRepository(
         statement = self.get_base_statement().where(
             File.organization_id == organization_id,
             File.is_uploaded.is_(True),
+            File.flagged_malicious_at.is_(None),
         )
 
         if service is not None:

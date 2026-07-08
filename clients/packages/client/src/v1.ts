@@ -21355,6 +21355,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** InvalidSourceCredentials */
+    InvalidSourceCredentials: {
+      /**
+       * Error
+       * @example InvalidSourceCredentials
+       * @constant
+       */
+      error: 'InvalidSourceCredentials'
+      /** Detail */
+      detail: string
+    }
     /** LLMMetadata */
     LLMMetadata: {
       /**
@@ -22694,6 +22705,11 @@ export interface components {
       organization_id: string
       /** @description The provider to migrate the billing from. */
       source_platform: components['schemas']['MerchantMigrationSourcePlatform']
+      /**
+       * Api Key
+       * @description A Stripe API key for the source account (a restricted `rk_...` key is recommended). It is validated for all required permissions before the migration is saved.
+       */
+      api_key: string
     }
     /** MerchantMigrationNotFound */
     MerchantMigrationNotFound: {
@@ -23614,6 +23630,17 @@ export interface components {
        * @constant
        */
       error: 'MissingPaymentMethodError'
+      /** Detail */
+      detail: string
+    }
+    /** MissingStripeScopes */
+    MissingStripeScopes: {
+      /**
+       * Error
+       * @example MissingStripeScopes
+       * @constant
+       */
+      error: 'MissingStripeScopes'
       /** Detail */
       detail: string
     }
@@ -31014,6 +31041,17 @@ export interface components {
        * @constant
        */
       error: 'SourceNotConnected'
+      /** Detail */
+      detail: string
+    }
+    /** SourceVerificationUnavailable */
+    SourceVerificationUnavailable: {
+      /**
+       * Error
+       * @example SourceVerificationUnavailable
+       * @constant
+       */
+      error: 'SourceVerificationUnavailable'
       /** Detail */
       detail: string
     }
@@ -49686,6 +49724,27 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigration']
         }
       }
+      /** @description The Stripe API key is invalid or missing permissions. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['InvalidSourceCredentials']
+            | components['schemas']['MissingStripeScopes']
+            | components['schemas']['UnsupportedMigrationSource']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -49693,6 +49752,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+      /** @description Couldn't reach Stripe to validate the key. */
+      502: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SourceVerificationUnavailable']
         }
       }
     }

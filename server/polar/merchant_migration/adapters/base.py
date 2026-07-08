@@ -8,7 +8,8 @@ class SourceAdapter(Protocol):
     """Reads one billing provider into provider-agnostic CanonicalRecords.
 
     ``extract`` is an async iterator because source data can be huge and must be
-    streamed, not materialized.
+    streamed, not materialized. Credential validation is provider-specific and
+    lives on the concrete adapter (e.g. ``StripeAdapter.verify_scopes``), not here.
     """
 
     def extract(self) -> AsyncIterator[CanonicalRecord]: ...

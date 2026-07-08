@@ -2,26 +2,22 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useMerchantMigration } from '@/hooks/queries/merchantMigrations'
-import { getPublicServerURL } from '@/utils/api'
 import { schemas } from '@polar-sh/client'
 import { Alert, Spinner, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
-import { useCallback } from 'react'
 import { MigrationTimeline } from '../MigrationTimeline'
 import { StripeMark } from '../StripeMark'
 
 interface Props {
   organization: schemas['Organization']
   migrationId: string
-  error?: string
 }
 
 export default function MigrationDetailPage({
   organization,
   migrationId,
-  error,
 }: Props) {
   const {
     data: migration,
@@ -31,15 +27,6 @@ export default function MigrationDetailPage({
 
   const basePath = `/dashboard/${organization.slug}/settings/migrations`
   const connected = migration?.source_connected ?? false
-
-  const connect = useCallback(() => {
-    const returnTo = `${basePath}/${migrationId}`
-    window.location.href = getPublicServerURL(
-      `/v1/merchant-migrations/stripe/authorize` +
-        `?migration_id=${encodeURIComponent(migrationId)}` +
-        `&return_to=${encodeURIComponent(returnTo)}`,
-    )
-  }, [basePath, migrationId])
 
   return (
     <DashboardBody title="Migration">
@@ -57,14 +44,6 @@ export default function MigrationDetailPage({
             </Text>
           </Box>
         </Link>
-
-        {error && (
-          <Alert
-            variant="danger"
-            title="We couldn't connect your Stripe account"
-            description="The authorization didn't complete. Please try connecting again."
-          />
-        )}
 
         {isLoading ? (
           <Box padding="3xl" alignItems="center" justifyContent="center">
@@ -84,7 +63,7 @@ export default function MigrationDetailPage({
 
             <Divider />
 
-            <MigrationTimeline migration={migration} onConnect={connect} />
+            <MigrationTimeline migration={migration} />
 
             {connected && (
               <Text variant="caption" color="muted">
@@ -115,13 +94,9 @@ function AccountHeader({
           <Text variant="heading-xs" as="h2">
             Stripe
           </Text>
-          {connected && stripeUserId ? (
+          {stripeUserId && (
             <Text variant="caption" color="muted" monospace>
               {stripeUserId}
-            </Text>
-          ) : (
-            <Text variant="caption" color="muted">
-              Not connected yet
             </Text>
           )}
         </Box>

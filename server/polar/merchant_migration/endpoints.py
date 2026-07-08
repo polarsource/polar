@@ -1,12 +1,10 @@
 from typing import Annotated
 
-from fastapi import Depends, Query, Request
-from fastapi.responses import RedirectResponse
+from fastapi import Depends, Query
 from pydantic import UUID4
 
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.http import ReturnTo, add_query_parameters, get_safe_return_url
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import MerchantMigration
 from polar.openapi import APITag
@@ -24,8 +22,11 @@ from .schemas import (
     PrecheckReport,
 )
 from .service import (
+    InvalidSourceCredentials,
     MerchantMigrationNotFound,
+    MissingStripeScopes,
     SourceNotConnected,
+    SourceVerificationUnavailable,
     UnsupportedMigrationSource,
 )
 from .service import merchant_migration as merchant_migration_service
@@ -34,8 +35,6 @@ router = APIRouter(
     prefix="/merchant-migrations",
     tags=["merchant-migrations", APITag.private],
 )
-
-STRIPE_CALLBACK_ROUTE_NAME = "merchant_migrations.stripe.callback"
 
 
 @router.get(
@@ -67,6 +66,22 @@ async def list(
     response_model=MerchantMigrationSchema,
     status_code=201,
     summary="Create Merchant Migration",
+    responses={
+        400: {
+            "description": "The Stripe API key is invalid or missing permissions.",
+            "model": InvalidSourceCredentials.schema()
+            | MissingStripeScopes.schema()
+            | UnsupportedMigrationSource.schema(),
+        },
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        502: {
+            "description": "Couldn't reach Stripe to validate the key.",
+            "model": SourceVerificationUnavailable.schema(),
+        },
+    },
 )
 async def create(
     migration_create: MerchantMigrationCreate,
@@ -76,46 +91,6 @@ async def create(
     return await merchant_migration_service.create(
         session, auth_subject, migration_create
     )
-
-
-@router.get("/stripe/authorize", include_in_schema=False)
-async def stripe_authorize(
-    migration_id: Annotated[UUID4, Query()],
-    return_to: ReturnTo,
-    auth_subject: MerchantMigrationWrite,
-    request: Request,
-    session: AsyncSession = Depends(get_db_session),
-) -> RedirectResponse:
-    redirect_uri = str(request.url_for(STRIPE_CALLBACK_ROUTE_NAME))
-    authorize_url = await merchant_migration_service.create_stripe_authorization_url(
-        session,
-        auth_subject,
-        migration_id=migration_id,
-        redirect_uri=redirect_uri,
-        return_to=return_to,
-    )
-    return RedirectResponse(authorize_url, 303)
-
-
-@router.get(
-    "/stripe/callback",
-    name=STRIPE_CALLBACK_ROUTE_NAME,
-    include_in_schema=False,
-)
-async def stripe_callback(
-    auth_subject: MerchantMigrationWrite,
-    state: str = Query(...),
-    code: str | None = Query(None),
-    error: str | None = Query(None),
-    session: AsyncSession = Depends(get_db_session),
-) -> RedirectResponse:
-    result = await merchant_migration_service.complete_stripe_authorization(
-        session, auth_subject, state=state, code=code, error=error
-    )
-    target = result.return_to
-    if result.error is not None:
-        target = add_query_parameters(target, error=result.error)
-    return RedirectResponse(get_safe_return_url(target), 303)
 
 
 @router.get(

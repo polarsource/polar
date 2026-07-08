@@ -17,6 +17,15 @@ class MerchantMigrationCreate(Schema):
     source_platform: MerchantMigrationSourcePlatform = Field(
         description="The provider to migrate the billing from.",
     )
+    api_key: str = Field(
+        min_length=1,
+        pattern=r"^(rk|sk)_",
+        description=(
+            "A Stripe API key for the source account (a restricted `rk_...` key is "
+            "recommended). It is validated for all required permissions before the "
+            "migration is saved."
+        ),
+    )
 
 
 class PrecheckIssueLevel(StrEnum):

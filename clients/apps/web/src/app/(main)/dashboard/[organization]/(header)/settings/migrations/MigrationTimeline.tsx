@@ -1,5 +1,5 @@
 import { schemas } from '@polar-sh/client'
-import { Button, Status, Text } from '@polar-sh/orbit'
+import { Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Check } from 'lucide-react'
 import { PrecheckPanel } from './PrecheckPanel'
@@ -14,10 +14,8 @@ type StepState = 'done' | 'current' | 'upcoming'
 
 export function MigrationTimeline({
   migration,
-  onConnect,
 }: {
   migration: schemas['MerchantMigration']
-  onConnect: () => void
 }) {
   const connected = migration.source_connected
   const currentIndex = stepPosition(currentStepKey(migration))
@@ -34,8 +32,6 @@ export function MigrationTimeline({
               : 'upcoming'
         const last = index === MIGRATION_STEPS.length - 1
         const ownerLabel = OWNER_LABELS[def.owner]
-        const showConnect =
-          state === 'current' && def.step === 'source_setup' && !connected
         const showPrecheck =
           state === 'current' && def.step === 'pre_check' && connected
 
@@ -78,13 +74,6 @@ export function MigrationTimeline({
               <Text variant="caption" color="muted">
                 {def.description}
               </Text>
-              {showConnect && (
-                <Box paddingTop="s">
-                  <Button size="sm" onClick={onConnect}>
-                    Connect Stripe
-                  </Button>
-                </Box>
-              )}
               {showPrecheck && <PrecheckPanel migrationId={migration.id} />}
             </Box>
           </Box>

@@ -20,7 +20,7 @@ export const MIGRATION_STEPS: MigrationStepDef[] = [
     owner: 'you',
     title: 'Connect your Stripe account',
     description:
-      'Authorize Polar to read your Stripe products, customers and subscriptions.',
+      'Paste a Stripe restricted API key so Polar can read your products, customers and subscriptions.',
   },
   {
     step: 'pre_check',

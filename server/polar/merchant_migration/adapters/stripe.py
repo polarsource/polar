@@ -1,7 +1,8 @@
 """Reads a merchant's Stripe account with its own restricted-key client
 (never Polar's platform key) and normalizes it into CanonicalRecords."""
 
-from collections.abc import AsyncIterator
+import asyncio
+from collections.abc import AsyncIterator, Awaitable, Callable
 from datetime import UTC, datetime
 from typing import Any
 
@@ -36,6 +37,66 @@ class StripeAdapter:
             access_token, stripe_version=STRIPE_API_VERSION
         )
 
+    async def verify_scopes(self) -> list[str]:
+        """Probe every permission the migration needs, concurrently, and return the
+        labels of the ones the key is missing (empty list = fully scoped).
+
+        Stripe has no endpoint to introspect a restricted key's permissions, so we
+        exercise each one: a missing permission raises ``PermissionError``. Any
+        other failure — an invalid key (``AuthenticationError``), a rate limit, a
+        network blip — propagates, so we fail closed rather than accept a key we
+        couldn't fully check. The probes cover exactly what ``extract()`` reads
+        plus the ``subscription_write`` needed to stop billing at cutover.
+        """
+        v1 = self._client.v1
+        probes: list[tuple[str, Callable[[], Awaitable[Any]]]] = [
+            ("Customers", lambda: v1.customers.list_async(params={"limit": 1})),
+            ("Products", lambda: v1.products.list_async(params={"limit": 1})),
+            ("Prices", lambda: v1.prices.list_async(params={"limit": 1})),
+            ("Subscriptions", lambda: v1.subscriptions.list_async(params={"limit": 1})),
+            (
+                "Payment methods",
+                lambda: v1.payment_methods.list_async(
+                    params={"limit": 1, "type": "card"}
+                ),
+            ),
+            ("Subscriptions (write)", self._probe_subscription_write),
+        ]
+        results = await asyncio.gather(
+            *(self._probe_scope(label, probe) for label, probe in probes)
+        )
+        return [label for label in results if label is not None]
+
+    async def _probe_scope(
+        self, label: str, probe: Callable[[], Awaitable[Any]]
+    ) -> str | None:
+        try:
+            await probe()
+            return None
+        except stripe_lib.PermissionError:
+            return label
+
+    async def _probe_subscription_write(self) -> None:
+        # Probe write access without side effects: cancelling a non-existent
+        # subscription fails with "no such subscription" (InvalidRequestError)
+        # when the key can write, and with PermissionError when it can't. Only the
+        # former means the scope is granted.
+        try:
+            await self._client.v1.subscriptions.cancel_async("sub_polar_scope_probe")
+        except stripe_lib.InvalidRequestError:
+            pass
+
+    async def _current_account(self) -> stripe_lib.Account | None:
+        # Best-effort: a restricted key may lack account read scope.
+        try:
+            return await self._client.v1.accounts.retrieve_current_async()
+        except stripe_lib.StripeError:
+            return None
+
+    async def get_account_id(self) -> str | None:
+        account = await self._current_account()
+        return account.id if account else None
+
     async def extract(self) -> AsyncIterator[CanonicalRecord]:
         async for product in self._extract_products():
             yield product
@@ -45,15 +106,10 @@ class StripeAdapter:
             yield subscription
 
     async def get_source_account(self) -> CanonicalAccount:
-        # Best-effort: the restricted OAuth key may lack account/Connect read
-        # scope, in which case we can't determine these and don't block.
-        country: str | None = None
+        # Best-effort: the restricted key may lack account/Connect read scope, in
+        # which case we can't determine these and don't block.
+        account = await self._current_account()
         is_connect_platform = False
-        try:
-            account = await self._client.v1.accounts.retrieve_current_async()
-            country = account.country
-        except stripe_lib.StripeError:
-            pass
         try:
             # Only Connect platforms may list connected accounts; a non-platform
             # gets a permission error. So the call *succeeding* — not the number
@@ -64,7 +120,8 @@ class StripeAdapter:
         except stripe_lib.StripeError:
             pass
         return CanonicalAccount(
-            country=country, is_connect_platform=is_connect_platform
+            country=account.country if account else None,
+            is_connect_platform=is_connect_platform,
         )
 
     async def _extract_products(self) -> AsyncIterator[CanonicalProduct]:

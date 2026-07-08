@@ -1,16 +1,13 @@
 from collections.abc import AsyncIterator, Sequence
-from dataclasses import dataclass
-from typing import Any, Literal, TypedDict
+from typing import TypedDict
 from uuid import UUID
 
-import structlog
+import stripe as stripe_lib
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
-from polar.config import settings
-from polar.exceptions import PolarError, ResourceNotFound
-from polar.kit import jwt
+from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
 from polar.kit.pagination import PaginationParams
@@ -36,19 +33,6 @@ from .schemas import (
     PrecheckRecordStatus,
     PrecheckReport,
 )
-from .stripe_oauth import (
-    StripeAppNotConfigured,
-    StripeOAuthError,
-    StripeOAuthToken,
-    stripe_oauth,
-)
-
-log = structlog.get_logger()
-
-OAUTH_STATE_JWT_TYPE: Literal["stripe_app_oauth"] = "stripe_app_oauth"
-# The state must survive the whole interactive consent on Stripe, so give it more
-# room than the 15-minute JWT default.
-OAUTH_STATE_EXPIRATION = 60 * 60
 
 SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT = {
     "table": "merchant_migrations",
@@ -59,23 +43,17 @@ SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT = {
 class StripeSourceCredentials(TypedDict):
     """Shape of ``MerchantMigration.source_credentials`` for a Stripe source.
 
-    Only ``refresh_token_encrypted`` is a secret: it holds the ciphertext of the
-    long-lived refresh token, decrypted on demand to mint a short-lived access
-    token. The other fields are non-secret account metadata.
+    Only ``api_key_encrypted`` is a secret: the ciphertext of the merchant's
+    restricted API key, decrypted on demand to read their account. The other
+    fields are non-secret metadata surfaced to the API.
     """
 
-    stripe_user_id: str
-    scope: str
+    api_key_encrypted: str
+    stripe_user_id: str | None
     livemode: bool
-    refresh_token_encrypted: str
 
 
 class MerchantMigrationError(PolarError): ...
-
-
-class InvalidStripeOAuthState(MerchantMigrationError):
-    def __init__(self, message: str = "Invalid Stripe authorization state.") -> None:
-        super().__init__(message, 400)
 
 
 class MerchantMigrationNotFound(MerchantMigrationError):
@@ -102,18 +80,29 @@ class MerchantMigrationNotEnabled(MerchantMigrationError):
         )
 
 
-class NotAStripeMigration(MerchantMigrationError):
+class InvalidSourceCredentials(MerchantMigrationError):
     def __init__(self) -> None:
-        super().__init__("This migration does not use Stripe as its source.", 400)
+        super().__init__(
+            "The provided Stripe API key is invalid.",
+            400,
+        )
 
 
-@dataclass
-class StripeConnectResult:
-    """Where the callback should send the merchant back, and an error message to
-    surface there if the connection didn't complete."""
+class MissingStripeScopes(MerchantMigrationError):
+    def __init__(self, missing: list[str]) -> None:
+        self.missing = missing
+        super().__init__(
+            "The Stripe API key is missing access to: " + ", ".join(missing) + ".",
+            400,
+        )
 
-    return_to: str
-    error: str | None = None
+
+class SourceVerificationUnavailable(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "We couldn't verify the Stripe key right now. Please try again.",
+            502,
+        )
 
 
 class MerchantMigrationService:
@@ -153,6 +142,9 @@ class MerchantMigrationService:
         auth_subject: AuthSubject[User | Organization],
         create_schema: MerchantMigrationCreate,
     ) -> MerchantMigration:
+        """Validate the source API key's permissions, then create the migration
+        with the key stored. If the key is invalid or missing any required scope,
+        nothing is persisted — the merchant fixes the key and retries."""
         await assert_organization_permission(
             session,
             auth_subject,
@@ -160,15 +152,36 @@ class MerchantMigrationService:
             OrganizationPermission.organization_manage,
         )
         await self._assert_feature_enabled(session, create_schema.organization_id)
-        repository = MerchantMigrationRepository.from_session(session)
-        return await repository.create(
-            MerchantMigration(
-                organization_id=create_schema.organization_id,
-                source_platform=create_schema.source_platform,
-                step=MerchantMigrationStep.source_setup,
-            ),
-            flush=True,
+        if create_schema.source_platform != MerchantMigrationSourcePlatform.stripe:
+            raise UnsupportedMigrationSource(create_schema.source_platform)
+
+        adapter = StripeAdapter(create_schema.api_key)
+        try:
+            missing_scopes = await adapter.verify_scopes()
+        except stripe_lib.AuthenticationError as e:
+            raise InvalidSourceCredentials() from e
+        except stripe_lib.StripeError as e:
+            # A non-permission failure (rate limit, network) means we couldn't
+            # fully check the key — fail closed rather than store an unvalidated one.
+            raise SourceVerificationUnavailable() from e
+        if missing_scopes:
+            raise MissingStripeScopes(missing_scopes)
+
+        # Pre-generate the id so the credentials (encrypted with it as context) can
+        # be set before the row is inserted — one INSERT instead of INSERT+UPDATE.
+        migration = MerchantMigration(
+            id=MerchantMigration.generate_id(),
+            organization_id=create_schema.organization_id,
+            source_platform=create_schema.source_platform,
+            step=MerchantMigrationStep.source_setup,
         )
+        migration.source_credentials = dict(
+            await self._build_stripe_credentials(
+                migration, create_schema.api_key, adapter
+            )
+        )
+        repository = MerchantMigrationRepository.from_session(session)
+        return await repository.create(migration, flush=True)
 
     async def run_precheck(
         self,
@@ -179,6 +192,37 @@ class MerchantMigrationService:
         """Read the connected source, normalize it, and report whether it can be
         imported. Advances the migration from source setup to the precheck step.
         """
+        migration = await self._get_manageable(session, auth_subject, migration_id)
+
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            migration.organization_id
+        )
+        if organization is None:
+            raise MerchantMigrationNotFound()
+
+        adapter = await self._build_adapter(migration)
+        source_account = await adapter.get_source_account()
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        report = await precheck_engine.run(
+            self._stage_records(
+                record_repository, migration, organization, adapter.extract()
+            ),
+            organization,
+            source_account,
+        )
+
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.update(
+            migration, update_dict={"step": MerchantMigrationStep.pre_check}
+        )
+        return report
+
+    async def _get_manageable(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> MerchantMigration:
         repository = MerchantMigrationRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).where(
             MerchantMigration.id == migration_id
@@ -192,28 +236,7 @@ class MerchantMigrationService:
             migration.organization_id,
             OrganizationPermission.organization_manage,
         )
-
-        organization = await OrganizationRepository.from_session(session).get_by_id(
-            migration.organization_id
-        )
-        if organization is None:
-            raise MerchantMigrationNotFound()
-
-        adapter = await self._build_adapter(session, migration)
-        source_account = await adapter.get_source_account()
-        record_repository = MerchantMigrationRecordRepository.from_session(session)
-        report = await precheck_engine.run(
-            self._stage_records(
-                record_repository, migration, organization, adapter.extract()
-            ),
-            organization,
-            source_account,
-        )
-
-        await repository.update(
-            migration, update_dict={"step": MerchantMigrationStep.pre_check}
-        )
-        return report
+        return migration
 
     async def list_records(
         self,
@@ -228,19 +251,7 @@ class MerchantMigrationService:
         """Return the records of one entity type from the staged ledger,
         classified importable/skipped and paginated in memory. Reads what
         ``run_precheck`` persisted, so it never re-reads the source."""
-        repository = MerchantMigrationRepository.from_session(session)
-        statement = repository.get_readable_statement(auth_subject).where(
-            MerchantMigration.id == migration_id
-        )
-        migration = await repository.get_one_or_none(statement)
-        if migration is None:
-            raise MerchantMigrationNotFound()
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            migration.organization_id,
-            OrganizationPermission.organization_manage,
-        )
+        migration = await self._get_manageable(session, auth_subject, migration_id)
 
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         staged = await record_repository.list_by_migration(migration.id)
@@ -265,35 +276,35 @@ class MerchantMigrationService:
             await record_repository.upsert(migration, organization, record)
             yield record
 
-    async def _build_adapter(
-        self, session: AsyncSession, migration: MerchantMigration
-    ) -> SourceAdapter:
+    async def _build_adapter(self, migration: MerchantMigration) -> SourceAdapter:
         if migration.source_platform != MerchantMigrationSourcePlatform.stripe:
             raise UnsupportedMigrationSource(migration.source_platform)
-        access_token = await self._refresh_stripe_access_token(session, migration)
-        return StripeAdapter(access_token)
+        return StripeAdapter(await self._decrypt_stripe_api_key(migration))
 
-    async def _refresh_stripe_access_token(
-        self, session: AsyncSession, migration: MerchantMigration
-    ) -> str:
-        """Mint a short-lived access token from the stored refresh token, and
-        persist the rotated refresh token Stripe returns."""
-        credentials = migration.source_credentials
-        encrypted = credentials.get("refresh_token_encrypted")
+    async def _decrypt_stripe_api_key(self, migration: MerchantMigration) -> str:
+        encrypted = migration.source_credentials.get("api_key_encrypted")
         if not encrypted:
             raise SourceNotConnected()
-
-        refresh_token = await EncryptedString(
+        return await EncryptedString(
             encrypted, SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT
         ).decrypt(id=str(migration.id))
-        token = await stripe_oauth.refresh(refresh_token)
 
-        new_credentials = await self._build_stripe_credentials(migration, token)
-        repository = MerchantMigrationRepository.from_session(session)
-        await repository.update(
-            migration, update_dict={"source_credentials": dict(new_credentials)}
+    async def _build_stripe_credentials(
+        self,
+        migration: MerchantMigration,
+        api_key: str,
+        adapter: StripeAdapter,
+    ) -> StripeSourceCredentials:
+        encrypted = await EncryptedString.encrypt(
+            api_key,
+            context={**SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT, "id": str(migration.id)},
         )
-        return token.access_token
+        return StripeSourceCredentials(
+            api_key_encrypted=encrypted.encrypted_value,
+            stripe_user_id=await adapter.get_account_id(),
+            # `*_live_` keys operate on live data; everything else is test mode.
+            livemode=api_key.startswith(("rk_live_", "sk_live_")),
+        )
 
     async def _assert_feature_enabled(
         self, session: AsyncReadSession, organization_id: UUID
@@ -302,131 +313,6 @@ class MerchantMigrationService:
         organization = await organization_repository.get_by_id(organization_id)
         if organization is None or not organization.is_merchant_migration_enabled:
             raise MerchantMigrationNotEnabled()
-
-    async def create_stripe_authorization_url(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        *,
-        migration_id: UUID,
-        redirect_uri: str,
-        return_to: str,
-    ) -> str:
-        migration = await self.get(session, auth_subject, migration_id)
-        if migration is None:
-            raise ResourceNotFound()
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            migration.organization_id,
-            OrganizationPermission.organization_manage,
-        )
-        if migration.source_platform != MerchantMigrationSourcePlatform.stripe:
-            raise NotAStripeMigration()
-        if not stripe_oauth.is_configured():
-            raise StripeAppNotConfigured()
-
-        state = jwt.encode(
-            data={
-                "migration_id": str(migration.id),
-                "subject_id": str(auth_subject.subject.id),
-                "return_to": return_to,
-            },
-            secret=settings.SECRET,
-            type=OAUTH_STATE_JWT_TYPE,
-            expires_in=OAUTH_STATE_EXPIRATION,
-        )
-        return stripe_oauth.build_authorize_url(state=state, redirect_uri=redirect_uri)
-
-    async def complete_stripe_authorization(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        *,
-        state: str,
-        code: str | None,
-        error: str | None,
-    ) -> StripeConnectResult:
-        """Handle the Stripe OAuth callback end to end: validate the state, run
-        the code exchange, and store the credentials. A tampered/expired state
-        raises (nothing trustworthy to redirect to); every other failure comes
-        back as a ``StripeConnectResult`` with an ``error`` to show the merchant.
-        """
-        state_data = self._decode_state(state)
-        return_to = state_data.get("return_to") or ""
-
-        if state_data.get("subject_id") != str(auth_subject.subject.id):
-            return StripeConnectResult(
-                return_to=return_to,
-                error="Authorization must be completed by the same account "
-                "that started it.",
-            )
-        if code is None or error is not None:
-            return StripeConnectResult(
-                return_to=return_to,
-                error=error or "Failed to connect Stripe account.",
-            )
-
-        try:
-            await self._store_stripe_credentials(
-                session, auth_subject, UUID(state_data["migration_id"]), code
-            )
-        except (StripeOAuthError, MerchantMigrationError) as e:
-            log.error(
-                "merchant_migration.stripe_authorization_failed",
-                migration_id=state_data.get("migration_id"),
-                error=str(e),
-            )
-            return StripeConnectResult(
-                return_to=return_to, error="Failed to connect Stripe account."
-            )
-        return StripeConnectResult(return_to=return_to)
-
-    def _decode_state(self, state: str) -> dict[str, Any]:
-        try:
-            return jwt.decode(
-                token=state, secret=settings.SECRET, type=OAUTH_STATE_JWT_TYPE
-            )
-        except (jwt.DecodeError, jwt.ExpiredSignatureError) as e:
-            raise InvalidStripeOAuthState(str(e)) from e
-
-    async def _store_stripe_credentials(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
-        migration_id: UUID,
-        code: str,
-    ) -> None:
-        repository = MerchantMigrationRepository.from_session(session)
-        migration = await repository.get_by_id(migration_id)
-        if migration is None:
-            raise InvalidStripeOAuthState("Unknown migration.")
-        await assert_organization_permission(
-            session,
-            auth_subject,
-            migration.organization_id,
-            OrganizationPermission.organization_manage,
-        )
-
-        token = await stripe_oauth.exchange_code(code)
-        credentials = await self._build_stripe_credentials(migration, token)
-        await repository.update(
-            migration, update_dict={"source_credentials": dict(credentials)}
-        )
-
-    async def _build_stripe_credentials(
-        self, migration: MerchantMigration, token: StripeOAuthToken
-    ) -> StripeSourceCredentials:
-        encrypted = await EncryptedString.encrypt(
-            token.refresh_token,
-            context={**SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT, "id": str(migration.id)},
-        )
-        return StripeSourceCredentials(
-            stripe_user_id=token.stripe_user_id,
-            scope=token.scope,
-            livemode=token.livemode,
-            refresh_token_encrypted=encrypted.encrypted_value,
-        )
 
 
 merchant_migration = MerchantMigrationService()

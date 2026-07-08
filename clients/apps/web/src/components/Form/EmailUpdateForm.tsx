@@ -1,6 +1,5 @@
 'use client'
 
-import { useSessionRefreshPrompt } from '@/components/Settings/SessionRefreshModal'
 import { useSendEmailUpdate } from '@/hooks/emailUpdate'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Button } from '@polar-sh/orbit'
@@ -28,8 +27,6 @@ const EmailUpdateForm = ({
   const [loading, setLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const sendEmailUpdate = useSendEmailUpdate()
-  const { promptIfSessionNotFresh, sessionRefreshModal } =
-    useSessionRefreshPrompt()
 
   const onSubmit: SubmitHandler<{ email: string }> = async ({ email }) => {
     setErrorMessage(null) // Clear previous errors
@@ -37,9 +34,6 @@ const EmailUpdateForm = ({
     const { error } = await sendEmailUpdate(email, returnTo)
     setLoading(false)
     if (error) {
-      if (promptIfSessionNotFresh(error)) {
-        return
-      }
       let errMsg = 'An error occurred while updating your email.'
       if (error.detail && Array.isArray(error.detail)) {
         const emailError = error.detail.find(
@@ -107,7 +101,6 @@ const EmailUpdateForm = ({
             {errorMessage}
           </div>
         )}
-        {sessionRefreshModal}
       </form>
     </Form>
   )

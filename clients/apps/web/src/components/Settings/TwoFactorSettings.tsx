@@ -15,7 +15,6 @@ import { useState } from 'react'
 import TOTPSetupModal from './TOTPSetupModal'
 import BackupCodesModal from './BackupCodesModal'
 import BackupCodesRegenerateModal from './BackupCodesRegenerateModal'
-import { useSessionRefreshPrompt } from './SessionRefreshModal'
 import { toast } from '../Toast/use-toast'
 import { KeyRoundIcon, ShieldCheckIcon } from 'lucide-react'
 
@@ -78,15 +77,9 @@ const TwoFactorSettings = () => {
 
   const [newBackupCodes, setNewBackupCodes] = useState<string[] | null>(null)
 
-  const { promptIfSessionNotFresh, sessionRefreshModal } =
-    useSessionRefreshPrompt()
-
   const handleDeleteTOTP = async () => {
     const { error } = await totpDelete.mutateAsync()
     if (error) {
-      if (promptIfSessionNotFresh(error)) {
-        return
-      }
       toast({
         title: 'Error',
         description: extractApiErrorMessage(error),
@@ -153,9 +146,6 @@ const TwoFactorSettings = () => {
                       const { data, error } =
                         await backupCodesEnroll.mutateAsync()
                       if (error) {
-                        if (promptIfSessionNotFresh(error)) {
-                          return
-                        }
                         toast({
                           title: 'Error',
                           description: extractApiErrorMessage(error),
@@ -188,9 +178,6 @@ const TwoFactorSettings = () => {
           await totpStatus.refetch()
           const { data, error } = await backupCodesEnroll.mutateAsync()
           if (error) {
-            if (promptIfSessionNotFresh(error)) {
-              return
-            }
             toast({
               title: 'Error',
               description: extractApiErrorMessage(error),
@@ -222,10 +209,6 @@ const TwoFactorSettings = () => {
         onRegenerate={async () => {
           const { data, error } = await backupCodesEnroll.mutateAsync()
           if (error) {
-            if (promptIfSessionNotFresh(error)) {
-              hideBackupCodesRegenerateModal()
-              return null
-            }
             toast({
               title: 'Error',
               description: extractApiErrorMessage(error),
@@ -248,8 +231,6 @@ const TwoFactorSettings = () => {
         hide={hideBackupCodesModal}
         codes={newBackupCodes || []}
       />
-
-      {sessionRefreshModal}
     </div>
   )
 }

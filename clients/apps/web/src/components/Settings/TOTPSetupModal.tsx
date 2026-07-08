@@ -2,6 +2,7 @@
 
 import { Modal, Text } from '@polar-sh/orbit'
 import { useTOTPEnroll, useTOTPEnable } from '@/hooks/auth'
+import { isSessionNotFreshError } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import {
@@ -13,7 +14,6 @@ import QRCode from 'react-qr-code'
 import { useState } from 'react'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { toast } from '../Toast/use-toast'
-import { useSessionRefreshPrompt } from './SessionRefreshModal'
 
 export interface TOTPSetupModalProps {
   isShown: boolean
@@ -33,8 +33,6 @@ const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
 
   const totpEnroll = useTOTPEnroll()
   const totpEnable = useTOTPEnable()
-  const { promptIfSessionNotFresh, sessionRefreshModal } =
-    useSessionRefreshPrompt()
 
   const renderContent = () => {
     if (!enrollment) {
@@ -138,7 +136,7 @@ const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
       onSuccess: (response) => {
         if (response.data) {
           setEnrollment(response.data)
-        } else if (!promptIfSessionNotFresh(response.error)) {
+        } else if (!isSessionNotFreshError(response.error)) {
           setError('Failed to start TOTP setup. Please try again.')
         }
       },
@@ -155,11 +153,10 @@ const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
     setError(null)
     const { error } = await totpEnable.mutateAsync(code)
     if (error) {
-      if (promptIfSessionNotFresh(error)) {
-        return
+      if (!isSessionNotFreshError(error)) {
+        setError('Invalid code. Please try again.')
+        setInvalidCodeError(true)
       }
-      setError('Invalid code. Please try again.')
-      setInvalidCodeError(true)
       return
     }
     toast({ title: 'Two-factor authentication enabled' })
@@ -171,12 +168,7 @@ const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
     if (error) setError(null)
   }
 
-  return (
-    <>
-      {renderContent()}
-      {sessionRefreshModal}
-    </>
-  )
+  return renderContent()
 }
 
 const TOTPSetupModal = ({ isShown, hide, onEnabled }: TOTPSetupModalProps) => {

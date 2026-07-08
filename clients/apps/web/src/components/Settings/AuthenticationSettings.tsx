@@ -21,7 +21,6 @@ import { usePathname, useSearchParams } from 'next/navigation'
 import { useEffect, useRef, useState } from 'react'
 import EmailUpdateForm from '../Form/EmailUpdateForm'
 import { toast } from '../Toast/use-toast'
-import { useSessionRefreshPrompt } from './SessionRefreshModal'
 import { twMerge } from 'tailwind-merge'
 
 const AuthenticationMethod = ({
@@ -165,16 +164,11 @@ const AuthenticationSettings = () => {
   const googleAccount = useGoogleAccount()
   const disconnectOAuth = useDisconnectOAuthAccount()
   const listGroupRef = useRef<HTMLDivElement>(null)
-  const { promptIfSessionNotFresh, sessionRefreshModal } =
-    useSessionRefreshPrompt()
 
   const handleDisconnect = async (platform: schemas['OAuthPlatform']) => {
     try {
       const { error } = await disconnectOAuth.mutateAsync(platform)
       if (error) {
-        if (promptIfSessionNotFresh(error)) {
-          return
-        }
         toast({
           title: 'Error',
           description: extractApiErrorMessage(error),
@@ -291,8 +285,6 @@ const AuthenticationSettings = () => {
           />
         </ListGroup.Item>
       </ListGroup>
-
-      {sessionRefreshModal}
     </div>
   )
 }

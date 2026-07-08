@@ -1,6 +1,7 @@
 import '../styles/globals.css'
 
 import SandboxBanner from '@/components/Sandbox/SandboxBanner'
+import { SessionRefreshModal } from '@/components/SessionRefresh/SessionRefreshModal'
 import { getExperimentNames } from '@/experiments'
 import { getDistinctId } from '@/experiments/distinct-id'
 import { ExperimentProvider } from '@/experiments/ExperimentProvider'
@@ -85,6 +86,7 @@ export default async function RootLayout({
               <PolarQueryClientProvider>
                 <PolarNuqsProvider>
                   {CONFIG.IS_SANDBOX && <SandboxBanner />}
+                  <SessionRefreshModal />
                   {children}
                 </PolarNuqsProvider>
               </PolarQueryClientProvider>

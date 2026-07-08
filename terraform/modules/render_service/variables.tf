@@ -204,13 +204,13 @@ variable "aws_kms_config" {
 }
 
 variable "worker_sqs_config" {
-  description = "Worker SQS execution engine config and producer credentials (optional). null skips the env group."
+  description = "Worker SQS execution engine config (optional). null skips the env group. Omit the static credentials to send via the Render OIDC role instead."
   type = object({
     enabled               = string
     actors                = string
     queue_prefix          = string
-    aws_access_key_id     = string
-    aws_secret_access_key = string
+    aws_access_key_id     = optional(string)
+    aws_secret_access_key = optional(string)
   })
   default   = null
   sensitive = true

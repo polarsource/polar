@@ -91,6 +91,27 @@ module "lambda_worker" {
 }
 
 # =============================================================================
+# Task producer policy (SQS send-only, attached to the Render backend OIDC role)
+# =============================================================================
+
+data "aws_iam_policy_document" "tasks_producer" {
+  statement {
+    sid = "SendTasks"
+    actions = [
+      "sqs:SendMessage",
+      "sqs:GetQueueUrl",
+    ]
+    resources = [module.lambda_worker.queue_arn]
+  }
+}
+
+resource "aws_iam_role_policy" "tasks_producer" {
+  name   = "polar-production-tasks-producer"
+  role   = module.secrets_kms.role_name
+  policy = data.aws_iam_policy_document.tasks_producer.json
+}
+
+# =============================================================================
 # GitHub Actions OIDC role (builds the task-worker image and deploys it)
 # =============================================================================
 

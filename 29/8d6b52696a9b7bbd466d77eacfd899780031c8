@@ -24,6 +24,7 @@ server/tests/merchant_migration/test_service.py
   s_e52d7854cce576::t_08f797221b02c6 51,56,60-61
   s_e52d7854cce576::t_1ea3ec1cef8f23 26
   s_15e6848c860b9d::t_22cc4b8d7afb00 63,92,98,114
+  s_e52d7854cce576::t_5aafadafa50a6b 339,367
 server/tests/merchant_migration/test_endpoints.py
   s_e52d7854cce576::t_58b225d1a7982f 4,102,120,135,148,151,166,170,173-175,180,276
   s_e52d7854cce576::t_ba179265ca3167 59
@@ -32,6 +33,7 @@ server/tests/merchant_migration/test_endpoints.py
   s_e52d7854cce576::t_6098a4d2bb3cc6 27-30,32-34,47-58,68,77,89,94,103,105,108,117,121,123,127-132,139,143-145,149,154,157,163-164,167,169,171-172,178
   s_e52d7854cce576::t_e9246fe74a939e 25
   s_15e6848c860b9d::t_df656e3c5acedd 177,179
+  s_e52d7854cce576::t_fba40ae10785e6 338
 server/tests/merchant_migration/test_stripe_adapter.py
   s_e52d7854cce576::t_b5f228b82e3d2c 17-37,39-45,51-57,59,63,68,81
   s_e52d7854cce576::t_d6d973e5fb1b55 38,48-49,58,60-62,64-67,82-102
@@ -60,6 +62,8 @@ server/polar/merchant_migration/service.py
   s_e52d7854cce576::t_508e56ca10bbc7 199
   s_e52d7854cce576::t_fde41db3ca099a 141-143,151-158,163-165
   s_15e6848c860b9d::t_3fa89682236166 95,291
+  s_e52d7854cce576::t_0f7956a7c50d2d 244-245
+  s_e52d7854cce576::t_7480941c031d92 85,178,233,267,272-273,275-277
 clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationTimeline.tsx
   s_e52d7854cce576::t_39c5a97749c8c3 2
 clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ConnectGuide.tsx

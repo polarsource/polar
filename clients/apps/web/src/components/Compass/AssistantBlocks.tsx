@@ -57,8 +57,8 @@ const MetricChartView = ({
       backgroundColor="background-card"
     >
       <Box display="flex" justifyContent="between" alignItems="center">
-        <Text color="muted">{block.label}</Text>
-        <Text monospace>{getFormattedMetricValue(metric, latest)}</Text>
+        <Text variant="body">{block.label}</Text>
+        <Text variant="body">{getFormattedMetricValue(metric, latest)}</Text>
       </Box>
       <MetricChart
         data={data}

@@ -1,0 +1,20 @@
+.claude/commands/yeet.md
+  s_e04eaffa8fdea7::t_e98cce8eeb6741 27-35
+  s_e04eaffa8fdea7::t_203aef478e8416 44-50
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ed55ed0f911a7eda92ab3fade447357e65f3b074",
+  "prompts": {},
+  "sessions": {
+    "s_e04eaffa8fdea7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8e4d72fb-d17f-4c53-a11b-a03389530056",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

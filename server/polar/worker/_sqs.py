@@ -41,7 +41,11 @@ class SQSSendError(Exception):
 def get_sqs_client() -> "SQSClient":
     access_key_id = settings.WORKER_SQS_AWS_ACCESS_KEY_ID
     secret_access_key = settings.WORKER_SQS_AWS_SECRET_ACCESS_KEY
-    if access_key_id is None and settings.SQS_ENDPOINT_URL is not None:
+    if access_key_id is None and (
+        settings.SQS_ENDPOINT_URL is not None
+        or settings.is_development()
+        or settings.is_testing()
+    ):
         access_key_id = settings.AWS_ACCESS_KEY_ID
         secret_access_key = settings.AWS_SECRET_ACCESS_KEY
     # None credentials: boto3's default chain assumes the Render OIDC role (AWS_ROLE_ARN).

@@ -337,7 +337,7 @@ module "production" {
     region                        = "us-east-2"
     signature_version             = "v4"
     files_presign_ttl             = "3600"
-    files_public_bucket_name      = "polar-public-files"
+    files_public_bucket_name      = local.files_public_bucket_name
     customer_invoices_bucket_name = "polar-customer-invoices"
     customer_receipts_bucket_name = "polar-customer-receipts"
     payout_invoices_bucket_name   = "polar-payout-invoices"

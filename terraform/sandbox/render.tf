@@ -232,7 +232,7 @@ module "sandbox" {
     region                        = "us-east-2"
     signature_version             = "v4"
     files_presign_ttl             = "3600"
-    files_public_bucket_name      = "polar-public-sandbox-files"
+    files_public_bucket_name      = local.files_public_bucket_name
     customer_invoices_bucket_name = "polar-sandbox-customer-invoices"
     customer_receipts_bucket_name = "polar-sandbox-customer-receipts"
     payout_invoices_bucket_name   = "polar-sandbox-payout-invoices"

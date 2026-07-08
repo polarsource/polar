@@ -170,10 +170,11 @@ module "github_oidc_lambda_worker" {
 module "guardduty_scan_events" {
   source = "../modules/guardduty_scan_events"
 
-  environment  = "production"
-  bucket_names = ["polar-production-files", "polar-public-files"]
-  queue_arn    = module.lambda_worker.queue_arn
-  queue_url    = module.lambda_worker.queue_url
-  dlq_arn      = module.lambda_worker.dlq_arn
-  dlq_url      = module.lambda_worker.dlq_url
+  environment       = "production"
+  bucket_names      = ["polar-production-files", "polar-public-files"]
+  source_account_id = "975049931254"
+  queue_arn         = module.lambda_worker.queue_arn
+  queue_url         = module.lambda_worker.queue_url
+  dlq_arn           = module.lambda_worker.dlq_arn
+  dlq_url           = module.lambda_worker.dlq_url
 }

@@ -183,10 +183,11 @@ module "guardduty_scan_events" {
   source = "../modules/guardduty_scan_events"
   count  = local.test_enabled ? 1 : 0
 
-  environment  = "test"
-  bucket_names = ["polar-test-files", "polar-test-public-files"]
-  queue_arn    = module.lambda_worker[0].queue_arn
-  queue_url    = module.lambda_worker[0].queue_url
-  dlq_arn      = module.lambda_worker[0].dlq_arn
-  dlq_url      = module.lambda_worker[0].dlq_url
+  environment       = "test"
+  bucket_names      = ["polar-test-files", "polar-test-public-files"]
+  source_account_id = "975049931254"
+  queue_arn         = module.lambda_worker[0].queue_arn
+  queue_url         = module.lambda_worker[0].queue_url
+  dlq_arn           = module.lambda_worker[0].dlq_arn
+  dlq_url           = module.lambda_worker[0].dlq_url
 }

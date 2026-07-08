@@ -44,9 +44,40 @@ variable "dlq_url" {
   type        = string
 }
 
+variable "source_account_id" {
+  description = "AWS account ID that owns the GuardDuty malware protection plans and forwards scan results to this bus"
+  type        = string
+}
+
+resource "aws_cloudwatch_event_bus" "guardduty" {
+  name = "polar-${var.environment}-guardduty-scan-results"
+}
+
+resource "aws_cloudwatch_event_bus_policy" "guardduty" {
+  event_bus_name = aws_cloudwatch_event_bus.guardduty.name
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Sid       = "AllowManagementAccountPutEvents"
+        Effect    = "Allow"
+        Principal = { AWS = "arn:aws:iam::${var.source_account_id}:root" }
+        Action    = "events:PutEvents"
+        Resource  = aws_cloudwatch_event_bus.guardduty.arn
+        Condition = {
+          BoolIfExists = {
+            "events:eventBusInvocation" = "true"
+          }
+        }
+      },
+    ]
+  })
+}
+
 resource "aws_cloudwatch_event_rule" "threats_found" {
-  name        = "polar-${var.environment}-guardduty-scan-threats-found"
-  description = "GuardDuty Malware Protection THREATS_FOUND results for ${var.environment} buckets, delivered to the task worker."
+  name           = "polar-${var.environment}-guardduty-scan-threats-found"
+  event_bus_name = aws_cloudwatch_event_bus.guardduty.name
+  description    = "GuardDuty Malware Protection THREATS_FOUND results for ${var.environment} buckets, delivered to the task worker."
   event_pattern = jsonencode({
     source      = ["aws.guardduty"]
     detail-type = ["GuardDuty Malware Protection Object Scan Result"]
@@ -63,8 +94,9 @@ resource "aws_cloudwatch_event_rule" "threats_found" {
 }
 
 resource "aws_cloudwatch_event_target" "threats_found" {
-  rule = aws_cloudwatch_event_rule.threats_found.name
-  arn  = var.queue_arn
+  rule           = aws_cloudwatch_event_rule.threats_found.name
+  event_bus_name = aws_cloudwatch_event_bus.guardduty.name
+  arn            = var.queue_arn
 
   input_transformer {
     input_paths = {

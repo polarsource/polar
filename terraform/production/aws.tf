@@ -34,28 +34,33 @@ resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
 }
 
 locals {
+  files_bucket_name        = "polar-production-files"
+  files_public_bucket_name = "polar-public-files"
+
   lambda_worker_environment = {
-    POLAR_ENV                     = "production"
-    POLAR_BASE_URL                = "https://api.polar.sh"
-    POLAR_FRONTEND_BASE_URL       = "https://polar.sh"
-    POLAR_CHECKOUT_BASE_URL       = "https://buy.polar.sh/{client_secret}"
-    POLAR_JWKS                    = "/tmp/jwks.json"
-    POLAR_LOG_LEVEL               = "INFO"
-    POLAR_TESTING                 = "0"
-    POLAR_POSTGRES_DATABASE       = "polar_cpit_p9lf"
-    POLAR_POSTGRES_HOST           = local.db_external_host
-    POLAR_POSTGRES_PORT           = local.db_port
-    POLAR_POSTGRES_USER           = local.db_user
-    POLAR_POSTGRES_SSL            = "true"
-    POLAR_REDIS_HOST              = module.redis.host
-    POLAR_REDIS_PORT              = tostring(module.redis.port)
-    POLAR_REDIS_DB                = "1"
-    POLAR_AWS_REGION              = "us-east-2"
-    POLAR_EMAIL_SENDER            = "resend"
-    POLAR_EMAIL_FROM_NAME         = "Polar"
-    POLAR_EMAIL_FROM_DOMAIN       = "notifications.polar.sh"
-    POLAR_WORKER_SQS_ENABLED      = "true"
-    POLAR_WORKER_SQS_QUEUE_PREFIX = "polar-production-tasks"
+    POLAR_ENV                         = "production"
+    POLAR_BASE_URL                    = "https://api.polar.sh"
+    POLAR_FRONTEND_BASE_URL           = "https://polar.sh"
+    POLAR_CHECKOUT_BASE_URL           = "https://buy.polar.sh/{client_secret}"
+    POLAR_JWKS                        = "/tmp/jwks.json"
+    POLAR_LOG_LEVEL                   = "INFO"
+    POLAR_TESTING                     = "0"
+    POLAR_POSTGRES_DATABASE           = "polar_cpit_p9lf"
+    POLAR_POSTGRES_HOST               = local.db_external_host
+    POLAR_POSTGRES_PORT               = local.db_port
+    POLAR_POSTGRES_USER               = local.db_user
+    POLAR_POSTGRES_SSL                = "true"
+    POLAR_REDIS_HOST                  = module.redis.host
+    POLAR_REDIS_PORT                  = tostring(module.redis.port)
+    POLAR_REDIS_DB                    = "1"
+    POLAR_AWS_REGION                  = "us-east-2"
+    POLAR_S3_FILES_BUCKET_NAME        = local.files_bucket_name
+    POLAR_S3_FILES_PUBLIC_BUCKET_NAME = local.files_public_bucket_name
+    POLAR_EMAIL_SENDER                = "resend"
+    POLAR_EMAIL_FROM_NAME             = "Polar"
+    POLAR_EMAIL_FROM_DOMAIN           = "notifications.polar.sh"
+    POLAR_WORKER_SQS_ENABLED          = "true"
+    POLAR_WORKER_SQS_QUEUE_PREFIX     = "polar-production-tasks"
   }
 
   lambda_worker_secrets = {
@@ -171,7 +176,7 @@ module "guardduty_scan_events" {
   source = "../modules/guardduty_scan_events"
 
   environment       = "production"
-  bucket_names      = ["polar-production-files", "polar-public-files"]
+  bucket_names      = [local.files_bucket_name, local.files_public_bucket_name]
   source_account_id = "975049931254"
   queue_arn         = module.lambda_worker.queue_arn
   queue_url         = module.lambda_worker.queue_url

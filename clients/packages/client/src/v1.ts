@@ -53709,6 +53709,15 @@ export interface operations {
           'application/json': components['schemas']['OrganizationAccessTokenCreateResponse']
         }
       }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -53771,6 +53780,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['OrganizationAccessToken']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
         }
       }
       /** @description Validation Error */

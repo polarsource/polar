@@ -1,6 +1,7 @@
 from fastapi import Depends, Query
 from pydantic import UUID4
 
+from polar.auth.exceptions import SessionNotFreshError
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -11,7 +12,11 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
 from . import sorting
-from .auth import OrganizationAccessTokensRead, OrganizationAccessTokensWrite
+from .auth import (
+    OrganizationAccessTokensRead,
+    OrganizationAccessTokensWrite,
+    OrganizationAccessTokensWriteFresh,
+)
 from .schemas import (
     OrganizationAccessToken as OrganizationAccessTokenSchema,
 )
@@ -54,10 +59,15 @@ async def list(
     )
 
 
-@router.post("/", response_model=OrganizationAccessTokenCreateResponse, status_code=201)
+@router.post(
+    "/",
+    response_model=OrganizationAccessTokenCreateResponse,
+    status_code=201,
+    responses={403: {"model": SessionNotFreshError.schema()}},
+)
 async def create(
     organization_access_token_create: OrganizationAccessTokenCreate,
-    auth_subject: OrganizationAccessTokensWrite,
+    auth_subject: OrganizationAccessTokensWriteFresh,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationAccessTokenCreateResponse:
     organization_access_token, token = await organization_access_token_service.create(
@@ -71,11 +81,15 @@ async def create(
     )
 
 
-@router.patch("/{id}", response_model=OrganizationAccessTokenSchema)
+@router.patch(
+    "/{id}",
+    response_model=OrganizationAccessTokenSchema,
+    responses={403: {"model": SessionNotFreshError.schema()}},
+)
 async def update(
     id: UUID4,
     organization_access_token_update: OrganizationAccessTokenUpdate,
-    auth_subject: OrganizationAccessTokensWrite,
+    auth_subject: OrganizationAccessTokensWriteFresh,
     session: AsyncSession = Depends(get_db_session),
 ) -> OrganizationAccessToken:
     organization_access_token = await organization_access_token_service.get(

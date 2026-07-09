@@ -7,8 +7,22 @@ import { Alert, Spinner, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
-import { MigrationTimeline } from '../MigrationTimeline'
+import { MigrationStepper } from '../MigrationStepper'
+import { PrecheckPanel } from '../PrecheckPanel'
+import { ReviewTable } from '../review/ReviewTable'
+import {
+  currentStepKey,
+  MIGRATION_STEPS,
+  MigrationStepDef,
+  OWNER_LABELS,
+  stepPosition,
+} from '../steps'
 import { StripeMark } from '../StripeMark'
+
+const REVIEW_STEPS: schemas['MerchantMigrationStep'][] = [
+  'pre_check',
+  'create_catalog',
+]
 
 interface Props {
   organization: schemas['Organization']
@@ -26,7 +40,6 @@ export default function MigrationDetailPage({
   } = useMerchantMigration(migrationId)
 
   const basePath = `/dashboard/${organization.slug}/settings/migrations`
-  const connected = migration?.source_connected ?? false
 
   return (
     <DashboardBody title="Migration">
@@ -59,18 +72,10 @@ export default function MigrationDetailPage({
           <Text color="muted">This migration no longer exists.</Text>
         ) : (
           <Box as="section" flexDirection="column" rowGap="xl">
-            <AccountHeader migration={migration} />
-
+            <SourceChip migration={migration} />
+            <MigrationStepper migration={migration} />
             <Divider />
-
-            <MigrationTimeline migration={migration} />
-
-            {connected && (
-              <Text variant="caption" color="muted">
-                Import and cutover steps are being rolled out. We&apos;ll move
-                each one forward and keep this page up to date.
-              </Text>
-            )}
+            <StepContent migration={migration} />
           </Box>
         )}
       </Box>
@@ -78,7 +83,67 @@ export default function MigrationDetailPage({
   )
 }
 
-function AccountHeader({
+// The current step's work — nothing else. The review table carries its own
+// heading; the other states get a compact heading + the step's one action.
+function StepContent({
+  migration,
+}: {
+  migration: schemas['MerchantMigration']
+}) {
+  if (!migration.source_connected) {
+    return (
+      <Text variant="caption" color="muted">
+        Connect your Stripe account to start the migration.
+      </Text>
+    )
+  }
+  if (REVIEW_STEPS.includes(migration.step)) {
+    const step = stepPosition(currentStepKey(migration)) + 1
+    return (
+      <ReviewTable
+        migrationId={migration.id}
+        eyebrow={`Step ${step} of ${MIGRATION_STEPS.length}`}
+      />
+    )
+  }
+
+  const current = MIGRATION_STEPS.find(
+    (step) => step.step === currentStepKey(migration),
+  )
+  return (
+    <Box flexDirection="column" rowGap="l">
+      {current && <StepHeading def={current} />}
+      {migration.step === 'source_setup' ? (
+        <PrecheckPanel migrationId={migration.id} />
+      ) : (
+        <Text variant="caption" color="muted">
+          This step is being rolled out. We&apos;ll keep this page up to date.
+        </Text>
+      )}
+    </Box>
+  )
+}
+
+function StepHeading({ def }: { def: MigrationStepDef }) {
+  const owner = OWNER_LABELS[def.owner]
+  return (
+    <Box flexDirection="column" rowGap="xs">
+      <Box alignItems="center" columnGap="s">
+        <Text variant="heading-xs" as="h3">
+          {def.title}
+        </Text>
+        {owner && <Status status={owner} color="gray" size="small" />}
+      </Box>
+      <Text variant="caption" color="muted">
+        {def.description}
+      </Text>
+    </Box>
+  )
+}
+
+// A slim one-line source identity, not a hero banner: the page title and the
+// stepper already carry the weight, so the source is just context.
+function SourceChip({
   migration,
 }: {
   migration: schemas['MerchantMigration']
@@ -87,34 +152,19 @@ function AccountHeader({
   const stripeUserId = migration.source?.stripe_user_id as string | undefined
   const livemode = migration.source?.livemode as boolean | undefined
   return (
-    <Box alignItems="center" justifyContent="between" columnGap="m">
-      <Box alignItems="center" columnGap="m">
-        <StripeMark size={44} />
-        <Box flexDirection="column" rowGap="xs">
-          <Text variant="heading-xs" as="h2">
-            Stripe
-          </Text>
-          {stripeUserId && (
-            <Text variant="caption" color="muted" monospace>
-              {stripeUserId}
-            </Text>
-          )}
-        </Box>
-      </Box>
-      <Box alignItems="center" columnGap="s">
-        {connected && (
-          <Status
-            status={livemode ? 'Live' : 'Test'}
-            color={livemode ? 'green' : 'yellow'}
-            size="small"
-          />
-        )}
-        <Status
-          status={connected ? 'Connected' : 'Not connected'}
-          color={connected ? 'green' : 'gray'}
-          size="small"
-        />
-      </Box>
+    <Box alignItems="center" columnGap="s">
+      <StripeMark size={22} />
+      <Text variant="body">Stripe</Text>
+      {stripeUserId && (
+        <Text variant="caption" color="muted" monospace>
+          {stripeUserId}
+        </Text>
+      )}
+      <Status
+        status={connected ? (livemode ? 'Live' : 'Test') : 'Not connected'}
+        color="gray"
+        size="small"
+      />
     </Box>
   )
 }

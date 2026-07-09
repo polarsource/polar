@@ -4990,6 +4990,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/import': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Import Merchant Migration Catalog
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:import_catalog']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/merchant-migrations/{id}/records': {
     parameters: {
       query?: never
@@ -11629,6 +11649,17 @@ export interface components {
        * @constant
        */
       error: 'CaseRepliesNotSupportedError'
+      /** Detail */
+      detail: string
+    }
+    /** CatalogImportNotReady */
+    CatalogImportNotReady: {
+      /**
+       * Error
+       * @example CatalogImportNotReady
+       * @constant
+       */
+      error: 'CatalogImportNotReady'
       /** Detail */
       detail: string
     }
@@ -22711,6 +22742,39 @@ export interface components {
        */
       api_key: string
     }
+    /** MerchantMigrationImportReport */
+    MerchantMigrationImportReport: {
+      /** @description The migration step after the import. */
+      step: components['schemas']['MerchantMigrationStep']
+      /**
+       * Results
+       * @description Per-entity counts of what was imported vs skipped.
+       */
+      results: components['schemas']['MerchantMigrationImportResult'][]
+    }
+    /** MerchantMigrationImportRequest */
+    MerchantMigrationImportRequest: {
+      /**
+       * Record Ids
+       * @description The ledger record ids to import (from the records listing). When omitted, every importable record is imported. Records not selected stay pending and can be imported later.
+       */
+      record_ids?: string[] | null
+    }
+    /** MerchantMigrationImportResult */
+    MerchantMigrationImportResult: {
+      /** @description The source entity type. */
+      entity: components['schemas']['PrecheckEntity']
+      /**
+       * Imported
+       * @description How many were created or reused in Polar.
+       */
+      imported: number
+      /**
+       * Skipped
+       * @description How many were left on the source (not importable).
+       */
+      skipped: number
+    }
     /** MerchantMigrationNotEnabled */
     MerchantMigrationNotEnabled: {
       /**
@@ -22735,6 +22799,11 @@ export interface components {
     }
     /** MerchantMigrationRecordItem */
     MerchantMigrationRecordItem: {
+      /**
+       * Record Id
+       * @description The ledger record id, used to select this row for import. Null for price rows, which are imported together with their product.
+       */
+      record_id?: string | null
       /** @description The source entity type. */
       entity: components['schemas']['PrecheckEntity']
       /**
@@ -22754,6 +22823,10 @@ export interface components {
       subtitle: string | null
       /** @description Whether this record will be imported or stays on the source. */
       status: components['schemas']['PrecheckRecordStatus']
+      /** @description The ledger status of this record: `pending` (not imported yet), `imported`, `skipped` or `failed`. Null for price rows, which import with their product. */
+      import_status?:
+        | components['schemas']['MerchantMigrationRecordStatus']
+        | null
       /**
        * Reason
        * @description Why the record is skipped, if it is.
@@ -22765,6 +22838,11 @@ export interface components {
        */
       reason_code: string | null
     }
+    /**
+     * MerchantMigrationRecordStatus
+     * @enum {string}
+     */
+    MerchantMigrationRecordStatus: 'pending' | 'imported' | 'skipped' | 'failed'
     /**
      * MerchantMigrationSourcePlatform
      * @enum {string}
@@ -49888,6 +49966,70 @@ export interface operations {
       }
     }
   }
+  'merchant-migrations:import_catalog': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'application/json':
+          | components['schemas']['MerchantMigrationImportRequest']
+          | null
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationImportReport']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description The pre-check hasn't run yet. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CatalogImportNotReady']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'merchant-migrations:records': {
     parameters: {
       query: {
@@ -62396,6 +62538,9 @@ export const memberRoleValues: ReadonlyArray<
 export const memberSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberSortProperty']
 > = ['created_at', '-created_at']
+export const merchantMigrationRecordStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationRecordStatus']
+> = ['pending', 'imported', 'skipped', 'failed']
 export const merchantMigrationSourcePlatformValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationSourcePlatform']
 > = ['stripe', 'lemon_squeezy', 'paddle']

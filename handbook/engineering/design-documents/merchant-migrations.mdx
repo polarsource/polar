@@ -297,12 +297,10 @@ On top of the generic ones in Appendix A. What's unique to Stripe:
 - **Warning:** `past_due` / `unpaid` - don't import.
 - **Warning:** in-flight refunds / open disputes on an invoice - don't import, the money is still moving on Stripe.
 
-### Connecting the source (Stripe App OAuth)
+### Connecting the source (merchant-pasted restricted key)
 
-The merchant connects Stripe by installing the Polar Stripe App (one-click OAuth); we never ask for a pasted API key. The access token Stripe returns is a restricted key bound to the merchant account, so it drops straight into the reader below. App permissions: `customer_read`, `product_read`, `plan_read`, `subscription_read`, `coupon_read`, `promotion_code_read`, `payment_method_read`, plus `subscription_write` for the cutover pause. The refund/dispute precheck additionally needs charge/invoice read (not in the POC app yet).
+The merchant pastes a Stripe **restricted API key** (`rk_…`) when creating the migration. We validate up front that it holds every required permission (by exercising each one — Stripe has no key-introspection endpoint), then store it encrypted (`EncryptedString`) and read the account with it directly. No OAuth, no Stripe App.
 
-Notes from building it (POC, validated in test mode):
-- Authorize URL is channel-scoped: `/oauth/v2/{chnlink_…}/authorize?client_id=ca_…&redirect_uri=…&state=…`. Omitting the `chnlink_` segment fails consent with "oauth client is not valid".
-- The token exchange authenticates as the account that owns the app (in prod, Polar's platform account).
-- The callback may arrive without `state` (Stripe-initiated installs); handle it (reconcile by account or require a Polar-initiated install).
-- Refresh tokens rotate on every refresh; persist the new one each time.
+We originally built a Polar Stripe App (one-click OAuth), but Stripe does **not** let a Connect platform account (which Polar is) own the public app that external-merchant OAuth requires. So we fell back to the pasted-restricted-key approach this doc's Appendix D always contemplated.
+
+Required permissions, validated before the migration is saved (matching what `extract()` reads plus the cutover pause): Customers, Products, Prices, Subscriptions (read **and write**), Payment methods. Coupons / promotion codes and charge / invoice reads will be added when discount import and the refund/dispute precheck land. Validation fails closed: a transient Stripe error rejects the key rather than accepting it unchecked.

@@ -1,12 +1,11 @@
 from collections.abc import AsyncIterator
-from urllib.parse import parse_qs, urlparse
 
 import pytest
+import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
-from polar.kit import jwt
 from polar.kit.pagination import PaginationParams
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
@@ -25,7 +24,11 @@ from polar.merchant_migration.schemas import (
     PrecheckRecordStatus,
 )
 from polar.merchant_migration.service import (
+    InvalidSourceCredentials,
+    MissingStripeScopes,
+    SourceKeyModeMismatch,
     SourceNotConnected,
+    SourceVerificationUnavailable,
     UnsupportedMigrationSource,
 )
 from polar.merchant_migration.service import merchant_migration as service
@@ -41,12 +44,30 @@ from polar.models.merchant_migration import (
 )
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.merchant_migration._helpers import build_stripe_oauth_token
+from tests.merchant_migration._helpers import build_connected_migration
 
 
 class _FakeAdapter:
-    def __init__(self, records: list[CanonicalRecord]) -> None:
-        self._records = records
+    def __init__(
+        self,
+        records: list[CanonicalRecord] | None = None,
+        *,
+        missing_scopes: list[str] | None = None,
+        verify_error: Exception | None = None,
+        account_id: str | None = "acct_test",
+    ) -> None:
+        self._records = records or []
+        self._missing_scopes = missing_scopes or []
+        self._verify_error = verify_error
+        self._account_id = account_id
+
+    async def verify_scopes(self) -> list[str]:
+        if self._verify_error is not None:
+            raise self._verify_error
+        return self._missing_scopes
+
+    async def get_account_id(self) -> str | None:
+        return self._account_id
 
     async def extract(self) -> AsyncIterator[CanonicalRecord]:
         for record in self._records:
@@ -66,11 +87,20 @@ async def _enable_feature(
     await save_fixture(organization)
 
 
+def _create_schema(organization: Organization) -> MerchantMigrationCreate:
+    return MerchantMigrationCreate(
+        organization_id=organization.id,
+        source_platform=MerchantMigrationSourcePlatform.stripe,
+        api_key="rk_test_123",
+    )
+
+
 @pytest.mark.asyncio
 class TestCreate:
     @pytest.mark.auth
-    async def test_creates_independent_migrations(
+    async def test_validates_key_stores_it_and_creates(
         self,
+        mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
@@ -78,27 +108,96 @@ class TestCreate:
         user_organization: UserOrganization,
     ) -> None:
         await _enable_feature(save_fixture, organization)
-
-        first = await service.create(
-            session,
-            auth_subject,
-            MerchantMigrationCreate(
-                organization_id=organization.id,
-                source_platform=MerchantMigrationSourcePlatform.stripe,
-            ),
-        )
-        second = await service.create(
-            session,
-            auth_subject,
-            MerchantMigrationCreate(
-                organization_id=organization.id,
-                source_platform=MerchantMigrationSourcePlatform.stripe,
-            ),
+        stripe_adapter = mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(),
         )
 
-        assert first.id != second.id
-        assert first.step == MerchantMigrationStep.source_setup
-        assert first.source_platform == MerchantMigrationSourcePlatform.stripe
+        migration = await service.create(
+            session, auth_subject, _create_schema(organization)
+        )
+
+        stripe_adapter.assert_called_once_with("rk_test_123")
+        assert migration.step == MerchantMigrationStep.source_setup
+        assert migration.source_connected is True
+        credentials = migration.source_credentials
+        assert credentials["stripe_user_id"] == "acct_test"
+        assert credentials["livemode"] is False
+        assert credentials["api_key_encrypted"].startswith("v1.")
+        assert await service._decrypt_stripe_api_key(migration) == "rk_test_123"
+
+    @pytest.mark.auth
+    async def test_missing_scopes_raises_and_persists_nothing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(
+                missing_scopes=["Payment methods", "Subscriptions (write)"]
+            ),
+        )
+
+        with pytest.raises(MissingStripeScopes) as exc_info:
+            await service.create(session, auth_subject, _create_schema(organization))
+
+        assert exc_info.value.missing == ["Payment methods", "Subscriptions (write)"]
+        repository = MerchantMigrationRepository.from_session(session)
+        migrations = await repository.get_all(
+            repository.get_base_statement().where(
+                MerchantMigration.organization_id == organization.id
+            )
+        )
+        assert len(migrations) == 0
+
+    @pytest.mark.auth
+    async def test_invalid_key_raises(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(
+                verify_error=stripe_lib.AuthenticationError("bad key")
+            ),
+        )
+
+        with pytest.raises(InvalidSourceCredentials):
+            await service.create(session, auth_subject, _create_schema(organization))
+
+    @pytest.mark.auth
+    async def test_transient_stripe_error_fails_closed(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(
+                verify_error=stripe_lib.RateLimitError("rate limited")
+            ),
+        )
+
+        # A non-permission Stripe failure must not create a migration.
+        with pytest.raises(SourceVerificationUnavailable):
+            await service.create(session, auth_subject, _create_schema(organization))
 
         repository = MerchantMigrationRepository.from_session(session)
         migrations = await repository.get_all(
@@ -106,13 +205,33 @@ class TestCreate:
                 MerchantMigration.organization_id == organization.id
             )
         )
-        assert len(migrations) == 2
+        assert len(migrations) == 0
 
-
-@pytest.mark.asyncio
-class TestCreateStripeAuthorizationUrl:
     @pytest.mark.auth
-    async def test_targets_the_given_migration(
+    async def test_sandbox_rejects_a_live_key(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # The test environment is not production, so a live-mode key is rejected
+        # before Stripe is ever contacted.
+        await _enable_feature(save_fixture, organization)
+        with pytest.raises(SourceKeyModeMismatch):
+            await service.create(
+                session,
+                auth_subject,
+                MerchantMigrationCreate(
+                    organization_id=organization.id,
+                    source_platform=MerchantMigrationSourcePlatform.stripe,
+                    api_key="rk_live_123",
+                ),
+            )
+
+    @pytest.mark.auth
+    async def test_production_requires_a_live_key(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -121,99 +240,34 @@ class TestCreateStripeAuthorizationUrl:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        mocker.patch.object(settings, "STRIPE_APP_CLIENT_ID", "ca_test")
-        mocker.patch.object(settings, "STRIPE_APP_CLIENT_LINK_ID", "chnlink_test")
-        migration = MerchantMigration(
-            organization_id=organization.id,
-            source_platform=MerchantMigrationSourcePlatform.stripe,
-            step=MerchantMigrationStep.source_setup,
-        )
-        await save_fixture(migration)
+        await _enable_feature(save_fixture, organization)
+        mocker.patch.object(settings, "is_production", return_value=True)
 
-        url = await service.create_stripe_authorization_url(
+        # A test-mode key is rejected in production...
+        with pytest.raises(SourceKeyModeMismatch):
+            await service.create(session, auth_subject, _create_schema(organization))
+
+        # ...and a live key is accepted, stored as livemode.
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(),
+        )
+        migration = await service.create(
             session,
             auth_subject,
-            migration_id=migration.id,
-            redirect_uri="http://test/callback",
-            return_to="http://test/return",
+            MerchantMigrationCreate(
+                organization_id=organization.id,
+                source_platform=MerchantMigrationSourcePlatform.stripe,
+                api_key="rk_live_123",
+            ),
         )
-        assert "chnlink_test" in url
-        assert "ca_test" in url
-
-        token = parse_qs(urlparse(url).query)["state"][0]
-        state = jwt.decode(token=token, secret=settings.SECRET, type="stripe_app_oauth")
-        assert state["migration_id"] == str(migration.id)
-
-
-@pytest.mark.asyncio
-class TestCompleteStripeAuthorization:
-    @pytest.mark.auth
-    async def test_stores_encrypted_refresh_token(
-        self,
-        mocker: MockerFixture,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User],
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        mocker.patch(
-            "polar.merchant_migration.service.stripe_oauth.exchange_code",
-            return_value=build_stripe_oauth_token("rt_secret"),
-        )
-        migration = MerchantMigration(
-            organization_id=organization.id,
-            source_platform=MerchantMigrationSourcePlatform.stripe,
-            step=MerchantMigrationStep.source_setup,
-        )
-        await save_fixture(migration)
-        state = jwt.encode(
-            data={
-                "migration_id": str(migration.id),
-                "subject_id": str(auth_subject.subject.id),
-                "return_to": "/dashboard",
-            },
-            secret=settings.SECRET,
-            type="stripe_app_oauth",
-        )
-
-        result = await service.complete_stripe_authorization(
-            session, auth_subject, state=state, code="ac_test", error=None
-        )
-        assert result.error is None
-
-        repository = MerchantMigrationRepository.from_session(session)
-        updated = await repository.get_by_id(migration.id)
-        assert updated is not None
-        credentials = updated.source_credentials
-        assert credentials["stripe_user_id"] == "acct_test"
-        assert credentials["livemode"] is True
-        # the refresh token is stored as ciphertext, never in clear text
-        assert credentials["refresh_token_encrypted"] != "rt_secret"
-        assert credentials["refresh_token_encrypted"].startswith("v1.")
-
-
-async def _create_connected_migration(
-    save_fixture: SaveFixture, organization: Organization
-) -> MerchantMigration:
-    migration = MerchantMigration(
-        organization_id=organization.id,
-        source_platform=MerchantMigrationSourcePlatform.stripe,
-        step=MerchantMigrationStep.source_setup,
-    )
-    await save_fixture(migration)
-    credentials = await service._build_stripe_credentials(
-        migration, build_stripe_oauth_token("rt_old")
-    )
-    migration.source_credentials = dict(credentials)
-    await save_fixture(migration)
-    return migration
+        assert migration.source_credentials["livemode"] is True
 
 
 @pytest.mark.asyncio
 class TestRunPrecheck:
     @pytest.mark.auth
-    async def test_extracts_rotates_token_and_advances_step(
+    async def test_extracts_with_stored_key_and_advances_step(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -222,13 +276,7 @@ class TestRunPrecheck:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        migration = await _create_connected_migration(save_fixture, organization)
-        old_ciphertext = migration.source_credentials["refresh_token_encrypted"]
-
-        refresh = mocker.patch(
-            "polar.merchant_migration.service.stripe_oauth.refresh",
-            return_value=build_stripe_oauth_token("rt_new"),
-        )
+        migration = await build_connected_migration(save_fixture, organization)
         adapter = _FakeAdapter(
             [
                 CanonicalProduct(
@@ -255,15 +303,13 @@ class TestRunPrecheck:
         report = await service.run_precheck(session, auth_subject, migration.id)
 
         assert report.can_start is True
-        refresh.assert_awaited_once_with("rt_old")
-        stripe_adapter.assert_called_once_with("rk_test")
+        # the adapter is built from the decrypted, pasted key
+        stripe_adapter.assert_called_once_with("rk_test_123")
 
         repository = MerchantMigrationRepository.from_session(session)
         updated = await repository.get_by_id(migration.id)
         assert updated is not None
         assert updated.step == MerchantMigrationStep.pre_check
-        # the rotated refresh token is re-persisted as fresh ciphertext
-        assert updated.source_credentials["refresh_token_encrypted"] != old_ciphertext
 
         # the extracted canonical records are staged in the ledger
         record_repository = MerchantMigrationRecordRepository.from_session(session)
@@ -361,11 +407,7 @@ class TestListRecords:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        migration = await _create_connected_migration(save_fixture, organization)
-        mocker.patch(
-            "polar.merchant_migration.service.stripe_oauth.refresh",
-            return_value=build_stripe_oauth_token("rt_new"),
-        )
+        migration = await build_connected_migration(save_fixture, organization)
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(_catalog()),
@@ -394,11 +436,7 @@ class TestListRecords:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        migration = await _create_connected_migration(save_fixture, organization)
-        mocker.patch(
-            "polar.merchant_migration.service.stripe_oauth.refresh",
-            return_value=build_stripe_oauth_token("rt_new"),
-        )
+        migration = await build_connected_migration(save_fixture, organization)
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(_catalog()),

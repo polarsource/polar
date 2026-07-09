@@ -1976,6 +1976,7 @@ class SubscriptionService:
         subscription.status = SubscriptionStatus.active
         subscription.paused_at = None
         subscription.resumes_at = None
+        subscription.scheduler_locked_at = None
 
         # Start a fresh billing period from now and charge immediately.
         subscription.current_period_start = now

@@ -2,19 +2,27 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.kit.utils import utc_now
-from polar.subscription.scheduler import SubscriptionJobStore
+from polar.subscription.scheduler import (
+    SubscriptionJobStore,
+    SubscriptionResumeJobStore,
+    _SubscriptionScheduleJobStore,
+)
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "store_class", [SubscriptionJobStore, SubscriptionResumeJobStore]
+)
 async def test_get_due_jobs_does_not_raise(
+    store_class: type[_SubscriptionScheduleJobStore],
     mocker: MockerFixture,
 ) -> None:
     """``get_due_jobs`` must build and run its query without raising.
 
-    Guards the job store's instance query path — previously uncovered, since
+    Guards each store's instance query path — previously uncovered, since
     tests only exercised the class-level ``scheduling_statement()``.
     """
-    store = SubscriptionJobStore()
+    store = store_class()
     mocker.patch.object(store, "_list_jobs_from_statement", return_value=[])
 
     jobs = store.get_due_jobs(utc_now())

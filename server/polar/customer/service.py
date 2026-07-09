@@ -279,6 +279,7 @@ class CustomerService:
         email: str,
         name: str | None = None,
         billing_address: Address | None = None,
+        stripe_customer_id: str | None = None,
         send_webhooks: bool = False,
     ) -> Customer:
         """Create a customer for a known organization (internal flows)."""
@@ -300,6 +301,7 @@ class CustomerService:
             email=email,
             name=name,
             billing_address=billing_address,
+            stripe_customer_id=stripe_customer_id,
             organization=organization,
         )
 

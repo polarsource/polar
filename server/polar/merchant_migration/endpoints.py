@@ -16,12 +16,15 @@ from .auth import MerchantMigrationRead, MerchantMigrationWrite
 from .schemas import MerchantMigration as MerchantMigrationSchema
 from .schemas import (
     MerchantMigrationCreate,
+    MerchantMigrationImportReport,
+    MerchantMigrationImportRequest,
     MerchantMigrationRecordItem,
     PrecheckEntity,
     PrecheckRecordStatus,
     PrecheckReport,
 )
 from .service import (
+    CatalogImportNotReady,
     InvalidSourceCredentials,
     MerchantMigrationNotEnabled,
     MerchantMigrationNotFound,
@@ -140,6 +143,39 @@ async def precheck(
     session: AsyncSession = Depends(get_db_session),
 ) -> PrecheckReport:
     return await merchant_migration_service.run_precheck(session, auth_subject, id)
+
+
+@router.post(
+    "/{id}/import",
+    response_model=MerchantMigrationImportReport,
+    summary="Import Merchant Migration Catalog",
+    responses={
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+        409: {
+            "description": "The pre-check hasn't run yet.",
+            "model": CatalogImportNotReady.schema(),
+        },
+    },
+)
+async def import_catalog(
+    id: UUID4,
+    auth_subject: MerchantMigrationWrite,
+    body: MerchantMigrationImportRequest | None = None,
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigrationImportReport:
+    return await merchant_migration_service.import_catalog(
+        session,
+        auth_subject,
+        id,
+        record_ids=body.record_ids if body is not None else None,
+    )
 
 
 @router.get(

@@ -1,3 +1,4 @@
+import json
 from typing import Any
 
 import structlog
@@ -5,6 +6,7 @@ import structlog
 from polar.config import settings
 from polar.integrations.slack.client import SlackClient
 from polar.integrations.slack.payload import SlackPayload, get_branded_slack_payload
+from polar.kit.json import json_obj_serializer
 from polar.logging import Logger
 from polar.postgres import AsyncReadSession
 
@@ -13,9 +15,8 @@ from .rules import Invariant, InvariantError
 log: Logger = structlog.get_logger()
 
 
-def _format_invariant_failure_payload(
-    invariant_name: str, message: str
-) -> SlackPayload:
+def _format_invariant_failure_payload(error: InvariantError) -> SlackPayload:
+    invariant_name = error.invariant.__name__
     blocks: list[dict[str, Any]] = [
         {
             "type": "header",
@@ -43,7 +44,15 @@ def _format_invariant_failure_payload(
             "type": "section",
             "text": {
                 "type": "mrkdwn",
-                "text": f"*Failure Details*\n>{message}",
+                "text": f"*Failure Details*\n>{error.message}",
+            },
+        },
+        {"type": "divider"},
+        {
+            "type": "section",
+            "text": {
+                "type": "mrkdwn",
+                "text": f"*Context*\n\n```{json.dumps(error.context, indent=2, default=json_obj_serializer)}```",
             },
         },
     ]
@@ -71,13 +80,15 @@ class InvariantService:
                 "Invariant check failed",
                 invariant=e.invariant.__name__,
                 message=e.message,
+                context=e.context,
             )
             if not settings.SLACK_BOT_TOKEN or not settings.SLACK_CHANNEL:
                 log.warning(
-                    "Slack bot token or channel not configured, cannot send invariant failure notification"
+                    "Slack bot token or channel not configured, "
+                    "cannot send invariant failure notification"
                 )
                 return
-            payload = _format_invariant_failure_payload(e.invariant.__name__, e.message)
+            payload = _format_invariant_failure_payload(e)
             await self._slack.chat_post_message(
                 bot_token=settings.SLACK_BOT_TOKEN,
                 channel=settings.SLACK_CHANNEL,

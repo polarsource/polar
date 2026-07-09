@@ -1,4 +1,5 @@
 import abc
+import typing
 
 from polar.postgres import AsyncReadSession
 
@@ -6,10 +7,16 @@ from polar.postgres import AsyncReadSession
 class InvariantError(Exception):
     """Exception raised when an invariant check fails."""
 
-    def __init__(self, invariant: type["Invariant"], message: str) -> None:
+    def __init__(
+        self,
+        invariant: type["Invariant"],
+        message: str,
+        context: dict[str, typing.Any] | None = None,
+    ) -> None:
         super().__init__(message)
         self.invariant = invariant
         self.message = message
+        self.context = context or {}
 
 
 class Invariant(abc.ABC):

@@ -1,3 +1,4 @@
+import uuid
 from datetime import timedelta
 
 from sqlalchemy import func, select
@@ -10,10 +11,15 @@ from .base import Invariant, InvariantError
 class SubscriptionsCurrentPeriodEndInvariantError(InvariantError):
     """Exception raised when the SubscriptionsCurrentPeriodEndInvariant check fails."""
 
-    def __init__(self, count: int) -> None:
-        message = f"Found {count} subscriptions with current_period_end in the past."
-        super().__init__(SubscriptionsCurrentPeriodEndInvariant, message)
-        self.count = count
+    def __init__(self, subscriptions: list[uuid.UUID]) -> None:
+        message = f"Found {len(subscriptions)} subscriptions with current_period_end in the past."
+        super().__init__(
+            SubscriptionsCurrentPeriodEndInvariant,
+            message,
+            {
+                "subscriptions": subscriptions,
+            },
+        )
 
 
 class SubscriptionsCurrentPeriodEndInvariant(Invariant):
@@ -27,7 +33,7 @@ class SubscriptionsCurrentPeriodEndInvariant(Invariant):
 
     async def check(self) -> None:
         statement = (
-            select(func.count(Subscription.id))
+            select(Subscription.id)
             .join(Subscription.organization)
             .where(
                 Subscription.active.is_(True),
@@ -37,7 +43,7 @@ class SubscriptionsCurrentPeriodEndInvariant(Invariant):
         )
 
         result = await self.session.execute(statement)
-        count = result.scalar_one()
+        subscriptions = list(result.scalars().all())
 
-        if count > 0:
-            raise SubscriptionsCurrentPeriodEndInvariantError(count)
+        if len(subscriptions) > 0:
+            raise SubscriptionsCurrentPeriodEndInvariantError(subscriptions)

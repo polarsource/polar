@@ -27,7 +27,7 @@ async def test_failure(
     product: Product,
     customer: Customer,
 ) -> None:
-    await create_subscription(
+    subscription = await create_subscription(
         save_fixture,
         status=SubscriptionStatus.active,
         product=product,
@@ -37,7 +37,7 @@ async def test_failure(
 
     with pytest.raises(SubscriptionsCurrentPeriodEndInvariantError) as exc_info:
         await invariant.check()
-    assert exc_info.value.count == 1
+    assert exc_info.value.context == {"subscriptions": [subscription.id]}
 
 
 @pytest.mark.asyncio

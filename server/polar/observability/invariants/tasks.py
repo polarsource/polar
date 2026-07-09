@@ -24,7 +24,7 @@ class InvariantDoesNotExistError(InvariantTaskError):
 
 @actor(
     actor_name="observability.invariants.enqueue",
-    priority=TaskPriority.LOW,
+    priority=TaskPriority.HIGH,
     max_retries=0,
     cron_trigger=CronTrigger.from_crontab("*/15 * * * *"),
 )
@@ -38,7 +38,7 @@ async def enqueue_invariants() -> None:
 
 @actor(
     actor_name="observability.invariants.check",
-    priority=TaskPriority.LOW,
+    priority=TaskPriority.HIGH,
     max_retries=0,
 )
 async def check_invariant(invariant_cls_name: str) -> None:

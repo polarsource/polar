@@ -1,14 +1,11 @@
 from collections.abc import AsyncIterator
-from urllib.parse import parse_qs, urlparse
-from uuid import uuid4
 
 import pytest
+import stripe as stripe_lib
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
-from polar.config import settings
-from polar.kit import jwt
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalPrice,
@@ -17,7 +14,6 @@ from polar.merchant_migration.canonical import (
     CanonicalRecord,
 )
 from polar.merchant_migration.repository import MerchantMigrationRepository
-from polar.merchant_migration.stripe_oauth import StripeOAuthError
 from polar.models import MerchantMigration, Organization, UserOrganization
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
@@ -26,12 +22,16 @@ from polar.models.merchant_migration import (
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.merchant_migration._helpers import build_stripe_oauth_token
+from tests.merchant_migration._helpers import build_connected_migration
+
+VALID_BODY = {
+    "source_platform": "stripe",
+    "api_key": "rk_test_123",
+}
 
 
-def _configure_app(mocker: MockerFixture) -> None:
-    mocker.patch.object(settings, "STRIPE_APP_CLIENT_ID", "ca_test")
-    mocker.patch.object(settings, "STRIPE_APP_CLIENT_LINK_ID", "chnlink_test")
+def _body(organization: Organization, **overrides: object) -> dict[str, object]:
+    return {**VALID_BODY, "organization_id": str(organization.id), **overrides}
 
 
 async def _enable_feature(
@@ -44,11 +44,19 @@ async def _enable_feature(
     await save_fixture(organization)
 
 
-def _state_migration_id(location: str) -> str:
-    state = parse_qs(urlparse(location).query)["state"][0]
-    return jwt.decode(token=state, secret=settings.SECRET, type="stripe_app_oauth")[
-        "migration_id"
-    ]
+def _mock_stripe_adapter(
+    mocker: MockerFixture,
+    *,
+    missing_scopes: list[str] | None = None,
+    auth_error: Exception | None = None,
+) -> None:
+    adapter = mocker.MagicMock()
+    if auth_error is not None:
+        adapter.verify_scopes = mocker.AsyncMock(side_effect=auth_error)
+    else:
+        adapter.verify_scopes = mocker.AsyncMock(return_value=missing_scopes or [])
+    adapter.get_account_id = mocker.AsyncMock(return_value="acct_test")
+    mocker.patch("polar.merchant_migration.service.StripeAdapter", return_value=adapter)
 
 
 @pytest.mark.asyncio
@@ -57,8 +65,7 @@ class TestCreate:
         self, client: AsyncClient, organization: Organization
     ) -> None:
         response = await client.post(
-            "/v1/merchant-migrations/",
-            json={"organization_id": str(organization.id), "source_platform": "stripe"},
+            "/v1/merchant-migrations/", json=_body(organization)
         )
         assert response.status_code == 401
 
@@ -67,8 +74,7 @@ class TestCreate:
         self, client: AsyncClient, organization: Organization
     ) -> None:
         response = await client.post(
-            "/v1/merchant-migrations/",
-            json={"organization_id": str(organization.id), "source_platform": "stripe"},
+            "/v1/merchant-migrations/", json=_body(organization)
         )
         assert response.status_code == 403
 
@@ -80,39 +86,42 @@ class TestCreate:
         user_organization: UserOrganization,
     ) -> None:
         response = await client.post(
-            "/v1/merchant-migrations/",
-            json={"organization_id": str(organization.id), "source_platform": "stripe"},
+            "/v1/merchant-migrations/", json=_body(organization)
         )
         assert response.status_code == 403
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_creates_multiple_migrations(
+    async def test_invalid_key_format_returns_422(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        response = await client.post(
+            "/v1/merchant-migrations/", json=_body(organization, api_key="nope")
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_missing_scopes_returns_400(
         self,
         client: AsyncClient,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
+        mocker: MockerFixture,
     ) -> None:
         await _enable_feature(save_fixture, organization)
+        _mock_stripe_adapter(mocker, missing_scopes=["Subscriptions (write)"])
 
-        first = await client.post(
-            "/v1/merchant-migrations/",
-            json={"organization_id": str(organization.id), "source_platform": "stripe"},
+        response = await client.post(
+            "/v1/merchant-migrations/", json=_body(organization)
         )
-        assert first.status_code == 201
-        body = first.json()
-        assert body["source_platform"] == "stripe"
-        assert body["step"] == "source_setup"
-        assert body["source_connected"] is False
-        assert "source_credentials" not in body
-
-        second = await client.post(
-            "/v1/merchant-migrations/",
-            json={"organization_id": str(organization.id), "source_platform": "stripe"},
-        )
-        assert second.status_code == 201
-        assert second.json()["id"] != body["id"]
+        assert response.status_code == 400
+        assert "Subscriptions (write)" in response.text
 
         repository = MerchantMigrationRepository.from_session(session)
         migrations = await repository.get_all(
@@ -120,62 +129,29 @@ class TestCreate:
                 MerchantMigration.organization_id == organization.id
             )
         )
-        assert len(migrations) == 2
-
-
-@pytest.mark.asyncio
-class TestStripeAuthorize:
-    async def test_anonymous(self, client: AsyncClient) -> None:
-        response = await client.get(
-            "/v1/merchant-migrations/stripe/authorize",
-            params={"migration_id": str(uuid4()), "return_to": "/dashboard"},
-        )
-        assert response.status_code == 401
+        assert len(migrations) == 0
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_not_member_returns_404(
+    async def test_invalid_key_returns_400(
         self,
         client: AsyncClient,
-        save_fixture: SaveFixture,
         organization: Organization,
-        mocker: MockerFixture,
-    ) -> None:
-        _configure_app(mocker)
-        migration = await _create_migration(save_fixture, organization)
-        response = await client.get(
-            "/v1/merchant-migrations/stripe/authorize",
-            params={"migration_id": str(migration.id), "return_to": "/dashboard"},
-        )
-        assert response.status_code == 404
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_redirects_to_stripe(
-        self,
-        client: AsyncClient,
         save_fixture: SaveFixture,
-        organization: Organization,
         user_organization: UserOrganization,
         mocker: MockerFixture,
     ) -> None:
-        _configure_app(mocker)
-        migration = await _create_migration(save_fixture, organization)
-        response = await client.get(
-            "/v1/merchant-migrations/stripe/authorize",
-            params={"migration_id": str(migration.id), "return_to": "/dashboard"},
+        await _enable_feature(save_fixture, organization)
+        _mock_stripe_adapter(
+            mocker, auth_error=stripe_lib.AuthenticationError("bad key")
         )
-        assert response.status_code == 303
-        location = response.headers["location"]
-        assert location.startswith(
-            "https://marketplace.stripe.com/oauth/v2/chnlink_test/authorize"
+
+        response = await client.post(
+            "/v1/merchant-migrations/", json=_body(organization)
         )
-        assert "ca_test" in location
-        assert _state_migration_id(location) == str(migration.id)
+        assert response.status_code == 400
 
-
-@pytest.mark.asyncio
-class TestStripeCallback:
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_valid_stores_credentials_and_redirects(
+    async def test_creates_connected_migration(
         self,
         client: AsyncClient,
         session: AsyncSession,
@@ -184,92 +160,24 @@ class TestStripeCallback:
         user_organization: UserOrganization,
         mocker: MockerFixture,
     ) -> None:
-        _configure_app(mocker)
-        migration = await _create_migration(save_fixture, organization)
-        mocker.patch(
-            "polar.merchant_migration.service.stripe_oauth.exchange_code",
-            return_value=build_stripe_oauth_token(),
-        )
+        await _enable_feature(save_fixture, organization)
+        _mock_stripe_adapter(mocker)
 
-        authorize = await client.get(
-            "/v1/merchant-migrations/stripe/authorize",
-            params={"migration_id": str(migration.id), "return_to": "/dashboard"},
+        response = await client.post(
+            "/v1/merchant-migrations/", json=_body(organization)
         )
-        state = parse_qs(urlparse(authorize.headers["location"]).query)["state"][0]
-
-        response = await client.get(
-            "/v1/merchant-migrations/stripe/callback",
-            params={"state": state, "code": "ac_test"},
-        )
-        assert response.status_code == 303
-        assert response.headers["location"].endswith("/dashboard")
+        assert response.status_code == 201
+        body = response.json()
+        assert body["source_platform"] == "stripe"
+        assert body["step"] == "source_setup"
+        assert body["source_connected"] is True
+        assert body["source"]["stripe_user_id"] == "acct_test"
+        assert "source_credentials" not in body
 
         repository = MerchantMigrationRepository.from_session(session)
-        stored = await repository.get_by_id(migration.id)
+        stored = await repository.get_by_id(body["id"])
         assert stored is not None
-        assert stored.source_credentials["stripe_user_id"] == "acct_test"
-        # the refresh token is stored as ciphertext, never in clear text
-        assert stored.source_credentials["refresh_token_encrypted"].startswith("v1.")
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_missing_code_redirects_with_error(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-        mocker: MockerFixture,
-    ) -> None:
-        _configure_app(mocker)
-        migration = await _create_migration(save_fixture, organization)
-        authorize = await client.get(
-            "/v1/merchant-migrations/stripe/authorize",
-            params={"migration_id": str(migration.id), "return_to": "/dashboard"},
-        )
-        state = parse_qs(urlparse(authorize.headers["location"]).query)["state"][0]
-
-        response = await client.get(
-            "/v1/merchant-migrations/stripe/callback",
-            params={"state": state, "error": "access_denied"},
-        )
-        assert response.status_code == 303
-        assert "error=" in response.headers["location"]
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_exchange_failure_redirects_with_error(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_organization: UserOrganization,
-        mocker: MockerFixture,
-    ) -> None:
-        _configure_app(mocker)
-        migration = await _create_migration(save_fixture, organization)
-        mocker.patch(
-            "polar.merchant_migration.service.stripe_oauth.exchange_code",
-            side_effect=StripeOAuthError("stripe down", 502),
-        )
-        authorize = await client.get(
-            "/v1/merchant-migrations/stripe/authorize",
-            params={"migration_id": str(migration.id), "return_to": "/dashboard"},
-        )
-        state = parse_qs(urlparse(authorize.headers["location"]).query)["state"][0]
-
-        response = await client.get(
-            "/v1/merchant-migrations/stripe/callback",
-            params={"state": state, "code": "ac_test"},
-        )
-        assert response.status_code == 303
-        assert "error=" in response.headers["location"]
-
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_invalid_state_returns_400(self, client: AsyncClient) -> None:
-        response = await client.get(
-            "/v1/merchant-migrations/stripe/callback",
-            params={"state": "not-a-jwt", "code": "ac_test"},
-        )
-        assert response.status_code == 400
+        assert stored.source_credentials["api_key_encrypted"].startswith("v1.")
 
 
 @pytest.mark.asyncio
@@ -342,7 +250,6 @@ class TestList:
         item = json_body["items"][0]
         assert item["id"] == str(migration.id)
         assert item["step"] == "source_setup"
-        assert item["source_connected"] is False
         assert "source_credentials" not in item
 
 
@@ -365,16 +272,8 @@ class TestPrecheck:
         user_organization: UserOrganization,
         mocker: MockerFixture,
     ) -> None:
-        _configure_app(mocker)
-        migration = await _create_migration(save_fixture, organization)
-        mocker.patch(
-            "polar.merchant_migration.service.stripe_oauth.exchange_code",
-            return_value=build_stripe_oauth_token(),
-        )
-        mocker.patch(
-            "polar.merchant_migration.service.stripe_oauth.refresh",
-            return_value=build_stripe_oauth_token("rt_new"),
-        )
+        migration = await build_connected_migration(save_fixture, organization)
+
         adapter = mocker.MagicMock()
         adapter.extract.return_value = _empty_extract()
         adapter.get_source_account = mocker.AsyncMock(
@@ -382,16 +281,6 @@ class TestPrecheck:
         )
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter", return_value=adapter
-        )
-
-        authorize = await client.get(
-            "/v1/merchant-migrations/stripe/authorize",
-            params={"migration_id": str(migration.id), "return_to": "/dashboard"},
-        )
-        state = parse_qs(urlparse(authorize.headers["location"]).query)["state"][0]
-        await client.get(
-            "/v1/merchant-migrations/stripe/callback",
-            params={"state": state, "code": "ac_test"},
         )
 
         response = await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
@@ -446,16 +335,7 @@ class TestRecords:
         user_organization: UserOrganization,
         mocker: MockerFixture,
     ) -> None:
-        _configure_app(mocker)
-        migration = await _create_migration(save_fixture, organization)
-        mocker.patch(
-            "polar.merchant_migration.service.stripe_oauth.exchange_code",
-            return_value=build_stripe_oauth_token(),
-        )
-        mocker.patch(
-            "polar.merchant_migration.service.stripe_oauth.refresh",
-            return_value=build_stripe_oauth_token("rt_new"),
-        )
+        migration = await build_connected_migration(save_fixture, organization)
         adapter = mocker.MagicMock()
         adapter.extract.return_value = _catalog_extract()
         adapter.get_source_account = mocker.AsyncMock(
@@ -465,15 +345,8 @@ class TestRecords:
             "polar.merchant_migration.service.StripeAdapter", return_value=adapter
         )
 
-        authorize = await client.get(
-            "/v1/merchant-migrations/stripe/authorize",
-            params={"migration_id": str(migration.id), "return_to": "/dashboard"},
-        )
-        state = parse_qs(urlparse(authorize.headers["location"]).query)["state"][0]
-        await client.get(
-            "/v1/merchant-migrations/stripe/callback",
-            params={"state": state, "code": "ac_test"},
-        )
+        precheck = await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
+        assert precheck.status_code == 200
 
         response = await client.get(
             f"/v1/merchant-migrations/{migration.id}/records",

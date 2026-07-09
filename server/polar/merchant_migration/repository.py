@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select
@@ -9,7 +10,13 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import MerchantMigration
+from polar.models import MerchantMigration, MerchantMigrationRecord
+from polar.models.merchant_migration_record import (
+    MerchantMigrationRecordStatus,
+    MerchantMigrationRecordType,
+)
+
+from .canonical import CanonicalRecord, serialize
 
 
 class MerchantMigrationRepository(
@@ -34,3 +41,70 @@ class MerchantMigrationRepository(
                 MerchantMigration.organization_id == auth_subject.subject.id
             )
         return statement
+
+
+class MerchantMigrationRecordRepository(
+    RepositorySoftDeletionIDMixin[MerchantMigrationRecord, UUID],
+    RepositorySoftDeletionMixin[MerchantMigrationRecord],
+    RepositoryBase[MerchantMigrationRecord],
+):
+    model = MerchantMigrationRecord
+
+    async def get_by_source(
+        self,
+        *,
+        organization_id: UUID,
+        type: MerchantMigrationRecordType,
+        source_id: str,
+    ) -> MerchantMigrationRecord | None:
+        statement = self.get_base_statement().where(
+            MerchantMigrationRecord.organization_id == organization_id,
+            MerchantMigrationRecord.type == type,
+            MerchantMigrationRecord.source_id == source_id,
+        )
+        return await self.get_one_or_none(statement)
+
+    async def list_by_migration(
+        self, migration_id: UUID
+    ) -> Sequence[MerchantMigrationRecord]:
+        statement = self.get_base_statement().where(
+            MerchantMigrationRecord.merchant_migration_id == migration_id
+        )
+        return await self.get_all(statement)
+
+    async def upsert(
+        self,
+        merchant_migration: MerchantMigration,
+        organization: Organization,
+        record: CanonicalRecord,
+    ) -> MerchantMigrationRecord:
+        """Idempotently stage a record, keyed per org by (type, source_id). A
+        re-run refreshes a still-pending row; imported/skipped/failed rows are
+        left as-is so a prior run's results aren't re-imported."""
+        existing = await self.get_by_source(
+            organization_id=organization.id,
+            type=record.type,
+            source_id=record.source_id,
+        )
+        canonical = serialize(record)
+        if existing is not None:
+            if existing.status == MerchantMigrationRecordStatus.pending:
+                return await self.update(
+                    existing,
+                    update_dict={
+                        "canonical": canonical,
+                        "merchant_migration_id": merchant_migration.id,
+                    },
+                    flush=True,
+                )
+            return existing
+        return await self.create(
+            MerchantMigrationRecord(
+                merchant_migration=merchant_migration,
+                organization=organization,
+                type=record.type,
+                source_id=record.source_id,
+                canonical=canonical,
+            ),
+            flush=True,
+        )

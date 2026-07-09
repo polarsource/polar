@@ -38,28 +38,33 @@ resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
 }
 
 locals {
+  files_bucket_name        = "polar-test-files"
+  files_public_bucket_name = "polar-test-public-files"
+
   lambda_worker_environment = local.test_enabled ? {
-    POLAR_ENV                     = "test"
-    POLAR_BASE_URL                = "https://test-api.polar.sh"
-    POLAR_FRONTEND_BASE_URL       = "https://test.polar.sh"
-    POLAR_CHECKOUT_BASE_URL       = "https://test-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
-    POLAR_JWKS                    = "/tmp/jwks.json"
-    POLAR_LOG_LEVEL               = "INFO"
-    POLAR_TESTING                 = "0"
-    POLAR_POSTGRES_DATABASE       = local.db_name
-    POLAR_POSTGRES_HOST           = local.db_external_host
-    POLAR_POSTGRES_PORT           = local.db_port
-    POLAR_POSTGRES_USER           = local.db_user
-    POLAR_POSTGRES_SSL            = "true"
-    POLAR_REDIS_HOST              = module.redis[0].host
-    POLAR_REDIS_PORT              = tostring(module.redis[0].port)
-    POLAR_REDIS_DB                = "1"
-    POLAR_AWS_REGION              = "us-east-2"
-    POLAR_EMAIL_SENDER            = "resend"
-    POLAR_EMAIL_FROM_NAME         = "[TEST] Polar"
-    POLAR_EMAIL_FROM_DOMAIN       = "notifications.test.polar.sh"
-    POLAR_WORKER_SQS_ENABLED      = "true"
-    POLAR_WORKER_SQS_QUEUE_PREFIX = "polar-test-tasks"
+    POLAR_ENV                         = "test"
+    POLAR_BASE_URL                    = "https://test-api.polar.sh"
+    POLAR_FRONTEND_BASE_URL           = "https://test.polar.sh"
+    POLAR_CHECKOUT_BASE_URL           = "https://test-api.polar.sh/v1/checkout-links/{client_secret}/redirect"
+    POLAR_JWKS                        = "/tmp/jwks.json"
+    POLAR_LOG_LEVEL                   = "INFO"
+    POLAR_TESTING                     = "0"
+    POLAR_POSTGRES_DATABASE           = local.db_name
+    POLAR_POSTGRES_HOST               = local.db_external_host
+    POLAR_POSTGRES_PORT               = local.db_port
+    POLAR_POSTGRES_USER               = local.db_user
+    POLAR_POSTGRES_SSL                = "true"
+    POLAR_REDIS_HOST                  = module.redis[0].host
+    POLAR_REDIS_PORT                  = tostring(module.redis[0].port)
+    POLAR_REDIS_DB                    = "1"
+    POLAR_AWS_REGION                  = "us-east-2"
+    POLAR_S3_FILES_BUCKET_NAME        = local.files_bucket_name
+    POLAR_S3_FILES_PUBLIC_BUCKET_NAME = local.files_public_bucket_name
+    POLAR_EMAIL_SENDER                = "resend"
+    POLAR_EMAIL_FROM_NAME             = "[TEST] Polar"
+    POLAR_EMAIL_FROM_DOMAIN           = "notifications.test.polar.sh"
+    POLAR_WORKER_SQS_ENABLED          = "true"
+    POLAR_WORKER_SQS_QUEUE_PREFIX     = "polar-test-tasks"
   } : {}
 
   lambda_worker_secrets = local.test_enabled ? {
@@ -93,6 +98,30 @@ module "lambda_worker" {
 
   environment_variables        = local.lambda_worker_environment
   secret_environment_variables = local.lambda_worker_secrets
+}
+
+# =============================================================================
+# Task producer policy (SQS send-only, attached to the Render backend OIDC role)
+# =============================================================================
+
+data "aws_iam_policy_document" "tasks_producer" {
+  count = local.test_enabled ? 1 : 0
+
+  statement {
+    sid = "SendTasks"
+    actions = [
+      "sqs:SendMessage",
+      "sqs:GetQueueUrl",
+    ]
+    resources = [module.lambda_worker[0].queue_arn]
+  }
+}
+
+resource "aws_iam_role_policy" "tasks_producer" {
+  count  = local.test_enabled ? 1 : 0
+  name   = "polar-test-tasks-producer"
+  role   = module.secrets_kms[0].role_name
+  policy = data.aws_iam_policy_document.tasks_producer[0].json
 }
 
 # =============================================================================
@@ -151,3 +180,19 @@ module "github_oidc_lambda_worker" {
   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 }
 
+# =============================================================================
+# GuardDuty malware scan results → tasks queue
+# =============================================================================
+
+module "guardduty_scan_events" {
+  source = "../modules/guardduty_scan_events"
+  count  = local.test_enabled ? 1 : 0
+
+  environment       = "test"
+  bucket_names      = [local.files_bucket_name, local.files_public_bucket_name]
+  source_account_id = "975049931254"
+  queue_arn         = module.lambda_worker[0].queue_arn
+  queue_url         = module.lambda_worker[0].queue_url
+  dlq_arn           = module.lambda_worker[0].dlq_arn
+  dlq_url           = module.lambda_worker[0].dlq_url
+}

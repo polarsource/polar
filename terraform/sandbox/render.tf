@@ -232,7 +232,7 @@ module "sandbox" {
     region                        = "us-east-2"
     signature_version             = "v4"
     files_presign_ttl             = "3600"
-    files_public_bucket_name      = "polar-public-sandbox-files"
+    files_public_bucket_name      = local.files_public_bucket_name
     customer_invoices_bucket_name = "polar-sandbox-customer-invoices"
     customer_receipts_bucket_name = "polar-sandbox-customer-receipts"
     payout_invoices_bucket_name   = "polar-sandbox-payout-invoices"
@@ -252,11 +252,9 @@ module "sandbox" {
   }
 
   worker_sqs_config = {
-    enabled               = "true"
-    actors                = var.worker_sqs_actors
-    queue_prefix          = "polar-sandbox-tasks"
-    aws_access_key_id     = aws_iam_access_key.tasks_producer.id
-    aws_secret_access_key = aws_iam_access_key.tasks_producer.secret
+    enabled      = "true"
+    actors       = var.worker_sqs_actors
+    queue_prefix = "polar-sandbox-tasks"
   }
 
   github_secrets = {

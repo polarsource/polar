@@ -53,9 +53,9 @@ class MerchantMigration(RecordModel):
         default=MerchantMigrationStep.source_setup,
     )
     # Provider-specific credentials used to read the source; the shape depends
-    # on source_platform: a Stripe OAuth refresh token, a Lemon Squeezy / Paddle
-    # API key, etc. Encryption at rest is tracked separately (see the KMS
-    # secrets RFC).
+    # on source_platform: a Stripe restricted API key, a Lemon Squeezy / Paddle
+    # API key, etc. Secrets in the blob are encrypted at rest (see EncryptedString
+    # in the service).
     source_credentials: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
     )
@@ -71,7 +71,7 @@ class MerchantMigration(RecordModel):
     @property
     def source_connected(self) -> bool:
         """Whether the source provider has been connected (credentials stored)."""
-        return bool(self.source_credentials)
+        return bool(self.source_credentials.get("api_key_encrypted"))
 
     @property
     def source(self) -> dict[str, Any] | None:

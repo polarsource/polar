@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from datetime import datetime
+from typing import Any
 
 import structlog
 
@@ -8,6 +9,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.kit.pagination import PaginationParams
+from polar.kit.utils import utc_now
 from polar.models import Organization, ProductMedia, User
 from polar.models.file import File, FileServiceTypes, ProductMediaFile
 from polar.postgres import AsyncReadSession, AsyncSession, sql
@@ -192,6 +194,33 @@ class FileService:
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()
+
+    async def flag_malicious(
+        self,
+        session: AsyncSession,
+        *,
+        file: File,
+        scan_result_details: dict[str, Any],
+    ) -> File:
+        if file.flagged_malicious_at is not None:
+            return file
+
+        repository = FileRepository.from_session(session)
+        file = await repository.update(
+            file,
+            update_dict={
+                "flagged_malicious_at": utc_now(),
+                "flagged_malicious_details": scan_result_details,
+            },
+        )
+        log.warning(
+            "file.flagged_malicious",
+            file_id=file.id,
+            organization_id=file.organization_id,
+            service=file.service,
+            scan_result_details=scan_result_details,
+        )
+        return file
 
 
 file = FileService()

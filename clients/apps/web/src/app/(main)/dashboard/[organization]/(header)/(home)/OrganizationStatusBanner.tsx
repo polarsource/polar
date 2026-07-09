@@ -4,7 +4,7 @@ import { schemas } from '@polar-sh/client'
 import { DeniedBanner } from './DeniedBanner'
 import { OffboardedBanner } from './OffboardedBanner'
 import { OffboardingBanner } from './OffboardingBanner'
-import { OnboardingChecklistCard } from './OnboardingChecklistCard'
+import { OnboardingChecklistCard } from './OnboardingChecklistCard/OnboardingChecklistCard'
 
 interface OrganizationStatusBannerProps {
   organization: schemas['Organization']

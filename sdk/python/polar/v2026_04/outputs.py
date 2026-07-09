@@ -3839,6 +3839,15 @@ class CustomerOrderSubscription:
     past_due_at: str | None = None
     """The timestamp when the subscription entered `past_due` status."""
 
+    pause_at_period_end: bool
+    """Whether the subscription will be paused at the end of the current period."""
+
+    paused_at: str | None
+    """The timestamp when the subscription was paused."""
+
+    resumes_at: str | None
+    """The timestamp when a paused subscription is scheduled to automatically resume, if set."""
+
     customer_id: str
     """The ID of the subscribed customer."""
 
@@ -4037,6 +4046,8 @@ class CustomerPortalSubscriptionSettings:
     update_seats: bool
 
     update_plan: bool
+
+    pause: bool | None = None
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -4520,6 +4531,15 @@ class CustomerSubscription:
 
     past_due_at: str | None = None
     """The timestamp when the subscription entered `past_due` status."""
+
+    pause_at_period_end: bool
+    """Whether the subscription will be paused at the end of the current period."""
+
+    paused_at: str | None
+    """The timestamp when the subscription was paused."""
+
+    resumes_at: str | None
+    """The timestamp when a paused subscription is scheduled to automatically resume, if set."""
 
     customer_id: str
     """The ID of the subscribed customer."""
@@ -7312,6 +7332,15 @@ class OrderSubscription:
     past_due_at: str | None = None
     """The timestamp when the subscription entered `past_due` status."""
 
+    pause_at_period_end: bool
+    """Whether the subscription will be paused at the end of the current period."""
+
+    paused_at: str | None
+    """The timestamp when the subscription was paused."""
+
+    resumes_at: str | None
+    """The timestamp when a paused subscription is scheduled to automatically resume, if set."""
+
     customer_id: str
     """The ID of the subscribed customer."""
 
@@ -7529,6 +7558,10 @@ class OrganizationCustomerEmailSettings:
 
     subscription_past_due: bool
 
+    subscription_paused: bool
+
+    subscription_resumed: bool
+
     subscription_renewal_reminder: bool
 
     subscription_revoked: bool
@@ -7590,6 +7623,9 @@ class OrganizationFeatureSettings:
     compass_enabled: bool = False
     """If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard"""
 
+    merchant_migration_enabled: bool = False
+    """If this organization can migrate its billing from another provider (e.g. Stripe) to Polar."""
+
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class OrganizationNotReadyForPayments:
@@ -7624,6 +7660,13 @@ class Pagination:
     total_count: int
 
     max_page: int
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class PauseResumeNotAllowed:
+    error: typing.Literal["PauseResumeNotAllowed"]
+
+    detail: str
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -8319,6 +8362,15 @@ class Subscription:
     past_due_at: str | None = None
     """The timestamp when the subscription entered `past_due` status."""
 
+    pause_at_period_end: bool
+    """Whether the subscription will be paused at the end of the current period."""
+
+    paused_at: str | None
+    """The timestamp when the subscription was paused."""
+
+    resumes_at: str | None
+    """The timestamp when a paused subscription is scheduled to automatically resume, if set."""
+
     customer_id: str
     """The ID of the subscribed customer."""
 
@@ -8761,6 +8813,71 @@ class SubscriptionPastDueMetadata:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class SubscriptionPausedEvent:
+    """An event created by Polar when a subscription is paused."""
+
+    id: str
+    """The ID of the object."""
+
+    timestamp: str
+    """The timestamp of the event."""
+
+    organization_id: str
+    """The ID of the organization owning the event."""
+
+    customer_id: str | None
+    """ID of the customer in your Polar organization associated with the event."""
+
+    customer: Customer | None
+    """The customer associated with the event."""
+
+    external_customer_id: str | None
+    """ID of the customer in your system associated with the event."""
+
+    member_id: str | None = None
+    """ID of the member within the customer's organization who performed the action inside B2B."""
+
+    external_member_id: str | None = None
+    """ID of the member in your system within the customer's organization who performed the action inside B2B."""
+
+    child_count: int = 0
+    """Number of direct child events linked to this event."""
+
+    parent_id: str | None = None
+    """The ID of the parent event."""
+
+    label: str
+    """Human readable label of the event type."""
+
+    source: typing.Literal["system"]
+    """The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."""
+
+    name: typing.Literal["subscription.paused"]
+    """The name of the event."""
+
+    metadata: SubscriptionPausedMetadata
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class SubscriptionPausedMetadata:
+    subscription_id: str
+
+    product_id: str | None = None
+
+    amount: int | None = None
+
+    currency: str | None = None
+
+    recurring_interval: str | None = None
+
+    recurring_interval_count: int | None = None
+
+    paused_at: str
+
+    resumes_at: str | None = None
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class SubscriptionProductUpdatedEvent:
     """An event created by Polar when a subscription changes the product."""
 
@@ -8863,6 +8980,67 @@ class SubscriptionReactivatedEvent:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class SubscriptionReactivatedMetadata:
+    subscription_id: str
+
+    product_id: str | None = None
+
+    amount: int | None = None
+
+    currency: str | None = None
+
+    recurring_interval: str | None = None
+
+    recurring_interval_count: int | None = None
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class SubscriptionResumedEvent:
+    """An event created by Polar when a paused subscription is resumed."""
+
+    id: str
+    """The ID of the object."""
+
+    timestamp: str
+    """The timestamp of the event."""
+
+    organization_id: str
+    """The ID of the organization owning the event."""
+
+    customer_id: str | None
+    """ID of the customer in your Polar organization associated with the event."""
+
+    customer: Customer | None
+    """The customer associated with the event."""
+
+    external_customer_id: str | None
+    """ID of the customer in your system associated with the event."""
+
+    member_id: str | None = None
+    """ID of the member within the customer's organization who performed the action inside B2B."""
+
+    external_member_id: str | None = None
+    """ID of the member in your system within the customer's organization who performed the action inside B2B."""
+
+    child_count: int = 0
+    """Number of direct child events linked to this event."""
+
+    parent_id: str | None = None
+    """The ID of the parent event."""
+
+    label: str
+    """Human readable label of the event type."""
+
+    source: typing.Literal["system"]
+    """The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."""
+
+    name: typing.Literal["subscription.resumed"]
+    """The name of the event."""
+
+    metadata: SubscriptionResumedMetadata
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class SubscriptionResumedMetadata:
     subscription_id: str
 
     product_id: str | None = None
@@ -9550,6 +9728,8 @@ SystemEvent: typing.TypeAlias = (
     | SubscriptionRevokedEvent
     | SubscriptionPastDueEvent
     | SubscriptionReactivatedEvent
+    | SubscriptionPausedEvent
+    | SubscriptionResumedEvent
     | SubscriptionUncanceledEvent
     | SubscriptionProductUpdatedEvent
     | SubscriptionSeatsUpdatedEvent

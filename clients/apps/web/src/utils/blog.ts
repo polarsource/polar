@@ -51,6 +51,11 @@ const STORIES_DIR = path.join(
 
 const PUBLIC_POSTS_DIR = path.join(process.cwd(), 'public/posts')
 
+const LEGAL_DIR = path.join(
+  process.cwd(),
+  'src/app/(main)/(website)/(landing)/(mdx)/legal',
+)
+
 function readPostsFromDir(
   dir: string,
   type: 'blog' | 'story',
@@ -90,5 +95,15 @@ export function getAllContent(): ContentPost[] {
     if (!a.date) return 1
     if (!b.date) return -1
     return new Date(b.date).getTime() - new Date(a.date).getTime()
+  })
+}
+
+export function getLegalSlugs(): string[] {
+  return fs.readdirSync(LEGAL_DIR).filter((name) => {
+    const fullPath = path.join(LEGAL_DIR, name)
+    return (
+      fs.statSync(fullPath).isDirectory() &&
+      fs.existsSync(path.join(fullPath, 'page.mdx'))
+    )
   })
 }

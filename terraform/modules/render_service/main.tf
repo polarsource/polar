@@ -142,13 +142,17 @@ resource "render_env_group" "worker_sqs" {
   count          = var.worker_sqs_config != null ? 1 : 0
   environment_id = var.render_environment_id
   name           = "worker-sqs-${var.environment}"
-  env_vars = {
-    POLAR_WORKER_SQS_ENABLED               = { value = var.worker_sqs_config.enabled }
-    POLAR_WORKER_SQS_ACTORS                = { value = var.worker_sqs_config.actors }
-    POLAR_WORKER_SQS_QUEUE_PREFIX          = { value = var.worker_sqs_config.queue_prefix }
-    POLAR_WORKER_SQS_AWS_ACCESS_KEY_ID     = { value = var.worker_sqs_config.aws_access_key_id }
-    POLAR_WORKER_SQS_AWS_SECRET_ACCESS_KEY = { value = var.worker_sqs_config.aws_secret_access_key }
-  }
+  env_vars = merge(
+    {
+      POLAR_WORKER_SQS_ENABLED      = { value = var.worker_sqs_config.enabled }
+      POLAR_WORKER_SQS_ACTORS       = { value = var.worker_sqs_config.actors }
+      POLAR_WORKER_SQS_QUEUE_PREFIX = { value = var.worker_sqs_config.queue_prefix }
+    },
+    var.worker_sqs_config.aws_access_key_id != null ? {
+      POLAR_WORKER_SQS_AWS_ACCESS_KEY_ID     = { value = var.worker_sqs_config.aws_access_key_id }
+      POLAR_WORKER_SQS_AWS_SECRET_ACCESS_KEY = { value = var.worker_sqs_config.aws_secret_access_key }
+    } : {}
+  )
 }
 
 resource "render_env_group" "github" {

@@ -49,13 +49,16 @@ def cases_statement(
     assigned_user_id: UUID | None = None,
     viewer_user_id: UUID | None = None,
     case_type: str = "all",
+    self_service: str = "all",
     sort: str = "recency",
 ) -> Select[Row]:
     """Polymorphic case list with its organization, open state and assignee.
 
-    ``status`` (open/closed/all), ``assigned`` (me/unassigned/all) and
-    ``case_type`` (review_appeal/dispute/all) narrow the set; ``sort`` is either
-    pure recency or support tier first with recency as the tiebreaker.
+    ``status`` (open/closed/all), ``assigned`` (me/unassigned/all),
+    ``case_type`` (review_appeal/dispute/all) and ``self_service``
+    (enabled/disabled/all, on the org's ``disputes_enabled`` flag) narrow the
+    set; ``sort`` is either pure recency or support tier first with recency as
+    the tiebreaker.
     """
     is_open = SupportCaseMessageRepository.is_open_expression()
     awaiting_platform = SupportCaseMessageRepository.awaiting_platform_expression()
@@ -125,6 +128,11 @@ def cases_statement(
         statement = statement.where(SupportCase.assigned_user_id.is_(None))
     if case_type in _TYPE_FILTERS:
         statement = statement.where(SupportCase.type == case_type)
+    disputes_enabled = Organization.feature_settings["disputes_enabled"].as_boolean()
+    if self_service == "enabled":
+        statement = statement.where(disputes_enabled.is_(True))
+    elif self_service == "disabled":
+        statement = statement.where(disputes_enabled.isnot(True))
 
     order_by: tuple[Any, ...]
     if sort == "tier":

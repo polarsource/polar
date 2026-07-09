@@ -12,10 +12,8 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Page(props: {
   params: Promise<{ organization: string; id: string }>
-  searchParams: Promise<{ error?: string | string[] }>
 }) {
   const params = await props.params
-  const searchParams = await props.searchParams
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
     api,
@@ -26,15 +24,7 @@ export default async function Page(props: {
     notFound()
   }
 
-  const error = Array.isArray(searchParams.error)
-    ? searchParams.error[0]
-    : searchParams.error
-
   return (
-    <MigrationDetailPage
-      organization={organization}
-      migrationId={params.id}
-      error={error}
-    />
+    <MigrationDetailPage organization={organization} migrationId={params.id} />
   )
 }

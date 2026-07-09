@@ -1057,6 +1057,7 @@ SubscriptionStatus: typing.TypeAlias = typing.Literal[
     "past_due",
     "canceled",
     "unpaid",
+    "paused",
 ]
 TaxBehavior: typing.TypeAlias = typing.Literal["inclusive", "exclusive"]
 TaxBehaviorOption: typing.TypeAlias = typing.Literal[
@@ -1695,6 +1696,8 @@ WebhookEventType: typing.TypeAlias = typing.Literal[
     "subscription.uncanceled",
     "subscription.revoked",
     "subscription.past_due",
+    "subscription.paused",
+    "subscription.resumed",
     "refund.created",
     "refund.updated",
     "product.created",

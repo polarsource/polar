@@ -43,9 +43,12 @@ class _SubscriptionScheduleJobStore(BaseJobStore):
     """APScheduler job store that turns subscription rows into date-triggered jobs,
     dispatched under an atomic ``scheduler_locked_at`` claim."""
 
-    trigger_column: ClassVar[ColumnElement[datetime.datetime | None]]
     job_id_prefix: ClassVar[str]
     actor_name: ClassVar[str]
+
+    @property
+    def trigger_column(self) -> ColumnElement[datetime.datetime | None]:
+        raise NotImplementedError
 
     def __init__(self, executor: str = "default") -> None:
         self.engine = create_sync_engine("scheduler")
@@ -147,11 +150,14 @@ class _SubscriptionScheduleJobStore(BaseJobStore):
 class SubscriptionJobStore(_SubscriptionScheduleJobStore):
     """Triggers ``subscription.cycle`` at each active subscription's period end."""
 
-    trigger_column = cast(
-        ColumnElement[datetime.datetime | None], Subscription.current_period_end
-    )
     job_id_prefix = "subscriptions:cycle"
     actor_name = "subscription.cycle"
+
+    @property
+    def trigger_column(self) -> ColumnElement[datetime.datetime | None]:
+        return cast(
+            ColumnElement[datetime.datetime | None], Subscription.current_period_end
+        )
 
     @staticmethod
     def scheduling_statement() -> Select[tuple[Subscription]]:

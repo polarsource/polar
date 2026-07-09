@@ -21,6 +21,8 @@ from polar.v2026_04.inputs import (
     SubscriptionCancel,
     SubscriptionCreateCustomer,
     SubscriptionCreateExternalCustomer,
+    SubscriptionPause,
+    SubscriptionResume,
     SubscriptionRevoke,
     SubscriptionUpdateBase,
     SubscriptionUpdateBillingPeriod,
@@ -377,6 +379,20 @@ class SubscriptionsSync(SyncServiceBase):
         self,
         id: str,
         **kwargs: typing.Unpack[SubscriptionRevoke],
+    ) -> Subscription: ...
+
+    @typing.overload
+    def update(
+        self,
+        id: str,
+        **kwargs: typing.Unpack[SubscriptionPause],
+    ) -> Subscription: ...
+
+    @typing.overload
+    def update(
+        self,
+        id: str,
+        **kwargs: typing.Unpack[SubscriptionResume],
     ) -> Subscription: ...
 
     @typing.overload
@@ -770,6 +786,20 @@ class SubscriptionsAsync(AsyncServiceBase):
         self,
         id: str,
         **kwargs: typing.Unpack[SubscriptionRevoke],
+    ) -> Subscription: ...
+
+    @typing.overload
+    async def update(
+        self,
+        id: str,
+        **kwargs: typing.Unpack[SubscriptionPause],
+    ) -> Subscription: ...
+
+    @typing.overload
+    async def update(
+        self,
+        id: str,
+        **kwargs: typing.Unpack[SubscriptionResume],
     ) -> Subscription: ...
 
     @typing.overload

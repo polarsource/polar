@@ -45,6 +45,7 @@ class SubscriptionsCurrentPeriodEndInvariant(Invariant):
                 Subscription.current_period_end < (func.now() - self.LEEWAY),
                 Organization.can_renew_subscriptions.is_(True),
             )
+            .order_by(Subscription.current_period_end.asc(), Subscription.id.asc())
             .limit(self.LIMIT)
         )
 

@@ -10,10 +10,7 @@ from polar import tasks
 from polar.logfire import configure_logfire
 from polar.logging import configure as configure_logging
 from polar.sentry import configure_sentry
-from polar.subscription.scheduler import (
-    SubscriptionJobStore,
-    SubscriptionResumeJobStore,
-)
+from polar.subscription.scheduler import SubscriptionJobStore
 
 from ._broker import scheduler_middleware
 from ._health import _run_exposition_server, set_heartbeat_checker
@@ -53,7 +50,6 @@ def start() -> None:
 
     scheduler.add_jobstore(MemoryJobStore(), "memory")
     scheduler.add_jobstore(SubscriptionJobStore(), "subscription")
-    scheduler.add_jobstore(SubscriptionResumeJobStore(), "subscription_resume")
 
     for func, cron_trigger in scheduler_middleware.cron_triggers:
         scheduler.add_job(func, cron_trigger, jobstore="memory")

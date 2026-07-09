@@ -1,7 +1,10 @@
+import typing
 from typing import Any
 
 import httpx
 import structlog
+
+from .payload import SlackPayload
 
 log = structlog.get_logger()
 
@@ -160,12 +163,12 @@ class SlackClient:
         *,
         bot_token: str,
         channel: str,
-        text: str,
+        **payload: typing.Unpack[SlackPayload],
     ) -> dict[str, Any]:
         return await self._post_authed(
             "/chat.postMessage",
             bot_token=bot_token,
-            json={"channel": channel, "text": text},
+            json={"channel": channel, **payload},
         )
 
     async def _post_authed(

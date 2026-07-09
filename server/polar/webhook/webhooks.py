@@ -29,6 +29,11 @@ from polar.integrations.discord.webhook import (
     DiscordPayload,
     get_branded_discord_embed,
 )
+from polar.integrations.slack.payload import (
+    SlackPayload,
+    SlackText,
+    get_branded_slack_payload,
+)
 from polar.kit.schemas import IDSchema, Schema
 from polar.member.schemas import Member as MemberSchema
 from polar.models import (
@@ -53,8 +58,6 @@ from polar.organization.schemas import Organization as OrganizationSchema
 from polar.product.schemas import Product as ProductSchema
 from polar.refund.schemas import Refund as RefundSchema
 from polar.subscription.schemas import Subscription as SubscriptionSchema
-
-from .slack import SlackPayload, SlackText, get_branded_slack_payload
 
 WebhookTypeObject = (
     tuple[Literal[WebhookEventType.checkout_created], Checkout]

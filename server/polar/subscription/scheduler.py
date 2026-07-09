@@ -15,6 +15,7 @@ from sqlalchemy.orm import Session
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import Customer, Organization, Subscription
+from polar.models.subscription import SubscriptionStatus
 from polar.postgres import create_sync_engine
 
 log: Logger = structlog.get_logger()
@@ -180,4 +181,34 @@ class SubscriptionJobStore(_SubscriptionScheduleJobStore):
                 Subscription.current_period_end.is_not(None),
             )
             .order_by(Subscription.current_period_end.asc())
+        )
+
+
+class SubscriptionResumeJobStore(_SubscriptionScheduleJobStore):
+    """Triggers ``subscription.resume`` at each paused subscription's ``resumes_at``."""
+
+    job_id_prefix = "subscriptions:resume"
+    actor_name = "subscription.resume"
+
+    @property
+    def trigger_column(self) -> ColumnElement[datetime.datetime | None]:
+        return cast(ColumnElement[datetime.datetime | None], Subscription.resumes_at)
+
+    @staticmethod
+    def scheduling_statement() -> Select[tuple[Subscription]]:
+        """Paused subscriptions eligible for auto-resume. Excludes renewals-disabled
+        orgs — resuming charges immediately (the API path guards separately)."""
+        return (
+            select(Subscription)
+            .join(Customer, onclause=Customer.id == Subscription.customer_id)
+            .join(Organization, onclause=Organization.id == Customer.organization_id)
+            .where(
+                Customer.is_deleted.is_(False),
+                Organization.is_deleted.is_(False),
+                Organization.can_renew_subscriptions.is_(True),
+                Subscription.scheduler_locked_at.is_(None),
+                Subscription.status == SubscriptionStatus.paused,
+                Subscription.resumes_at.is_not(None),
+            )
+            .order_by(Subscription.resumes_at.asc())
         )

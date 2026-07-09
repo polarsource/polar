@@ -1,7 +1,7 @@
 {
-  "name": "@polar/sdk",
-  "version": "0.0.0",
-  "description": "Polar TypeScript SDK - Auto-generated from OpenAPI specification",
+  "name": "@polar-sh/sdk",
+  "version": "{{ version }}",
+  "description": "Polar SDK — A billing platform for the intelligence era",
   "type": "module",
   "sideEffects": false,
   "files": [
@@ -49,6 +49,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/polar-sh/polar"
+    "url": "https://github.com/polar-sh/polar",
+    "directory": "sdk/typescript"
   }
 }

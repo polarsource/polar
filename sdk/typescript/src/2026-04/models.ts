@@ -916,7 +916,7 @@ export type PaymentTrigger =
   | "retry_payment_method_update"
   | "retry_admin";
 /**
- * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
+ * Permission
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -1233,7 +1233,8 @@ export type SubscriptionStatus =
   | "active"
   | "past_due"
   | "canceled"
-  | "unpaid";
+  | "unpaid"
+  | "paused";
 /**
  * TaxBehavior
  */
@@ -1892,6 +1893,8 @@ export type WebhookEventType =
   | "subscription.uncanceled"
   | "subscription.revoked"
   | "subscription.past_due"
+  | "subscription.paused"
+  | "subscription.resumed"
   | "refund.created"
   | "refund.updated"
   | "product.created"
@@ -9408,6 +9411,18 @@ export interface CustomerOrderSubscription {
    */
   past_due_at?: string | null;
   /**
+   * Whether the subscription will be paused at the end of the current period.
+   */
+  pause_at_period_end: boolean;
+  /**
+   * The timestamp when the subscription was paused.
+   */
+  paused_at: string | null;
+  /**
+   * The timestamp when a paused subscription is scheduled to automatically resume, if set.
+   */
+  resumes_at: string | null;
+  /**
    * The ID of the subscribed customer.
    */
   customer_id: string;
@@ -9817,6 +9832,10 @@ export interface CustomerPortalSubscriptionSettings {
    * update_plan
    */
   update_plan: boolean;
+  /**
+   * pause
+   */
+  pause?: boolean;
 }
 /**
  * CustomerPortalUsageSettings
@@ -10568,6 +10587,18 @@ export interface CustomerSubscription {
    */
   past_due_at?: string | null;
   /**
+   * Whether the subscription will be paused at the end of the current period.
+   */
+  pause_at_period_end: boolean;
+  /**
+   * The timestamp when the subscription was paused.
+   */
+  paused_at: string | null;
+  /**
+   * The timestamp when a paused subscription is scheduled to automatically resume, if set.
+   */
+  resumes_at: string | null;
+  /**
    * The ID of the subscribed customer.
    */
   customer_id: string;
@@ -10699,6 +10730,22 @@ export interface CustomerSubscriptionMeterMeter {
   name: string;
 }
 /**
+ * CustomerSubscriptionPause
+ */
+export interface CustomerSubscriptionPause {
+  /**
+   * Pause an active subscription at the end of the current period.
+
+Or cancel a scheduled pause on a subscription set to be paused at
+period end.
+   */
+  pause_at_period_end: boolean;
+  /**
+   * Date at which the paused subscription should automatically resume. If not set, it stays paused until resumed. Must be after the current period end.
+   */
+  resumes_at?: string | null;
+}
+/**
  * CustomerSubscriptionProduct
  */
 export interface CustomerSubscriptionProduct {
@@ -10778,6 +10825,15 @@ export interface CustomerSubscriptionProduct {
    * organization
    */
   organization: CustomerOrganization;
+}
+/**
+ * CustomerSubscriptionResume
+ */
+export interface CustomerSubscriptionResume {
+  /**
+   * Resume a paused subscription immediately, starting a new billing period and charging the customer.
+   */
+  resume: true;
 }
 /**
  * CustomerSubscriptionUpdateClear
@@ -16093,6 +16149,18 @@ export interface OrderSubscription {
    */
   past_due_at?: string | null;
   /**
+   * Whether the subscription will be paused at the end of the current period.
+   */
+  pause_at_period_end: boolean;
+  /**
+   * The timestamp when the subscription was paused.
+   */
+  paused_at: string | null;
+  /**
+   * The timestamp when a paused subscription is scheduled to automatically resume, if set.
+   */
+  resumes_at: string | null;
+  /**
    * The ID of the subscribed customer.
    */
   customer_id: string;
@@ -16561,6 +16629,14 @@ export interface OrganizationCustomerEmailSettings {
    */
   subscription_past_due: boolean;
   /**
+   * subscription_paused
+   */
+  subscription_paused: boolean;
+  /**
+   * subscription_resumed
+   */
+  subscription_resumed: boolean;
+  /**
    * subscription_renewal_reminder
    */
   subscription_renewal_reminder: boolean;
@@ -16699,6 +16775,10 @@ export interface OrganizationFeatureSettings {
    * If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard
    */
   compass_enabled?: boolean;
+  /**
+   * If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.
+   */
+  merchant_migration_enabled?: boolean;
 }
 /**
  * Feature settings that organizations can update themselves.
@@ -16857,6 +16937,19 @@ export interface Pagination {
    * max_page
    */
   max_page: number;
+}
+/**
+ * PauseResumeNotAllowed
+ */
+export interface PauseResumeNotAllowed {
+  /**
+   * error
+   */
+  error: "PauseResumeNotAllowed";
+  /**
+   * detail
+   */
+  detail: string;
 }
 /**
  * PaymentActionRequired
@@ -18812,6 +18905,18 @@ export interface Subscription {
    */
   past_due_at?: string | null;
   /**
+   * Whether the subscription will be paused at the end of the current period.
+   */
+  pause_at_period_end: boolean;
+  /**
+   * The timestamp when the subscription was paused.
+   */
+  paused_at: string | null;
+  /**
+   * The timestamp when a paused subscription is scheduled to automatically resume, if set.
+   */
+  resumes_at: string | null;
+  /**
    * The ID of the subscribed customer.
    */
   customer_id: string;
@@ -19566,6 +19671,123 @@ export interface SubscriptionPastDueMetadata {
   recurring_interval_count?: number;
 }
 /**
+ * SubscriptionPause
+ */
+export interface SubscriptionPause {
+  /**
+   * Pause an active subscription at the end of the current period.
+
+Or cancel a scheduled pause on a subscription set to be paused at
+period end.
+   */
+  pause_at_period_end: boolean;
+  /**
+   * Date at which the paused subscription should automatically resume.
+
+If not set, the subscription stays paused until it is resumed manually.
+Must be after the current period end.
+   */
+  resumes_at?: string | null;
+}
+/**
+ * An event created by Polar when a subscription is paused.
+ */
+export interface SubscriptionPausedEvent {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * The timestamp of the event.
+   */
+  timestamp: string;
+  /**
+   * The ID of the organization owning the event.
+   */
+  organization_id: string;
+  /**
+   * ID of the customer in your Polar organization associated with the event.
+   */
+  customer_id: string | null;
+  /**
+   * The customer associated with the event.
+   */
+  customer: Customer | null;
+  /**
+   * ID of the customer in your system associated with the event.
+   */
+  external_customer_id: string | null;
+  /**
+   * ID of the member within the customer's organization who performed the action inside B2B.
+   */
+  member_id?: string | null;
+  /**
+   * ID of the member in your system within the customer's organization who performed the action inside B2B.
+   */
+  external_member_id?: string | null;
+  /**
+   * Number of direct child events linked to this event.
+   */
+  child_count?: number;
+  /**
+   * The ID of the parent event.
+   */
+  parent_id?: string | null;
+  /**
+   * Human readable label of the event type.
+   */
+  label: string;
+  /**
+   * The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+   */
+  source: "system";
+  /**
+   * The name of the event.
+   */
+  name: "subscription.paused";
+  /**
+   * metadata
+   */
+  metadata: SubscriptionPausedMetadata;
+}
+/**
+ * SubscriptionPausedMetadata
+ */
+export interface SubscriptionPausedMetadata {
+  /**
+   * subscription_id
+   */
+  subscription_id: string;
+  /**
+   * product_id
+   */
+  product_id?: string;
+  /**
+   * amount
+   */
+  amount?: number;
+  /**
+   * currency
+   */
+  currency?: string;
+  /**
+   * recurring_interval
+   */
+  recurring_interval?: string;
+  /**
+   * recurring_interval_count
+   */
+  recurring_interval_count?: number;
+  /**
+   * paused_at
+   */
+  paused_at: string;
+  /**
+   * resumes_at
+   */
+  resumes_at?: string;
+}
+/**
  * An event created by Polar when a subscription changes the product.
  */
 export interface SubscriptionProductUpdatedEvent {
@@ -19708,6 +19930,105 @@ export interface SubscriptionReactivatedEvent {
  * SubscriptionReactivatedMetadata
  */
 export interface SubscriptionReactivatedMetadata {
+  /**
+   * subscription_id
+   */
+  subscription_id: string;
+  /**
+   * product_id
+   */
+  product_id?: string;
+  /**
+   * amount
+   */
+  amount?: number;
+  /**
+   * currency
+   */
+  currency?: string;
+  /**
+   * recurring_interval
+   */
+  recurring_interval?: string;
+  /**
+   * recurring_interval_count
+   */
+  recurring_interval_count?: number;
+}
+/**
+ * SubscriptionResume
+ */
+export interface SubscriptionResume {
+  /**
+   * Resume a paused subscription immediately, starting a new billing period and charging the customer.
+   */
+  resume: true;
+}
+/**
+ * An event created by Polar when a paused subscription is resumed.
+ */
+export interface SubscriptionResumedEvent {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * The timestamp of the event.
+   */
+  timestamp: string;
+  /**
+   * The ID of the organization owning the event.
+   */
+  organization_id: string;
+  /**
+   * ID of the customer in your Polar organization associated with the event.
+   */
+  customer_id: string | null;
+  /**
+   * The customer associated with the event.
+   */
+  customer: Customer | null;
+  /**
+   * ID of the customer in your system associated with the event.
+   */
+  external_customer_id: string | null;
+  /**
+   * ID of the member within the customer's organization who performed the action inside B2B.
+   */
+  member_id?: string | null;
+  /**
+   * ID of the member in your system within the customer's organization who performed the action inside B2B.
+   */
+  external_member_id?: string | null;
+  /**
+   * Number of direct child events linked to this event.
+   */
+  child_count?: number;
+  /**
+   * The ID of the parent event.
+   */
+  parent_id?: string | null;
+  /**
+   * Human readable label of the event type.
+   */
+  label: string;
+  /**
+   * The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+   */
+  source: "system";
+  /**
+   * The name of the event.
+   */
+  name: "subscription.resumed";
+  /**
+   * metadata
+   */
+  metadata: SubscriptionResumedMetadata;
+}
+/**
+ * SubscriptionResumedMetadata
+ */
+export interface SubscriptionResumedMetadata {
   /**
    * subscription_id
    */
@@ -20916,6 +21237,8 @@ export type CustomerSubscriptionUpdate =
   | CustomerSubscriptionUpdateProduct
   | CustomerSubscriptionUpdateSeats
   | CustomerSubscriptionCancel
+  | CustomerSubscriptionPause
+  | CustomerSubscriptionResume
   | CustomerSubscriptionUpdateClear;
 /**
  * Discount
@@ -20991,6 +21314,8 @@ export type SubscriptionUpdate =
   | SubscriptionUpdateBillingPeriod
   | SubscriptionCancel
   | SubscriptionRevoke
+  | SubscriptionPause
+  | SubscriptionResume
   | SubscriptionUpdateClear;
 /**
  * SystemEvent
@@ -21009,6 +21334,8 @@ export type SystemEvent =
   | SubscriptionRevokedEvent
   | SubscriptionPastDueEvent
   | SubscriptionReactivatedEvent
+  | SubscriptionPausedEvent
+  | SubscriptionResumedEvent
   | SubscriptionUncanceledEvent
   | SubscriptionProductUpdatedEvent
   | SubscriptionSeatsUpdatedEvent

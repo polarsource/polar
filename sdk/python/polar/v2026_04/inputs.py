@@ -1587,6 +1587,8 @@ class CustomerPortalSubscriptionSettings(typing.TypedDict):
 
     update_plan: bool
 
+    pause: typing.NotRequired[bool]
+
 
 class CustomerPortalUsageSettings(typing.TypedDict):
     show: bool
@@ -1676,6 +1678,22 @@ Or uncancel a subscription currently set to be revoked at period end."""
 
     cancellation_comment: typing.NotRequired[str | None]
     """Customer feedback and why they decided to cancel."""
+
+
+class CustomerSubscriptionPause(typing.TypedDict):
+    pause_at_period_end: bool
+    """Pause an active subscription at the end of the current period.
+
+Or cancel a scheduled pause on a subscription set to be paused at
+period end."""
+
+    resumes_at: typing.NotRequired[str | None]
+    """Date at which the paused subscription should automatically resume. If not set, it stays paused until resumed. Must be after the current period end."""
+
+
+class CustomerSubscriptionResume(typing.TypedDict):
+    resume: typing.Literal[True]
+    """Resume a paused subscription immediately, starting a new billing period and charging the customer."""
 
 
 class CustomerSubscriptionUpdateClear(typing.TypedDict):
@@ -2513,6 +2531,10 @@ class OrganizationCustomerEmailSettings(typing.TypedDict):
     subscription_cycled_after_trial: bool
 
     subscription_past_due: bool
+
+    subscription_paused: bool
+
+    subscription_resumed: bool
 
     subscription_renewal_reminder: bool
 
@@ -3517,6 +3539,25 @@ You can store up to **50 key-value pairs**."""
     """The ID of the customer in your system to create the subscription for. It must already exist in Polar."""
 
 
+class SubscriptionPause(typing.TypedDict):
+    pause_at_period_end: bool
+    """Pause an active subscription at the end of the current period.
+
+Or cancel a scheduled pause on a subscription set to be paused at
+period end."""
+
+    resumes_at: typing.NotRequired[str | None]
+    """Date at which the paused subscription should automatically resume.
+
+If not set, the subscription stays paused until it is resumed manually.
+Must be after the current period end."""
+
+
+class SubscriptionResume(typing.TypedDict):
+    resume: typing.Literal[True]
+    """Resume a paused subscription immediately, starting a new billing period and charging the customer."""
+
+
 class SubscriptionRevoke(typing.TypedDict):
     customer_cancellation_reason: typing.NotRequired[CustomerCancellationReason | None]
     """Customer reason for cancellation.
@@ -3698,6 +3739,8 @@ CustomerSubscriptionUpdate: typing.TypeAlias = (
     CustomerSubscriptionUpdateProduct
     | CustomerSubscriptionUpdateSeats
     | CustomerSubscriptionCancel
+    | CustomerSubscriptionPause
+    | CustomerSubscriptionResume
     | CustomerSubscriptionUpdateClear
 )
 
@@ -3725,5 +3768,7 @@ SubscriptionUpdate: typing.TypeAlias = (
     | SubscriptionUpdateBillingPeriod
     | SubscriptionCancel
     | SubscriptionRevoke
+    | SubscriptionPause
+    | SubscriptionResume
     | SubscriptionUpdateClear
 )

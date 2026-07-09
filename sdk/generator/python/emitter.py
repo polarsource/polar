@@ -64,8 +64,8 @@ def _collect_type_ref_names(
 
 
 class PythonEmitter(EmitterBase):
-    def __init__(self, ir: APIIR) -> None:
-        super().__init__(ir, EMITTER_DIRECTORY / "template")
+    def __init__(self, ir: APIIR, version: str) -> None:
+        super().__init__(ir, version, EMITTER_DIRECTORY / "template")
 
     def emit(self, root_directory: pathlib.Path | str) -> None:
         """Emit the Python SDK files to the specified root directory."""

@@ -20,3 +20,22 @@ async def test_get_due_jobs_does_not_raise(
     jobs = store.get_due_jobs(utc_now())
 
     assert jobs == []
+
+
+@pytest.mark.asyncio
+async def test_get_due_jobs_reports_failures_to_sentry(
+    mocker: MockerFixture,
+) -> None:
+    """A failing query is captured to Sentry and re-raised, so a broken store
+    can't degrade silently behind APScheduler's warn-and-retry."""
+    store = SubscriptionJobStore()
+    error = RuntimeError("query failed")
+    mocker.patch.object(store, "scheduling_statement", side_effect=error)
+    capture_exception = mocker.patch(
+        "polar.subscription.scheduler.sentry_sdk.capture_exception"
+    )
+
+    with pytest.raises(RuntimeError):
+        store.get_due_jobs(utc_now())
+
+    capture_exception.assert_called_once_with(error)

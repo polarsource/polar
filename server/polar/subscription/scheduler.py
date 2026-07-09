@@ -1,6 +1,9 @@
 import datetime
+import functools
+from collections.abc import Callable
 
 import dramatiq
+import sentry_sdk
 import structlog
 from apscheduler.job import Job
 from apscheduler.jobstores.base import BaseJobStore
@@ -14,6 +17,25 @@ from polar.models import Customer, Organization, Subscription
 from polar.postgres import create_sync_engine
 
 log: Logger = structlog.get_logger()
+
+
+def _report_failures[**P, R](method: Callable[P, R]) -> Callable[P, R]:
+    """Report job store query failures to Sentry, then re-raise.
+
+    APScheduler swallows job store exceptions into a warning and retries, so
+    without this a broken store degrades silently.
+    """
+
+    @functools.wraps(method)
+    def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
+        try:
+            return method(*args, **kwargs)
+        except Exception as e:
+            log.error("subscription.scheduler.job_store_failure", exc_info=True)
+            sentry_sdk.capture_exception(e)
+            raise
+
+    return wrapper
 
 
 class SubscriptionJobStore(BaseJobStore):
@@ -33,6 +55,7 @@ class SubscriptionJobStore(BaseJobStore):
     def lookup_job(self, job_id: str) -> Job | None:
         return None
 
+    @_report_failures
     def get_due_jobs(self, now: datetime.datetime) -> list[Job]:
         statement = self.scheduling_statement().where(
             Subscription.current_period_end <= now,
@@ -41,6 +64,7 @@ class SubscriptionJobStore(BaseJobStore):
         log.debug("Due jobs", count=len(jobs))
         return jobs
 
+    @_report_failures
     def get_next_run_time(self) -> datetime.datetime | None:
         statement = (
             self.scheduling_statement()
@@ -53,6 +77,7 @@ class SubscriptionJobStore(BaseJobStore):
             log.debug("Next run time", next_run_time=next_run_time)
             return next_run_time
 
+    @_report_failures
     def get_all_jobs(self) -> list[Job]:
         statement = self.scheduling_statement()
         jobs = self._list_jobs_from_statement(statement)

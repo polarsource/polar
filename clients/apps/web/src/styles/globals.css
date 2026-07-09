@@ -262,7 +262,7 @@
     @apply text-gray-200;
   }
 
-  #polar-embed-layout {
+  html:has(#polar-embed-layout) {
     color-scheme: normal;
   }
 

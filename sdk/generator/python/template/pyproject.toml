@@ -1,7 +1,7 @@
 [project]
 name = "polar-sdk"
 authors = [{ name = "Polar", email = "contact@polar.sh" }]
-description = "Polar SDK — A billing platform for the intelligence er"
+description = "Polar SDK — A billing platform for the intelligence era"
 readme = "README.md"
 dynamic = ["version"]
 classifiers = [

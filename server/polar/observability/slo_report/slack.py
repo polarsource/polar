@@ -7,7 +7,7 @@ https://api.slack.com/block-kit
 
 from typing import Any
 
-from polar.webhook.slack import SlackPayload, get_branded_slack_payload
+from polar.integrations.slack.payload import SlackPayload, get_branded_slack_payload
 
 from .schemas import SLOReport
 

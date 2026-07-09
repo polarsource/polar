@@ -12,7 +12,7 @@ class SubscriptionsCurrentPeriodEndInvariantError(InvariantError):
     """Exception raised when the SubscriptionsCurrentPeriodEndInvariant check fails."""
 
     def __init__(self, count: int, subscriptions: list[uuid.UUID]) -> None:
-        message = f"Found {len(subscriptions)} subscriptions with current_period_end in the past."
+        message = f"Found {count} subscriptions with current_period_end in the past."
         super().__init__(
             SubscriptionsCurrentPeriodEndInvariant,
             message,

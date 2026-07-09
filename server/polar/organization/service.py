@@ -1622,16 +1622,16 @@ class OrganizationService:
         )
 
         preliminary_steps = [
-            self._build_product_description_check(organization),
             product_configuration_check,
             setup_readiness_check,
             self._build_identity_verification_check(
                 owner_user, restricted=identity_restricted
             ),
             self._build_payout_account_check(payout_account),
-            self._build_socials_check(organization),
+            self._build_product_description_check(organization),
             await product_url_task,
             self._build_email_check(organization),
+            self._build_socials_check(organization),
         ]
 
         submitted_at = organization.details_submitted_at
@@ -1850,13 +1850,21 @@ class OrganizationService:
         self, session: AsyncReadSession, organization: Organization
     ) -> OrganizationReviewCheck:
         """Setup readiness passes when the merchant has at least one
-        auto-fulfillable checkout link (selling a Polar-fulfilled benefit,
-        or with a success_url so the merchant handles fulfillment via
-        redirect), or has both an organization access token and a webhook
-        endpoint.
+        checkout link and every live checkout link is auto-fulfillable
+        (it sets a success_url so the merchant handles fulfillment via
+        redirect, or every product on it sells a Polar-fulfilled benefit),
+        or has both an organization access token and a webhook endpoint.
 
-        A checkout link with neither benefits nor a success_url has no
-        automatic fulfillment path, which is a broken integration.
+        Every live link is a purchasable surface, so a single link where
+        some product has neither a benefit nor a success_url covering it
+        means a customer can pay without receiving anything. That's treated
+        as in-progress (PENDING) rather than an error: the merchant simply
+        hasn't finished setting up delivery. It still blocks submission
+        (PENDING gates like FAILED), but the onboarding UI guides the
+        merchant to add a benefit or a success_url instead of surfacing a
+        scary "invalid" state. The underlying `checkout_link` sub-check
+        stays FAILED so internal review can still see a link isn't
+        fulfillable.
 
         An access token without a webhook is a non-blocking warning rather
         than a failure: the merchant can still fulfill via success_url +
@@ -1873,19 +1881,15 @@ class OrganizationService:
         )
         webhook_repository = WebhookEndpointRepository.from_session(session)
 
-        has_checkout_link_with_fulfillable_benefit = (
-            await checkout_link_repository.has_with_benefit_types(
+        has_any_checkout_link = await checkout_link_repository.has_any(organization.id)
+        has_unfulfillable_checkout_link = (
+            await checkout_link_repository.has_unfulfillable(
                 organization.id, _CHECKOUT_FULFILLABLE_BENEFITS
             )
         )
-        has_checkout_link_with_success_url = (
-            await checkout_link_repository.has_with_success_url(organization.id)
+        all_checkout_links_fulfillable = (
+            has_any_checkout_link and not has_unfulfillable_checkout_link
         )
-        has_fulfillable_checkout_link = (
-            has_checkout_link_with_fulfillable_benefit
-            or has_checkout_link_with_success_url
-        )
-        has_any_checkout_link = await checkout_link_repository.has_any(organization.id)
         has_access_token = await access_token_repository.has_by_organization_id(
             organization.id
         )
@@ -1902,20 +1906,16 @@ class OrganizationService:
                 reasons=[] if ok else [OrganizationReviewCheckReason.NOT_STARTED],
             )
 
-        # Checkout link escalates to WARNING when the merchant has created a
-        # checkout link but it neither sells a fulfillable benefit nor sets a
-        # success_url — i.e. the link exists but won't actually deliver
-        # anything to the customer post-purchase.
-        if has_fulfillable_checkout_link:
+        if all_checkout_links_fulfillable:
             checkout_link_sub = _sub(
                 OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK,
                 True,
             )
         elif has_any_checkout_link:
-            # The merchant created a checkout link but it neither sells a
-            # fulfillable benefit nor sets a success_url — it can't actually
-            # deliver anything post-purchase. Treat as a hard failure so the
-            # row surfaces it clearly; the parent rollup still falls back to
+            # The merchant has a checkout link that can't deliver on every
+            # product: no success_url, and at least one product sells no
+            # fulfillable benefit. Treat as a hard failure so the row
+            # surfaces it clearly; the parent rollup still falls back to
             # PASSED if the API path is fully configured.
             checkout_link_sub = OrganizationReviewSubCheck(
                 key=OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK,
@@ -1960,27 +1960,27 @@ class OrganizationService:
         ):
             parent_status = OrganizationReviewCheckStatus.PASSED
         elif checkout_link_sub.status == OrganizationReviewCheckStatus.FAILED:
-            # No-code path attempted but the link can't fulfill — surface as
-            # a hard failure so the user can't submit without fixing it.
-            parent_status = OrganizationReviewCheckStatus.FAILED
+            # No-code path attempted but the link can't fulfill yet. Treat as
+            # in-progress: still blocks submission (PENDING gates like FAILED),
+            # but the UI guides the merchant to finish setting up delivery
+            # rather than surfacing it as an error.
+            parent_status = OrganizationReviewCheckStatus.PENDING
         elif access_token_sub.status == OrganizationReviewCheckStatus.PASSED:
             # API path partially configured — token present, webhook missing.
             parent_status = OrganizationReviewCheckStatus.WARNING
         else:
             parent_status = OrganizationReviewCheckStatus.PENDING
 
-        # Propagate failure/warning-level reasons from sub-checks to the
-        # parent so the row header can surface a single, actionable hint
-        # without the frontend re-deriving which sub-check produced it. Skip
-        # propagation when the parent is already PASSED — one complete path
-        # makes any partial state on the other path irrelevant for the rollup
-        # message.
+        # Propagate warning-level reasons from sub-checks to the parent so the
+        # row header can surface a single, actionable hint without the
+        # frontend re-deriving which sub-check produced it. The checkout-link
+        # "not fulfillable" state is deliberately NOT propagated: it's guided
+        # in-product (add a benefit or a success_url), not shown as an error.
         sub_checks = [checkout_link_sub, access_token_sub, webhook_sub]
         parent_reasons: list[OrganizationReviewCheckReason] = []
         if parent_status != OrganizationReviewCheckStatus.PASSED:
             propagated_statuses = {
                 OrganizationReviewCheckStatus.WARNING,
-                OrganizationReviewCheckStatus.FAILED,
             }
             seen: set[OrganizationReviewCheckReason] = set()
             for sub in sub_checks:

@@ -1,67 +1,102 @@
 'use client'
 
 import { CheckoutLinkManagementModal } from '@/components/CheckoutLinks/CheckoutLinkManagementModal'
-import { InlineModal } from '@polar-sh/orbit'
-import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { CreateAccessTokenModal } from '@/components/Settings/CreateAccessTokenModal'
 import NewWebhookModal from '@/components/Settings/Webhook/NewWebhookModal'
 import { toast } from '@/components/Toast/use-toast'
+import { useCheckoutLinks } from '@/hooks/queries/checkout_links'
 import { getQueryClient } from '@/utils/api/query'
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
+import {
+  Button,
+  InlineModal,
+  Modal,
+  SegmentedControl,
+  Text,
+} from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Button } from '@polar-sh/orbit'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import Banner from '@polar-sh/ui/components/molecules/Banner'
-import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import { PathCard } from './PathCard'
-import { PathCardBanner } from './PathCardBanner'
+import { DeliveryRadioGroup, LearnMore, Todo } from './SetupReadinessParts'
 
 interface Props {
   organization: schemas['Organization']
   step: schemas['OrganizationReviewCheck']
 }
 
+type Path = 'no-code' | 'api'
+type Status = schemas['OrganizationReviewCheckStatus']
+
+const DOCS = {
+  checkoutLink: 'https://polar.sh/docs/features/checkout/links',
+  api: 'https://polar.sh/docs/api-reference/introduction',
+}
+
+const API_ONLY_BENEFIT_TYPES: ReadonlySet<schemas['BenefitType']> = new Set([
+  'feature_flag',
+  'meter_credit',
+])
+
+const isMissingBenefit = (product: schemas['CheckoutLinkProduct']): boolean =>
+  !product.is_archived &&
+  !product.benefits.some((benefit) => !API_ONLY_BENEFIT_TYPES.has(benefit.type))
+
 const subStatus = (
   step: schemas['OrganizationReviewCheck'],
   key: schemas['OrganizationReviewSubCheckKey'],
-): schemas['OrganizationReviewCheckStatus'] | undefined =>
-  step.sub_checks?.find((s) => s.key === key)?.status
-
-const INLINE_LINK_CLASS =
-  'dark:text-polar-300 dark:hover:text-polar-100 text-gray-700 underline underline-offset-2 hover:text-gray-900'
+): Status | undefined => step.sub_checks?.find((s) => s.key === key)?.status
 
 export const SetupReadinessSection = ({ organization, step }: Props) => {
+  const router = useRouter()
   const checkoutLinkStatus = subStatus(step, 'setup_readiness.checkout_link')
-  const accessTokenStatus = subStatus(step, 'setup_readiness.access_token')
-  const webhookStatus = subStatus(step, 'setup_readiness.webhook')
+  const accessTokenStatus =
+    subStatus(step, 'setup_readiness.access_token') ?? 'pending'
+  const webhookStatus = subStatus(step, 'setup_readiness.webhook') ?? 'pending'
 
-  const checkoutLinkNeedsEdit =
-    checkoutLinkStatus === 'failed' || checkoutLinkStatus === 'warning'
-  const checkoutLinkHref = checkoutLinkNeedsEdit
-    ? `/dashboard/${organization.slug}/products/checkout-links`
-    : undefined
+  const { data: checkoutLinksData } = useCheckoutLinks(organization.id)
+  const checkoutLinks =
+    checkoutLinksData?.pages.flatMap((page) => page.items) ?? []
+  const blockingLinks = checkoutLinks.filter(
+    (link) => !link.success_url && link.products.some(isMissingBenefit),
+  )
+  const linkToEdit = blockingLinks[0] ?? checkoutLinks[0]
 
-  const {
-    isShown: isCreateCheckoutLinkModalShown,
-    show: showCreateCheckoutLinkModal,
-    hide: hideCreateCheckoutLinkModal,
-  } = useModal()
+  const hasCheckoutLink =
+    checkoutLinkStatus === 'passed' ||
+    checkoutLinkStatus === 'failed' ||
+    checkoutLinks.length > 0
+  const isFulfillable = checkoutLinkStatus === 'passed'
 
-  const {
-    isShown: isCreateTokenModalShown,
-    show: showCreateTokenModal,
-    hide: hideCreateTokenModal,
-  } = useModal()
+  const productsPath = `/dashboard/${organization.slug}/products`
+  const returnTo = encodeURIComponent(
+    `/dashboard/${organization.slug}/finance/account`,
+  )
+  const productsMissingBenefit = [
+    ...new Map(
+      blockingLinks
+        .flatMap((link) => link.products)
+        .filter(isMissingBenefit)
+        .map((product) => [product.id, product] as const),
+    ).values(),
+  ].map((product) => ({
+    id: product.id,
+    name: product.name,
+    href: `${productsPath}/${product.id}/edit?return_to=${returnTo}`,
+  }))
 
-  const {
-    isShown: isCreateWebhookModalShown,
-    show: showCreateWebhookModal,
-    hide: hideCreateWebhookModal,
-  } = useModal()
+  const startedApi =
+    accessTokenStatus === 'passed' || webhookStatus === 'passed'
+  const [path, setPath] = useState<Path>(
+    startedApi && !isFulfillable ? 'api' : 'no-code',
+  )
 
+  const checkoutModal = useModal()
+  const editCheckoutLinkModal = useModal()
+  const tokenModal = useModal()
+  const webhookModal = useModal()
   const [createdToken, setCreatedToken] =
     useState<schemas['OrganizationAccessTokenCreateResponse']>()
 
@@ -72,132 +107,78 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
   }
 
   return (
-    <Box flexDirection="column" rowGap="xl">
-      <Text variant="default" color="muted">
-        You&rsquo;re not integrated with Polar yet. Pick the option that fits
-        your setup. You can always switch later.
-      </Text>
+    <Box flexDirection="column" rowGap="l">
+      <SegmentedControl
+        variant="tabs"
+        value={path}
+        onChange={setPath}
+        options={[
+          { value: 'no-code', label: 'No-code' },
+          { value: 'api', label: 'API integration' },
+        ]}
+      />
 
-      <Box flexDirection="column" rowGap="xl">
-        <Box flexDirection="column" rowGap="s">
+      {path === 'no-code' ? (
+        <Box flexDirection="column" rowGap="l">
           <Text variant="caption" color="muted">
-            No-code
+            A pre-configured checkout URL you can share anywhere to start
+            selling without writing any code. Drop it on your site, in emails,
+            on social, or send it straight to customers.{' '}
+            <LearnMore href={DOCS.checkoutLink} />
           </Text>
-          <PathCard
-            title="Create a checkout link"
-            description="A pre-configured checkout URL you can share anywhere to start selling without writing any code. Drop it on your site, in emails, on social, or send it straight to customers."
-            href={checkoutLinkHref}
-            onClick={
-              checkoutLinkNeedsEdit ? undefined : showCreateCheckoutLinkModal
-            }
-            docsUrl="https://polar.sh/docs/features/checkout/links"
-            status={checkoutLinkStatus}
-            extra={
-              checkoutLinkStatus === 'failed' && (
-                <PathCardBanner
-                  tone="danger"
-                  title="Checkout link is invalid"
-                  description={
-                    <>
-                      Your checkout links needs either a{' '}
-                      <Link
-                        href={`/dashboard/${organization.slug}/products`}
-                        onClick={(e) => e.stopPropagation()}
-                        className={INLINE_LINK_CLASS}
-                      >
-                        product
-                      </Link>{' '}
-                      with a benefit attached or a{' '}
-                      <Link
-                        href={`/dashboard/${organization.slug}/products/checkout-links`}
-                        onClick={(e) => e.stopPropagation()}
-                        className={INLINE_LINK_CLASS}
-                      >
-                        checkout link
-                      </Link>{' '}
-                      with a{' '}
-                      <a
-                        href="https://polar.sh/docs/features/checkout/links#success-url"
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        onClick={(e) => e.stopPropagation()}
-                        className={INLINE_LINK_CLASS}
-                      >
-                        Success URL
-                      </a>{' '}
-                      set.
-                    </>
-                  }
-                />
-              )
-            }
-          />
-        </Box>
-
-        <Box alignItems="center" columnGap="m">
-          <Box
-            display="block"
-            flexGrow={1}
-            borderTopWidth={1}
-            borderStyle="solid"
-            borderColor="border-primary"
-          />
-          <Text variant="caption" color="muted">
-            OR
-          </Text>
-          <Box
-            display="block"
-            flexGrow={1}
-            borderTopWidth={1}
-            borderStyle="solid"
-            borderColor="border-primary"
-          />
-        </Box>
-
-        <Box flexDirection="column" rowGap="s">
-          <Box alignItems="baseline" columnGap="s">
-            <Text variant="caption" color="muted">
-              API integration
-            </Text>
+          <Box flexDirection="column" rowGap="m">
+            <Todo
+              status={hasCheckoutLink ? 'passed' : 'pending'}
+              title="Create a checkout link"
+              actionLabel="Create"
+              onAction={checkoutModal.show}
+            />
+            {hasCheckoutLink && !isFulfillable && (
+              <DeliveryRadioGroup
+                productsMissingBenefit={productsMissingBenefit}
+                onAddBenefit={() => router.push(productsPath)}
+                onAddSuccessUrl={editCheckoutLinkModal.show}
+              />
+            )}
           </Box>
-
-          <PathCard
-            title="Create an API key"
-            description="Integrate your application with the Polar API to manage orders, customers, and subscriptions programmatically."
-            onClick={showCreateTokenModal}
-            docsUrl="https://polar.sh/docs/api-reference/introduction"
-            required
-            status={accessTokenStatus}
-          />
-
-          <PathCard
-            title="Create a webhook"
-            description="Receive real-time HTTP callbacks for events like new orders, refunds, and subscription changes, keeping data consistent between your app and Polar."
-            onClick={showCreateWebhookModal}
-            recommended
-            docsUrl="https://polar.sh/docs/integrate/webhooks/endpoints"
-            status={webhookStatus}
-            extra={
-              webhookStatus === 'warning' && (
-                <PathCardBanner
-                  tone="warning"
-                  title="Setting up a webhook is helpful to ensure consistency when you integrate over API"
-                />
-              )
-            }
-          />
         </Box>
-      </Box>
+      ) : (
+        <Box flexDirection="column" rowGap="l">
+          <Text variant="caption" color="muted">
+            Integrate your application with the Polar API to manage orders,
+            customers, and subscriptions programmatically from your own code.{' '}
+            <LearnMore href={DOCS.api} />
+          </Text>
+          <Box flexDirection="column" rowGap="m">
+            <Todo
+              status={accessTokenStatus}
+              title="Create an API key"
+              hint="Required"
+              hintColor="gray"
+              actionLabel="Create"
+              onAction={tokenModal.show}
+            />
+            <Todo
+              status={webhookStatus}
+              title="Create a webhook"
+              hint="Recommended"
+              hintColor="blue"
+              actionLabel="Create"
+              onAction={webhookModal.show}
+            />
+          </Box>
+        </Box>
+      )}
 
       <InlineModal
-        isShown={isCreateCheckoutLinkModalShown}
-        hide={hideCreateCheckoutLinkModal}
+        isShown={checkoutModal.isShown}
+        hide={checkoutModal.hide}
         modalContent={
           <CheckoutLinkManagementModal
             organization={organization}
             productIds={[]}
             onClose={() => {
-              hideCreateCheckoutLinkModal()
+              checkoutModal.hide()
               invalidateReviewState()
             }}
           />
@@ -205,31 +186,48 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
       />
 
       <InlineModal
-        isShown={isCreateTokenModalShown}
-        hide={hideCreateTokenModal}
+        isShown={editCheckoutLinkModal.isShown}
+        hide={editCheckoutLinkModal.hide}
+        modalContent={
+          linkToEdit ? (
+            <CheckoutLinkManagementModal
+              organization={organization}
+              checkoutLink={linkToEdit}
+              onClose={() => {
+                editCheckoutLinkModal.hide()
+                invalidateReviewState()
+              }}
+            />
+          ) : null
+        }
+      />
+
+      <InlineModal
+        isShown={tokenModal.isShown}
+        hide={tokenModal.hide}
         modalContent={
           <CreateAccessTokenModal
             organization={organization}
             title="Create API key"
             onSuccess={(token) => {
               setCreatedToken(token)
-              hideCreateTokenModal()
+              tokenModal.hide()
               invalidateReviewState()
             }}
-            onHide={hideCreateTokenModal}
+            onHide={tokenModal.hide}
           />
         }
       />
 
       <InlineModal
-        isShown={isCreateWebhookModalShown}
-        hide={hideCreateWebhookModal}
+        isShown={webhookModal.isShown}
+        hide={webhookModal.hide}
         modalContent={
           <NewWebhookModal
             organization={organization}
-            hide={hideCreateWebhookModal}
+            hide={webhookModal.hide}
             onSuccess={() => {
-              hideCreateWebhookModal()
+              webhookModal.hide()
               invalidateReviewState()
             }}
           />

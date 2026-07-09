@@ -53,7 +53,7 @@ async def cancel_subscriptions_deleted_customers() -> None:
     async with JobQueueManager.open(dramatiq.get_broker(), redis) as job_queue_manager:
         async with sessionmaker() as session:
             statement = select(Customer).where(
-                Customer.deleted_at.is_(True),
+                Customer.deleted_at.is_not(None),
                 Customer.id.in_(
                     select(Subscription.customer_id).where(
                         Subscription.active.is_(True)

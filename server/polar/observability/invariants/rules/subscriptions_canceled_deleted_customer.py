@@ -3,7 +3,6 @@ import uuid
 from sqlalchemy import and_, func, over, select
 
 from polar.models import Customer, Subscription
-from polar.models.subscription import SubscriptionStatus
 
 from .base import Invariant, InvariantError
 
@@ -48,6 +47,7 @@ class SubscriptionsCanceledDeletedCustomerInvariant(Invariant):
                 )
             )
             .limit(self.LIMIT)
+            .order_by(Customer.deleted_at.asc(), Subscription.id.asc())
         )
 
         result = await self.session.execute(statement)

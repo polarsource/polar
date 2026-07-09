@@ -66,10 +66,10 @@ async def cancel_subscriptions_deleted_customers() -> None:
 
             repository = CustomerRepository.from_session(session)
             with Progress() as progress:
+                task = progress.add_task(
+                    "[cyan]Enqueuing cancellation jobs...", total=count
+                )
                 async for customer in repository.stream(statement):
-                    task = progress.add_task(
-                        "[cyan]Enqueuing cancellation jobs...", total=count
-                    )
                     enqueue_job("subscription.cancel_customer", customer_id=customer.id)
                     progress.advance(task)
 

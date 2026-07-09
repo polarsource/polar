@@ -62,6 +62,25 @@ export const useRunMerchantMigrationPrecheck = (id: string) =>
     },
   })
 
+export const useImportMerchantMigrationCatalog = (id: string) =>
+  useMutation({
+    mutationFn: (recordIds?: string[]) =>
+      unwrap(
+        api.POST('/v1/merchant-migrations/{id}/import', {
+          params: { path: { id } },
+          body: recordIds ? { record_ids: recordIds } : {},
+        }),
+      ),
+    onSuccess: () => {
+      getQueryClient().invalidateQueries({
+        queryKey: ['merchantMigration', { id }],
+      })
+      getQueryClient().invalidateQueries({
+        queryKey: ['merchantMigrationRecords'],
+      })
+    },
+  })
+
 export const useMigrationRecords = (
   id: string,
   params: {

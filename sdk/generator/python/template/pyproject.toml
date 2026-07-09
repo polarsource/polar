@@ -1,7 +1,7 @@
 [project]
 name = "polar-sdk"
 authors = [{ name = "Polar", email = "contact@polar.sh" }]
-description = "Polar SDK for Python"
+description = "Polar SDK — A billing platform for the intelligence er"
 readme = "README.md"
 dynamic = ["version"]
 classifiers = [
@@ -13,6 +13,10 @@ classifiers = [
 ]
 requires-python = ">=3.11"
 dependencies = ["httpx>=0.28.1", "adaptix==3.0.0b12"]
+
+[project.urls]
+homepage = "https://polar.sh"
+repository = "https://github.com/polarsource/polar/tree/main/sdk/python"
 
 [build-system]
 requires = ["hatchling"]

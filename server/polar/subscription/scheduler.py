@@ -89,6 +89,7 @@ class _SubscriptionScheduleJobStore(BaseJobStore):
         log.debug("All jobs", count=len(jobs), store=self.job_id_prefix)
         return jobs
 
+    @_report_failures
     def remove_job(self, job_id: str) -> None:
         # Conditional UPDATE dedupes concurrent schedulers: losers see 0 rows.
         subscription_id = job_id.split(":")[-1]

@@ -30,7 +30,10 @@ class InvariantDoesNotExistError(InvariantTaskError):
 )
 async def enqueue_invariants() -> None:
     for invariant_cls in INVARIANTS:
-        enqueue_job("observability.invariants.check", invariant_cls.__name__)
+        invariant_identifier = (
+            f"{invariant_cls.__module__}.{invariant_cls.__qualname__}"
+        )
+        enqueue_job("observability.invariants.check", invariant_identifier)
 
 
 @actor(
@@ -41,7 +44,9 @@ async def enqueue_invariants() -> None:
 async def check_invariant(invariant_cls_name: str) -> None:
     try:
         invariant_cls = next(
-            cls for cls in INVARIANTS if cls.__name__ == invariant_cls_name
+            cls
+            for cls in INVARIANTS
+            if f"{cls.__module__}.{cls.__qualname__}" == invariant_cls_name
         )
     except StopIteration as e:
         raise InvariantDoesNotExistError(invariant_cls_name) from e

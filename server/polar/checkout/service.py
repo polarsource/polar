@@ -2,6 +2,7 @@ import contextlib
 import typing
 import uuid
 from collections.abc import AsyncGenerator, Sequence
+from datetime import datetime
 
 import sentry_sdk
 import stripe as stripe_lib
@@ -265,6 +266,8 @@ class CheckoutService:
         external_customer_id: Sequence[str] | None = None,
         status: Sequence[CheckoutStatus] | None = None,
         query: str | None = None,
+        created_at_after: datetime | None = None,
+        created_at_before: datetime | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[CheckoutSortProperty]] = [
             (CheckoutSortProperty.created_at, True)
@@ -297,6 +300,12 @@ class CheckoutService:
 
         if query is not None:
             statement = statement.where(Checkout.customer_email.ilike(f"%{query}%"))
+
+        if created_at_after is not None:
+            statement = statement.where(Checkout.created_at >= created_at_after)
+
+        if created_at_before is not None:
+            statement = statement.where(Checkout.created_at < created_at_before)
 
         statement = repository.apply_sorting(statement, sorting)
 

@@ -10,7 +10,7 @@ Every tool follows the same contract:
   the client as typed blocks via `deps.emit(...)` for the block registry.
 """
 
-from datetime import timedelta
+from datetime import date, timedelta
 from typing import Literal
 
 from pydantic_ai import RunContext
@@ -42,18 +42,57 @@ def _scope_denial(deps: AssistantDeps, scope: Scope) -> str | None:
     )
 
 
+def _resolve_window(
+    deps: AssistantDeps,
+    *,
+    days: int,
+    start_date: date | None,
+    end_date: date | None,
+    max_span_days: int,
+) -> tuple[date, date] | str:
+    """An inclusive [start, end] date window, from explicit dates or a
+    trailing `days` count ending today. Explicit dates express questions a
+    trailing window cannot ("yesterday", "last month"). Returns an
+    instruction string for the model on invalid input."""
+    end = min(end_date, deps.today) if end_date is not None else deps.today
+    if start_date is None:
+        # The range is inclusive of both endpoints, so a window of N days
+        # starts N-1 days before its end.
+        return end - timedelta(days=days - 1), end
+    if start_date > end:
+        return (
+            f"Invalid date range: start_date {start_date} is after end_date "
+            f"{end}. Today is {deps.today}."
+        )
+    span = (end - start_date).days + 1
+    if span > max_span_days:
+        return (
+            f"Date range too long: {span} days requested, the maximum is "
+            f"{max_span_days} days. Narrow the range."
+        )
+    return start_date, end
+
+
 async def get_metrics(
     ctx: RunContext[AssistantDeps],
     metric_slugs: list[str],
     days: int = 30,
+    start_date: date | None = None,
+    end_date: date | None = None,
 ) -> str:
-    """Fetch daily values for up to five metrics over a trailing window.
+    """Fetch daily values for up to five metrics over a date window.
 
     Args:
         metric_slugs: Metric slugs to fetch, e.g. `monthly_recurring_revenue`,
             `active_subscriptions`, `churned_subscriptions`, `revenue`,
             `checkouts_conversion`, `gross_margin_percentage`, `cost_per_user`.
-        days: Trailing window length in days (7 to 90, default 30).
+        days: Trailing window ending today, in days (7 to 90, default 30).
+            Ignored when `start_date` is set.
+        start_date: First day of an explicit window (inclusive). Set it for
+            questions about a specific day or calendar period, e.g. yesterday
+            or one month. A single day is `start_date` equal to `end_date`.
+        end_date: Last day of the explicit window (inclusive, defaults to
+            today).
     """
     deps = ctx.deps
     if denial := _scope_denial(deps, Scope.metrics_read):
@@ -65,15 +104,22 @@ async def get_metrics(
         return f"Unknown metric slugs {unknown}. Available slugs: {known}"
     slugs = metric_slugs[:_MAX_SLUGS]
     days = max(_MIN_WINDOW_DAYS, min(_MAX_WINDOW_DAYS, days))
+    window = _resolve_window(
+        deps,
+        days=days,
+        start_date=start_date,
+        end_date=end_date,
+        max_span_days=_MAX_WINDOW_DAYS,
+    )
+    if isinstance(window, str):
+        return window
+    start, end = window
 
-    today = deps.today
     response = await metrics_service.get_metrics(
         deps.session,
         deps.auth_subject,
-        # The metrics range is inclusive of both endpoints, so a trailing
-        # window of N days starts N-1 days before today.
-        start_date=today - timedelta(days=days - 1),
-        end_date=today,
+        start_date=start,
+        end_date=end,
         timezone=deps.timezone,
         interval=TimeInterval.day,
         organization_id=[deps.organization_id],
@@ -103,8 +149,8 @@ async def get_metrics(
         last = points[-1].value if points else 0
         summaries.append(
             f"{slug} ({metric.type.value}): start={first} latest={last} "
-            f"over the last {days} days. Chart prepared; place it with "
-            f"[block:{marker}]."
+            f"from {start} to {end} (inclusive). Chart prepared; place it "
+            f"with [block:{marker}]."
         )
     return "\n".join(summaries)
 

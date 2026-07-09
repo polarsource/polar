@@ -59,6 +59,7 @@ class OrderRepository(
         organization_id: UUID,
         *,
         start: datetime | None = None,
+        end: datetime | None = None,
         limit: int = 10,
     ) -> Sequence[tuple[UUID, str | None, str | None, int, int]]:
         """Customers ranked by paid net revenue: (customer_id, email, name,
@@ -94,6 +95,8 @@ class OrderRepository(
         )
         if start is not None:
             statement = statement.where(Order.created_at >= start)
+        if end is not None:
+            statement = statement.where(Order.created_at < end)
         result = await self.session.execute(statement)
         return [
             (row[0], row[1], row[2], int(row[3]), int(row[4])) for row in result.all()
@@ -134,6 +137,7 @@ class OrderRepository(
         organization_id: UUID,
         *,
         start: datetime | None = None,
+        end: datetime | None = None,
         limit: int = 10,
     ) -> Sequence[UUID]:
         """Product ids ordered by kept net revenue, descending.
@@ -161,6 +165,8 @@ class OrderRepository(
         )
         if start is not None:
             statement = statement.where(Order.created_at >= start)
+        if end is not None:
+            statement = statement.where(Order.created_at < end)
         result = await self.session.execute(statement)
         return [row[0] for row in result.all()]
 

@@ -2,7 +2,7 @@ import functools
 from typing import Any, cast
 
 import structlog
-from pydantic_ai import Agent
+from pydantic_ai import Agent, RunContext
 
 from polar.auth.scope import Scope
 from polar.config import settings
@@ -42,6 +42,10 @@ How to answer:
 - Pick the narrowest tool and the narrowest arguments that answer the
   question. Filter when a filter exists (e.g. an insight category, a checkout
   status, a search query). One precise call beats several broad ones.
+- For questions about a specific day or calendar period ("yesterday", "last
+  month", "in June"), resolve the dates against today's date and pass them as
+  `start_date` and `end_date` to the tools that accept them, instead of
+  approximating with a trailing `days` window.
 - Insights flow: `get_insights` only fetches findings for your reasoning and
   renders nothing. For broad questions ("how is my business doing?"), give
   your assessment in prose first — lead with the most severe findings — then
@@ -135,4 +139,14 @@ def build_assistant_agent(
         # gpt-5.5+ reasoning models reject any non-default temperature.
         model_settings=({} if model_name.startswith("gpt-5.5") else {"temperature": 0}),
     )
+
+    # Relative dates ("yesterday", "last month") are resolvable only if the
+    # model knows what today is; the static prompt can't carry it.
+    @agent.system_prompt
+    async def _current_date(ctx: RunContext[AssistantDeps]) -> str:
+        return (
+            f"Today's date is {ctx.deps.today.isoformat()} in the merchant's "
+            f"timezone ({ctx.deps.timezone})."
+        )
+
     return agent, model_provider, model_name

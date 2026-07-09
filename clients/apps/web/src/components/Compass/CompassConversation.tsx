@@ -244,7 +244,7 @@ export const CompassConversation = ({
                       maxWidth="85%"
                     >
                       {message.parts.length === 0 && isStreaming ? (
-                        <span className="dark:from-polar-500 dark:via-polar-100 dark:to-polar-500 w-fit [animation:shimmer_2s_linear_infinite] bg-linear-to-r from-gray-400 via-gray-800 to-gray-400 bg-size-[200%_100%] bg-clip-text text-sm text-transparent">
+                        <span className="dark:from-polar-500 dark:via-polar-100 dark:to-polar-500 w-fit [animation:shimmer_2s_linear_infinite] bg-linear-to-r from-gray-400 via-gray-800 to-gray-400 bg-size-[200%_100%] bg-clip-text text-transparent">
                           Thinking...
                         </span>
                       ) : (

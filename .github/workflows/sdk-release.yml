@@ -69,6 +69,7 @@ jobs:
     needs: [detect-release, tag]
     if: needs.detect-release.outputs.version != ''
     runs-on: ubuntu-latest
+    environment: sdk-release
     steps:
       - uses: actions/checkout@v4
         with:
@@ -91,6 +92,7 @@ jobs:
     needs: [detect-release, tag]
     if: needs.detect-release.outputs.version != ''
     runs-on: ubuntu-latest
+    environment: sdk-release
     steps:
       - uses: actions/checkout@v4
         with:

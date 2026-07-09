@@ -42,6 +42,7 @@ class SubscriptionsCurrentPeriodEndInvariant(Invariant):
             .join(Subscription.organization)
             .where(
                 Subscription.active.is_(True),
+                Organization.deleted_at.is_(None),
                 Subscription.current_period_end < (func.now() - self.LEEWAY),
                 Organization.can_renew_subscriptions.is_(True),
             )

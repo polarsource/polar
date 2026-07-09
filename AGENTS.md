@@ -133,6 +133,7 @@ Treat **Accepted** ADRs as binding:
 
 ## Custom Commands
 
+- `/yeet` — lint, type-check, run the code reviews, then open a draft PR. Runs the reviews in order: `/code-review xhigh --fix`, `/simplify`, `/security-review`, `/polar-code-review`.
 - `/polar-code-review` — checks the diff against Polar-specific rules with 2 parallel agents (conventions, ADR compliance). Bugs, security, and simplification are covered by the built-in `/code-review`, `/security-review`, and `/simplify`.
 
 ## Documentation

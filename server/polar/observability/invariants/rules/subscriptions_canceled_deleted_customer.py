@@ -44,7 +44,7 @@ class SubscriptionsCanceledDeletedCustomerInvariant(Invariant):
             .where(
                 and_(
                     Customer.deleted_at.is_not(None),
-                    Subscription.status == SubscriptionStatus.active,
+                    Subscription.active.is_(True),
                 )
             )
             .limit(self.LIMIT)

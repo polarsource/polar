@@ -393,14 +393,17 @@ class TestEnqueueTrackCompassAssistantUsage:
 
         enqueue.assert_not_called()
 
-    def test_noop_for_self_organization(
+    def test_tracks_self_organization_usage(
         self, configured: None, mocker: MockerFixture
     ) -> None:
+        # Polar's own organization is deliberately not gated out: its Compass
+        # usage is cost-tracked like any merchant's, so Polar's own dashboard
+        # shows its AI costs.
         enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
 
         self._call(external_customer_id=str(SELF_ORG_ID))
 
-        enqueue.assert_not_called()
+        enqueue.assert_called_once()
 
     def test_noop_when_cost_is_none(
         self, configured: None, mocker: MockerFixture

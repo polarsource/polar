@@ -4,15 +4,22 @@ from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy import func, select
 
-from polar.enums import TaxBehavior, TaxProcessor
+from polar.enums import (
+    SubscriptionProrationBehavior,
+    SubscriptionRecurringInterval,
+    TaxBehavior,
+    TaxProcessor,
+)
 from polar.kit.address import Address
-from polar.models import Customer, Organization, Product
+from polar.models import BillingEntry, Customer, Organization, Product, Subscription
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product_price import ProductPriceFixed
 from polar.models.subscription_meter import SubscriptionMeter
 from polar.postgres import AsyncSession
+from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -21,6 +28,7 @@ from tests.fixtures.random_objects import (
     create_customer,
     create_discount,
     create_meter,
+    create_product,
 )
 
 
@@ -255,3 +263,93 @@ class TestCalculateChargePreview:
         assert preview.discount_amount == 250
         assert preview.net_amount == 3250 - 250
         assert preview.total_amount == 3000
+
+
+@pytest.mark.asyncio
+class TestCalculateChargePreviewPersistsNothing:
+    async def test_pending_update_is_previewed_but_not_persisted(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """The preview applies the pending update in memory to price the next charge.
+
+        None of that may reach the database, and the surrounding transaction must
+        survive — the guard is a savepoint, not a bare `session.rollback()`.
+        """
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(5000, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription_id = subscription.id
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
+        await session.flush()
+
+        entries_before = await session.scalar(
+            select(func.count()).select_from(BillingEntry)
+        )
+
+        preview = await subscription_service.calculate_charge_preview(
+            session, subscription
+        )
+
+        # The pending update is reflected in the preview...
+        assert preview.base_amount == 5000
+
+        # ...but a later flush (as at request end) must not persist it.
+        await session.flush()
+
+        assert (
+            await session.scalar(
+                select(Subscription.product_id).where(
+                    Subscription.id == subscription_id
+                )
+            )
+            == product.id
+        )
+        assert (
+            await session.scalar(select(func.count()).select_from(BillingEntry))
+            == entries_before
+        )
+
+    async def test_surrounding_transaction_survives(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """A bare `session.rollback()` guard would discard the caller's own work."""
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription_id = subscription.id
+
+        await subscription_service.calculate_charge_preview(session, subscription)
+
+        assert (
+            await session.scalar(
+                select(func.count())
+                .select_from(Subscription)
+                .where(Subscription.id == subscription_id)
+            )
+            == 1
+        )

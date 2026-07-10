@@ -616,6 +616,17 @@ Examples for APPROVE:
 - "Your appeal has been accepted. Your organization has been approved to sell on Polar."
 """
 
+POLICY_NOTE = (
+    "The policy below is a live internal working document. It may contain "
+    "authoring scaffolding — a title banner, reading guide, TODOs, editorial "
+    "comments, assessment dates, section-status labels (e.g. Hard/Soft AUP), "
+    "and links to Slack or the backoffice. Treat that scaffolding as context, "
+    "not as rules: base your decision on the actual prohibited/allowed "
+    "categories and their documented reasoning (Context/Why, Examples, "
+    "Nuances). Where a note records a decision or exception, honor it; where "
+    "it is an unresolved question or TODO, do not treat it as settled policy."
+)
+
 
 def _annotate_domains(domains: list[str]) -> str:
     """Join domain names, tagging known service domains for the AI agent."""
@@ -688,19 +699,7 @@ class ReviewAnalyzer:
             ReviewContext.PRODUCT_CHANGED: THRESHOLD_PREAMBLE,
         }.get(context)
 
-        policy_note = (
-            "The policy below is a live internal working document. It may "
-            "contain authoring scaffolding — a title banner, reading guide, "
-            "TODOs, editorial comments, assessment dates, section-status "
-            "labels (e.g. Hard/Soft AUP), and links to Slack or the "
-            "backoffice. Treat that scaffolding as context, not as rules: "
-            "base your decision on the actual prohibited/allowed categories "
-            "and their documented reasoning (Context/Why, Examples, Nuances). "
-            "Where a note records a decision or exception, honor it; where it "
-            "is an unresolved question or TODO, do not treat it as settled "
-            "policy."
-        )
-        policy_block = f"## Acceptable Use Policy\n\n{policy_note}\n\n{policy_content}"
+        policy_block = f"## Acceptable Use Policy\n\n{POLICY_NOTE}\n\n{policy_content}"
         instructions = f"{preamble}\n\n{policy_block}" if preamble else policy_block
 
         try:

@@ -4,6 +4,8 @@ import time
 
 import httpx
 import structlog
+from google.auth.transport.requests import Request as GoogleAuthRequest
+from google.oauth2 import service_account
 
 from polar.config import settings
 
@@ -11,6 +13,12 @@ log = structlog.get_logger(__name__)
 
 _DRIVE_EXPORT_URL = "https://www.googleapis.com/drive/v3/files/{file_id}/export"
 _SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
+
+# When a refresh fails but a stale value exists, serve the stale value and only
+# retry this often, so a sustained Drive outage doesn't make every review
+# re-attempt the fetch (each paying a token refresh + HTTP timeout under the
+# lock).
+_FAILURE_RETRY_SECONDS = 60
 
 _cache: tuple[float, str] | None = None
 _cache_lock = asyncio.Lock()
@@ -21,16 +29,15 @@ class AUPPolicyError(Exception):
 
 
 async def _get_access_token() -> str:
-    from google.auth.transport.requests import Request as GoogleAuthRequest
-    from google.oauth2 import service_account
-
     if not settings.GOOGLE_SERVICE_ACCOUNT_JSON:
         raise AUPPolicyError("GOOGLE_SERVICE_ACCOUNT_JSON is not configured.")
 
     try:
         info = json.loads(settings.GOOGLE_SERVICE_ACCOUNT_JSON)
-    except json.JSONDecodeError as e:
-        raise AUPPolicyError("GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON.") from e
+    except json.JSONDecodeError:
+        # `from None`: the JSONDecodeError carries the raw JSON (a private key)
+        # in `.doc`, which must not reach error tracking.
+        raise AUPPolicyError("GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON.") from None
 
     credentials = service_account.Credentials.from_service_account_info(
         info, scopes=_SCOPES
@@ -57,7 +64,10 @@ async def _download_policy() -> str:
         raise AUPPolicyError(
             f"Drive export failed ({response.status_code}): {response.text[:200]}"
         )
-    return response.text
+    content = response.text
+    if not content.strip():
+        raise AUPPolicyError("Drive export returned an empty document.")
+    return content
 
 
 async def fetch_policy_content() -> str:
@@ -70,19 +80,22 @@ async def fetch_policy_content() -> str:
 
     The content is cached in-process for
     ``ORGANIZATION_REVIEW_AUP_CACHE_TTL_SECONDS``. If a refresh fails but a
-    previously fetched value is available, the stale value is served so a
-    transient Drive/Google outage doesn't block reviews.
+    previously fetched value is available, the stale value is served (with a
+    short retry backoff) so a transient Drive/Google outage doesn't block
+    reviews.
     """
     global _cache
     ttl = settings.ORGANIZATION_REVIEW_AUP_CACHE_TTL_SECONDS
+    now = time.monotonic()
 
     cached = _cache
-    if cached is not None and time.monotonic() - cached[0] < ttl:
+    if cached is not None and now - cached[0] < ttl:
         return cached[1]
 
     async with _cache_lock:
+        now = time.monotonic()
         cached = _cache
-        if cached is not None and time.monotonic() - cached[0] < ttl:
+        if cached is not None and now - cached[0] < ttl:
             return cached[1]
 
         try:
@@ -93,6 +106,11 @@ async def fetch_policy_content() -> str:
                     "organization_review.policy.refresh_failed",
                     error=str(e),
                 )
+                # Keep serving the last-good value but back off: age the
+                # timestamp so the next retry is ~_FAILURE_RETRY_SECONDS away
+                # instead of on the very next call.
+                retry_at = now - ttl + _FAILURE_RETRY_SECONDS
+                _cache = (min(now, retry_at), cached[1])
                 return cached[1]
             raise
 

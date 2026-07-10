@@ -1,0 +1,92 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewTable.tsx
+  s_81f519e3bb364f::t_2ffcbe3ce6154b 81-82
+  s_81f519e3bb364f::t_b89eb8b23e6a2e 83
+  s_81f519e3bb364f::t_a056335130a46f 86-88,90
+  s_81f519e3bb364f::t_9179474989905a 5,11,25,29,31,36-37,42,48-50,59,67,79-80,84-85,89,92
+  s_81f519e3bb364f::t_e2099e7313a299 20,33-34,43-47
+  s_81f519e3bb364f::t_8765fa2dd7c333 22
+  s_81f519e3bb364f::t_891cb9e0938e60 12,23,30,41
+  s_81f519e3bb364f::t_1f5e4b3d4adf06 56
+  s_81f519e3bb364f::t_e477fac19a2185 91,93-94
+  s_81f519e3bb364f::t_c001cbeddd8ec1 26,32
+  s_81f519e3bb364f::t_1e32a420f13b27 13-19,24,27
+  s_81f519e3bb364f::t_b4be59905e05f4 51-55
+  s_81f519e3bb364f::t_b42a5a3409e01e 57
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewStatusTabs.tsx
+  s_81f519e3bb364f::t_61e0c51694a890 1-30
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewSummary.tsx
+  s_81f519e3bb364f::t_fd1d20639f4a23 1-80
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewRows.ts
+  s_81f519e3bb364f::t_cdf445255a876c 60,62-64,67-70,74-76
+  s_81f519e3bb364f::t_9d2c8afce13280 53-57,71-73
+  s_81f519e3bb364f::t_f2b27fd7bd8468 10,12-13,23-30
+  s_81f519e3bb364f::t_76ef5793e3e00d 6-8
+  s_81f519e3bb364f::t_34a2b1630ccc7c 2
+  s_81f519e3bb364f::t_4c5cc4d50773d8 31-33
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewStatus.ts
+  s_81f519e3bb364f::t_85ad7f222de973 3-7
+  s_81f519e3bb364f::t_961c5b583539ed 1-2,8-45
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/importSummary.ts
+  s_81f519e3bb364f::t_b598ad4efa8085 1-21
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewSelection.ts
+  s_81f519e3bb364f::t_41b5e96c6ce01a 1-13,18-64
+  s_81f519e3bb364f::t_1f5e4b3d4adf06 14-17
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewColumns.tsx
+  s_81f519e3bb364f::t_820ec2cc6be75a 1,3,6,15,18,27-30,32,35-39,43,49-57,76-82,84,87-90,92-116,121-122,124,128-129,131-137,139-143,145-149,163,166,171-172,224-225,228-238,240-242,244-246,248
+  s_81f519e3bb364f::t_85ad7f222de973 44-45,47
+  s_81f519e3bb364f::t_5e23b062519edb 4,7,19-20,22,34,40-42,46
+  s_81f519e3bb364f::t_7b25dc4ca763f6 138
+  s_81f519e3bb364f::t_edd1f6d54fc546 9,14,25-26,33,58-75
+  s_81f519e3bb364f::t_f1c1096291c4c5 156,160,174,176-220,222-223,226-227,239,243,247
+  s_81f519e3bb364f::t_0d4d397ca33aae 221
+  s_81f519e3bb364f::t_f3a1981b716c42 5
+  s_81f519e3bb364f::t_485d3f49a7604d 125-127
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewEntityTabs.tsx
+  s_81f519e3bb364f::t_8fb177bb02e662 1-29
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationStepper.tsx
+  s_81f519e3bb364f::t_20a43d39711efa 4,9-10,12-14,27,33-46,48,66-67
+  s_81f519e3bb364f::t_5512c97df6c53a 11,23,47,49-53,59-62,64,68-70
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewTableView.tsx
+  s_81f519e3bb364f::t_945f429052b68e 12-13,16-21,25,41,43,65,67,90,95-102,117,158-170,172-182,186
+  s_81f519e3bb364f::t_53f5ea9b12cf37 8,23
+  s_81f519e3bb364f::t_67450be55ab1a4 29-30
+  s_81f519e3bb364f::t_164b7229230fb7 3,14,33,57,75,78-88,114-116,119-121,123-135,150-157,189-213
+  s_81f519e3bb364f::t_0d6402a96c5de4 4,6-7,15,36-38,40,60-62,64,94,103,105-106,108-113
+  s_81f519e3bb364f::t_70c72a23d03977 31-32
+  s_81f519e3bb364f::t_c11f0b234790ab 35,39,42,44,53-54,59,63,66,91-92
+  s_81f519e3bb364f::t_7a3cbada224899 55-56
+  s_81f519e3bb364f::t_a4954dee121f60 76-77,118
+  s_81f519e3bb364f::t_85ad7f222de973 107
+  s_81f519e3bb364f::t_87ea5e30d59280 185,187
+  s_81f519e3bb364f::t_ce203766aebd15 10-11
+  s_81f519e3bb364f::t_714bf15eef0b9c 22,26
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_81f519e3bb364f::t_c28e61c407a9dc 13
+  s_81f519e3bb364f::t_bf9a04ec88c12a 138
+  s_81f519e3bb364f::t_20f268894dfdb7 121,126
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_81f519e3bb364f::t_94954bad3ab147 65-69,72,76-81
+  s_81f519e3bb364f::t_5c4e446207de06 132-135
+  s_81f519e3bb364f::t_685eaeb827dec4 136-138,140-155,157-160,162-165,167-169,171-175
+  s_81f519e3bb364f::t_bb0af6a407176c 99,114
+  s_81f519e3bb364f::t_6df945525a6645 97,112
+  s_81f519e3bb364f::t_c675283bb36a98 124-131,139,156,161,166,170,176
+clients/packages/client/src/v1.ts
+  s_81f519e3bb364f::t_a2d46eb12c0de2 22759,22762-22766,22826,22829-22843,50055-50056,50058
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "aca9eca44b92ac1c139bdafc42926587d0809a0b",
+  "prompts": {},
+  "sessions": {
+    "s_81f519e3bb364f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ac6e6895-3b5c-40c8-8804-f6a4f5e8786b",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

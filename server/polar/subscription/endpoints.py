@@ -270,7 +270,7 @@ async def get_charge_preview(
 async def preview_change(
     id: SubscriptionID,
     change: SubscriptionChangePreview,
-    auth_subject: auth.SubscriptionsRead,
+    auth_subject: auth.SubscriptionsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionChargePreview:
     """
@@ -282,6 +282,13 @@ async def preview_change(
 
     if subscription is None:
         raise ResourceNotFound()
+
+    await assert_resource_permission(
+        session,
+        auth_subject,
+        subscription.product,
+        OrganizationPermission.sales_manage,
+    )
 
     if isinstance(change, SubscriptionChangePreviewSeats):
         return await subscription_service.calculate_change_preview(

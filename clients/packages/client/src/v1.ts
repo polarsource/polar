@@ -1613,7 +1613,7 @@ export interface paths {
      *
      *     Returns the proration breakdown and the amount due today.
      *
-     *     **Scopes**: `subscriptions:read` `subscriptions:write`
+     *     **Scopes**: `subscriptions:write`
      */
     post: operations['subscriptions:preview_change']
     delete?: never

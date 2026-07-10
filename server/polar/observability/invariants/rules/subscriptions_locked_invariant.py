@@ -9,7 +9,7 @@ from .base import Invariant, InvariantError
 
 
 class SubscriptionsLockedInvariantError(InvariantError):
-    """Exception raised when the SubscriptionsCurrentPeriodEndInvariant check fails."""
+    """Exception raised when the SubscriptionsLockedInvariant check fails."""
 
     def __init__(self, count: int, subscriptions: list[uuid.UUID]) -> None:
         message = f"Found {count} subscriptions with too old scheduler_locked_at."

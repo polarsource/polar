@@ -1,4 +1,5 @@
 import uuid
+from datetime import timedelta
 
 from sqlalchemy import func, over, select
 
@@ -34,14 +35,13 @@ class SubscriptionsFuturePeriodStartInvariant(Invariant):
     Failure of this invariant indicate there is an issue with the subscription cycle process.
     """
 
+    LEEWAY = timedelta(minutes=5)
     LIMIT = 10
 
     async def check(self) -> None:
         statement = (
             select(Subscription.id, over(func.count()))
-            .where(
-                Subscription.current_period_start > func.now(),
-            )
+            .where(Subscription.current_period_start > (func.now() + self.LEEWAY))
             .limit(self.LIMIT)
             .order_by(Subscription.current_period_start.asc(), Subscription.id.asc())
         )

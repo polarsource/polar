@@ -266,6 +266,91 @@ class TestCalculateChargePreview:
 
 
 @pytest.mark.asyncio
+class TestCalculateChargePreviewTaxDivergesFromOrder:
+    """The preview taxes strictly positive amounts and needs an explicit tax behavior.
+
+    `order.amounts.calculate_tax` taxes any non-zero amount — negating it for
+    credits — and falls back to the organization's default tax behavior. These pin
+    the preview's current, divergent rules so realigning it onto the shared
+    computation surfaces as failing assertions rather than a silent change.
+    """
+
+    async def test_negative_net_is_not_taxed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        tax_mock: MagicMock,
+    ) -> None:
+        set_tax(tax_mock, 200)
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country="FR"),  # type: ignore[arg-type]
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer, cancel_at_period_end=True
+        )
+        price = subscription.product.prices[0]
+        assert isinstance(price, ProductPriceFixed)
+
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.proration,
+            direction=BillingEntryDirection.credit,
+            customer=customer,
+            product_price=price,
+            subscription=subscription,
+            amount=1125,
+            currency="usd",
+            start_timestamp=datetime(2025, 9, 16, tzinfo=UTC),
+            end_timestamp=datetime(2025, 10, 1, tzinfo=UTC),
+        )
+
+        preview = await subscription_service.calculate_charge_preview(
+            session, subscription
+        )
+
+        assert preview.base_amount == 0
+        assert preview.proration_amount == -1125
+        assert preview.subtotal_amount == -1125
+        assert preview.net_amount == -1125
+        # The invoice would record a negative tax here; the preview reports none.
+        assert preview.tax_amount == 0
+        assert preview.total_amount == -1125
+        tax_mock.calculate.assert_not_called()
+
+    async def test_unset_tax_behavior_is_not_taxed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        tax_mock: MagicMock,
+    ) -> None:
+        set_tax(tax_mock, 200)
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country="FR"),  # type: ignore[arg-type]
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer, tax_behavior=None
+        )
+
+        preview = await subscription_service.calculate_charge_preview(
+            session, subscription
+        )
+
+        # The invoice would fall back to `organization.default_tax_behavior`.
+        assert preview.net_amount == 1000
+        assert preview.tax_amount == 0
+        assert preview.total_amount == 1000
+        tax_mock.calculate.assert_not_called()
+
+
+@pytest.mark.asyncio
 class TestCalculateChargePreviewPersistsNothing:
     async def test_pending_update_is_previewed_but_not_persisted(
         self,

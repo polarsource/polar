@@ -581,7 +581,7 @@ resource "tfe_variable" "worker_sqs_actors_production" {
   category        = "terraform"
   description     = "JSON array of Dramatiq actor names routed to the SQS execution engine for production"
   sensitive       = false
-  value           = "[\"dummy\"]"
+  value           = "[\"dummy\",\"observability.invariants.enqueue\",\"observability.invariants.check\"]"
   variable_set_id = tfe_variable_set.production.id
 
   lifecycle {

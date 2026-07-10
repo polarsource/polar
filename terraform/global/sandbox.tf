@@ -495,7 +495,7 @@ resource "tfe_variable" "worker_sqs_actors_sandbox" {
   category        = "terraform"
   description     = "JSON array of Dramatiq actor names routed to the SQS execution engine for sandbox"
   sensitive       = false
-  value           = "[\"dummy\"]"
+  value           = "[\"dummy\",\"observability.invariants.enqueue\",\"observability.invariants.check\"]"
   variable_set_id = tfe_variable_set.sandbox.id
 
   lifecycle {

@@ -33,13 +33,9 @@ export const CompassIntroModal = ({
     markDismissed()
   }
 
-  const goToBilling = () => {
-    dismiss()
-    router.push(`/dashboard/${organization.slug}/products`)
-  }
-
   const explore = () => {
     dismiss()
+    router.push(`/dashboard/${organization.slug}/compass`)
   }
 
   return (
@@ -65,15 +61,15 @@ export const CompassIntroModal = ({
               Introducing Compass
             </Text>
             <Text color="muted" variant="body" wrap="pretty">
-              Your dashboard now has two surfaces. Billing that gets you paid.
-              Compass which shows you what every customer, feature, and model
-              actually costs to serve.
+              Ask anything about your revenue, costs, churn or customers and get
+              answers grounded in your data. Insights watch your metrics and
+              surface what needs attention.
             </Text>
           </Box>
           <Box flexDirection="column" gap="s" width="100%">
             <Button onClick={explore}>Explore Compass</Button>
-            <Button variant="ghost" onClick={goToBilling}>
-              Go to Billing
+            <Button variant="ghost" onClick={dismiss}>
+              Close
             </Button>
           </Box>
         </Box>

@@ -1,7 +1,14 @@
 import inspect
 from typing import Annotated, Literal
 
-from pydantic import UUID4, AliasChoices, AliasPath, Field, FutureDatetime
+from pydantic import (
+    UUID4,
+    AliasChoices,
+    AliasPath,
+    ConfigDict,
+    Field,
+    FutureDatetime,
+)
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.enums import SubscriptionProrationBehavior
@@ -91,6 +98,36 @@ class CustomerSubscriptionUpdateSeats(Schema):
             "If not provided, will use the default organization setting."
         ),
     )
+
+
+class CustomerSubscriptionChangePreviewProduct(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: UUID4 = Field(
+        description="Preview a change of the subscription to this product."
+    )
+
+
+class CustomerSubscriptionChangePreviewSeats(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    seats: int = Field(
+        description="Preview a change of the subscription to this number of seats.",
+        ge=1,
+    )
+    proration_behavior: SubscriptionProrationBehavior | None = Field(
+        default=None,
+        description=(
+            "Determine how to handle the proration billing. "
+            "If not provided, will use the default organization setting."
+        ),
+    )
+
+
+CustomerSubscriptionChangePreview = Annotated[
+    CustomerSubscriptionChangePreviewProduct | CustomerSubscriptionChangePreviewSeats,
+    SetSchemaReference("CustomerSubscriptionChangePreview"),
+]
 
 
 class CustomerSubscriptionCancel(Schema):

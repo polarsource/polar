@@ -541,3 +541,41 @@ class SubscriptionChargePreview(Schema):
     net_amount: int = Field(description="Net amount in cents before taxes")
     tax_amount: int = Field(description="Tax amount in cents")
     total_amount: int = Field(description="Total amount in cents (final charge amount)")
+
+
+class SubscriptionChangePreviewProduct(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: UUID4 = Field(
+        description="Preview a change of the subscription to this product.",
+        examples=[PRODUCT_ID_EXAMPLE],
+    )
+    proration_behavior: SubscriptionProrationBehavior | None = Field(
+        default=None,
+        description=(
+            "Determine how to handle the proration billing. "
+            "If not provided, will use the default organization setting."
+        ),
+    )
+
+
+class SubscriptionChangePreviewSeats(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    seats: Int32 = Field(
+        description="Preview a change of the subscription to this number of seats.",
+        ge=1,
+    )
+    proration_behavior: SubscriptionProrationBehavior | None = Field(
+        default=None,
+        description=(
+            "Determine how to handle the proration billing. "
+            "If not provided, will use the default organization setting."
+        ),
+    )
+
+
+SubscriptionChangePreview = Annotated[
+    SubscriptionChangePreviewProduct | SubscriptionChangePreviewSeats,
+    SetSchemaReference("SubscriptionChangePreview"),
+]

@@ -29,6 +29,8 @@ from polar.routing import APIRouter
 from . import auth, sorting
 from .schemas import Subscription as SubscriptionSchema
 from .schemas import (
+    SubscriptionChangePreview,
+    SubscriptionChangePreviewSeats,
     SubscriptionChargePreview,
     SubscriptionCreate,
     SubscriptionID,
@@ -36,6 +38,7 @@ from .schemas import (
 )
 from .service import (
     AlreadyCanceledSubscription,
+    NotASeatBasedSubscription,
     SubscriptionLocked,
     SubscriptionUpdateContext,
 )
@@ -251,6 +254,49 @@ async def get_charge_preview(
             raise ResourceNotFound()
 
     return await subscription_service.calculate_charge_preview(session, subscription)
+
+
+@router.post(
+    "/{id}/change-preview",
+    summary="Preview Subscription Change",
+    response_model=SubscriptionChargePreview,
+    responses={
+        403: {"model": AlreadyCanceledSubscription.schema()},
+        400: {"model": NotASeatBasedSubscription.schema()},
+        404: SubscriptionNotFound,
+    },
+    tags=[APITag.private],
+)
+async def preview_change(
+    id: SubscriptionID,
+    change: SubscriptionChangePreview,
+    auth_subject: auth.SubscriptionsRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionChargePreview:
+    """
+    Preview what a subscription change would cost, without applying it.
+
+    Returns the proration breakdown and the amount due today.
+    """
+    subscription = await subscription_service.get(session, auth_subject, id)
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    if isinstance(change, SubscriptionChangePreviewSeats):
+        return await subscription_service.calculate_change_preview(
+            session,
+            subscription,
+            seats=change.seats,
+            proration_behavior=change.proration_behavior,
+        )
+
+    return await subscription_service.calculate_change_preview(
+        session,
+        subscription,
+        product_id=change.product_id,
+        proration_behavior=change.proration_behavior,
+    )
 
 
 @router.post(

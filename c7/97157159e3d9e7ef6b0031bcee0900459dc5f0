@@ -1,0 +1,22 @@
+server/polar/organization_review/policy.py
+  s_c297d764f40f7b::t_7a212e58ee19d0 123-124
+  s_c297d764f40f7b::t_fb5932766718dc 88-95
+  s_c297d764f40f7b::t_77fda124f336f8 48,55,58
+  s_c297d764f40f7b::t_a9d6cdcb342d71 19-20,23,26-27
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c797157159e3d9e7ef6b0031bcee0900459dc5f0",
+  "prompts": {},
+  "sessions": {
+    "s_c297d764f40f7b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f650e816-8a0f-4090-9247-5e53bd1b64c9",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -220,8 +220,9 @@ module "production" {
   }
 
   google_secrets = {
-    client_id     = var.google_client_id_production
-    client_secret = var.google_client_secret_production
+    client_id            = var.google_client_id_production
+    client_secret        = var.google_client_secret_production
+    service_account_json = var.google_service_account_json
   }
 
   openai_secrets = {

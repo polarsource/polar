@@ -1162,22 +1162,16 @@ class SubscriptionService:
 
         return subscription
 
-    async def update_product(
+    async def validate_product_change(
         self,
         session: AsyncSession,
-        ctx: SubscriptionUpdateContext,
         subscription: Subscription,
         *,
         product_id: uuid.UUID,
-        proration_behavior: SubscriptionProrationBehavior | None = None,
-        discount: uuid.UUID | Literal["unset"] | None = None,
         allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
-    ) -> Subscription:
+    ) -> tuple[Product, PriceSet]:
         if subscription.revoked or subscription.cancel_at_period_end:
             raise AlreadyCanceledSubscription(subscription)
-
-        previous_product = subscription.product
-        previous_prices = [*subscription.prices]
 
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id_and_organization(
@@ -1273,7 +1267,7 @@ class SubscriptionService:
                     ]
                 )
 
-        old_has_seat_prices = any(is_seat_price(p) for p in previous_prices)
+        old_has_seat_prices = any(is_seat_price(p) for p in subscription.prices)
         new_has_seat_prices = any(is_seat_price(p) for p in currency_prices)
 
         # Seat → non-seat plan changes are not yet supported.
@@ -1288,6 +1282,60 @@ class SubscriptionService:
                     }
                 ]
             )
+
+        return product, currency_prices
+
+    async def validate_seats_change(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        seats: int,
+    ) -> None:
+        if subscription.revoked or subscription.cancel_at_period_end:
+            raise AlreadyCanceledSubscription(subscription)
+
+        seat_price = subscription.get_price_by_type(ProductPriceSeatUnit)
+        if seat_price is None:
+            raise NotASeatBasedSubscription(subscription)
+
+        minimum_seats = seat_price.get_minimum_seats()
+        if seats < minimum_seats:
+            raise BelowMinimumSeats(subscription, minimum_seats, seats)
+
+        maximum_seats = seat_price.get_maximum_seats()
+        if maximum_seats is not None and seats > maximum_seats:
+            raise AboveMaximumSeats(subscription, maximum_seats, seats)
+
+        assigned_count = await seat_service.count_assigned_seats_for_subscription(
+            session, subscription
+        )
+        if seats < assigned_count:
+            raise SeatsAlreadyAssigned(subscription, assigned_count, seats)
+
+    async def update_product(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+        *,
+        product_id: uuid.UUID,
+        proration_behavior: SubscriptionProrationBehavior | None = None,
+        discount: uuid.UUID | Literal["unset"] | None = None,
+        allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
+    ) -> Subscription:
+        previous_product = subscription.product
+        previous_prices = [*subscription.prices]
+
+        product, currency_prices = await self.validate_product_change(
+            session,
+            subscription,
+            product_id=product_id,
+            allowed_visibilities=allowed_visibilities,
+        )
+
+        old_has_seat_prices = any(is_seat_price(p) for p in previous_prices)
+        new_has_seat_prices = any(is_seat_price(p) for p in currency_prices)
 
         was_trialing = subscription.status == SubscriptionStatus.trialing
         new_trial_end: datetime | None = None
@@ -1663,37 +1711,7 @@ class SubscriptionService:
         seats: int,
         proration_behavior: SubscriptionProrationBehavior | None = None,
     ) -> Subscription:
-        """
-        Update the number of seats for a seat-based subscription.
-
-        Validates:
-        - Subscription is seat-based
-        - Subscription is active
-        - New seat count >= minimum seats
-        - New seat count <= maximum seats (if set)
-        - New seat count >= currently assigned seats
-        """
-        if subscription.revoked or subscription.cancel_at_period_end:
-            raise AlreadyCanceledSubscription(subscription)
-
-        seat_price = subscription.get_price_by_type(ProductPriceSeatUnit)
-        if seat_price is None:
-            raise NotASeatBasedSubscription(subscription)
-
-        minimum_seats = seat_price.get_minimum_seats()
-        if seats < minimum_seats:
-            raise BelowMinimumSeats(subscription, minimum_seats, seats)
-
-        maximum_seats = seat_price.get_maximum_seats()
-        if maximum_seats is not None and seats > maximum_seats:
-            raise AboveMaximumSeats(subscription, maximum_seats, seats)
-
-        assigned_count = await seat_service.count_assigned_seats_for_subscription(
-            session, subscription
-        )
-
-        if seats < assigned_count:
-            raise SeatsAlreadyAssigned(subscription, assigned_count, seats)
+        await self.validate_seats_change(session, subscription, seats=seats)
 
         organization_repository = OrganizationRepository.from_session(session)
         organization = await organization_repository.get_by_id(

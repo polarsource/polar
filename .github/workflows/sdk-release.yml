@@ -37,15 +37,6 @@ jobs:
           echo "Extracted version: $version"
           echo "version=$version" >> $GITHUB_OUTPUT
 
-      - name: Verify version format
-        if: steps.check.outputs.release == 'true'
-        run: |
-          version="${{ steps.extract.outputs.version }}"
-          if [[ ! "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[a-zA-Z0-9.]+)?$ ]]; then
-            echo "Invalid version format: $version"
-            exit 1
-          fi
-
   tag:
     needs: detect-release
     if: needs.detect-release.outputs.version != ''

@@ -324,6 +324,7 @@ class TestCreateCheckout:
                 },
                 id="wrong state",
             ),
+            pytest.param({"country": None}, id="null country"),
         ],
     )
     async def test_invalid_customer_billing_address(
@@ -905,6 +906,7 @@ class TestClientConfirm:
                 },
                 id="wrong state",
             ),
+            pytest.param({"country": None}, id="null country"),
         ],
     )
     async def test_invalid_customer_billing_address(

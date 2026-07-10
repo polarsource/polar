@@ -10,10 +10,18 @@ from polar.enums import (
     SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
     TaxBehavior,
+    TaxBehaviorOption,
     TaxProcessor,
 )
 from polar.kit.address import Address
-from polar.models import BillingEntry, Customer, Organization, Product, Subscription
+from polar.models import (
+    BillingEntry,
+    Customer,
+    OrderItem,
+    Organization,
+    Product,
+    Subscription,
+)
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.product_price import ProductPriceFixed
@@ -21,6 +29,7 @@ from polar.models.subscription_meter import SubscriptionMeter
 from polar.postgres import AsyncSession
 from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
+from polar.tax.calculation import get_tax_behavior_from_option
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -34,14 +43,32 @@ from tests.fixtures.random_objects import (
 
 @pytest.fixture
 def tax_mock(mocker: MockerFixture) -> MagicMock:
-    return mocker.patch("polar.subscription.service.tax_calculation_service")
+    return mocker.patch("polar.order.amounts.tax_calculation_service")
 
 
 def set_tax(tax_mock: MagicMock, amount: int) -> None:
     async def calculate(
-        *args: Any, **kwargs: Any
+        reference: str,
+        currency: str,
+        taxable_amount: int,
+        tax_behavior_option: TaxBehaviorOption,
+        tax_code: Any,
+        address: Address,
+        tax_ids: list[Any],
+        tax_exempted: bool,
     ) -> tuple[dict[str, Any], TaxProcessor]:
-        return {"amount": amount}, TaxProcessor.stripe
+        return (
+            {
+                "processor_id": "TAX_PROCESSOR_ID",
+                "amount": amount,
+                "currency": currency,
+                "tax_behavior": get_tax_behavior_from_option(
+                    tax_behavior_option, address
+                ),
+                "tax_breakdown": [],
+            },
+            TaxProcessor.stripe,
+        )
 
     tax_mock.calculate = AsyncMock(side_effect=calculate)
 
@@ -266,16 +293,12 @@ class TestCalculateChargePreview:
 
 
 @pytest.mark.asyncio
-class TestCalculateChargePreviewTaxDivergesFromOrder:
-    """The preview taxes strictly positive amounts and needs an explicit tax behavior.
-
-    `order.amounts.calculate_tax` taxes any non-zero amount — negating it for
-    credits — and falls back to the organization's default tax behavior. These pin
-    the preview's current, divergent rules so realigning it onto the shared
-    computation surfaces as failing assertions rather than a silent change.
+class TestCalculateChargePreviewTaxMatchesOrder:
+    """Any non-zero amount is taxed — negated for a credit — and an unset tax
+    behavior falls back to the organization's default, as `order.amounts` does.
     """
 
-    async def test_negative_net_is_not_taxed(
+    async def test_negative_net_is_taxed_as_a_credit(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -316,12 +339,12 @@ class TestCalculateChargePreviewTaxDivergesFromOrder:
         assert preview.proration_amount == -1125
         assert preview.subtotal_amount == -1125
         assert preview.net_amount == -1125
-        # The invoice would record a negative tax here; the preview reports none.
-        assert preview.tax_amount == 0
-        assert preview.total_amount == -1125
-        tax_mock.calculate.assert_not_called()
+        # We owe the customer the tax on the credit too, as the invoice records it.
+        assert preview.tax_amount == -200
+        assert preview.total_amount == -1325
+        tax_mock.calculate.assert_called_once()
 
-    async def test_unset_tax_behavior_is_not_taxed(
+    async def test_unset_tax_behavior_falls_back_to_organization_default(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -343,11 +366,12 @@ class TestCalculateChargePreviewTaxDivergesFromOrder:
             session, subscription
         )
 
-        # The invoice would fall back to `organization.default_tax_behavior`.
-        assert preview.net_amount == 1000
-        assert preview.tax_amount == 0
+        # `location` default + a non-tax-exclusive country resolves to inclusive,
+        # so the tax is carved out of the total rather than added on top.
+        assert preview.net_amount == 800
+        assert preview.tax_amount == 200
         assert preview.total_amount == 1000
-        tax_mock.calculate.assert_not_called()
+        tax_mock.calculate.assert_called_once()
 
 
 @pytest.mark.asyncio
@@ -360,10 +384,9 @@ class TestCalculateChargePreviewPersistsNothing:
         product: Product,
         customer: Customer,
     ) -> None:
-        """The preview applies the pending update in memory to price the next charge.
+        """The pending update is applied in memory to price the next charge.
 
-        None of that may reach the database, and the surrounding transaction must
-        survive — the guard is a savepoint, not a bare `session.rollback()`.
+        None of it may reach the database, and the surrounding transaction survives.
         """
         new_product = await create_product(
             save_fixture,
@@ -414,6 +437,8 @@ class TestCalculateChargePreviewPersistsNothing:
             await session.scalar(select(func.count()).select_from(BillingEntry))
             == entries_before
         )
+        # The preview builds `OrderItem`s to price the charge; none may be persisted.
+        assert await session.scalar(select(func.count()).select_from(OrderItem)) == 0
 
     async def test_surrounding_transaction_survives(
         self,
@@ -422,7 +447,7 @@ class TestCalculateChargePreviewPersistsNothing:
         product: Product,
         customer: Customer,
     ) -> None:
-        """A bare `session.rollback()` guard would discard the caller's own work."""
+        """The preview leaves the caller's own uncommitted work intact."""
         subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer
         )

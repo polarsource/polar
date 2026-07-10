@@ -33,7 +33,6 @@ from polar.enums import (
     PaymentMode,
     SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
-    TaxBehavior,
 )
 from polar.event.service import event as event_service
 from polar.event.system import (
@@ -72,6 +71,7 @@ from polar.models import (
     Customer,
     Discount,
     Order,
+    OrderItem,
     Organization,
     PaymentMethod,
     Product,
@@ -92,6 +92,7 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
+from polar.order.amounts import compute_order_amounts
 from polar.organization.repository import (
     SUBSCRIPTION_CANCELLATION_STATUSES,
     OrganizationRepository,
@@ -105,8 +106,6 @@ from polar.product.guard import (
 from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
-from polar.tax.calculation import TaxCalculationLogicalError
-from polar.tax.calculation import tax_calculation as tax_calculation_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
@@ -2223,6 +2222,23 @@ class SubscriptionService:
 
         metered_amount = sum(meter.amount for meter in subscription.meters)
 
+        items = [
+            OrderItem(
+                label="Subscription",
+                amount=base_price,
+                net_amount=base_price,
+                tax_amount=0,
+                proration=False,
+            ),
+            OrderItem(
+                label="Metered usage",
+                amount=metered_amount,
+                net_amount=metered_amount,
+                tax_amount=0,
+                proration=False,
+            ),
+        ]
+
         # Pending mid-period prorations (seat/product changes) already exist as
         # billing entries; surface them so the preview matches the next invoice.
         prorations: list[SubscriptionChargePreviewProration] = []
@@ -2241,14 +2257,17 @@ class SubscriptionService:
                 )
             )
             proration_amount += line_item.amount
-
-        recurring_amount = base_price + metered_amount
-        subtotal_amount = recurring_amount + proration_amount
-
-        discount_amount = 0
+            items.append(
+                OrderItem(
+                    label=line_item.label,
+                    amount=line_item.amount,
+                    net_amount=line_item.amount,
+                    tax_amount=0,
+                    proration=True,
+                )
+            )
 
         applicable_discount = None
-
         # Ensure the discount has not expired yet for the next charge (so at current_period_end)
         if subscription.discount is not None:
             # If discount hasn't been applied yet, it will be applied at the next cycle
@@ -2262,60 +2281,23 @@ class SubscriptionService:
             ):
                 applicable_discount = subscription.discount
 
-        if applicable_discount is not None:
-            # Discount applies to the recurring charge only; prorations are billed
-            # net of their own proration at entry-creation time.
-            discount_amount = applicable_discount.get_discount_amount(
-                recurring_amount, subscription.currency
-            )
-
-        net_amount = subtotal_amount - discount_amount
-        tax_amount = 0
-
-        if (
-            net_amount > 0
-            and subscription.product.is_tax_applicable
-            and subscription.tax_behavior
-            and subscription.customer.billing_address is not None
-        ):
-            tax_behavior = subscription.tax_behavior.to_option()
-            try:
-                tax, _ = await tax_calculation_service.calculate(
-                    subscription.id,
-                    subscription.currency,
-                    net_amount,
-                    tax_behavior,
-                    subscription.product.tax_code,
-                    subscription.customer.billing_address,
-                    [subscription.customer.tax_id]
-                    if subscription.customer.tax_id is not None
-                    else [],
-                    subscription.tax_exempted,
-                )
-            except TaxCalculationLogicalError:
-                log.warning(
-                    "Failed to calculate tax for subscription due to invalid or incomplete address",
-                    subscription_id=subscription.id,
-                    customer_id=subscription.customer_id,
-                )
-                tax_amount = 0
-            else:
-                tax_amount = tax["amount"]
-                if subscription.tax_behavior == TaxBehavior.inclusive:
-                    net_amount -= tax_amount
-
-        total = net_amount + tax_amount
+        amounts = await compute_order_amounts(
+            subscription,
+            items,
+            reference=str(subscription.id),
+            discount=applicable_discount,
+        )
 
         return SubscriptionChargePreview(
             base_amount=base_price,
             metered_amount=metered_amount,
             proration_amount=proration_amount,
             prorations=prorations,
-            subtotal_amount=subtotal_amount,
-            discount_amount=discount_amount,
-            net_amount=net_amount,
-            tax_amount=tax_amount,
-            total_amount=total,
+            subtotal_amount=amounts.subtotal_amount,
+            discount_amount=amounts.discount_amount,
+            net_amount=amounts.net_amount,
+            tax_amount=amounts.tax_amount,
+            total_amount=amounts.total_amount,
         )
 
     async def _after_subscription_updated(

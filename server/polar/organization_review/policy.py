@@ -16,22 +16,15 @@ log = structlog.get_logger(__name__)
 _DRIVE_EXPORT_URL = "https://www.googleapis.com/drive/v3/files/{file_id}/export"
 _SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 
-# Committed snapshot of the public Acceptable Use Policy, served when the live
-# document can't be fetched (Drive outage, misconfigured/absent service account,
-# empty export) and nothing is cached yet. Keeps reviews running on a known-good,
-# conservative policy instead of failing. Public policy only — never the internal
-# working document (this is a public repo).
+# Public AUP, served when the live doc is unavailable. Public only: the internal
+# working doc must never be committed to this public repo.
 _FALLBACK_PATH = Path(__file__).parent / "acceptable-use-policy.fallback.mdx"
 
-# When a refresh fails but a stale value exists, serve the stale value and only
-# retry this often, so a sustained Drive outage doesn't make every review
-# re-attempt the fetch (each paying a token refresh + HTTP timeout under the
-# lock).
+# Retry cadence while serving a degraded (stale or fallback) value.
 _FAILURE_RETRY_SECONDS = 60
 
-# (monotonic_timestamp, content, source) where source is "live" or "fallback".
-# The source is kept so a persistent misconfig (always serving the fallback)
-# stays visible in logs instead of masquerading as a transient stale-cache hit.
+# (timestamp, content, source="live"|"fallback"); source keeps a persistent
+# fallback visible in logs instead of looking like stale cache.
 _cache: tuple[float, str, str] | None = None
 _cache_lock = asyncio.Lock()
 
@@ -52,20 +45,17 @@ async def _get_access_token() -> str:
     try:
         info = json.loads(settings.GOOGLE_SERVICE_ACCOUNT_JSON)
     except json.JSONDecodeError:
-        # `from None`: the JSONDecodeError carries the raw JSON (a private key)
-        # in `.doc`, which must not reach error tracking.
+        # `from None`: JSONDecodeError.doc holds the raw key; keep it out of logs.
         raise AUPPolicyError("GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON.") from None
 
     try:
         credentials = service_account.Credentials.from_service_account_info(
             info, scopes=_SCOPES
         )
-        # Credential refresh is synchronous (uses `requests`), so run it off the
-        # event loop.
+        # google-auth refresh is sync (uses `requests`).
         await asyncio.to_thread(credentials.refresh, GoogleAuthRequest())
     except Exception:
-        # `from None`: google-auth/cryptography errors can carry key-adjacent
-        # detail; keep the raw exception out of logs / error tracking.
+        # `from None`: google-auth errors may carry key-adjacent detail.
         raise AUPPolicyError(
             "Failed to authenticate the Google service account."
         ) from None
@@ -95,18 +85,14 @@ async def _download_policy() -> str:
 
 
 async def fetch_policy_content() -> str:
-    """Return the Acceptable Use Policy, fetched from Google Drive and cached.
+    """Return the Acceptable Use Policy, fetched live from Google Drive and cached.
 
-    The document is a live internal working document, returned verbatim. The
-    review agent is told as much and reasons around any authoring notes,
-    comments, or open questions it contains — we deliberately don't try to
-    clean the source, since any structural assumption about it is fragile.
+    Returned verbatim: the doc is a live working document and the agent reasons
+    around its authoring notes rather than us guessing at its structure.
 
-    The content is cached in-process for
-    ``ORGANIZATION_REVIEW_AUP_CACHE_TTL_SECONDS``. If a refresh fails, the last
-    good value is served when available, otherwise the committed public-policy
-    fallback — so a Drive outage, an unset service account, or an empty export
-    never blocks reviews. Either degraded path backs off before retrying.
+    Cached in-process for ``ORGANIZATION_REVIEW_AUP_CACHE_TTL_SECONDS``. On
+    failure it degrades to the last live value, or the committed fallback, so a
+    Drive outage, unset service account, or empty export never blocks reviews.
     """
     global _cache
     ttl = settings.ORGANIZATION_REVIEW_AUP_CACHE_TTL_SECONDS
@@ -125,8 +111,6 @@ async def fetch_policy_content() -> str:
         try:
             content = await _download_policy()
         except Exception as e:
-            # Degrade gracefully. Serve the last *live* value if we ever fetched
-            # one; otherwise the committed public-policy fallback.
             if cached is not None and cached[2] == "live":
                 degraded, source = cached[1], "live"
             else:
@@ -136,9 +120,8 @@ async def fetch_policy_content() -> str:
                 error=str(e),
                 served=("stale_cache" if source == "live" else "fallback"),
             )
-            # Back off: hold the degraded value for ~_FAILURE_RETRY_SECONDS (age
-            # the timestamp so it reads fresh for that long) before retrying, so a
-            # sustained failure doesn't refetch on every call.
+            # Age the timestamp so the value reads fresh for _FAILURE_RETRY_SECONDS,
+            # then we retry instead of refetching on every call.
             _cache = (now - ttl + _FAILURE_RETRY_SECONDS, degraded, source)
             return degraded
 

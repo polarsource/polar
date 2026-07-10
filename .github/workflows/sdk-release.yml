@@ -33,7 +33,7 @@ jobs:
         if: steps.check.outputs.release == 'true'
         id: extract
         run: |
-          version=$(git log --oneline -1 | grep -oP 'sdk\[release\]: \K.+')
+          version=$(git log --oneline -1 | grep -oP 'sdk\[release\]: \K\S+')
           echo "Extracted version: $version"
           echo "version=$version" >> $GITHUB_OUTPUT
 

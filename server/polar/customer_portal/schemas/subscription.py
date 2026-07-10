@@ -12,7 +12,13 @@ from pydantic import (
 from pydantic.json_schema import SkipJsonSchema
 
 from polar.enums import SubscriptionProrationBehavior
-from polar.kit.schemas import IDSchema, Schema, SetSchemaReference, TimestampedSchema
+from polar.kit.schemas import (
+    IDSchema,
+    Int32,
+    Schema,
+    SetSchemaReference,
+    TimestampedSchema,
+)
 from polar.meter.schemas import NAME_DESCRIPTION as METER_NAME_DESCRIPTION
 from polar.models.subscription import CustomerCancellationReason
 from polar.product.schemas import (
@@ -87,7 +93,7 @@ class CustomerSubscriptionUpdateProduct(Schema):
 
 
 class CustomerSubscriptionUpdateSeats(Schema):
-    seats: int = Field(
+    seats: Int32 = Field(
         description="Update the number of seats for this subscription.",
         ge=1,
     )
@@ -111,7 +117,7 @@ class CustomerSubscriptionChangePreviewProduct(Schema):
 class CustomerSubscriptionChangePreviewSeats(Schema):
     model_config = ConfigDict(extra="forbid")
 
-    seats: int = Field(
+    seats: Int32 = Field(
         description="Preview a change of the subscription to this number of seats.",
         ge=1,
     )

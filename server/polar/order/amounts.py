@@ -17,6 +17,19 @@ log: Logger = structlog.get_logger()
 
 
 @dataclass(frozen=True)
+class LineItem:
+    """What `compute_order_amounts` needs of a line: its amount, and whether the
+    subscription's discount applies to it."""
+
+    amount: int
+    discountable: bool
+
+    @classmethod
+    def from_order_item(cls, item: OrderItem) -> "LineItem":
+        return cls(amount=item.amount, discountable=item.discountable)
+
+
+@dataclass(frozen=True)
 class OrderAmounts:
     """Monetary breakdown of an order: allocates no invoice number, touches no balance."""
 
@@ -119,7 +132,7 @@ async def calculate_tax(
 
 async def compute_order_amounts(
     subscription: Subscription,
-    items: Sequence[OrderItem],
+    items: Sequence[LineItem],
     *,
     reference: str,
     discount: Discount | None,

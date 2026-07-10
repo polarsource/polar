@@ -71,7 +71,6 @@ from polar.models import (
     Customer,
     Discount,
     Order,
-    OrderItem,
     Organization,
     PaymentMethod,
     Product,
@@ -92,7 +91,7 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
-from polar.order.amounts import compute_order_amounts
+from polar.order.amounts import LineItem, compute_order_amounts
 from polar.organization.repository import (
     SUBSCRIPTION_CANCELLATION_STATUSES,
     OrganizationRepository,
@@ -2241,20 +2240,8 @@ class SubscriptionService:
         metered_amount = sum(meter.amount for meter in subscription.meters)
 
         items = [
-            OrderItem(
-                label="Subscription",
-                amount=base_price,
-                net_amount=base_price,
-                tax_amount=0,
-                proration=False,
-            ),
-            OrderItem(
-                label="Metered usage",
-                amount=metered_amount,
-                net_amount=metered_amount,
-                tax_amount=0,
-                proration=False,
-            ),
+            LineItem(amount=base_price, discountable=True),
+            LineItem(amount=metered_amount, discountable=True),
         ]
 
         # Pending mid-period prorations (seat/product changes) already exist as
@@ -2275,15 +2262,7 @@ class SubscriptionService:
                 )
             )
             proration_amount += line_item.amount
-            items.append(
-                OrderItem(
-                    label=line_item.label,
-                    amount=line_item.amount,
-                    net_amount=line_item.amount,
-                    tax_amount=0,
-                    proration=True,
-                )
-            )
+            items.append(LineItem(amount=line_item.amount, discountable=False))
 
         applicable_discount = None
         # Ensure the discount has not expired yet for the next charge (so at current_period_end)
@@ -2413,7 +2392,7 @@ class SubscriptionService:
 
         prorations: list[SubscriptionChargePreviewProration] = []
         proration_amount = 0
-        items: list[OrderItem] = []
+        items: list[LineItem] = []
         async for (
             line_item,
             _,
@@ -2428,15 +2407,7 @@ class SubscriptionService:
                 )
             )
             proration_amount += line_item.amount
-            items.append(
-                OrderItem(
-                    label=line_item.label,
-                    amount=line_item.amount,
-                    net_amount=line_item.amount,
-                    tax_amount=0,
-                    proration=True,
-                )
-            )
+            items.append(LineItem(amount=line_item.amount, discountable=False))
 
         amounts = await compute_order_amounts(
             subscription,

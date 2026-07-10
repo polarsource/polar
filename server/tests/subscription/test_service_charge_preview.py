@@ -17,7 +17,6 @@ from polar.kit.address import Address
 from polar.models import (
     BillingEntry,
     Customer,
-    OrderItem,
     Organization,
     Product,
     Subscription,
@@ -437,8 +436,6 @@ class TestCalculateChargePreviewPersistsNothing:
             await session.scalar(select(func.count()).select_from(BillingEntry))
             == entries_before
         )
-        # The preview builds `OrderItem`s to price the charge; none may be persisted.
-        assert await session.scalar(select(func.count()).select_from(OrderItem)) == 0
 
     async def test_surrounding_transaction_survives(
         self,

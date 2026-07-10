@@ -127,7 +127,7 @@ from polar.wallet.service import wallet as wallet_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
-from .amounts import calculate_tax, compute_order_amounts
+from .amounts import LineItem, calculate_tax, compute_order_amounts
 from .repository import OrderRepository
 from .schemas import OrderCreate, OrderInvoice, OrderReceipt, OrderUpdate
 from .sorting import OrderSortProperty
@@ -1336,7 +1336,10 @@ class OrderService:
         customer = subscription.customer
 
         amounts = await compute_order_amounts(
-            subscription, items, reference=str(order_id), discount=subscription.discount
+            subscription,
+            [LineItem.from_order_item(item) for item in items],
+            reference=str(order_id),
+            discount=subscription.discount,
         )
         total_amount = amounts.total_amount
 

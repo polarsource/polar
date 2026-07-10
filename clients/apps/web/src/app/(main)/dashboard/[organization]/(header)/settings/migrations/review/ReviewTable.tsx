@@ -2,52 +2,61 @@
 
 import {
   useImportMerchantMigrationCatalog,
+  useMigrationEntityCounts,
   useMigrationRecords,
   useRunMerchantMigrationPrecheck,
 } from '@/hooks/queries/merchantMigrations'
 import { Alert, Spinner } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useMemo } from 'react'
-import { ReviewTableView } from './ReviewTableView'
-import { ReviewRow } from './reviewRows'
+import { useState } from 'react'
+import { ReviewScope } from './reviewRows'
+import {
+  importPayload,
+  initialSelection,
+  SelectionState,
+  toggleAll,
+  toggleRow,
+} from './reviewSelection'
+import { ReviewFilter, ReviewTableView } from './ReviewTableView'
 
-const LIMIT = 100
+export function ReviewTable({ migrationId }: { migrationId: string }) {
+  const [entity, setEntity] = useState<ReviewScope>('all')
+  const [filter, setFilter] = useState<ReviewFilter>('attention')
+  const [page, setPage] = useState(1)
+  const [pageSize, setPageSize] = useState(20)
+  const [selection, setSelection] = useState<SelectionState>(initialSelection)
 
-export function ReviewTable({
-  migrationId,
-  eyebrow,
-}: {
-  migrationId: string
-  eyebrow?: string
-}) {
-  const products = useMigrationRecords(migrationId, {
-    entity: 'products',
-    page: 1,
-    limit: LIMIT,
+  const records = useMigrationRecords(migrationId, {
+    ...(entity !== 'all' ? { entity } : {}),
+    page,
+    limit: pageSize,
+    ...(filter === 'attention' ? { reasonLevel: 'action_required' } : {}),
+    ...(filter === 'skipped' ? { status: 'skipped' as const } : {}),
   })
-  const customers = useMigrationRecords(migrationId, {
-    entity: 'customers',
-    page: 1,
-    limit: LIMIT,
-  })
-  const subscriptions = useMigrationRecords(migrationId, {
-    entity: 'subscriptions',
-    page: 1,
-    limit: LIMIT,
-  })
+  const { counts, isLoading: countsLoading } =
+    useMigrationEntityCounts(migrationId)
   const importCatalog = useImportMerchantMigrationCatalog(migrationId)
   const rerunPrecheck = useRunMerchantMigrationPrecheck(migrationId)
 
-  const rows = useMemo<ReviewRow[]>(
-    () => [
-      ...(subscriptions.data?.items ?? []),
-      ...(products.data?.items ?? []),
-      ...(customers.data?.items ?? []),
-    ],
-    [subscriptions.data, products.data, customers.data],
-  )
+  const onEntityChange = (next: ReviewScope) => {
+    setEntity(next)
+    setPage(1)
+  }
 
-  if (products.isLoading || customers.isLoading || subscriptions.isLoading) {
+  const onFilterChange = (next: ReviewFilter) => {
+    setFilter(next)
+    setPage(1)
+  }
+
+  const onPageSizeChange = (size: number) => {
+    setPageSize(size)
+    setPage(1)
+  }
+
+  const toggle = (id: string) => setSelection((prev) => toggleRow(prev, id))
+  const onToggleAll = () => setSelection((prev) => toggleAll(prev))
+
+  if (records.isLoading || countsLoading) {
     return (
       <Box padding="2xl" alignItems="center" justifyContent="center">
         <Spinner />
@@ -55,7 +64,7 @@ export function ReviewTable({
     )
   }
 
-  if (products.isError || customers.isError || subscriptions.isError) {
+  if (records.isError) {
     return (
       <Alert
         variant="danger"
@@ -67,9 +76,22 @@ export function ReviewTable({
 
   return (
     <ReviewTableView
-      rows={rows}
-      eyebrow={eyebrow}
-      onImport={(recordIds) => importCatalog.mutate(recordIds)}
+      entity={entity}
+      onEntityChange={onEntityChange}
+      filter={filter}
+      onFilterChange={onFilterChange}
+      counts={counts}
+      rows={records.data?.items ?? []}
+      page={page}
+      pageSize={pageSize}
+      pageCount={records.data?.pagination.max_page ?? 1}
+      rowCount={records.data?.pagination.total_count ?? 0}
+      onPageChange={setPage}
+      onPageSizeChange={onPageSizeChange}
+      selection={selection}
+      onToggle={toggle}
+      onToggleAll={onToggleAll}
+      onImport={() => importCatalog.mutate(importPayload(selection))}
       importing={importCatalog.isPending}
       importResult={importCatalog.data}
       importError={importCatalog.isError}

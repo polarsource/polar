@@ -1,13 +1,17 @@
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Check } from 'lucide-react'
+import { Check, Circle } from 'lucide-react'
 import { currentVisibleIndex, MIGRATION_STEPS } from './steps'
 
 type StepState = 'done' | 'current' | 'upcoming'
 
-// Equal-width segments instead of hairline connectors: the row reads as one
-// progress control, the current segment is tinted, done segments carry a check.
+const MARKER_SIZE = 16
+
+// One derived control: every segment carries the same 2px top track, and the
+// filled length of that track is the only dimension encoding progress. Position
+// and one consistent marker shape carry state; the accent is spent on the
+// current step alone (its marker and its label).
 export function MigrationStepper({
   migration,
 }: {
@@ -16,85 +20,55 @@ export function MigrationStepper({
   const current = currentVisibleIndex(migration)
 
   return (
-    <Box as="ol" alignItems="stretch" columnGap="xs">
+    <Box as="ol" alignItems="stretch" columnGap="s">
       {MIGRATION_STEPS.map((def, index) => {
         const state: StepState =
           index < current ? 'done' : index === current ? 'current' : 'upcoming'
-        return (
-          <Segment
-            key={def.key}
-            label={def.short}
-            index={index}
-            state={state}
-          />
-        )
+        return <Segment key={def.key} label={def.short} state={state} />
       })}
     </Box>
   )
 }
 
-function Segment({
-  label,
-  index,
-  state,
-}: {
-  label: string
-  index: number
-  state: StepState
-}) {
-  const current = state === 'current'
+function Marker({ state }: { state: StepState }) {
+  if (state === 'done') {
+    return <Check size={MARKER_SIZE} strokeWidth={2.5} aria-hidden="true" />
+  }
+  return (
+    <Circle
+      size={MARKER_SIZE}
+      fill={state === 'current' ? 'currentColor' : 'none'}
+      aria-hidden="true"
+    />
+  )
+}
+
+function Segment({ label, state }: { label: string; state: StepState }) {
+  const reached = state !== 'upcoming'
+  const color =
+    state === 'current'
+      ? 'text-accent'
+      : state === 'done'
+        ? 'text-secondary'
+        : 'text-tertiary'
   return (
     <Box
       as="li"
       flex={1}
       minWidth={0}
-      alignItems="center"
-      columnGap="s"
-      paddingVertical="s"
-      paddingHorizontal="m"
-      borderRadius="m"
-      backgroundColor={
-        current
-          ? 'background-accent'
-          : state === 'done'
-            ? 'background-secondary'
-            : 'background-primary'
-      }
-      borderWidth={state === 'upcoming' ? 1 : 0}
+      flexDirection="column"
+      rowGap="s"
+      paddingTop="s"
+      borderTopWidth={2}
       borderStyle="solid"
-      borderColor="border-secondary"
+      borderColor={reached ? 'border-primary' : 'border-secondary'}
     >
-      <Badge state={state} index={index} />
-      <Text variant="caption" color={current ? 'accent' : 'muted'}>
-        {label}
-      </Text>
-    </Box>
-  )
-}
-
-function Badge({ state, index }: { state: StepState; index: number }) {
-  if (state === 'done') {
-    return (
-      <Box color="text-secondary" alignItems="center" flexShrink={0}>
-        <Check size={14} strokeWidth={2.5} aria-hidden="true" />
+      <Box alignItems="center" columnGap="xs" color={color}>
+        <Marker state={state} />
+        <Text variant="caption" color="inherit" truncate>
+          {label}
+        </Text>
       </Box>
-    )
-  }
-  return (
-    <Box
-      width={18}
-      height={18}
-      flexShrink={0}
-      borderRadius="full"
-      alignItems="center"
-      justifyContent="center"
-      backgroundColor={
-        state === 'current' ? 'background-primary' : 'background-secondary'
-      }
-    >
-      <Text variant="caption" color={state === 'current' ? 'accent' : 'muted'}>
-        {index + 1}
-      </Text>
     </Box>
   )
 }

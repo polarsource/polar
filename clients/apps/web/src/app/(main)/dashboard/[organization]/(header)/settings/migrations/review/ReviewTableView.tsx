@@ -1,24 +1,47 @@
 'use client'
 
-import { Alert, Button, Text } from '@polar-sh/orbit'
+import { CountEntity, EntityCount } from '@/hooks/queries/merchantMigrations'
+import { Alert, Button, DataTable, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useState } from 'react'
-import { ReviewGroup } from './ReviewGroup'
+import { OnChangeFn, PaginationState } from '@tanstack/react-table'
+import { useMemo } from 'react'
+import { ReviewEntityTabs } from './ReviewEntityTabs'
 import {
-  entityLabelPlural,
-  groupRows,
-  ReviewRow,
-  selectableIds,
-} from './reviewRows'
+  EMPTY_MESSAGES,
+  ReviewFilter,
+  ReviewStatusTabs,
+} from './ReviewStatusTabs'
+import { ReviewSummary } from './ReviewSummary'
+import { buildReviewColumns } from './reviewColumns'
+import {
+  headerCheckState,
+  isRowSelected,
+  selectedCount,
+  SelectionState,
+} from './reviewSelection'
+import { ImportSummary, importResultText } from './importSummary'
+import { ReviewRow, ReviewScope } from './reviewRows'
 
-export interface ImportSummary {
-  results: { entity: string; imported: number }[]
-}
+export type { ReviewFilter } from './ReviewStatusTabs'
+export type { ImportSummary } from './importSummary'
 
 interface Props {
+  entity: ReviewScope
+  onEntityChange: (entity: ReviewScope) => void
+  filter: ReviewFilter
+  onFilterChange: (filter: ReviewFilter) => void
+  counts: Record<CountEntity, EntityCount>
   rows: ReviewRow[]
-  onImport: (recordIds: string[]) => void
-  eyebrow?: string
+  page: number
+  pageSize: number
+  pageCount: number
+  rowCount: number
+  onPageChange: (page: number) => void
+  onPageSizeChange: (size: number) => void
+  selection: SelectionState
+  onToggle: (id: string) => void
+  onToggleAll: () => void
+  onImport: () => void
   importing?: boolean
   importResult?: ImportSummary | null
   importError?: boolean
@@ -27,66 +50,89 @@ interface Props {
 }
 
 export function ReviewTableView({
+  entity,
+  onEntityChange,
+  filter,
+  onFilterChange,
+  counts,
   rows,
+  page,
+  pageSize,
+  pageCount,
+  rowCount,
+  onPageChange,
+  onPageSizeChange,
+  selection,
+  onToggle,
+  onToggleAll,
   onImport,
-  eyebrow,
   importing = false,
   importResult,
   importError = false,
   onRerunPrecheck,
   rerunning = false,
 }: Props) {
-  // Every importable row is selected by default; we track only the rows the
-  // merchant explicitly turned off, so selection derives from the data with no
-  // seeding effect — imported rows drop out on their own after a refetch.
-  const [deselected, setDeselected] = useState<Set<string>>(new Set())
-  const selectable = selectableIds(rows)
-  const selectedIds = selectable.filter((id) => !deselected.has(id))
-  const selected = new Set(selectedIds)
+  const tabCounts: Record<CountEntity, number> = {
+    subscriptions:
+      counts.subscriptions.importable + counts.subscriptions.skipped,
+    products: counts.products.importable + counts.products.skipped,
+    customers: counts.customers.importable + counts.customers.skipped,
+  }
+  const importableTotal =
+    counts.subscriptions.importable +
+    counts.products.importable +
+    counts.customers.importable
+  const skippedTotal =
+    counts.subscriptions.skipped +
+    counts.products.skipped +
+    counts.customers.skipped
 
-  const toggle = (id: string) =>
-    setDeselected((prev) => toggleIn(prev, [id], !prev.has(id)))
-  const toggleGroup = (ids: string[], select: boolean) =>
-    setDeselected((prev) => toggleIn(prev, ids, select))
+  const importCount = selectedCount(selection, importableTotal)
+  const hasCatalog = importableTotal + skippedTotal > 0
+  const allImported = hasCatalog && importableTotal === 0
 
-  const skippedCount = rows.filter((row) => row.status === 'skipped').length
-  const allImported = rows.length > 0 && selectable.length === 0
+  const columns = useMemo(
+    () =>
+      buildReviewColumns(entity, {
+        isSelected: (id) => isRowSelected(selection, id),
+        headerState: headerCheckState(selection),
+        onToggle,
+        onToggleAll,
+      }),
+    [entity, selection, onToggle, onToggleAll],
+  )
+
+  const pagination: PaginationState = { pageIndex: page - 1, pageSize }
+  const onPaginationChange: OnChangeFn<PaginationState> = (updater) => {
+    const next = typeof updater === 'function' ? updater(pagination) : updater
+    if (next.pageSize !== pageSize) {
+      onPageSizeChange(next.pageSize)
+    }
+    onPageChange(next.pageIndex + 1)
+  }
+
+  if (!hasCatalog) {
+    return (
+      <Text variant="caption" color="muted">
+        No records staged yet. Use &ldquo;Refresh from Stripe&rdquo; to scan
+        Stripe.
+      </Text>
+    )
+  }
+
+  if (allImported) {
+    return (
+      <Alert
+        variant="success"
+        title="Catalog imported"
+        description="All importable records are in Polar. Next: move saved cards."
+      />
+    )
+  }
 
   return (
-    <Box as="section" flexDirection="column" rowGap="l">
-      <Box flexDirection="column" rowGap="xs">
-        <Box alignItems="center" justifyContent="between" columnGap="m">
-          <Box flexDirection="column" rowGap="xs">
-            {eyebrow && (
-              <Text variant="caption" color="muted">
-                {eyebrow}
-              </Text>
-            )}
-            <Text variant="heading-xs" as="h3">
-              Review &amp; import
-            </Text>
-          </Box>
-          {onRerunPrecheck && (
-            <Button
-              size="sm"
-              variant="ghost"
-              onClick={onRerunPrecheck}
-              disabled={rerunning}
-            >
-              {rerunning ? 'Re-checking…' : 'Re-run pre-check'}
-            </Button>
-          )}
-        </Box>
-        <Box maxWidth={680}>
-          <Text variant="caption" color="muted">
-            Pick what to bring to Polar. Subscriptions come over paused, so no
-            one is billed until cutover. Anything you leave out stays pending
-            and can be imported later.
-          </Text>
-        </Box>
-      </Box>
-
-      {importResult && !allImported && (
+    <Box as="section" flexDirection="column" rowGap="xl">
+      {importResult && (
         <Alert
           variant="success"
           title="Catalog imported"
@@ -101,120 +147,71 @@ export function ReviewTableView({
         />
       )}
 
-      {rows.length === 0 ? (
-        <Text variant="caption" color="muted">
-          No records staged yet. Use &ldquo;Re-run pre-check&rdquo; to scan
-          Stripe.
-        </Text>
-      ) : allImported ? (
-        <Alert
-          variant="success"
-          title="Catalog imported"
-          description="All importable records are in Polar. Next: move saved cards."
-        />
-      ) : (
-        <Box flexDirection="column" rowGap="l">
-          <SelectionBar
-            count={selectedIds.length}
-            total={selectable.length}
-            skipped={skippedCount}
-            disabled={selectedIds.length === 0 || importing}
-            pending={importing}
-            onClear={() => setDeselected(new Set(selectable))}
-            onImport={() => onImport(selectedIds)}
-          />
-          {groupRows(rows).map((group) => (
-            <ReviewGroup
-              key={group.entity}
-              title={entityLabelPlural(group.entity)}
-              rows={group.rows}
-              selected={selected}
-              onToggle={toggle}
-              onToggleGroup={toggleGroup}
-            />
-          ))}
-        </Box>
-      )}
-    </Box>
-  )
-}
+      <ReviewSummary
+        counts={counts}
+        importCount={importCount}
+        onImport={onImport}
+        importing={importing}
+      />
 
-function toggleIn(
-  set: Set<string>,
-  ids: string[],
-  select: boolean,
-): Set<string> {
-  const next = new Set(set)
-  // `deselected` tracks turned-off rows, so selecting removes and vice versa.
-  ids.forEach((id) => (select ? next.delete(id) : next.add(id)))
-  return next
-}
-
-function SelectionBar({
-  count,
-  total,
-  skipped,
-  disabled,
-  pending,
-  onClear,
-  onImport,
-}: {
-  count: number
-  total: number
-  skipped: number
-  disabled: boolean
-  pending: boolean
-  onClear: () => void
-  onImport: () => void
-}) {
-  return (
-    <Box
-      alignItems="center"
-      justifyContent="between"
-      columnGap="m"
-      padding="m"
-      borderRadius="m"
-      backgroundColor="background-secondary"
-    >
-      <Text variant="caption" color="muted">
-        {count} of {total} selected
-        {skipped > 0 ? ` · ${skipped} stay on Stripe` : ''}
-      </Text>
-      <Box alignItems="center" columnGap="s">
-        <Button
-          size="sm"
-          variant="ghost"
-          onClick={onClear}
-          disabled={count === 0}
+      <Box flexDirection="column" rowGap="m">
+        <Box
+          alignItems="center"
+          justifyContent="between"
+          columnGap="m"
+          rowGap="s"
+          flexWrap="wrap"
         >
-          Deselect all
-        </Button>
-        <Button size="sm" onClick={onImport} disabled={disabled}>
-          {pending
-            ? 'Importing…'
-            : count > 0
-              ? `Import ${count} selected`
-              : 'Import selected'}
-        </Button>
+          <Box maxWidth="100%" overflowX="auto">
+            <ReviewStatusTabs value={filter} onChange={onFilterChange} />
+          </Box>
+          <Box alignItems="center" columnGap="s" rowGap="s" flexWrap="wrap">
+            <Box maxWidth="100%" overflowX="auto">
+              <ReviewEntityTabs
+                value={entity}
+                counts={tabCounts}
+                onChange={onEntityChange}
+              />
+            </Box>
+            {onRerunPrecheck && (
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={onRerunPrecheck}
+                disabled={rerunning}
+              >
+                {rerunning ? 'Refreshing…' : 'Refresh from Stripe'}
+              </Button>
+            )}
+          </Box>
+        </Box>
+
+        {rows.length === 0 ? (
+          <Box
+            borderWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
+            borderRadius="l"
+            paddingVertical="2xl"
+            justifyContent="center"
+          >
+            <Text variant="caption" color="muted">
+              {EMPTY_MESSAGES[filter]}
+            </Text>
+          </Box>
+        ) : (
+          <DataTable
+            columns={columns}
+            data={rows}
+            rowCount={rowCount}
+            pageCount={pageCount}
+            pagination={pagination}
+            onPaginationChange={onPaginationChange}
+            isLoading={false}
+            getRowId={(row) => row.record_id ?? row.source_id}
+          />
+        )}
       </Box>
     </Box>
   )
-}
-
-function importResultText(report: ImportSummary): string {
-  const byEntity = new Map(
-    report.results.map((result) => [result.entity, result.imported]),
-  )
-  const parts = [
-    plural(byEntity.get('subscriptions') ?? 0, 'subscription'),
-    plural(byEntity.get('products') ?? 0, 'product'),
-    plural(byEntity.get('customers') ?? 0, 'customer'),
-  ].filter((part) => part !== null)
-  if (parts.length === 0) return 'No new records to import.'
-  return `Imported ${parts.join(', ')} into Polar.`
-}
-
-function plural(count: number, noun: string): string | null {
-  if (count === 0) return null
-  return `${count} ${noun}${count === 1 ? '' : 's'}`
 }

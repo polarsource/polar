@@ -1,24 +1,33 @@
 import { schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 
 export type ReviewRow = schemas['MerchantMigrationRecordItem']
 export type ReviewEntity = ReviewRow['entity']
+// The table can scope to one listable entity or show them all together. Prices
+// aren't listed as their own rows, so they're excluded from the scope.
+export type ReviewScope = 'all' | 'products' | 'customers' | 'subscriptions'
 
-// Records are grouped into these sections, in this order — subscriptions first
-// because they're the point of the migration, then the catalog they depend on.
-export const ENTITY_ORDER: ReviewEntity[] = [
-  'subscriptions',
-  'products',
-  'customers',
-]
-
-export function entityLabelPlural(entity: ReviewEntity): string {
+export function entityLabelPlural(entity: ReviewScope): string {
   switch (entity) {
+    case 'all':
+      return 'All'
     case 'subscriptions':
       return 'Subscriptions'
     case 'customers':
       return 'Customers'
     default:
       return 'Products'
+  }
+}
+
+export function entityLabelSingular(entity: ReviewEntity): string {
+  switch (entity) {
+    case 'subscriptions':
+      return 'Subscription'
+    case 'customers':
+      return 'Customer'
+    default:
+      return 'Product'
   }
 }
 
@@ -36,38 +45,33 @@ export function isImported(row: ReviewRow): boolean {
   return row.import_status === 'imported'
 }
 
-// Importable, not yet imported, and carrying a warning the merchant should read.
+// Something the merchant has to fix, as opposed to a note they only read.
 export function needsAttention(row: ReviewRow): boolean {
-  return row.status === 'importable' && !isImported(row) && Boolean(row.reason)
+  return row.reason_level === 'action_required' && !isImported(row)
 }
 
-export function selectableIds(rows: ReviewRow[]): string[] {
-  return rows
-    .filter(isSelectable)
-    .map((row) => row.record_id)
-    .filter((id): id is string => id != null)
+const INTERVAL_ABBREVIATION: Record<string, string> = {
+  day: '/day',
+  week: '/wk',
+  month: '/mo',
+  year: '/yr',
 }
 
-export interface ReviewGroupData {
-  entity: ReviewEntity
-  rows: ReviewRow[]
+const formatAmount = formatCurrency('accounting', 'en-US')
+
+export interface RowAmount {
+  money: string
+  interval: string | null
 }
 
-export function groupRows(rows: ReviewRow[]): ReviewGroupData[] {
-  return ENTITY_ORDER.map((entity) => ({
-    entity,
-    rows: rows.filter((row) => row.entity === entity),
-  })).filter((group) => group.rows.length > 0)
-}
-
-// The single-word status shown per row. Colour is neutral except the one
-// signal that wants the merchant's eye: a row flagged for review.
-export function rowStatus(row: ReviewRow): {
-  label: string
-  color: 'gray' | 'yellow'
-} {
-  if (needsAttention(row)) return { label: 'Review', color: 'yellow' }
-  if (isImported(row)) return { label: 'Imported', color: 'gray' }
-  if (row.status === 'skipped') return { label: 'Skipped', color: 'gray' }
-  return { label: 'Ready', color: 'gray' }
+// The row's money is a co-primary datum: a formatted amount and, for recurring
+// prices, a billing interval abbreviation kept separate so the amounts can align
+// their decimals down the column. Rows without a price (customers) return null.
+export function rowAmount(row: ReviewRow): RowAmount | null {
+  if (row.amount == null || !row.currency) return null
+  const money = formatAmount(row.amount, row.currency)
+  const interval = row.recurring_interval
+    ? (INTERVAL_ABBREVIATION[row.recurring_interval] ?? null)
+    : null
+  return { money, interval }
 }

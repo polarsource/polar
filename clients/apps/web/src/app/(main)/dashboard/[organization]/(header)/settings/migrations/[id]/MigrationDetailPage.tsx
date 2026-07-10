@@ -10,13 +10,7 @@ import Link from 'next/link'
 import { MigrationStepper } from '../MigrationStepper'
 import { PrecheckPanel } from '../PrecheckPanel'
 import { ReviewTable } from '../review/ReviewTable'
-import {
-  currentStepDef,
-  currentVisibleIndex,
-  MIGRATION_STEPS,
-  MigrationStepDef,
-  OWNER_LABELS,
-} from '../steps'
+import { currentStepDef, MigrationStepDef, OWNER_LABELS } from '../steps'
 import { StripeMark } from '../StripeMark'
 
 const REVIEW_STEPS: schemas['MerchantMigrationStep'][] = [
@@ -116,8 +110,6 @@ function StepContent({
 }: {
   migration: schemas['MerchantMigration']
 }) {
-  const eyebrow = `Step ${currentVisibleIndex(migration) + 1} of ${MIGRATION_STEPS.length}`
-
   if (!migration.source_connected) {
     return (
       <Text variant="caption" color="muted">
@@ -126,12 +118,12 @@ function StepContent({
     )
   }
   if (REVIEW_STEPS.includes(migration.step)) {
-    return <ReviewTable migrationId={migration.id} eyebrow={eyebrow} />
+    return <ReviewTable migrationId={migration.id} />
   }
 
   return (
     <Box flexDirection="column" rowGap="l">
-      <StepHeading def={currentStepDef(migration)} eyebrow={eyebrow} />
+      <StepHeading def={currentStepDef(migration)} />
       {migration.step === 'source_setup' ? (
         <PrecheckPanel migrationId={migration.id} />
       ) : (
@@ -143,19 +135,10 @@ function StepContent({
   )
 }
 
-function StepHeading({
-  def,
-  eyebrow,
-}: {
-  def: MigrationStepDef
-  eyebrow: string
-}) {
+function StepHeading({ def }: { def: MigrationStepDef }) {
   const owner = OWNER_LABELS[def.owner]
   return (
     <Box flexDirection="column" rowGap="xs">
-      <Text variant="caption" color="muted">
-        {eyebrow}
-      </Text>
       <Box alignItems="center" columnGap="s">
         <Text variant="heading-xs" as="h3">
           {def.title}

@@ -11,8 +11,9 @@ resource "render_env_group" "google" {
   environment_id = var.render_environment_id
   name           = "google-${var.environment}"
   env_vars = {
-    POLAR_GOOGLE_CLIENT_ID     = { value = var.google_secrets.client_id }
-    POLAR_GOOGLE_CLIENT_SECRET = { value = var.google_secrets.client_secret }
+    POLAR_GOOGLE_CLIENT_ID            = { value = var.google_secrets.client_id }
+    POLAR_GOOGLE_CLIENT_SECRET        = { value = var.google_secrets.client_secret }
+    POLAR_GOOGLE_SERVICE_ACCOUNT_JSON = { value = var.google_secrets.service_account_json }
   }
 }
 

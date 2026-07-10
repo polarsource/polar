@@ -8,6 +8,7 @@ from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
+from polar.models.merchant_migration_record import MerchantMigrationRecordStatus
 
 
 class MerchantMigrationCreate(Schema):
@@ -70,6 +71,13 @@ class PrecheckReport(Schema):
 
 
 class MerchantMigrationRecordItem(Schema):
+    record_id: UUID4 | None = Field(
+        default=None,
+        description=(
+            "The ledger record id, used to select this row for import. Null for "
+            "price rows, which are imported together with their product."
+        ),
+    )
     entity: PrecheckEntity = Field(description="The source entity type.")
     source_id: str = Field(description="The source identifier (e.g. Stripe `sub_…`).")
     title: str = Field(description="Primary label (name, email or product).")
@@ -79,9 +87,45 @@ class MerchantMigrationRecordItem(Schema):
     status: PrecheckRecordStatus = Field(
         description="Whether this record will be imported or stays on the source."
     )
+    import_status: MerchantMigrationRecordStatus | None = Field(
+        default=None,
+        description=(
+            "The ledger status of this record: `pending` (not imported yet), "
+            "`imported`, `skipped` or `failed`. Null for price rows, which import "
+            "with their product."
+        ),
+    )
     reason: str | None = Field(description="Why the record is skipped, if it is.")
     reason_code: str | None = Field(
         description="Stable code for the skip reason, if any."
+    )
+
+
+class MerchantMigrationImportRequest(Schema):
+    record_ids: list[UUID4] | None = Field(
+        default=None,
+        description=(
+            "The ledger record ids to import (from the records listing). When "
+            "omitted, every importable record is imported. Records not selected "
+            "stay pending and can be imported later."
+        ),
+    )
+
+
+class MerchantMigrationImportResult(Schema):
+    entity: PrecheckEntity = Field(description="The source entity type.")
+    imported: int = Field(description="How many were created or reused in Polar.")
+    skipped: int = Field(
+        description="How many were left on the source (not importable)."
+    )
+
+
+class MerchantMigrationImportReport(Schema):
+    step: MerchantMigrationStep = Field(
+        description="The migration step after the import."
+    )
+    results: list[MerchantMigrationImportResult] = Field(
+        description="Per-entity counts of what was imported vs skipped."
     )
 
 

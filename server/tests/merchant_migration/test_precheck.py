@@ -18,6 +18,8 @@ from polar.merchant_migration.canonical import (
 )
 from polar.merchant_migration.precheck import (
     classify_records,
+    plan_customer_imports,
+    plan_product_imports,
     precheck_engine,
     summarize_records,
 )
@@ -136,11 +138,13 @@ async def run(
     *,
     organization: Organization | None = None,
     account: CanonicalAccount | None = None,
+    existing_product_names: set[str] | None = None,
 ) -> PrecheckReport:
     return await precheck_engine.run(
         aiter_records(records),
         organization or build_organization(),
         account or build_account(),
+        existing_product_names,
     )
 
 
@@ -231,6 +235,25 @@ class TestPrecheckEngine:
         )
         assert "duplicate_product_name" in codes(report, PrecheckIssueLevel.warning)
         assert report.can_start is True
+
+    async def test_existing_polar_product_warns_without_blocking(self) -> None:
+        report = await run(
+            [build_product(name="Pro")],
+            existing_product_names={"pro"},
+        )
+        assert "product_exists_in_polar" in codes(report, PrecheckIssueLevel.warning)
+        assert report.can_start is True
+        # the collision is a warning only: the product still imports.
+        products = next(
+            e for e in report.entities if e.entity == PrecheckEntity.products
+        )
+        assert products.importable == 1
+
+    async def test_no_existing_products_no_warning(self) -> None:
+        report = await run([build_product(name="Pro")])
+        assert "product_exists_in_polar" not in codes(
+            report, PrecheckIssueLevel.warning
+        )
 
     async def test_same_product_different_intervals_is_not_a_duplicate(self) -> None:
         report = await run(
@@ -524,3 +547,78 @@ class TestClassifyCascade:
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_product_not_importable"
+
+
+class TestPlanProductImports:
+    def test_importable_product_lists_its_prices(self) -> None:
+        product = build_product(prices=[build_price(source_id="price_1")])
+
+        plans = plan_product_imports([product])
+
+        plan = plans[product.source_id]
+        assert plan.importable is True
+        assert plan.importable_price_ids == {"price_1"}
+
+    def test_one_time_product_is_skipped(self) -> None:
+        product = build_product(source_id="prod_1:one_time", recurring_interval=None)
+
+        plan = plan_product_imports([product])[product.source_id]
+
+        assert plan.importable is False
+        assert plan.skip_code == "one_time_product"
+
+    def test_drops_unsupported_prices_but_keeps_the_rest(self) -> None:
+        product = build_product(
+            prices=[
+                build_price(source_id="price_ok"),
+                build_price(
+                    source_id="price_bad",
+                    pricing_scheme=CanonicalPricingScheme.tiered,
+                ),
+            ]
+        )
+
+        plan = plan_product_imports([product])[product.source_id]
+
+        assert plan.importable is True
+        assert plan.importable_price_ids == {"price_ok"}
+
+    def test_product_with_no_importable_price_is_skipped(self) -> None:
+        product = build_product(
+            prices=[
+                build_price(
+                    source_id="price_bad",
+                    pricing_scheme=CanonicalPricingScheme.metered,
+                )
+            ]
+        )
+
+        plan = plan_product_imports([product])[product.source_id]
+
+        assert plan.importable is False
+        assert plan.skip_code == "no_importable_price"
+
+    def test_duplicate_name_skips_the_later_product(self) -> None:
+        first = build_product(source_id="prod_1:month:1", product_source_id="prod_1")
+        second = build_product(source_id="prod_2:month:1", product_source_id="prod_2")
+
+        plans = plan_product_imports([first, second])
+
+        assert plans[first.source_id].importable is True
+        assert plans[second.source_id].skip_code == "duplicate_product_name"
+
+
+class TestPlanCustomerImports:
+    def test_unique_customers_are_importable(self) -> None:
+        customer = build_customer(source_id="cus_1", email="a@example.com")
+
+        assert plan_customer_imports([customer])[customer.source_id] == (None, None)
+
+    def test_duplicate_email_skips_the_later_customer(self) -> None:
+        first = build_customer(source_id="cus_1", email="a@example.com")
+        second = build_customer(source_id="cus_2", email="a@example.com")
+
+        plans = plan_customer_imports([first, second])
+
+        assert plans["cus_1"] == (None, None)
+        assert plans["cus_2"][0] == "duplicate_customer_email"

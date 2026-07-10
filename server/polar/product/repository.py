@@ -65,6 +65,17 @@ class ProductRepository(
         result = await self.session.execute(statement)
         return {row[0].lower() for row in result.all()}
 
+    async def get_active_names_by_organization(self, organization_id: UUID) -> set[str]:
+        """Lower-cased names of the org's active products, used to warn when a
+        migration source product would duplicate one that already exists."""
+        statement = select(func.lower(Product.name)).where(
+            Product.organization_id == organization_id,
+            Product.is_archived.is_(False),
+            Product.deleted_at.is_(None),
+        )
+        result = await self.session.execute(statement)
+        return {row[0] for row in result.all()}
+
     async def get_all_by_organization(
         self,
         organization_id: UUID,

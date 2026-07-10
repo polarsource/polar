@@ -198,6 +198,7 @@ def tax_service_mock(mocker: MockerFixture) -> MagicMock:
     mock = mocker.patch(
         "polar.order.service.tax_calculation_service", spec=TaxCalculationService
     )
+    mocker.patch("polar.order.amounts.tax_calculation_service", new=mock)
     mock.record.return_value = ("TAX_TRANSACTION_ID", TaxProcessor.numeral)
     return mock
 

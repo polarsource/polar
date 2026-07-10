@@ -2184,6 +2184,15 @@ class SubscriptionService:
         Returns:
             SubscriptionChargePreview with breakdown of charges
         """
+        nested = await session.begin_nested()
+        try:
+            return await self._compute_charge_preview(session, subscription)
+        finally:
+            await nested.rollback()
+
+    async def _compute_charge_preview(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> SubscriptionChargePreview:
         # Apply any pending subscription update (product change, seats change)
         pending_update = subscription.pending_update
         if pending_update is not None:
@@ -2296,9 +2305,6 @@ class SubscriptionService:
                     net_amount -= tax_amount
 
         total = net_amount + tax_amount
-
-        # Make sure nothing is saved to DB
-        await session.rollback()
 
         return SubscriptionChargePreview(
             base_amount=base_price,

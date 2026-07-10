@@ -1374,28 +1374,9 @@ class SubscriptionService:
             if proration_behavior is None:
                 proration_behavior = organization.proration_behavior
 
-            # Non-seat → seat upgrades: promote `subscription.seats` to the new
-            # product's first seat-price tier minimum so the proration debit and
-            # `apply_update`'s product-branch rebuild both see a valid seat count.
-            # Block `next_period` because the post-apply seat auto-claim has to run
-            # immediately so the billing customer doesn't lose benefit access.
-            is_initial_seat_transition = not old_has_seat_prices and new_has_seat_prices
-            if is_initial_seat_transition:
-                if proration_behavior == SubscriptionProrationBehavior.next_period:
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", "proration_behavior"),
-                                "msg": "Switching from a non-seat to a seat-based product must apply immediately and can't use the 'next_period' proration behavior.",
-                                "input": proration_behavior,
-                            }
-                        ]
-                    )
-                for price in currency_prices:
-                    if is_seat_price(price):
-                        subscription.seats = price.get_minimum_seats()
-                        break
+            is_initial_seat_transition = self._promote_seats_for_seat_transition(
+                subscription, currency_prices, proration_behavior
+            )
 
             subscription_update_repository = SubscriptionUpdateRepository.from_session(
                 session
@@ -2335,11 +2316,14 @@ class SubscriptionService:
 
         product: Product | None = None
         if product_id is not None:
-            product, _ = await self.validate_product_change(
+            product, currency_prices = await self.validate_product_change(
                 session,
                 subscription,
                 product_id=product_id,
                 allowed_visibilities=allowed_visibilities,
+            )
+            self._promote_seats_for_seat_transition(
+                subscription, currency_prices, proration_behavior
             )
             event = build_system_event(
                 SystemEvent.subscription_product_updated,
@@ -2426,6 +2410,42 @@ class SubscriptionService:
             prorations=prorations,
             proration_amount=proration_amount,
         )
+
+    def _promote_seats_for_seat_transition(
+        self,
+        subscription: Subscription,
+        currency_prices: PriceSet,
+        proration_behavior: SubscriptionProrationBehavior,
+    ) -> bool:
+        """Promote `subscription.seats` to the new product's first seat-price tier
+        minimum, so the proration debit and `apply_update`'s product-branch rebuild
+        both see a valid seat count. `next_period` is blocked because the post-apply
+        seat auto-claim has to run immediately, or the billing customer loses benefit
+        access. Returns whether this was a non-seat → seat transition.
+        """
+        if any(is_seat_price(price) for price in subscription.prices):
+            return False
+
+        seat_price = next(
+            (price for price in currency_prices if is_seat_price(price)), None
+        )
+        if seat_price is None:
+            return False
+
+        if proration_behavior == SubscriptionProrationBehavior.next_period:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "proration_behavior"),
+                        "msg": "Switching from a non-seat to a seat-based product must apply immediately and can't use the 'next_period' proration behavior.",
+                        "input": proration_behavior,
+                    }
+                ]
+            )
+
+        subscription.seats = seat_price.get_minimum_seats()
+        return True
 
     def _resolve_trial_end(
         self, subscription: Subscription, product: Product

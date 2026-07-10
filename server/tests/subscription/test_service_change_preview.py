@@ -9,6 +9,7 @@ from polar.enums import (
     SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
 )
+from polar.exceptions import PolarRequestValidationError
 from polar.kit.trial import TrialInterval
 from polar.models import (
     BillingEntry,
@@ -156,6 +157,67 @@ class TestCalculateChangePreview:
 
         assert preview.prorations == []
         assert preview.total_amount == 0
+
+    async def test_non_seat_to_seat_quotes_the_minimum_seats(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        seat_product = await create_product_fixed_and_seat(
+            save_fixture,
+            organization=organization,
+            fixed_amount=0,
+            tiers=[{"min_seats": 3, "max_seats": None, "price_per_seat": 1000}],
+        )
+
+        with freezegun.freeze_time(datetime(2025, 1, 16, 12, tzinfo=UTC)):
+            subscription = await create_active_subscription(
+                save_fixture,
+                product=product,
+                customer=customer,
+                current_period_start=datetime(2025, 1, 1, tzinfo=UTC),
+                current_period_end=datetime(2025, 2, 1, tzinfo=UTC),
+            )
+
+            preview = await subscription_service.calculate_change_preview(
+                session,
+                subscription,
+                product_id=seat_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+
+        # Half a cycle of the three minimum seats, less the old plan's unused half.
+        assert sorted(p.amount for p in preview.prorations) == [-500, 1500]
+        assert preview.total_amount == 1000
+
+    async def test_non_seat_to_seat_rejects_next_period(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        seat_product = await create_product_fixed_and_seat(
+            save_fixture,
+            organization=organization,
+            fixed_amount=0,
+            tiers=[{"min_seats": 3, "max_seats": None, "price_per_seat": 1000}],
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await subscription_service.calculate_change_preview(
+                session,
+                subscription,
+                product_id=seat_product.id,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
 
     async def test_seat_increase_at_half_period_charges_the_delta(
         self,

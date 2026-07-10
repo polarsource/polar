@@ -7,7 +7,7 @@ resolution-markers = [
 ]
 
 [options]
-exclude-newer = "2026-07-03T07:48:10.642009Z"
+exclude-newer = "2026-07-03T12:32:28.494865Z"
 exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
@@ -1247,6 +1247,11 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/e8/1d/f6d3ca1ad0725f2e08a1c6915640748a52de2e66596160a4d53b010cccf0/google_auth-2.55.1-py3-none-any.whl", hash = "sha256:eada68dfd52b3b81191827601e2a0c3fa12540c818534b630ddc5355769c3995", size = 252349, upload-time = "2026-06-25T23:38:52.946Z" },
 ]
 
+[package.optional-dependencies]
+requests = [
+    { name = "requests" },
+]
+
 [[package]]
 name = "googleapis-common-protos"
 version = "1.73.0"
@@ -2474,7 +2479,7 @@ dependencies = [
     { name = "fpdf2" },
     { name = "genai-prices" },
     { name = "githubkit" },
-    { name = "google-auth" },
+    { name = "google-auth", extra = ["requests"] },
     { name = "greenlet" },
     { name = "httpx" },
     { name = "httpx-oauth" },
@@ -2572,7 +2577,7 @@ requires-dist = [
     { name = "fpdf2", specifier = ">=2.8.3" },
     { name = "genai-prices", specifier = ">=0.0.67" },
     { name = "githubkit", specifier = "==0.16.0" },
-    { name = "google-auth", specifier = ">=2.38.0" },
+    { name = "google-auth", extras = ["requests"], specifier = ">=2.38.0" },
     { name = "greenlet", specifier = ">=3.5.2" },
     { name = "httpx", specifier = ">=0.23.0" },
     { name = "httpx-oauth", specifier = ">=0.17.0" },

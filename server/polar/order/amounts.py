@@ -5,7 +5,7 @@ import structlog
 
 from polar.enums import TaxBehavior, TaxBehaviorOption, TaxProcessor
 from polar.logging import Logger
-from polar.models import Customer, OrderItem, Product, Subscription
+from polar.models import Customer, Discount, OrderItem, Product, Subscription
 from polar.tax.calculation import (
     TaxBreakdownItem,
     TaxCalculation,
@@ -122,12 +122,12 @@ async def compute_order_amounts(
     items: Sequence[OrderItem],
     *,
     reference: str,
+    discount: Discount | None,
 ) -> OrderAmounts:
     customer = subscription.customer
 
     subtotal_amount = sum(item.amount for item in items)
 
-    discount = subscription.discount
     discount_amount = 0
     if discount is not None:
         # Discount only applies to cycle and meter items, as prorations

@@ -1336,7 +1336,7 @@ class OrderService:
         customer = subscription.customer
 
         amounts = await compute_order_amounts(
-            subscription, items, reference=str(order_id)
+            subscription, items, reference=str(order_id), discount=subscription.discount
         )
         total_amount = amounts.total_amount
 

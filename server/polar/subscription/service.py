@@ -1340,17 +1340,8 @@ class SubscriptionService:
         new_trial_end: datetime | None = None
         ends_trial = False
         if was_trialing:
-            assert subscription.trial_start is not None
-            if product.trial_interval is None or product.trial_interval_count is None:
-                ends_trial = True
-            else:
-                candidate_trial_end = product.trial_interval.get_end(
-                    subscription.trial_start, product.trial_interval_count
-                )
-                if candidate_trial_end <= utc_now():
-                    ends_trial = True
-                else:
-                    new_trial_end = candidate_trial_end
+            new_trial_end = self._resolve_trial_end(subscription, product)
+            ends_trial = new_trial_end is None
 
         # Add event for the subscription plan change
         event = await event_service.create_event(
@@ -2375,15 +2366,35 @@ class SubscriptionService:
                 },
             )
 
-        _, billing_entries = generate_subscription_update(
+        subscription_update, billing_entries = generate_subscription_update(
             subscription, proration_behavior, product=product, seats=seats
         )
 
-        charges_now = (
-            proration_behavior != SubscriptionProrationBehavior.next_period
-            and not subscription.trialing
-        )
-        if charges_now:
+        applies_now = proration_behavior != SubscriptionProrationBehavior.next_period
+
+        if applies_now and subscription.trialing:
+            # Ending the trial bills a full period of the new product; keeping it
+            # bills nothing today. Either way, a trial has no proration to surface.
+            if (
+                product is not None
+                and self._resolve_trial_end(subscription, product) is None
+            ):
+                subscription_update.apply_update()
+                return await self._preview_amounts(
+                    subscription,
+                    [
+                        LineItem(amount=spp.amount, discountable=True)
+                        for spp in subscription.subscription_product_prices
+                        if is_static_price(spp.product_price)
+                    ],
+                    prorations=[],
+                    proration_amount=0,
+                )
+            return await self._preview_amounts(
+                subscription, [], prorations=[], proration_amount=0
+            )
+
+        if applies_now:
             session.add(event)
             for entry in billing_entries:
                 entry.event = event
@@ -2409,6 +2420,33 @@ class SubscriptionService:
             proration_amount += line_item.amount
             items.append(LineItem(amount=line_item.amount, discountable=False))
 
+        return await self._preview_amounts(
+            subscription,
+            items,
+            prorations=prorations,
+            proration_amount=proration_amount,
+        )
+
+    def _resolve_trial_end(
+        self, subscription: Subscription, product: Product
+    ) -> datetime | None:
+        """The trial's end under `product`, or None when it ends immediately."""
+        assert subscription.trial_start is not None
+        if product.trial_interval is None or product.trial_interval_count is None:
+            return None
+        candidate_trial_end = product.trial_interval.get_end(
+            subscription.trial_start, product.trial_interval_count
+        )
+        return None if candidate_trial_end <= utc_now() else candidate_trial_end
+
+    async def _preview_amounts(
+        self,
+        subscription: Subscription,
+        items: Sequence[LineItem],
+        *,
+        prorations: Sequence[SubscriptionChargePreviewProration],
+        proration_amount: int,
+    ) -> SubscriptionChargePreview:
         amounts = await compute_order_amounts(
             subscription,
             items,
@@ -2420,7 +2458,7 @@ class SubscriptionService:
             base_amount=0,
             metered_amount=0,
             proration_amount=proration_amount,
-            prorations=prorations,
+            prorations=list(prorations),
             subtotal_amount=amounts.subtotal_amount,
             discount_amount=amounts.discount_amount,
             net_amount=amounts.net_amount,

@@ -9,6 +9,7 @@ from polar.enums import (
     SubscriptionProrationBehavior,
     SubscriptionRecurringInterval,
 )
+from polar.kit.trial import TrialInterval
 from polar.models import (
     BillingEntry,
     Customer,
@@ -25,6 +26,7 @@ from tests.fixtures.random_objects import (
     create_product,
     create_product_fixed_and_seat,
     create_subscription_with_seats,
+    create_trialing_subscription,
 )
 
 
@@ -95,6 +97,65 @@ class TestCalculateChangePreview:
         assert preview.proration_amount == 2000
         assert preview.subtotal_amount == 2000
         assert preview.total_amount == 2000
+
+    async def test_trial_ending_change_charges_a_full_period(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """Switching to a product without a trial ends the trial and bills a cycle."""
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(5000, "usd")],
+        )
+
+        preview = await subscription_service.calculate_change_preview(
+            session,
+            subscription,
+            product_id=new_product.id,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+
+        assert preview.prorations == []
+        assert preview.total_amount == 5000
+
+    async def test_trial_continuing_change_charges_nothing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_trialing_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(5000, "usd")],
+            trial_interval=TrialInterval.month,
+            trial_interval_count=3,
+        )
+
+        preview = await subscription_service.calculate_change_preview(
+            session,
+            subscription,
+            product_id=new_product.id,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+
+        assert preview.prorations == []
+        assert preview.total_amount == 0
 
     async def test_seat_increase_at_half_period_charges_the_delta(
         self,

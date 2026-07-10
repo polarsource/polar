@@ -29,7 +29,10 @@ _FALLBACK_PATH = Path(__file__).parent / "acceptable-use-policy.fallback.mdx"
 # lock).
 _FAILURE_RETRY_SECONDS = 60
 
-_cache: tuple[float, str] | None = None
+# (monotonic_timestamp, content, source) where source is "live" or "fallback".
+# The source is kept so a persistent misconfig (always serving the fallback)
+# stays visible in logs instead of masquerading as a transient stale-cache hit.
+_cache: tuple[float, str, str] | None = None
 _cache_lock = asyncio.Lock()
 
 
@@ -53,12 +56,19 @@ async def _get_access_token() -> str:
         # in `.doc`, which must not reach error tracking.
         raise AUPPolicyError("GOOGLE_SERVICE_ACCOUNT_JSON is not valid JSON.") from None
 
-    credentials = service_account.Credentials.from_service_account_info(
-        info, scopes=_SCOPES
-    )
-    # Credential refresh is synchronous (uses `requests`), so run it off the
-    # event loop.
-    await asyncio.to_thread(credentials.refresh, GoogleAuthRequest())
+    try:
+        credentials = service_account.Credentials.from_service_account_info(
+            info, scopes=_SCOPES
+        )
+        # Credential refresh is synchronous (uses `requests`), so run it off the
+        # event loop.
+        await asyncio.to_thread(credentials.refresh, GoogleAuthRequest())
+    except Exception:
+        # `from None`: google-auth/cryptography errors can carry key-adjacent
+        # detail; keep the raw exception out of logs / error tracking.
+        raise AUPPolicyError(
+            "Failed to authenticate the Google service account."
+        ) from None
     token = credentials.token
     if not token:
         raise AUPPolicyError("Failed to obtain a Google access token.")
@@ -115,19 +125,22 @@ async def fetch_policy_content() -> str:
         try:
             content = await _download_policy()
         except Exception as e:
-            # Degrade gracefully: last-good value if we have one, else the
-            # committed public-policy fallback.
-            degraded = cached[1] if cached is not None else _load_fallback_policy()
+            # Degrade gracefully. Serve the last *live* value if we ever fetched
+            # one; otherwise the committed public-policy fallback.
+            if cached is not None and cached[2] == "live":
+                degraded, source = cached[1], "live"
+            else:
+                degraded, source = _load_fallback_policy(), "fallback"
             log.warning(
                 "organization_review.policy.refresh_failed",
                 error=str(e),
-                served=("stale_cache" if cached is not None else "fallback"),
+                served=("stale_cache" if source == "live" else "fallback"),
             )
-            # Back off: age the timestamp so the next retry is
-            # ~_FAILURE_RETRY_SECONDS away instead of on the very next call.
-            retry_at = now - ttl + _FAILURE_RETRY_SECONDS
-            _cache = (min(now, retry_at), degraded)
+            # Back off: hold the degraded value for ~_FAILURE_RETRY_SECONDS (age
+            # the timestamp so it reads fresh for that long) before retrying, so a
+            # sustained failure doesn't refetch on every call.
+            _cache = (now - ttl + _FAILURE_RETRY_SECONDS, degraded, source)
             return degraded
 
-        _cache = (time.monotonic(), content)
+        _cache = (time.monotonic(), content, "live")
         return content

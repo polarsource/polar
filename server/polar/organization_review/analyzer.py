@@ -688,7 +688,19 @@ class ReviewAnalyzer:
             ReviewContext.PRODUCT_CHANGED: THRESHOLD_PREAMBLE,
         }.get(context)
 
-        policy_block = f"## Acceptable Use Policy\n\n{policy_content}"
+        policy_note = (
+            "The policy below is a live internal working document. It may "
+            "contain authoring scaffolding — a title banner, reading guide, "
+            "TODOs, editorial comments, assessment dates, section-status "
+            "labels (e.g. Hard/Soft AUP), and links to Slack or the "
+            "backoffice. Treat that scaffolding as context, not as rules: "
+            "base your decision on the actual prohibited/allowed categories "
+            "and their documented reasoning (Context/Why, Examples, Nuances). "
+            "Where a note records a decision or exception, honor it; where it "
+            "is an unresolved question or TODO, do not treat it as settled "
+            "policy."
+        )
+        policy_block = f"## Acceptable Use Policy\n\n{policy_note}\n\n{policy_content}"
         instructions = f"{preamble}\n\n{policy_block}" if preamble else policy_block
 
         try:

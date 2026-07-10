@@ -1,6 +1,5 @@
 import asyncio
 import json
-import re
 import time
 
 import httpx
@@ -13,51 +12,12 @@ log = structlog.get_logger(__name__)
 _DRIVE_EXPORT_URL = "https://www.googleapis.com/drive/v3/files/{file_id}/export"
 _SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 
-# The policy document begins at this heading; everything above it in the source
-# doc is authoring scaffolding (the "[Working Document]" banner, "How to read
-# this", the TODO list, and the colour legend).
-_START_MARKER = re.compile(r"^[#*\s]*Polar Acceptable Use Policy", re.IGNORECASE)
-# Everything from this heading onward is an internal parking lot, not policy.
-_END_MARKER = re.compile(r"^[#*\s]*Topics to discuss", re.IGNORECASE)
-# Internal governance metadata that adds nothing to the agent's reasoning.
-_DROP_LINE = re.compile(
-    r"^\s*[-*]?\s*\**\s*(Last Assessed|Reassessment Deadline)\b", re.IGNORECASE
-)
-# Collapse markdown links whose target points at internal tooling (Slack
-# permalinks, backoffice, Google Docs) down to their link text.
-_INTERNAL_LINK = re.compile(
-    r"\[([^\]]*)\]\(https?://[^)]*"
-    r"(?:slack\.com|backoffice\.polar\.sh|docs\.google\.com)[^)]*\)"
-)
-
 _cache: tuple[float, str] | None = None
 _cache_lock = asyncio.Lock()
 
 
 class AUPPolicyError(Exception):
     """Raised when the Acceptable Use Policy cannot be fetched."""
-
-
-def _strip_scaffolding(raw: str) -> str:
-    """Reduce the raw working-document export to the agent-facing policy.
-
-    Slices the document to the policy body, drops internal governance
-    metadata, and unwraps links to internal tooling. Best-effort: if the
-    boundary markers are missing (the doc was restructured), the text is
-    returned untouched rather than silently dropping the whole policy.
-    """
-    lines = raw.splitlines()
-
-    start = next((i for i, line in enumerate(lines) if _START_MARKER.match(line)), None)
-    end = next((i for i, line in enumerate(lines) if _END_MARKER.match(line)), None)
-    body = lines[start if start is not None else 0 : end if end is not None else None]
-
-    body = [
-        _INTERNAL_LINK.sub(r"\1", line) for line in body if not _DROP_LINE.match(line)
-    ]
-
-    cleaned = "\n".join(body).strip()
-    return cleaned or raw.strip()
 
 
 async def _get_access_token() -> str:
@@ -97,11 +57,16 @@ async def _download_policy() -> str:
         raise AUPPolicyError(
             f"Drive export failed ({response.status_code}): {response.text[:200]}"
         )
-    return _strip_scaffolding(response.text)
+    return response.text
 
 
 async def fetch_policy_content() -> str:
     """Return the Acceptable Use Policy, fetched from Google Drive and cached.
+
+    The document is a live internal working document, returned verbatim. The
+    review agent is told as much and reasons around any authoring notes,
+    comments, or open questions it contains — we deliberately don't try to
+    clean the source, since any structural assumption about it is fragile.
 
     The content is cached in-process for
     ``ORGANIZATION_REVIEW_AUP_CACHE_TTL_SECONDS``. If a refresh fails but a

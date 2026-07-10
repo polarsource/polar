@@ -11,11 +11,11 @@ import { MigrationStepper } from '../MigrationStepper'
 import { PrecheckPanel } from '../PrecheckPanel'
 import { ReviewTable } from '../review/ReviewTable'
 import {
-  currentStepKey,
+  currentStepDef,
+  currentVisibleIndex,
   MIGRATION_STEPS,
   MigrationStepDef,
   OWNER_LABELS,
-  stepPosition,
 } from '../steps'
 import { StripeMark } from '../StripeMark'
 
@@ -38,12 +38,11 @@ export default function MigrationDetailPage({
     isLoading,
     isError,
   } = useMerchantMigration(migrationId)
-
   const basePath = `/dashboard/${organization.slug}/settings/migrations`
 
   return (
-    <DashboardBody title="Migration">
-      <Box flexDirection="column" rowGap="2xl">
+    <DashboardBody title={null}>
+      <Box flexDirection="column" rowGap="l">
         <Link href={basePath}>
           <Box
             alignItems="center"
@@ -51,7 +50,7 @@ export default function MigrationDetailPage({
             color={{ base: 'text-secondary', hover: 'text-primary' }}
             cursor={{ hover: 'pointer' }}
           >
-            <ChevronLeft size={16} />
+            <ChevronLeft size={14} />
             <Text variant="caption" color="inherit">
               All migrations
             </Text>
@@ -72,9 +71,8 @@ export default function MigrationDetailPage({
           <Text color="muted">This migration no longer exists.</Text>
         ) : (
           <Box as="section" flexDirection="column" rowGap="xl">
-            <SourceChip migration={migration} />
+            <SourceHeader migration={migration} />
             <MigrationStepper migration={migration} />
-            <Divider />
             <StepContent migration={migration} />
           </Box>
         )}
@@ -83,67 +81,9 @@ export default function MigrationDetailPage({
   )
 }
 
-// The current step's work — nothing else. The review table carries its own
-// heading; the other states get a compact heading + the step's one action.
-function StepContent({
-  migration,
-}: {
-  migration: schemas['MerchantMigration']
-}) {
-  if (!migration.source_connected) {
-    return (
-      <Text variant="caption" color="muted">
-        Connect your Stripe account to start the migration.
-      </Text>
-    )
-  }
-  if (REVIEW_STEPS.includes(migration.step)) {
-    const step = stepPosition(currentStepKey(migration)) + 1
-    return (
-      <ReviewTable
-        migrationId={migration.id}
-        eyebrow={`Step ${step} of ${MIGRATION_STEPS.length}`}
-      />
-    )
-  }
-
-  const current = MIGRATION_STEPS.find(
-    (step) => step.step === currentStepKey(migration),
-  )
-  return (
-    <Box flexDirection="column" rowGap="l">
-      {current && <StepHeading def={current} />}
-      {migration.step === 'source_setup' ? (
-        <PrecheckPanel migrationId={migration.id} />
-      ) : (
-        <Text variant="caption" color="muted">
-          This step is being rolled out. We&apos;ll keep this page up to date.
-        </Text>
-      )}
-    </Box>
-  )
-}
-
-function StepHeading({ def }: { def: MigrationStepDef }) {
-  const owner = OWNER_LABELS[def.owner]
-  return (
-    <Box flexDirection="column" rowGap="xs">
-      <Box alignItems="center" columnGap="s">
-        <Text variant="heading-xs" as="h3">
-          {def.title}
-        </Text>
-        {owner && <Status status={owner} color="gray" size="small" />}
-      </Box>
-      <Text variant="caption" color="muted">
-        {def.description}
-      </Text>
-    </Box>
-  )
-}
-
-// A slim one-line source identity, not a hero banner: the page title and the
-// stepper already carry the weight, so the source is just context.
-function SourceChip({
+// The migration's source is the page's real subject, so it stands in for the
+// title — one line, no hero banner.
+function SourceHeader({
   migration,
 }: {
   migration: schemas['MerchantMigration']
@@ -153,8 +93,10 @@ function SourceChip({
   const livemode = migration.source?.livemode as boolean | undefined
   return (
     <Box alignItems="center" columnGap="s">
-      <StripeMark size={22} />
-      <Text variant="body">Stripe</Text>
+      <StripeMark size={26} />
+      <Text variant="heading-xs" as="h1">
+        Stripe
+      </Text>
       {stripeUserId && (
         <Text variant="caption" color="muted" monospace>
           {stripeUserId}
@@ -169,8 +111,60 @@ function SourceChip({
   )
 }
 
-function Divider() {
+function StepContent({
+  migration,
+}: {
+  migration: schemas['MerchantMigration']
+}) {
+  const eyebrow = `Step ${currentVisibleIndex(migration) + 1} of ${MIGRATION_STEPS.length}`
+
+  if (!migration.source_connected) {
+    return (
+      <Text variant="caption" color="muted">
+        Connect your Stripe account to start the migration.
+      </Text>
+    )
+  }
+  if (REVIEW_STEPS.includes(migration.step)) {
+    return <ReviewTable migrationId={migration.id} eyebrow={eyebrow} />
+  }
+
   return (
-    <Box borderTopWidth={1} borderStyle="solid" borderColor="border-primary" />
+    <Box flexDirection="column" rowGap="l">
+      <StepHeading def={currentStepDef(migration)} eyebrow={eyebrow} />
+      {migration.step === 'source_setup' ? (
+        <PrecheckPanel migrationId={migration.id} />
+      ) : (
+        <Text variant="caption" color="muted">
+          This step is being rolled out. We&apos;ll keep this page up to date.
+        </Text>
+      )}
+    </Box>
+  )
+}
+
+function StepHeading({
+  def,
+  eyebrow,
+}: {
+  def: MigrationStepDef
+  eyebrow: string
+}) {
+  const owner = OWNER_LABELS[def.owner]
+  return (
+    <Box flexDirection="column" rowGap="xs">
+      <Text variant="caption" color="muted">
+        {eyebrow}
+      </Text>
+      <Box alignItems="center" columnGap="s">
+        <Text variant="heading-xs" as="h3">
+          {def.title}
+        </Text>
+        {owner && <Status status={owner} color="gray" size="small" />}
+      </Box>
+      <Text variant="caption" color="muted">
+        {def.description}
+      </Text>
+    </Box>
   )
 }

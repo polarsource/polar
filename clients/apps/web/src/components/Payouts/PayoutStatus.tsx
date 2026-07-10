@@ -5,7 +5,7 @@ import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 const PayoutStatusDisplayTitle: Record<schemas['PayoutStatus'], string> = {
   succeeded: 'Succeeded',
   pending: 'Pending',
-  held: 'Held',
+  held: 'Held for review',
   failed: 'Failed',
   in_transit: 'In Transit',
   canceled: 'Canceled',

@@ -10,6 +10,7 @@ import React, { useCallback } from 'react'
 import { useModal } from '../Modal/useModal'
 import { Well, WellContent, WellFooter, WellHeader } from '../Shared/Well'
 import { FeeCreditGrantsModal } from './FeeCreditGrantsModal'
+import { HeldBalanceSummary } from './HeldBalanceSummary'
 import WithdrawModal from './WithdrawModal'
 
 interface AccountBalanceProps {
@@ -86,16 +87,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           </Text>
         </WellContent>
         <WellFooter>
-          {summary &&
-          summary.available_balance.amount !== summary.balance.amount ? (
-            <Text color="muted">
-              Held balance:{' '}
-              {formatCurrency('accounting')(
-                summary.balance.amount - summary.available_balance.amount,
-                summary.balance.currency,
-              )}
-            </Text>
-          ) : null}
+          <HeldBalanceSummary heldBalance={summary?.held_balance} />
         </WellFooter>
       </Well>
       <Well className="flex-1 justify-start rounded-2xl bg-gray-50 p-6">

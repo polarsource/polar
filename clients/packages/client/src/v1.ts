@@ -4824,8 +4824,6 @@ export interface paths {
     /**
      * Preview Subscription Change
      * @description Preview what a subscription change would cost, without applying it.
-     *
-     *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
     post: operations['customer_portal:subscriptions:preview_change']
     delete?: never
@@ -34110,6 +34108,28 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** UpdateSubscriptionPlanNotAllowed */
+    UpdateSubscriptionPlanNotAllowed: {
+      /**
+       * Error
+       * @example UpdateSubscriptionPlanNotAllowed
+       * @constant
+       */
+      error: 'UpdateSubscriptionPlanNotAllowed'
+      /** Detail */
+      detail: string
+    }
+    /** UpdateSubscriptionSeatsNotAllowed */
+    UpdateSubscriptionSeatsNotAllowed: {
+      /**
+       * Error
+       * @example UpdateSubscriptionSeatsNotAllowed
+       * @constant
+       */
+      error: 'UpdateSubscriptionSeatsNotAllowed'
+      /** Detail */
+      detail: string
+    }
     /**
      * UserDeletionBlockedReason
      * @description Reasons why a user account cannot be immediately deleted.
@@ -49495,13 +49515,16 @@ export interface operations {
           'application/json': components['schemas']['NotASeatBasedSubscription']
         }
       }
-      /** @description Forbidden */
+      /** @description Previewing this change is not allowed. */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['AlreadyCanceledSubscription']
+          'application/json':
+            | components['schemas']['AlreadyCanceledSubscription']
+            | components['schemas']['UpdateSubscriptionPlanNotAllowed']
+            | components['schemas']['UpdateSubscriptionSeatsNotAllowed']
         }
       }
       /** @description Customer subscription was not found. */

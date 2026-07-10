@@ -8,7 +8,6 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.sorting import Sorting, SortingGetter
-from polar.kit.visibility import Visibility
 from polar.models import Subscription
 from polar.openapi import APITag
 from polar.order.service import PaymentFailed
@@ -26,12 +25,13 @@ from .. import auth
 from ..schemas.subscription import (
     CustomerSubscription,
     CustomerSubscriptionChangePreview,
-    CustomerSubscriptionChangePreviewSeats,
     CustomerSubscriptionUpdate,
 )
 from ..service.subscription import (
     CustomerSubscriptionSortProperty,
     PauseResumeNotAllowed,
+    UpdateSubscriptionPlanNotAllowed,
+    UpdateSubscriptionSeatsNotAllowed,
 )
 from ..service.subscription import (
     customer_subscription as customer_subscription_service,
@@ -154,8 +154,13 @@ async def get_charge_preview(
     summary="Preview Subscription Change",
     response_model=SubscriptionChargePreview,
     responses={
-        403: {"model": AlreadyCanceledSubscription.schema()},
         400: {"model": NotASeatBasedSubscription.schema()},
+        403: {
+            "description": "Previewing this change is not allowed.",
+            "model": AlreadyCanceledSubscription.schema()
+            | UpdateSubscriptionPlanNotAllowed.schema()
+            | UpdateSubscriptionSeatsNotAllowed.schema(),
+        },
         404: SubscriptionNotFound,
     },
     tags=[APITag.private],
@@ -163,7 +168,7 @@ async def get_charge_preview(
 async def preview_change(
     id: SubscriptionID,
     change: CustomerSubscriptionChangePreview,
-    auth_subject: auth.CustomerPortalUnionRead,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> SubscriptionChargePreview:
     """Preview what a subscription change would cost, without applying it."""
@@ -174,19 +179,8 @@ async def preview_change(
     if subscription is None:
         raise ResourceNotFound()
 
-    if isinstance(change, CustomerSubscriptionChangePreviewSeats):
-        return await subscription_service.calculate_change_preview(
-            session,
-            subscription,
-            seats=change.seats,
-            proration_behavior=change.proration_behavior,
-        )
-
-    return await subscription_service.calculate_change_preview(
-        session,
-        subscription,
-        product_id=change.product_id,
-        allowed_visibilities=frozenset({Visibility.public}),
+    return await customer_subscription_service.preview_change(
+        session, subscription, change=change
     )
 
 

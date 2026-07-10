@@ -5,6 +5,7 @@ import pytest
 
 from polar.auth.models import AuthSubject
 from polar.customer_portal.schemas.subscription import (
+    CustomerSubscriptionChangePreviewProduct,
     CustomerSubscriptionPause,
     CustomerSubscriptionResume,
     CustomerSubscriptionUpdateClear,
@@ -297,6 +298,29 @@ class TestUpdate:
                 session,
                 subscription,
                 updates=CustomerSubscriptionUpdateSeats(seats=100),
+            )
+
+    async def test_preview_change_not_allowed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+        product_second: Product,
+        organization: Organization,
+    ) -> None:
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "subscription": {"update_seats": False, "update_plan": False},
+        }
+        await save_fixture(organization)
+
+        with pytest.raises(UpdateSubscriptionPlanNotAllowed):
+            await customer_subscription_service.preview_change(
+                session,
+                subscription,
+                change=CustomerSubscriptionChangePreviewProduct(
+                    product_id=product_second.id
+                ),
             )
 
     @pytest.mark.keep_session_state

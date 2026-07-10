@@ -1,6 +1,8 @@
 import asyncio
+import functools
 import json
 import time
+from pathlib import Path
 
 import httpx
 import structlog
@@ -14,6 +16,13 @@ log = structlog.get_logger(__name__)
 _DRIVE_EXPORT_URL = "https://www.googleapis.com/drive/v3/files/{file_id}/export"
 _SCOPES = ["https://www.googleapis.com/auth/drive.readonly"]
 
+# Committed snapshot of the public Acceptable Use Policy, served when the live
+# document can't be fetched (Drive outage, misconfigured/absent service account,
+# empty export) and nothing is cached yet. Keeps reviews running on a known-good,
+# conservative policy instead of failing. Public policy only — never the internal
+# working document (this is a public repo).
+_FALLBACK_PATH = Path(__file__).parent / "acceptable-use-policy.fallback.mdx"
+
 # When a refresh fails but a stale value exists, serve the stale value and only
 # retry this often, so a sustained Drive outage doesn't make every review
 # re-attempt the fetch (each paying a token refresh + HTTP timeout under the
@@ -26,6 +35,11 @@ _cache_lock = asyncio.Lock()
 
 class AUPPolicyError(Exception):
     """Raised when the Acceptable Use Policy cannot be fetched."""
+
+
+@functools.cache
+def _load_fallback_policy() -> str:
+    return _FALLBACK_PATH.read_text(encoding="utf-8")
 
 
 async def _get_access_token() -> str:
@@ -79,10 +93,10 @@ async def fetch_policy_content() -> str:
     clean the source, since any structural assumption about it is fragile.
 
     The content is cached in-process for
-    ``ORGANIZATION_REVIEW_AUP_CACHE_TTL_SECONDS``. If a refresh fails but a
-    previously fetched value is available, the stale value is served (with a
-    short retry backoff) so a transient Drive/Google outage doesn't block
-    reviews.
+    ``ORGANIZATION_REVIEW_AUP_CACHE_TTL_SECONDS``. If a refresh fails, the last
+    good value is served when available, otherwise the committed public-policy
+    fallback — so a Drive outage, an unset service account, or an empty export
+    never blocks reviews. Either degraded path backs off before retrying.
     """
     global _cache
     ttl = settings.ORGANIZATION_REVIEW_AUP_CACHE_TTL_SECONDS
@@ -101,18 +115,19 @@ async def fetch_policy_content() -> str:
         try:
             content = await _download_policy()
         except Exception as e:
-            if cached is not None:
-                log.warning(
-                    "organization_review.policy.refresh_failed",
-                    error=str(e),
-                )
-                # Keep serving the last-good value but back off: age the
-                # timestamp so the next retry is ~_FAILURE_RETRY_SECONDS away
-                # instead of on the very next call.
-                retry_at = now - ttl + _FAILURE_RETRY_SECONDS
-                _cache = (min(now, retry_at), cached[1])
-                return cached[1]
-            raise
+            # Degrade gracefully: last-good value if we have one, else the
+            # committed public-policy fallback.
+            degraded = cached[1] if cached is not None else _load_fallback_policy()
+            log.warning(
+                "organization_review.policy.refresh_failed",
+                error=str(e),
+                served=("stale_cache" if cached is not None else "fallback"),
+            )
+            # Back off: age the timestamp so the next retry is
+            # ~_FAILURE_RETRY_SECONDS away instead of on the very next call.
+            retry_at = now - ttl + _FAILURE_RETRY_SECONDS
+            _cache = (min(now, retry_at), degraded)
+            return degraded
 
         _cache = (time.monotonic(), content)
         return content

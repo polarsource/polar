@@ -29,5 +29,11 @@ generate-all:
 release version:
   uv run -m cli release {{version}}
 
+release-pre version prerelease:
+  uv run -m cli release {{version}} --prerelease {{prerelease}}
+
 release-dry version:
   uv run -m cli release --dry-run {{version}}
+
+release-pre-dry version prerelease:
+  uv run -m cli release --dry-run {{version}} --prerelease {{prerelease}}

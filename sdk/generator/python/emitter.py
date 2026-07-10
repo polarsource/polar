@@ -1,7 +1,7 @@
 import pathlib
 
 from generator.casing import to_snake_case
-from generator.emitter import EmitterBase
+from generator.emitter import EmitterBase, Prerelease
 from generator.ir import (
     APIIR,
     APIVersion,
@@ -64,8 +64,19 @@ def _collect_type_ref_names(
 
 
 class PythonEmitter(EmitterBase):
-    def __init__(self, ir: APIIR, version: str) -> None:
-        super().__init__(ir, version, EMITTER_DIRECTORY / "template")
+    def __init__(
+        self, ir: APIIR, version: str, *, prerelease: Prerelease | None = None
+    ) -> None:
+        super().__init__(
+            ir, version, EMITTER_DIRECTORY / "template", prerelease=prerelease
+        )
+
+    def format_version(self) -> str:
+        """Return the SDK version in PEP 440 notation (e.g. '1.2.3a1', '1.2.3b2', '1.2.3rc3')."""
+        if self.prerelease is None:
+            return self.version
+        _pep440: dict[str, str] = {"alpha": "a", "beta": "b", "rc": "rc"}
+        return f"{self.version}{_pep440[self.prerelease.label]}{self.prerelease.number}"
 
     def emit(self, root_directory: pathlib.Path | str) -> None:
         """Emit the Python SDK files to the specified root directory."""

@@ -23,6 +23,8 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_product,
+    create_product_fixed_and_seat,
+    create_subscription_with_seats,
 )
 
 
@@ -93,6 +95,75 @@ class TestCalculateChangePreview:
         assert preview.proration_amount == 2000
         assert preview.subtotal_amount == 2000
         assert preview.total_amount == 2000
+
+    async def test_seat_increase_at_half_period_charges_the_delta(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        seat_product = await create_product_fixed_and_seat(
+            save_fixture,
+            organization=organization,
+            fixed_amount=0,
+            price_per_seat=1000,
+        )
+
+        with freezegun.freeze_time(datetime(2025, 1, 16, 12, tzinfo=UTC)):
+            subscription = await create_subscription_with_seats(
+                save_fixture,
+                product=seat_product,
+                customer=customer,
+                seats=10,
+                current_period_start=datetime(2025, 1, 1, tzinfo=UTC),
+                current_period_end=datetime(2025, 2, 1, tzinfo=UTC),
+            )
+
+            preview = await subscription_service.calculate_change_preview(
+                session,
+                subscription,
+                seats=12,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+
+        # Half a cycle of two extra seats at 1000 each.
+        assert preview.proration_amount == 1000
+        assert preview.total_amount == 1000
+
+    async def test_seat_preview_persists_nothing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        seat_product = await create_product_fixed_and_seat(
+            save_fixture,
+            organization=organization,
+            fixed_amount=0,
+            price_per_seat=1000,
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=seat_product, customer=customer, seats=10
+        )
+        subscription_id = subscription.id
+
+        await subscription_service.calculate_change_preview(
+            session,
+            subscription,
+            seats=12,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        assert await session.scalar(select(func.count()).select_from(BillingEntry)) == 0
+        assert (
+            await session.scalar(
+                select(Subscription.seats).where(Subscription.id == subscription_id)
+            )
+            == 10
+        )
 
     async def test_preview_persists_nothing(
         self,

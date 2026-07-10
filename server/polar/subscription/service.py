@@ -2318,6 +2318,145 @@ class SubscriptionService:
             total_amount=amounts.total_amount,
         )
 
+    async def calculate_change_preview(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        product_id: uuid.UUID | None = None,
+        seats: int | None = None,
+        proration_behavior: SubscriptionProrationBehavior | None = None,
+        allowed_visibilities: frozenset[Visibility] = frozenset(Visibility),
+    ) -> SubscriptionChargePreview:
+        # The change is applied inside a savepoint: the preview prices the rows the
+        # invoice would bill.
+        nested = await session.begin_nested()
+        try:
+            return await self._compute_change_preview(
+                session,
+                subscription,
+                product_id=product_id,
+                seats=seats,
+                proration_behavior=proration_behavior,
+                allowed_visibilities=allowed_visibilities,
+            )
+        finally:
+            await nested.rollback()
+
+    async def _compute_change_preview(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        product_id: uuid.UUID | None,
+        seats: int | None,
+        proration_behavior: SubscriptionProrationBehavior | None,
+        allowed_visibilities: frozenset[Visibility],
+    ) -> SubscriptionChargePreview:
+        assert (product_id is None) != (seats is None), "exactly one change per preview"
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            subscription.product.organization_id
+        )
+        assert organization is not None
+        if proration_behavior is None:
+            proration_behavior = organization.proration_behavior
+
+        product: Product | None = None
+        if product_id is not None:
+            product, _ = await self.validate_product_change(
+                session,
+                subscription,
+                product_id=product_id,
+                allowed_visibilities=allowed_visibilities,
+            )
+            event = build_system_event(
+                SystemEvent.subscription_product_updated,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata={
+                    "subscription_id": str(subscription.id),
+                    "old_product_id": str(subscription.product.id),
+                    "new_product_id": str(product.id),
+                },
+            )
+        else:
+            assert seats is not None
+            await self.validate_seats_change(session, subscription, seats=seats)
+            event = build_system_event(
+                SystemEvent.subscription_seats_updated,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata={
+                    "subscription_id": str(subscription.id),
+                    "old_seats": subscription.seats or 1,
+                    "new_seats": seats,
+                    "proration_behavior": proration_behavior.value,
+                },
+            )
+
+        _, billing_entries = generate_subscription_update(
+            subscription, proration_behavior, product=product, seats=seats
+        )
+
+        charges_now = (
+            proration_behavior != SubscriptionProrationBehavior.next_period
+            and not subscription.trialing
+        )
+        if charges_now:
+            session.add(event)
+            for entry in billing_entries:
+                entry.event = event
+                session.add(entry)
+            await session.flush()
+
+        prorations: list[SubscriptionChargePreviewProration] = []
+        proration_amount = 0
+        items: list[OrderItem] = []
+        async for (
+            line_item,
+            _,
+        ) in billing_entry_service.compute_pending_subscription_line_items(
+            session, subscription
+        ):
+            if not line_item.proration:
+                continue
+            prorations.append(
+                SubscriptionChargePreviewProration(
+                    label=line_item.label, amount=line_item.amount
+                )
+            )
+            proration_amount += line_item.amount
+            items.append(
+                OrderItem(
+                    label=line_item.label,
+                    amount=line_item.amount,
+                    net_amount=line_item.amount,
+                    tax_amount=0,
+                    proration=True,
+                )
+            )
+
+        amounts = await compute_order_amounts(
+            subscription,
+            items,
+            reference=str(subscription.id),
+            discount=subscription.discount,
+        )
+
+        return SubscriptionChargePreview(
+            base_amount=0,
+            metered_amount=0,
+            proration_amount=proration_amount,
+            prorations=prorations,
+            subtotal_amount=amounts.subtotal_amount,
+            discount_amount=amounts.discount_amount,
+            net_amount=amounts.net_amount,
+            tax_amount=amounts.tax_amount,
+            total_amount=amounts.total_amount,
+        )
+
     async def _after_subscription_updated(
         self,
         session: AsyncSession,

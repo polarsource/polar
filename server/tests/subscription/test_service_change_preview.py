@@ -1,0 +1,141 @@
+from datetime import UTC, datetime
+
+import freezegun
+import pytest
+from pytest_mock import MockerFixture
+from sqlalchemy import func, select
+
+from polar.enums import (
+    SubscriptionProrationBehavior,
+    SubscriptionRecurringInterval,
+)
+from polar.models import (
+    BillingEntry,
+    Customer,
+    Event,
+    Organization,
+    Product,
+    Subscription,
+)
+from polar.postgres import AsyncSession
+from polar.subscription.service import subscription as subscription_service
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import (
+    create_active_subscription,
+    create_product,
+)
+
+
+@pytest.mark.asyncio
+class TestCalculateChangePreview:
+    async def test_product_upgrade_prices_the_proration(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(5000, "usd")],
+        )
+
+        preview = await subscription_service.calculate_change_preview(
+            session,
+            subscription,
+            product_id=new_product.id,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+
+        # A credit for the old product and a debit for the new one.
+        assert len(preview.prorations) == 2
+        assert preview.proration_amount > 0
+        assert preview.total_amount == preview.proration_amount
+
+    async def test_upgrade_at_half_period_prices_half_of_each(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        with freezegun.freeze_time(datetime(2025, 1, 16, 12, tzinfo=UTC)):
+            subscription = await create_active_subscription(
+                save_fixture,
+                product=product,
+                customer=customer,
+                current_period_start=datetime(2025, 1, 1, tzinfo=UTC),
+                current_period_end=datetime(2025, 2, 1, tzinfo=UTC),
+            )
+            new_product = await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[(5000, "usd")],
+            )
+
+            preview = await subscription_service.calculate_change_preview(
+                session,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+
+        # Exactly half the cycle remains: credit half of 1000, charge half of 5000.
+        assert sorted(p.amount for p in preview.prorations) == [-500, 2500]
+        assert preview.proration_amount == 2000
+        assert preview.subtotal_amount == 2000
+        assert preview.total_amount == 2000
+
+    async def test_preview_persists_nothing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # A queued event would outlive the rollback.
+        enqueue_events_mock = mocker.patch("polar.event.service.enqueue_events")
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription_id = subscription.id
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(5000, "usd")],
+        )
+        events_before = await session.scalar(select(func.count()).select_from(Event))
+
+        await subscription_service.calculate_change_preview(
+            session,
+            subscription,
+            product_id=new_product.id,
+            proration_behavior=SubscriptionProrationBehavior.prorate,
+        )
+        await session.flush()
+
+        assert await session.scalar(select(func.count()).select_from(BillingEntry)) == 0
+        assert (
+            await session.scalar(select(func.count()).select_from(Event))
+            == events_before
+        )
+        assert (
+            await session.scalar(
+                select(Subscription.product_id).where(
+                    Subscription.id == subscription_id
+                )
+            )
+            == product.id
+        )
+        enqueue_events_mock.assert_not_called()

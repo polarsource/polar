@@ -1,6 +1,10 @@
 'use client'
 
-import { isOrderDunningFailed, isPaymentNonRecoverable } from '@/utils/order'
+import {
+  getLatestFailedPayment,
+  isOrderDunningFailed,
+  isOrderNonRecoverable,
+} from '@/utils/order'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -63,7 +67,7 @@ const BannerColumn = ({
 
 const ColumnHeading = ({
   label,
-  datetime = null,
+  datetime,
   resolution = 'day',
 }: {
   label: string
@@ -129,19 +133,8 @@ export const OrderCalloutBanner = ({
   payments,
 }: OrderCalloutBannerProps) => {
   const dunningFailed = isOrderDunningFailed(order, subscription, payments)
-
-  const latestFailedPayment =
-    payments
-      .filter((payment) => payment.status === 'failed')
-      .toSorted(
-        (a, b) =>
-          parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime(),
-      )[0] ?? null
-
-  const nonRecoverable =
-    !dunningFailed &&
-    latestFailedPayment !== null &&
-    isPaymentNonRecoverable(latestFailedPayment)
+  const latestFailedPayment = getLatestFailedPayment(payments)
+  const nonRecoverable = isOrderNonRecoverable(order, subscription, payments)
 
   const pastDueAt = subscription.past_due_at
     ? parseISO(subscription.past_due_at)

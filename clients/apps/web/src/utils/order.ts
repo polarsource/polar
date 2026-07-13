@@ -1,4 +1,5 @@
 import { Client, schemas, unwrap } from '@polar-sh/client'
+import { parseISO } from 'date-fns'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
 
@@ -102,3 +103,32 @@ const UNRECOVERABLE_DECLINE_CODES = new Set([
 export const isPaymentNonRecoverable = (payment: schemas['Payment']): boolean =>
   payment.decline_reason !== null &&
   UNRECOVERABLE_DECLINE_CODES.has(payment.decline_reason)
+
+export function getLatestFailedPayment(
+  payments: schemas['Payment'][],
+): schemas['Payment'] | null {
+  return (
+    payments
+      .filter((payment) => payment.status === 'failed')
+      .toSorted(
+        (a, b) =>
+          parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime(),
+      )[0] ?? null
+  )
+}
+
+export function isOrderNonRecoverable(
+  order: schemas['Order'],
+  subscription: schemas['Subscription'],
+  payments: schemas['Payment'][],
+): boolean {
+  if (isOrderDunningFailed(order, subscription, payments)) {
+    return false
+  }
+
+  const latestFailedPayment = getLatestFailedPayment(payments)
+
+  return (
+    latestFailedPayment !== null && isPaymentNonRecoverable(latestFailedPayment)
+  )
+}

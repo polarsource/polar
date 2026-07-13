@@ -2511,9 +2511,8 @@ class TestRevokeAllSeatsForSubscription:
         """Seats are revoked even when the organization is blocked.
 
         This happens when a wound-down organization's subscriptions are
-        auto-cancelled: the organization is blocked, and the feature check must
-        still be able to read it, otherwise it raises FeatureNotEnabled and
-        breaks the cancellation.
+        auto-cancelled: the organization is blocked, but its seats must still
+        be revocable.
         """
         customer = await create_customer(
             save_fixture,

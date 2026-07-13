@@ -61,12 +61,6 @@ class InvalidInvitationToken(SeatError):
         super().__init__(message, 400)
 
 
-class FeatureNotEnabled(SeatError):
-    def __init__(self) -> None:
-        message = "Seat-based pricing is not enabled for this organization"
-        super().__init__(message, 403)
-
-
 class SeatAlreadyAssigned(SeatError):
     def __init__(self, customer_email: str) -> None:
         self.customer_email = customer_email
@@ -217,26 +211,11 @@ class SeatService:
                 seat,
             )
 
-    async def check_seat_feature_enabled(
-        self, session: AsyncReadSession, organization_id: uuid.UUID
-    ) -> None:
-        from polar.organization.repository import OrganizationRepository
-
-        organization_repository = OrganizationRepository.from_session(session)
-        organization = await organization_repository.get_by_id(
-            organization_id, include_blocked=True
-        )
-        if not organization:
-            raise FeatureNotEnabled()
-
     async def list_seats(
         self,
         session: AsyncReadSession,
         container: SeatContainer,
     ) -> Sequence[CustomerSeat]:
-        await self.check_seat_feature_enabled(
-            session, self._get_organization_id(container)
-        )
         repository = CustomerSeatRepository.from_session(session)
         return await repository.list_by_container(
             container,
@@ -248,9 +227,6 @@ class SeatService:
         session: AsyncReadSession,
         container: SeatContainer,
     ) -> int:
-        await self.check_seat_feature_enabled(
-            session, self._get_organization_id(container)
-        )
         repository = CustomerSeatRepository.from_session(session)
         return await repository.get_available_seats_count_for_container(container)
 
@@ -285,8 +261,6 @@ class SeatService:
         billing_manager_customer = container.customer
         billing_customer_id = container.customer_id
         is_subscription = self._is_subscription(container)
-
-        await self.check_seat_feature_enabled(session, organization_id)
 
         if isinstance(container, Order) and container.status == OrderStatus.pending:
             raise SeatNotAvailable(
@@ -475,8 +449,6 @@ class SeatService:
         organization_id = product.organization_id
         product_id = product.id
 
-        await self.check_seat_feature_enabled(session, organization_id)
-
         # Validate seat has required data
         if not seat.customer_id:
             raise InvalidInvitationToken(invitation_token)
@@ -576,19 +548,14 @@ class SeatService:
     ) -> CustomerSeat:
         # Get product and organization from either subscription or order
         if seat.subscription_id and seat.subscription:
-            organization_id = seat.subscription.product.organization_id
             product_id = seat.subscription.product_id
             organization = seat.subscription.product.organization
         elif seat.order_id and seat.order and seat.order.product_id:
-            organization_id = seat.order.organization.id
             product_id = seat.order.product_id
             organization = seat.order.organization
         else:
             raise ValueError("Seat must have either subscription or order")
 
-        await self.check_seat_feature_enabled(session, organization_id)
-
-        # Check feature flag
         member_model_enabled = organization.is_member_model_enabled
 
         # Capture customer_id and member_id before clearing to avoid race condition
@@ -660,15 +627,14 @@ class SeatService:
         if not seat:
             return None
 
-        # Get organization_id from either subscription or order
-        if seat.subscription_id and seat.subscription:
-            organization_id = seat.subscription.product.organization_id
-        elif seat.order_id and seat.order:
-            organization_id = seat.order.organization.id
-        else:
+        # A seat must belong to either a subscription or an order.
+        has_container = bool(
+            (seat.subscription_id and seat.subscription)
+            or (seat.order_id and seat.order)
+        )
+        if not has_container:
             return None
 
-        await self.check_seat_feature_enabled(session, organization_id)
         return seat
 
     async def resend_invitation(
@@ -678,19 +644,15 @@ class SeatService:
     ) -> CustomerSeat:
         # Get product info and organization from either subscription or order
         if seat.subscription_id and seat.subscription and seat.subscription.product:
-            organization_id = seat.subscription.product.organization_id
             organization = seat.subscription.product.organization
             product_name = seat.subscription.product.name
             billing_customer = seat.subscription.customer
         elif seat.order_id and seat.order and seat.order.product:
-            organization_id = seat.order.product.organization_id
             organization = seat.order.organization
             product_name = seat.order.product.name
             billing_customer = seat.order.customer
         else:
             raise ValueError("Seat must have either subscription or order")
-
-        await self.check_seat_feature_enabled(session, organization_id)
 
         if not seat.is_pending():
             raise SeatNotPending()

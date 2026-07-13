@@ -44,7 +44,7 @@ router = APIRouter(
     responses={
         400: {"description": "No available seats or customer already has a seat"},
         401: {"description": "Authentication required"},
-        403: {"description": "Not permitted or seat-based pricing not enabled"},
+        403: {"description": "Not permitted"},
         404: {"description": "Subscription, order, or customer not found"},
     },
 )
@@ -109,7 +109,7 @@ async def assign_seat(
     response_model=SeatsList,
     responses={
         401: {"description": "Authentication required"},
-        403: {"description": "Not permitted or seat-based pricing not enabled"},
+        403: {"description": "Not permitted"},
         404: {"description": "Subscription or order not found"},
     },
 )
@@ -175,7 +175,7 @@ async def list_seats(
     response_model=CustomerSeatSchema,
     responses={
         401: {"description": "Authentication required"},
-        403: {"description": "Not permitted or seat-based pricing not enabled"},
+        403: {"description": "Not permitted"},
         404: {"description": "Seat not found"},
     },
 )
@@ -196,15 +196,6 @@ async def revoke_seat(
     if not seat:
         raise ResourceNotFound("Seat not found")
 
-    if seat.subscription:
-        organization_id = seat.subscription.product.organization_id
-    elif seat.order:
-        organization_id = seat.order.organization.id
-    else:
-        raise ResourceNotFound("Seat has no subscription or order")
-
-    await seat_service.check_seat_feature_enabled(session, organization_id)
-
     return await seat_service.revoke_seat(session, seat)
 
 
@@ -215,7 +206,7 @@ async def revoke_seat(
     responses={
         400: {"description": "Seat is not pending or already claimed"},
         401: {"description": "Authentication required"},
-        403: {"description": "Not permitted or seat-based pricing not enabled"},
+        403: {"description": "Not permitted"},
         404: {"description": "Seat not found"},
     },
 )
@@ -236,15 +227,6 @@ async def resend_invitation(
     if not seat:
         raise ResourceNotFound("Seat not found")
 
-    if seat.subscription:
-        organization_id = seat.subscription.product.organization_id
-    elif seat.order:
-        organization_id = seat.order.organization.id
-    else:
-        raise ResourceNotFound("Seat has no subscription or order")
-
-    await seat_service.check_seat_feature_enabled(session, organization_id)
-
     return await seat_service.resend_invitation(session, seat)
 
 
@@ -254,7 +236,6 @@ async def resend_invitation(
     response_model=SeatClaimInfo,
     responses={
         400: {"description": "Invalid or expired invitation token"},
-        403: {"description": "Seat-based pricing not enabled for organization"},
         404: {"description": "Seat not found"},
     },
 )
@@ -273,8 +254,6 @@ async def get_claim_info(
         product = seat.order.product
     else:
         raise ResourceNotFound("Seat has no subscription or order")
-
-    await seat_service.check_seat_feature_enabled(session, product.organization_id)
 
     organization_repository = OrganizationRepository.from_session(session)
     organization = await organization_repository.get_by_id(product.organization_id)
@@ -326,7 +305,6 @@ async def claim_stream(
     response_model=CustomerSeatClaimResponse,
     responses={
         400: {"description": "Invalid, expired, or already claimed token"},
-        403: {"description": "Seat-based pricing not enabled for organization"},
     },
 )
 async def claim_seat(

@@ -12,6 +12,7 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
@@ -1035,9 +1036,9 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             "s3_public_bucket": s3_public_bucket(instance),
         }
         if json_output:
-            # Plain print (not console.print_json) so piped output stays clean
-            # JSON with no Rich styling or width-based line wrapping.
-            print(json.dumps(info, indent=2))
+            # Write straight to stdout (not console.print_json) so piped output
+            # stays clean JSON with no Rich styling or width-based wrapping.
+            sys.stdout.write(json.dumps(info, indent=2) + "\n")
             return
         console.print(
             f"[bold]Instance {instance}[/bold] (project {app_project(instance)})"
@@ -1102,9 +1103,10 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 }}
 """
         if stdout:
-            # Plain print (not console.print) so Rich doesn't wrap long lines
-            # at the console width and corrupt the JSON. content ends with "\n".
-            print(content, end="")
+            # Write straight to stdout (not console.print) so Rich doesn't wrap
+            # long lines at the console width and corrupt the JSON. content
+            # already ends with "\n".
+            sys.stdout.write(content)
             return
         target = ROOT_DIR / ".claude" / "launch.json"
         target.parent.mkdir(parents=True, exist_ok=True)

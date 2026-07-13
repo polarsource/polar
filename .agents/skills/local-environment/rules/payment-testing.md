@@ -36,7 +36,7 @@ checkout testing without onboarding work.
 
 ```bash
 dev stripe --listen
-# or, for a non-default instance, pass the API port shown by `dev docker up`:
+# or, for a non-default instance, pass the API port from `dev docker ports`:
 dev stripe --listen --port <api-port>
 ```
 

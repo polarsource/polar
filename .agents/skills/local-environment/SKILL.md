@@ -92,14 +92,15 @@ Discover the exact host ports for the current worktree with `dev docker ports`.
 
 ## Instance port mapping
 
-Only api and web get host ports: `Port = Base + (Instance × 100)` for instances
-1–99. Instance 0 uses the legacy `8000` / `3000`.
+Only api and web get host ports: `Port = Base + Instance` (Base 8100 for api,
+3100 for web) for instances 1–99. Instance 0 uses the legacy `8000` / `3000`.
 
 | Instance | API | Web |
 |----------|-----|-----|
 | 0 | 8000 | 3000 |
-| 1 | 8100 | 3100 |
-| 2 | 8200 | 3200 |
+| 1 | 8101 | 3101 |
+| 2 | 8102 | 3102 |
+| 5 | 8105 | 3105 |
 
 Everything else is per-instance but not on a host port: database `polar_dev_<N>`,
 redis DB index `<N>`, buckets `polar-s3-<N>` / `polar-s3-public-<N>`. Reach them

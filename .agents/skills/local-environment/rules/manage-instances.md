@@ -27,14 +27,15 @@ ports don't exist in this model.
 
 | Service | Instance 0 | Instance 1 | Instance 2 |
 |---------|------------|------------|------------|
-| API (host) | 8000 | 8100 | 8200 |
-| Web (host) | 3000 | 3100 | 3200 |
+| API (host) | 8000 | 8101 | 8102 |
+| Web (host) | 3000 | 3101 | 3102 |
 | DB (logical) | `polar_dev_0` | `polar_dev_1` | `polar_dev_2` |
 | Redis (DB index) | 0 | 1 | 2 |
 | S3 bucket | `polar-s3-0` | `polar-s3-1` | `polar-s3-2` |
 
-**Host-port formula (api/web only):** `Port = Base + (Instance × 100)`, for
-instances 1–99. Instance 0 uses the legacy `8000`/`3000`.
+**Host-port formula (api/web only):** `Port = Base + Instance` (Base 8100 for
+api, 3100 for web), for instances 1–99. Instance 0 uses the legacy `8000`/`3000`.
+So instance 5 is api `8105` / web `3105`.
 
 Run `dev docker ports` in a worktree to print its resolved instance and URLs.
 

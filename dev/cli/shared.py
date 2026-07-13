@@ -68,6 +68,12 @@ def check_command_exists(cmd: str) -> bool:
     return shutil.which(cmd) is not None
 
 
+def is_docker_running() -> bool:
+    """Check if the Docker daemon is reachable."""
+    result = run_command(["docker", "info"], capture=True)
+    return result is not None and result.returncode == 0
+
+
 def get_command_version(cmd: str, version_flag: str = "--version") -> str | None:
     """Get the version of a command."""
     result = run_command([cmd, version_flag], capture=True)

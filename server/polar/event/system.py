@@ -216,6 +216,7 @@ class SubscriptionCreatedEvent(Event):
 class SubscriptionUpdatedMetadataFields(TypedDict, total=False):
     product_id: str
     proration_behavior: SubscriptionProrationBehavior
+    requested_proration_behavior: SubscriptionProrationBehavior
     discount_id: str | None
     trial_end: str
     seats: int

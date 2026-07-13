@@ -27353,7 +27353,7 @@ export interface components {
        * PublicSubscriptionProrationBehavior
        * @enum {string}
        */
-      proration_behavior: 'invoice' | 'prorate' | 'next_period'
+      proration_behavior: 'invoice' | 'prorate' | 'next_period' | 'auto'
       /** Benefit Revocation Grace Period */
       benefit_revocation_grace_period: number
       /** Prevent Trial Abuse */
@@ -32414,6 +32414,7 @@ export interface components {
       | 'invoice'
       | 'prorate'
       | 'next_period'
+      | 'auto'
       | 'reset'
     /**
      * SubscriptionReactivatedEvent
@@ -33173,6 +33174,7 @@ export interface components {
       /** Product Id */
       product_id?: string
       proration_behavior?: components['schemas']['SubscriptionProrationBehavior']
+      requested_proration_behavior?: components['schemas']['SubscriptionProrationBehavior']
       /** Discount Id */
       discount_id?: string | null
       /** Trial End */
@@ -63409,7 +63411,7 @@ export const organizationStatusValues: ReadonlyArray<
 ]
 export const organizationSubscriptionSettingsProration_behaviorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationSubscriptionSettings']['proration_behavior']
-> = ['invoice', 'prorate', 'next_period']
+> = ['invoice', 'prorate', 'next_period', 'auto']
 export const organizationUpdateCountryAnyOf0Values: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationUpdate']['country']
 > = [
@@ -64459,7 +64461,7 @@ export const subscriptionProductUpdatedEventNameValues: ReadonlyArray<
 > = ['subscription.product_updated']
 export const subscriptionProrationBehaviorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionProrationBehavior']
-> = ['invoice', 'prorate', 'next_period', 'reset']
+> = ['invoice', 'prorate', 'next_period', 'auto', 'reset']
 export const subscriptionReactivatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionReactivatedEvent']['name']
 > = ['subscription.reactivated']

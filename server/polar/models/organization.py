@@ -78,7 +78,7 @@ class OrganizationSubscriptionSettings(TypedDict):
         SubscriptionProrationBehavior,
         WithJsonSchema(
             {
-                "enum": ["invoice", "prorate", "next_period"],
+                "enum": ["invoice", "prorate", "next_period", "auto"],
                 "title": "PublicSubscriptionProrationBehavior",
                 "type": "string",
             }

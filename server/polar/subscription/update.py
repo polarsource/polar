@@ -164,6 +164,87 @@ def _generate_product_debit_proration_billing_entries(
     return billing_entries
 
 
+def resolve_auto_proration_behavior(
+    subscription: Subscription,
+    *,
+    product: Product | None = None,
+    seats: int | None = None,
+) -> SubscriptionProrationBehavior:
+    """Resolve the `auto` proration behavior to a concrete primitive.
+
+    Upgrades apply immediately (`invoice`); downgrades are deferred to the start of
+    the next period (`next_period`).
+
+    For a product change, "upgrade" means a longer billing commitment or, at equal
+    commitment length, a higher gross static (fixed + seat) amount. A change with no
+    static delta is treated as an upgrade and applied immediately.
+
+    For a seat change, more seats is an upgrade and fewer is a downgrade.
+
+    The non-seat → seat transition is handled by the caller (it forces `invoice`),
+    so it is not considered here.
+    """
+    if product is not None:
+        assert is_recurring_product(product)
+        anchor = subscription.current_period_start
+        anchor_day = anchor.day
+        current_length = (
+            subscription.recurring_interval.get_next_period(
+                anchor, anchor_day, subscription.recurring_interval_count
+            )
+            - anchor
+        )
+        new_length = (
+            product.recurring_interval.get_next_period(
+                anchor, anchor_day, product.recurring_interval_count
+            )
+            - anchor
+        )
+        if new_length != current_length:
+            return (
+                SubscriptionProrationBehavior.invoice
+                if new_length > current_length
+                else SubscriptionProrationBehavior.next_period
+            )
+
+        # Same commitment length: compare the gross static amount. Only fixed and
+        # seat prices are proratable, so they alone define the direction; metered,
+        # custom and free prices are ignored, and discounts don't move the tier.
+        current_amount = sum(
+            base_amount
+            for _, base_amount in _collect_proratable_amounts(
+                PriceSet.from_prices(
+                    subscription.prices, subscription.currency
+                ).get_static_prices(),
+                seats=subscription.seats,
+            )
+        )
+        new_amount = sum(
+            base_amount
+            for _, base_amount in _collect_proratable_amounts(
+                PriceSet.from_product(
+                    product, subscription.currency
+                ).get_static_prices(),
+                seats=subscription.seats,
+            )
+        )
+        return (
+            SubscriptionProrationBehavior.next_period
+            if new_amount < current_amount
+            else SubscriptionProrationBehavior.invoice
+        )
+
+    if seats is not None:
+        current_seats = subscription.seats or 0
+        return (
+            SubscriptionProrationBehavior.invoice
+            if seats > current_seats
+            else SubscriptionProrationBehavior.next_period
+        )
+
+    raise NotImplementedError("Only product and seats updates are supported")
+
+
 def _generate_product_subscription_update(
     subscription_update: SubscriptionUpdate,
 ) -> tuple[SubscriptionUpdate, list[BillingEntry]]:

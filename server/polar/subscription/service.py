@@ -126,7 +126,7 @@ from .schemas import (
     SubscriptionUpdateSeats,
 )
 from .sorting import SubscriptionSortProperty
-from .update import generate_subscription_update
+from .update import generate_subscription_update, resolve_auto_proration_behavior
 
 log: Logger = structlog.get_logger()
 
@@ -1335,6 +1335,7 @@ class SubscriptionService:
 
             if proration_behavior is None:
                 proration_behavior = organization.proration_behavior
+            requested_proration_behavior = proration_behavior
 
             # Non-seat → seat upgrades: promote `subscription.seats` to the new
             # product's first seat-price tier minimum so the proration debit and
@@ -1342,6 +1343,16 @@ class SubscriptionService:
             # Block `next_period` because the post-apply seat auto-claim has to run
             # immediately so the billing customer doesn't lose benefit access.
             is_initial_seat_transition = not old_has_seat_prices and new_has_seat_prices
+
+            if proration_behavior == SubscriptionProrationBehavior.auto:
+                # A non-seat → seat transition must apply immediately (the seat
+                # auto-claim below can't be deferred) and is an upgrade anyway.
+                proration_behavior = (
+                    SubscriptionProrationBehavior.invoice
+                    if is_initial_seat_transition
+                    else resolve_auto_proration_behavior(subscription, product=product)
+                )
+
             if is_initial_seat_transition:
                 if proration_behavior == SubscriptionProrationBehavior.next_period:
                     raise PolarRequestValidationError(
@@ -1448,6 +1459,7 @@ class SubscriptionService:
             ctx.add_event_metadata(
                 product_id=str(product.id),
                 proration_behavior=proration_behavior,
+                requested_proration_behavior=requested_proration_behavior,
             )
 
             return subscription
@@ -1703,6 +1715,7 @@ class SubscriptionService:
 
         if proration_behavior is None:
             proration_behavior = organization.proration_behavior
+        requested_proration_behavior = proration_behavior
 
         old_seats = subscription.seats or 1
         old_amount = subscription.amount
@@ -1723,6 +1736,11 @@ class SubscriptionService:
                     pending.seats = None
                     await subscription_update_repository.update(pending)
             return subscription
+
+        if proration_behavior == SubscriptionProrationBehavior.auto:
+            proration_behavior = resolve_auto_proration_behavior(
+                subscription, seats=seats
+            )
 
         event = await event_service.create_event(
             session,
@@ -1794,6 +1812,7 @@ class SubscriptionService:
         ctx.add_event_metadata(
             seats=seats,
             proration_behavior=proration_behavior,
+            requested_proration_behavior=requested_proration_behavior,
         )
 
         return subscription

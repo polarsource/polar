@@ -1,0 +1,23 @@
+server/tests/customer_seat/test_service.py
+  s_42238cfe0d80f3::t_913c86fda02050 2514-2515
+server/polar/customer_seat/endpoints.py
+  s_42238cfe0d80f3::t_75f8c11f7cd89a 47,112,178,209
+server/polar/customer_seat/service.py
+  s_42238cfe0d80f3::t_b0c8b1bd9e2772 630-635
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "028fbd99583dd035ae1e717b54a76ec761ca3c1b",
+  "prompts": {},
+  "sessions": {
+    "s_42238cfe0d80f3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a4105da2-2139-4f24-acf4-7ccb153260a1",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

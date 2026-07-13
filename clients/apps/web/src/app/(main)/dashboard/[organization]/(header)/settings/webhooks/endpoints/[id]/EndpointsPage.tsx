@@ -183,17 +183,17 @@ export default function ClientPage({
       wide
     >
       <div className="flex flex-col gap-4">
-        <div className="flex items-center justify-between gap-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex min-w-0 flex-col gap-1">
             {endpoint.name && endpoint.name.length > 0 ? (
               <>
-                <h3 className="text-lg">{endpoint.name}</h3>
-                <p className="dark:text-polar-400 truncate font-mono text-sm text-gray-500">
+                <h3 className="break-words text-lg">{endpoint.name}</h3>
+                <p className="dark:text-polar-400 break-all font-mono text-sm text-gray-500">
                   {endpoint.url}
                 </p>
               </>
             ) : (
-              <h3 className="text-lg">{endpoint.url}</h3>
+              <h3 className="break-words text-lg">{endpoint.url}</h3>
             )}
           </div>
           <div className="flex shrink-0 items-center gap-2">

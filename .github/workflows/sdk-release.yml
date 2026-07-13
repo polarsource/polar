@@ -16,7 +16,7 @@ jobs:
     outputs:
       version: ${{ steps.extract.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 0
 
@@ -44,7 +44,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 0
 
@@ -62,13 +62,13 @@ jobs:
     runs-on: ubuntu-latest
     environment: sdk-release
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.0
         with:
           ref: "sdk/${{ needs.detect-release.outputs.version }}"
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v8.2.0
 
       - name: Build Python SDK
         working-directory: sdk/python
@@ -85,17 +85,17 @@ jobs:
     runs-on: ubuntu-latest
     environment: sdk-release
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.0
         with:
           ref: "sdk/${{ needs.detect-release.outputs.version }}"
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6.0.9
 
-      - name: Setup Node.js (v22+ required for trusted publishing)
+      - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: "22"
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
           cache: "pnpm"
 
@@ -109,8 +109,7 @@ jobs:
 
       - name: Publish to npm (Trusted Publishing)
         working-directory: sdk/typescript
-        # npm automatically uses OIDC in GitHub Actions with id-token: write
-        run: npm publish --access public
+        run: npm publish
 
   create-github-release:
     needs: [detect-release, publish-python, publish-typescript]
@@ -119,7 +118,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.0
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v1
         with:

@@ -42,8 +42,13 @@ def run_command(
     cwd: Path | None = None,
     capture: bool = False,
     env: dict | None = None,
+    timeout: float | None = None,
 ) -> subprocess.CompletedProcess | None:
-    """Run a command and handle errors."""
+    """Run a command and handle errors.
+
+    Returns None if the command is missing, interrupted, or (when `timeout` is
+    set) doesn't finish in time.
+    """
     full_env = {**os.environ, **(env or {})}
     try:
         if capture:
@@ -53,10 +58,13 @@ def run_command(
                 capture_output=True,
                 text=True,
                 env=full_env,
+                timeout=timeout,
             )
         else:
-            return subprocess.run(cmd, cwd=cwd, env=full_env)
+            return subprocess.run(cmd, cwd=cwd, env=full_env, timeout=timeout)
     except FileNotFoundError:
+        return None
+    except subprocess.TimeoutExpired:
         return None
     except KeyboardInterrupt:
         console.print("\n[yellow]Interrupted[/yellow]")
@@ -69,8 +77,12 @@ def check_command_exists(cmd: str) -> bool:
 
 
 def is_docker_running() -> bool:
-    """Check if the Docker daemon is reachable."""
-    result = run_command(["docker", "info"], capture=True)
+    """Check if the Docker daemon is reachable.
+
+    Uses a timeout so a wedged daemon (socket present but unresponsive) fails
+    fast instead of hanging the CLI.
+    """
+    result = run_command(["docker", "info"], capture=True, timeout=10)
     return result is not None and result.returncode == 0
 
 

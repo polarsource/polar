@@ -127,12 +127,12 @@ const CustomerCancellationModal = ({
           </div>
           {subscription.status === 'past_due' &&
             cancelPreview?.stops_collection && (
-            <Alert
-              variant="warning"
-              title="Your latest payment didn't go through"
-              description="Cancelling now ends your subscription immediately and stops any further payment attempts."
-            />
-          )}
+              <Alert
+                variant="warning"
+                title="Your latest payment didn't go through"
+                description="Cancelling now ends your subscription immediately and stops any further payment attempts."
+              />
+            )}
           <Form {...form}>
             <form onSubmit={handleSubmit(handleCancellation)}>
               <FormField

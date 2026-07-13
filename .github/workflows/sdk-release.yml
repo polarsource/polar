@@ -99,9 +99,6 @@ jobs:
           registry-url: "https://registry.npmjs.org"
           cache: "pnpm"
 
-      - name: Upgrade npm
-        run: npm install -g npm@latest
-
       - name: Install dependencies
         working-directory: sdk/typescript
         run: pnpm install --frozen-lockfile

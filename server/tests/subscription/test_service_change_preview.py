@@ -15,6 +15,7 @@ from polar.models import (
     BillingEntry,
     Customer,
     Event,
+    OrderItem,
     Organization,
     Product,
     Subscription,
@@ -320,6 +321,7 @@ class TestCalculateChangePreview:
         await session.flush()
 
         assert await session.scalar(select(func.count()).select_from(BillingEntry)) == 0
+        assert await session.scalar(select(func.count()).select_from(OrderItem)) == 0
         assert (
             await session.scalar(select(func.count()).select_from(Event))
             == events_before

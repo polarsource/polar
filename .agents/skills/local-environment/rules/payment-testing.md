@@ -54,8 +54,8 @@ land outside the 0–2 base-port table, so read the api port from
 `dev docker ports` rather than computing it.
 
 Leave it running and `stripe listen` will log each event with the API's
-2xx response. Missing webhook → confirm the api port matches the
-`dev docker up` output.
+2xx response. Missing webhook → confirm the api port matches
+`dev docker ports`.
 
 ## Checkout Email Validation
 

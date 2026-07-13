@@ -1,0 +1,21 @@
+dev/cli/commands/docker.py
+  s_3e0979df60fe40::t_fdbfcf42ae1335 1106-1109
+  s_3e0979df60fe40::t_cbb7ea45cd93c4 15
+  s_3e0979df60fe40::t_123c7c602d7f2b 1039-1041
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "37d13977dae477b58b8344732340fd1b95d3b433",
+  "prompts": {},
+  "sessions": {
+    "s_3e0979df60fe40": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3446067f-3784-4449-a319-add08039e8af",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

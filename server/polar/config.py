@@ -441,6 +441,7 @@ class Settings(BaseSettings):
         "chf": 1500,
         "clp": 4000,
         "cop": 5000,
+        "crc": 4000,
         "eur": 1300,
         "gbp": 1500,
         "gmd": 4000,

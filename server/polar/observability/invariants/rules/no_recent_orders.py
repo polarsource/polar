@@ -19,7 +19,10 @@ class NoRecentOrdersInvariantError(InvariantError):
         super().__init__(
             NoRecentOrdersInvariant,
             message,
-            {"threshold": str(threshold), "last_order_at": last_order_at},
+            {
+                "threshold": str(threshold),
+                "last_order_at": last_order_at.isoformat() if last_order_at else None,
+            },
         )
 
 

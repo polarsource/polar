@@ -21,7 +21,12 @@ class NoRecentSubscriptionsInvariantError(InvariantError):
         super().__init__(
             NoRecentSubscriptionsInvariant,
             message,
-            {"threshold": str(threshold), "last_subscription_at": last_subscription_at},
+            {
+                "threshold": str(threshold),
+                "last_subscription_at": (
+                    last_subscription_at.isoformat() if last_subscription_at else None
+                ),
+            },
         )
 
 

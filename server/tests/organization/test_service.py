@@ -49,7 +49,6 @@ from polar.organization.schemas import (
     LegacyOrganizationStatus,
     OrganizationCreate,
     OrganizationDetails,
-    OrganizationFeatureSettingsUpdate,
     OrganizationReviewCheck,
     OrganizationReviewCheckKey,
     OrganizationReviewCheckReason,
@@ -191,7 +190,6 @@ class TestCreate:
         assert organization.slug == slug
         assert organization.feature_settings == {
             "member_model_enabled": True,
-            "seat_based_pricing_enabled": True,
         }
 
         user_organization = await user_organization_service.get_by_user_and_org(
@@ -259,7 +257,6 @@ class TestCreate:
         assert organization.feature_settings == {
             "checkout_localization_enabled": True,
             "member_model_enabled": True,
-            "seat_based_pricing_enabled": True,
         }
 
     @pytest.mark.auth
@@ -3440,156 +3437,6 @@ class TestSoftDeleteOrganization:
         assert result.slug != original_slug
         assert original_slug not in result.slug
         assert result.slug_history == []
-
-
-@pytest.mark.asyncio
-class TestUpdateSeatBasedPricing:
-    async def test_enable_seat_based_pricing_with_member_model(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        organization.feature_settings = {
-            "member_model_enabled": True,
-            "seat_based_pricing_enabled": False,
-        }
-        await save_fixture(organization)
-
-        result = await organization_service.update(
-            session,
-            organization,
-            OrganizationUpdate(
-                feature_settings=OrganizationFeatureSettingsUpdate(
-                    seat_based_pricing_enabled=True,
-                ),
-            ),
-        )
-
-        assert result.feature_settings["seat_based_pricing_enabled"] is True
-
-    async def test_enable_seat_based_pricing_without_member_model(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        organization.feature_settings = {
-            "member_model_enabled": False,
-            "seat_based_pricing_enabled": False,
-        }
-        await save_fixture(organization)
-
-        with pytest.raises(PolarRequestValidationError):
-            await organization_service.update(
-                session,
-                organization,
-                OrganizationUpdate(
-                    feature_settings=OrganizationFeatureSettingsUpdate(
-                        seat_based_pricing_enabled=True,
-                    ),
-                ),
-            )
-
-    async def test_disable_seat_based_pricing_when_enabled(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        organization.feature_settings = {
-            "member_model_enabled": True,
-            "seat_based_pricing_enabled": True,
-        }
-        await save_fixture(organization)
-
-        with pytest.raises(PolarRequestValidationError):
-            await organization_service.update(
-                session,
-                organization,
-                OrganizationUpdate(
-                    feature_settings=OrganizationFeatureSettingsUpdate(
-                        seat_based_pricing_enabled=False,
-                    ),
-                ),
-            )
-
-    async def test_keep_seat_based_pricing_enabled(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        organization.feature_settings = {
-            "member_model_enabled": True,
-            "seat_based_pricing_enabled": True,
-        }
-        await save_fixture(organization)
-
-        result = await organization_service.update(
-            session,
-            organization,
-            OrganizationUpdate(
-                feature_settings=OrganizationFeatureSettingsUpdate(
-                    seat_based_pricing_enabled=True,
-                ),
-            ),
-        )
-
-        assert result.feature_settings["seat_based_pricing_enabled"] is True
-
-    async def test_update_unrelated_setting_with_inconsistent_state(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        """Orgs in inconsistent state (seat_based=True, member_model=False)
-        should still be able to update other feature settings."""
-        organization.feature_settings = {
-            "member_model_enabled": False,
-            "seat_based_pricing_enabled": True,
-        }
-        await save_fixture(organization)
-
-        result = await organization_service.update(
-            session,
-            organization,
-            OrganizationUpdate(
-                feature_settings=OrganizationFeatureSettingsUpdate(
-                    checkout_localization_enabled=True,
-                ),
-            ),
-        )
-
-        assert result.feature_settings["seat_based_pricing_enabled"] is True
-        assert result.feature_settings["checkout_localization_enabled"] is True
-
-    async def test_resend_seat_based_true_with_inconsistent_state(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-    ) -> None:
-        """Orgs in inconsistent state should not be blocked when
-        seat_based_pricing_enabled=True is re-sent (no False->True transition)."""
-        organization.feature_settings = {
-            "member_model_enabled": False,
-            "seat_based_pricing_enabled": True,
-        }
-        await save_fixture(organization)
-
-        result = await organization_service.update(
-            session,
-            organization,
-            OrganizationUpdate(
-                feature_settings=OrganizationFeatureSettingsUpdate(
-                    seat_based_pricing_enabled=True,
-                ),
-            ),
-        )
-
-        assert result.feature_settings["seat_based_pricing_enabled"] is True
 
 
 @pytest.mark.asyncio

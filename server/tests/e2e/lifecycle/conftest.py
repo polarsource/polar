@@ -104,7 +104,6 @@ async def seat_org(save_fixture: SaveFixture, user: User) -> Organization:
     org = await create_organization(
         save_fixture,
         account,
-        feature_settings={"seat_based_pricing_enabled": True},
     )
     await save_fixture(UserOrganization(user=user, organization=org))
     return org

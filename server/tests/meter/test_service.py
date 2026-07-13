@@ -1364,9 +1364,7 @@ class TestCreateBillingEntriesWithSeats:
         session: AsyncSession,
         account: Account,
     ) -> None:
-        seat_org = await create_organization(
-            save_fixture, account, feature_settings={"seat_based_pricing_enabled": True}
-        )
+        seat_org = await create_organization(save_fixture, account)
 
         meter = await create_meter(
             save_fixture,
@@ -1465,9 +1463,7 @@ class TestCreateBillingEntriesWithSeats:
         session: AsyncSession,
         account: Account,
     ) -> None:
-        seat_org = await create_organization(
-            save_fixture, account, feature_settings={"seat_based_pricing_enabled": True}
-        )
+        seat_org = await create_organization(save_fixture, account)
 
         meter = await create_meter(
             save_fixture,
@@ -1547,9 +1543,7 @@ class TestCreateBillingEntriesWithSeats:
         session: AsyncSession,
         account: Account,
     ) -> None:
-        seat_org = await create_organization(
-            save_fixture, account, feature_settings={"seat_based_pricing_enabled": True}
-        )
+        seat_org = await create_organization(save_fixture, account)
 
         meter = await create_meter(
             save_fixture,
@@ -1676,9 +1670,7 @@ class TestCreateBillingEntriesWithSeats:
         session: AsyncSession,
         account: Account,
     ) -> None:
-        seat_org = await create_organization(
-            save_fixture, account, feature_settings={"seat_based_pricing_enabled": True}
-        )
+        seat_org = await create_organization(save_fixture, account)
 
         meter = await create_meter(
             save_fixture,

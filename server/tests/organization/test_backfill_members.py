@@ -186,7 +186,6 @@ class TestBackfillMembers:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing_customer = await create_customer(
@@ -246,7 +245,6 @@ class TestBackfillMembers:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing_customer = await create_customer(
@@ -313,7 +311,6 @@ class TestBackfillMembers:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing_customer = await create_customer(
@@ -377,7 +374,6 @@ class TestBackfillMembers:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing_customer = await create_customer(
@@ -424,7 +420,6 @@ class TestBackfillMembers:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         customer = await create_customer(
@@ -541,7 +536,6 @@ class TestBackfillMembers:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing_customer = await create_customer(
@@ -727,7 +721,6 @@ class TestBackfillMembers:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing_customer = await create_customer(
@@ -807,7 +800,6 @@ class TestBackfillMembers:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing_customer = await create_customer(
@@ -892,7 +884,6 @@ class TestBackfillMembers:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         customer = await create_customer(
@@ -944,7 +935,6 @@ class TestBackfillMembers:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing_customer = await create_customer(
@@ -1027,7 +1017,6 @@ class TestBackfillMembers:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing_customer = await create_customer(
@@ -1092,7 +1081,6 @@ class TestBackfillMembers:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing_customer = await create_customer(
@@ -1161,7 +1149,6 @@ class TestBackfillMembers:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing_customer = await create_customer(
@@ -1448,7 +1435,6 @@ class TestBackfillMembersB2B:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing = await create_customer(
@@ -1490,7 +1476,6 @@ class TestBackfillMembersB2B:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing = await create_customer(
@@ -1541,7 +1526,6 @@ class TestBackfillMembersB2B:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing = await create_customer(
@@ -1615,7 +1599,6 @@ class TestBackfillMembersB2B:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing = await create_customer(
@@ -1673,7 +1656,6 @@ class TestBackfillMembersB2B:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing = await create_customer(
@@ -1728,7 +1710,6 @@ class TestBackfillMembersB2B:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing = await create_customer(
@@ -1804,7 +1785,6 @@ class TestBackfillMembersB2B:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing = await create_customer(
@@ -1887,7 +1867,6 @@ class TestBackfillMembersB2B:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing = await create_customer(
@@ -1961,7 +1940,6 @@ class TestBackfillMembersB2B:
             account,
             feature_settings={
                 "member_model_enabled": True,
-                "seat_based_pricing_enabled": True,
             },
         )
         billing = await create_customer(

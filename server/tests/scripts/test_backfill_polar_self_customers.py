@@ -36,7 +36,6 @@ async def _setup_self_org(
         name_prefix="polar-self",
         feature_settings={
             "member_model_enabled": True,
-            "seat_based_pricing_enabled": True,
         },
     )
     free_product = await create_product(

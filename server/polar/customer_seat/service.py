@@ -228,8 +228,6 @@ class SeatService:
         )
         if not organization:
             raise FeatureNotEnabled()
-        if not organization.feature_settings.get("seat_based_pricing_enabled", False):
-            raise FeatureNotEnabled()
 
     async def list_seats(
         self,

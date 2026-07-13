@@ -61,8 +61,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
   })
 
   const memberColumnEnabled =
-    !!organization.feature_settings?.member_model_enabled &&
-    !!organization.feature_settings?.seat_based_pricing_enabled
+    !!organization.feature_settings?.member_model_enabled
 
   const setPagination = (
     updaterOrValue:

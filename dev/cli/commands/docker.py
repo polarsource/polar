@@ -17,6 +17,7 @@ from pathlib import Path
 from typing import Annotated
 
 import typer
+from rich.console import Console
 from rich.table import Table
 
 from shared import (
@@ -28,6 +29,10 @@ from shared import (
     console,
     run_command,
 )
+
+# Diagnostics (e.g. "Using instance N") go to stderr so machine-readable
+# commands like `ports --json` and `launch-json --stdout` keep stdout clean.
+err_console = Console(stderr=True)
 
 DOCKER_DIR = ROOT_DIR / "dev" / "docker"
 COMPOSE_FILE = DOCKER_DIR / "docker-compose.dev.yml"
@@ -625,17 +630,17 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         if instance is None:
             instance, source = _detect_instance()
             if source == "stored":
-                console.print(
+                err_console.print(
                     f"[dim]Using stored instance {instance} (from .env.docker)[/dim]"
                 )
             elif source == "registry":
-                console.print(f"[dim]Using registered instance {instance}[/dim]")
+                err_console.print(f"[dim]Using registered instance {instance}[/dim]")
             elif source == "new":
-                console.print(
+                err_console.print(
                     f"[dim]Allocated new instance {instance} for {ROOT_DIR}[/dim]"
                 )
             else:
-                console.print(f"[dim]Auto-detected instance {instance}[/dim]")
+                err_console.print(f"[dim]Auto-detected instance {instance}[/dim]")
             if source != "registry":
                 _upsert_registry(str(ROOT_DIR), instance)
         ctx.ensure_object(dict)
@@ -1020,7 +1025,9 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             "s3_public_bucket": s3_public_bucket(instance),
         }
         if json_output:
-            console.print_json(json.dumps(info))
+            # Plain print (not console.print_json) so piped output stays clean
+            # JSON with no Rich styling or width-based line wrapping.
+            print(json.dumps(info, indent=2))
             return
         console.print(
             f"[bold]Instance {instance}[/bold] (project {app_project(instance)})"
@@ -1084,7 +1091,9 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
 }}
 """
         if stdout:
-            console.print(content)
+            # Plain print (not console.print) so Rich doesn't wrap long lines
+            # at the console width and corrupt the JSON. content ends with "\n".
+            print(content, end="")
             return
         target = ROOT_DIR / ".claude" / "launch.json"
         target.parent.mkdir(parents=True, exist_ok=True)

@@ -95,16 +95,18 @@ services:
       # instances' api containers also on polar-shared).
       - default
       - polar-shared
-    # `start_period` is generous because first boot runs uv sync, migrations,
-    # and seed loading before the server binds. Checks that fail during it
-    # don't count against `retries`, so `dev docker up --wait` reports the
-    # container as ready only once /healthz actually responds.
+    # `start_period` is long because a cold first boot binds uvicorn only after
+    # a serial chain: uv sync, the email-template build (pnpm install + tsup +
+    # pkg), DB/bucket bootstrap, migrations, and full seed load — routinely
+    # several minutes. Checks that fail during it don't count against `retries`,
+    # so `dev docker up --wait` won't give up before /healthz answers. Plain
+    # `up -d` (no --wait) is unaffected either way.
     healthcheck:
       test: ["CMD", "curl", "-fsS", "http://localhost:8000/healthz"]
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 300s
+      start_period: 600s
     command: ["api"]
 
   worker:
@@ -171,7 +173,7 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-      start_period: 300s
+      start_period: 600s
     deploy:
       resources:
         limits:

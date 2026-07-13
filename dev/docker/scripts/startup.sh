@@ -29,8 +29,9 @@ if [[ "${1:-api}" == "api" ]] && [[ ! -f "$EMAIL_MARKER" ]]; then
     # Clean previous builds (may be from different architecture)
     rm -rf dist
     rm -f bin/react-email-pkg bin/.built-* 2>/dev/null || true
-    # Configure pnpm to use the mounted store volume for faster installs
-    pnpm config set store-dir /root/.local/share/pnpm/store --location project
+    # Point pnpm at the mounted store volume for faster installs via env var,
+    # so we don't mutate the bind-mounted (and git-tracked) pnpm-workspace.yaml.
+    export npm_config_store_dir=/root/.local/share/pnpm/store
     # Install dependencies (uses shared pnpm store for speed)
     pnpm install --frozen-lockfile
     # Build: tsup compiles TypeScript, pkg creates standalone binary

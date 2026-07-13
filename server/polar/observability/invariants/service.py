@@ -71,6 +71,17 @@ class InvariantService:
     async def check(
         self, session: AsyncReadSession, invariant_cls: type[Invariant]
     ) -> None:
+        if (
+            invariant_cls.ENVIRONMENTS is not None
+            and settings.ENV not in invariant_cls.ENVIRONMENTS
+        ):
+            log.debug(
+                "Skipping invariant in this environment",
+                invariant=invariant_cls.__name__,
+                environment=settings.ENV,
+            )
+            return
+
         log.debug("Checking invariant", invariant=invariant_cls.__name__)
         invariant = invariant_cls(session)
         try:

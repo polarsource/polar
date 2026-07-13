@@ -1,6 +1,7 @@
 import abc
 import typing
 
+from polar.config import Environment
 from polar.postgres import AsyncReadSession
 
 
@@ -25,6 +26,9 @@ class Invariant(abc.ABC):
 
     Invariants are conditions that must always hold true for the system to be considered in a valid state.
     """
+
+    ENVIRONMENTS: typing.ClassVar[set[Environment] | None] = None
+    """Environments where this invariant runs. `None` means all environments."""
 
     def __init__(self, session: AsyncReadSession) -> None:
         self.session = session

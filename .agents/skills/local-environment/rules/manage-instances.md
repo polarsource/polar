@@ -6,74 +6,73 @@ tags: instances, parallel, isolation
 
 # Managing Multiple Instances
 
-## What Are Instances?
+## What are instances?
 
-Instances allow running multiple isolated development environments simultaneously. Each instance:
-- Uses different ports (offset by instance × 100)
-- Has its own database
-- Has its own file storage
-- Runs independently
+An instance is one worktree's isolated app stack (project `polar-app-<N>`). All
+instances share a single infra stack (`polar-shared`), but each gets:
 
-## Port Mapping
+- Its own api/web **host ports** (offset per instance)
+- Its own database `polar_dev_<N>` on the shared postgres
+- Its own redis DB index `<N>` on the shared redis
+- Its own S3 buckets `polar-s3-<N>` / `polar-s3-public-<N>` on the shared minio
+
+So instances are cheap: only api/worker/web containers are duplicated, not the
+infra.
+
+## Port mapping
+
+Only api and web publish host ports. Everything else is shared and reached by
+container name, so there is **no** per-instance `5532`/`6479`/`9100` — those
+ports don't exist in this model.
 
 | Service | Instance 0 | Instance 1 | Instance 2 |
 |---------|------------|------------|------------|
-| Web | 3000 | 3100 | 3200 |
-| API | 8000 | 8100 | 8200 |
-| DB | 5432 | 5532 | 5632 |
-| Redis | 6379 | 6479 | 6579 |
-| MinIO API | 9000 | 9100 | 9200 |
-| MinIO Console | 9001 | 9101 | 9201 |
+| API (host) | 8000 | 8101 | 8102 |
+| Web (host) | 3000 | 3101 | 3102 |
+| DB (logical) | `polar_dev_0` | `polar_dev_1` | `polar_dev_2` |
+| Redis (DB index) | 0 | 1 | 2 |
+| S3 bucket | `polar-s3-0` | `polar-s3-1` | `polar-s3-2` |
 
-**Formula:** Port = Base + (Instance × 100)
+**Host-port formula (api/web only):** `Port = Base + Instance` (Base 8100 for
+api, 3100 for web), for instances 1–99. Instance 0 uses the legacy `8000`/`3000`.
+So instance 5 is api `8105` / web `3105`.
 
-## Commands
+Run `dev docker ports` in a worktree to print its resolved instance and URLs.
 
-**Start instance:**
+## Pinning and inspecting instances
+
+Auto-detection usually picks the right instance, but you can pin or inspect:
+
 ```bash
-dev docker up -i 1 -d
-dev docker up -i 2 -d
+dev docker set-instance 5     # pin this worktree to instance 5 (writes .env.docker + registry)
+dev docker clear-instance     # back to auto-detect
+dev docker list               # every registered instance: number, status, path
+dev docker prune              # drop registry entries whose worktree is gone, and their data
 ```
 
-**Check instance status:**
+Pinning makes ports deterministic, which is what you want when wiring a worktree
+into tooling like `.claude/launch.json`.
+
+## Commands (explicit instance)
+
+Most commands auto-detect, but `-i N` targets one explicitly:
+
 ```bash
-dev docker ps -i 1
+dev docker up -i 1 -d       # start instance 1
+dev docker ps -i 1          # status
+dev docker logs -i 1 api    # logs
+dev docker down -i 1        # stop
+dev docker shell -i 1 api   # shell
 ```
 
-**View instance logs:**
-```bash
-dev docker logs -i 1 api
-```
+## Use cases
 
-**Stop instance:**
-```bash
-dev docker down -i 1
-```
+- **Branch A vs branch B** side by side, each in its own worktree.
+- **Run a long test suite** in one instance while developing in another.
+- **Before/after comparisons** without tearing down your main stack.
 
-**Shell into instance:**
-```bash
-dev docker shell -i 1 api
-```
+## Resource notes
 
-## Use Cases
-
-1. **Testing different branches:**
-   - Instance 0: main branch
-   - Instance 1: feature branch
-
-2. **Running parallel tests:**
-   - Instance 0: development
-   - Instance 1: running test suite
-
-3. **Comparing behavior:**
-   - Instance 0: before changes
-   - Instance 1: after changes
-
-## Resource Considerations
-
-Each instance uses:
-- ~2GB memory for full stack
-- Separate disk space for volumes
-- Independent CPU allocation
-
-Limit to 2-3 instances on typical development machines.
+Each app stack adds ~2 GB and its own build/cache volumes; the shared infra is
+paid once. Two or three instances is comfortable on a typical machine. Use
+`dev docker prune` to reclaim data from worktrees you've deleted.

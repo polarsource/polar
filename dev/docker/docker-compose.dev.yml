@@ -99,6 +99,18 @@ services:
       # instances' api containers also on polar-shared).
       - default
       - polar-shared
+    # `start_period` is long because a cold first boot binds uvicorn only after
+    # a serial chain: uv sync, the email-template build (pnpm install + tsup +
+    # pkg), DB/bucket bootstrap, migrations, and full seed load — routinely
+    # several minutes. Checks that fail during it don't count against `retries`,
+    # so `dev docker up --wait` won't give up before /healthz answers. Plain
+    # `up -d` (no --wait) is unaffected either way.
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 600s
     command: ["api"]
 
   worker:
@@ -155,7 +167,17 @@ services:
       # `http://api:8000` resolves unambiguously to THIS instance's api.
       - default
     depends_on:
-      - api
+      # Wait for the api to be serving, not just started — the SSR layer proxies
+      # to it, so starting web before api is healthy yields 500s on first load.
+      api:
+        condition: service_healthy
+    # node:22-slim ships no curl/wget, so probe with Node's built-in fetch.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 600s
     deploy:
       resources:
         limits:

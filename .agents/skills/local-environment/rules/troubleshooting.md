@@ -32,6 +32,50 @@ dev docker down
 dev docker up -d
 ```
 
+## Docker Daemon Not Running
+
+`dev docker up` preflights the daemon and prints a friendly message if it's
+down. If you see it, start Docker (OrbStack or Docker Desktop) and retry. A raw
+`docker.sock: no such file or directory` from another command means the same
+thing.
+
+## `No interpreter found for Python 3.14.x` (stale base image)
+
+The api container exits during the JWKS/`uv sync` step with something like:
+
+```
+error: No interpreter found for Python 3.14.6 in managed installations or search path
+```
+
+This is a **stale base image**: the cached api image ships an older Python patch
+than `server/.python-version` requires, and a plain rebuild reuses the cached
+`FROM` layer. Refresh the bases and rebuild:
+
+```bash
+dev docker up -b --pull -d
+```
+
+`--pull` re-fetches `python:3.14.x-slim` and `uv` so the rebuilt image satisfies
+the pin. (The Dockerfile pins the patch to keep this rare, but a `.python-version`
+bump can still outrun a cached image.)
+
+## First boot fails cloning a git dependency
+
+`uv sync` clones a git dependency (the dramatiq fork) over the network, and
+Docker's embedded DNS can flap transiently:
+
+```
+failed to fetch commit ... Could not resolve host: github.com
+```
+
+Startup now retries `uv sync` a few times, so this usually self-heals. If the
+container still exited, just restart it — the retry runs again with a fresh
+resolver:
+
+```bash
+dev docker up -d api worker
+```
+
 ## Database Connection Failed
 
 **Wait for health check (up to 40 seconds on first start)**
@@ -110,17 +154,22 @@ clash.
 
 ## MinIO/S3 Issues
 
+Shared MinIO has **no host port**, so there's no `localhost:9001` console. Work
+through the container instead.
+
 **Check minio-setup logs:**
 ```bash
 dev docker logs minio-setup
 ```
 
-**Access MinIO console:**
-- URL: http://localhost:9001
-- User: polar
-- Password: polarpolar
-
-**Verify buckets exist in console UI**
+**List this instance's buckets (creds `polar-development` / `polar123456789`):**
+```bash
+dev docker exec minio mc alias set local http://localhost:9000 \
+  polar-development polar123456789
+dev docker exec minio mc ls local
+```
+Buckets are per-instance: `polar-s3-<N>` and `polar-s3-public-<N>`. If you truly
+need the console UI, port-forward 9001 from the `polar-shared-minio-1` container.
 
 ## Frontend Build Errors
 

@@ -8,18 +8,13 @@ from shared import (
     check_command_exists,
     console,
     get_command_version,
+    is_docker_running,
     run_command,
     step_spinner,
     step_status,
 )
 
 NAME = "Checking prerequisites"
-
-
-def is_docker_running() -> bool:
-    """Check if Docker daemon is running."""
-    result = run_command(["docker", "info"], capture=True)
-    return result is not None and result.returncode == 0
 
 
 def install_docker() -> bool:

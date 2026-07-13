@@ -4,83 +4,117 @@ description: Local development environment management for Polar using Docker
 license: MIT
 metadata:
   author: polar
-  version: "1.0.0"
+  version: "1.1.0"
 ---
 
 # Local Environment Skill
 
-This skill enables Claude to help manage the Polar local development environment using Docker. Use this when the user needs to start, stop, debug, or understand the local development stack.
+Helps manage the Polar local development environment through the `dev docker`
+CLI. Use it to start, stop, debug, or reason about the local stack.
 
-## Instance Auto-Detection
+## The two-part model
 
-The `dev docker` command **automatically detects** the correct instance number. No manual `-i` flag is needed in most cases.
+`dev docker` deliberately splits the stack so many worktrees can share one set
+of heavy infra:
 
-**Detection priority:**
-1. `CONDUCTOR_PORT` env var → `(port - 55000) / 10 + 1`
-2. Workspace path hash → stable instance derived from the repo root path
+- **Shared infra** — one copy per machine, Docker project `polar-shared`:
+  postgres, redis, minio, tinybird, and optional prometheus/grafana. These
+  publish **no host ports**; they're reached by container name on the
+  `polar-shared` network. Use `dev docker exec <service> ...` to reach them.
+- **Per-instance app stack** — one per worktree, project `polar-app-<N>`: api,
+  worker, web. Only **api and web** publish host ports, offset per instance so
+  worktrees don't collide.
 
-You can override with `-i N` if needed, but auto-detection handles Conductor workspaces automatically.
+Knowing this prevents the most common confusion: there is no `localhost:5432`
+or MinIO console on a host port. The database lives in the shared stack and is
+reached through `dev docker exec db ...`.
 
-## When to Use
+## Instance auto-detection
 
-- User asks to start/stop the local environment
-- User needs to view logs or debug issues
-- User wants to run multiple isolated instances
-- User needs to understand the service architecture
-- User encounters container or service errors
+`dev docker` auto-detects the instance for the current worktree, so `-i` is
+rarely needed. Priority:
 
-## Quick Reference
+1. `POLAR_DOCKER_INSTANCE` pinned in `dev/docker/.env.docker` (`dev docker set-instance N`)
+2. `CONDUCTOR_PORT` env var → `(port - 55000) / 10 + 1`
+3. The cross-worktree registry (`~/.config/polar/docker-instances.json`)
+4. Otherwise the lowest free number, then registered
+
+Run `dev docker ports` to see the resolved instance and its URLs (add `--json`
+for tooling). To wire this worktree into Claude Code's preview, run
+`dev docker launch-json`, which writes a per-instance `.claude/launch.json` with
+the correct ports (it's gitignored, so regenerate after `set-instance`).
+
+## When to use
+
+- Start / stop / restart the local environment
+- View logs or debug a service that won't come up
+- Run several isolated worktree instances in parallel
+- Understand the service architecture or find a service's real port
+- Diagnose container or first-boot errors
+
+## Quick reference
 
 | Task | Command |
 |------|---------|
-| Start full stack | `dev docker up -d` |
-| Stop services | `dev docker down` |
-| View all logs | `dev docker logs` |
-| View service logs | `dev docker logs {service}` |
-| Follow logs | `dev docker logs -f` |
-| Check status | `dev docker ps` |
-| Restart service | `dev docker restart {service}` |
-| Shell access | `dev docker shell {service}` |
-| Fresh start | `dev docker cleanup -f && dev docker up -d` |
+| Start full stack (background) | `dev docker up -d` |
+| Start and block until healthy | `dev docker up -d --wait` |
+| Start in foreground (stream logs) | `dev docker up --no-detach` |
+| Rebuild with fresh base images | `dev docker up -b --pull -d` |
+| Show this instance's ports/URLs | `dev docker ports` (`--json` for tooling) |
+| Write Claude Code preview config | `dev docker launch-json` |
+| Stop app stack | `dev docker down` |
+| Stop app **and** shared infra | `dev docker down --all` |
+| Follow logs | `dev docker logs -f [service]` |
+| Print logs and exit | `dev docker logs --no-follow [service]` |
+| Status | `dev docker ps` |
+| Restart a service | `dev docker restart <service>` |
+| Shell into a service | `dev docker shell <service>` |
+| One-off command in a service | `dev docker exec <service> <cmd>` |
+| Reset this instance | `dev docker cleanup -f` |
+| Wipe ALL shared data | `dev docker cleanup --all -f` |
+| List every instance | `dev docker list` |
 | With monitoring | `dev docker up --monitoring -d` |
-| Force rebuild | `dev docker up -b -d` |
 
 ## Services
 
-| Service | Default Port | Description |
-|---------|-------------|-------------|
-| api | 8000 | FastAPI backend |
-| worker | - | Background job processor |
-| web | 3000 | Next.js frontend |
-| db | 5432 | PostgreSQL database |
-| redis | 6379 | Redis cache |
-| minio | 9000/9001 | S3-compatible storage |
-| prometheus | 9090 | Metrics (optional) |
-| grafana | 3001 | Dashboards (optional) |
+| Service | Project | Host port (instance 0 / N) | Notes |
+|---------|---------|----------------------------|-------|
+| api | `polar-app-<N>` | 8000 / 8100+N | FastAPI; `/healthz` healthcheck |
+| web | `polar-app-<N>` | 3000 / 3100+N | Next.js; healthchecked |
+| worker | `polar-app-<N>` | none | Background jobs |
+| db | `polar-shared` | none (`exec`) | PostgreSQL; DB `polar_dev_<N>` |
+| redis | `polar-shared` | none (`exec`) | Redis DB index = N |
+| minio | `polar-shared` | none (`exec`) | S3; buckets `polar-s3-<N>` |
+| tinybird | `polar-shared` | none (`exec`) | Analytics |
+| prometheus / grafana | `polar-shared` | none (`exec`) | `--monitoring` only |
 
-## Instance Port Mapping
+Discover the exact host ports for the current worktree with `dev docker ports`.
 
-For manually started instances: `Port = Base Port + (Instance × 100)`
+## Instance port mapping
 
-| Instance | API | Web | DB | Redis | MinIO |
-|----------|-----|-----|-----|-------|-------|
-| 0 | 8000 | 3000 | 5432 | 6379 | 9000 |
-| 1 | 8100 | 3100 | 5532 | 6479 | 9100 |
-| 2 | 8200 | 3200 | 5632 | 6579 | 9200 |
+Only api and web get host ports: `Port = Base + Instance` (Base 8100 for api,
+3100 for web) for instances 1–99. Instance 0 uses the legacy `8000` / `3000`.
 
-Shared infra (db/redis/minio/tinybird) runs under the `polar-shared` project
-without host port mappings — reach it via `dev docker exec <service>` or
-`docker exec polar-shared-<service>-1`. The per-instance database is named
-`polar_dev_<N>`, not `polar`.
+| Instance | API | Web |
+|----------|-----|-----|
+| 0 | 8000 | 3000 |
+| 1 | 8101 | 3101 |
+| 2 | 8102 | 3102 |
+| 5 | 8105 | 3105 |
 
-## Rules Index
+Everything else is per-instance but not on a host port: database `polar_dev_<N>`,
+redis DB index `<N>`, buckets `polar-s3-<N>` / `polar-s3-public-<N>`. Reach them
+via `dev docker exec <service>` or `docker exec polar-shared-<service>-1`.
+
+## Rules index
 
 | Rule | Category | Description |
 |------|----------|-------------|
-| [service-architecture](rules/service-architecture.md) | Reference | Service details |
-| [start-environment](rules/start-environment.md) | Operations | Starting the stack |
-| [stop-environment](rules/stop-environment.md) | Operations | Stopping the stack |
-| [manage-instances](rules/manage-instances.md) | Operations | Running parallel instances |
+| [service-architecture](rules/service-architecture.md) | Reference | Service details, ports, healthchecks |
+| [start-environment](rules/start-environment.md) | Operations | Starting the stack (flags, `--wait`, `--pull`) |
+| [stop-environment](rules/stop-environment.md) | Operations | Stopping and cleanup (app vs shared) |
+| [manage-instances](rules/manage-instances.md) | Operations | Parallel worktree instances |
 | [view-logs](rules/view-logs.md) | Debugging | Viewing service logs |
+| [shell-and-workflows](rules/shell-and-workflows.md) | Operations | Shell access and common dev workflows |
 | [troubleshooting](rules/troubleshooting.md) | Debugging | Common errors and fixes |
-| [payment-testing](rules/payment-testing.md) | Operations | Login codes, Stripe webhooks, dramatiq actors, backoffice |
+| [payment-testing](rules/payment-testing.md) | Operations | Login codes, Stripe webhooks, backoffice |

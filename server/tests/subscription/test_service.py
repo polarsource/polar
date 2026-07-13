@@ -2219,7 +2219,7 @@ class TestCancel:
             "order.void_pending_orders_for_subscription", subscription.id
         )
 
-    async def test_past_due_within_grace_period_cancels_at_period_end(
+    async def test_past_due_with_grace_period_cancels_at_period_end(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,

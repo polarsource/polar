@@ -2,6 +2,7 @@ from datetime import datetime, timedelta
 
 from sqlalchemy import func, select
 
+from polar.config import Environment
 from polar.kit.utils import utc_now
 from polar.models import Subscription
 
@@ -36,9 +37,12 @@ class NoRecentSubscriptionsInvariant(Invariant):
 
     In production, subscriptions are created continuously. A prolonged silence does
     not happen under normal traffic and indicates the checkout or subscription
-    pipeline is stalled.
+    pipeline is stalled. Only runs in production, where traffic is continuous; other
+    environments have too little traffic for the absence of subscriptions to be
+    meaningful.
     """
 
+    ENVIRONMENTS = {Environment.production}
     THRESHOLD = timedelta(minutes=45)
 
     async def check(self) -> None:

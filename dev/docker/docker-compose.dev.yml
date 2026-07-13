@@ -35,7 +35,10 @@ x-common-backend-env: &common-backend-env
   POLAR_REDIS_PORT: "6379"
   POLAR_REDIS_DB: ${POLAR_REDIS_DB:-0}
   # S3/MinIO — shared instance; each app instance gets its own bucket pair.
+  # Server-side calls stay in-network (minio:9000); presigned URLs handed to
+  # the browser must point at the host-published port (localhost:9000).
   POLAR_S3_ENDPOINT_URL: http://minio:9000
+  POLAR_S3_PUBLIC_ENDPOINT_URL: http://localhost:9000
   POLAR_AWS_ACCESS_KEY_ID: ${POLAR_AWS_ACCESS_KEY_ID:-polar-development}
   POLAR_AWS_SECRET_ACCESS_KEY: ${POLAR_AWS_SECRET_ACCESS_KEY:-polar123456789}
   POLAR_S3_FILES_BUCKET_NAME: polar-s3-${POLAR_DOCKER_INSTANCE:-1}
@@ -46,6 +49,7 @@ x-common-backend-env: &common-backend-env
   # CORS and allowed hosts — configured for Docker networking
   POLAR_CORS_ORIGINS: '["http://localhost:${WEB_PORT:-3000}", "http://127.0.0.1:${WEB_PORT:-3000}", "http://web:3000"]'
   POLAR_ALLOWED_HOSTS: '["localhost:${WEB_PORT:-3000}", "127.0.0.1:${WEB_PORT:-3000}"]'
+  POLAR_BASE_URL: http://localhost:${API_PORT:-8000}
   POLAR_FRONTEND_BASE_URL: http://localhost:${WEB_PORT:-3000}
   POLAR_CHECKOUT_BASE_URL: http://localhost:${API_PORT:-8000}/v1/checkout-links/{client_secret}/redirect
   POLAR_USER_SESSION_COOKIE_DOMAIN: localhost
@@ -129,10 +133,10 @@ services:
       # must be set in server/.env (they're loaded via env_file)
       # POLAR_API_URL is for server-side requests (container-to-container)
       POLAR_API_URL: http://api:8000
-      # Browser-side MinIO uploads require a host-reachable MinIO. Shared
-      # infra doesn't publish a host port by default, so direct browser
-      # uploads won't work in this dev model — file features that round-trip
-      # through the API still work fine.
+      # Browser-side MinIO uploads require a host-reachable MinIO. Shared infra
+      # publishes MinIO on host port 9000, and the API generates presigned URLs
+      # against POLAR_S3_PUBLIC_ENDPOINT_URL (http://localhost:9000), so direct
+      # browser uploads/downloads work.
       S3_PUBLIC_IMAGES_BUCKET_PROTOCOL: http
       S3_PUBLIC_IMAGES_BUCKET_HOSTNAME: localhost
       S3_PUBLIC_IMAGES_BUCKET_PORT: "9000"

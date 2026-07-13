@@ -375,6 +375,15 @@ class Settings(BaseSettings):
     S3_FILES_DOWNLOAD_SALT: str = "saltysalty"
     # Override to http://127.0.0.1:9000 in .env during development
     S3_ENDPOINT_URL: str | None = None
+    # Endpoint used when generating presigned URLs handed to the browser.
+    # In local dev Minio must be reached as http://localhost:9000 from the host,
+    # while server-side calls use the in-network http://minio:9000. Defaults to
+    # S3_ENDPOINT_URL (production: same real AWS endpoint).
+    S3_PUBLIC_ENDPOINT_URL: str | None = None
+
+    @property
+    def s3_presign_endpoint_url(self) -> str | None:
+        return self.S3_PUBLIC_ENDPOINT_URL or self.S3_ENDPOINT_URL
 
     MINIO_USER: str = "polar"
     MINIO_PWD: str = "polarpolar"

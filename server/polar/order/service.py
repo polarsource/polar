@@ -31,7 +31,6 @@ from polar.enums import (
     PaymentMode,
     PaymentProcessor,
     TaxBehavior,
-    TaxBehaviorOption,
     TaxProcessor,
 )
 from polar.event.repository import EventRepository
@@ -112,8 +111,6 @@ from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
     CalculationExpiredError,
-    TaxBreakdownItem,
-    TaxCalculation,
     TaxCalculationLogicalError,
     TaxCode,
 )
@@ -130,6 +127,7 @@ from polar.wallet.service import wallet as wallet_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
+from .amounts import calculate_tax, compute_order_amounts
 from .repository import OrderRepository
 from .schemas import OrderCreate, OrderInvoice, OrderReceipt, OrderUpdate
 from .sorting import OrderSortProperty
@@ -1043,7 +1041,7 @@ class OrderService:
                 tax_calculation_processor_id,
                 tax_amount,
                 tax_breakdown,
-            ) = await self._calculate_tax(
+            ) = await calculate_tax(
                 reference=str(order_id),
                 taxable_amount=subtotal_amount - discount_amount,
                 tax_behavior_option=organization.default_tax_behavior,
@@ -1337,57 +1335,18 @@ class OrderService:
         order_id = uuid.uuid4()
         customer = subscription.customer
 
-        subtotal_amount = sum(item.amount for item in items)
-
-        discount = subscription.discount
-        discount_amount = 0
-        if discount is not None:
-            # Discount only applies to cycle and meter items, as prorations
-            # use "last month's" discount and so this month's discount
-            # shouldn't apply to those.
-            discountable_amount = sum(
-                item.amount for item in items if item.discountable
-            )
-            discount_amount = discount.get_discount_amount(
-                discountable_amount, subscription.currency
-            )
-
-        billing_address = customer.billing_address
-        tax_id = customer.tax_id
-        product = subscription.product
-
-        tax_behavior_option = (
-            subscription.tax_behavior.to_option()
-            if subscription.tax_behavior is not None
-            else customer.organization.default_tax_behavior
-        )
-        # Calculate tax
-        (
-            tax_processor,
-            tax_behavior,
-            tax_calculation_processor_id,
-            tax_amount,
-            tax_breakdown,
-        ) = await self._calculate_tax(
+        amounts = await compute_order_amounts(
+            subscription,
+            items,
             reference=str(order_id),
-            taxable_amount=subtotal_amount - discount_amount,
-            tax_behavior_option=tax_behavior_option,
-            currency=subscription.currency,
-            customer=customer,
-            product=product,
-            tax_exempted=subscription.tax_exempted,
+            discount=subscription.discount,
         )
+        total_amount = amounts.total_amount
 
         invoice_number = await organization_service.get_next_invoice_number(
             session, subscription.organization, customer
         )
 
-        net_amount = (
-            subtotal_amount
-            - discount_amount
-            - (tax_amount if tax_behavior == TaxBehavior.inclusive else 0)
-        )
-        total_amount = net_amount + tax_amount
         customer_balance = await wallet_service.get_billing_wallet_balance(
             session, customer, subscription.currency, for_update=True
         )
@@ -1411,25 +1370,25 @@ class OrderService:
             Order(
                 id=order_id,
                 status=OrderStatus.pending,
-                subtotal_amount=subtotal_amount,
-                discount_amount=discount_amount,
-                tax_amount=tax_amount,
-                net_amount=net_amount,
+                subtotal_amount=amounts.subtotal_amount,
+                discount_amount=amounts.discount_amount,
+                tax_amount=amounts.tax_amount,
+                net_amount=amounts.net_amount,
                 applied_balance_amount=applied_balance_amount,
                 currency=subscription.currency,
                 billing_reason=billing_reason,
                 billing_name=customer.billing_name,
-                billing_address=billing_address,
-                tax_behavior=tax_behavior,
-                tax_id=tax_id,
-                tax_breakdown=tax_breakdown or None,
-                tax_processor=tax_processor,
-                tax_calculation_processor_id=tax_calculation_processor_id,
+                billing_address=customer.billing_address,
+                tax_behavior=amounts.tax_behavior,
+                tax_id=customer.tax_id,
+                tax_breakdown=amounts.tax_breakdown or None,
+                tax_processor=amounts.tax_processor,
+                tax_calculation_processor_id=amounts.tax_calculation_processor_id,
                 invoice_number=invoice_number,
                 organization=subscription.organization,
                 customer=customer,
                 product=subscription.product,
-                discount=discount,
+                discount=subscription.discount,
                 subscription=subscription,
                 checkout=None,
                 items=items,
@@ -2154,7 +2113,7 @@ class OrderService:
                     tax_calculation_processor_id,
                     tax_amount,
                     tax_breakdown,
-                ) = await self._calculate_tax(
+                ) = await calculate_tax(
                     reference=str(order.id),
                     taxable_amount=order.net_amount,
                     currency=order.currency,
@@ -2981,92 +2940,6 @@ class OrderService:
             await subscription_service.enqueue_benefits_grants(session, subscription)
 
         return order
-
-    async def _calculate_tax(
-        self,
-        *,
-        reference: str,
-        taxable_amount: int,
-        tax_behavior_option: TaxBehaviorOption,
-        currency: str,
-        customer: Customer,
-        product: Product,
-        tax_exempted: bool,
-        allow_silent_failure: bool = True,
-    ) -> tuple[
-        TaxProcessor | None,
-        TaxBehavior | None,
-        str | None,
-        int,
-        Sequence[TaxBreakdownItem],
-    ]:
-        billing_address = customer.billing_address
-        tax_id = customer.tax_id
-
-        tax_processor: TaxProcessor | None = None
-        tax_behavior: TaxBehavior | None = None
-        tax_calculation: TaxCalculation | None = None
-        tax_amount = 0
-        tax_breakdown: list[TaxBreakdownItem] = []
-        tax_calculation_processor_id: str | None = None
-
-        if (
-            taxable_amount != 0
-            and product.is_tax_applicable
-            and billing_address is not None
-        ):
-            try:
-                (
-                    tax_calculation,
-                    tax_processor,
-                ) = await tax_calculation_service.calculate(
-                    reference,
-                    currency,
-                    # Stripe doesn't support calculating negative tax amounts
-                    taxable_amount if taxable_amount >= 0 else -taxable_amount,
-                    tax_behavior_option,
-                    product.tax_code,
-                    billing_address,
-                    [tax_id] if tax_id is not None else [],
-                    tax_exempted,
-                )
-            except TaxCalculationLogicalError:
-                # The subscription flow tolerates an uncomputable tax (the
-                # address is fixed up over the lifecycle). Off-session draft
-                # orders persist this result and never recompute it, so a silent
-                # zero would charge tax-free — the caller must surface it instead.
-                if not allow_silent_failure:
-                    raise
-                log.warning(
-                    "Failed to calculate tax for subscription order due to invalid or incomplete address",
-                    reference=reference,
-                    customer_id=customer.id,
-                )
-                tax_amount = 0
-                tax_calculation_processor_id = None
-            else:
-                if taxable_amount >= 0:
-                    tax_calculation_processor_id = tax_calculation["processor_id"]
-                    tax_amount = tax_calculation["amount"]
-                else:
-                    # When the taxable amount is negative it's usually due to a credit proration
-                    # this means we "owe" the customer money -- but we don't pay it back at this
-                    # point. This also means that there's no money transaction going on, and we
-                    # don't have to record the tax transaction either.
-                    tax_calculation_processor_id = None
-                    tax_amount = -tax_calculation["amount"]
-
-            if tax_calculation is not None:
-                tax_behavior = tax_calculation["tax_behavior"]
-                tax_breakdown = tax_calculation["tax_breakdown"]
-
-        return (
-            tax_processor,
-            tax_behavior,
-            tax_calculation_processor_id,
-            tax_amount,
-            tax_breakdown,
-        )
 
     async def schedule_retry_for_past_due_orders(
         self,

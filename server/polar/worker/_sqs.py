@@ -12,9 +12,8 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from polar.config import settings
+from polar.kit.json import json_obj_serializer
 from polar.logging import Logger
-
-from ._encoder import _json_obj_serializer
 
 if TYPE_CHECKING:
     from mypy_boto3_scheduler.client import EventBridgeSchedulerClient
@@ -128,7 +127,7 @@ def build_envelope(
             "attempt": attempt,
         },
         separators=(",", ":"),
-        default=_json_obj_serializer,
+        default=json_obj_serializer,
     )
 
 

@@ -114,8 +114,11 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
 
         if request.user is not None:
             oauth2_client.user_id = request.user.id
-        oauth2_client.registration_access_token = generate_token(
-            prefix=CLIENT_REGISTRATION_TOKEN_PREFIX
+
+        # Sync: must run while we hold the plaintext, and authlib can't await.
+        oauth2_client.set_client_secret_sync(oauth2_client.client_secret)
+        oauth2_client.set_registration_access_token_sync(
+            generate_token(prefix=CLIENT_REGISTRATION_TOKEN_PREFIX)
         )
 
         self.server.session.add(oauth2_client)

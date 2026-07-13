@@ -1,7 +1,7 @@
 import pathlib
 
 from generator.casing import to_camel_case, to_pascal_case, to_snake_case
-from generator.emitter import EmitterBase
+from generator.emitter import EmitterBase, Prerelease
 from generator.ir import (
     APIIR,
     APIVersion,
@@ -22,8 +22,12 @@ EMITTER_DIRECTORY = pathlib.Path(__file__).parent
 
 
 class TypeScriptEmitter(EmitterBase):
-    def __init__(self, ir: APIIR, version: str) -> None:
-        super().__init__(ir, version, EMITTER_DIRECTORY / "template")
+    def __init__(
+        self, ir: APIIR, version: str, *, prerelease: Prerelease | None = None
+    ) -> None:
+        super().__init__(
+            ir, version, EMITTER_DIRECTORY / "template", prerelease=prerelease
+        )
 
     def emit(self, root_directory: pathlib.Path | str) -> None:
         """Emit the TypeScript SDK files to the specified root directory."""
@@ -106,6 +110,12 @@ class TypeScriptEmitter(EmitterBase):
     def get_version_string(self, api: APIVersion) -> str:
         """Return the version string for a given API version."""
         return api.version
+
+    def format_version(self) -> str:
+        """Return the SDK version in semver notation (e.g. '1.2.3-alpha.1')."""
+        if self.prerelease is None:
+            return self.version
+        return f"{self.version}-{self.prerelease}"
 
     def setup_environment(self) -> None:
         """Add TypeScript-specific filters to the Jinja2 environment."""

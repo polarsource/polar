@@ -6,6 +6,8 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
+from polar.kit import encryption
+from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
@@ -242,6 +244,13 @@ class TestCreate:
     ) -> None:
         await _enable_feature(save_fixture, organization)
         mocker.patch.object(settings, "is_production", return_value=True)
+        # `get_key_provider` is cached, so faking production would otherwise reach
+        # for KMS whenever this test happens to be the first caller in the process.
+        mocker.patch.object(
+            encryption,
+            "get_key_provider",
+            return_value=LocalKeyProvider(settings.ENCRYPTION_LOCAL_KEY),
+        )
 
         # A test-mode key is rejected in production...
         with pytest.raises(SourceKeyModeMismatch):

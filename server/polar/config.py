@@ -345,7 +345,11 @@ class Settings(BaseSettings):
     # When enabled, jobs enqueued for an allowlisted actor are routed to an
     # SQS queue consumed by the Lambda worker instead of Redis.
     WORKER_SQS_ENABLED: bool = False
-    WORKER_SQS_ACTORS: set[str] = {"dummy"}
+    WORKER_SQS_ACTORS: set[str] = {
+        "dummy",
+        "observability.invariants.enqueue",
+        "observability.invariants.check",
+    }
     WORKER_SQS_QUEUE_PREFIX: str = "polar-tasks"
     # Override to http://127.0.0.1:4566 in .env to target LocalStack
     SQS_ENDPOINT_URL: str | None = None

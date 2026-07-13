@@ -21,6 +21,14 @@ async def test_encrypt_decrypt_roundtrip() -> None:
 
 
 @pytest.mark.asyncio
+async def test_encrypt_sync_roundtrips_through_async_decrypt() -> None:
+    secret = EncryptedString.encrypt_sync("xoxb-1234", context=CONTEXT)
+    assert secret.encrypted_value.startswith("v1.")
+    assert "xoxb-1234" not in secret.encrypted_value
+    assert await secret.decrypt() == "xoxb-1234"
+
+
+@pytest.mark.asyncio
 async def test_each_encryption_uses_a_fresh_data_key() -> None:
     first = await EncryptedString.encrypt("same", context=CONTEXT)
     second = await EncryptedString.encrypt("same", context=CONTEXT)

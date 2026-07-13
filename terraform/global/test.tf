@@ -28,6 +28,14 @@ resource "tfe_variable" "google_client_secret_test" {
   variable_set_id = tfe_variable_set.test.id
 }
 
+resource "tfe_variable" "google_service_account_json_test" {
+  key             = "google_service_account_json"
+  category        = "terraform"
+  description     = "Google service account JSON key for fetching the organization review AUP for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
 resource "tfe_variable" "openai_api_key_test" {
   key             = "openai_api_key"
   category        = "terraform"

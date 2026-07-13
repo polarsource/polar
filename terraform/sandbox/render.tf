@@ -176,8 +176,9 @@ module "sandbox" {
   }
 
   google_secrets = {
-    client_id     = var.google_client_id_sandbox
-    client_secret = var.google_client_secret_sandbox
+    client_id            = var.google_client_id_sandbox
+    client_secret        = var.google_client_secret_sandbox
+    service_account_json = var.google_service_account_json
   }
 
   openai_secrets = {

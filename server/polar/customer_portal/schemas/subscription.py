@@ -1,11 +1,23 @@
 import inspect
 from typing import Annotated, Literal
 
-from pydantic import UUID4, AliasChoices, AliasPath, Field, FutureDatetime
+from pydantic import (
+    UUID4,
+    AliasChoices,
+    AliasPath,
+    ConfigDict,
+    Field,
+    FutureDatetime,
+)
 from pydantic.json_schema import SkipJsonSchema
 
-from polar.enums import SubscriptionProrationBehavior
-from polar.kit.schemas import IDSchema, Schema, SetSchemaReference, TimestampedSchema
+from polar.kit.schemas import (
+    IDSchema,
+    Int32,
+    Schema,
+    SetSchemaReference,
+    TimestampedSchema,
+)
 from polar.meter.schemas import NAME_DESCRIPTION as METER_NAME_DESCRIPTION
 from polar.models.subscription import CustomerCancellationReason
 from polar.product.schemas import (
@@ -80,17 +92,33 @@ class CustomerSubscriptionUpdateProduct(Schema):
 
 
 class CustomerSubscriptionUpdateSeats(Schema):
-    seats: int = Field(
+    seats: Int32 = Field(
         description="Update the number of seats for this subscription.",
         ge=1,
     )
-    proration_behavior: SubscriptionProrationBehavior | None = Field(
-        default=None,
-        description=(
-            "Determine how to handle the proration billing. "
-            "If not provided, will use the default organization setting."
-        ),
+
+
+class CustomerSubscriptionChangePreviewProduct(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: UUID4 = Field(
+        description="Preview a change of the subscription to this product."
     )
+
+
+class CustomerSubscriptionChangePreviewSeats(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    seats: Int32 = Field(
+        description="Preview a change of the subscription to this number of seats.",
+        ge=1,
+    )
+
+
+CustomerSubscriptionChangePreview = Annotated[
+    CustomerSubscriptionChangePreviewProduct | CustomerSubscriptionChangePreviewSeats,
+    SetSchemaReference("CustomerSubscriptionChangePreview"),
+]
 
 
 class CustomerSubscriptionCancel(Schema):

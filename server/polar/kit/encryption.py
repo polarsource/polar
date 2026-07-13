@@ -50,6 +50,10 @@ class KeyProvider(Protocol):
         """Return a fresh ``(plaintext_data_key, wrapped_data_key)`` pair."""
         ...
 
+    def generate_data_key_sync(self, context: dict[str, str]) -> tuple[bytes, bytes]:
+        """Blocking variant of :meth:`generate_data_key` for callers that cannot await."""
+        ...
+
     async def decrypt_data_key(self, wrapped: bytes, context: dict[str, str]) -> bytes:
         """Unwrap a previously wrapped data key."""
         ...
@@ -62,11 +66,14 @@ class LocalKeyProvider:
     def __init__(self, key: str) -> None:
         self._key = AESGCM(hashlib.sha256(key.encode("utf-8")).digest())
 
-    async def generate_data_key(self, context: dict[str, str]) -> tuple[bytes, bytes]:
+    def generate_data_key_sync(self, context: dict[str, str]) -> tuple[bytes, bytes]:
         data_key = os.urandom(DATA_KEY_SIZE)
         nonce = os.urandom(NONCE_SIZE)
         wrapped = nonce + self._key.encrypt(nonce, data_key, _encode_context(context))
         return data_key, wrapped
+
+    async def generate_data_key(self, context: dict[str, str]) -> tuple[bytes, bytes]:
+        return self.generate_data_key_sync(context)
 
     async def decrypt_data_key(self, wrapped: bytes, context: dict[str, str]) -> bytes:
         nonce, ciphertext = wrapped[:NONCE_SIZE], wrapped[NONCE_SIZE:]
@@ -82,17 +89,28 @@ class KMSKeyProvider:
     @functools.cached_property
     def _client(self) -> Any:
         import boto3
+        from botocore.config import Config
 
-        return boto3.client("kms", region_name=settings.AWS_REGION)
+        # Bound the blocking KMS calls: the sync encryption path can run on the
+        # event loop, so a slow or throttled KMS must fail fast, not stall it.
+        return boto3.client(
+            "kms",
+            region_name=settings.AWS_REGION,
+            config=Config(
+                connect_timeout=3,
+                read_timeout=5,
+                retries={"max_attempts": 3, "mode": "standard"},
+            ),
+        )
 
-    async def generate_data_key(self, context: dict[str, str]) -> tuple[bytes, bytes]:
-        response = await asyncio.to_thread(
-            self._client.generate_data_key,
-            KeyId=self._key_id,
-            KeySpec="AES_256",
-            EncryptionContext=context,
+    def generate_data_key_sync(self, context: dict[str, str]) -> tuple[bytes, bytes]:
+        response = self._client.generate_data_key(
+            KeyId=self._key_id, KeySpec="AES_256", EncryptionContext=context
         )
         return response["Plaintext"], response["CiphertextBlob"]
+
+    async def generate_data_key(self, context: dict[str, str]) -> tuple[bytes, bytes]:
+        return await asyncio.to_thread(self.generate_data_key_sync, context)
 
     async def decrypt_data_key(self, wrapped: bytes, context: dict[str, str]) -> bytes:
         response = await asyncio.to_thread(
@@ -122,20 +140,35 @@ class EncryptedString:
         self.encrypted_value = encrypted_value
         self.context = dict(context)
 
+    @staticmethod
+    def _seal(
+        data_key: bytes, wrapped: bytes, plaintext: str, context: dict[str, str]
+    ) -> str:
+        nonce = os.urandom(NONCE_SIZE)
+        ciphertext = AESGCM(data_key).encrypt(
+            nonce, plaintext.encode("utf-8"), _encode_context(context)
+        )
+        return ".".join(
+            (VERSION, _b64encode(wrapped), _b64encode(nonce), _b64encode(ciphertext))
+        )
+
     @classmethod
     async def encrypt(
         cls, plaintext: str, *, context: dict[str, str]
     ) -> "EncryptedString":
         provider = get_key_provider()
         data_key, wrapped = await provider.generate_data_key(context)
-        nonce = os.urandom(NONCE_SIZE)
-        ciphertext = AESGCM(data_key).encrypt(
-            nonce, plaintext.encode("utf-8"), _encode_context(context)
-        )
-        encoded = ".".join(
-            (VERSION, _b64encode(wrapped), _b64encode(nonce), _b64encode(ciphertext))
-        )
-        return cls(encoded, context)
+        return cls(cls._seal(data_key, wrapped, plaintext, context), context)
+
+    @classmethod
+    def encrypt_sync(
+        cls, plaintext: str, *, context: dict[str, str]
+    ) -> "EncryptedString":
+        """Blocking encryption for callers that cannot await; keep it to
+        low-volume paths since it blocks on the KMS call."""
+        provider = get_key_provider()
+        data_key, wrapped = provider.generate_data_key_sync(context)
+        return cls(cls._seal(data_key, wrapped, plaintext, context), context)
 
     async def decrypt(self, *, id: str | None = None) -> str:
         context = {**self.context, "id": id} if id is not None else self.context

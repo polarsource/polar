@@ -15,14 +15,23 @@ from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
 from polar.subscription.schemas import SubscriptionChargePreview, SubscriptionID
-from polar.subscription.service import AlreadyCanceledSubscription
+from polar.subscription.service import (
+    AlreadyCanceledSubscription,
+    NotASeatBasedSubscription,
+)
 from polar.subscription.service import subscription as subscription_service
 
 from .. import auth
-from ..schemas.subscription import CustomerSubscription, CustomerSubscriptionUpdate
+from ..schemas.subscription import (
+    CustomerSubscription,
+    CustomerSubscriptionChangePreview,
+    CustomerSubscriptionUpdate,
+)
 from ..service.subscription import (
     CustomerSubscriptionSortProperty,
     PauseResumeNotAllowed,
+    UpdateSubscriptionPlanNotAllowed,
+    UpdateSubscriptionSeatsNotAllowed,
 )
 from ..service.subscription import (
     customer_subscription as customer_subscription_service,
@@ -138,6 +147,41 @@ async def get_charge_preview(
             raise ResourceNotFound()
 
     return await subscription_service.calculate_charge_preview(session, subscription)
+
+
+@router.post(
+    "/{id}/change-preview",
+    summary="Preview Subscription Change",
+    response_model=SubscriptionChargePreview,
+    responses={
+        400: {"model": NotASeatBasedSubscription.schema()},
+        403: {
+            "description": "Previewing this change is not allowed.",
+            "model": AlreadyCanceledSubscription.schema()
+            | UpdateSubscriptionPlanNotAllowed.schema()
+            | UpdateSubscriptionSeatsNotAllowed.schema(),
+        },
+        404: SubscriptionNotFound,
+    },
+    tags=[APITag.private],
+)
+async def preview_change(
+    id: SubscriptionID,
+    change: CustomerSubscriptionChangePreview,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionChargePreview:
+    """Preview what a subscription change would cost, without applying it."""
+    subscription = await customer_subscription_service.get_by_id(
+        session, auth_subject, id
+    )
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    return await customer_subscription_service.preview_change(
+        session, subscription, change=change
+    )
 
 
 @router.patch(

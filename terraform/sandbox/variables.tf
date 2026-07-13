@@ -26,6 +26,12 @@ variable "google_client_secret_sandbox" {
   sensitive   = true
 }
 
+variable "google_service_account_json" {
+  description = "Google service account JSON key for fetching the organization review AUP"
+  type        = string
+  sensitive   = true
+}
+
 variable "openai_api_key_sandbox" {
   description = "OpenAI API Key for sandbox"
   type        = string

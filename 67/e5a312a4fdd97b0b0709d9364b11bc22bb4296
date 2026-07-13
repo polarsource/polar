@@ -1,0 +1,21 @@
+server/polar/observability/invariants/rules/no_recent_subscriptions.py
+  s_560b79dace0543::t_c29ecee1f8c3e0 24-29
+server/polar/observability/invariants/rules/no_recent_orders.py
+  s_560b79dace0543::t_e6e88a26d7b3eb 22-25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "67e5a312a4fdd97b0b0709d9364b11bc22bb4296",
+  "prompts": {},
+  "sessions": {
+    "s_560b79dace0543": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "826db7a9-e82d-46ad-a40c-de21684256a6",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

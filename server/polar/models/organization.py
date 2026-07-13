@@ -104,9 +104,10 @@ class OrganizationOrderSettings(TypedDict):
     invoice_numbering: InvoiceNumbering
 
 
-_default_order_settings: OrganizationOrderSettings = {
-    "invoice_numbering": InvoiceNumbering.customer,
-}
+def _default_order_settings() -> OrganizationOrderSettings:
+    return {
+        "invoice_numbering": InvoiceNumbering.customer,
+    }
 
 
 class OrganizationCustomerEmailSettings(TypedDict):
@@ -125,21 +126,22 @@ class OrganizationCustomerEmailSettings(TypedDict):
     subscription_updated: bool
 
 
-_default_customer_email_settings: OrganizationCustomerEmailSettings = {
-    "order_confirmation": True,
-    "subscription_cancellation": True,
-    "subscription_confirmation": True,
-    "subscription_cycled": True,
-    "subscription_cycled_after_trial": True,
-    "subscription_past_due": True,
-    "subscription_paused": True,
-    "subscription_resumed": True,
-    "subscription_renewal_reminder": True,
-    "subscription_revoked": True,
-    "subscription_trial_conversion_reminder": True,
-    "subscription_uncanceled": True,
-    "subscription_updated": True,
-}
+def _default_customer_email_settings() -> OrganizationCustomerEmailSettings:
+    return {
+        "order_confirmation": True,
+        "subscription_cancellation": True,
+        "subscription_confirmation": True,
+        "subscription_cycled": True,
+        "subscription_cycled_after_trial": True,
+        "subscription_past_due": True,
+        "subscription_paused": True,
+        "subscription_resumed": True,
+        "subscription_renewal_reminder": True,
+        "subscription_revoked": True,
+        "subscription_trial_conversion_reminder": True,
+        "subscription_uncanceled": True,
+        "subscription_updated": True,
+    }
 
 
 class CustomerPortalUsageSettings(TypedDict):
@@ -162,25 +164,27 @@ class OrganizationCustomerPortalSettings(TypedDict):
     customer: NotRequired[CustomerPortalCustomerSettings]
 
 
-_default_customer_portal_settings: OrganizationCustomerPortalSettings = {
-    "usage": {"show": True},
-    "subscription": {
-        "update_seats": True,
-        "update_plan": True,
-    },
-    "customer": {
-        "allow_email_change": False,
-    },
-}
+def _default_customer_portal_settings() -> OrganizationCustomerPortalSettings:
+    return {
+        "usage": {"show": True},
+        "subscription": {
+            "update_seats": True,
+            "update_plan": True,
+        },
+        "customer": {
+            "allow_email_change": False,
+        },
+    }
 
 
 class OrganizationCheckoutSettings(TypedDict):
     require_3ds: bool
 
 
-_default_checkout_settings: OrganizationCheckoutSettings = {
-    "require_3ds": True,
-}
+def _default_checkout_settings() -> OrganizationCheckoutSettings:
+    return {
+        "require_3ds": True,
+    }
 
 
 class OrganizationIndividualLegalEntity(TypedDict):

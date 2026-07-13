@@ -220,7 +220,7 @@ export default {
     },
     cta: {
       startTrial: 'Testphase starten',
-      subscribeNow: 'Jetzt abonnieren',
+      subscribeNow: 'Jetzt kostenpflichtig abonnieren',
       payNow: 'Jetzt bezahlen',
       getFree: 'Kostenlos erhalten',
       paymentsUnavailable: 'Zahlungen sind derzeit nicht verfügbar',

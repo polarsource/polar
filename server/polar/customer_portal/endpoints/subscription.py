@@ -14,7 +14,11 @@ from polar.order.service import PaymentFailed
 from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
-from polar.subscription.schemas import SubscriptionChargePreview, SubscriptionID
+from polar.subscription.schemas import (
+    SubscriptionCancelPreview,
+    SubscriptionChargePreview,
+    SubscriptionID,
+)
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
     NotASeatBasedSubscription,
@@ -147,6 +151,29 @@ async def get_charge_preview(
             raise ResourceNotFound()
 
     return await subscription_service.calculate_charge_preview(session, subscription)
+
+
+@router.get(
+    "/{id}/cancel-preview",
+    summary="Preview Subscription Cancellation",
+    response_model=SubscriptionCancelPreview,
+    responses={404: SubscriptionNotFound},
+    tags=[APITag.private],
+)
+async def get_cancel_preview(
+    id: SubscriptionID,
+    auth_subject: auth.CustomerPortalUnionRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionCancelPreview:
+    """Preview the effect of cancelling a subscription right now."""
+    subscription = await customer_subscription_service.get_by_id(
+        session, auth_subject, id
+    )
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    return await subscription_service.calculate_cancel_preview(session, subscription)
 
 
 @router.post(

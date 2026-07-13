@@ -1598,6 +1598,31 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/subscriptions/{id}/cancel-preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Preview Subscription Cancellation
+     * @description Preview the effect of cancelling a subscription right now.
+     *
+     *     Reports whether cancelling also stops collecting the outstanding payment,
+     *     and the amount that would no longer be collected.
+     *
+     *     **Scopes**: `subscriptions:read` `subscriptions:write`
+     */
+    get: operations['subscriptions:get_cancel_preview']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/subscriptions/{id}/change-preview': {
     parameters: {
       query?: never
@@ -4804,6 +4829,28 @@ export interface paths {
      *     **Scopes**: `customer_portal:read` `customer_portal:write`
      */
     get: operations['customer_portal:subscriptions:get_charge_preview']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/subscriptions/{id}/cancel-preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Preview Subscription Cancellation
+     * @description Preview the effect of cancelling a subscription right now.
+     *
+     *     **Scopes**: `customer_portal:read` `customer_portal:write`
+     */
+    get: operations['customer_portal:subscriptions:get_cancel_preview']
     put?: never
     post?: never
     delete?: never
@@ -31623,6 +31670,22 @@ export interface components {
       cancel_at_period_end: boolean
     }
     /**
+     * SubscriptionCancelPreview
+     * @description Preview of the effect of cancelling a subscription right now.
+     */
+    SubscriptionCancelPreview: {
+      /**
+       * Stops Collection
+       * @description Whether cancelling now also stops collecting the outstanding payment. True for a past-due subscription whose organization has no benefit revocation grace period: cancelling voids the pending order and stops dunning retries.
+       */
+      stops_collection: boolean
+      /**
+       * Outstanding Amount
+       * @description Amount in cents still due on the pending order that would be voided, or null when nothing would be dropped.
+       */
+      outstanding_amount: number | null
+    }
+    /**
      * SubscriptionCanceledEvent
      * @description An event created by Polar when a subscription is canceled.
      */
@@ -39496,6 +39559,47 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SubscriptionChargePreview']
+        }
+      }
+      /** @description Subscription not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'subscriptions:get_cancel_preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionCancelPreview']
         }
       }
       /** @description Subscription not found. */
@@ -49451,6 +49555,47 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SubscriptionChargePreview']
+        }
+      }
+      /** @description Customer subscription was not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:subscriptions:get_cancel_preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionCancelPreview']
         }
       }
       /** @description Customer subscription was not found. */

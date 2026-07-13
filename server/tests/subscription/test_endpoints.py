@@ -17,6 +17,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.customer_seat import SeatStatus
+from polar.models.order import OrderStatus
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
@@ -26,6 +27,7 @@ from tests.fixtures.random_objects import (
     create_canceled_subscription,
     create_customer,
     create_customer_seat,
+    create_order,
     create_product,
     create_subscription,
     create_subscription_with_seats,
@@ -1458,6 +1460,108 @@ class TestGetChargePreview:
         )
 
         assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestGetCancelPreview:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/subscriptions/{uuid.uuid4()}/cancel-preview")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_past_due_no_grace_stops_collection(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+        await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=utc_now(),
+        )
+
+        response = await client.get(
+            f"/v1/subscriptions/{subscription.id}/cancel-preview"
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["stops_collection"] is True
+        assert json["outstanding_amount"] == 1000
+
+    @pytest.mark.auth
+    async def test_past_due_within_grace_keeps_collecting(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        product.organization.subscription_settings = {
+            **product.organization.subscription_settings,
+            "benefit_revocation_grace_period": 7,
+        }
+        await save_fixture(product.organization)
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+        await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=utc_now(),
+        )
+
+        response = await client.get(
+            f"/v1/subscriptions/{subscription.id}/cancel-preview"
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["stops_collection"] is False
+        assert json["outstanding_amount"] is None
+
+    @pytest.mark.auth
+    async def test_active_keeps_collecting(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.get(
+            f"/v1/subscriptions/{subscription.id}/cancel-preview"
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["stops_collection"] is False
+        assert json["outstanding_amount"] is None
 
 
 @pytest.mark.asyncio

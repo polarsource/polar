@@ -93,6 +93,7 @@ from polar.notifications.notification import (
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.order.amounts import compute_order_amounts
+from polar.order.repository import OrderRepository
 from polar.organization.repository import (
     SUBSCRIPTION_CANCELLATION_STATUSES,
     OrganizationRepository,
@@ -112,6 +113,7 @@ from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 from .repository import SubscriptionRepository, SubscriptionUpdateRepository
 from .schemas import (
     SubscriptionCancel,
+    SubscriptionCancelPreview,
     SubscriptionChargePreview,
     SubscriptionChargePreviewProration,
     SubscriptionCreate,
@@ -2315,6 +2317,25 @@ class SubscriptionService:
             net_amount=amounts.net_amount,
             tax_amount=amounts.tax_amount,
             total_amount=amounts.total_amount,
+        )
+
+    async def calculate_cancel_preview(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> SubscriptionCancelPreview:
+        stops_collection = await self._cancel_stops_collection(session, subscription)
+
+        outstanding_amount: int | None = None
+        if stops_collection:
+            order_repository = OrderRepository.from_session(session)
+            pending_orders = await order_repository.get_pending_orders_for_subscription(
+                subscription.id
+            )
+            if pending_orders:
+                outstanding_amount = sum(order.due_amount for order in pending_orders)
+
+        return SubscriptionCancelPreview(
+            stops_collection=stops_collection,
+            outstanding_amount=outstanding_amount,
         )
 
     async def calculate_change_preview(

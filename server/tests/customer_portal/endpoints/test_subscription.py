@@ -4,8 +4,10 @@ import pytest
 from httpx import AsyncClient
 
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.models import Customer, Member, Organization, Product, Subscription
+from polar.models.order import OrderStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import (
@@ -19,6 +21,7 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_benefit,
     create_canceled_subscription,
+    create_order,
     create_product,
     set_product_benefits,
 )
@@ -60,6 +63,48 @@ class TestGetSubscription:
         benefit_ids = {benefit["id"] for benefit in json["product"]["benefits"]}
         assert str(public_benefit.id) in benefit_ids
         assert str(private_benefit.id) not in benefit_ids
+
+
+@pytest.mark.asyncio
+class TestGetCancelPreview:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(
+            f"/v1/customer-portal/subscriptions/{uuid.uuid4()}/cancel-preview"
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_past_due_no_grace_stops_collection(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+        await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=utc_now(),
+        )
+
+        response = await client.get(
+            f"/v1/customer-portal/subscriptions/{subscription.id}/cancel-preview"
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["stops_collection"] is True
+        assert json["outstanding_amount"] == 1000
 
 
 @pytest.mark.asyncio

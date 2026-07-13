@@ -145,7 +145,7 @@ def _stub_analyzer_io(
     mocker.patch.object(review_analyzer, "_build_prompt", return_value="test-prompt")
     mocker.patch(
         "polar.organization_review.analyzer.fetch_policy_content",
-        return_value="test-policy",
+        new=AsyncMock(return_value="test-policy"),
     )
     mocker.patch.object(
         review_analyzer.agent,

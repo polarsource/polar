@@ -234,6 +234,16 @@ class Settings(BaseSettings):
     # Google
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
+    # Service account (JSON key) used to fetch the organization review AUP from
+    # Google Drive. The document must be shared with the service account email.
+    GOOGLE_SERVICE_ACCOUNT_JSON: str = ""
+
+    # Organization review Acceptable Use Policy source (Google Doc, fetched via
+    # the Drive API and cached in-process).
+    ORGANIZATION_REVIEW_AUP_DOCUMENT_ID: str = (
+        "13dRNFns8e_BD7yJ0uagDp3_1RB1-hGgam93d3p_9piw"
+    )
+    ORGANIZATION_REVIEW_AUP_CACHE_TTL_SECONDS: int = 3600
 
     # Apple
     APPLE_CLIENT_ID: str = ""

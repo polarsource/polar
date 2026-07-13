@@ -212,8 +212,8 @@ async def run(
 
     policy_override: str | None = None
     if policy == "default":
-        policy_override = fetch_policy_content()
-        typer.echo("Using DEFAULT (disk) policy")
+        policy_override = await fetch_policy_content()
+        typer.echo("Using DEFAULT (live) policy")
     elif policy is not None:
         policy_override = Path(policy).read_text()
         typer.echo(f"Using policy from file: {policy}")

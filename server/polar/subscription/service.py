@@ -1885,12 +1885,14 @@ class SubscriptionService:
         customer_reason: CustomerCancellationReason | None = None,
         customer_comment: str | None = None,
     ) -> Subscription:
+        immediately = await self._cancel_stops_collection(session, subscription)
         return await self._perform_cancellation(
             session,
             ctx,
             subscription,
             customer_reason=customer_reason,
             customer_comment=customer_comment,
+            immediately=immediately,
         )
 
     async def pause(
@@ -2126,6 +2128,31 @@ class SubscriptionService:
         )
         session.add(subscription)
         return subscription
+
+    async def _cancel_stops_collection(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> bool:
+        """Whether cancelling now should also stop collecting the pending order.
+
+        True only for a ``past_due`` subscription whose organization has no benefit
+        revocation grace period: the customer never retained access, so the failed
+        payment is dropped by cancelling immediately, which voids the pending order
+        through ``_on_subscription_revoked``.
+        """
+        if subscription.status != SubscriptionStatus.past_due:
+            return False
+
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id(subscription.product_id)
+        assert product is not None
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            product.organization_id, include_deleted=True, include_blocked=True
+        )
+        assert organization is not None
+
+        return int(organization.benefit_revocation_grace_period) == 0
 
     async def update_meters(
         self, session: AsyncSession, subscription: Subscription

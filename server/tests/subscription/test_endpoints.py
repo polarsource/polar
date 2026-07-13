@@ -652,6 +652,7 @@ class TestSubscriptionUpdateCancel:
             customer=customer,
             started_at=datetime(2023, 1, 1),
             status=SubscriptionStatus.past_due,
+            past_due_at=utc_now(),
         )
 
         reason = "too_expensive"
@@ -668,7 +669,10 @@ class TestSubscriptionUpdateCancel:
 
         assert response.status_code == 200
         updated_subscription = response.json()
-        assert updated_subscription["status"] == SubscriptionStatus.past_due
+        # No revocation grace period (org default 0): cancelling a past-due
+        # subscription ends it immediately instead of at period end.
+        assert updated_subscription["status"] == SubscriptionStatus.canceled
+        assert updated_subscription["cancel_at_period_end"] is False
 
 
 @pytest.mark.asyncio

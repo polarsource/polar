@@ -1598,6 +1598,30 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/subscriptions/{id}/change-preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Preview Subscription Change
+     * @description Preview what a subscription change would cost, without applying it.
+     *
+     *     Returns the proration breakdown and the amount due today.
+     *
+     *     **Scopes**: `subscriptions:write`
+     */
+    post: operations['subscriptions:preview_change']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/transactions/search': {
     parameters: {
       query?: never
@@ -4782,6 +4806,26 @@ export interface paths {
     get: operations['customer_portal:subscriptions:get_charge_preview']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/subscriptions/{id}/change-preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Preview Subscription Change
+     * @description Preview what a subscription change would cost, without applying it.
+     */
+    post: operations['customer_portal:subscriptions:preview_change']
     delete?: never
     options?: never
     head?: never
@@ -18432,6 +18476,26 @@ export interface components {
        */
       cancellation_comment?: string | null
     }
+    CustomerSubscriptionChangePreview:
+      | components['schemas']['CustomerSubscriptionChangePreviewProduct']
+      | components['schemas']['CustomerSubscriptionChangePreviewSeats']
+    /** CustomerSubscriptionChangePreviewProduct */
+    CustomerSubscriptionChangePreviewProduct: {
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description Preview a change of the subscription to this product.
+       */
+      product_id: string
+    }
+    /** CustomerSubscriptionChangePreviewSeats */
+    CustomerSubscriptionChangePreviewSeats: {
+      /**
+       * Seats
+       * @description Preview a change of the subscription to this number of seats.
+       */
+      seats: number
+    }
     /** CustomerSubscriptionMeter */
     CustomerSubscriptionMeter: {
       /**
@@ -18662,10 +18726,6 @@ export interface components {
        * @description Update the number of seats for this subscription.
        */
       seats: number
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
-      proration_behavior?:
-        | components['schemas']['SubscriptionProrationBehavior']
-        | null
     }
     /**
      * CustomerTeam
@@ -23652,6 +23712,17 @@ export interface components {
        * @constant
        */
       error: 'MissingStripeScopes'
+      /** Detail */
+      detail: string
+    }
+    /** NotASeatBasedSubscription */
+    NotASeatBasedSubscription: {
+      /**
+       * Error
+       * @example NotASeatBasedSubscription
+       * @constant
+       */
+      error: 'NotASeatBasedSubscription'
       /** Detail */
       detail: string
     }
@@ -31651,6 +31722,35 @@ export interface components {
       /** Cancel At Period End */
       cancel_at_period_end?: boolean
     }
+    SubscriptionChangePreview:
+      | components['schemas']['SubscriptionChangePreviewProduct']
+      | components['schemas']['SubscriptionChangePreviewSeats']
+    /** SubscriptionChangePreviewProduct */
+    SubscriptionChangePreviewProduct: {
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description Preview a change of the subscription to this product.
+       * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
+       */
+      product_id: string
+      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      proration_behavior?:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | null
+    }
+    /** SubscriptionChangePreviewSeats */
+    SubscriptionChangePreviewSeats: {
+      /**
+       * Seats
+       * @description Preview a change of the subscription to this number of seats.
+       */
+      seats: number
+      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      proration_behavior?:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | null
+    }
     /**
      * SubscriptionChargePreview
      * @description Preview of the next charge for a subscription.
@@ -33997,6 +34097,28 @@ export interface components {
        * @constant
        */
       error: 'UnsupportedMigrationSource'
+      /** Detail */
+      detail: string
+    }
+    /** UpdateSubscriptionPlanNotAllowed */
+    UpdateSubscriptionPlanNotAllowed: {
+      /**
+       * Error
+       * @example UpdateSubscriptionPlanNotAllowed
+       * @constant
+       */
+      error: 'UpdateSubscriptionPlanNotAllowed'
+      /** Detail */
+      detail: string
+    }
+    /** UpdateSubscriptionSeatsNotAllowed */
+    UpdateSubscriptionSeatsNotAllowed: {
+      /**
+       * Error
+       * @example UpdateSubscriptionSeatsNotAllowed
+       * @constant
+       */
+      error: 'UpdateSubscriptionSeatsNotAllowed'
       /** Detail */
       detail: string
     }
@@ -39374,6 +39496,69 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SubscriptionChargePreview']
+        }
+      }
+      /** @description Subscription not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'subscriptions:preview_change': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SubscriptionChangePreview']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionChargePreview']
+        }
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotASeatBasedSubscription']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AlreadyCanceledSubscription']
         }
       }
       /** @description Subscription not found. */
@@ -49266,6 +49451,72 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SubscriptionChargePreview']
+        }
+      }
+      /** @description Customer subscription was not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:subscriptions:preview_change': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerSubscriptionChangePreview']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionChargePreview']
+        }
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotASeatBasedSubscription']
+        }
+      }
+      /** @description Previewing this change is not allowed. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['AlreadyCanceledSubscription']
+            | components['schemas']['UpdateSubscriptionPlanNotAllowed']
+            | components['schemas']['UpdateSubscriptionSeatsNotAllowed']
         }
       }
       /** @description Customer subscription was not found. */

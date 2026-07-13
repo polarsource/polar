@@ -20,10 +20,13 @@ from polar.models import (
     SubscriptionMeter,
 )
 from polar.models.subscription import CustomerCancellationReason
+from polar.subscription.schemas import SubscriptionChargePreview
 from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 
 from ..schemas.subscription import (
+    CustomerSubscriptionChangePreview,
+    CustomerSubscriptionChangePreviewSeats,
     CustomerSubscriptionPause,
     CustomerSubscriptionResume,
     CustomerSubscriptionUpdate,
@@ -180,7 +183,6 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                     ctx,
                     subscription,
                     seats=updates.seats,
-                    proration_behavior=updates.proration_behavior,
                 )
 
         if isinstance(updates, CustomerSubscriptionUpdateClear):
@@ -229,6 +231,32 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             )
 
         return await self.uncancel(session, subscription)
+
+    async def preview_change(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        change: CustomerSubscriptionChangePreview,
+    ) -> SubscriptionChargePreview:
+        organization = subscription.product.organization
+        if isinstance(change, CustomerSubscriptionChangePreviewSeats):
+            if not organization.customer_portal_subscription_update_seats:
+                raise UpdateSubscriptionSeatsNotAllowed()
+            return await subscription_service.calculate_change_preview(
+                session,
+                subscription,
+                seats=change.seats,
+            )
+
+        if not organization.customer_portal_subscription_update_plan:
+            raise UpdateSubscriptionPlanNotAllowed()
+        return await subscription_service.calculate_change_preview(
+            session,
+            subscription,
+            product_id=change.product_id,
+            allowed_visibilities=frozenset({Visibility.public}),
+        )
 
     async def update_product(
         self,

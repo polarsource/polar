@@ -10861,10 +10861,6 @@ export interface CustomerSubscriptionUpdateSeats {
    * Update the number of seats for this subscription.
    */
   seats: number;
-  /**
-   * Determine how to handle the proration billing. If not provided, will use the default organization setting.
-   */
-  proration_behavior?: SubscriptionProrationBehavior | null;
 }
 /**
  * A team customer in an organization.

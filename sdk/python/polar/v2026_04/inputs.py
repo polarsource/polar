@@ -1710,9 +1710,6 @@ class CustomerSubscriptionUpdateSeats(typing.TypedDict):
     seats: int
     """Update the number of seats for this subscription."""
 
-    proration_behavior: typing.NotRequired[SubscriptionProrationBehavior | None]
-    """Determine how to handle the proration billing. If not provided, will use the default organization setting."""
-
 
 class CustomerTeamCreate(typing.TypedDict):
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]

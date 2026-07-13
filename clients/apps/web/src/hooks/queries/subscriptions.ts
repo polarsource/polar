@@ -59,6 +59,22 @@ export const useSubscriptionChargePreview = (
     enabled: options?.enabled ?? true,
   })
 
+export const useSubscriptionCancelPreview = (
+  id: string,
+  options?: { enabled?: boolean },
+) =>
+  useQuery({
+    queryKey: ['subscriptions', { id }, 'cancel-preview'],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/subscriptions/{id}/cancel-preview', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: options?.enabled ?? true,
+  })
+
 export const useUpdateSubscription = (id: string) =>
   useMutation({
     mutationFn: (body: schemas['SubscriptionUpdate']) => {

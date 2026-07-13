@@ -70,3 +70,37 @@ export function isOrderDunningFailed(
     subscription.customer_cancellation_reason === null
   )
 }
+
+// Mirror of UNRECOVERABLE_DECLINE_CODES in server/polar/models/payment.py.
+// Keep in sync — Stripe decline codes that will never succeed on retry.
+const UNRECOVERABLE_DECLINE_CODES = new Set([
+  'card_not_supported',
+  'do_not_honor',
+  'expired_card',
+  'fraudulent',
+  'incorrect_cvc',
+  'incorrect_number',
+  'invalid_account',
+  'invalid_cvc',
+  'invalid_expiry_year',
+  'invalid_pin',
+  'live_mode_test_card',
+  'lost_card',
+  'merchant_blacklist',
+  'not_permitted',
+  'pickup_card',
+  'previously_declined_do_not_retry',
+  'restricted_card',
+  'revocation_of_all_authorizations',
+  'revocation_of_authorization',
+  'security_violation',
+  'stolen_card',
+  'stop_payment_order',
+  'blocklist',
+])
+
+export const isPaymentNonRecoverable = (
+  payment: schemas['Payment'],
+): boolean =>
+  payment.decline_reason !== null &&
+  UNRECOVERABLE_DECLINE_CODES.has(payment.decline_reason)

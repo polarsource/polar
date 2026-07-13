@@ -2,10 +2,13 @@
 
 import revalidate from '@/app/actions'
 import { Modal, ModalProps } from '@polar-sh/orbit'
-import { useCustomerCancelSubscription } from '@/hooks/queries/customerPortal'
+import {
+  useCustomerCancelSubscription,
+  useCustomerSubscriptionCancelPreview,
+} from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
-import { isValidationError, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Client, isValidationError, schemas } from '@polar-sh/client'
+import { Alert, Button } from '@polar-sh/orbit'
 import { TextArea } from '@polar-sh/orbit'
 import {
   Form,
@@ -45,16 +48,24 @@ interface CustomerCancellationModalProps extends Omit<
   ModalProps,
   'title' | 'modalContent'
 > {
+  api: Client
   subscription: schemas['CustomerSubscription']
   cancelSubscription: ReturnType<typeof useCustomerCancelSubscription>
 }
 
 const CustomerCancellationModal = ({
+  api,
   subscription,
   cancelSubscription,
   ...props
 }: CustomerCancellationModalProps) => {
   const router = useRouter()
+
+  const { data: cancelPreview } = useCustomerSubscriptionCancelPreview(
+    api,
+    subscription.id,
+    subscription.status === 'past_due',
+  )
 
   const handleCancel = useCallback(() => {
     props.hide()
@@ -114,6 +125,13 @@ const CustomerCancellationModal = ({
               leaving to help us improve our product.
             </p>
           </div>
+          {cancelPreview?.stops_collection && (
+            <Alert
+              variant="warning"
+              title="Your latest payment didn't go through"
+              description="Cancelling now ends your subscription immediately and stops any further payment attempts."
+            />
+          )}
           <Form {...form}>
             <form onSubmit={handleSubmit(handleCancellation)}>
               <FormField

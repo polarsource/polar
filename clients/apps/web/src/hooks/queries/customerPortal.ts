@@ -328,6 +328,23 @@ export const useCustomerSubscriptionChargePreview = (
     enabled,
   })
 
+export const useCustomerSubscriptionCancelPreview = (
+  api: Client,
+  id: string,
+  enabled = true,
+) =>
+  useQuery({
+    queryKey: ['customer_subscription_cancel_preview', { id }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/subscriptions/{id}/cancel-preview', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled,
+  })
+
 export const useCustomerUpdateSubscription = (api: Client) =>
   useMutation({
     mutationFn: (variables: {

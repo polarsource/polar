@@ -50,8 +50,8 @@ and the Stripe Connect endpoint (`/v1/integrations/stripe/webhook` and
 the listener.
 
 `--port` defaults to `8000`. Conductor worktrees and multi-instance setups
-land outside the 0–2 base-port table, so always check the port printed by
-`dev docker up` rather than computing it.
+land outside the 0–2 base-port table, so read the api port from
+`dev docker ports` rather than computing it.
 
 Leave it running and `stripe listen` will log each event with the API's
 2xx response. Missing webhook → confirm the api port matches the

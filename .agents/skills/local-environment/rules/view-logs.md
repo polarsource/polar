@@ -6,29 +6,36 @@ tags: logs, debugging, troubleshooting
 
 # Viewing Service Logs
 
+`dev docker logs` **follows by default** (`-f` is on). It auto-routes by service
+name: app services (api/worker/web) come from this instance's `polar-app-<N>`
+project, and infra services (db/redis/minio/...) from `polar-shared`.
+
 ## Commands
 
-**View all logs (last output):**
+**Follow all app logs (the default):**
 ```bash
 dev docker logs
 ```
 
-**Follow logs in real-time:**
+**Print current logs and exit (don't follow):**
 ```bash
-dev docker logs -f
+dev docker logs --no-follow
+dev docker logs --no-follow api
 ```
+Use `--no-follow` in scripts or when you just want a snapshot — otherwise the
+command blocks streaming. (This maps to a foreground `docker compose logs`.)
 
 **Specific service logs:**
 ```bash
 dev docker logs api
 dev docker logs worker
 dev docker logs web
-dev docker logs db
+dev docker logs db       # auto-routed to polar-shared
 dev docker logs redis
 dev docker logs minio
 ```
 
-**Follow specific service:**
+**Follow a specific service:**
 ```bash
 dev docker logs -f api
 ```

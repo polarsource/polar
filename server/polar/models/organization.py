@@ -90,13 +90,14 @@ class OrganizationSubscriptionSettings(TypedDict):
     allow_customer_updates: bool
 
 
-_default_subscription_settings: OrganizationSubscriptionSettings = {
-    "allow_multiple_subscriptions": False,
-    "allow_customer_updates": True,
-    "proration_behavior": SubscriptionProrationBehavior.prorate,
-    "benefit_revocation_grace_period": 0,
-    "prevent_trial_abuse": False,
-}
+def _default_subscription_settings() -> OrganizationSubscriptionSettings:
+    return {
+        "allow_multiple_subscriptions": False,
+        "allow_customer_updates": True,
+        "proration_behavior": SubscriptionProrationBehavior.prorate,
+        "benefit_revocation_grace_period": 0,
+        "prevent_trial_abuse": False,
+    }
 
 
 class OrganizationOrderSettings(TypedDict):

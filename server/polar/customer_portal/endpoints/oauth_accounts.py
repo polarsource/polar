@@ -3,6 +3,7 @@ from typing import Any
 
 import httpx
 import logfire
+import structlog
 from fastapi import Depends, Query, Request
 from fastapi.responses import RedirectResponse
 from httpx_oauth.clients.github import GitHubOAuth2
@@ -30,6 +31,8 @@ from polar.worker import enqueue_job
 
 from .. import auth
 from ..schemas.oauth_accounts import AuthorizeResponse
+
+log = structlog.get_logger()
 
 router = APIRouter(prefix="/oauth-accounts", tags=["oauth-accounts", APITag.private])
 
@@ -202,12 +205,12 @@ async def callback(
             "error_platform": platform.value,
         }
         redirect_url = add_query_parameters(redirect_url, **error_params)
-        with logfire.span(
-            "Failed to get access token",
-            platform=platform,
+        log.info(
+            "customer_portal.oauth_accounts.callback.access_token_missing",
+            platform=platform.value,
             customer_id=str(customer.id),
-        ) as span:
-            span.set_attribute("oauth2_token_data_keys", list(oauth2_token_data.keys()))
+            oauth2_token_data_keys=list(oauth2_token_data.keys()),
+        )
         return RedirectResponse(redirect_url, 303)
 
     # Create a session only after the OAuth provider has confirmed the code.

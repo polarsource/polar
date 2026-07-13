@@ -190,6 +190,12 @@ class TestGetSummary:
         assert summary.payout.amount == 0
         assert summary.payout.account_amount == 0
 
+        assert summary.held_balance.amount == 0
+        assert summary.held_balance.account_amount == 0
+        assert summary.held_balance.next_release_at is None
+        assert summary.held_balance.next_release_amount == 0
+        assert summary.held_balance.fully_available_at is None
+
     async def test_valid(
         self, session: AsyncSession, save_fixture: SaveFixture, account: Account
     ) -> None:
@@ -256,6 +262,100 @@ class TestGetSummary:
         # Payout balance should include all payouts
         assert summary.payout.amount == -2000
         assert summary.payout.account_amount == -2000
+
+        assert summary.held_balance.amount == 500
+        assert summary.held_balance.account_amount == 500
+        assert summary.held_balance.next_release_amount == 500
+        assert summary.held_balance.next_release_at == now + timedelta(days=5)
+        assert summary.held_balance.fully_available_at == now + timedelta(days=5)
+
+    async def test_held_release_schedule(
+        self, session: AsyncSession, save_fixture: SaveFixture, account: Account
+    ) -> None:
+        now = utc_now()
+
+        await create_transaction(
+            save_fixture,
+            type=TransactionType.balance,
+            account=account,
+            amount=1000,
+            account_currency="usd",
+            created_at=now - timedelta(days=10),
+        )
+        for amount in (300, 200):
+            await create_transaction(
+                save_fixture,
+                type=TransactionType.balance,
+                account=account,
+                amount=amount,
+                account_currency="usd",
+                created_at=now - timedelta(days=5),
+            )
+        await create_transaction(
+            save_fixture,
+            type=TransactionType.balance,
+            account=account,
+            amount=-100,
+            account_currency="usd",
+            created_at=now - timedelta(days=3),
+        )
+
+        summary = await transaction_service.get_summary(session, account)
+
+        assert summary.held_balance.amount == 400
+        assert summary.held_balance.next_release_amount == 500
+        assert summary.held_balance.next_release_at == now + timedelta(days=2)
+        assert summary.held_balance.fully_available_at == now + timedelta(days=4)
+
+    async def test_held_negative_release_skipped(
+        self, session: AsyncSession, save_fixture: SaveFixture, account: Account
+    ) -> None:
+        now = utc_now()
+
+        await create_transaction(
+            save_fixture,
+            type=TransactionType.balance,
+            account=account,
+            amount=-100,
+            account_currency="usd",
+            created_at=now - timedelta(days=6),
+        )
+        await create_transaction(
+            save_fixture,
+            type=TransactionType.balance,
+            account=account,
+            amount=500,
+            account_currency="usd",
+            created_at=now - timedelta(days=2),
+        )
+
+        summary = await transaction_service.get_summary(session, account)
+
+        assert summary.held_balance.amount == 400
+        assert summary.held_balance.next_release_amount == 500
+        assert summary.held_balance.next_release_at == now + timedelta(days=5)
+        assert summary.held_balance.fully_available_at == now + timedelta(days=5)
+
+    async def test_held_negative_only(
+        self, session: AsyncSession, save_fixture: SaveFixture, account: Account
+    ) -> None:
+        now = utc_now()
+
+        await create_transaction(
+            save_fixture,
+            type=TransactionType.balance,
+            account=account,
+            amount=-100,
+            account_currency="usd",
+            created_at=now - timedelta(days=2),
+        )
+
+        summary = await transaction_service.get_summary(session, account)
+
+        assert summary.held_balance.amount == -100
+        assert summary.held_balance.next_release_at is None
+        assert summary.held_balance.next_release_amount == 0
+        assert summary.held_balance.fully_available_at == now + timedelta(days=5)
 
 
 @pytest.mark.asyncio

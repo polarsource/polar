@@ -1,4 +1,6 @@
-from pydantic import UUID4
+from datetime import datetime
+
+from pydantic import UUID4, Field
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
@@ -84,7 +86,26 @@ class TransactionsBalance(Schema):
     account_amount: int
 
 
+class TransactionsHeldBalance(TransactionsBalance):
+    next_release_at: datetime | None = Field(
+        description="When the next chunk of the held balance becomes available for payout."
+    )
+    next_release_amount: int = Field(
+        description="Amount becoming available for payout at `next_release_at`."
+    )
+    next_release_account_amount: int = Field(
+        description=(
+            "Amount becoming available for payout at `next_release_at`, "
+            "in the account's currency."
+        )
+    )
+    fully_available_at: datetime | None = Field(
+        description="When the whole held balance has become available for payout."
+    )
+
+
 class TransactionsSummary(Schema):
     balance: TransactionsBalance
     available_balance: TransactionsBalance
+    held_balance: TransactionsHeldBalance
     payout: TransactionsBalance

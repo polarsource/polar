@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Sequence
+from datetime import datetime
 from enum import StrEnum
 from typing import Any, cast
 
@@ -26,6 +27,7 @@ from polar.postgres import AsyncReadSession, AsyncSession
 
 from ..schemas import (
     TransactionsBalance,
+    TransactionsHeldBalance,
     TransactionsSummary,
 )
 from .base import BaseTransactionService
@@ -248,6 +250,45 @@ class TransactionService(BaseTransactionService):
             available_amount = 0
             available_account_amount = 0
 
+        released_at = Transaction.created_at + Account.payout_transaction_delay
+        release_day = func.date_trunc("day", released_at)
+        held_statement = (
+            select(
+                cast(type[datetime], func.max(released_at)),
+                cast(type[int], func.sum(Transaction.amount)),
+                cast(type[int], func.sum(Transaction.account_amount)),
+            )
+            .join(Account, Account.id == Transaction.account_id)
+            .where(
+                Transaction.account_id == account.id,
+                Transaction.type.not_in(
+                    (TransactionType.payout, TransactionType.payout_reversal)
+                ),
+                or_(
+                    Transaction.platform_fee_type.is_(None),
+                    Transaction.platform_fee_type.not_in(
+                        PlatformFeeType.payout_fee_types()
+                    ),
+                ),
+                released_at > func.now(),
+            )
+            .group_by(release_day)
+            .order_by(release_day)
+        )
+
+        held_result = await session.execute(held_statement)
+        held_releases = held_result.tuples().all()
+
+        held_amount = sum(amount for _, amount, _ in held_releases)
+        held_account_amount = sum(
+            account_amount for _, _, account_amount in held_releases
+        )
+        fully_available_at = held_releases[-1][0] if held_releases else None
+        next_release_at, next_release_amount, next_release_account_amount = next(
+            (release for release in held_releases if release[1] > 0),
+            (None, 0, 0),
+        )
+
         return TransactionsSummary(
             balance=TransactionsBalance(
                 currency=currency,
@@ -260,6 +301,16 @@ class TransactionService(BaseTransactionService):
                 amount=available_amount,
                 account_currency=account_currency,
                 account_amount=available_account_amount,
+            ),
+            held_balance=TransactionsHeldBalance(
+                currency=currency,
+                amount=held_amount,
+                account_currency=account_currency,
+                account_amount=held_account_amount,
+                next_release_at=next_release_at,
+                next_release_amount=next_release_amount,
+                next_release_account_amount=next_release_account_amount,
+                fully_available_at=fully_available_at,
             ),
             payout=TransactionsBalance(
                 currency=currency,

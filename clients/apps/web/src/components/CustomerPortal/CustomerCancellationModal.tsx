@@ -125,7 +125,8 @@ const CustomerCancellationModal = ({
               leaving to help us improve our product.
             </p>
           </div>
-          {cancelPreview?.stops_collection && (
+          {subscription.status === 'past_due' &&
+            cancelPreview?.stops_collection && (
             <Alert
               variant="warning"
               title="Your latest payment didn't go through"

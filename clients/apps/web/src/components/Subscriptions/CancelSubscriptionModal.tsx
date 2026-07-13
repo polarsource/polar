@@ -80,7 +80,9 @@ const CancelSubscriptionModal = ({
   })
   const { control, handleSubmit, setError, setValue } = form
 
-  const stopsCollection = cancelPreview?.stops_collection ?? false
+  const stopsCollection =
+    subscription.status === 'past_due' &&
+    (cancelPreview?.stops_collection ?? false)
 
   // A past-due subscription with no grace period is always cancelled
   // immediately, so period-end cancellation isn't offered here.

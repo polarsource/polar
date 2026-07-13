@@ -18495,10 +18495,6 @@ export interface components {
        * @description Preview a change of the subscription to this number of seats.
        */
       seats: number
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
-      proration_behavior?:
-        | components['schemas']['SubscriptionProrationBehavior']
-        | null
     }
     /** CustomerSubscriptionMeter */
     CustomerSubscriptionMeter: {
@@ -18730,10 +18726,6 @@ export interface components {
        * @description Update the number of seats for this subscription.
        */
       seats: number
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
-      proration_behavior?:
-        | components['schemas']['SubscriptionProrationBehavior']
-        | null
     }
     /**
      * CustomerTeam

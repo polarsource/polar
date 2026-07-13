@@ -11,7 +11,6 @@ from pydantic import (
 )
 from pydantic.json_schema import SkipJsonSchema
 
-from polar.enums import SubscriptionProrationBehavior
 from polar.kit.schemas import (
     IDSchema,
     Int32,
@@ -97,13 +96,6 @@ class CustomerSubscriptionUpdateSeats(Schema):
         description="Update the number of seats for this subscription.",
         ge=1,
     )
-    proration_behavior: SubscriptionProrationBehavior | None = Field(
-        default=None,
-        description=(
-            "Determine how to handle the proration billing. "
-            "If not provided, will use the default organization setting."
-        ),
-    )
 
 
 class CustomerSubscriptionChangePreviewProduct(Schema):
@@ -120,13 +112,6 @@ class CustomerSubscriptionChangePreviewSeats(Schema):
     seats: Int32 = Field(
         description="Preview a change of the subscription to this number of seats.",
         ge=1,
-    )
-    proration_behavior: SubscriptionProrationBehavior | None = Field(
-        default=None,
-        description=(
-            "Determine how to handle the proration billing. "
-            "If not provided, will use the default organization setting."
-        ),
     )
 
 

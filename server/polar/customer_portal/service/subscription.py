@@ -183,7 +183,6 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                     ctx,
                     subscription,
                     seats=updates.seats,
-                    proration_behavior=updates.proration_behavior,
                 )
 
         if isinstance(updates, CustomerSubscriptionUpdateClear):
@@ -248,7 +247,6 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                 session,
                 subscription,
                 seats=change.seats,
-                proration_behavior=change.proration_behavior,
             )
 
         if not organization.customer_portal_subscription_update_plan:

@@ -10,13 +10,29 @@ cd /app/server
 echo "=== Polar Backend Startup ==="
 echo "Service: ${1:-api}"
 
-# Install Python dependencies if not present or outdated
-if [[ ! -d ".venv" ]] || [[ "pyproject.toml" -nt ".venv" ]] || [[ "uv.lock" -nt ".venv" ]]; then
-    echo "Installing Python dependencies..."
-    uv sync --frozen
-else
-    echo "Python dependencies up to date"
-fi
+# Retry a command a few times with linear backoff. Container startup pulls git
+# dependencies over the network (e.g. the dramatiq fork), and Docker's embedded
+# DNS can flap transiently — a single failure shouldn't kill the whole boot.
+retry() {
+    local -r max="${RETRY_MAX:-3}"
+    local n=1
+    until "$@"; do
+        if (( n >= max )); then
+            echo "ERROR: '$*' failed after ${max} attempts" >&2
+            return 1
+        fi
+        echo "'$*' failed (attempt ${n}/${max}); retrying in $(( n * 5 ))s..." >&2
+        sleep $(( n * 5 ))
+        n=$(( n + 1 ))
+    done
+}
+
+# Reconcile the virtualenv against the lockfile on every boot. This is a fast
+# no-op when already in sync, and — unlike an mtime check — it also repairs a
+# venv whose interpreter no longer matches .python-version (e.g. after a base
+# image bump), which would otherwise fail lazily in a later `uv run`.
+echo "Syncing Python dependencies..."
+retry uv sync --frozen
 
 # Build email templates for this architecture (API only to avoid race conditions)
 # The binary must be built for the container's architecture (Linux), not host (macOS)

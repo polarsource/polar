@@ -154,6 +154,9 @@ server/.tinyb
 
 .turbo
 .claude/worktrees
+# Per-worktree Claude Code preview config (ports differ per instance).
+# Generate with `dev docker launch-json`.
+.claude/launch.json
 .superset/
 
 # Eval artifacts (generated, may contain PII)

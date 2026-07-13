@@ -207,6 +207,17 @@ def _running_compose_projects() -> set[str]:
     return {line.strip() for line in result.stdout.splitlines() if line.strip()}
 
 
+def _ensure_docker_running() -> None:
+    """Fail with a friendly message if the Docker daemon isn't reachable."""
+    result = run_command(["docker", "info"], capture=True)
+    if result is None or result.returncode != 0:
+        console.print(
+            "[red]Docker doesn't appear to be running.[/red] Start Docker, "
+            "then try again."
+        )
+        raise typer.Exit(1)
+
+
 # --------------------------------------------------------------------------- #
 # Per-worktree pin (.env.docker) and instance detection
 # --------------------------------------------------------------------------- #
@@ -647,10 +658,28 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     def docker_up(
         ctx: typer.Context,
         detach: Annotated[
-            bool, typer.Option("--detach", "-d", help="Run in background")
+            bool,
+            typer.Option(
+                "--detach/--no-detach",
+                "-d",
+                help="Run in background (default), or attach to streamed logs",
+            ),
         ] = True,
         build: Annotated[
             bool, typer.Option("--build", "-b", help="Force rebuild images")
+        ] = False,
+        pull: Annotated[
+            bool,
+            typer.Option(
+                "--pull",
+                help="Refresh base images before building (avoids stale cached bases)",
+            ),
+        ] = False,
+        wait: Annotated[
+            bool,
+            typer.Option(
+                "--wait", help="Block until app services are healthy (detached only)"
+            ),
         ] = False,
         monitoring: Annotated[
             bool,
@@ -670,6 +699,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         ] = None,
     ) -> None:
         """Start shared infra (if needed) + this instance's app stack."""
+        _ensure_docker_running()
         instance = _get_instance(ctx)
         _ensure_server_env()
 
@@ -694,17 +724,28 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             f"\n[bold blue]Starting Polar app stack (instance {instance})[/bold blue]\n"
         )
 
-        if build:
+        if build or pull:
             console.print("[dim]Building images...[/dim]")
-            build_cmd = cmd + ["build"] + (services or [])
+            build_cmd = cmd + ["build"]
+            if pull:
+                build_cmd.append("--pull")
+            build_cmd.extend(services or [])
             result = run_command(build_cmd, env=env)
             if result and result.returncode != 0:
                 console.print("[red]Build failed[/red]")
                 raise typer.Exit(1)
 
+        if wait and not detach:
+            console.print(
+                "[yellow]--wait has no effect with --no-detach; the foreground "
+                "process already streams until you stop it.[/yellow]"
+            )
+
         up_cmd = cmd + ["up"]
         if detach:
             up_cmd.append("-d")
+            if wait:
+                up_cmd.append("--wait")
         up_cmd.extend(services or [])
 
         if detach:
@@ -759,7 +800,12 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     def docker_logs(
         ctx: typer.Context,
         follow: Annotated[
-            bool, typer.Option("--follow", "-f", help="Follow log output")
+            bool,
+            typer.Option(
+                "--follow/--no-follow",
+                "-f",
+                help="Follow log output (default), or print current logs and exit",
+            ),
         ] = True,
         service: Annotated[
             str | None,
@@ -820,6 +866,13 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     @docker_app.command("build")
     def docker_build(
         ctx: typer.Context,
+        pull: Annotated[
+            bool,
+            typer.Option(
+                "--pull",
+                help="Refresh base images first (avoids stale cached bases)",
+            ),
+        ] = False,
         services: Annotated[
             list[str] | None,
             typer.Argument(
@@ -830,7 +883,10 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         """Build/rebuild this instance's app images."""
         instance = _get_instance(ctx)
         env = _build_compose_env(instance)
-        cmd = _build_compose_cmd(instance) + ["build"] + (services or [])
+        cmd = _build_compose_cmd(instance) + ["build"]
+        if pull:
+            cmd.append("--pull")
+        cmd += services or []
         console.print("[dim]Building images...[/dim]")
         result = run_command(cmd, env=env)
         if result and result.returncode == 0:
@@ -938,6 +994,105 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
                 console.print("[red]Shared cleanup failed[/red]")
                 raise typer.Exit(1)
             console.print("[green]Shared infra wiped[/green]")
+
+    @docker_app.command("ports")
+    def docker_ports(
+        ctx: typer.Context,
+        json_output: Annotated[
+            bool, typer.Option("--json", help="Print as JSON for tooling")
+        ] = False,
+    ) -> None:
+        """Print this instance's resolved ports and resource names.
+
+        Machine-readable with --json, so tooling (e.g. .claude/launch.json) can
+        discover the per-instance ports instead of hardcoding the port scheme.
+        """
+        instance = ctx.obj["instance"]
+        info = {
+            "instance": instance,
+            "api_port": api_port(instance),
+            "web_port": web_port(instance),
+            "api_url": f"http://localhost:{api_port(instance)}",
+            "web_url": f"http://localhost:{web_port(instance)}",
+            "database": db_name(instance),
+            "redis_db": redis_db(instance),
+            "s3_bucket": s3_bucket(instance),
+            "s3_public_bucket": s3_public_bucket(instance),
+        }
+        if json_output:
+            console.print_json(json.dumps(info))
+            return
+        console.print(
+            f"[bold]Instance {instance}[/bold] (project {app_project(instance)})"
+        )
+        console.print(f"  API: {info['api_url']}")
+        console.print(f"  Web: {info['web_url']}")
+        console.print(
+            f"  Database: {info['database']}  Redis DB: {info['redis_db']}"
+        )
+        console.print(
+            f"  Buckets: {info['s3_bucket']}, {info['s3_public_bucket']}"
+        )
+
+    @docker_app.command("launch-json")
+    def docker_launch_json(
+        ctx: typer.Context,
+        stdout: Annotated[
+            bool,
+            typer.Option("--stdout", help="Print instead of writing the file"),
+        ] = False,
+    ) -> None:
+        """Generate .claude/launch.json for this worktree's instance.
+
+        Ports are per-worktree, so a hardcoded (or committed) launch.json points
+        Claude Code's preview at the wrong port in every other worktree. Generate
+        it here instead, and regenerate after `dev docker set-instance`. dev
+        docker publishes fixed host ports and ignores $PORT, so autoPort is false.
+        """
+        instance = ctx.obj["instance"]
+        api = api_port(instance)
+        web = web_port(instance)
+        docs = 3300 + instance
+        content = f"""{{
+  // Generated by `dev docker launch-json` for instance {instance}.
+  // Ports are per-worktree; regenerate after `dev docker set-instance`.
+  "version": "0.0.1",
+  "autoVerify": false,
+  "configurations": [
+    {{
+      "name": "polar-app",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-lc", "./dev/cli/dev docker up -d && ./dev/cli/dev docker logs -f"],
+      "port": {web},
+      "autoPort": false
+    }},
+    {{
+      "name": "polar-api",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-lc", "./dev/cli/dev docker up -d api worker && ./dev/cli/dev docker logs -f api"],
+      "port": {api},
+      "autoPort": false
+    }},
+    {{
+      "name": "docs",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["-C", "docs", "dev", "--", "--port", "{docs}"],
+      "port": {docs},
+      "autoPort": false
+    }}
+  ]
+}}
+"""
+        if stdout:
+            console.print(content)
+            return
+        target = ROOT_DIR / ".claude" / "launch.json"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content)
+        console.print(
+            f"[green]Wrote {target}[/green] "
+            f"(instance {instance}: web {web}, api {api}, docs {docs})"
+        )
 
     @docker_app.command("set-instance")
     def docker_set_instance(

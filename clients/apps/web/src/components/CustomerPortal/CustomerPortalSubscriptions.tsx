@@ -67,9 +67,13 @@ export const InactiveSubscriptionsOverview = ({
   const theme = useTheme()
   const themingPreset = getThemePreset(theme.resolvedTheme as 'light' | 'dark')
 
-  const [selectedSubscription, setSelectedSubscription] = useState<
-    schemas['CustomerSubscription'] | null
+  const [selectedSubscriptionId, setSelectedSubscriptionId] = useState<
+    string | null
   >(null)
+  // Derive from the (refreshable) subscriptions prop rather than snapshotting,
+  // so a cancellation reflects here after the list refetches.
+  const selectedSubscription =
+    subscriptions.find((s) => s.id === selectedSubscriptionId) ?? null
   const [retryPaymentSubscription, setRetryPaymentSubscription] = useState<
     schemas['CustomerSubscription'] | null
   >(null)
@@ -88,14 +92,14 @@ export const InactiveSubscriptionsOverview = ({
 
   const openSubscriptionModal = useCallback(
     (subscription: schemas['CustomerSubscription']) => {
-      setSelectedSubscription(subscription)
+      setSelectedSubscriptionId(subscription.id)
       showSubscriptionModal()
     },
     [showSubscriptionModal],
   )
 
   const hideSubscriptionModal = useCallback(() => {
-    setSelectedSubscription(null)
+    setSelectedSubscriptionId(null)
     _hideSubscriptionModal()
   }, [_hideSubscriptionModal])
 

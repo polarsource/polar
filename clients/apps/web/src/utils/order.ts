@@ -99,8 +99,6 @@ const UNRECOVERABLE_DECLINE_CODES = new Set([
   'blocklist',
 ])
 
-export const isPaymentNonRecoverable = (
-  payment: schemas['Payment'],
-): boolean =>
+export const isPaymentNonRecoverable = (payment: schemas['Payment']): boolean =>
   payment.decline_reason !== null &&
   UNRECOVERABLE_DECLINE_CODES.has(payment.decline_reason)

@@ -294,13 +294,20 @@ export const OrderCalloutBanner = ({
       </BannerColumn>
 
       <BannerColumn divided>
-        <ColumnHeading label="What happens next" datetime={revocationDeadline} />
+        <ColumnHeading
+          label="What happens next"
+          datetime={revocationDeadline}
+        />
         <Text>
-          If we can&apos;t recover the payment, the subscription will be canceled
+          If we can&apos;t recover the payment, the subscription will be
+          canceled
           {revocationDeadline ? (
             <>
               {' on '}
-              <FormattedDateTime resolution="day" datetime={revocationDeadline} />
+              <FormattedDateTime
+                resolution="day"
+                datetime={revocationDeadline}
+              />
             </>
           ) : null}
           .

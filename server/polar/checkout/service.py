@@ -988,6 +988,17 @@ class CheckoutService:
         try:
             checkout = await self._update_checkout_tax(session, checkout)
         except TaxCalculationLogicalError as e:
+            billing_address = checkout.customer_billing_address
+            log.warning(
+                "Checkout confirmation blocked by tax calculation error",
+                error_type=type(e).__name__,
+                error_message=e.message,
+                checkout_id=str(checkout.id),
+                organization_id=str(checkout.organization_id),
+                product_id=str(checkout.product_id) if checkout.product_id else None,
+                billing_country=billing_address.country if billing_address else None,
+                billing_state=billing_address.state if billing_address else None,
+            )
             errors.append(
                 {
                     "type": "value_error",

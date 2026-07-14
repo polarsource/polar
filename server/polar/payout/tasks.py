@@ -71,10 +71,6 @@ async def trigger_payout(
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = PayoutRepository(session)
-        # Lock the payout row up front: a queued trigger can race a cancel
-        # (deny/block/backoffice) and would otherwise pay out a payout the ledger
-        # already reversed. FOR UPDATE serializes with cancel(), which locks the
-        # same row.
         payout = await repository.get_by_id(
             payout_id, options=repository.get_eager_options(), for_update=True
         )

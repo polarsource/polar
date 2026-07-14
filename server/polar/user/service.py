@@ -182,7 +182,9 @@ class UserService:
         verification_session: stripe_lib.identity.VerificationSession,
     ) -> User:
         repository = UserRepository.from_session(session)
-        user = await repository.get_by_identity_verification_id(verification_session.id)
+        user = await repository.get_by_identity_verification_id(
+            verification_session.id, for_update=True
+        )
         if user is None:
             raise IdentityVerificationDoesNotExist(verification_session.id)
 
@@ -207,13 +209,20 @@ class UserService:
         verification_session: stripe_lib.identity.VerificationSession,
     ) -> User:
         repository = UserRepository.from_session(session)
-        user = await repository.get_by_identity_verification_id(verification_session.id)
+        user = await repository.get_by_identity_verification_id(
+            verification_session.id, for_update=True
+        )
         if user is None:
             raise IdentityVerificationDoesNotExist(verification_session.id)
 
-        # If the user is already verified, we don't need to update their status.
-        # Might happen if the webhook was delayed
-        if user.identity_verified:
+        # Never downgrade a terminal status back to pending. Stripe delivers the
+        # `processing` event alongside the terminal one, and the two webhook tasks
+        # can run concurrently; the row lock above serializes them, so here we
+        # read the committed status and skip if it's already verified or failed.
+        if user.identity_verification_status in (
+            IdentityVerificationStatus.verified,
+            IdentityVerificationStatus.failed,
+        ):
             return user
 
         assert verification_session.status == "processing"
@@ -230,7 +239,9 @@ class UserService:
         verification_session: stripe_lib.identity.VerificationSession,
     ) -> User:
         repository = UserRepository.from_session(session)
-        user = await repository.get_by_identity_verification_id(verification_session.id)
+        user = await repository.get_by_identity_verification_id(
+            verification_session.id, for_update=True
+        )
         if user is None:
             raise IdentityVerificationDoesNotExist(verification_session.id)
 

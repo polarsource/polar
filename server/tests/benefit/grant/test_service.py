@@ -1655,3 +1655,178 @@ class TestRevokeBenefitWithMember:
 
         # Member2's grant should still be granted
         assert grant2.is_granted
+
+    async def test_revoke_member_with_different_account_calls_revoke(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        organization: Organization,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        """The external revoke must run when the only remaining grant is for a
+        different external account (e.g. another member's Discord ID)."""
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+
+        member1 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member1@example.com",
+            name="Member 1",
+            role=MemberRole.member,
+        )
+        await save_fixture(member1)
+
+        member2 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member2@example.com",
+            name="Member 2",
+            role=MemberRole.member,
+        )
+        await save_fixture(member2)
+
+        grant1 = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
+            member_id=member1.id,
+            properties={"granted_account_id": "discord_AAA"},
+        )
+        grant1.set_granted()
+        await save_fixture(grant1)
+
+        grant2 = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
+            member_id=member2.id,
+            properties={"granted_account_id": "discord_BBB"},
+        )
+        grant2.set_granted()
+        await save_fixture(grant2)
+
+        await benefit_grant_service.revoke_benefit(
+            session,
+            redis,
+            customer,
+            benefit_organization,
+            member=member1,
+            subscription=subscription,
+        )
+
+        benefit_strategy_mock.revoke.assert_called_once()
+
+    async def test_revoke_member_alone_calls_revoke(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        organization: Organization,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        """The external revoke must run when the member's grant is the only one."""
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        grant = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
+            member_id=member.id,
+            properties={"granted_account_id": "discord_AAA"},
+        )
+        grant.set_granted()
+        await save_fixture(grant)
+
+        await benefit_grant_service.revoke_benefit(
+            session,
+            redis,
+            customer,
+            benefit_organization,
+            member=member,
+            subscription=subscription,
+        )
+
+        benefit_strategy_mock.revoke.assert_called_once()
+
+    async def test_revoke_member_with_same_account_skips_revoke(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        benefit_organization: Benefit,
+        organization: Organization,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        """The external revoke is skipped when another active grant retains
+        access through the same external account."""
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+
+        member1 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member1@example.com",
+            name="Member 1",
+            role=MemberRole.member,
+        )
+        await save_fixture(member1)
+
+        member2 = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member2@example.com",
+            name="Member 2",
+            role=MemberRole.member,
+        )
+        await save_fixture(member2)
+
+        grant1 = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
+            member_id=member1.id,
+            properties={"granted_account_id": "discord_AAA"},
+        )
+        grant1.set_granted()
+        await save_fixture(grant1)
+
+        grant2 = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
+            member_id=member2.id,
+            properties={"granted_account_id": "discord_AAA"},
+        )
+        grant2.set_granted()
+        await save_fixture(grant2)
+
+        await benefit_grant_service.revoke_benefit(
+            session,
+            redis,
+            customer,
+            benefit_organization,
+            member=member1,
+            subscription=subscription,
+        )
+
+        benefit_strategy_mock.revoke.assert_not_called()

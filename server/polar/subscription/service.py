@@ -285,6 +285,7 @@ class SubscriptionUpdateContext:
 
         self._billing_effect: Literal["invoice", "cycle"] | None = None
         self._event_metadata: SubscriptionUpdatedMetadataFields = {}
+        self._has_changes = True
 
     async def __aenter__(self) -> "SubscriptionUpdateContext":
         return self
@@ -321,13 +322,17 @@ class SubscriptionUpdateContext:
                 ),
             )
 
-        await self.service._after_subscription_updated(
-            self.session,
-            self.subscription,
-            previous_status=self._previous_status,
-            previous_is_canceled=self._previous_is_canceled,
-            notify_customer=self._notify_customer,
-        )
+        if self._has_changes:
+            await self.service._after_subscription_updated(
+                self.session,
+                self.subscription,
+                previous_status=self._previous_status,
+                previous_is_canceled=self._previous_is_canceled,
+                notify_customer=self._notify_customer,
+            )
+
+    def mark_unchanged(self) -> None:
+        self._has_changes = False
 
     def set_billing_effect(self, effect: Literal["invoice", "cycle"]) -> None:
         if effect == "cycle":
@@ -1712,6 +1717,11 @@ class SubscriptionService:
                 else:
                     pending.seats = None
                     await subscription_update_repository.update(pending)
+            else:
+                # Nothing changed: re-asserting the current seat count with no
+                # pending seat change to cancel is a true no-op, so don't emit
+                # a `subscription.updated` webhook.
+                ctx.mark_unchanged()
             return subscription
 
         event = await event_service.create_event(

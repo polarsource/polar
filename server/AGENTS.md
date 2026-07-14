@@ -349,7 +349,8 @@ Add the `relationship()` to the model if it doesn't exist yet.
 ### Relationships are `lazy="raise"`
 All relationships use `lazy="raise"`: accessing an unloaded one raises instead of silently emitting a query (no async lazy-load `MissingGreenlet`, no N+1). Eager-load what the request needs:
 ```python
-select(X).options(joinedload(X.rel))   # or selectinload / contains_eager
+select(X).options(joinedload(X.rel))   # or selectinload
+# Use contains_eager(X.rel) after .join(X.rel) to reuse the join for loading
 ```
 (Populating a backref into an unloaded collection — e.g. `case=case` — is passive and does **not** trigger the raise.)
 

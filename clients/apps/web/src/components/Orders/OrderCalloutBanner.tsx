@@ -1,18 +1,48 @@
 'use client'
 
-import { isOrderDunningFailed } from '@/utils/order'
+import {
+  getLatestFailedPayment,
+  isOrderDunningFailed,
+  isOrderNonRecoverable,
+} from '@/utils/order'
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
+import { Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { addDays, isPast, min, parseISO } from 'date-fns'
 import { ExternalLinkIcon } from 'lucide-react'
-import type { ReactNode } from 'react'
+import { Children, type ReactNode } from 'react'
 
 const DUNNING_TOTAL_RETRY_DAYS = 21
 
 const FAILED_PAYMENTS_DOCS_URL =
   'https://docs.polar.sh/features/subscriptions/failed-payments'
+
+const BannerFrame = ({
+  heading,
+  children,
+}: {
+  heading: string
+  children: ReactNode
+}) => (
+  <Box flexDirection="column" rowGap="l">
+    <Text variant="heading-xxs">{heading}</Text>
+
+    <Box
+      display="grid"
+      gridTemplateColumns={{
+        base: '1fr',
+        lg: `repeat(${Children.count(children)}, 1fr)`,
+      }}
+      borderColor="border-primary"
+      borderWidth={1}
+      borderStyle="solid"
+      borderRadius="l"
+    >
+      {children}
+    </Box>
+  </Box>
+)
 
 const BannerColumn = ({
   divided = false,
@@ -41,7 +71,7 @@ const ColumnHeading = ({
   resolution = 'day',
 }: {
   label: string
-  datetime: Date | string | null
+  datetime?: Date | string | null
   resolution?: 'time' | 'day'
 }) => (
   <Box flexDirection="column" rowGap="xs">
@@ -54,92 +84,69 @@ const ColumnHeading = ({
   </Box>
 )
 
-const CanceledColumn = ({
-  endedAt,
-  benefitsRevocationDate,
-  benefitsRevoked,
+const DeclineReasonBox = ({
+  declineMessage,
+  unrecoverable = false,
 }: {
-  endedAt: string | null
-  benefitsRevocationDate: Date | null
-  benefitsRevoked: boolean
+  declineMessage: string
+  unrecoverable?: boolean
 }) => (
-  <BannerColumn divided>
-    <ColumnHeading label="Subscription canceled" datetime={endedAt} />
-    <Text>
-      Benefits {benefitsRevoked ? 'were revoked' : 'will be revoked'}
-      {benefitsRevocationDate ? (
-        <>
-          {' on '}
-          <FormattedDateTime
-            resolution="day"
-            datetime={benefitsRevocationDate}
-          />
-        </>
-      ) : null}
-      .
-    </Text>
-  </BannerColumn>
+  <Box
+    flexDirection="column"
+    rowGap="xs"
+    backgroundColor="background-card"
+    borderRadius="s"
+    padding="l"
+  >
+    <Box alignItems="center" justifyContent="between" columnGap="s">
+      <Text variant="caption" color="muted">
+        Bank Decline Reason
+      </Text>
+      {unrecoverable ? <Pill color="red">Unrecoverable</Pill> : null}
+    </Box>
+    <Text>{declineMessage}</Text>
+    {unrecoverable ? (
+      <Text variant="caption" color="muted">
+        This decline reason is unrecoverable. Every retry will fail the same
+        way, so we won&apos;t charge the card again.
+      </Text>
+    ) : null}
+  </Box>
 )
 
-const RecoveringColumns = ({
-  nextAttemptAt,
-  revocationDeadline,
-  benefitsRevocationDate,
-  benefitsRevoked,
-}: {
-  nextAttemptAt: string | null
-  revocationDeadline: Date | null
-  benefitsRevocationDate: Date | null
-  benefitsRevoked: boolean
-}) => (
-  <>
-    <BannerColumn divided>
-      <ColumnHeading label="Next attempt" datetime={nextAttemptAt} />
-      <Text>
-        Polar always tries to recover failed subscription payments for you.
+const LearnMoreLink = () => (
+  <a
+    href={FAILED_PAYMENTS_DOCS_URL}
+    target="_blank"
+    rel="noopener noreferrer"
+    className="w-fit"
+  >
+    <Box as="span" display="inline-flex" alignItems="center" columnGap="xs">
+      <Text as="span">
+        <span className="underline">Learn more</span>
       </Text>
-      <a
-        href={FAILED_PAYMENTS_DOCS_URL}
-        target="_blank"
-        rel="noopener noreferrer"
-        className="w-fit"
-      >
-        <Box as="span" display="inline-flex" alignItems="center" columnGap="xs">
-          <Text as="span">
-            <span className="underline">Learn more</span>
-          </Text>
-          <ExternalLinkIcon className="h-3.5 w-3.5 shrink-0" />
-        </Box>
-      </a>
-    </BannerColumn>
+      <ExternalLinkIcon className="h-3.5 w-3.5 shrink-0" />
+    </Box>
+  </a>
+)
 
-    <BannerColumn divided>
-      <ColumnHeading label="What happens next" datetime={revocationDeadline} />
-      <Text>
-        If we can&apos;t recover the payment, the subscription will be canceled
-        {revocationDeadline ? (
-          <>
-            {' on '}
-            <FormattedDateTime resolution="day" datetime={revocationDeadline} />
-          </>
-        ) : null}
-        .
-      </Text>
-      <Text>
-        Benefits {benefitsRevoked ? 'were revoked' : 'will be revoked'}
-        {benefitsRevocationDate ? (
-          <>
-            {' on '}
-            <FormattedDateTime
-              resolution="day"
-              datetime={benefitsRevocationDate}
-            />
-          </>
-        ) : null}
-        .
-      </Text>
-    </BannerColumn>
-  </>
+const BenefitsRevocationText = ({
+  benefitsRevoked,
+  benefitsRevocationDate,
+}: {
+  benefitsRevoked: boolean
+  benefitsRevocationDate: Date | null
+}) => (
+  <Text>
+    Benefits {benefitsRevoked ? 'were revoked' : 'will be revoked'}
+    {benefitsRevocationDate ? (
+      <>
+        {' on '}
+        <FormattedDateTime resolution="day" datetime={benefitsRevocationDate} />
+      </>
+    ) : null}
+    .
+  </Text>
 )
 
 interface OrderCalloutBannerProps {
@@ -156,14 +163,8 @@ export const OrderCalloutBanner = ({
   payments,
 }: OrderCalloutBannerProps) => {
   const dunningFailed = isOrderDunningFailed(order, subscription, payments)
-
-  const latestFailedPayment =
-    payments
-      .filter((payment) => payment.status === 'failed')
-      .toSorted(
-        (a, b) =>
-          parseISO(b.created_at).getTime() - parseISO(a.created_at).getTime(),
-      )[0] ?? null
+  const latestFailedPayment = getLatestFailedPayment(payments)
+  const nonRecoverable = isOrderNonRecoverable(order, subscription, payments)
 
   const pastDueAt = subscription.past_due_at
     ? parseISO(subscription.past_due_at)
@@ -184,67 +185,128 @@ export const OrderCalloutBanner = ({
       )
     : null
 
-  const failedPaymentDisplayMessage =
+  const declineMessage =
     latestFailedPayment?.decline_message ?? latestFailedPayment?.decline_reason
 
-  const benefitsRevokedInPast = benefitsRevocationDate
+  const benefitsRevoked = benefitsRevocationDate
     ? isPast(benefitsRevocationDate)
     : false
 
-  return (
-    <Box flexDirection="column" rowGap="l">
-      <Text variant="heading-xxs">
-        {dunningFailed ? "Payment couldn't be recovered" : 'Payment Failed'}
-      </Text>
+  const attemptAt = latestFailedPayment?.created_at ?? null
 
-      <Box
-        display="grid"
-        gridTemplateColumns={{
-          base: '1fr',
-          lg: dunningFailed ? 'repeat(2, 1fr)' : 'repeat(3, 1fr)',
-        }}
-        borderColor="border-primary"
-        borderWidth={1}
-        borderStyle="solid"
-        borderRadius="l"
-      >
+  if (dunningFailed) {
+    return (
+      <BannerFrame heading="Payment couldn't be recovered">
         <BannerColumn>
           <ColumnHeading
-            label={dunningFailed ? 'Final attempt' : 'Last attempt'}
-            datetime={latestFailedPayment?.created_at ?? null}
+            label="Final attempt"
+            datetime={attemptAt}
             resolution="time"
           />
-          {failedPaymentDisplayMessage ? (
-            <Box
-              flexDirection="column"
-              rowGap="xs"
-              backgroundColor="background-card"
-              borderRadius="s"
-              padding="l"
-            >
-              <Text variant="caption" color="muted">
-                Bank Decline Reason
-              </Text>
-              <Text>{failedPaymentDisplayMessage}</Text>
-            </Box>
+          {declineMessage ? (
+            <DeclineReasonBox declineMessage={declineMessage} />
           ) : null}
         </BannerColumn>
 
-        {dunningFailed ? (
-          <CanceledColumn
-            endedAt={subscription.ended_at}
-            benefitsRevocationDate={benefitsRevocationDate}
-            benefitsRevoked={benefitsRevokedInPast}
+        <BannerColumn divided>
+          <ColumnHeading
+            label="Subscription canceled"
+            datetime={subscription.ended_at}
           />
-        ) : (
-          <RecoveringColumns
-            nextAttemptAt={order.next_payment_attempt_at ?? null}
-            revocationDeadline={revocationDeadline}
+          <BenefitsRevocationText
+            benefitsRevoked={benefitsRevoked}
             benefitsRevocationDate={benefitsRevocationDate}
-            benefitsRevoked={benefitsRevokedInPast}
           />
-        )}
-      </Box>
-    </Box>
+        </BannerColumn>
+      </BannerFrame>
+    )
+  }
+
+  if (nonRecoverable) {
+    return (
+      <BannerFrame heading="Payment method can't be charged">
+        <BannerColumn>
+          <ColumnHeading
+            label="Last attempt"
+            datetime={attemptAt}
+            resolution="time"
+          />
+          {declineMessage ? (
+            <DeclineReasonBox declineMessage={declineMessage} unrecoverable />
+          ) : null}
+        </BannerColumn>
+
+        <BannerColumn divided>
+          <ColumnHeading
+            label={
+              revocationDeadline
+                ? 'Subscription will be canceled on'
+                : 'Subscription will be canceled'
+            }
+            datetime={revocationDeadline}
+          />
+          <Text>
+            The subscription will be canceled unless the customer updates their
+            payment method.
+          </Text>
+          <BenefitsRevocationText
+            benefitsRevoked={benefitsRevoked}
+            benefitsRevocationDate={benefitsRevocationDate}
+          />
+          <LearnMoreLink />
+        </BannerColumn>
+      </BannerFrame>
+    )
+  }
+
+  return (
+    <BannerFrame heading="Payment Failed">
+      <BannerColumn>
+        <ColumnHeading
+          label="Last attempt"
+          datetime={attemptAt}
+          resolution="time"
+        />
+        {declineMessage ? (
+          <DeclineReasonBox declineMessage={declineMessage} />
+        ) : null}
+      </BannerColumn>
+
+      <BannerColumn divided>
+        <ColumnHeading
+          label="Next attempt"
+          datetime={order.next_payment_attempt_at ?? null}
+        />
+        <Text>
+          Polar always tries to recover failed subscription payments for you.
+        </Text>
+        <LearnMoreLink />
+      </BannerColumn>
+
+      <BannerColumn divided>
+        <ColumnHeading
+          label="What happens next"
+          datetime={revocationDeadline}
+        />
+        <Text>
+          If we can&apos;t recover the payment, the subscription will be
+          canceled
+          {revocationDeadline ? (
+            <>
+              {' on '}
+              <FormattedDateTime
+                resolution="day"
+                datetime={revocationDeadline}
+              />
+            </>
+          ) : null}
+          .
+        </Text>
+        <BenefitsRevocationText
+          benefitsRevoked={benefitsRevoked}
+          benefitsRevocationDate={benefitsRevocationDate}
+        />
+      </BannerColumn>
+    </BannerFrame>
   )
 }

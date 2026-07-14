@@ -1,7 +1,7 @@
 import uuid
 
 from polar.integrations.stripe.service import StripeAccountRejectReason
-from polar.worker import AsyncReadSessionMaker, TaskPriority, actor
+from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .service import payout_account as payout_account_service
 
@@ -13,9 +13,10 @@ async def reject_stripe_account(
     """Reject the Stripe connected account for a denied or blocked organization.
 
     Enqueued by ``deny_organization``/``block_organization`` only when a human
-    reviewer opts in from the backoffice. Rejection is permanent on Stripe.
+    reviewer opts in from the backoffice. Rejection is permanent on Stripe, so
+    read from the primary session to avoid a replica-lag miss dropping it.
     """
-    async with AsyncReadSessionMaker() as session:
+    async with AsyncSessionMaker() as session:
         await payout_account_service.reject_stripe_account(
             session, payout_account_id, reason
         )

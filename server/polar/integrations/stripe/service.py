@@ -113,7 +113,8 @@ class StripeService:
         try:
             account = await stripe_lib.Account.retrieve_async(id)
             return bool(account)
-        except stripe_lib.PermissionError:
+        except (stripe_lib.PermissionError, stripe_lib.InvalidRequestError):
+            # No access, or the account was deleted / never existed.
             return False
 
     async def delete_account(self, id: str) -> stripe_lib.Account:

@@ -10,7 +10,7 @@ from polar.backoffice import app as backoffice_app
 from polar.backoffice.dependencies import get_admin
 from polar.backoffice.organizations_v2.endpoints import _stripe_reject_reason_for_aup
 from polar.models import PayoutAccount
-from polar.models.organization import Organization
+from polar.models.organization import Organization, OrganizationStatus
 from polar.models.user import User
 from polar.models.user_session import UserSession
 from polar.organization_review.repository import OrganizationReviewRepository
@@ -165,6 +165,12 @@ class TestDenyDialog:
             reason="fraud",
         )
 
+        current = await OrganizationReviewRepository.from_session(
+            session
+        ).get_current_decision(organization.id)
+        assert current is not None
+        assert current.violated_aup_section == AUPSection.TRADING_FINANCIAL
+
     async def test_invalid_stripe_reject_reason_does_not_deny(
         self,
         backoffice_client: httpx.AsyncClient,
@@ -216,6 +222,8 @@ class TestBlockDialog:
             payout_account_id=stripe_payout_account.id,
             reason="terms_of_service",
         )
+
+        assert organization.status == OrganizationStatus.BLOCKED
 
     async def test_invalid_stripe_reject_reason_does_not_block(
         self,

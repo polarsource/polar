@@ -1,4 +1,4 @@
-import { DragEvent, useRef, useState } from 'react'
+import { DragEvent, useEffect, useRef, useState } from 'react'
 
 interface FileDrop {
   isDragging: boolean
@@ -13,6 +13,15 @@ interface FileDrop {
 export const useFileDrop = (onFiles: (files: File[]) => void): FileDrop => {
   const [isDragging, setIsDragging] = useState(false)
   const dragCounter = useRef(0)
+
+  useEffect(() => {
+    const handleDragEnd = () => {
+      dragCounter.current = 0
+      setIsDragging(false)
+    }
+    document.addEventListener('dragend', handleDragEnd)
+    return () => document.removeEventListener('dragend', handleDragEnd)
+  }, [])
 
   const draggingFiles = (e: DragEvent) => e.dataTransfer.types.includes('Files')
 

@@ -1087,6 +1087,169 @@ class TestUpdateEmail:
 
 
 @pytest.mark.asyncio
+class TestSyncOwnerEmail:
+    async def test_syncs_owner_and_connected_seat_emails(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """When an individual customer's email changes, both the owner member
+        and its connected seats mirror the new email."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="old@example.com",
+        )
+        customer.type = CustomerType.individual
+        await save_fixture(customer)
+        owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="old@example.com",
+            role=MemberRole.owner,
+        )
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=customer, seats=5
+        )
+        pending_seat = CustomerSeat(
+            subscription_id=subscription.id,
+            customer_id=customer.id,
+            member_id=owner.id,
+            email="old@example.com",
+            status=SeatStatus.pending,
+        )
+        await save_fixture(pending_seat)
+        claimed_seat = CustomerSeat(
+            subscription_id=subscription.id,
+            customer_id=customer.id,
+            member_id=owner.id,
+            email="old@example.com",
+            status=SeatStatus.claimed,
+        )
+        await save_fixture(claimed_seat)
+
+        customer.email = "new@example.com"
+        await save_fixture(customer)
+
+        await member_service.sync_owner_email(session, customer)
+
+        await session.refresh(owner)
+        await session.refresh(pending_seat)
+        await session.refresh(claimed_seat)
+        assert owner.email == "new@example.com"
+        assert pending_seat.email == "new@example.com"
+        assert claimed_seat.email == "new@example.com"
+
+    async def test_leaves_seats_without_member_untouched(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """A seat with no member connected (member_id NULL) is not touched when
+        the owner email is synced."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="old@example.com",
+        )
+        customer.type = CustomerType.individual
+        await save_fixture(customer)
+        owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="old@example.com",
+            role=MemberRole.owner,
+        )
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=customer, seats=5
+        )
+        unconnected_seat = CustomerSeat(
+            subscription_id=subscription.id,
+            customer_id=customer.id,
+            member_id=None,
+            email="old@example.com",
+            status=SeatStatus.claimed,
+        )
+        await save_fixture(unconnected_seat)
+
+        customer.email = "new@example.com"
+        await save_fixture(customer)
+
+        await member_service.sync_owner_email(session, customer)
+
+        await session.refresh(owner)
+        await session.refresh(unconnected_seat)
+        assert owner.email == "new@example.com"
+        assert unconnected_seat.email == "old@example.com"
+
+    async def test_skips_team_customer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Team customers legitimately have members with distinct emails, so
+        neither the owner nor its seats are synced."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="new@example.com",
+        )
+        customer.type = CustomerType.team
+        await save_fixture(customer)
+        owner = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="old@example.com",
+            role=MemberRole.owner,
+        )
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=customer, seats=5
+        )
+        seat = CustomerSeat(
+            subscription_id=subscription.id,
+            customer_id=customer.id,
+            member_id=owner.id,
+            email="old@example.com",
+            status=SeatStatus.claimed,
+        )
+        await save_fixture(seat)
+
+        await member_service.sync_owner_email(session, customer)
+
+        await session.refresh(owner)
+        await session.refresh(seat)
+        assert owner.email == "old@example.com"
+        assert seat.email == "old@example.com"
+
+
+@pytest.mark.asyncio
 class TestDelete:
     async def test_delete_member_enqueues_seat_revocation_job(
         self,

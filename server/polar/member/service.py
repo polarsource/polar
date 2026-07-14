@@ -279,6 +279,10 @@ class MemberService:
 
         old_email = owner.email
         await repository.update(owner, update_dict={"email": customer.email})
+
+        seat_repository = CustomerSeatRepository.from_session(session)
+        await seat_repository.update_email_by_member_id(owner.id, customer.email)
+
         log.info(
             "member.sync_owner_email",
             customer_id=customer.id,

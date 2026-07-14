@@ -86,5 +86,6 @@ dev docker ports --json   # for tooling
 ```
 
 For instance 0 the app is at http://localhost:3000 (web) and
-http://localhost:8000 (api, docs at `/docs`). Shared infra (db/redis/minio) has
-no host port — reach it with `dev docker exec <service> ...`.
+http://localhost:8000 (api, docs at `/docs`). MinIO exposes ports 9000 (API)
+and 9001 (console) on localhost; db and redis have no host port — reach them
+with `dev docker exec <service> ...`.

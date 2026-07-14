@@ -154,22 +154,22 @@ clash.
 
 ## MinIO/S3 Issues
 
-Shared MinIO has **no host port**, so there's no `localhost:9001` console. Work
-through the container instead.
+Shared MinIO exposes ports 9000 (API) and 9001 (console) on localhost. Access
+the console at http://localhost:9001 with credentials `polar-development` /
+`polar123456789`.
 
 **Check minio-setup logs:**
 ```bash
 dev docker logs minio-setup
 ```
 
-**List this instance's buckets (creds `polar-development` / `polar123456789`):**
+**List this instance's buckets:**
 ```bash
 dev docker exec minio mc alias set local http://localhost:9000 \
   polar-development polar123456789
 dev docker exec minio mc ls local
 ```
-Buckets are per-instance: `polar-s3-<N>` and `polar-s3-public-<N>`. If you truly
-need the console UI, port-forward 9001 from the `polar-shared-minio-1` container.
+Buckets are per-instance: `polar-s3-<N>` and `polar-s3-public-<N>`.
 
 ## Frontend Build Errors
 

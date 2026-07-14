@@ -107,8 +107,8 @@ const DeclineReasonBox = ({
     <Text>{declineMessage}</Text>
     {unrecoverable ? (
       <Text variant="caption" color="muted">
-        This reason is permanent — every retry fails the same way, so the card
-        can&apos;t be charged again.
+        This decline reason is unrecoverable. Every retry will fail the same
+        way, so we won&apos;t charge the card again.
       </Text>
     ) : null}
   </Box>

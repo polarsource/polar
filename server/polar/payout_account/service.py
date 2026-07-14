@@ -192,7 +192,7 @@ class PayoutAccountService:
 
     async def reject_stripe_account(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         payout_account_id: uuid.UUID,
         reason: StripeAccountRejectReason,
     ) -> None:

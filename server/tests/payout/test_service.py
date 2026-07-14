@@ -90,6 +90,9 @@ class TestCreate:
             # Country-specific minimum (Panama: $50 USD) dominates the
             # currency-based USD default ($10).
             ("usd", "PA", settings.get_minimum_payout("usd", "PA") - 1),
+            # Ghana settles in GHS, whose currency minimum ($40) holds the
+            # payout until the converted amount clears Stripe's ₵300 floor.
+            ("ghs", "GH", settings.get_minimum_payout("ghs", "GH") - 1),
         ],
     )
     async def test_insufficient_balance(

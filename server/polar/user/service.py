@@ -215,8 +215,8 @@ class UserService:
         if user is None:
             raise IdentityVerificationDoesNotExist(verification_session.id)
 
-        # `verified` is the only absorbing state: don't let a concurrent `processing`
-        # clobber it. `failed` is retryable, so `failed` -> `pending` is allowed.
+        # Once a user is verified, keep them verified: a late `processing` webhook
+        # must not overwrite it. A failed user can retry, so `failed` -> `pending` is fine.
         if user.identity_verified:
             return user
 
@@ -240,8 +240,8 @@ class UserService:
         if user is None:
             raise IdentityVerificationDoesNotExist(verification_session.id)
 
-        # `verified` is the only absorbing state: a late/redelivered terminal event
-        # from an earlier attempt must not un-verify a user who has since verified.
+        # Once a user is verified, keep them verified. An old or repeated webhook
+        # from a past attempt must not undo it.
         if user.identity_verified:
             return user
 

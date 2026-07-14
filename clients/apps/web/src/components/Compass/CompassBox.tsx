@@ -42,7 +42,7 @@ export const CompassBox = ({
       display="flex"
       justifyContent="center"
       alignItems="end"
-      paddingHorizontal="l"
+      paddingHorizontal={{ base: 'xs', md: 'l' }}
       paddingBottom="xl"
     >
       {/* Gradient fade — content scrolls under it toward the bottom. */}
@@ -54,8 +54,8 @@ export const CompassBox = ({
         paddingVertical="m"
         paddingHorizontal="l"
         top={-36}
-        left={12}
-        right={12}
+        left={{ base: 20, md: 12 }}
+        right={{ base: 20, md: 12 }}
         borderTopRightRadius="l"
         borderTopLeftRadius="l"
         backgroundColor="background-card"

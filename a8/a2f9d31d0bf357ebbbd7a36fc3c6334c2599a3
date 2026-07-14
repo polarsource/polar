@@ -1,0 +1,25 @@
+server/tests/merchant_migration/test_precheck.py
+  s_81f519e3bb364f::t_1660d99d8d9ccc 434-443
+server/polar/subscription/repository.py
+  s_81f519e3bb364f::t_2cf1f07fd95fbb 143-149
+server/polar/merchant_migration/precheck.py
+  s_81f519e3bb364f::t_84d8f8254fb732 77-79
+  s_81f519e3bb364f::t_590703ca9098e1 640-642,645-646,649
+  s_81f519e3bb364f::t_55511cee8e967f 810-811,813-827
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "a8a2f9d31d0bf357ebbbd7a36fc3c6334c2599a3",
+  "prompts": {},
+  "sessions": {
+    "s_81f519e3bb364f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ac6e6895-3b5c-40c8-8804-f6a4f5e8786b",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

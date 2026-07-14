@@ -1,0 +1,48 @@
+server/polar/organization/service.py
+  s_995efc8d9db2f1::t_e56ca5335310ab 29,1042-1053,1058-1059,1065-1066,1347-1351,1357-1358
+server/polar/backoffice/organizations_v2/endpoints.py
+  s_995efc8d9db2f1::t_cc77bc65ea7d89 2302-2306
+  s_995efc8d9db2f1::t_d42846b24cd62e 245-247,249-251
+  s_995efc8d9db2f1::t_862d93cc976414 1506-1508,1518-1526,1530
+  s_995efc8d9db2f1::t_e56ca5335310ab 40,233-244,248,252-294,296-299,1410-1413,1419-1424,1426-1438,1451-1453,1469,1488-1489,1492-1504,1515-1517,1529,1531-1532,2262-2264,2266-2269,2272-2281,2283-2301,2307-2310,2316-2317
+  s_995efc8d9db2f1::t_82521fcbc22c20 168-199,204-230
+  s_995efc8d9db2f1::t_6494720f49914a 200
+  s_995efc8d9db2f1::t_31f01a7ad47272 295
+  s_995efc8d9db2f1::t_1dd8cf16bb6a8a 231-232
+server/polar/payout_account/tasks.py
+  s_995efc8d9db2f1::t_e56ca5335310ab 1-21
+server/tests/payout_account/test_service.py
+  s_995efc8d9db2f1::t_e56ca5335310ab 195-237
+server/tests/organization/test_service.py
+  s_995efc8d9db2f1::t_e56ca5335310ab 24,1241-1277,1308-1326
+  s_995efc8d9db2f1::t_1f1f27f3fad506 1327
+server/tests/backoffice/organizations_v2/test_endpoints.py
+  s_995efc8d9db2f1::t_e56ca5335310ab 7,141-238
+  s_995efc8d9db2f1::t_b5075a8f95aa02 11
+  s_995efc8d9db2f1::t_3dfcb002068d3e 40-75
+  s_995efc8d9db2f1::t_97878dc7849127 239
+server/polar/payout_account/service.py
+  s_995efc8d9db2f1::t_e56ca5335310ab 12,193-215
+  s_995efc8d9db2f1::t_32597fd66fc634 216
+server/polar/integrations/stripe/service.py
+  s_995efc8d9db2f1::t_e56ca5335310ab 70-71,127-135
+  s_995efc8d9db2f1::t_9ec0c42ac16319 136
+server/polar/tasks.py
+  s_995efc8d9db2f1::t_e56ca5335310ab 33,73
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "988a423b69d21cc7c6396e7a0011e1c883c500d8",
+  "prompts": {},
+  "sessions": {
+    "s_995efc8d9db2f1": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6694aa8d-7e07-49d1-bf12-7190cb5b8abf",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

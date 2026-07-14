@@ -37,6 +37,7 @@ from polar.integrations.plain.service import (
     plain_thread_url,
 )
 from polar.integrations.plain.service import plain as plain_service
+from polar.integrations.stripe.service import StripeAccountRejectReason
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import count_subquery
 from polar.kit.sorting import Sorting
@@ -151,10 +152,6 @@ router = APIRouter(prefix="/organizations", tags=["organizations"])
 
 logger = structlog.getLogger(__name__)
 
-_AUP_SECTION_OPTIONS = [
-    (label, member.value) for member, label in AUP_SECTION_LABELS.items()
-]
-
 
 def _parse_violated_aup_section(
     form_data: FormData, *, required_error: str
@@ -168,20 +165,138 @@ def _parse_violated_aup_section(
         return raw_section, None, "Invalid AUP section."
 
 
-def _render_violated_aup_section_field(selected_section: str | None) -> None:
-    with tag.div(classes="form-control"):
+# AUP sections whose violation is inherently deceptive, infringing, or harmful
+# (scams, counterfeits, piracy, malware, IP/data theft). These map to Stripe's
+# "fraud" reject reason; every other prohibited category maps to
+# "terms_of_service". "other" (risk of delinquency) is a payment-risk reason and
+# is never implied by an AUP section.
+_FRAUD_AUP_SECTIONS: set[AUPSection] = {
+    AUPSection.INTELLECTUAL_PROPERTY_INFRINGEMENT,
+    AUPSection.UNAUTHORIZED_DATA_ACCESS,
+    AUPSection.RESELLING_CUSTOMER_DATA,
+    AUPSection.LOW_QUALITY_COUNTERFEIT,
+    AUPSection.FAKE_TESTIMONIALS_REVIEWS,
+    AUPSection.RESELLING_SOFTWARE_LICENSES,
+    AUPSection.CIRCUMVENTION,
+    AUPSection.GET_RICH_SCHEMES,
+    AUPSection.CHEATING,
+    AUPSection.IPTV,
+    AUPSection.VIRUSES_SPYWARE,
+    AUPSection.API_IP_CLOAKING,
+    AUPSection.TRADEMARK_REMOVAL,
+    AUPSection.CONTENT_DOWNLOADERS,
+    AUPSection.CONTENT_GENERATION_INFRINGING,
+    AUPSection.TEST_PREP_PLATFORMS,
+}
+
+
+def _stripe_reject_reason_for_aup(section: AUPSection) -> StripeAccountRejectReason:
+    return "fraud" if section in _FRAUD_AUP_SECTIONS else "terms_of_service"
+
+
+def _render_violated_aup_section_field(
+    selected_section: str | None, *, link_stripe_reason: bool = False
+) -> None:
+    with tag.div(classes="form-control min-w-0 overflow-hidden"):
         with tag.label(classes="label"):
             with tag.span(classes="label-text"):
                 text("Violated AUP section (required)")
-        with input.select(
-            _AUP_SECTION_OPTIONS,
-            selected_section,
-            name="violated_aup_section",
-            placeholder="Select the violated AUP section…",
-            classes="select-bordered w-full",
-            required=True,
-        ):
-            pass
+        select_attrs: dict[str, Any] = {
+            "name": "violated_aup_section",
+            "classes": "select select-bordered w-full min-w-0",
+            "required": True,
+        }
+        if link_stripe_reason:
+            # Picking a section suggests the matching Stripe reject reason,
+            # carried on each option as data-stripe-reason.
+            select_attrs["_"] = (
+                "on change "
+                "set the value of <select[name='stripe_reject_reason']/> "
+                "to my.selectedOptions[0].dataset.stripeReason"
+            )
+        with tag.select(**select_attrs):
+            with tag.option(value="", selected=not selected_section):
+                text("Select the violated AUP section…")
+            for member, label in AUP_SECTION_LABELS.items():
+                option_attrs: dict[str, Any] = {
+                    "value": member.value,
+                    "selected": member.value == selected_section,
+                }
+                if link_stripe_reason:
+                    option_attrs["data-stripe-reason"] = _stripe_reject_reason_for_aup(
+                        member
+                    )
+                with tag.option(**option_attrs):
+                    text(label)
+
+
+def _prefill_aup_section(report: ReviewAgentReport | None) -> str | None:
+    """Pick the first AI-flagged section that maps to a known AUP section, so the
+    deny dialog can default the select without a reviewer having to re-pick it."""
+    if report is None:
+        return None
+    valid = {section.value for section in AUPSection}
+    for candidate in report.violated_sections:
+        if candidate in valid:
+            return candidate
+    return None
+
+
+# Labels map to Stripe's own reject-dialog buckets; the values are the only ones
+# the Account.reject API accepts (fraud, terms_of_service, other). "Risk of
+# delinquency" has no dedicated API value, so it maps to "other".
+_STRIPE_REJECT_REASON_OPTIONS: list[tuple[str, str]] = [
+    ("Violates Stripe AUP / ToS", "terms_of_service"),
+    ("Fraudulent", "fraud"),
+    ("Risk of delinquency", "other"),
+]
+_STRIPE_REJECT_REASONS = {value for _, value in _STRIPE_REJECT_REASON_OPTIONS}
+
+
+def _parse_stripe_reject_reason(
+    form_data: FormData,
+) -> tuple[bool, str | None, StripeAccountRejectReason | None, str | None]:
+    """Parse the opt-in "disable Stripe account" control.
+
+    Returns ``(checked, selected_value, reason, error)``. ``reason`` is only set
+    when the reviewer ticked the box and picked a valid Stripe reject reason.
+    """
+    checked = bool(form_data.get("disable_stripe_account"))
+    selected_value = str(form_data.get("stripe_reject_reason", "")).strip() or None
+    if not checked:
+        return False, selected_value, None, None
+    if selected_value in _STRIPE_REJECT_REASONS:
+        return (
+            True,
+            selected_value,
+            cast(StripeAccountRejectReason, selected_value),
+            None,
+        )
+    return True, selected_value, None, "Select a valid Stripe reject reason."
+
+
+def _render_stripe_reject_field(*, checked: bool, selected_reason: str | None) -> None:
+    with tag.div(classes="border-t border-base-200 pt-4"):
+        with tag.div(classes="flex items-center gap-2"):
+            with tag.label(classes="flex items-center gap-2 cursor-pointer"):
+                with tag.input(
+                    type="checkbox",
+                    name="disable_stripe_account",
+                    classes="checkbox checkbox-sm",
+                    checked=checked,
+                ):
+                    pass
+                with tag.span(classes="text-sm font-medium"):
+                    text("Disable Stripe account")
+            with input.select(
+                _STRIPE_REJECT_REASON_OPTIONS,
+                selected_reason or "terms_of_service",
+                name="stripe_reject_reason",
+                classes="select-bordered select-sm ml-auto w-52",
+            ):
+                pass
+        with tag.p(classes="text-xs text-base-content/60 mt-1.5"):
+            text("Permanent. Reactivation later needs a fresh Stripe onboarding.")
 
 
 REVIEW_TICKET_TITLE_PREFIX = "Ongoing organization review"
@@ -1292,20 +1407,35 @@ async def deny_dialog(
     review_report = _get_review_report(agent_review)
 
     error_message: str | None = None
-    selected_section: str | None = None
+    selected_section: str | None = _prefill_aup_section(review_report)
+    override_reason: str | None = None
+    stripe_checked = False
+    stripe_selected_reason: str | None = None
 
     if request.method == "POST":
         form_data = await request.form()
         override_reason = str(form_data.get("override_reason", "")).strip() or None
 
-        selected_section, violated_aup_section, error_message = (
-            _parse_violated_aup_section(
-                form_data,
-                required_error="An AUP section is required when denying an organization.",
-            )
+        selected_section, violated_aup_section, aup_error = _parse_violated_aup_section(
+            form_data,
+            required_error="An AUP section is required when denying an organization.",
         )
-        if not override_reason:
-            error_message = "A reason is required when denying an organization."
+        stripe_checked, stripe_selected_reason, stripe_reject_reason, stripe_error = (
+            _parse_stripe_reject_reason(form_data)
+        )
+
+        errors = [
+            message
+            for message in (
+                aup_error,
+                None
+                if override_reason
+                else "A reason is required when denying an organization.",
+                stripe_error,
+            )
+            if message
+        ]
+        error_message = " ".join(errors) if errors else None
 
         if error_message is None:
             # Record review decision before denying
@@ -1318,7 +1448,9 @@ async def deny_dialog(
             )
 
             # Deny the organization
-            await organization_service.deny_organization(session, organization)
+            await organization_service.deny_organization(
+                session, organization, stripe_reject_reason=stripe_reject_reason
+            )
 
             return HXRedirectResponse(
                 request,
@@ -1334,7 +1466,7 @@ async def deny_dialog(
         "name": "override_reason",
         "classes": "textarea textarea-bordered w-full",
         "placeholder": "Why are you denying this organization?",
-        "rows": "3",
+        "rows": "2",
         "required": True,
     }
 
@@ -1353,27 +1485,50 @@ async def deny_dialog(
                 with tag.div(classes="alert alert-error"):
                     text(error_message)
 
-            with tag.p(classes="font-semibold text-error"):
-                text("⚠️ Warning: Payments will be blocked")
+            with tag.p(classes="text-sm text-base-content/70"):
+                text("Blocks payments. Reversible after another review.")
 
             if review_report:
-                _render_ai_review_summary(review_report)
+                risk_level = review_report.overall_risk_level.value
+                if review_report.verdict.value == ReviewVerdict.APPROVE.value:
+                    with tag.p(classes="text-sm text-error"):
+                        text(
+                            f"⚠️ Overriding AI recommendation "
+                            f"(APPROVE · {risk_level} risk)"
+                        )
+                else:
+                    with tag.p(classes="text-sm text-base-content/60"):
+                        text(
+                            f"AI recommendation: {review_report.verdict.value} "
+                            f"· {risk_level} risk"
+                        )
 
-            with tag.div(classes="bg-base-200 p-4 rounded-lg"):
-                with tag.p(classes="mb-2"):
-                    text(
-                        "Denying this organization will prevent them from receiving payments. "
-                        "This action can be reversed, but the organization will need to be reviewed again."
-                    )
-
-            _render_violated_aup_section_field(selected_section)
+            _render_violated_aup_section_field(
+                selected_section, link_stripe_reason=True
+            )
 
             with tag.div(classes="form-control"):
                 with tag.label(classes="label"):
                     with tag.span(classes="label-text"):
                         text("Reason for denial (required)")
                 with tag.textarea(**textarea_attrs):
+                    if override_reason:
+                        text(override_reason)
+
+            # Match the Stripe reason to the initially-selected AUP section so the
+            # field agrees with the section before the reviewer changes anything.
+            initial_stripe_reason = stripe_selected_reason
+            if initial_stripe_reason is None and selected_section is not None:
+                try:
+                    initial_stripe_reason = _stripe_reject_reason_for_aup(
+                        AUPSection(selected_section)
+                    )
+                except ValueError:
                     pass
+
+            _render_stripe_reject_field(
+                checked=stripe_checked, selected_reason=initial_stripe_reason
+            )
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
                 with tag.form(method="dialog"):
@@ -2104,54 +2259,62 @@ async def block_dialog(
     if not organization:
         raise HTTPException(status_code=404, detail="Organization not found")
 
-    if request.method == "POST":
-        await organization_service.block_organization(session, organization)
+    error_message: str | None = None
+    stripe_checked = False
+    stripe_selected_reason: str | None = None
 
-        return HXRedirectResponse(
-            request,
-            str(
-                request.url_for("organizations:detail", organization_id=organization_id)
-            ),
-            303,
+    if request.method == "POST":
+        form_data = await request.form()
+        stripe_checked, stripe_selected_reason, stripe_reject_reason, error_message = (
+            _parse_stripe_reject_reason(form_data)
         )
 
-    with modal("Block Organization", open=True):
-        with tag.div(classes="flex flex-col gap-4"):
-            with tag.p(classes="font-semibold text-error"):
-                text("⚠️ Critical Warning: Complete Organization Block")
+        if error_message is None:
+            await organization_service.block_organization(
+                session, organization, stripe_reject_reason=stripe_reject_reason
+            )
 
-            with tag.div(classes="bg-error/10 border border-error/20 p-4 rounded-lg"):
-                with tag.p(classes="font-semibold mb-2 text-error"):
-                    text("Blocking this organization will:")
-                with tag.ul(classes="list-disc list-inside space-y-1 text-sm"):
-                    with tag.li():
-                        text("Prevent all access to the organization")
-                    with tag.li():
-                        text("Block all payments and transactions")
-                    with tag.li():
-                        text("Disable API access")
-                    with tag.li():
-                        text("Prevent any organization operations")
-
-                with tag.p(classes="mt-3 text-sm font-semibold"):
-                    text(
-                        "This is a severe action typically used for fraud or ToS violations."
+            return HXRedirectResponse(
+                request,
+                str(
+                    request.url_for(
+                        "organizations:detail", organization_id=organization_id
                     )
+                ),
+                303,
+            )
+
+    with modal("Block Organization", open=True):
+        with tag.form(
+            hx_post=str(
+                request.url_for(
+                    "organizations:block_dialog",
+                    organization_id=organization_id,
+                )
+            ),
+            hx_target="#modal",
+            classes="flex flex-col gap-4",
+        ):
+            if error_message:
+                with tag.div(classes="alert alert-error"):
+                    text(error_message)
+
+            with tag.p(classes="text-sm text-base-content/70"):
+                text(
+                    "Blocks all access, payments, and API. "
+                    "Typically used for fraud or ToS violations."
+                )
+
+            _render_stripe_reject_field(
+                checked=stripe_checked, selected_reason=stripe_selected_reason
+            )
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
                 with tag.form(method="dialog"):
                     with button(ghost=True):
                         text("Cancel")
-                with tag.form(
-                    hx_post=str(
-                        request.url_for(
-                            "organizations:block_dialog",
-                            organization_id=organization_id,
-                        )
-                    ),
-                ):
-                    with button(variant="error", type="submit"):
-                        text("Block Organization")
+                with button(variant="error", type="submit"):
+                    text("Block Organization")
 
     return None
 

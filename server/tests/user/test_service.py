@@ -404,7 +404,7 @@ class TestIdentityVerificationPending:
     ) -> None:
         """`failed` is not terminal. A user may retry on the same (reusable)
         verification session, so a `processing` webhook must move them back to
-        `pending` — otherwise the status stays `failed` during reprocessing.
+        `pending`. Otherwise the status stays `failed` during reprocessing.
         """
         user.identity_verification_id = "vs_failed_retry"
         user.identity_verification_status = IdentityVerificationStatus.failed

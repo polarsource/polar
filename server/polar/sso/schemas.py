@@ -1,6 +1,12 @@
 from typing import Annotated, Literal
 
-from pydantic import UUID4, Discriminator, Field, StringConstraints
+from pydantic import (
+    UUID4,
+    BeforeValidator,
+    Discriminator,
+    Field,
+    StringConstraints,
+)
 
 from polar.kit.schemas import HttpsUrl, IDSchema, Schema, TimestampedSchema
 from polar.models.organization_sso_connection import (
@@ -9,6 +15,15 @@ from polar.models.organization_sso_connection import (
 )
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
+
+
+def _blank_to_none(value: object) -> object:
+    if isinstance(value, str) and not value.strip():
+        return None
+    return value
+
+
+OptionalName = Annotated[NonEmptyStr | None, BeforeValidator(_blank_to_none)]
 
 
 class OIDCConfigurationBase(Schema):
@@ -66,7 +81,7 @@ class OrganizationSSOConnection(IDSchema, TimestampedSchema):
 
 
 class OrganizationSSOConnectionCreate(Schema):
-    name: NonEmptyStr | None = Field(
+    name: OptionalName = Field(
         default=None,
         description="Human-friendly label for the connection, shown on the login page.",
     )
@@ -83,7 +98,7 @@ class OrganizationSSOConnectionCreate(Schema):
 
 
 class OrganizationSSOConnectionUpdate(Schema):
-    name: NonEmptyStr | None = Field(
+    name: OptionalName = Field(
         default=None,
         description="Human-friendly label for the connection, shown on the login page.",
     )

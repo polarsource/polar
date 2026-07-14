@@ -215,10 +215,8 @@ class UserService:
         if user is None:
             raise IdentityVerificationDoesNotExist(verification_session.id)
 
-        # `verified` is the only absorbing state. The `processing` and terminal
-        # webhooks can be processed concurrently; the row lock serializes them so
-        # a late `processing` can't clobber a committed `verified`. `failed` is
-        # retryable, so `failed` -> `pending` is intentionally allowed through.
+        # `verified` is the only absorbing state: don't let a concurrent `processing`
+        # clobber it. `failed` is retryable, so `failed` -> `pending` is allowed.
         if user.identity_verified:
             return user
 
@@ -242,9 +240,8 @@ class UserService:
         if user is None:
             raise IdentityVerificationDoesNotExist(verification_session.id)
 
-        # `verified` is the only absorbing state: a late or redelivered
-        # `requires_input`/`canceled` from an earlier attempt must not un-verify
-        # a user who has since verified.
+        # `verified` is the only absorbing state: a late/redelivered terminal event
+        # from an earlier attempt must not un-verify a user who has since verified.
         if user.identity_verified:
             return user
 

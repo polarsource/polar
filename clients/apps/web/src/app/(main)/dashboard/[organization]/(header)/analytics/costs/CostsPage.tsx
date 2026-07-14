@@ -13,7 +13,8 @@ import { useMetrics } from '@/hooks/queries/metrics'
 import { fromISODate, toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Avatar } from '@polar-sh/orbit'
+import { Avatar, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { RankedList, RankedListItem } from './RankedListItem'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
@@ -302,11 +303,6 @@ export default function ClientPage({
 
   const fmt = formatCurrency('accounting')
   const fmtSub = formatCurrency('subcent')
-  const fmtPct = (n: number) =>
-    Math.abs(n).toLocaleString(undefined, {
-      minimumFractionDigits: 1,
-      maximumFractionDigits: 1,
-    }) + '%'
 
   const content = (
     <Tabs defaultValue="overview">
@@ -351,9 +347,11 @@ export default function ClientPage({
                       share={s.share}
                       onSelect={() => router.push(spanHref(s))}
                       label={
-                        <span className="min-w-0 flex-1 truncate text-sm font-medium dark:text-white">
-                          {s.label}
-                        </span>
+                        <Box flex={1} minWidth={0}>
+                          <Text variant="title" truncate>
+                            {s.label}
+                          </Text>
+                        </Box>
                       }
                       stats={
                         <>
@@ -367,16 +365,30 @@ export default function ClientPage({
                               prevEnd={prevEnd}
                             />
                           )}
-                          <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
+                          <Text
+                            as="span"
+                            variant="caption"
+                            color="muted"
+                            tabularNums
+                          >
                             {s.occurrences.toLocaleString()} events
-                          </span>
-                          <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
+                          </Text>
+                          <Text
+                            as="span"
+                            variant="caption"
+                            color="muted"
+                            tabularNums
+                          >
                             Avg {fmtSub(s.avg, 'usd')}
-                          </span>
-                          <span className="w-24 text-right text-sm tabular-nums dark:text-white">
-                            {fmt(s.total, 'usd')}
-                          </span>
+                          </Text>
                         </>
+                      }
+                      value={
+                        <Box width={96} justifyContent="end">
+                          <Text as="span" variant="default" tabularNums>
+                            {fmt(s.total, 'usd')}
+                          </Text>
+                        </Box>
                       }
                     />
                   )
@@ -490,27 +502,34 @@ export default function ClientPage({
                               avatar_url={null}
                               className="h-9 w-9 shrink-0 text-xs"
                             />
-                            <div className="min-w-0 flex-1">
-                              <p className="truncate text-sm font-medium dark:text-white">
+                            <Box flexDirection="column" flex={1} minWidth={0}>
+                              <Text variant="title" truncate>
                                 {r.label}
-                              </p>
+                              </Text>
                               {r.email && r.email !== r.label && (
-                                <p className="dark:text-polar-400 truncate text-xs text-gray-400">
+                                <Text variant="caption" color="muted" truncate>
                                   {r.email}
-                                </p>
+                                </Text>
                               )}
-                            </div>
+                            </Box>
                           </>
                         }
                         stats={
-                          <>
-                            <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
-                              {r.occurrences.toLocaleString()} events
-                            </span>
-                            <span className="w-24 text-right text-sm tabular-nums dark:text-white">
+                          <Text
+                            as="span"
+                            variant="caption"
+                            color="muted"
+                            tabularNums
+                          >
+                            {r.occurrences.toLocaleString()} events
+                          </Text>
+                        }
+                        value={
+                          <Box width={96} justifyContent="end">
+                            <Text as="span" variant="default" tabularNums>
                               {fmt(r.total, 'usd')}
-                            </span>
-                          </>
+                            </Text>
+                          </Box>
                         }
                       />
                     )
@@ -629,9 +648,11 @@ export default function ClientPage({
                     rank={i + 1}
                     share={r.share}
                     label={
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium dark:text-white">
-                        {r.value}
-                      </span>
+                      <Box flex={1} minWidth={0}>
+                        <Text variant="title" truncate>
+                          {r.value}
+                        </Text>
+                      </Box>
                     }
                     stats={
                       <>
@@ -645,16 +666,30 @@ export default function ClientPage({
                             prevEnd={prevEnd}
                           />
                         )}
-                        <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
+                        <Text
+                          as="span"
+                          variant="caption"
+                          color="muted"
+                          tabularNums
+                        >
                           {r.occurrences.toLocaleString()} events
-                        </span>
-                        <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
+                        </Text>
+                        <Text
+                          as="span"
+                          variant="caption"
+                          color="muted"
+                          tabularNums
+                        >
                           {r.customers.toLocaleString()} customers
-                        </span>
-                        <span className="w-24 text-right font-mono text-sm font-semibold tabular-nums dark:text-white">
-                          {fmtSub(r.total, 'usd')}
-                        </span>
+                        </Text>
                       </>
+                    }
+                    value={
+                      <Box width={96} justifyContent="end">
+                        <Text as="span" variant="title" monospace tabularNums>
+                          {fmtSub(r.total, 'usd')}
+                        </Text>
+                      </Box>
                     }
                   />
                 ))}
@@ -682,9 +717,11 @@ export default function ClientPage({
                     rank={i + 1}
                     share={r.share}
                     label={
-                      <span className="min-w-0 flex-1 truncate text-sm font-medium dark:text-white">
-                        {r.value}
-                      </span>
+                      <Box flex={1} minWidth={0}>
+                        <Text variant="title" truncate>
+                          {r.value}
+                        </Text>
+                      </Box>
                     }
                     stats={
                       <>
@@ -698,16 +735,30 @@ export default function ClientPage({
                             prevEnd={prevEnd}
                           />
                         )}
-                        <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
+                        <Text
+                          as="span"
+                          variant="caption"
+                          color="muted"
+                          tabularNums
+                        >
                           {r.occurrences.toLocaleString()} events
-                        </span>
-                        <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
+                        </Text>
+                        <Text
+                          as="span"
+                          variant="caption"
+                          color="muted"
+                          tabularNums
+                        >
                           {r.customers.toLocaleString()} customers
-                        </span>
-                        <span className="w-24 text-right font-mono text-sm font-semibold tabular-nums dark:text-white">
-                          {fmtSub(r.total, 'usd')}
-                        </span>
+                        </Text>
                       </>
+                    }
+                    value={
+                      <Box width={96} justifyContent="end">
+                        <Text as="span" variant="title" monospace tabularNums>
+                          {fmtSub(r.total, 'usd')}
+                        </Text>
+                      </Box>
                     }
                   />
                 ))}
@@ -752,27 +803,34 @@ export default function ClientPage({
                             avatar_url={null}
                             className="h-9 w-9 shrink-0 text-xs"
                           />
-                          <div className="min-w-0 flex-1">
-                            <p className="truncate text-sm font-medium dark:text-white">
+                          <Box flexDirection="column" flex={1} minWidth={0}>
+                            <Text variant="title" truncate>
                               {r.label}
-                            </p>
+                            </Text>
                             {r.email && r.email !== r.label && (
-                              <p className="dark:text-polar-400 truncate text-xs text-gray-400">
+                              <Text variant="caption" color="muted" truncate>
                                 {r.email}
-                              </p>
+                              </Text>
                             )}
-                          </div>
+                          </Box>
                         </>
                       }
                       stats={
-                        <>
-                          <span className="dark:text-polar-400 text-xs text-gray-400 tabular-nums">
-                            {r.occurrences.toLocaleString()} events
-                          </span>
-                          <span className="w-24 text-right font-mono text-sm font-semibold tabular-nums dark:text-white">
+                        <Text
+                          as="span"
+                          variant="caption"
+                          color="muted"
+                          tabularNums
+                        >
+                          {r.occurrences.toLocaleString()} events
+                        </Text>
+                      }
+                      value={
+                        <Box width={96} justifyContent="end">
+                          <Text as="span" variant="title" monospace tabularNums>
                             {fmt(r.total, 'usd')}
-                          </span>
-                        </>
+                          </Text>
+                        </Box>
                       }
                     />
                   ))}
@@ -814,6 +872,12 @@ const fmtDate = (d: Date) =>
     year: 'numeric',
   })
 
+const fmtPct = (n: number) =>
+  Math.abs(n).toLocaleString(undefined, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }) + '%'
+
 function TrendBadge({
   delta,
   pct,
@@ -834,14 +898,25 @@ function TrendBadge({
   return (
     <Tooltip>
       <TooltipTrigger asChild>
-        <span
-          className={`mt-1 flex w-fit cursor-default items-center gap-1 text-xs ${
+        <Box
+          as="span"
+          display="inline-flex"
+          width="fit-content"
+          alignItems="center"
+          columnGap="xs"
+          paddingHorizontal="s"
+          borderRadius="full"
+          cursor="default"
+          backgroundColor={
             isUp
-              ? 'text-red-500'
+              ? 'background-danger'
               : isDown
-                ? 'text-emerald-500'
-                : 'dark:text-polar-500 text-gray-400'
-          }`}
+                ? 'background-success'
+                : 'background-card'
+          }
+          color={
+            isUp ? 'text-danger' : isDown ? 'text-success' : 'text-tertiary'
+          }
         >
           {isUp ? (
             <ArrowUpRight className="size-3" />
@@ -850,20 +925,18 @@ function TrendBadge({
           ) : (
             <Minus className="size-3" />
           )}
-          {Math.abs(pct).toLocaleString(undefined, {
-            minimumFractionDigits: 1,
-            maximumFractionDigits: 1,
-          })}
-          %
-        </span>
+          <Text as="span" variant="label" color="inherit" tabularNums>
+            {fmtPct(pct)}
+          </Text>
+        </Box>
       </TooltipTrigger>
       <TooltipContent className="flex flex-col gap-1">
-        <span>
+        <Text as="span" variant="caption">
           {fmtDate(currentStart)} – {fmtDate(currentEnd)}
-        </span>
-        <span className="dark:text-polar-400 text-gray-400">
+        </Text>
+        <Text as="span" variant="caption" color="muted">
           vs {fmtDate(prevStart)} – {fmtDate(prevEnd)}
-        </span>
+        </Text>
       </TooltipContent>
     </Tooltip>
   )

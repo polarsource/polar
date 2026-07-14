@@ -2193,7 +2193,7 @@ class TestResendInvitation:
         """Test that resending invitation without a customer raises an error."""
         # Create a pending seat without a customer (edge case)
         seat = CustomerSeat(
-            subscription_id=subscription_with_seats.id,
+            subscription=subscription_with_seats,
             status=SeatStatus.pending,
             invitation_token="test-token",
         )
@@ -2218,8 +2218,8 @@ class TestResendInvitation:
         """Test that resending invitation without a token raises an error."""
         # Create a pending seat without an invitation token (edge case)
         seat = CustomerSeat(
-            subscription_id=subscription_with_seats.id,
-            customer_id=customer.id,
+            subscription=subscription_with_seats,
+            customer=customer,
             status=SeatStatus.pending,
             invitation_token=None,
         )
@@ -3022,7 +3022,7 @@ class TestUpdateProductBenefitsGrants:
             customer=billing_customer,
             status=SeatStatus.claimed,
             claimed_at=utc_now(),
-            member_id=member.id,
+            member=member,
             email="member@test.com",
         )
 

@@ -58,14 +58,18 @@ variable "workers" {
 variable "postgres_config" {
   description = "PostgreSQL connection configuration"
   type = object({
-    host          = string
-    port          = string
-    user          = string
-    password      = string
-    read_host     = string
-    read_port     = string
-    read_user     = string
-    read_password = string
+    host               = string
+    port               = string
+    user               = string
+    password           = string
+    host_fallback      = optional(string)
+    port_fallback      = optional(string)
+    read_host          = string
+    read_port          = string
+    read_user          = string
+    read_password      = string
+    read_host_fallback = optional(string)
+    read_port_fallback = optional(string)
   })
   sensitive = true
 }
@@ -84,8 +88,9 @@ variable "redis_config" {
 variable "google_secrets" {
   description = "Google secrets (sensitive)"
   type = object({
-    client_id     = string
-    client_secret = string
+    client_id            = string
+    client_secret        = string
+    service_account_json = string
   })
   sensitive = true
 }
@@ -200,13 +205,13 @@ variable "aws_kms_config" {
 }
 
 variable "worker_sqs_config" {
-  description = "Worker SQS execution engine config and producer credentials (optional). null skips the env group."
+  description = "Worker SQS execution engine config (optional). null skips the env group. Omit the static credentials to send via the Render OIDC role instead."
   type = object({
     enabled               = string
     actors                = string
     queue_prefix          = string
-    aws_access_key_id     = string
-    aws_secret_access_key = string
+    aws_access_key_id     = optional(string)
+    aws_secret_access_key = optional(string)
   })
   default   = null
   sensitive = true
@@ -232,6 +237,8 @@ variable "stripe_secrets" {
     connect_webhook_secret = string
     secret_key             = string
     webhook_secret         = string
+    app_client_id          = optional(string, "")
+    app_client_link_id     = optional(string, "")
   })
   sensitive = true
 }

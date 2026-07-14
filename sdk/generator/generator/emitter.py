@@ -1,19 +1,53 @@
 import abc
+import dataclasses
 import pathlib
 import re
 import subprocess
 import typing
+from typing import Literal
 
 from jinja2 import Environment, FileSystemLoader, Template
 
-from generator.ir import OpenAPIIR
+from generator.ir import APIIR, APIVersion
 
 _LOOP_DIRECTORY_PATTERN = re.compile(r"^\[\[([\w\.]+)\]\]$")
 
+PrereleaseLabel = Literal["alpha", "beta", "rc"]
+_PRERELEASE_PATTERN = re.compile(r"^(alpha|beta|rc)\.(\d+)$")
+
+
+@dataclasses.dataclass(frozen=True)
+class Prerelease:
+    label: PrereleaseLabel
+    number: int
+
+    @classmethod
+    def parse(cls, value: str) -> "Prerelease":
+        match = _PRERELEASE_PATTERN.match(value)
+        if not match:
+            raise ValueError(
+                f"Invalid prerelease '{value}'. "
+                "Expected <label>.<number> where label is one of: alpha, beta, rc."
+            )
+        label = typing.cast(PrereleaseLabel, match.group(1))
+        return cls(label=label, number=int(match.group(2)))
+
+    def __str__(self) -> str:
+        return f"{self.label}.{self.number}"
+
 
 class EmitterBase(abc.ABC):
-    def __init__(self, ir: OpenAPIIR, templates_dir: pathlib.Path | str):
+    def __init__(
+        self,
+        ir: APIIR,
+        version: str,
+        templates_dir: pathlib.Path | str,
+        *,
+        prerelease: Prerelease | None = None,
+    ):
         self.ir = ir
+        self.version = version
+        self.prerelease = prerelease
         self.templates_dir = pathlib.Path(templates_dir)
         self.env = Environment(
             loader=FileSystemLoader(self.templates_dir),
@@ -24,6 +58,13 @@ class EmitterBase(abc.ABC):
 
     @abc.abstractmethod
     def emit(self, root_directory: pathlib.Path | str) -> None: ...
+
+    @abc.abstractmethod
+    def get_version_string(self, api: APIVersion) -> str: ...
+
+    @abc.abstractmethod
+    def format_version(self) -> str:
+        """Return the full SDK version string formatted for the target language."""
 
     def setup_environment(self) -> None:
         """Setup the Jinja2 environment with default context and filters.
@@ -44,7 +85,14 @@ class EmitterBase(abc.ABC):
 
         Override this method in subclasses to add custom context variables.
         """
-        return {"ir": self.ir}
+        return {"ir": self.ir, "version": self.format_version()}
+
+    def get_version_context(self, api: APIVersion) -> dict[str, typing.Any]:
+        """Get the context dictionary for template rendering for a specific API version.
+
+        Override this method in subclasses to add custom context variables for a specific version.
+        """
+        return {"ir": self.ir, "api": api, "version": self.get_version_string(api)}
 
     def copy_file(
         self, source: pathlib.Path | str, destination: pathlib.Path | str

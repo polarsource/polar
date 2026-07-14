@@ -16,8 +16,6 @@ export default {
       email: 'Email',
       cardholderName: 'Cardholder name',
       purchasingAsBusiness: "I'm purchasing as a business",
-      addBusinessDetails: 'Add business details',
-      removeBusinessDetails: 'Remove business details',
       businessName: 'Business name',
       billingDetails: 'Business Details',
       billingAddress: {
@@ -96,7 +94,6 @@ export default {
         },
       },
       additionalMeteredUsage: 'Additional metered usage',
-      perUnit: '/ unit',
       perSeat: 'per seat',
       basePrice: {
         value: 'Base price',
@@ -134,18 +131,6 @@ export default {
         updateFailed: 'Failed to update seats',
       },
       discount: {
-        duration: {
-          months: {
-            _mode: 'plural',
-            '=1': 'for the first month',
-            other: 'for the first # months',
-          },
-          years: {
-            _mode: 'plural',
-            '=1': 'for the first year',
-            other: 'for the first # years',
-          },
-        },
         until: {
           value: 'Until {date}',
           _llmContext:
@@ -154,29 +139,6 @@ export default {
       },
     },
     trial: {
-      ends: 'Trial ends {endDate}',
-      duration: {
-        days: {
-          _mode: 'plural',
-          '=1': '# day trial',
-          other: '# days trial',
-        },
-        weeks: {
-          _mode: 'plural',
-          '=1': '# week trial',
-          other: '# weeks trial',
-        },
-        months: {
-          _mode: 'plural',
-          '=1': '# month trial',
-          other: '# months trial',
-        },
-        years: {
-          _mode: 'plural',
-          '=1': '# year trial',
-          other: '# years trial',
-        },
-      },
       hero: {
         free: {
           day: {
@@ -212,11 +174,6 @@ export default {
             'Suffix after the recurring price when a trial end date is known. Displayed as: "Then $99.99/year starting April 5, 2026". The "Then" prefix and bold price are separate elements.',
         },
       },
-      summary: {
-        totalWhenTrialEnds: 'Total when trial ends',
-        totalWhenDiscountExpires: 'Total when discount expires',
-        totalDueToday: 'Total due today',
-      },
     },
     pwywForm: {
       label: 'Name a fair price',
@@ -231,23 +188,8 @@ export default {
     },
     productDescription: {
       readMore: 'Read more',
-      readLess: 'Read less',
-    },
-    card: {
-      included: 'Included',
     },
     benefits: {
-      moreBenefits: {
-        _mode: 'plural',
-        '=1': '# more benefit',
-        other: '# more benefits',
-      },
-      showMoreBenefits: {
-        _mode: 'plural',
-        '=1': 'Show # more benefit',
-        other: 'Show # more benefits',
-      },
-      showLess: 'Show less',
       granting: 'Granting benefits...',
       requestNewInvite: 'Request new invite',
       retryIn: {
@@ -331,13 +273,34 @@ export default {
       getFree: 'Get for free',
       paymentsUnavailable: 'Payments are currently unavailable',
     },
+    trialUnavailable: {
+      title: 'No free trial for this purchase',
+      description:
+        "You've already used a free trial for this product, so you'll be charged today. Continue below to complete your purchase.",
+    },
   },
   intervals: {
     short: {
-      day: 'dy',
-      week: 'wk',
-      month: 'mo',
-      year: 'yr',
+      day: {
+        _mode: 'plural',
+        '=1': 'dy',
+        other: '# dy',
+      },
+      week: {
+        _mode: 'plural',
+        '=1': 'wk',
+        other: '# wk',
+      },
+      month: {
+        _mode: 'plural',
+        '=1': 'mo',
+        other: '# mo',
+      },
+      year: {
+        _mode: 'plural',
+        '=1': 'yr',
+        other: '# yr',
+      },
     },
   },
   benefitTypes: {

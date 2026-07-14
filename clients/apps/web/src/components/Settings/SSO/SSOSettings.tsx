@@ -1,9 +1,11 @@
 'use client'
 
 import { toast } from '@/components/Toast/use-toast'
+import { useAuth } from '@/hooks'
 import {
   useDeleteSSOConnection,
   useSSOConnections,
+  useUpdateOrganization,
   useUpdateSSOConnection,
 } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
@@ -12,13 +14,42 @@ import { schemas } from '@polar-sh/client'
 import { Button, InlineModal, ListGroup, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
+import { ConfirmModal } from '../../Modal/ConfirmModal'
 import { useModal } from '../../Modal/useModal'
 import EditSSOConnectionModal from './EditSSOConnectionModal'
 import NewSSOConnectionModal from './NewSSOConnectionModal'
 
 const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
   const { isShown, show, hide } = useModal()
+  const {
+    isShown: enforceModalShown,
+    show: showEnforceModal,
+    hide: hideEnforceModal,
+  } = useModal()
+  const { currentUser } = useAuth()
   const connections = useSSOConnections(org.id)
+  const updateOrganization = useUpdateOrganization()
+
+  const hasEnabledConnection = connections.data?.items?.some(
+    (connection) => connection.enabled,
+  )
+  // Enforcing is only allowed from a session already authenticated through
+  // this organization's SSO — a scoped session can only reach this org, so
+  // `organization_scoped` here means "signed in via this org's SSO".
+  const canEnforce = currentUser?.organization_scoped ?? false
+
+  const applyEnforced = async (sso_enforced: boolean) => {
+    const { error } = await updateOrganization.mutateAsync({
+      id: org.id,
+      body: { sso_enforced },
+    })
+    if (error) {
+      toast({
+        title: 'Update failed',
+        description: extractApiErrorMessage(error),
+      })
+    }
+  }
 
   return (
     <>
@@ -52,7 +83,50 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
             <Button onClick={show}>Add connection</Button>
           </ListGroup.Item>
         </ListGroup>
+        <Box alignItems="center" justifyContent="between" width="100%">
+          <Box flexDirection="column" gap="xs">
+            <Box alignItems="center" gap="s">
+              <Text variant="label">Enforce SSO</Text>
+              <Status
+                status={org.sso_enforced ? 'Enforced' : 'Not enforced'}
+                color={org.sso_enforced ? 'green' : 'gray'}
+                size="small"
+              />
+            </Box>
+            <Text variant="caption" color="muted">
+              {org.sso_enforced
+                ? 'Members must sign in through SSO to access this organization.'
+                : !hasEnabledConnection
+                  ? 'Add and enable an SSO connection before enforcing SSO.'
+                  : !canEnforce
+                    ? 'Sign in through this organization’s SSO to enforce it.'
+                    : 'Require members to sign in through SSO to access this organization.'}
+            </Text>
+          </Box>
+          <Button
+            variant="secondary"
+            onClick={() =>
+              org.sso_enforced ? applyEnforced(false) : showEnforceModal()
+            }
+            loading={updateOrganization.isPending}
+            disabled={
+              !org.sso_enforced && (!canEnforce || !hasEnabledConnection)
+            }
+          >
+            {org.sso_enforced ? 'Stop enforcing' : 'Enforce'}
+          </Button>
+        </Box>
       </Box>
+      <ConfirmModal
+        isShown={enforceModalShown}
+        hide={hideEnforceModal}
+        onConfirm={() => applyEnforced(true)}
+        title="Enforce SSO"
+        description="All members and authorized third-party apps will be disconnected and must be re-authorized through SSO."
+        destructive
+        destructiveText="Enforce"
+        confirmPrompt={org.slug}
+      />
       <InlineModal
         isShown={isShown}
         hide={hide}
@@ -72,6 +146,11 @@ const SSOConnectionRow = ({
   connection: schemas['OrganizationSSOConnection']
 }) => {
   const { isShown, show, hide } = useModal()
+  const {
+    isShown: deleteModalShown,
+    show: showDeleteModal,
+    hide: hideDeleteModal,
+  } = useModal()
   const updateConnection = useUpdateSSOConnection(org.id, connection.id)
   const deleteConnection = useDeleteSSOConnection(org.id)
 
@@ -88,13 +167,6 @@ const SSOConnectionRow = ({
   }
 
   const onDelete = async () => {
-    if (
-      !window.confirm(
-        'Delete this SSO connection? Members will no longer be able to sign in with it.',
-      )
-    ) {
-      return
-    }
     const { error } = await deleteConnection.mutateAsync(connection.id)
     if (error) {
       toast({
@@ -133,13 +205,21 @@ const SSOConnectionRow = ({
           </Button>
           <Button
             variant="ghost"
-            onClick={onDelete}
+            onClick={showDeleteModal}
             loading={deleteConnection.isPending}
           >
             Delete
           </Button>
         </Box>
       </Box>
+      <ConfirmModal
+        isShown={deleteModalShown}
+        hide={hideDeleteModal}
+        onConfirm={onDelete}
+        title="Delete SSO connection"
+        description="Members will no longer be able to sign in with this connection."
+        destructive
+      />
       <InlineModal
         isShown={isShown}
         hide={hide}

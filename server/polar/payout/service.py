@@ -224,6 +224,16 @@ class PayoutCanceled(PayoutError):
         super().__init__(message, 400)
 
 
+class PayoutHeld(PayoutError):
+    def __init__(self, payout: Payout) -> None:
+        self.payout = payout
+        message = (
+            f"Payout {payout.id} is held and cannot be triggered while the "
+            "organization is under review."
+        )
+        super().__init__(message, 400)
+
+
 class PayoutNotCancelable(PayoutError):
     def __init__(self, payout: Payout) -> None:
         self.payout = payout
@@ -663,6 +673,9 @@ class PayoutService:
         """
         if payout.status == PayoutStatus.canceled:
             raise PayoutCanceled(payout)
+
+        if payout.status == PayoutStatus.held:
+            raise PayoutHeld(payout)
 
         payout_account = payout.payout_account
         assert payout_account.stripe_id is not None

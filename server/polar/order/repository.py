@@ -1,8 +1,9 @@
 from collections.abc import Sequence
+from datetime import datetime
 from typing import TYPE_CHECKING, cast
 from uuid import UUID
 
-from sqlalchemy import CursorResult, Select, case, select, update
+from sqlalchemy import CursorResult, Select, case, func, select, update
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import (
@@ -52,6 +53,122 @@ class OrderRepository(
     RepositoryBase[Order],
 ):
     model = Order
+
+    async def get_revenue_by_customer(
+        self,
+        organization_id: UUID,
+        *,
+        start: datetime | None = None,
+        end: datetime | None = None,
+        limit: int = 10,
+    ) -> Sequence[tuple[UUID, str | None, str | None, int, int]]:
+        """Customers ranked by paid net revenue: (customer_id, email, name,
+        order count, net revenue in cents), descending.
+
+        Partially refunded orders count with the refunded portion subtracted,
+        so the ranking reflects money actually kept.
+
+        A repository aggregation (not the metrics layer) on purpose: ranking
+        across all customers cannot be expressed as bounded per-entity metric
+        queries the way products can.
+        """
+        net_revenue = func.coalesce(
+            func.sum(Order.net_amount - Order.refunded_amount), 0
+        )
+        statement = (
+            select(
+                Customer.id,
+                Customer.email,
+                Customer.name,
+                func.count(Order.id),
+                net_revenue,
+            )
+            .join(Customer, Customer.id == Order.customer_id)
+            .where(
+                Order.organization_id == organization_id,
+                Order.status.in_(OrderStatus.paid_statuses()),
+                Order.is_deleted.is_(False),
+            )
+            .group_by(Customer.id, Customer.email, Customer.name)
+            .order_by(net_revenue.desc())
+            .limit(limit)
+        )
+        if start is not None:
+            statement = statement.where(Order.created_at >= start)
+        if end is not None:
+            statement = statement.where(Order.created_at < end)
+        result = await self.session.execute(statement)
+        return [
+            (row[0], row[1], row[2], int(row[3]), int(row[4])) for row in result.all()
+        ]
+
+    async def get_paid_revenue_by_country(
+        self,
+        organization_id: UUID,
+        *,
+        since: datetime,
+        limit: int = 30,
+    ) -> Sequence[tuple[str, int, int]]:
+        """(country, order count, kept net revenue in cents) for paid orders
+        since the cutoff, largest revenue first. Orders without a billing
+        country are excluded."""
+        country = Order.billing_address["country"].astext
+        net_revenue = func.coalesce(
+            func.sum(Order.net_amount - Order.refunded_amount), 0
+        )
+        statement = (
+            select(country, func.count(Order.id), net_revenue)
+            .where(
+                Order.organization_id == organization_id,
+                Order.status.in_(OrderStatus.paid_statuses()),
+                Order.is_deleted.is_(False),
+                Order.created_at >= since,
+                country.is_not(None),
+            )
+            .group_by(country)
+            .order_by(net_revenue.desc())
+            .limit(limit)
+        )
+        result = await self.session.execute(statement)
+        return [(row[0], int(row[1]), int(row[2])) for row in result.all()]
+
+    async def get_top_product_ids_by_revenue(
+        self,
+        organization_id: UUID,
+        *,
+        start: datetime | None = None,
+        end: datetime | None = None,
+        limit: int = 10,
+    ) -> Sequence[UUID]:
+        """Product ids ordered by kept net revenue, descending.
+
+        Candidate *selection* only: the assistant reports revenue numbers from
+        the metrics layer so they match the dashboard; this narrows which
+        products are worth those per-product metric queries.
+        """
+        net_revenue = func.coalesce(
+            func.sum(Order.net_amount - Order.refunded_amount), 0
+        )
+        statement = (
+            select(Order.product_id)
+            .where(
+                Order.organization_id == organization_id,
+                Order.status.in_(OrderStatus.paid_statuses()),
+                Order.is_deleted.is_(False),
+                # product_id is nullable; a NULL revenue group would waste a
+                # candidate slot and poison the returned id list.
+                Order.product_id.is_not(None),
+            )
+            .group_by(Order.product_id)
+            .order_by(net_revenue.desc())
+            .limit(limit)
+        )
+        if start is not None:
+            statement = statement.where(Order.created_at >= start)
+        if end is not None:
+            statement = statement.where(Order.created_at < end)
+        result = await self.session.execute(statement)
+        return [row[0] for row in result.all()]
 
     async def get_all_by_customer(
         self,

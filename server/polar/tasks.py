@@ -15,6 +15,7 @@ from polar.event import tasks as event
 from polar.eventstream import tasks as eventstream
 from polar.external_event import tasks as external_event
 from polar.feedback import tasks as feedback
+from polar.file import tasks as file
 from polar.integrations.chargeback_stop import tasks as chargeback_stop
 from polar.integrations.polar import tasks as polar_self
 from polar.integrations.stripe import tasks as stripe
@@ -22,6 +23,7 @@ from polar.integrations.tinybird import tasks as tinybird
 from polar.meter import tasks as meter
 from polar.notifications import tasks as notifications
 from polar.oauth2 import tasks as oauth2
+from polar.observability.invariants import tasks as invariants
 from polar.observability.slo_report import tasks as slo_report
 from polar.order import tasks as order
 from polar.organization import tasks as organization
@@ -57,6 +59,8 @@ __all__ = [
     "eventstream",
     "external_event",
     "feedback",
+    "file",
+    "invariants",
     "meter",
     "notifications",
     "oauth2",

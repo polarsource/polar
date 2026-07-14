@@ -25,11 +25,13 @@ async def create_client(add_to_env_file: bool) -> None:
     async with sessionmaker() as session:
         oauth2_client = OAuth2Client(
             client_id=generate_token(prefix=CLIENT_ID_PREFIX),
-            client_secret=generate_token(prefix=CLIENT_SECRET_PREFIX),
-            registration_access_token=generate_token(
-                prefix=CLIENT_REGISTRATION_TOKEN_PREFIX
-            ),
             user=None,
+        )
+        await oauth2_client.set_client_secret(
+            generate_token(prefix=CLIENT_SECRET_PREFIX)
+        )
+        await oauth2_client.set_registration_access_token(
+            generate_token(prefix=CLIENT_REGISTRATION_TOKEN_PREFIX)
         )
         oauth2_client.set_client_metadata(
             {

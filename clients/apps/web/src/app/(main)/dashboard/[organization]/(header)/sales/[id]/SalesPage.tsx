@@ -12,6 +12,7 @@ import { OrderSeatsSection } from '@/components/Orders/OrderSeatsSection'
 import { OrderSection } from '@/components/Orders/OrderSection'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
 import { DownloadInvoiceDashboard } from '@/components/Orders/DownloadInvoice'
+import { DownloadReceiptDashboard } from '@/components/Orders/DownloadReceipt'
 import { InvoicePreview } from '@/components/Orders/InvoicePreview'
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomFields, useProduct, useSubscription } from '@/hooks/queries'
@@ -84,11 +85,21 @@ const ClientPage: React.FC<ClientPageProps> = ({
       header={
         <Box alignItems="center" columnGap="l">
           {order.paid && (
-            <DownloadInvoiceDashboard
-              order={order}
-              organization={organization}
-              onInvoiceGenerated={refetchOrder}
-            />
+            <>
+              <DownloadInvoiceDashboard
+                order={order}
+                organization={organization}
+                onInvoiceGenerated={refetchOrder}
+              />
+              {order.receipt_number != null && (
+                <DownloadReceiptDashboard
+                  organization={organization}
+                  order={order}
+                  className="w-auto"
+                  variant="secondary"
+                />
+              )}
+            </>
           )}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>

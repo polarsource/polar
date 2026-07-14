@@ -26,6 +26,8 @@ class SystemEvent(StrEnum):
     subscription_revoked = "subscription.revoked"
     subscription_past_due = "subscription.past_due"
     subscription_reactivated = "subscription.reactivated"
+    subscription_paused = "subscription.paused"
+    subscription_resumed = "subscription.resumed"
     subscription_uncanceled = "subscription.uncanceled"
     subscription_product_updated = "subscription.product_updated"
     subscription_seats_updated = "subscription.seats_updated"
@@ -58,6 +60,8 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "subscription.revoked": "Subscription Revoked",
     "subscription.past_due": "Subscription Past Due",
     "subscription.reactivated": "Subscription Reactivated",
+    "subscription.paused": "Subscription Paused",
+    "subscription.resumed": "Subscription Resumed",
     "subscription.uncanceled": "Subscription Uncanceled",
     "subscription.product_updated": "Subscription Product Updated",
     "order.paid": "Order Paid",
@@ -313,6 +317,40 @@ class SubscriptionReactivatedEvent(Event):
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.subscription_reactivated]]
         user_metadata: Mapped[SubscriptionReactivatedMetadata]  # type: ignore[assignment]
+
+
+class SubscriptionPausedMetadata(TypedDict):
+    subscription_id: str
+    product_id: NotRequired[str]
+    amount: NotRequired[int]
+    currency: NotRequired[str]
+    recurring_interval: NotRequired[str]
+    recurring_interval_count: NotRequired[int]
+    paused_at: str
+    resumes_at: NotRequired[str]
+
+
+class SubscriptionPausedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_paused]]
+        user_metadata: Mapped[SubscriptionPausedMetadata]  # type: ignore[assignment]
+
+
+class SubscriptionResumedMetadata(TypedDict):
+    subscription_id: str
+    product_id: NotRequired[str]
+    amount: NotRequired[int]
+    currency: NotRequired[str]
+    recurring_interval: NotRequired[str]
+    recurring_interval_count: NotRequired[int]
+
+
+class SubscriptionResumedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_resumed]]
+        user_metadata: Mapped[SubscriptionResumedMetadata]  # type: ignore[assignment]
 
 
 class SubscriptionUncanceledMetadata(TypedDict):
@@ -699,6 +737,24 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: SubscriptionReactivatedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_paused],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionPausedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.subscription_resumed],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionResumedMetadata,
 ) -> Event: ...
 
 

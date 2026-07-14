@@ -224,6 +224,35 @@ class PolarSelfService:
             cost_usd=str(cost_decimal),
         )
 
+    def enqueue_track_compass_assistant_usage(
+        self,
+        *,
+        external_customer_id: str,
+        vendor: str,
+        model: str,
+        input_tokens: int,
+        output_tokens: int,
+        cost_usd: Decimal | float | None,
+        usage_id: str,
+    ) -> None:
+        if not self.is_configured:
+            return
+        if cost_usd is None:
+            return
+        cost_decimal = Decimal(str(cost_usd))
+        if cost_decimal <= 0:
+            return
+        enqueue_job(
+            "polar_self.track_compass_assistant_usage",
+            external_customer_id=external_customer_id,
+            vendor=vendor,
+            model=model,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_usd=str(cost_decimal),
+            usage_id=usage_id,
+        )
+
     async def list_plans(self) -> list["Product"]:
         if not self.is_configured:
             raise PolarSelfNotConfigured()

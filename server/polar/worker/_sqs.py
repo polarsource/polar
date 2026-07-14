@@ -12,9 +12,8 @@ from botocore.config import Config
 from botocore.exceptions import ClientError
 
 from polar.config import settings
+from polar.kit.json import json_obj_serializer
 from polar.logging import Logger
-
-from ._encoder import _json_obj_serializer
 
 if TYPE_CHECKING:
     from mypy_boto3_scheduler.client import EventBridgeSchedulerClient
@@ -39,15 +38,21 @@ class SQSSendError(Exception):
 
 
 def get_sqs_client() -> "SQSClient":
+    access_key_id = settings.WORKER_SQS_AWS_ACCESS_KEY_ID
+    secret_access_key = settings.WORKER_SQS_AWS_SECRET_ACCESS_KEY
+    if access_key_id is None and (
+        settings.SQS_ENDPOINT_URL is not None
+        or settings.is_development()
+        or settings.is_testing()
+    ):
+        access_key_id = settings.AWS_ACCESS_KEY_ID
+        secret_access_key = settings.AWS_SECRET_ACCESS_KEY
+    # None credentials: boto3's default chain assumes the Render OIDC role (AWS_ROLE_ARN).
     return boto3.client(
         "sqs",
         endpoint_url=settings.SQS_ENDPOINT_URL,
-        aws_access_key_id=(
-            settings.WORKER_SQS_AWS_ACCESS_KEY_ID or settings.AWS_ACCESS_KEY_ID
-        ),
-        aws_secret_access_key=(
-            settings.WORKER_SQS_AWS_SECRET_ACCESS_KEY or settings.AWS_SECRET_ACCESS_KEY
-        ),
+        aws_access_key_id=access_key_id,
+        aws_secret_access_key=secret_access_key,
         config=Config(
             region_name=settings.AWS_REGION,
             signature_version=settings.AWS_SIGNATURE_VERSION,
@@ -122,7 +127,7 @@ def build_envelope(
             "attempt": attempt,
         },
         separators=(",", ":"),
-        default=_json_obj_serializer,
+        default=json_obj_serializer,
     )
 
 

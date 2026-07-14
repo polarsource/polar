@@ -2,13 +2,8 @@
 
 import { formatCurrency } from '@polar-sh/currency'
 import type { AcceptedLocale } from '@polar-sh/i18n'
-import {
-  DEFAULT_LOCALE,
-  getTranslations,
-  useTranslations,
-} from '@polar-sh/i18n'
+import { DEFAULT_LOCALE, useTranslations } from '@polar-sh/i18n'
 import { formatDate } from '@polar-sh/i18n/formatters/date'
-import { formatOrdinal } from '@polar-sh/i18n/formatters/ordinal'
 import type { ProductCheckoutPublic } from '../guards'
 import { isLegacyRecurringPrice } from '../utils/product'
 
@@ -57,14 +52,11 @@ const CheckoutTrialHeroPrice = ({
   const intervalCount = product.recurring_interval_count
   const intervalSuffix = (() => {
     if (!interval || !(interval in INTERVAL_SUFFIX_KEYS)) return ''
+    const intervalKey = interval as keyof typeof INTERVAL_SUFFIX_KEYS
     if (intervalCount && intervalCount > 1) {
-      const shortInterval =
-        getTranslations(effectiveLocale).intervals.short[interval]
-      return ` / ${formatOrdinal(intervalCount, effectiveLocale)} ${shortInterval}`
+      return ` / ${t(`intervals.short.${intervalKey}`, { count: intervalCount })}`
     }
-    return t(
-      INTERVAL_SUFFIX_KEYS[interval as keyof typeof INTERVAL_SUFFIX_KEYS],
-    )
+    return t(INTERVAL_SUFFIX_KEYS[intervalKey])
   })()
   const format = formatCurrency('standard', effectiveLocale)
   const priceStr = `${format(recurringAmount, currency)}${intervalSuffix}`

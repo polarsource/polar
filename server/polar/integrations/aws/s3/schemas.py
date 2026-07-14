@@ -3,7 +3,7 @@ import hashlib
 from datetime import datetime
 from typing import Any, Self
 
-from pydantic import UUID4, computed_field
+from pydantic import UUID4, Field, computed_field
 
 from polar.kit.schemas import IDSchema, Schema
 from polar.kit.utils import human_readable_size
@@ -29,7 +29,7 @@ class S3FileCreatePart(Schema):
 
 
 class S3FileCreateMultipart(Schema):
-    parts: list[S3FileCreatePart]
+    parts: list[S3FileCreatePart] = Field(max_length=10_000)
 
 
 class S3FileCreate(Schema):

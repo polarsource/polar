@@ -130,7 +130,7 @@ export default function EventDetailPage({
       }
       contextViewClassName="bg-transparent dark:bg-transparent border-none rounded-none md:shadow-none"
     >
-      <div className="grid grid-cols-1 items-start gap-16 md:grid-cols-[1fr_360px]">
+      <div className="grid grid-cols-1 items-start gap-12 md:grid-cols-[1fr_300px]">
         {/* Left column — event rows */}
         <div className="flex flex-col gap-y-8">
           <div className="flex flex-row items-center justify-between gap-x-4">

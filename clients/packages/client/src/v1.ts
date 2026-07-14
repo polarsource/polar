@@ -1584,13 +1584,38 @@ export interface paths {
      *
      *     For trialing subscriptions, shows what the first charge will be when the trial ends.
      *     For subscriptions set to cancel at period end, shows the final charge.
-     *     Only available for active or trialing subscriptions, including those set to cancel.
+     *     For paused subscriptions scheduled to auto-resume, shows the charge on resume.
+     *     Available for active, trialing, and paused-with-resume subscriptions.
      *
      *     **Scopes**: `subscriptions:read` `subscriptions:write`
      */
     get: operations['subscriptions:get_charge_preview']
     put?: never
     post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/subscriptions/{id}/change-preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Preview Subscription Change
+     * @description Preview what a subscription change would cost, without applying it.
+     *
+     *     Returns the proration breakdown and the amount due today.
+     *
+     *     **Scopes**: `subscriptions:write`
+     */
+    post: operations['subscriptions:preview_change']
     delete?: never
     options?: never
     head?: never
@@ -2646,6 +2671,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/support-cases/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Support Cases
+     * @description List the organization's support cases.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['support-cases:list_support_cases']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/support-cases/{id}': {
     parameters: {
       query?: never
@@ -3043,6 +3090,31 @@ export interface paths {
      *     **Scopes**: `metrics:write`
      */
     patch: operations['metrics:update_dashboard']
+    trace?: never
+  }
+  '/v1/compass/insights': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Insights
+     * @description List computed insights about your business.
+     *
+     *     Insights are derived live from your metrics, narrated, and linked to a
+     *     drill-down. They are ordered by importance.
+     *
+     *     **Scopes**: `metrics:read`
+     */
+    get: operations['compass:list_insights']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
     trace?: never
   }
   '/v1/license-keys/': {
@@ -4740,6 +4812,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-portal/subscriptions/{id}/change-preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Preview Subscription Change
+     * @description Preview what a subscription change would cost, without applying it.
+     */
+    post: operations['customer_portal:subscriptions:preview_change']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customer-portal/wallets/': {
     parameters: {
       query?: never
@@ -4872,6 +4964,90 @@ export interface paths {
     put?: never
     /** Claim Seat */
     post: operations['customer-seats:claim_seat']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/merchant-migrations/': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Merchant Migrations
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['merchant-migrations:list']
+    put?: never
+    /**
+     * Create Merchant Migration
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:create']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/merchant-migrations/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Merchant Migration
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['merchant-migrations:get']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/merchant-migrations/{id}/precheck': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Run Merchant Migration Pre-check
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:precheck']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/merchant-migrations/{id}/records': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Merchant Migration Records
+     * @description **Scopes**: `organizations:write`
+     */
+    get: operations['merchant-migrations:records']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -6235,6 +6411,55 @@ export interface webhooks {
     patch?: never
     trace?: never
   }
+  'subscription.paused': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * subscription.paused
+     * @description Sent when a subscription is paused and the customer temporarily loses access.
+     *
+     *     No order is created while paused. The subscription resumes either on its
+     *     scheduled resume date or when resumed manually, starting a new billing period.
+     *
+     *     **Discord & Slack support:** Full
+     */
+    post: operations['_endpointsubscription_paused_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'subscription.resumed': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * subscription.resumed
+     * @description Sent when a paused subscription resumes, restoring the customer's access.
+     *
+     *     Resuming starts a new billing period and charges the customer immediately.
+     *
+     *     **Discord & Slack support:** Full
+     */
+    post: operations['_endpointsubscription_resumed_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   'refund.created': {
     parameters: {
       query?: never
@@ -6565,6 +6790,30 @@ export interface components {
        * @description Notes that should appear on the reverse invoice.
        */
       billing_notes?: string | null
+    }
+    /**
+     * AddCurrencyAction
+     * @description A nudge to offer prices in an additional presentment currency.
+     *
+     *     The client routes to the products list, where per-product pricing can be
+     *     extended. Nothing is ever applied automatically.
+     */
+    AddCurrencyAction: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'add_currency'
+      /**
+       * Label
+       * @description Button label.
+       */
+      label: string
+      /**
+       * Currency
+       * @description Lowercase ISO code of the suggested currency, e.g. `eur`.
+       */
+      currency: string
     }
     /** Address */
     Address: {
@@ -7115,6 +7364,54 @@ export interface components {
         | 'ZA'
         | 'ZM'
         | 'ZW'
+    }
+    /**
+     * AdjustPriceAction
+     * @description A recommendation to review a product's pricing, with a reference point.
+     *
+     *     The suggested amount is a *reference*, not a mandate: it's the list price
+     *     that would restore the target gross margin at the current cost to serve,
+     *     ignoring demand elasticity. It applies to new customers only — existing
+     *     subscriptions keep their price. The client routes to the product's pricing
+     *     editor; nothing is ever applied automatically.
+     */
+    AdjustPriceAction: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'adjust_price'
+      /**
+       * Label
+       * @description Button label.
+       */
+      label: string
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description The product whose pricing to review.
+       */
+      product_id: string
+      /**
+       * Product Name
+       * @description Display name of the product.
+       */
+      product_name: string
+      /**
+       * Current Price Amount
+       * @description The product's current list price, in cents.
+       */
+      current_price_amount: number
+      /**
+       * Suggested Price Amount
+       * @description Reference list price (cents) that would restore the target gross margin at the current cost to serve. Null when no meaningful suggestion can be computed.
+       */
+      suggested_price_amount: number | null
+      /**
+       * Currency
+       * @description ISO currency code of the amounts.
+       */
+      currency: string
     }
     AggregateField: string
     /**
@@ -11219,6 +11516,17 @@ export interface components {
        */
       action: 'allow' | 'deny'
     }
+    /** CannotCreateOrganizationError */
+    CannotCreateOrganizationError: {
+      /**
+       * Error
+       * @example CannotCreateOrganizationError
+       * @constant
+       */
+      error: 'CannotCreateOrganizationError'
+      /** Detail */
+      detail: string
+    }
     /**
      * CardPayment
      * @description Schema of a payment with a card payment method.
@@ -11274,7 +11582,7 @@ export interface components {
        * @description What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.
        * @example subscription_cycle
        */
-      trigger?: components['schemas']['PaymentTrigger'] | null
+      trigger: components['schemas']['PaymentTrigger'] | null
       /**
        * Decline Reason
        * @description Error code, if the payment was declined.
@@ -13842,6 +14150,15 @@ export interface components {
        */
       allow_trial?: false | null
     }
+    /**
+     * ConfidenceLevel
+     * @description How much we trust an insight, derived from sample size and baseline variance.
+     *
+     *     Low-confidence insights are softened or suppressed so small merchants don't
+     *     get noise (e.g. "churn doubled" off a 1 -> 2 customer change).
+     * @enum {string}
+     */
+    ConfidenceLevel: 'low' | 'medium' | 'high'
     /** CostMetadata */
     'CostMetadata-Input': {
       /**
@@ -16611,6 +16928,21 @@ export interface components {
        */
       past_due_at?: string | null
       /**
+       * Pause At Period End
+       * @description Whether the subscription will be paused at the end of the current period.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Paused At
+       * @description The timestamp when the subscription was paused.
+       */
+      paused_at: string | null
+      /**
+       * Resumes At
+       * @description The timestamp when a paused subscription is scheduled to automatically resume, if set.
+       */
+      resumes_at: string | null
+      /**
        * Customer Id
        * Format: uuid4
        * @description The ID of the subscribed customer.
@@ -16984,6 +17316,8 @@ export interface components {
       update_seats: boolean
       /** Update Plan */
       update_plan: boolean
+      /** Pause */
+      pause?: boolean
     }
     /** CustomerPortalUsageSettings */
     CustomerPortalUsageSettings: {
@@ -17103,56 +17437,56 @@ export interface components {
        * Subscription Id
        * @description The subscription ID (for recurring seats)
        */
-      subscription_id?: string | null
+      subscription_id: string | null
       /**
        * Order Id
        * @description The order ID (for one-time purchase seats)
        */
-      order_id?: string | null
+      order_id: string | null
       /** @description Status of the seat */
       status: components['schemas']['SeatStatus']
       /**
        * Customer Id
        * @description The customer ID. When member_model_enabled is true, this is the billing customer (purchaser). When false, this is the seat member customer.
        */
-      customer_id?: string | null
+      customer_id: string | null
       /**
        * Member Id
        * @description The member ID of the seat occupant
        */
-      member_id?: string | null
+      member_id: string | null
       /** @description The member associated with this seat */
-      member?: components['schemas']['Member'] | null
+      member: components['schemas']['Member'] | null
       /**
        * Email
        * @description Email of the seat member (set when member_model_enabled is true)
        */
-      email?: string | null
+      email: string | null
       /**
        * Customer Email
        * @description The assigned customer email
        */
-      customer_email?: string | null
+      customer_email: string | null
       /**
        * Invitation Token Expires At
        * @description When the invitation token expires
        */
-      invitation_token_expires_at?: string | null
+      invitation_token_expires_at: string | null
       /**
        * Claimed At
        * @description When the seat was claimed
        */
-      claimed_at?: string | null
+      claimed_at: string | null
       /**
        * Revoked At
        * @description When the seat was revoked
        */
-      revoked_at?: string | null
+      revoked_at: string | null
       /**
        * Seat Metadata
        * @description Additional metadata for the seat
        */
-      seat_metadata?: {
+      seat_metadata: {
         [key: string]: unknown
       } | null
     }
@@ -18052,6 +18386,21 @@ export interface components {
        */
       past_due_at?: string | null
       /**
+       * Pause At Period End
+       * @description Whether the subscription will be paused at the end of the current period.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Paused At
+       * @description The timestamp when the subscription was paused.
+       */
+      paused_at: string | null
+      /**
+       * Resumes At
+       * @description The timestamp when a paused subscription is scheduled to automatically resume, if set.
+       */
+      resumes_at: string | null
+      /**
        * Customer Id
        * Format: uuid4
        * @description The ID of the subscribed customer.
@@ -18127,6 +18476,26 @@ export interface components {
        */
       cancellation_comment?: string | null
     }
+    CustomerSubscriptionChangePreview:
+      | components['schemas']['CustomerSubscriptionChangePreviewProduct']
+      | components['schemas']['CustomerSubscriptionChangePreviewSeats']
+    /** CustomerSubscriptionChangePreviewProduct */
+    CustomerSubscriptionChangePreviewProduct: {
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description Preview a change of the subscription to this product.
+       */
+      product_id: string
+    }
+    /** CustomerSubscriptionChangePreviewSeats */
+    CustomerSubscriptionChangePreviewSeats: {
+      /**
+       * Seats
+       * @description Preview a change of the subscription to this number of seats.
+       */
+      seats: number
+    }
     /** CustomerSubscriptionMeter */
     CustomerSubscriptionMeter: {
       /**
@@ -18197,6 +18566,22 @@ export interface components {
        * @description The name of the meter. Will be shown on customer's invoices and usage.
        */
       name: string
+    }
+    /** CustomerSubscriptionPause */
+    CustomerSubscriptionPause: {
+      /**
+       * Pause At Period End
+       * @description Pause an active subscription at the end of the current period.
+       *
+       *     Or cancel a scheduled pause on a subscription set to be paused at
+       *     period end.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Resumes At
+       * @description Date at which the paused subscription should automatically resume. If not set, it stays paused until resumed. Must be after the current period end.
+       */
+      resumes_at?: string | null
     }
     /** CustomerSubscriptionProduct */
     CustomerSubscriptionProduct: {
@@ -18286,6 +18671,15 @@ export interface components {
       medias: components['schemas']['ProductMediaFileRead'][]
       organization: components['schemas']['CustomerOrganization']
     }
+    /** CustomerSubscriptionResume */
+    CustomerSubscriptionResume: {
+      /**
+       * Resume
+       * @description Resume a paused subscription immediately, starting a new billing period and charging the customer.
+       * @constant
+       */
+      resume: true
+    }
     /**
      * CustomerSubscriptionSortProperty
      * @enum {string}
@@ -18305,6 +18699,8 @@ export interface components {
       | components['schemas']['CustomerSubscriptionUpdateProduct']
       | components['schemas']['CustomerSubscriptionUpdateSeats']
       | components['schemas']['CustomerSubscriptionCancel']
+      | components['schemas']['CustomerSubscriptionPause']
+      | components['schemas']['CustomerSubscriptionResume']
       | components['schemas']['CustomerSubscriptionUpdateClear']
     /** CustomerSubscriptionUpdateClear */
     CustomerSubscriptionUpdateClear: {
@@ -18330,10 +18726,6 @@ export interface components {
        * @description Update the number of seats for this subscription.
        */
       seats: number
-      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
-      proration_behavior?:
-        | components['schemas']['SubscriptionProrationBehavior']
-        | null
     }
     /**
      * CustomerTeam
@@ -19906,6 +20298,68 @@ export interface components {
       | 'under_review'
       | 'lost'
       | 'won'
+    /** DisputeSupportCaseListItem */
+    DisputeSupportCaseListItem: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'dispute'
+      /** @description The dispute this case handles. */
+      dispute: components['schemas']['Dispute']
+    }
+    /**
+     * DisputeSupportCaseMessageCreate
+     * @description A reply on a dispute case.
+     */
+    DisputeSupportCaseMessageCreate: {
+      /** Body */
+      body?: string | null
+      /** File Ids */
+      file_ids?: string[]
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'dispute'
+      /** @description The merchant's stated grounds for contesting, set on the counter submission. */
+      win_reason?: components['schemas']['DisputeWinReason'] | null
+      /**
+       * Win Reason Other
+       * @description Free-text detail when `win_reason` is `other`.
+       */
+      win_reason_other?: string | null
+    }
+    /**
+     * DisputeWinReason
+     * @description Why the merchant believes they should win the chargeback.
+     *
+     *     Collected on their counter submission to help support gather the right
+     *     evidence before submitting to the card network.
+     * @enum {string}
+     */
+    DisputeWinReason:
+      | 'cardholder_withdrew'
+      | 'cardholder_refunded'
+      | 'rightful_cardholder'
+      | 'other'
     /**
      * DownloadableFileCreate
      * @description Schema to create a file to be associated with the downloadables benefit.
@@ -20571,6 +21025,11 @@ export interface components {
       /** Version */
       version?: string | null
     }
+    FileRead:
+      | components['schemas']['DownloadableFileRead']
+      | components['schemas']['ProductMediaFileRead']
+      | components['schemas']['OrganizationAvatarFileRead']
+      | components['schemas']['SupportCaseAttachmentFileRead']
     /**
      * FileServiceTypes
      * @enum {string}
@@ -20721,7 +21180,7 @@ export interface components {
        * @description What initiated this payment attempt, e.g. initial purchase, subscription renewal, or an automated dunning retry.
        * @example subscription_cycle
        */
-      trigger?: components['schemas']['PaymentTrigger'] | null
+      trigger: components['schemas']['PaymentTrigger'] | null
       /**
        * Decline Reason
        * @description Error code, if the payment was declined.
@@ -20801,6 +21260,112 @@ export interface components {
      * @enum {string}
      */
     IdentityVerificationStatus: 'unverified' | 'pending' | 'verified' | 'failed'
+    /**
+     * Insight
+     * @description A computed, narrated reading of the business with a drill-down.
+     */
+    Insight: {
+      /**
+       * Id
+       * @description Deterministic insight key (`detector_id:organization_id:period_bucket`). Stable across recomputes so dismissals and feedback re-attach.
+       */
+      id: string
+      /**
+       * Detector Id
+       * @description The detector that produced this insight.
+       */
+      detector_id: string
+      category: components['schemas']['InsightCategory']
+      /**
+       * Category Label
+       * @description Visible label next to the category dot.
+       */
+      category_label: string
+      /** @description How much the merchant should care; the feed sorts on this first. */
+      severity: components['schemas']['InsightSeverity']
+      /** Title */
+      title: string
+      /** Body */
+      body: string
+      /**
+       * Why
+       * @description Explanation surfaced via the 'Why you're seeing this' link.
+       */
+      why?: string | null
+      confidence: components['schemas']['ConfidenceLevel']
+      /** Primary Action */
+      primary_action?:
+        | (
+            | components['schemas']['ViewMetricAction']
+            | components['schemas']['ViewCostsAction']
+            | components['schemas']['AdjustPriceAction']
+            | components['schemas']['AddCurrencyAction']
+          )
+        | null
+      /**
+       * Suggested Prompt
+       * @description A natural follow-up question this finding invites, offered to the merchant as a one-tap prompt for the assistant. None when the finding has no obvious next question.
+       */
+      suggested_prompt: string | null
+      /**
+       * Drivers
+       * @description Top contributors to the headline change.
+       */
+      drivers?: components['schemas']['InsightDriver'][]
+    }
+    /**
+     * InsightCategory
+     * @description Buckets an insight by which aspect of the business it speaks to.
+     * @enum {string}
+     */
+    InsightCategory:
+      | 'revenue'
+      | 'retention'
+      | 'growth'
+      | 'risk'
+      | 'cost'
+      | 'product'
+    /**
+     * InsightDriver
+     * @description One contributor to the headline change.
+     *
+     *     Decomposition is what makes an insight *explain* rather than *announce* — e.g.
+     *     "MRR grew 12%, ~70% of it from Pro upgrades". Populated by a grouped query; the
+     *     MRR scaffold leaves this empty until a dedicated Tinybird breakdown pipe lands.
+     */
+    InsightDriver: {
+      /**
+       * Dimension
+       * @description What the drivers are grouped by, e.g. `product`.
+       */
+      dimension: string
+      /**
+       * Label
+       * @description Human-readable name of this driver.
+       */
+      label: string
+      /**
+       * Contribution Pct
+       * @description Share of the headline change attributable to this driver (0-1).
+       */
+      contribution_pct: number
+      /**
+       * Value
+       * @description This driver's contribution in the metric's unit.
+       */
+      value: number
+    }
+    /**
+     * InsightSeverity
+     * @description How much the merchant should care, assigned per insight by its detector.
+     *
+     *     This is a property of what was *found*, not of the detector: the same MRR
+     *     detector emits `warning` when revenue falls and `info` when it grows. The
+     *     feed is ordered by severity first, so the most consequential reading always
+     *     leads.
+     * @enum {string}
+     */
+    InsightSeverity: 'critical' | 'warning' | 'opportunity' | 'info'
     /** InsufficientBalance */
     InsufficientBalance: {
       /**
@@ -20850,6 +21415,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** InvalidSourceCredentials */
+    InvalidSourceCredentials: {
+      /**
+       * Error
+       * @example InvalidSourceCredentials
+       * @constant
+       */
+      error: 'InvalidSourceCredentials'
+      /** Detail */
+      detail: string
+    }
     /** LLMMetadata */
     LLMMetadata: {
       /**
@@ -20892,6 +21468,17 @@ export interface components {
        * @description The total number of LLM tokens used for the event.
        */
       total_tokens: number
+    }
+    /** LastSSOConnectionRequired */
+    LastSSOConnectionRequired: {
+      /**
+       * Error
+       * @example LastSSOConnectionRequired
+       * @constant
+       */
+      error: 'LastSSOConnectionRequired'
+      /** Detail */
+      detail: string
     }
     /**
      * LegacyOrganizationStatus
@@ -21577,12 +22164,7 @@ export interface components {
     /** ListResource[FileRead] */
     ListResource_FileRead_: {
       /** Items */
-      items: (
-        | components['schemas']['DownloadableFileRead']
-        | components['schemas']['ProductMediaFileRead']
-        | components['schemas']['OrganizationAvatarFileRead']
-        | components['schemas']['SupportCaseAttachmentFileRead']
-      )[]
+      items: components['schemas']['FileRead'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[LicenseKeyRead] */
@@ -21595,6 +22177,18 @@ export interface components {
     ListResource_Member_: {
       /** Items */
       items: components['schemas']['Member'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[MerchantMigrationRecordItem] */
+    ListResource_MerchantMigrationRecordItem_: {
+      /** Items */
+      items: components['schemas']['MerchantMigrationRecordItem'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[MerchantMigration] */
+    ListResource_MerchantMigration_: {
+      /** Items */
+      items: components['schemas']['MerchantMigration'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[Meter] */
@@ -21703,6 +22297,12 @@ export interface components {
     ListResource_Subscription_: {
       /** Items */
       items: components['schemas']['Subscription'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[SupportCaseListItem] */
+    ListResource_SupportCaseListItem_: {
+      /** Items */
+      items: components['schemas']['SupportCaseListItem'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[TaxJurisdiction] */
@@ -22053,6 +22653,21 @@ export interface components {
        */
       role: 'member' | 'billing_manager'
     }
+    /** MemberOrganization */
+    MemberOrganization: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /** Slug */
+      slug: string
+      /**
+       * Requires Sso
+       * @description Whether this organization enforces SSO.
+       */
+      requires_sso: boolean
+    }
     /**
      * MemberOwnerCreate
      * @description Schema for creating an owner member during customer creation.
@@ -22099,6 +22714,134 @@ export interface components {
        */
       role?: components['schemas']['MemberRole'] | null
     }
+    /** MerchantMigration */
+    MerchantMigration: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+      /** @description The provider the billing is being migrated from. */
+      source_platform: components['schemas']['MerchantMigrationSourcePlatform']
+      /** @description The current step of the migration. */
+      step: components['schemas']['MerchantMigrationStep']
+      /**
+       * Source Connected
+       * @description Whether the source provider has been connected.
+       */
+      source_connected: boolean
+      /**
+       * Source
+       * @description Non-secret metadata about the connected source. The shape varies by provider (e.g. Stripe exposes `stripe_user_id`, `livemode`).
+       */
+      source: {
+        [key: string]: unknown
+      } | null
+    }
+    /** MerchantMigrationCreate */
+    MerchantMigrationCreate: {
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The organization the migration belongs to.
+       */
+      organization_id: string
+      /** @description The provider to migrate the billing from. */
+      source_platform: components['schemas']['MerchantMigrationSourcePlatform']
+      /**
+       * Api Key
+       * @description A Stripe API key for the source account (a restricted `rk_...` key is recommended). It is validated for all required permissions before the migration is saved.
+       */
+      api_key: string
+    }
+    /** MerchantMigrationNotEnabled */
+    MerchantMigrationNotEnabled: {
+      /**
+       * Error
+       * @example MerchantMigrationNotEnabled
+       * @constant
+       */
+      error: 'MerchantMigrationNotEnabled'
+      /** Detail */
+      detail: string
+    }
+    /** MerchantMigrationNotFound */
+    MerchantMigrationNotFound: {
+      /**
+       * Error
+       * @example MerchantMigrationNotFound
+       * @constant
+       */
+      error: 'MerchantMigrationNotFound'
+      /** Detail */
+      detail: string
+    }
+    /** MerchantMigrationRecordItem */
+    MerchantMigrationRecordItem: {
+      /** @description The source entity type. */
+      entity: components['schemas']['PrecheckEntity']
+      /**
+       * Source Id
+       * @description The source identifier (e.g. Stripe `sub_…`).
+       */
+      source_id: string
+      /**
+       * Title
+       * @description Primary label (name, email or product).
+       */
+      title: string
+      /**
+       * Subtitle
+       * @description Secondary detail (interval, amount, country, status).
+       */
+      subtitle: string | null
+      /** @description Whether this record will be imported or stays on the source. */
+      status: components['schemas']['PrecheckRecordStatus']
+      /**
+       * Reason
+       * @description Why the record is skipped, if it is.
+       */
+      reason: string | null
+      /**
+       * Reason Code
+       * @description Stable code for the skip reason, if any.
+       */
+      reason_code: string | null
+    }
+    /**
+     * MerchantMigrationSourcePlatform
+     * @enum {string}
+     */
+    MerchantMigrationSourcePlatform: 'stripe' | 'lemon_squeezy' | 'paddle'
+    /**
+     * MerchantMigrationStep
+     * @enum {string}
+     */
+    MerchantMigrationStep:
+      | 'source_setup'
+      | 'pre_check'
+      | 'create_catalog'
+      | 'copy_cards'
+      | 'activate_subscriptions'
+      | 'cleanup'
+      | 'completed'
     MetadataOutputType: {
       [key: string]: string | number | boolean
     }
@@ -22958,6 +23701,28 @@ export interface components {
        * @constant
        */
       error: 'MissingPaymentMethodError'
+      /** Detail */
+      detail: string
+    }
+    /** MissingStripeScopes */
+    MissingStripeScopes: {
+      /**
+       * Error
+       * @example MissingStripeScopes
+       * @constant
+       */
+      error: 'MissingStripeScopes'
+      /** Detail */
+      detail: string
+    }
+    /** NotASeatBasedSubscription */
+    NotASeatBasedSubscription: {
+      /**
+       * Error
+       * @example NotASeatBasedSubscription
+       * @constant
+       */
+      error: 'NotASeatBasedSubscription'
       /** Detail */
       detail: string
     }
@@ -24210,6 +24975,21 @@ export interface components {
        */
       past_due_at?: string | null
       /**
+       * Pause At Period End
+       * @description Whether the subscription will be paused at the end of the current period.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Paused At
+       * @description The timestamp when the subscription was paused.
+       */
+      paused_at: string | null
+      /**
+       * Resumes At
+       * @description The timestamp when a paused subscription is scheduled to automatically resume, if set.
+       */
+      resumes_at: string | null
+      /**
        * Customer Id
        * Format: uuid4
        * @description The ID of the subscribed customer.
@@ -24415,6 +25195,11 @@ export interface components {
        * @description When the business details were submitted for review.
        */
       details_submitted_at: string | null
+      /**
+       * Sso Enforced
+       * @description Whether members must access this organization through its SSO connection.
+       */
+      sso_enforced: boolean
       /**
        * Default Presentment Currency
        * @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available.
@@ -25333,6 +26118,10 @@ export interface components {
       subscription_cycled_after_trial: boolean
       /** Subscription Past Due */
       subscription_past_due: boolean
+      /** Subscription Paused */
+      subscription_paused: boolean
+      /** Subscription Resumed */
+      subscription_resumed: boolean
       /** Subscription Renewal Reminder */
       subscription_renewal_reminder: boolean
       /** Subscription Revoked */
@@ -25522,6 +26311,18 @@ export interface components {
        * @default false
        */
       sso_enabled: boolean
+      /**
+       * Compass Enabled
+       * @description If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard
+       * @default false
+       */
+      compass_enabled: boolean
+      /**
+       * Merchant Migration Enabled
+       * @description If this organization can migrate its billing from another provider (e.g. Stripe) to Polar.
+       * @default false
+       */
+      merchant_migration_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate
@@ -25629,6 +26430,11 @@ export interface components {
        * @description When the business details were submitted for review.
        */
       details_submitted_at: string | null
+      /**
+       * Sso Enforced
+       * @description Whether members must access this organization through its SSO connection.
+       */
+      sso_enforced: boolean
       /**
        * Default Presentment Currency
        * @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available.
@@ -26924,6 +27730,11 @@ export interface components {
         | null
       /** @description Default tax behavior applied on products. */
       default_tax_behavior?: components['schemas']['TaxBehaviorOption'] | null
+      /**
+       * Sso Enforced
+       * @description Whether members must access this organization through its SSO connection. Turning this on requires an active SSO session for this organization and at least one enabled SSO connection.
+       */
+      sso_enforced?: boolean | null
     }
     /** OrganizationValidateWebsiteRequest */
     OrganizationValidateWebsiteRequest: {
@@ -27019,6 +27830,11 @@ export interface components {
        * @description When the business details were submitted for review.
        */
       details_submitted_at: string | null
+      /**
+       * Sso Enforced
+       * @description Whether members must access this organization through its SSO connection.
+       */
+      sso_enforced: boolean
       /**
        * Default Presentment Currency
        * @description Default presentment currency. Used as fallback in checkout and customer portal, if the customer's local currency is not available.
@@ -27316,6 +28132,17 @@ export interface components {
       total_count: number
       /** Max Page */
       max_page: number
+    }
+    /** PauseResumeNotAllowed */
+    PauseResumeNotAllowed: {
+      /**
+       * Error
+       * @example PauseResumeNotAllowed
+       * @constant
+       */
+      error: 'PauseResumeNotAllowed'
+      /** Detail */
+      detail: string
     }
     Payment:
       | components['schemas']['CardPayment']
@@ -27825,6 +28652,17 @@ export interface components {
       | 'disputed'
       | 'charge_disputed'
       | 'cancelled'
+    /** PolarAuthError */
+    PolarAuthError: {
+      /**
+       * Error
+       * @example PolarAuthError
+       * @constant
+       */
+      error: 'PolarAuthError'
+      /** Detail */
+      detail: string
+    }
     /** PolarSelfPaymentMethodInUse */
     PolarSelfPaymentMethodInUse: {
       /**
@@ -27872,6 +28710,63 @@ export interface components {
        * @description Member role (owner, billing_manager, member). Only set for members.
        */
       role?: string | null
+    }
+    /**
+     * PrecheckEntity
+     * @enum {string}
+     */
+    PrecheckEntity: 'products' | 'prices' | 'customers' | 'subscriptions'
+    /** PrecheckEntitySummary */
+    PrecheckEntitySummary: {
+      /** @description The source entity type. */
+      entity: components['schemas']['PrecheckEntity']
+      /**
+       * Total
+       * @description How many were read from the source.
+       */
+      total: number
+      /**
+       * Importable
+       * @description How many will be imported into Polar.
+       */
+      importable: number
+      /**
+       * Skipped
+       * @description How many won't be imported and stay on the source.
+       */
+      skipped: number
+    }
+    /** PrecheckIssue */
+    PrecheckIssue: {
+      level: components['schemas']['PrecheckIssueLevel']
+      /** Code */
+      code: string
+      /** Message */
+      message: string
+      /** Source Id */
+      source_id: string | null
+    }
+    /**
+     * PrecheckIssueLevel
+     * @enum {string}
+     */
+    PrecheckIssueLevel: 'blocker' | 'warning'
+    /**
+     * PrecheckRecordStatus
+     * @enum {string}
+     */
+    PrecheckRecordStatus: 'importable' | 'skipped'
+    /** PrecheckReport */
+    PrecheckReport: {
+      /** Can Start */
+      can_start: boolean
+      /** Issues */
+      issues: components['schemas']['PrecheckIssue'][]
+      /**
+       * Entities
+       * @description Per-entity counts of what will be imported vs stay on the source.
+       */
+      entities: components['schemas']['PrecheckEntitySummary'][]
     }
     /**
      * PresentmentCurrency
@@ -28958,12 +29853,12 @@ export interface components {
        * Custom Label
        * @description The label for the custom unit.
        */
-      custom_label?: string | null
+      custom_label: string | null
       /**
        * Custom Multiplier
        * @description The multiplier to convert from base unit to display scale.
        */
-      custom_multiplier?: number | null
+      custom_multiplier: number | null
     }
     /**
      * ProductPriceMeteredUnit
@@ -29594,6 +30489,46 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** ReviewAppealSupportCaseListItem */
+    ReviewAppealSupportCaseListItem: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'review_appeal'
+    }
+    /**
+     * ReviewAppealSupportCaseMessageCreate
+     * @description A reply on a review-appeal case.
+     */
+    ReviewAppealSupportCaseMessageCreate: {
+      /** Body */
+      body?: string | null
+      /** File Ids */
+      file_ids?: string[]
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'review_appeal'
+    }
     /** RevokeTokenResponse */
     RevokeTokenResponse: Record<string, never>
     /** S3DownloadURL */
@@ -29671,6 +30606,17 @@ export interface components {
       headers: {
         [key: string]: string
       }
+    }
+    /** SSOEnforcementRequiresConnection */
+    SSOEnforcementRequiresConnection: {
+      /**
+       * Error
+       * @example SSOEnforcementRequiresConnection
+       * @constant
+       */
+      error: 'SSOEnforcementRequiresConnection'
+      /** Detail */
+      detail: string
     }
     /** SSOFactor */
     SSOFactor: {
@@ -29977,6 +30923,17 @@ export interface components {
        */
       total_seats: number
     }
+    /** SessionNotFreshError */
+    SessionNotFreshError: {
+      /**
+       * Error
+       * @example SessionNotFreshError
+       * @constant
+       */
+      error: 'SessionNotFreshError'
+      /** Detail */
+      detail: string
+    }
     /** SlackIntegration */
     SlackIntegration: {
       /**
@@ -30162,6 +31119,39 @@ export interface components {
        * @description Active, non-bot users in the connected Slack workspace.
        */
       users: components['schemas']['SlackWorkspaceUser'][]
+    }
+    /** SourceKeyModeMismatch */
+    SourceKeyModeMismatch: {
+      /**
+       * Error
+       * @example SourceKeyModeMismatch
+       * @constant
+       */
+      error: 'SourceKeyModeMismatch'
+      /** Detail */
+      detail: string
+    }
+    /** SourceNotConnected */
+    SourceNotConnected: {
+      /**
+       * Error
+       * @example SourceNotConnected
+       * @constant
+       */
+      error: 'SourceNotConnected'
+      /** Detail */
+      detail: string
+    }
+    /** SourceVerificationUnavailable */
+    SourceVerificationUnavailable: {
+      /**
+       * Error
+       * @example SourceVerificationUnavailable
+       * @constant
+       */
+      error: 'SourceVerificationUnavailable'
+      /** Detail */
+      detail: string
     }
     /**
      * StatisticsPeriod
@@ -30429,6 +31419,21 @@ export interface components {
        * @description The timestamp when the subscription entered `past_due` status.
        */
       past_due_at?: string | null
+      /**
+       * Pause At Period End
+       * @description Whether the subscription will be paused at the end of the current period.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Paused At
+       * @description The timestamp when the subscription was paused.
+       */
+      paused_at: string | null
+      /**
+       * Resumes At
+       * @description The timestamp when a paused subscription is scheduled to automatically resume, if set.
+       */
+      resumes_at: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -30721,6 +31726,35 @@ export interface components {
       ends_at?: string
       /** Cancel At Period End */
       cancel_at_period_end?: boolean
+    }
+    SubscriptionChangePreview:
+      | components['schemas']['SubscriptionChangePreviewProduct']
+      | components['schemas']['SubscriptionChangePreviewSeats']
+    /** SubscriptionChangePreviewProduct */
+    SubscriptionChangePreviewProduct: {
+      /**
+       * Product Id
+       * Format: uuid4
+       * @description Preview a change of the subscription to this product.
+       * @example d8dd2de1-21b7-4a41-8bc3-ce909c0cfe23
+       */
+      product_id: string
+      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      proration_behavior?:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | null
+    }
+    /** SubscriptionChangePreviewSeats */
+    SubscriptionChangePreviewSeats: {
+      /**
+       * Seats
+       * @description Preview a change of the subscription to this number of seats.
+       */
+      seats: number
+      /** @description Determine how to handle the proration billing. If not provided, will use the default organization setting. */
+      proration_behavior?:
+        | components['schemas']['SubscriptionProrationBehavior']
+        | null
     }
     /**
      * SubscriptionChargePreview
@@ -31280,6 +32314,119 @@ export interface components {
       /** Recurring Interval Count */
       recurring_interval_count?: number
     }
+    /** SubscriptionPause */
+    SubscriptionPause: {
+      /**
+       * Pause At Period End
+       * @description Pause an active subscription at the end of the current period.
+       *
+       *     Or cancel a scheduled pause on a subscription set to be paused at
+       *     period end.
+       */
+      pause_at_period_end: boolean
+      /**
+       * Resumes At
+       * @description Date at which the paused subscription should automatically resume.
+       *
+       *     If not set, the subscription stays paused until it is resumed manually.
+       *     Must be after the current period end.
+       */
+      resumes_at?: string | null
+    }
+    /**
+     * SubscriptionPausedEvent
+     * @description An event created by Polar when a subscription is paused.
+     */
+    SubscriptionPausedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'subscription.paused'
+      metadata: components['schemas']['SubscriptionPausedMetadata']
+    }
+    /** SubscriptionPausedMetadata */
+    SubscriptionPausedMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Product Id */
+      product_id?: string
+      /** Amount */
+      amount?: number
+      /** Currency */
+      currency?: string
+      /** Recurring Interval */
+      recurring_interval?: string
+      /** Recurring Interval Count */
+      recurring_interval_count?: number
+      /** Paused At */
+      paused_at: string
+      /** Resumes At */
+      resumes_at?: string
+    }
     /**
      * SubscriptionProductUpdatedEvent
      * @description An event created by Polar when a subscription changes the product.
@@ -31450,6 +32597,105 @@ export interface components {
     }
     /** SubscriptionReactivatedMetadata */
     SubscriptionReactivatedMetadata: {
+      /** Subscription Id */
+      subscription_id: string
+      /** Product Id */
+      product_id?: string
+      /** Amount */
+      amount?: number
+      /** Currency */
+      currency?: string
+      /** Recurring Interval */
+      recurring_interval?: string
+      /** Recurring Interval Count */
+      recurring_interval_count?: number
+    }
+    /** SubscriptionResume */
+    SubscriptionResume: {
+      /**
+       * Resume
+       * @description Resume a paused subscription immediately, starting a new billing period and charging the customer.
+       * @constant
+       */
+      resume: true
+    }
+    /**
+     * SubscriptionResumedEvent
+     * @description An event created by Polar when a paused subscription is resumed.
+     */
+    SubscriptionResumedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'subscription.resumed'
+      metadata: components['schemas']['SubscriptionResumedMetadata']
+    }
+    /** SubscriptionResumedMetadata */
+    SubscriptionResumedMetadata: {
       /** Subscription Id */
       subscription_id: string
       /** Product Id */
@@ -31718,6 +32964,7 @@ export interface components {
       | 'past_due'
       | 'canceled'
       | 'unpaid'
+      | 'paused'
     /**
      * SubscriptionUncanceledEvent
      * @description An event created by Polar when a subscription cancellation is reversed.
@@ -31814,6 +33061,8 @@ export interface components {
       | components['schemas']['SubscriptionUpdateBillingPeriod']
       | components['schemas']['SubscriptionCancel']
       | components['schemas']['SubscriptionRevoke']
+      | components['schemas']['SubscriptionPause']
+      | components['schemas']['SubscriptionResume']
       | components['schemas']['SubscriptionUpdateClear']
     /** SubscriptionUpdateBase */
     SubscriptionUpdateBase: {
@@ -32190,6 +33439,9 @@ export interface components {
       /** Size Readable */
       readonly size_readable: string
     }
+    SupportCaseListItem:
+      | components['schemas']['DisputeSupportCaseListItem']
+      | components['schemas']['ReviewAppealSupportCaseListItem']
     /** SupportCaseMessage */
     SupportCaseMessage: {
       /**
@@ -32223,16 +33475,9 @@ export interface components {
       | 'merchant'
       | 'customer'
       | 'system'
-    /**
-     * SupportCaseMessageCreate
-     * @description A reply: free text, attachments (already uploaded files), or both.
-     */
-    SupportCaseMessageCreate: {
-      /** Body */
-      body?: string | null
-      /** File Ids */
-      file_ids?: string[]
-    }
+    SupportCaseMessageCreate:
+      | components['schemas']['ReviewAppealSupportCaseMessageCreate']
+      | components['schemas']['DisputeSupportCaseMessageCreate']
     /**
      * SupportCaseMessageType
      * @description Known message types. Stored as a plain string column (not a DB enum):
@@ -32254,6 +33499,11 @@ export interface components {
       | 'dispute_lost'
       | 'dispute_prevented'
       | 'merchant_accepted'
+    /**
+     * SupportCaseSortProperty
+     * @enum {string}
+     */
+    SupportCaseSortProperty: 'created_at' | '-created_at'
     /** SupportCaseThread */
     SupportCaseThread: {
       case: components['schemas']['SupportCase']
@@ -32283,6 +33533,8 @@ export interface components {
       | components['schemas']['SubscriptionRevokedEvent']
       | components['schemas']['SubscriptionPastDueEvent']
       | components['schemas']['SubscriptionReactivatedEvent']
+      | components['schemas']['SubscriptionPausedEvent']
+      | components['schemas']['SubscriptionResumedEvent']
       | components['schemas']['SubscriptionUncanceledEvent']
       | components['schemas']['SubscriptionProductUpdatedEvent']
       | components['schemas']['SubscriptionSeatsUpdatedEvent']
@@ -32799,10 +34051,42 @@ export interface components {
       /** Account Amount */
       account_amount: number
     }
+    /** TransactionsHeldBalance */
+    TransactionsHeldBalance: {
+      /** Currency */
+      currency: string
+      /** Amount */
+      amount: number
+      /** Account Currency */
+      account_currency: string
+      /** Account Amount */
+      account_amount: number
+      /**
+       * Next Release At
+       * @description When the next chunk of the held balance becomes available for payout.
+       */
+      next_release_at: string | null
+      /**
+       * Next Release Amount
+       * @description Amount becoming available for payout at `next_release_at`.
+       */
+      next_release_amount: number
+      /**
+       * Next Release Account Amount
+       * @description Amount becoming available for payout at `next_release_at`, in the account's currency.
+       */
+      next_release_account_amount: number
+      /**
+       * Fully Available At
+       * @description When the whole held balance has become available for payout.
+       */
+      fully_available_at: string | null
+    }
     /** TransactionsSummary */
     TransactionsSummary: {
       balance: components['schemas']['TransactionsBalance']
       available_balance: components['schemas']['TransactionsBalance']
+      held_balance: components['schemas']['TransactionsHeldBalance']
       payout: components['schemas']['TransactionsBalance']
     }
     /** TrialAlreadyRedeemed */
@@ -32841,6 +34125,39 @@ export interface components {
       func: 'unique'
       /** Property */
       property: string
+    }
+    /** UnsupportedMigrationSource */
+    UnsupportedMigrationSource: {
+      /**
+       * Error
+       * @example UnsupportedMigrationSource
+       * @constant
+       */
+      error: 'UnsupportedMigrationSource'
+      /** Detail */
+      detail: string
+    }
+    /** UpdateSubscriptionPlanNotAllowed */
+    UpdateSubscriptionPlanNotAllowed: {
+      /**
+       * Error
+       * @example UpdateSubscriptionPlanNotAllowed
+       * @constant
+       */
+      error: 'UpdateSubscriptionPlanNotAllowed'
+      /** Detail */
+      detail: string
+    }
+    /** UpdateSubscriptionSeatsNotAllowed */
+    UpdateSubscriptionSeatsNotAllowed: {
+      /**
+       * Error
+       * @example UpdateSubscriptionSeatsNotAllowed
+       * @constant
+       */
+      error: 'UpdateSubscriptionSeatsNotAllowed'
+      /** Detail */
+      detail: string
     }
     /**
      * UserDeletionBlockedReason
@@ -33024,9 +34341,20 @@ export interface components {
       oauth_accounts: components['schemas']['OAuthAccountRead'][]
       /**
        * Organizations
-       * @description Organizations the user is a member of, with their role on each. Populated by `GET /v1/users/me`; empty otherwise.
+       * @description Organizations the user is a member of and can access in the current session, with their role on each. Populated by `GET /v1/users/me`; empty otherwise.
        */
       organizations?: components['schemas']['OrganizationWithRole'][]
+      /**
+       * Member Organizations
+       * @description All organizations the user is a member of, regardless of whether they're accessible in the current session. Compare with `organizations` (the accessible subset) to determine access. Populated by `GET /v1/users/me`.
+       */
+      member_organizations?: components['schemas']['MemberOrganization'][]
+      /**
+       * Organization Scoped
+       * @description Whether the current session is restricted to a specific organization. Such sessions cannot access other organizations or create new ones. Populated by `GET /v1/users/me`.
+       * @default false
+       */
+      organization_scoped: boolean
       /** Email Hash */
       readonly email_hash: string | null
     }
@@ -33415,6 +34743,53 @@ export interface components {
       p99?: {
         [key: string]: string
       }
+    }
+    /**
+     * ViewCostsAction
+     * @description A drill-down to the cost analytics, where per-trace anomalies live.
+     *
+     *     Unlike `view_metric`, costs are not a single metric slug: they have their
+     *     own analytics with a p99 anomaly breakdown. When `event_id` is set, the
+     *     client deep-links to that specific outlier event's span; otherwise it lands
+     *     on the costs overview. The client owns the routing either way.
+     */
+    ViewCostsAction: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'view_costs'
+      /**
+       * Label
+       * @description Button label.
+       */
+      label: string
+      /**
+       * Event Id
+       * @description Root event id of the single largest outlier trace, deep-linked to its span. Null routes to the costs overview instead.
+       */
+      event_id: string | null
+    }
+    /**
+     * ViewMetricAction
+     * @description A drill-down that points at the metric behind the insight.
+     */
+    ViewMetricAction: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'view_metric'
+      /**
+       * Label
+       * @description Button label.
+       */
+      label: string
+      /**
+       * Metric
+       * @description Slug of the metric this insight is about (e.g. `monthly_recurring_revenue`). The client owns the routing and resolves it to the matching analytics page.
+       */
+      metric: string
     }
     /**
      * Visibility
@@ -34072,6 +35447,8 @@ export interface components {
       | 'subscription.uncanceled'
       | 'subscription.revoked'
       | 'subscription.past_due'
+      | 'subscription.paused'
+      | 'subscription.resumed'
       | 'refund.created'
       | 'refund.updated'
       | 'product.created'
@@ -34438,6 +35815,51 @@ export interface components {
        * @constant
        */
       type: 'subscription.past_due'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Subscription']
+    }
+    /**
+     * WebhookSubscriptionPausedPayload
+     * @description Sent when a subscription is paused and the customer temporarily loses access.
+     *
+     *     No order is created while paused. The subscription resumes either on its
+     *     scheduled resume date or when resumed manually, starting a new billing period.
+     *
+     *     **Discord & Slack support:** Full
+     */
+    WebhookSubscriptionPausedPayload: {
+      /**
+       * Type
+       * @example subscription.paused
+       * @constant
+       */
+      type: 'subscription.paused'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Subscription']
+    }
+    /**
+     * WebhookSubscriptionResumedPayload
+     * @description Sent when a paused subscription resumes, restoring the customer's access.
+     *
+     *     Resuming starts a new billing period and charges the customer immediately.
+     *
+     *     **Discord & Slack support:** Full
+     */
+    WebhookSubscriptionResumedPayload: {
+      /**
+       * Type
+       * @example subscription.resumed
+       * @constant
+       */
+      type: 'subscription.resumed'
       /**
        * Timestamp
        * Format: date-time
@@ -34877,6 +36299,15 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
+        }
       }
       /** @description OAuth account not found */
       404: {
@@ -35793,6 +37224,15 @@ export interface operations {
           'application/json': components['schemas']['Organization']
         }
       }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CannotCreateOrganizationError']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -35933,6 +37373,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Cannot enforce SSO without an enabled connection. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SSOEnforcementRequiresConnection']
         }
       }
       /** @description Validation Error */
@@ -37674,6 +39123,15 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
+      /** @description Cannot remove the last enabled connection while SSO is enforced. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LastSSOConnectionRequired']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -37726,6 +39184,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Cannot remove the last enabled connection while SSO is enforced. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['LastSSOConnectionRequired']
         }
       }
       /** @description Validation Error */
@@ -38066,6 +39533,69 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SubscriptionChargePreview']
+        }
+      }
+      /** @description Subscription not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'subscriptions:preview_change': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['SubscriptionChangePreview']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionChargePreview']
+        }
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotASeatBasedSubscription']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AlreadyCanceledSubscription']
         }
       }
       /** @description Subscription not found. */
@@ -38485,6 +40015,15 @@ export interface operations {
           'application/json': components['schemas']['TOTPEnrollment']
         }
       }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
+        }
+      }
     }
   }
   'auth:totp_delete': {
@@ -38502,6 +40041,15 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
+        }
       }
     }
   }
@@ -38525,6 +40073,17 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+      /** @description Session is not fresh, TOTP factor not enrolled, or invalid TOTP code. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['SessionNotFreshError']
+            | components['schemas']['PolarAuthError']
         }
       }
       /** @description Validation Error */
@@ -38614,6 +40173,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['BackupCodesEnrollment']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
         }
       }
     }
@@ -40529,6 +42097,54 @@ export interface operations {
       }
     }
   }
+  'support-cases:list_support_cases': {
+    parameters: {
+      query?: {
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by support case type. */
+        type?:
+          | components['schemas']['SupportCaseType']
+          | components['schemas']['SupportCaseType'][]
+          | null
+        /** @description Filter dispute cases by the linked dispute's status. */
+        dispute_status?:
+          | components['schemas']['DisputeStatus']
+          | components['schemas']['DisputeStatus'][]
+          | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+        /** @description Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order. */
+        sorting?: components['schemas']['SupportCaseSortProperty'][] | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_SupportCaseListItem_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'support-cases:get_support_case': {
     parameters: {
       query?: never
@@ -41164,11 +42780,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['DownloadableFileRead']
-            | components['schemas']['ProductMediaFileRead']
-            | components['schemas']['OrganizationAvatarFileRead']
-            | components['schemas']['SupportCaseAttachmentFileRead']
+          'application/json': components['schemas']['FileRead']
         }
       }
       /** @description You don't have the permission to update this file. */
@@ -41269,11 +42881,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json':
-            | components['schemas']['DownloadableFileRead']
-            | components['schemas']['ProductMediaFileRead']
-            | components['schemas']['OrganizationAvatarFileRead']
-            | components['schemas']['SupportCaseAttachmentFileRead']
+          'application/json': components['schemas']['FileRead']
         }
       }
       /** @description You don't have the permission to update this file. */
@@ -42773,6 +44381,643 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['MetricDashboardSchema']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'compass:list_insights': {
+    parameters: {
+      query?: {
+        /** @description Timezone used to resolve the current period. Default is UTC. */
+        timezone?:
+          | 'Africa/Abidjan'
+          | 'Africa/Accra'
+          | 'Africa/Addis_Ababa'
+          | 'Africa/Algiers'
+          | 'Africa/Asmara'
+          | 'Africa/Asmera'
+          | 'Africa/Bamako'
+          | 'Africa/Bangui'
+          | 'Africa/Banjul'
+          | 'Africa/Bissau'
+          | 'Africa/Blantyre'
+          | 'Africa/Brazzaville'
+          | 'Africa/Bujumbura'
+          | 'Africa/Cairo'
+          | 'Africa/Casablanca'
+          | 'Africa/Ceuta'
+          | 'Africa/Conakry'
+          | 'Africa/Dakar'
+          | 'Africa/Dar_es_Salaam'
+          | 'Africa/Djibouti'
+          | 'Africa/Douala'
+          | 'Africa/El_Aaiun'
+          | 'Africa/Freetown'
+          | 'Africa/Gaborone'
+          | 'Africa/Harare'
+          | 'Africa/Johannesburg'
+          | 'Africa/Juba'
+          | 'Africa/Kampala'
+          | 'Africa/Khartoum'
+          | 'Africa/Kigali'
+          | 'Africa/Kinshasa'
+          | 'Africa/Lagos'
+          | 'Africa/Libreville'
+          | 'Africa/Lome'
+          | 'Africa/Luanda'
+          | 'Africa/Lubumbashi'
+          | 'Africa/Lusaka'
+          | 'Africa/Malabo'
+          | 'Africa/Maputo'
+          | 'Africa/Maseru'
+          | 'Africa/Mbabane'
+          | 'Africa/Mogadishu'
+          | 'Africa/Monrovia'
+          | 'Africa/Nairobi'
+          | 'Africa/Ndjamena'
+          | 'Africa/Niamey'
+          | 'Africa/Nouakchott'
+          | 'Africa/Ouagadougou'
+          | 'Africa/Porto-Novo'
+          | 'Africa/Sao_Tome'
+          | 'Africa/Timbuktu'
+          | 'Africa/Tripoli'
+          | 'Africa/Tunis'
+          | 'Africa/Windhoek'
+          | 'America/Adak'
+          | 'America/Anchorage'
+          | 'America/Anguilla'
+          | 'America/Antigua'
+          | 'America/Araguaina'
+          | 'America/Argentina/Buenos_Aires'
+          | 'America/Argentina/Catamarca'
+          | 'America/Argentina/ComodRivadavia'
+          | 'America/Argentina/Cordoba'
+          | 'America/Argentina/Jujuy'
+          | 'America/Argentina/La_Rioja'
+          | 'America/Argentina/Mendoza'
+          | 'America/Argentina/Rio_Gallegos'
+          | 'America/Argentina/Salta'
+          | 'America/Argentina/San_Juan'
+          | 'America/Argentina/San_Luis'
+          | 'America/Argentina/Tucuman'
+          | 'America/Argentina/Ushuaia'
+          | 'America/Aruba'
+          | 'America/Asuncion'
+          | 'America/Atikokan'
+          | 'America/Atka'
+          | 'America/Bahia'
+          | 'America/Bahia_Banderas'
+          | 'America/Barbados'
+          | 'America/Belem'
+          | 'America/Belize'
+          | 'America/Blanc-Sablon'
+          | 'America/Boa_Vista'
+          | 'America/Bogota'
+          | 'America/Boise'
+          | 'America/Buenos_Aires'
+          | 'America/Cambridge_Bay'
+          | 'America/Campo_Grande'
+          | 'America/Cancun'
+          | 'America/Caracas'
+          | 'America/Catamarca'
+          | 'America/Cayenne'
+          | 'America/Cayman'
+          | 'America/Chicago'
+          | 'America/Chihuahua'
+          | 'America/Ciudad_Juarez'
+          | 'America/Coral_Harbour'
+          | 'America/Cordoba'
+          | 'America/Costa_Rica'
+          | 'America/Coyhaique'
+          | 'America/Creston'
+          | 'America/Cuiaba'
+          | 'America/Curacao'
+          | 'America/Danmarkshavn'
+          | 'America/Dawson'
+          | 'America/Dawson_Creek'
+          | 'America/Denver'
+          | 'America/Detroit'
+          | 'America/Dominica'
+          | 'America/Edmonton'
+          | 'America/Eirunepe'
+          | 'America/El_Salvador'
+          | 'America/Ensenada'
+          | 'America/Fort_Nelson'
+          | 'America/Fort_Wayne'
+          | 'America/Fortaleza'
+          | 'America/Glace_Bay'
+          | 'America/Godthab'
+          | 'America/Goose_Bay'
+          | 'America/Grand_Turk'
+          | 'America/Grenada'
+          | 'America/Guadeloupe'
+          | 'America/Guatemala'
+          | 'America/Guayaquil'
+          | 'America/Guyana'
+          | 'America/Halifax'
+          | 'America/Havana'
+          | 'America/Hermosillo'
+          | 'America/Indiana/Indianapolis'
+          | 'America/Indiana/Knox'
+          | 'America/Indiana/Marengo'
+          | 'America/Indiana/Petersburg'
+          | 'America/Indiana/Tell_City'
+          | 'America/Indiana/Vevay'
+          | 'America/Indiana/Vincennes'
+          | 'America/Indiana/Winamac'
+          | 'America/Indianapolis'
+          | 'America/Inuvik'
+          | 'America/Iqaluit'
+          | 'America/Jamaica'
+          | 'America/Jujuy'
+          | 'America/Juneau'
+          | 'America/Kentucky/Louisville'
+          | 'America/Kentucky/Monticello'
+          | 'America/Knox_IN'
+          | 'America/Kralendijk'
+          | 'America/La_Paz'
+          | 'America/Lima'
+          | 'America/Los_Angeles'
+          | 'America/Louisville'
+          | 'America/Lower_Princes'
+          | 'America/Maceio'
+          | 'America/Managua'
+          | 'America/Manaus'
+          | 'America/Marigot'
+          | 'America/Martinique'
+          | 'America/Matamoros'
+          | 'America/Mazatlan'
+          | 'America/Mendoza'
+          | 'America/Menominee'
+          | 'America/Merida'
+          | 'America/Metlakatla'
+          | 'America/Mexico_City'
+          | 'America/Miquelon'
+          | 'America/Moncton'
+          | 'America/Monterrey'
+          | 'America/Montevideo'
+          | 'America/Montreal'
+          | 'America/Montserrat'
+          | 'America/Nassau'
+          | 'America/New_York'
+          | 'America/Nipigon'
+          | 'America/Nome'
+          | 'America/Noronha'
+          | 'America/North_Dakota/Beulah'
+          | 'America/North_Dakota/Center'
+          | 'America/North_Dakota/New_Salem'
+          | 'America/Nuuk'
+          | 'America/Ojinaga'
+          | 'America/Panama'
+          | 'America/Pangnirtung'
+          | 'America/Paramaribo'
+          | 'America/Phoenix'
+          | 'America/Port-au-Prince'
+          | 'America/Port_of_Spain'
+          | 'America/Porto_Acre'
+          | 'America/Porto_Velho'
+          | 'America/Puerto_Rico'
+          | 'America/Punta_Arenas'
+          | 'America/Rainy_River'
+          | 'America/Rankin_Inlet'
+          | 'America/Recife'
+          | 'America/Regina'
+          | 'America/Resolute'
+          | 'America/Rio_Branco'
+          | 'America/Rosario'
+          | 'America/Santa_Isabel'
+          | 'America/Santarem'
+          | 'America/Santiago'
+          | 'America/Santo_Domingo'
+          | 'America/Sao_Paulo'
+          | 'America/Scoresbysund'
+          | 'America/Shiprock'
+          | 'America/Sitka'
+          | 'America/St_Barthelemy'
+          | 'America/St_Johns'
+          | 'America/St_Kitts'
+          | 'America/St_Lucia'
+          | 'America/St_Thomas'
+          | 'America/St_Vincent'
+          | 'America/Swift_Current'
+          | 'America/Tegucigalpa'
+          | 'America/Thule'
+          | 'America/Thunder_Bay'
+          | 'America/Tijuana'
+          | 'America/Toronto'
+          | 'America/Tortola'
+          | 'America/Vancouver'
+          | 'America/Virgin'
+          | 'America/Whitehorse'
+          | 'America/Winnipeg'
+          | 'America/Yakutat'
+          | 'America/Yellowknife'
+          | 'Antarctica/Casey'
+          | 'Antarctica/Davis'
+          | 'Antarctica/DumontDUrville'
+          | 'Antarctica/Macquarie'
+          | 'Antarctica/Mawson'
+          | 'Antarctica/McMurdo'
+          | 'Antarctica/Palmer'
+          | 'Antarctica/Rothera'
+          | 'Antarctica/South_Pole'
+          | 'Antarctica/Syowa'
+          | 'Antarctica/Troll'
+          | 'Antarctica/Vostok'
+          | 'Arctic/Longyearbyen'
+          | 'Asia/Aden'
+          | 'Asia/Almaty'
+          | 'Asia/Amman'
+          | 'Asia/Anadyr'
+          | 'Asia/Aqtau'
+          | 'Asia/Aqtobe'
+          | 'Asia/Ashgabat'
+          | 'Asia/Ashkhabad'
+          | 'Asia/Atyrau'
+          | 'Asia/Baghdad'
+          | 'Asia/Bahrain'
+          | 'Asia/Baku'
+          | 'Asia/Bangkok'
+          | 'Asia/Barnaul'
+          | 'Asia/Beirut'
+          | 'Asia/Bishkek'
+          | 'Asia/Brunei'
+          | 'Asia/Calcutta'
+          | 'Asia/Chita'
+          | 'Asia/Choibalsan'
+          | 'Asia/Chongqing'
+          | 'Asia/Chungking'
+          | 'Asia/Colombo'
+          | 'Asia/Dacca'
+          | 'Asia/Damascus'
+          | 'Asia/Dhaka'
+          | 'Asia/Dili'
+          | 'Asia/Dubai'
+          | 'Asia/Dushanbe'
+          | 'Asia/Famagusta'
+          | 'Asia/Gaza'
+          | 'Asia/Harbin'
+          | 'Asia/Hebron'
+          | 'Asia/Ho_Chi_Minh'
+          | 'Asia/Hong_Kong'
+          | 'Asia/Hovd'
+          | 'Asia/Irkutsk'
+          | 'Asia/Istanbul'
+          | 'Asia/Jakarta'
+          | 'Asia/Jayapura'
+          | 'Asia/Jerusalem'
+          | 'Asia/Kabul'
+          | 'Asia/Kamchatka'
+          | 'Asia/Karachi'
+          | 'Asia/Kashgar'
+          | 'Asia/Kathmandu'
+          | 'Asia/Katmandu'
+          | 'Asia/Khandyga'
+          | 'Asia/Kolkata'
+          | 'Asia/Krasnoyarsk'
+          | 'Asia/Kuala_Lumpur'
+          | 'Asia/Kuching'
+          | 'Asia/Kuwait'
+          | 'Asia/Macao'
+          | 'Asia/Macau'
+          | 'Asia/Magadan'
+          | 'Asia/Makassar'
+          | 'Asia/Manila'
+          | 'Asia/Muscat'
+          | 'Asia/Nicosia'
+          | 'Asia/Novokuznetsk'
+          | 'Asia/Novosibirsk'
+          | 'Asia/Omsk'
+          | 'Asia/Oral'
+          | 'Asia/Phnom_Penh'
+          | 'Asia/Pontianak'
+          | 'Asia/Pyongyang'
+          | 'Asia/Qatar'
+          | 'Asia/Qostanay'
+          | 'Asia/Qyzylorda'
+          | 'Asia/Rangoon'
+          | 'Asia/Riyadh'
+          | 'Asia/Saigon'
+          | 'Asia/Sakhalin'
+          | 'Asia/Samarkand'
+          | 'Asia/Seoul'
+          | 'Asia/Shanghai'
+          | 'Asia/Singapore'
+          | 'Asia/Srednekolymsk'
+          | 'Asia/Taipei'
+          | 'Asia/Tashkent'
+          | 'Asia/Tbilisi'
+          | 'Asia/Tehran'
+          | 'Asia/Tel_Aviv'
+          | 'Asia/Thimbu'
+          | 'Asia/Thimphu'
+          | 'Asia/Tokyo'
+          | 'Asia/Tomsk'
+          | 'Asia/Ujung_Pandang'
+          | 'Asia/Ulaanbaatar'
+          | 'Asia/Ulan_Bator'
+          | 'Asia/Urumqi'
+          | 'Asia/Ust-Nera'
+          | 'Asia/Vientiane'
+          | 'Asia/Vladivostok'
+          | 'Asia/Yakutsk'
+          | 'Asia/Yangon'
+          | 'Asia/Yekaterinburg'
+          | 'Asia/Yerevan'
+          | 'Atlantic/Azores'
+          | 'Atlantic/Bermuda'
+          | 'Atlantic/Canary'
+          | 'Atlantic/Cape_Verde'
+          | 'Atlantic/Faeroe'
+          | 'Atlantic/Faroe'
+          | 'Atlantic/Jan_Mayen'
+          | 'Atlantic/Madeira'
+          | 'Atlantic/Reykjavik'
+          | 'Atlantic/South_Georgia'
+          | 'Atlantic/St_Helena'
+          | 'Atlantic/Stanley'
+          | 'Australia/ACT'
+          | 'Australia/Adelaide'
+          | 'Australia/Brisbane'
+          | 'Australia/Broken_Hill'
+          | 'Australia/Canberra'
+          | 'Australia/Currie'
+          | 'Australia/Darwin'
+          | 'Australia/Eucla'
+          | 'Australia/Hobart'
+          | 'Australia/LHI'
+          | 'Australia/Lindeman'
+          | 'Australia/Lord_Howe'
+          | 'Australia/Melbourne'
+          | 'Australia/NSW'
+          | 'Australia/North'
+          | 'Australia/Perth'
+          | 'Australia/Queensland'
+          | 'Australia/South'
+          | 'Australia/Sydney'
+          | 'Australia/Tasmania'
+          | 'Australia/Victoria'
+          | 'Australia/West'
+          | 'Australia/Yancowinna'
+          | 'Brazil/Acre'
+          | 'Brazil/DeNoronha'
+          | 'Brazil/East'
+          | 'Brazil/West'
+          | 'CET'
+          | 'CST6CDT'
+          | 'Canada/Atlantic'
+          | 'Canada/Central'
+          | 'Canada/Eastern'
+          | 'Canada/Mountain'
+          | 'Canada/Newfoundland'
+          | 'Canada/Pacific'
+          | 'Canada/Saskatchewan'
+          | 'Canada/Yukon'
+          | 'Chile/Continental'
+          | 'Chile/EasterIsland'
+          | 'Cuba'
+          | 'EET'
+          | 'EST'
+          | 'EST5EDT'
+          | 'Egypt'
+          | 'Eire'
+          | 'Etc/GMT'
+          | 'Etc/GMT+0'
+          | 'Etc/GMT+1'
+          | 'Etc/GMT+10'
+          | 'Etc/GMT+11'
+          | 'Etc/GMT+12'
+          | 'Etc/GMT+2'
+          | 'Etc/GMT+3'
+          | 'Etc/GMT+4'
+          | 'Etc/GMT+5'
+          | 'Etc/GMT+6'
+          | 'Etc/GMT+7'
+          | 'Etc/GMT+8'
+          | 'Etc/GMT+9'
+          | 'Etc/GMT-0'
+          | 'Etc/GMT-1'
+          | 'Etc/GMT-10'
+          | 'Etc/GMT-11'
+          | 'Etc/GMT-12'
+          | 'Etc/GMT-13'
+          | 'Etc/GMT-14'
+          | 'Etc/GMT-2'
+          | 'Etc/GMT-3'
+          | 'Etc/GMT-4'
+          | 'Etc/GMT-5'
+          | 'Etc/GMT-6'
+          | 'Etc/GMT-7'
+          | 'Etc/GMT-8'
+          | 'Etc/GMT-9'
+          | 'Etc/GMT0'
+          | 'Etc/Greenwich'
+          | 'Etc/UCT'
+          | 'Etc/UTC'
+          | 'Etc/Universal'
+          | 'Etc/Zulu'
+          | 'Europe/Amsterdam'
+          | 'Europe/Andorra'
+          | 'Europe/Astrakhan'
+          | 'Europe/Athens'
+          | 'Europe/Belfast'
+          | 'Europe/Belgrade'
+          | 'Europe/Berlin'
+          | 'Europe/Bratislava'
+          | 'Europe/Brussels'
+          | 'Europe/Bucharest'
+          | 'Europe/Budapest'
+          | 'Europe/Busingen'
+          | 'Europe/Chisinau'
+          | 'Europe/Copenhagen'
+          | 'Europe/Dublin'
+          | 'Europe/Gibraltar'
+          | 'Europe/Guernsey'
+          | 'Europe/Helsinki'
+          | 'Europe/Isle_of_Man'
+          | 'Europe/Istanbul'
+          | 'Europe/Jersey'
+          | 'Europe/Kaliningrad'
+          | 'Europe/Kiev'
+          | 'Europe/Kirov'
+          | 'Europe/Kyiv'
+          | 'Europe/Lisbon'
+          | 'Europe/Ljubljana'
+          | 'Europe/London'
+          | 'Europe/Luxembourg'
+          | 'Europe/Madrid'
+          | 'Europe/Malta'
+          | 'Europe/Mariehamn'
+          | 'Europe/Minsk'
+          | 'Europe/Monaco'
+          | 'Europe/Moscow'
+          | 'Europe/Nicosia'
+          | 'Europe/Oslo'
+          | 'Europe/Paris'
+          | 'Europe/Podgorica'
+          | 'Europe/Prague'
+          | 'Europe/Riga'
+          | 'Europe/Rome'
+          | 'Europe/Samara'
+          | 'Europe/San_Marino'
+          | 'Europe/Sarajevo'
+          | 'Europe/Saratov'
+          | 'Europe/Simferopol'
+          | 'Europe/Skopje'
+          | 'Europe/Sofia'
+          | 'Europe/Stockholm'
+          | 'Europe/Tallinn'
+          | 'Europe/Tirane'
+          | 'Europe/Tiraspol'
+          | 'Europe/Ulyanovsk'
+          | 'Europe/Uzhgorod'
+          | 'Europe/Vaduz'
+          | 'Europe/Vatican'
+          | 'Europe/Vienna'
+          | 'Europe/Vilnius'
+          | 'Europe/Volgograd'
+          | 'Europe/Warsaw'
+          | 'Europe/Zagreb'
+          | 'Europe/Zaporozhye'
+          | 'Europe/Zurich'
+          | 'Factory'
+          | 'GB'
+          | 'GB-Eire'
+          | 'GMT'
+          | 'GMT+0'
+          | 'GMT-0'
+          | 'GMT0'
+          | 'Greenwich'
+          | 'HST'
+          | 'Hongkong'
+          | 'Iceland'
+          | 'Indian/Antananarivo'
+          | 'Indian/Chagos'
+          | 'Indian/Christmas'
+          | 'Indian/Cocos'
+          | 'Indian/Comoro'
+          | 'Indian/Kerguelen'
+          | 'Indian/Mahe'
+          | 'Indian/Maldives'
+          | 'Indian/Mauritius'
+          | 'Indian/Mayotte'
+          | 'Indian/Reunion'
+          | 'Iran'
+          | 'Israel'
+          | 'Jamaica'
+          | 'Japan'
+          | 'Kwajalein'
+          | 'Libya'
+          | 'MET'
+          | 'MST'
+          | 'MST7MDT'
+          | 'Mexico/BajaNorte'
+          | 'Mexico/BajaSur'
+          | 'Mexico/General'
+          | 'NZ'
+          | 'NZ-CHAT'
+          | 'Navajo'
+          | 'PRC'
+          | 'PST8PDT'
+          | 'Pacific/Apia'
+          | 'Pacific/Auckland'
+          | 'Pacific/Bougainville'
+          | 'Pacific/Chatham'
+          | 'Pacific/Chuuk'
+          | 'Pacific/Easter'
+          | 'Pacific/Efate'
+          | 'Pacific/Enderbury'
+          | 'Pacific/Fakaofo'
+          | 'Pacific/Fiji'
+          | 'Pacific/Funafuti'
+          | 'Pacific/Galapagos'
+          | 'Pacific/Gambier'
+          | 'Pacific/Guadalcanal'
+          | 'Pacific/Guam'
+          | 'Pacific/Honolulu'
+          | 'Pacific/Johnston'
+          | 'Pacific/Kanton'
+          | 'Pacific/Kiritimati'
+          | 'Pacific/Kosrae'
+          | 'Pacific/Kwajalein'
+          | 'Pacific/Majuro'
+          | 'Pacific/Marquesas'
+          | 'Pacific/Midway'
+          | 'Pacific/Nauru'
+          | 'Pacific/Niue'
+          | 'Pacific/Norfolk'
+          | 'Pacific/Noumea'
+          | 'Pacific/Pago_Pago'
+          | 'Pacific/Palau'
+          | 'Pacific/Pitcairn'
+          | 'Pacific/Pohnpei'
+          | 'Pacific/Ponape'
+          | 'Pacific/Port_Moresby'
+          | 'Pacific/Rarotonga'
+          | 'Pacific/Saipan'
+          | 'Pacific/Samoa'
+          | 'Pacific/Tahiti'
+          | 'Pacific/Tarawa'
+          | 'Pacific/Tongatapu'
+          | 'Pacific/Truk'
+          | 'Pacific/Wake'
+          | 'Pacific/Wallis'
+          | 'Pacific/Yap'
+          | 'Poland'
+          | 'Portugal'
+          | 'ROC'
+          | 'ROK'
+          | 'Singapore'
+          | 'Turkey'
+          | 'UCT'
+          | 'US/Alaska'
+          | 'US/Aleutian'
+          | 'US/Arizona'
+          | 'US/Central'
+          | 'US/East-Indiana'
+          | 'US/Eastern'
+          | 'US/Hawaii'
+          | 'US/Indiana-Starke'
+          | 'US/Michigan'
+          | 'US/Mountain'
+          | 'US/Pacific'
+          | 'US/Samoa'
+          | 'UTC'
+          | 'Universal'
+          | 'W-SU'
+          | 'WET'
+          | 'Zulu'
+        /** @description Filter by organization ID. */
+        organization_id?: string | string[] | null
+        /** @description Filter by insight category. */
+        category?:
+          | components['schemas']['InsightCategory']
+          | components['schemas']['InsightCategory'][]
+          | null
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['Insight'][]
         }
       }
       /** @description Validation Error */
@@ -47193,13 +49438,15 @@ export interface operations {
           'application/json': components['schemas']['PaymentFailed']
         }
       }
-      /** @description Customer subscription is already canceled or will be at the end of the period, or the user lacks billing permissions. */
+      /** @description Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization. */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['AlreadyCanceledSubscription']
+          'application/json':
+            | components['schemas']['AlreadyCanceledSubscription']
+            | components['schemas']['PauseResumeNotAllowed']
         }
       }
       /** @description Customer subscription was not found. */
@@ -47241,6 +49488,72 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SubscriptionChargePreview']
+        }
+      }
+      /** @description Customer subscription was not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:subscriptions:preview_change': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerSubscriptionChangePreview']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionChargePreview']
+        }
+      }
+      /** @description Bad Request */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotASeatBasedSubscription']
+        }
+      }
+      /** @description Previewing this change is not allowed. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['AlreadyCanceledSubscription']
+            | components['schemas']['UpdateSubscriptionPlanNotAllowed']
+            | components['schemas']['UpdateSubscriptionSeatsNotAllowed']
         }
       }
       /** @description Customer subscription was not found. */
@@ -47664,6 +49977,272 @@ export interface operations {
       }
     }
   }
+  'merchant-migrations:list': {
+    parameters: {
+      query: {
+        organization_id: string
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_MerchantMigration_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:create': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MerchantMigrationCreate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      201: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigration']
+        }
+      }
+      /** @description The Stripe API key is invalid, wrong mode, or missing permissions. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['InvalidSourceCredentials']
+            | components['schemas']['MissingStripeScopes']
+            | components['schemas']['SourceKeyModeMismatch']
+            | components['schemas']['UnsupportedMigrationSource']
+        }
+      }
+      /** @description Not allowed to manage this organization, or migrations aren't enabled for it. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['MerchantMigrationNotEnabled']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+      /** @description Couldn't reach Stripe to validate the key. */
+      502: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SourceVerificationUnavailable']
+        }
+      }
+    }
+  }
+  'merchant-migrations:get': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigration']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:precheck': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PrecheckReport']
+        }
+      }
+      /** @description The source is not connected or isn't supported. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['SourceNotConnected']
+            | components['schemas']['UnsupportedMigrationSource']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:records': {
+    parameters: {
+      query: {
+        entity: components['schemas']['PrecheckEntity']
+        status?: components['schemas']['PrecheckRecordStatus'] | null
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_MerchantMigrationRecordItem_']
+        }
+      }
+      /** @description The source is not connected or isn't supported. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['SourceNotConnected']
+            | components['schemas']['UnsupportedMigrationSource']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'email-update:request_email_update': {
     parameters: {
       query?: never
@@ -47684,6 +50263,15 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
         }
       }
       /** @description Validation Error */
@@ -51529,6 +54117,15 @@ export interface operations {
           'application/json': components['schemas']['OrganizationAccessTokenCreateResponse']
         }
       }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -51591,6 +54188,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['OrganizationAccessToken']
+        }
+      }
+      /** @description Forbidden */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SessionNotFreshError']
         }
       }
       /** @description Validation Error */
@@ -53174,6 +55780,72 @@ export interface operations {
       }
     }
   }
+  _endpointsubscription_paused_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookSubscriptionPausedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointsubscription_resumed_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookSubscriptionResumedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   _endpointrefund_created_post: {
     parameters: {
       query?: never
@@ -54155,6 +56827,608 @@ export const pathsV1MetricsGetParametersQueryTimezoneValues: ReadonlyArray<
 ]
 export const pathsV1MetricsExportGetParametersQueryTimezoneValues: ReadonlyArray<
   FlattenedDeepRequired<paths>['/v1/metrics/export']['get']['parameters']['query']['timezone']
+> = [
+  'Africa/Abidjan',
+  'Africa/Accra',
+  'Africa/Addis_Ababa',
+  'Africa/Algiers',
+  'Africa/Asmara',
+  'Africa/Asmera',
+  'Africa/Bamako',
+  'Africa/Bangui',
+  'Africa/Banjul',
+  'Africa/Bissau',
+  'Africa/Blantyre',
+  'Africa/Brazzaville',
+  'Africa/Bujumbura',
+  'Africa/Cairo',
+  'Africa/Casablanca',
+  'Africa/Ceuta',
+  'Africa/Conakry',
+  'Africa/Dakar',
+  'Africa/Dar_es_Salaam',
+  'Africa/Djibouti',
+  'Africa/Douala',
+  'Africa/El_Aaiun',
+  'Africa/Freetown',
+  'Africa/Gaborone',
+  'Africa/Harare',
+  'Africa/Johannesburg',
+  'Africa/Juba',
+  'Africa/Kampala',
+  'Africa/Khartoum',
+  'Africa/Kigali',
+  'Africa/Kinshasa',
+  'Africa/Lagos',
+  'Africa/Libreville',
+  'Africa/Lome',
+  'Africa/Luanda',
+  'Africa/Lubumbashi',
+  'Africa/Lusaka',
+  'Africa/Malabo',
+  'Africa/Maputo',
+  'Africa/Maseru',
+  'Africa/Mbabane',
+  'Africa/Mogadishu',
+  'Africa/Monrovia',
+  'Africa/Nairobi',
+  'Africa/Ndjamena',
+  'Africa/Niamey',
+  'Africa/Nouakchott',
+  'Africa/Ouagadougou',
+  'Africa/Porto-Novo',
+  'Africa/Sao_Tome',
+  'Africa/Timbuktu',
+  'Africa/Tripoli',
+  'Africa/Tunis',
+  'Africa/Windhoek',
+  'America/Adak',
+  'America/Anchorage',
+  'America/Anguilla',
+  'America/Antigua',
+  'America/Araguaina',
+  'America/Argentina/Buenos_Aires',
+  'America/Argentina/Catamarca',
+  'America/Argentina/ComodRivadavia',
+  'America/Argentina/Cordoba',
+  'America/Argentina/Jujuy',
+  'America/Argentina/La_Rioja',
+  'America/Argentina/Mendoza',
+  'America/Argentina/Rio_Gallegos',
+  'America/Argentina/Salta',
+  'America/Argentina/San_Juan',
+  'America/Argentina/San_Luis',
+  'America/Argentina/Tucuman',
+  'America/Argentina/Ushuaia',
+  'America/Aruba',
+  'America/Asuncion',
+  'America/Atikokan',
+  'America/Atka',
+  'America/Bahia',
+  'America/Bahia_Banderas',
+  'America/Barbados',
+  'America/Belem',
+  'America/Belize',
+  'America/Blanc-Sablon',
+  'America/Boa_Vista',
+  'America/Bogota',
+  'America/Boise',
+  'America/Buenos_Aires',
+  'America/Cambridge_Bay',
+  'America/Campo_Grande',
+  'America/Cancun',
+  'America/Caracas',
+  'America/Catamarca',
+  'America/Cayenne',
+  'America/Cayman',
+  'America/Chicago',
+  'America/Chihuahua',
+  'America/Ciudad_Juarez',
+  'America/Coral_Harbour',
+  'America/Cordoba',
+  'America/Costa_Rica',
+  'America/Coyhaique',
+  'America/Creston',
+  'America/Cuiaba',
+  'America/Curacao',
+  'America/Danmarkshavn',
+  'America/Dawson',
+  'America/Dawson_Creek',
+  'America/Denver',
+  'America/Detroit',
+  'America/Dominica',
+  'America/Edmonton',
+  'America/Eirunepe',
+  'America/El_Salvador',
+  'America/Ensenada',
+  'America/Fort_Nelson',
+  'America/Fort_Wayne',
+  'America/Fortaleza',
+  'America/Glace_Bay',
+  'America/Godthab',
+  'America/Goose_Bay',
+  'America/Grand_Turk',
+  'America/Grenada',
+  'America/Guadeloupe',
+  'America/Guatemala',
+  'America/Guayaquil',
+  'America/Guyana',
+  'America/Halifax',
+  'America/Havana',
+  'America/Hermosillo',
+  'America/Indiana/Indianapolis',
+  'America/Indiana/Knox',
+  'America/Indiana/Marengo',
+  'America/Indiana/Petersburg',
+  'America/Indiana/Tell_City',
+  'America/Indiana/Vevay',
+  'America/Indiana/Vincennes',
+  'America/Indiana/Winamac',
+  'America/Indianapolis',
+  'America/Inuvik',
+  'America/Iqaluit',
+  'America/Jamaica',
+  'America/Jujuy',
+  'America/Juneau',
+  'America/Kentucky/Louisville',
+  'America/Kentucky/Monticello',
+  'America/Knox_IN',
+  'America/Kralendijk',
+  'America/La_Paz',
+  'America/Lima',
+  'America/Los_Angeles',
+  'America/Louisville',
+  'America/Lower_Princes',
+  'America/Maceio',
+  'America/Managua',
+  'America/Manaus',
+  'America/Marigot',
+  'America/Martinique',
+  'America/Matamoros',
+  'America/Mazatlan',
+  'America/Mendoza',
+  'America/Menominee',
+  'America/Merida',
+  'America/Metlakatla',
+  'America/Mexico_City',
+  'America/Miquelon',
+  'America/Moncton',
+  'America/Monterrey',
+  'America/Montevideo',
+  'America/Montreal',
+  'America/Montserrat',
+  'America/Nassau',
+  'America/New_York',
+  'America/Nipigon',
+  'America/Nome',
+  'America/Noronha',
+  'America/North_Dakota/Beulah',
+  'America/North_Dakota/Center',
+  'America/North_Dakota/New_Salem',
+  'America/Nuuk',
+  'America/Ojinaga',
+  'America/Panama',
+  'America/Pangnirtung',
+  'America/Paramaribo',
+  'America/Phoenix',
+  'America/Port-au-Prince',
+  'America/Port_of_Spain',
+  'America/Porto_Acre',
+  'America/Porto_Velho',
+  'America/Puerto_Rico',
+  'America/Punta_Arenas',
+  'America/Rainy_River',
+  'America/Rankin_Inlet',
+  'America/Recife',
+  'America/Regina',
+  'America/Resolute',
+  'America/Rio_Branco',
+  'America/Rosario',
+  'America/Santa_Isabel',
+  'America/Santarem',
+  'America/Santiago',
+  'America/Santo_Domingo',
+  'America/Sao_Paulo',
+  'America/Scoresbysund',
+  'America/Shiprock',
+  'America/Sitka',
+  'America/St_Barthelemy',
+  'America/St_Johns',
+  'America/St_Kitts',
+  'America/St_Lucia',
+  'America/St_Thomas',
+  'America/St_Vincent',
+  'America/Swift_Current',
+  'America/Tegucigalpa',
+  'America/Thule',
+  'America/Thunder_Bay',
+  'America/Tijuana',
+  'America/Toronto',
+  'America/Tortola',
+  'America/Vancouver',
+  'America/Virgin',
+  'America/Whitehorse',
+  'America/Winnipeg',
+  'America/Yakutat',
+  'America/Yellowknife',
+  'Antarctica/Casey',
+  'Antarctica/Davis',
+  'Antarctica/DumontDUrville',
+  'Antarctica/Macquarie',
+  'Antarctica/Mawson',
+  'Antarctica/McMurdo',
+  'Antarctica/Palmer',
+  'Antarctica/Rothera',
+  'Antarctica/South_Pole',
+  'Antarctica/Syowa',
+  'Antarctica/Troll',
+  'Antarctica/Vostok',
+  'Arctic/Longyearbyen',
+  'Asia/Aden',
+  'Asia/Almaty',
+  'Asia/Amman',
+  'Asia/Anadyr',
+  'Asia/Aqtau',
+  'Asia/Aqtobe',
+  'Asia/Ashgabat',
+  'Asia/Ashkhabad',
+  'Asia/Atyrau',
+  'Asia/Baghdad',
+  'Asia/Bahrain',
+  'Asia/Baku',
+  'Asia/Bangkok',
+  'Asia/Barnaul',
+  'Asia/Beirut',
+  'Asia/Bishkek',
+  'Asia/Brunei',
+  'Asia/Calcutta',
+  'Asia/Chita',
+  'Asia/Choibalsan',
+  'Asia/Chongqing',
+  'Asia/Chungking',
+  'Asia/Colombo',
+  'Asia/Dacca',
+  'Asia/Damascus',
+  'Asia/Dhaka',
+  'Asia/Dili',
+  'Asia/Dubai',
+  'Asia/Dushanbe',
+  'Asia/Famagusta',
+  'Asia/Gaza',
+  'Asia/Harbin',
+  'Asia/Hebron',
+  'Asia/Ho_Chi_Minh',
+  'Asia/Hong_Kong',
+  'Asia/Hovd',
+  'Asia/Irkutsk',
+  'Asia/Istanbul',
+  'Asia/Jakarta',
+  'Asia/Jayapura',
+  'Asia/Jerusalem',
+  'Asia/Kabul',
+  'Asia/Kamchatka',
+  'Asia/Karachi',
+  'Asia/Kashgar',
+  'Asia/Kathmandu',
+  'Asia/Katmandu',
+  'Asia/Khandyga',
+  'Asia/Kolkata',
+  'Asia/Krasnoyarsk',
+  'Asia/Kuala_Lumpur',
+  'Asia/Kuching',
+  'Asia/Kuwait',
+  'Asia/Macao',
+  'Asia/Macau',
+  'Asia/Magadan',
+  'Asia/Makassar',
+  'Asia/Manila',
+  'Asia/Muscat',
+  'Asia/Nicosia',
+  'Asia/Novokuznetsk',
+  'Asia/Novosibirsk',
+  'Asia/Omsk',
+  'Asia/Oral',
+  'Asia/Phnom_Penh',
+  'Asia/Pontianak',
+  'Asia/Pyongyang',
+  'Asia/Qatar',
+  'Asia/Qostanay',
+  'Asia/Qyzylorda',
+  'Asia/Rangoon',
+  'Asia/Riyadh',
+  'Asia/Saigon',
+  'Asia/Sakhalin',
+  'Asia/Samarkand',
+  'Asia/Seoul',
+  'Asia/Shanghai',
+  'Asia/Singapore',
+  'Asia/Srednekolymsk',
+  'Asia/Taipei',
+  'Asia/Tashkent',
+  'Asia/Tbilisi',
+  'Asia/Tehran',
+  'Asia/Tel_Aviv',
+  'Asia/Thimbu',
+  'Asia/Thimphu',
+  'Asia/Tokyo',
+  'Asia/Tomsk',
+  'Asia/Ujung_Pandang',
+  'Asia/Ulaanbaatar',
+  'Asia/Ulan_Bator',
+  'Asia/Urumqi',
+  'Asia/Ust-Nera',
+  'Asia/Vientiane',
+  'Asia/Vladivostok',
+  'Asia/Yakutsk',
+  'Asia/Yangon',
+  'Asia/Yekaterinburg',
+  'Asia/Yerevan',
+  'Atlantic/Azores',
+  'Atlantic/Bermuda',
+  'Atlantic/Canary',
+  'Atlantic/Cape_Verde',
+  'Atlantic/Faeroe',
+  'Atlantic/Faroe',
+  'Atlantic/Jan_Mayen',
+  'Atlantic/Madeira',
+  'Atlantic/Reykjavik',
+  'Atlantic/South_Georgia',
+  'Atlantic/St_Helena',
+  'Atlantic/Stanley',
+  'Australia/ACT',
+  'Australia/Adelaide',
+  'Australia/Brisbane',
+  'Australia/Broken_Hill',
+  'Australia/Canberra',
+  'Australia/Currie',
+  'Australia/Darwin',
+  'Australia/Eucla',
+  'Australia/Hobart',
+  'Australia/LHI',
+  'Australia/Lindeman',
+  'Australia/Lord_Howe',
+  'Australia/Melbourne',
+  'Australia/NSW',
+  'Australia/North',
+  'Australia/Perth',
+  'Australia/Queensland',
+  'Australia/South',
+  'Australia/Sydney',
+  'Australia/Tasmania',
+  'Australia/Victoria',
+  'Australia/West',
+  'Australia/Yancowinna',
+  'Brazil/Acre',
+  'Brazil/DeNoronha',
+  'Brazil/East',
+  'Brazil/West',
+  'CET',
+  'CST6CDT',
+  'Canada/Atlantic',
+  'Canada/Central',
+  'Canada/Eastern',
+  'Canada/Mountain',
+  'Canada/Newfoundland',
+  'Canada/Pacific',
+  'Canada/Saskatchewan',
+  'Canada/Yukon',
+  'Chile/Continental',
+  'Chile/EasterIsland',
+  'Cuba',
+  'EET',
+  'EST',
+  'EST5EDT',
+  'Egypt',
+  'Eire',
+  'Etc/GMT',
+  'Etc/GMT+0',
+  'Etc/GMT+1',
+  'Etc/GMT+10',
+  'Etc/GMT+11',
+  'Etc/GMT+12',
+  'Etc/GMT+2',
+  'Etc/GMT+3',
+  'Etc/GMT+4',
+  'Etc/GMT+5',
+  'Etc/GMT+6',
+  'Etc/GMT+7',
+  'Etc/GMT+8',
+  'Etc/GMT+9',
+  'Etc/GMT-0',
+  'Etc/GMT-1',
+  'Etc/GMT-10',
+  'Etc/GMT-11',
+  'Etc/GMT-12',
+  'Etc/GMT-13',
+  'Etc/GMT-14',
+  'Etc/GMT-2',
+  'Etc/GMT-3',
+  'Etc/GMT-4',
+  'Etc/GMT-5',
+  'Etc/GMT-6',
+  'Etc/GMT-7',
+  'Etc/GMT-8',
+  'Etc/GMT-9',
+  'Etc/GMT0',
+  'Etc/Greenwich',
+  'Etc/UCT',
+  'Etc/UTC',
+  'Etc/Universal',
+  'Etc/Zulu',
+  'Europe/Amsterdam',
+  'Europe/Andorra',
+  'Europe/Astrakhan',
+  'Europe/Athens',
+  'Europe/Belfast',
+  'Europe/Belgrade',
+  'Europe/Berlin',
+  'Europe/Bratislava',
+  'Europe/Brussels',
+  'Europe/Bucharest',
+  'Europe/Budapest',
+  'Europe/Busingen',
+  'Europe/Chisinau',
+  'Europe/Copenhagen',
+  'Europe/Dublin',
+  'Europe/Gibraltar',
+  'Europe/Guernsey',
+  'Europe/Helsinki',
+  'Europe/Isle_of_Man',
+  'Europe/Istanbul',
+  'Europe/Jersey',
+  'Europe/Kaliningrad',
+  'Europe/Kiev',
+  'Europe/Kirov',
+  'Europe/Kyiv',
+  'Europe/Lisbon',
+  'Europe/Ljubljana',
+  'Europe/London',
+  'Europe/Luxembourg',
+  'Europe/Madrid',
+  'Europe/Malta',
+  'Europe/Mariehamn',
+  'Europe/Minsk',
+  'Europe/Monaco',
+  'Europe/Moscow',
+  'Europe/Nicosia',
+  'Europe/Oslo',
+  'Europe/Paris',
+  'Europe/Podgorica',
+  'Europe/Prague',
+  'Europe/Riga',
+  'Europe/Rome',
+  'Europe/Samara',
+  'Europe/San_Marino',
+  'Europe/Sarajevo',
+  'Europe/Saratov',
+  'Europe/Simferopol',
+  'Europe/Skopje',
+  'Europe/Sofia',
+  'Europe/Stockholm',
+  'Europe/Tallinn',
+  'Europe/Tirane',
+  'Europe/Tiraspol',
+  'Europe/Ulyanovsk',
+  'Europe/Uzhgorod',
+  'Europe/Vaduz',
+  'Europe/Vatican',
+  'Europe/Vienna',
+  'Europe/Vilnius',
+  'Europe/Volgograd',
+  'Europe/Warsaw',
+  'Europe/Zagreb',
+  'Europe/Zaporozhye',
+  'Europe/Zurich',
+  'Factory',
+  'GB',
+  'GB-Eire',
+  'GMT',
+  'GMT+0',
+  'GMT-0',
+  'GMT0',
+  'Greenwich',
+  'HST',
+  'Hongkong',
+  'Iceland',
+  'Indian/Antananarivo',
+  'Indian/Chagos',
+  'Indian/Christmas',
+  'Indian/Cocos',
+  'Indian/Comoro',
+  'Indian/Kerguelen',
+  'Indian/Mahe',
+  'Indian/Maldives',
+  'Indian/Mauritius',
+  'Indian/Mayotte',
+  'Indian/Reunion',
+  'Iran',
+  'Israel',
+  'Jamaica',
+  'Japan',
+  'Kwajalein',
+  'Libya',
+  'MET',
+  'MST',
+  'MST7MDT',
+  'Mexico/BajaNorte',
+  'Mexico/BajaSur',
+  'Mexico/General',
+  'NZ',
+  'NZ-CHAT',
+  'Navajo',
+  'PRC',
+  'PST8PDT',
+  'Pacific/Apia',
+  'Pacific/Auckland',
+  'Pacific/Bougainville',
+  'Pacific/Chatham',
+  'Pacific/Chuuk',
+  'Pacific/Easter',
+  'Pacific/Efate',
+  'Pacific/Enderbury',
+  'Pacific/Fakaofo',
+  'Pacific/Fiji',
+  'Pacific/Funafuti',
+  'Pacific/Galapagos',
+  'Pacific/Gambier',
+  'Pacific/Guadalcanal',
+  'Pacific/Guam',
+  'Pacific/Honolulu',
+  'Pacific/Johnston',
+  'Pacific/Kanton',
+  'Pacific/Kiritimati',
+  'Pacific/Kosrae',
+  'Pacific/Kwajalein',
+  'Pacific/Majuro',
+  'Pacific/Marquesas',
+  'Pacific/Midway',
+  'Pacific/Nauru',
+  'Pacific/Niue',
+  'Pacific/Norfolk',
+  'Pacific/Noumea',
+  'Pacific/Pago_Pago',
+  'Pacific/Palau',
+  'Pacific/Pitcairn',
+  'Pacific/Pohnpei',
+  'Pacific/Ponape',
+  'Pacific/Port_Moresby',
+  'Pacific/Rarotonga',
+  'Pacific/Saipan',
+  'Pacific/Samoa',
+  'Pacific/Tahiti',
+  'Pacific/Tarawa',
+  'Pacific/Tongatapu',
+  'Pacific/Truk',
+  'Pacific/Wake',
+  'Pacific/Wallis',
+  'Pacific/Yap',
+  'Poland',
+  'Portugal',
+  'ROC',
+  'ROK',
+  'Singapore',
+  'Turkey',
+  'UCT',
+  'US/Alaska',
+  'US/Aleutian',
+  'US/Arizona',
+  'US/Central',
+  'US/East-Indiana',
+  'US/Eastern',
+  'US/Hawaii',
+  'US/Indiana-Starke',
+  'US/Michigan',
+  'US/Mountain',
+  'US/Pacific',
+  'US/Samoa',
+  'UTC',
+  'Universal',
+  'W-SU',
+  'WET',
+  'Zulu',
+]
+export const pathsV1CompassInsightsGetParametersQueryTimezoneValues: ReadonlyArray<
+  FlattenedDeepRequired<paths>['/v1/compass/insights']['get']['parameters']['query']['timezone']
 > = [
   'Africa/Abidjan',
   'Africa/Accra',
@@ -57765,6 +61039,9 @@ export const pathsV1MetersIdQuantitiesGetParametersQueryTimezoneValues: Readonly
   'WET',
   'Zulu',
 ]
+export const addCurrencyActionTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['AddCurrencyAction']['type']
+> = ['add_currency']
 export const addressCountryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Address']['country']
 > = [
@@ -58266,6 +61543,9 @@ export const addressInputCountryValues: ReadonlyArray<
   'ZM',
   'ZW',
 ]
+export const adjustPriceActionTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['AdjustPriceAction']['type']
+> = ['adjust_price']
 export const aggregationFunctionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AggregationFunction']
 > = ['count', 'sum', 'max', 'min', 'avg', 'unique']
@@ -58507,6 +61787,9 @@ export const checkoutSortPropertyValues: ReadonlyArray<
 export const checkoutStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CheckoutStatus']
 > = ['open', 'expired', 'confirmed', 'succeeded', 'failed']
+export const confidenceLevelValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ConfidenceLevel']
+> = ['low', 'medium', 'high']
 export const countAggregationFuncValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CountAggregation']['func']
 > = ['count']
@@ -59268,6 +62551,20 @@ export const disputeStatusValues: ReadonlyArray<
   'lost',
   'won',
 ]
+export const disputeSupportCaseListItemTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['DisputeSupportCaseListItem']['type']
+> = ['dispute']
+export const disputeSupportCaseMessageCreateTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['DisputeSupportCaseMessageCreate']['type']
+> = ['dispute']
+export const disputeWinReasonValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['DisputeWinReason']
+> = [
+  'cardholder_withdrew',
+  'cardholder_refunded',
+  'rightful_cardholder',
+  'other',
+]
 export const downloadableFileCreateServiceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DownloadableFileCreate']['service']
 > = ['downloadable']
@@ -59345,6 +62642,12 @@ export const filterOperatorValues: ReadonlyArray<
 export const identityVerificationStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['IdentityVerificationStatus']
 > = ['unverified', 'pending', 'verified', 'failed']
+export const insightCategoryValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['InsightCategory']
+> = ['revenue', 'retention', 'growth', 'risk', 'cost', 'product']
+export const insightSeverityValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['InsightSeverity']
+> = ['critical', 'warning', 'opportunity', 'info']
 export const introspectTokenResponseToken_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['IntrospectTokenResponse']['token_type']
 > = ['access_token', 'refresh_token']
@@ -59381,6 +62684,20 @@ export const memberRoleValues: ReadonlyArray<
 export const memberSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberSortProperty']
 > = ['created_at', '-created_at']
+export const merchantMigrationSourcePlatformValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationSourcePlatform']
+> = ['stripe', 'lemon_squeezy', 'paddle']
+export const merchantMigrationStepValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationStep']
+> = [
+  'source_setup',
+  'pre_check',
+  'create_catalog',
+  'copy_cards',
+  'activate_subscriptions',
+  'cleanup',
+  'completed',
+]
 export const meterCreditEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterCreditEvent']['name']
 > = ['meter.credited']
@@ -60958,6 +64275,15 @@ export const pledgeStateValues: ReadonlyArray<
   'charge_disputed',
   'cancelled',
 ]
+export const precheckEntityValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PrecheckEntity']
+> = ['products', 'prices', 'customers', 'subscriptions']
+export const precheckIssueLevelValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PrecheckIssueLevel']
+> = ['blocker', 'warning']
+export const precheckRecordStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PrecheckRecordStatus']
+> = ['importable', 'skipped']
 export const presentmentCurrencyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PresentmentCurrency']
 > = [
@@ -61178,6 +64504,12 @@ export const refundSortPropertyValues: ReadonlyArray<
 export const refundStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['RefundStatus']
 > = ['pending', 'succeeded', 'failed', 'canceled']
+export const reviewAppealSupportCaseListItemTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ReviewAppealSupportCaseListItem']['type']
+> = ['review_appeal']
+export const reviewAppealSupportCaseMessageCreateTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ReviewAppealSupportCaseMessageCreate']['type']
+> = ['review_appeal']
 export const sSOFactorTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SSOFactor']['type']
 > = ['sso']
@@ -61407,6 +64739,9 @@ export const subscriptionCycledEventNameValues: ReadonlyArray<
 export const subscriptionPastDueEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionPastDueEvent']['name']
 > = ['subscription.past_due']
+export const subscriptionPausedEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SubscriptionPausedEvent']['name']
+> = ['subscription.paused']
 export const subscriptionProductUpdatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionProductUpdatedEvent']['name']
 > = ['subscription.product_updated']
@@ -61416,6 +64751,9 @@ export const subscriptionProrationBehaviorValues: ReadonlyArray<
 export const subscriptionReactivatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionReactivatedEvent']['name']
 > = ['subscription.reactivated']
+export const subscriptionResumedEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SubscriptionResumedEvent']['name']
+> = ['subscription.resumed']
 export const subscriptionRevokedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionRevokedEvent']['name']
 > = ['subscription.revoked']
@@ -61454,6 +64792,7 @@ export const subscriptionStatusValues: ReadonlyArray<
   'past_due',
   'canceled',
   'unpaid',
+  'paused',
 ]
 export const subscriptionUncanceledEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionUncanceledEvent']['name']
@@ -61490,6 +64829,9 @@ export const supportCaseMessageTypeValues: ReadonlyArray<
   'dispute_prevented',
   'merchant_accepted',
 ]
+export const supportCaseSortPropertyValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SupportCaseSortProperty']
+> = ['created_at', '-created_at']
 export const supportCaseTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SupportCaseType']
 > = ['review_appeal', 'dispute']
@@ -61868,6 +65210,12 @@ export const userUpdateCountryAnyOf0Values: ReadonlyArray<
   'ZM',
   'ZW',
 ]
+export const viewCostsActionTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ViewCostsAction']['type']
+> = ['view_costs']
+export const viewMetricActionTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ViewMetricAction']['type']
+> = ['view_metric']
 export const visibilityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['Visibility']
 > = ['draft', 'private', 'public']
@@ -61904,6 +65252,8 @@ export const webhookEventTypeValues: ReadonlyArray<
   'subscription.uncanceled',
   'subscription.revoked',
   'subscription.past_due',
+  'subscription.paused',
+  'subscription.resumed',
   'refund.created',
   'refund.updated',
   'product.created',

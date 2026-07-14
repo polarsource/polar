@@ -77,19 +77,15 @@ export const NotificationsPopover = () => {
   return (
     <Popover>
       <Button
-        className="relative h-8 w-8"
+        className="relative size-8! cursor-pointer p-0"
         variant="ghost"
         onMouseDown={clickBell}
         asChild
       >
-        <PopoverTrigger>
-          <BoltOutlined
-            className="[&svg]:size-5!"
-            fontSize="medium"
-            aria-hidden="true"
-          />
+        <PopoverTrigger className="flex size-full cursor-pointer items-center justify-center">
+          <BoltOutlined fontSize="small" aria-hidden="true" />
           {showBadge && (
-            <div className="dark:border-polar-700 bg-blue absolute top-1 right-1 h-1.5 w-1.5 rounded-full" />
+            <div className="dark:border-polar-700 bg-blue absolute top-1.5 right-1.5 h-1 w-1 rounded-full" />
           )}
         </PopoverTrigger>
       </Button>

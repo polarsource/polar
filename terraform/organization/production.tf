@@ -170,12 +170,38 @@ module "production_s3_buckets" {
     aws = aws.us_east_2
   }
 
-  environment     = "production"
-  allowed_origins = ["https://polar.sh"]
+  environment                 = "production"
+  allowed_origins             = ["https://polar.sh"]
+  malware_protection_enabled  = true
+  malware_protection_role_arn = module.production_malware_protection.role_arn
+}
+
+module "production_malware_protection" {
+  source = "../modules/malware_protection"
+  providers = {
+    aws = aws.us_east_2
+  }
+
+  environment = "production"
+  buckets = {
+    files        = module.production_s3_buckets.files_bucket_id
+    public_files = module.production_s3_buckets.public_files_bucket_id
+  }
+  permissions_boundary_arn = module.permission_boundary_management.policy_arn
 }
 
 resource "aws_s3_bucket" "production_lambda_artifacts" {
   bucket = "polar-lambda-artifacts"
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "production_lambda_artifacts" {
+  bucket = aws_s3_bucket.production_lambda_artifacts.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
 }
 
 resource "aws_s3_bucket_versioning" "production_lambda_artifacts" {
@@ -363,6 +389,18 @@ resource "aws_s3_bucket" "production_backups" {
   provider = aws.us_east_2
 
   bucket = "polar-sh-backups"
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "production_backups" {
+  provider = aws.us_east_2
+
+  bucket = aws_s3_bucket.production_backups.id
+
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
 }
 
 resource "aws_s3_bucket_lifecycle_configuration" "production_backups" {

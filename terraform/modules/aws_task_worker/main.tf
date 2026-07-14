@@ -158,6 +158,10 @@ resource "aws_lambda_function" "task" {
   package_type  = "Image"
   image_uri     = var.image_uri
 
+  image_config {
+    command = var.image_command
+  }
+
   timeout     = var.timeout_seconds
   memory_size = var.memory_size
 
@@ -186,6 +190,8 @@ resource "aws_lambda_function" "task" {
   tags = var.tags
 
   lifecycle {
+    ignore_changes = [image_uri]
+
     precondition {
       condition     = length(local.function_name) <= 64
       error_message = "Lambda function name must be 64 characters or fewer: ${local.function_name}"

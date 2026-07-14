@@ -93,6 +93,21 @@
               "engineering/design-documents/merchant-migrations"
             ]
           },
+          {
+            "group": "Architecture Decisions",
+            "pages": [
+              "engineering/decisions/index",
+              "engineering/decisions/template",
+              "engineering/decisions/0001-record-architecture-decisions",
+              "engineering/decisions/0002-status-coded-polar-errors",
+              "engineering/decisions/0003-request-scoped-unit-of-work",
+              "engineering/decisions/0004-orbit-box-design-system",
+              "engineering/decisions/0005-auth-subject-and-scopes",
+              "engineering/decisions/0006-migration-and-backfill-safety",
+              "engineering/decisions/0007-no-default-in-output-schemas",
+              "engineering/decisions/0008-encrypt-secrets-at-rest"
+            ]
+          },
           "engineering/tech-notes",
           {
             "group": "On-Call Procedures",

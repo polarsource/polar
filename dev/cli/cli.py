@@ -211,6 +211,7 @@ def up(
     next_steps.add_row()
     next_steps.add_row("[dim]Start all services", "")
     next_steps.add_row("dev start", "API, worker, web, and Stripe in a tmux session")
+    next_steps.add_row("dev stop", "Stop all services")
     next_steps.add_row()
     next_steps.add_row("[dim]Start specific services", "")
     next_steps.add_row("dev api", "API server")
@@ -253,6 +254,8 @@ def help() -> None:
     recipes.add_row("dev api", "Start API server")
     recipes.add_row("dev worker", "Start background worker")
     recipes.add_row("dev web", "Start frontend dev server")
+    recipes.add_row("dev switch", "Switch branch with a clean web restart")
+    recipes.add_row("dev stop", "Stop all services")
 
     console.print("\n  [bold]Common commands[/bold]")
     console.print(Padding(recipes, (0, 2)))

@@ -28,6 +28,14 @@ resource "tfe_variable" "google_client_secret_test" {
   variable_set_id = tfe_variable_set.test.id
 }
 
+resource "tfe_variable" "google_service_account_json_test" {
+  key             = "google_service_account_json"
+  category        = "terraform"
+  description     = "Google service account JSON key for fetching the organization review AUP for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
 resource "tfe_variable" "openai_api_key_test" {
   key             = "openai_api_key"
   category        = "terraform"
@@ -487,4 +495,20 @@ resource "tfe_variable" "worker_sqs_actors_test" {
   lifecycle {
     ignore_changes = [value]
   }
+}
+
+resource "tfe_variable" "stripe_app_client_id_test" {
+  key             = "stripe_app_client_id"
+  category        = "terraform"
+  description     = "Stripe App OAuth client ID for test"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "stripe_app_client_link_id_test" {
+  key             = "stripe_app_client_link_id"
+  category        = "terraform"
+  description     = "Stripe App OAuth client link ID for test"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.test.id
 }

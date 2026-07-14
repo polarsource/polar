@@ -26,6 +26,12 @@ variable "google_client_secret_sandbox" {
   sensitive   = true
 }
 
+variable "google_service_account_json" {
+  description = "Google service account JSON key for fetching the organization review AUP"
+  type        = string
+  sensitive   = true
+}
+
 variable "openai_api_key_sandbox" {
   description = "OpenAI API Key for sandbox"
   type        = string
@@ -424,4 +430,16 @@ variable "worker_sqs_actors" {
   description = "JSON array of Dramatiq actor names routed to the SQS execution engine"
   type        = string
   default     = "[\"dummy\"]"
+}
+
+variable "stripe_app_client_id" {
+  description = "Stripe App OAuth client ID"
+  type        = string
+  default     = ""
+}
+
+variable "stripe_app_client_link_id" {
+  description = "Stripe App OAuth client link ID"
+  type        = string
+  default     = ""
 }

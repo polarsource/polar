@@ -115,6 +115,8 @@ class OrganizationCustomerEmailSettings(TypedDict):
     subscription_cycled: bool
     subscription_cycled_after_trial: bool
     subscription_past_due: bool
+    subscription_paused: bool
+    subscription_resumed: bool
     subscription_renewal_reminder: bool
     subscription_revoked: bool
     subscription_trial_conversion_reminder: bool
@@ -129,6 +131,8 @@ _default_customer_email_settings: OrganizationCustomerEmailSettings = {
     "subscription_cycled": True,
     "subscription_cycled_after_trial": True,
     "subscription_past_due": True,
+    "subscription_paused": True,
+    "subscription_resumed": True,
     "subscription_renewal_reminder": True,
     "subscription_revoked": True,
     "subscription_trial_conversion_reminder": True,
@@ -144,6 +148,7 @@ class CustomerPortalUsageSettings(TypedDict):
 class CustomerPortalSubscriptionSettings(TypedDict):
     update_seats: bool
     update_plan: bool
+    pause: NotRequired[bool]
 
 
 class CustomerPortalCustomerSettings(TypedDict):
@@ -635,6 +640,14 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def is_sso_enabled(self) -> bool:
         return self.feature_settings.get("sso_enabled", False)
 
+    @property
+    def is_compass_enabled(self) -> bool:
+        return self.feature_settings.get("compass_enabled", False)
+
+    @property
+    def is_merchant_migration_enabled(self) -> bool:
+        return self.feature_settings.get("merchant_migration_enabled", False)
+
     sso_enforced: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
 
     #
@@ -807,6 +820,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.customer_portal_settings.get("subscription", {}).get(
             "update_plan", True
         )
+
+    @property
+    def customer_portal_subscription_pause(self) -> bool:
+        return self.customer_portal_settings.get("subscription", {}).get("pause", False)
 
     @property
     def checkout_require_3ds(self) -> bool:

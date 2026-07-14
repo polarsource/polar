@@ -1,8 +1,4 @@
-# Global code owners
-* @polarsource/engineering
-
 # Backend
-server/** @frankie567 @polarsource/engineering
 server/polar/metrics/** @Yopi @pieterbeulque
 server/tests/metrics/** @Yopi @pieterbeulque
 server/polar/organization_review/** @psincraian
@@ -10,6 +6,16 @@ server/tests/organization_review/** @psincraian
 server/polar/customer_seat/** @psincraian
 server/tests/customer_seat/** @psincraian
 server/tests/e2e/** @psincraian
+
+# API
+server/polar/**/endpoints.py @frankie567
+server/polar/**/schemas.py @frankie567
+server/polar/customer_portal/endpoints/** @frankie567
+server/polar/customer_portal/schemas/** @frankie567
+
+# Authentication
+server/polar/auth/** @frankie567
+server/polar/oauth2/** @frankie567
 
 # Infrastructure
 terraform/** @Yopi
@@ -22,6 +28,9 @@ clients/packages/orbit/** @emilwidlund @sebastianekstrom
 
 # Docs
 /docs/ @pieterbeulque
+
+# ADR
+handbook/engineering/decisions/** @frankie567
 
 # Other
 **/legal @victoriabolin @birkjernstrom

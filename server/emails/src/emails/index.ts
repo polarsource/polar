@@ -11,7 +11,6 @@ import { OAuth2LeakedClient } from './oauth2_leaked_client'
 import { OAuth2LeakedToken } from './oauth2_leaked_token'
 import { OrderConfirmation } from './order_confirmation'
 import { OrganizationAccessTokenLeaked } from './organization_access_token_leaked'
-import { OrganizationAccountUnlink } from './organization_account_unlink'
 import { OrganizationInvite } from './organization_invite'
 import { OrganizationOffboarded } from './organization_offboarded'
 import { PersonalAccessTokenLeaked } from './personal_access_token_leaked'
@@ -28,7 +27,9 @@ import { SubscriptionCycled } from './subscription_cycled'
 import { SubscriptionCycledAfterTrial } from './subscription_cycled_after_trial'
 import { SubscriptionFinalInvoice } from './subscription_final_invoice'
 import { SubscriptionPastDue } from './subscription_past_due'
+import { SubscriptionPaused } from './subscription_paused'
 import { SubscriptionRenewalReminder } from './subscription_renewal_reminder'
+import { SubscriptionResumed } from './subscription_resumed'
 import { SubscriptionRevoked } from './subscription_revoked'
 import { SubscriptionTrialConversionReminder } from './subscription_trial_conversion_reminder'
 import { SubscriptionUncanceled } from './subscription_uncanceled'
@@ -46,7 +47,6 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   oauth2_leaked_token: OAuth2LeakedToken,
   order_confirmation: OrderConfirmation,
   organization_access_token_leaked: OrganizationAccessTokenLeaked,
-  organization_account_unlink: OrganizationAccountUnlink,
   organization_invite: OrganizationInvite,
   organization_offboarded: OrganizationOffboarded,
   personal_access_token_leaked: PersonalAccessTokenLeaked,
@@ -57,6 +57,8 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   subscription_cycled_after_trial: SubscriptionCycledAfterTrial,
   subscription_final_invoice: SubscriptionFinalInvoice,
   subscription_past_due: SubscriptionPastDue,
+  subscription_paused: SubscriptionPaused,
+  subscription_resumed: SubscriptionResumed,
   subscription_renewal_reminder: SubscriptionRenewalReminder,
   subscription_revoked: SubscriptionRevoked,
   subscription_trial_conversion_reminder: SubscriptionTrialConversionReminder,

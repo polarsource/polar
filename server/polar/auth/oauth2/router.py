@@ -158,7 +158,10 @@ def get_oauth_login_router(
             user, _ = await user_service.get_by_email_or_create(
                 authentication_session_service.session, email
             )
-            enrollment = await factor.enroll(user.id, oauth_account)
+            try:
+                enrollment = await factor.enroll(user.id, oauth_account)
+            except OAuth2GetProfileException as e:
+                raise PolarAuthRedirectionError("OAuth2 error") from e
             identity_id = user.id
 
         authentication_session = await authentication_session_service.advance(
@@ -270,6 +273,10 @@ def get_oauth_link_router(
             return_to = e.state.context.get("return_to") if e.state.context else None
             raise PolarAuthRedirectionError(
                 "OAuth2 error", url=return_to or default_return_to, **error_parameters
+            ) from e
+        except OAuth2GetProfileException as e:
+            raise PolarAuthRedirectionError(
+                "OAuth2 error", url=default_return_to, **error_parameters
             ) from e
         except OIDCException as e:
             raise PolarAuthRedirectionError(

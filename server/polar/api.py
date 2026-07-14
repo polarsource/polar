@@ -10,6 +10,7 @@ from polar.benefit.strategies.slack_shared_channel.endpoints import (
 from polar.checkout.endpoints import router as checkout_router
 from polar.checkout_link.endpoints import router as checkout_link_router
 from polar.cli.endpoints import router as cli_router
+from polar.compass.endpoints import router as compass_router
 from polar.custom_field.endpoints import router as custom_field_router
 from polar.customer.endpoints import router as customer_router
 from polar.customer_meter.endpoints import router as customer_meter_router
@@ -40,6 +41,7 @@ from polar.integrations.stripe.endpoints import router as stripe_router
 from polar.license_key.endpoints import router as license_key_router
 from polar.member.endpoints import customer_members_router
 from polar.member.endpoints import router as member_router
+from polar.merchant_migration.endpoints import router as merchant_migration_router
 from polar.meter.endpoints import router as meter_router
 from polar.metrics.endpoints import router as metrics_router
 from polar.notifications.endpoints import router as notifications_router
@@ -126,6 +128,8 @@ router.include_router(cli_router)
 router.include_router(files_router)
 # /metrics
 router.include_router(metrics_router)
+# /compass
+router.include_router(compass_router)
 # /license-keys
 router.include_router(license_key_router)
 # /checkout-links
@@ -144,6 +148,8 @@ router.include_router(customer_members_router)
 router.include_router(customer_portal_router)
 # /seats
 router.include_router(customer_seat_router)
+# /merchant-migrations
+router.include_router(merchant_migration_router)
 # /update-email
 router.include_router(email_update_router)
 # /customer-sessions

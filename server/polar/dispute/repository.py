@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy import Select
+from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -14,7 +15,7 @@ from polar.kit.repository import (
     SortingClause,
 )
 from polar.models import Dispute, Order, Payment
-from polar.models.dispute import DisputeAlertProcessor
+from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
 
 from .sorting import DisputeSortProperty
 
@@ -26,6 +27,44 @@ class DisputeRepository(
     RepositoryBase[Dispute],
 ):
     model = Dispute
+
+    async def get_or_create_from_stripe(
+        self,
+        *,
+        stripe_dispute_id: str,
+        status: DisputeStatus,
+        amount: int,
+        tax_amount: int,
+        currency: str,
+        order: Order,
+        payment: Payment,
+    ) -> tuple[Dispute, bool]:
+        statement = (
+            pg_insert(Dispute)
+            .values(
+                payment_processor=PaymentProcessor.stripe,
+                payment_processor_id=stripe_dispute_id,
+                status=status,
+                amount=amount,
+                tax_amount=tax_amount,
+                currency=currency,
+                order_id=order.id,
+                payment_id=payment.id,
+            )
+            .on_conflict_do_nothing(
+                index_elements=["payment_processor", "payment_processor_id"]
+            )
+            .returning(Dispute.id)
+        )
+        inserted_id = await self.session.scalar(statement)
+
+        dispute = await self.get_by_payment_processor_dispute_id(
+            PaymentProcessor.stripe,
+            stripe_dispute_id,
+            options=(*self.get_eager_options(), joinedload(Dispute.payment)),
+        )
+        assert dispute is not None
+        return dispute, inserted_id is not None
 
     async def get_by_payment_processor_dispute_id(
         self, processor: PaymentProcessor, processor_id: str, *, options: Options = ()

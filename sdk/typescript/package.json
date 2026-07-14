@@ -1,7 +1,7 @@
 {
-  "name": "@polar/sdk",
-  "version": "0.0.0",
-  "description": "Polar TypeScript SDK - Auto-generated from OpenAPI specification",
+  "name": "@polar-sh/sdk",
+  "version": "1.0.0-alpha.7",
+  "description": "Polar SDK — A billing platform for the intelligence era",
   "keywords": [
     "api",
     "polar",
@@ -12,18 +12,37 @@
   "author": "Polar",
   "repository": {
     "type": "git",
-    "url": "https://github.com/polar-sh/polar"
+    "url": "https://github.com/polar-sh/polar",
+    "directory": "sdk/typescript"
   },
+  "files": [
+    "dist",
+    "README.md"
+  ],
   "type": "module",
   "sideEffects": false,
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
-  "types": "dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
-      "require": "./dist/index.cjs",
-      "import": "./dist/index.mjs"
+      "import": {
+        "types": "./dist/index.d.mts",
+        "default": "./dist/index.mjs"
+      },
+      "require": {
+        "types": "./dist/index.d.cts",
+        "default": "./dist/index.cjs"
+      }
+    },
+    "./2026-04": {
+      "import": {
+        "types": "./dist/2026-04/index.d.mts",
+        "default": "./dist/2026-04/index.mjs"
+      },
+      "require": {
+        "types": "./dist/2026-04/index.d.cts",
+        "default": "./dist/2026-04/index.cjs"
+      }
     }
   },
   "scripts": {
@@ -33,7 +52,6 @@
     "lint": "oxlint",
     "lint:fix": "oxlint --fix",
     "typecheck": "tsc --noEmit",
-    "postbuild": "cp dist/index.d.mts dist/index.d.ts",
     "test": "vitest run"
   },
   "devDependencies": {
@@ -42,5 +60,8 @@
     "tsdown": "^0.22.3",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"
+  },
+  "engines": {
+    "node": ">=18"
   }
 }

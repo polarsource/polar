@@ -16,6 +16,7 @@ from polar.support_case.repository import (
     DisputeSupportCaseRepository,
     SupportCaseMessageRepository,
 )
+from polar.support_case.schemas import DisputeSupportCaseMessageCreate
 from polar.support_case.service import support_case as support_case_service
 from polar.worker import enqueue_job
 
@@ -134,10 +135,10 @@ class DisputeCaseService:
         self,
         session: AsyncSession,
         case: DisputeSupportCase,
+        reply: DisputeSupportCaseMessageCreate,
         *,
         author_kind: SupportCaseMessageAuthorKind,
         author_user: User | None = None,
-        body: str | None = None,
         files: Sequence[File] = (),
         internal: bool = False,
     ) -> SupportCaseMessage:
@@ -145,9 +146,15 @@ class DisputeCaseService:
 
         This is the merchant ↔ support conversation channel: the merchant's
         evidence and any back-and-forth live here as ``chat`` messages, which
-        support reviews and submits to the processor.
+        support reviews and submits to the processor. ``reply.win_reason``
+        records the merchant's stated grounds for contesting, set on their
+        counter.
         """
         await self._assert_open(session, case)
+
+        if reply.win_reason is not None:
+            case.win_reason = reply.win_reason
+            case.win_reason_other = reply.win_reason_other
 
         is_first_merchant_reply = (
             author_kind == SupportCaseMessageAuthorKind.merchant
@@ -160,7 +167,7 @@ class DisputeCaseService:
             case,
             author_kind=author_kind,
             author_user=author_user,
-            body=body,
+            body=reply.body,
             audience=audience,
         )
         for file in files:

@@ -36,7 +36,6 @@ class EmailTemplate(StrEnum):
     order_confirmation = "order_confirmation"
     organization_access_token_leaked = "organization_access_token_leaked"
     organization_invite = "organization_invite"
-    organization_account_unlink = "organization_account_unlink"
     organization_offboarded = "organization_offboarded"
     support_case_organization_new_message = "support_case_organization_new_message"
     personal_access_token_leaked = "personal_access_token_leaked"
@@ -47,6 +46,8 @@ class EmailTemplate(StrEnum):
     subscription_cycled_after_trial = "subscription_cycled_after_trial"
     subscription_final_invoice = "subscription_final_invoice"
     subscription_past_due = "subscription_past_due"
+    subscription_paused = "subscription_paused"
+    subscription_resumed = "subscription_resumed"
     subscription_revoked = "subscription_revoked"
     subscription_uncanceled = "subscription_uncanceled"
     subscription_renewal_reminder = "subscription_renewal_reminder"
@@ -373,6 +374,26 @@ class SubscriptionUncanceledEmail(BaseModel):
     props: SubscriptionUncanceledProps
 
 
+class SubscriptionPausedProps(SubscriptionPropsBase): ...
+
+
+class SubscriptionPausedEmail(BaseModel):
+    template: Literal[EmailTemplate.subscription_paused] = (
+        EmailTemplate.subscription_paused
+    )
+    props: SubscriptionPausedProps
+
+
+class SubscriptionResumedProps(SubscriptionPropsBase): ...
+
+
+class SubscriptionResumedEmail(BaseModel):
+    template: Literal[EmailTemplate.subscription_resumed] = (
+        EmailTemplate.subscription_resumed
+    )
+    props: SubscriptionResumedProps
+
+
 class SubscriptionUpdatedProps(SubscriptionPropsBase):
     order: OrderEmail | None
 
@@ -506,18 +527,6 @@ class PolarSelfStartupProgramWelcomeEmail(BaseModel):
     props: PolarSelfStartupProgramWelcomeProps
 
 
-class OrganizationAccountUnlinkProps(EmailProps):
-    organization_kept_name: str
-    organizations_unlinked: list[str]
-
-
-class OrganizationAccountUnlinkEmail(BaseModel):
-    template: Literal[EmailTemplate.organization_account_unlink] = (
-        EmailTemplate.organization_account_unlink
-    )
-    props: OrganizationAccountUnlinkProps
-
-
 class OrganizationOffboardedProps(EmailProps):
     organization_name: str
     account_url: str
@@ -541,7 +550,6 @@ Email = Annotated[
     | OrderConfirmationEmail
     | OrganizationAccessTokenLeakedEmail
     | OrganizationInviteEmail
-    | OrganizationAccountUnlinkEmail
     | OrganizationOffboardedEmail
     | SupportCaseOrganizationNewMessageEmail
     | PersonalAccessTokenLeakedEmail
@@ -552,6 +560,8 @@ Email = Annotated[
     | SubscriptionCycledAfterTrialEmail
     | SubscriptionFinalInvoiceEmail
     | SubscriptionPastDueEmail
+    | SubscriptionPausedEmail
+    | SubscriptionResumedEmail
     | SubscriptionRenewalReminderEmail
     | SubscriptionTrialConversionReminderEmail
     | SubscriptionRevokedEmail

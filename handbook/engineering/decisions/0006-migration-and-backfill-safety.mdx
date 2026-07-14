@@ -1,0 +1,73 @@
+---
+title: "ADR-0006: Migrations and backfills are deploy-safe by construction"
+description: "Migrations run under a lock timeout, backfills run as separate batched scripts, and migration PRs stay isolated from code."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Backend
+
+**Date**: 2026-07-02
+</Info>
+
+## Context
+
+Two things make migrations risky during a deploy:
+
+- **Locks.** A blocking `ALTER` or an unbatched `UPDATE` on a hot table takes an `ACCESS EXCLUSIVE`
+  lock, which can stall live API traffic until it finishes.
+- **Deploy order.** The API deploys before the workers. If a migration ships in the same PR as the
+  code that needs it, that code can go live before its schema exists.
+
+## Decision
+
+- Generate migrations with `alembic revision --autogenerate`. Every migration inherits
+  `SET LOCAL lock_timeout = '5s'` from the template.
+- Add a NOT NULL column across separate PRs: add it nullable, backfill with a batched script
+  (`run_batched_update`), then enforce NOT NULL.
+- The enforce migration's inline `UPDATE ... WHERE col IS NULL` is guarded by
+  `settings.is_development()`, so it runs only against a local database. Deployed environments
+  (testing, sandbox, production) run the batched backfill script first, verified before deploy,
+  so they skip the inline `UPDATE` and never rewrite a hot table under lock. The following
+  `SET NOT NULL` then doubles as a check that the backfill completed.
+- Keep migration PRs isolated from application code.
+
+The local-only guard is a plain inline check. Import `settings` in the migration (from
+`polar.config`, the same module `migrations/env.py` already imports); `is_development()` is
+true only when `POLAR_ENV=development`, which is local:
+
+```python
+from polar.config import settings
+
+def upgrade() -> None:
+    # Local dev only: deployed environments run the batched backfill first.
+    if settings.is_development():
+        op.execute("UPDATE organizations SET sso_enforced = false WHERE sso_enforced IS NULL")
+    op.alter_column("organizations", "sso_enforced", nullable=False)
+```
+
+## Consequences
+
+- A lock-holding migration fails fast at the 5s timeout instead of taking the database down.
+- Large backfills run outside the deploy path, in controlled batches.
+- Code never ships ahead of the schema it needs.
+- CI enforces this: a "Migration Isolation Check" gates which files travel together, and
+  `alembic check` catches model-versus-migration drift.
+- `settings.is_development()` is the single decision for what counts as local. A deployed
+  enforce migration cannot rewrite the table; if the backfill was skipped, `SET NOT NULL` fails
+  the deploy instead.
+
+## Alternatives considered
+
+- **Add NOT NULL in one step and let the migration's `UPDATE` backfill every row**: rewrites the
+  table under lock during deploy. The inline `UPDATE` runs in local development only; the batched
+  script does the real backfill everywhere else.
+- **Ship a migration in the same PR as the code that depends on it**: breaks the
+  API-before-workers ordering.
+
+## References
+
+- `server/migrations/script.py.mako`, `server/migrations/env.py`, `server/migrations/README.md`.
+- `server/scripts/helper.py` (`run_batched_update`) and the `server/scripts/backfill_*.py`
+  scripts. CI: `.github/workflows/test_server.yaml` (`migration-check`).

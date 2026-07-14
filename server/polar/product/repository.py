@@ -49,6 +49,42 @@ class ProductRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def get_price_currencies(self, organization_id: UUID) -> set[str]:
+        """Distinct currencies the organization's active prices are set in."""
+        statement = (
+            select(ProductPrice.price_currency)
+            .join(Product, Product.id == ProductPrice.product_id)
+            .where(
+                Product.organization_id == organization_id,
+                Product.is_archived.is_(False),
+                ProductPrice.is_archived.is_(False),
+                ProductPrice.price_currency.is_not(None),
+            )
+            .distinct()
+        )
+        result = await self.session.execute(statement)
+        return {row[0].lower() for row in result.all()}
+
+    async def get_all_by_organization(
+        self,
+        organization_id: UUID,
+        *,
+        options: Options = (),
+        limit: int | None = None,
+    ) -> Sequence[Product]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Product.organization_id == organization_id,
+                Product.is_archived.is_(False),
+            )
+            .order_by(Product.created_at.asc())
+            .options(*options)
+        )
+        if limit is not None:
+            statement = statement.limit(limit)
+        return await self.get_all(statement)
+
     async def get_by_id_and_checkout(
         self,
         id: UUID,

@@ -1,0 +1,44 @@
+---
+title: "ADR-0007: No default in output schemas"
+description: "Pydantic schemas used in API responses should not have default values, so the OpenAPI schema marks them as required."
+---
+
+<Info>
+**Status**: Accepted
+
+**Area**: Backend
+
+**Date**: 2026-07-06
+
+</Info>
+
+## Context
+
+When a Pydantic schema field includes a default value (e.g., `Field(None, ...)`), the generated OpenAPI/JSONSchema marks that field as **not required**. This causes SDK generators—particularly TypeScript—to mark the field as optional (using `?`). For **output schemas**, this is a semantic error: API responses always include the field (even when nullable), so it should never be considered optional by clients. This misalignment leads to incorrect SDK type definitions and forces consumers to add unnecessary null checks for fields that will always be present.
+
+This is a proactive decision to enforce a good practice already followed extensively in the codebase, ensuring SDKs remain correct and consistent with actual API behavior.
+
+## Decision
+
+**Output schemas must never include default values.** The value for each field must be explicitly provided by the underlying data source (ORM model, service layer, etc.). Fields should be defined as `Field(...)` or `Field(description="...")` without a default parameter.
+
+This rule applies **only to output schemas** (API responses). Input schemas are explicitly out of scope, as optional fields in requests are both necessary and desirable.
+
+Enforcement is currently through code review. An automated check may be introduced in the future, though reliably identifying a schema as "output" vs "input" can be complex.
+
+## Consequences
+
+**Positive:**
+
+- OpenAPI schema accurately reflects API behavior: output fields are correctly marked as required
+- Generated SDKs (TypeScript, etc.) produce correct type definitions without spurious optionality
+- SDK consumers no longer need to protect against "optional" fields that will always be present
+- Improved developer experience and reduced boilerplate in client code
+
+**Negative:**
+
+- None. This pattern was already widely used; the decision merely formalizes and enforces it.
+
+## Alternatives considered
+
+No alternatives were seriously considered. Using Pydantic's default mechanism for output schemas is fundamentally at odds with the semantics of API responses, where every declared field is always provided. Other approaches (custom OpenAPI post-processing, `json_schema_extra`) would add complexity without addressing the root cause.

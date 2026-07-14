@@ -23,6 +23,12 @@ variable "google_client_secret" {
   sensitive   = true
 }
 
+variable "google_service_account_json" {
+  description = "Google service account JSON key for fetching the organization review AUP"
+  type        = string
+  sensitive   = true
+}
+
 # OpenAI
 variable "openai_api_key" {
   description = "OpenAI API Key for production"
@@ -100,11 +106,11 @@ variable "backend_jwks" {
   sensitive   = true
 }
 
-# variable "lambda_worker_tailscale_token" {
-#   description = "Tailscale auth token for test Lambda workers"
-#   type        = string
-#   sensitive   = true
-# }
+variable "lambda_worker_tailscale_token" {
+  description = "Tailscale auth token for test Lambda workers"
+  type        = string
+  sensitive   = true
+}
 
 # AWS S3
 variable "aws_access_key_id" {
@@ -402,4 +408,22 @@ variable "next_public_stripe_payment_method_configuration" {
   description = "Stripe payment method configuration ID for the Vercel frontend"
   type        = string
   sensitive   = true
+}
+
+variable "worker_sqs_actors" {
+  description = "JSON array of Dramatiq actor names routed to the SQS execution engine"
+  type        = string
+  default     = "[\"dummy\"]"
+}
+
+variable "stripe_app_client_id" {
+  description = "Stripe App OAuth client ID"
+  type        = string
+  default     = ""
+}
+
+variable "stripe_app_client_link_id" {
+  description = "Stripe App OAuth client link ID"
+  type        = string
+  default     = ""
 }

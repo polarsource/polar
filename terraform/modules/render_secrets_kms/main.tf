@@ -122,3 +122,8 @@ output "role_arn" {
   description = "ARN of the role the Render backend assumes via OIDC. Passed to the app as AWS_ROLE_ARN."
   value       = aws_iam_role.secrets.arn
 }
+
+output "role_name" {
+  description = "Name of the role the Render backend assumes via OIDC, for attaching additional policies."
+  value       = aws_iam_role.secrets.name
+}

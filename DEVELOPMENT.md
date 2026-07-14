@@ -167,7 +167,7 @@ If you want to work on or test enterprise SSO login, you can point it at a local
     {"email": "admin@polar.sh", "email_verified": true}
     ```
 
-    You'll be redirected back to Polar, signed in with a session scoped to `admin-org`.
+    You'll be redirected back to Polar, where the org-scoped session completes.
 
 ### Setup backend
 

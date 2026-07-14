@@ -57,6 +57,9 @@ from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.oauth2.service.oauth2_token import (
+    oauth2_token as oauth2_token_service,
+)
 from polar.organization_access_token.repository import (
     OrganizationAccessTokenRepository,
 )
@@ -230,6 +233,24 @@ class CannotChangeOwnerError(OrganizationError):
         super().__init__(f"Cannot change organization owner: {reason}")
 
 
+class CannotCreateOrganizationError(OrganizationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "You cannot create an organization from a session restricted to a "
+            "specific organization.",
+            403,
+        )
+
+
+class SSOEnforcementRequiresConnection(OrganizationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This organization must have an enabled SSO connection before SSO "
+            "can be enforced.",
+            409,
+        )
+
+
 class OrganizationService:
     async def list(
         self,
@@ -316,6 +337,9 @@ class OrganizationService:
         create_schema: OrganizationCreate,
         auth_subject: AuthSubject[User],
     ) -> Organization:
+        if auth_subject.organization_ids is not None:
+            raise CannotCreateOrganizationError()
+
         repository = OrganizationRepository.from_session(session)
         if await repository.slug_exists(create_schema.slug):
             raise PolarRequestValidationError(
@@ -527,6 +551,10 @@ class OrganizationService:
                 session, organization, update_schema.default_presentment_currency
             )
 
+        sso_newly_enforced = (
+            update_schema.sso_enforced is True and not organization.sso_enforced
+        )
+
         update_dict = update_schema.model_dump(
             by_alias=True,
             exclude_unset=True,
@@ -544,6 +572,11 @@ class OrganizationService:
             )
 
         organization = await repository.update(organization, update_dict=update_dict)
+
+        if sso_newly_enforced:
+            await oauth2_token_service.revoke_for_sso_enforcement(
+                session, organization.id
+            )
 
         await self._after_update(session, organization)
         return organization
@@ -762,11 +795,7 @@ class OrganizationService:
         if payout_account is None:
             return
 
-        # Unlink the payout account from the organization before deleting
-        organization_repository = OrganizationRepository.from_session(session)
-        await organization_repository.delete_payout_account(payout_account.id)
-
-        await payout_account_service.delete(session, payout_account)
+        await payout_account_service.delete(session, payout_account, unlink=True)
 
     async def set_payout_account(
         self,

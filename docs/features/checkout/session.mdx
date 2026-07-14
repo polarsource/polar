@@ -151,12 +151,12 @@ from polar_sdk import Polar
 with Polar(access_token="<YOUR_BEARER_TOKEN_HERE>") as polar:
     checkout = polar.checkouts.create(request={
         "products": ["<product_id>"],
-        "customer_ip_address": request.client.host,
+        "customer_ip_address": request.headers.get("True-Client-IP") or request.client.host,
     })
 ```
 </CodeGroup>
 
-The exact way to read the connecting IP depends on your runtime — for example, `CF-Connecting-IP` on Cloudflare Workers, `x-forwarded-for` behind most proxies, or `request.client.host` in FastAPI.
+The exact way to read the connecting IP depends on your runtime — for example, `CF-Connecting-IP` on Cloudflare Workers, `x-forwarded-for` behind most proxies, or `True-Client-IP`/`request.client.host` in FastAPI.
 
 <Note>
   When `customer_ip_address` is provided, you don't need to set `customer_billing_address.country` yourself — Polar will derive both the country and the currency from the IP.

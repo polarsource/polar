@@ -1,14 +1,9 @@
 import json
-import uuid
 from typing import Any
 
 import dramatiq
 
-
-def _json_obj_serializer(obj: Any) -> Any:
-    if isinstance(obj, uuid.UUID):
-        return str(obj)
-    raise TypeError(f"Object of type {type(obj)} is not JSON serializable")
+from polar.kit.json import json_obj_serializer
 
 
 class JSONEncoder(dramatiq.JSONEncoder):
@@ -29,5 +24,5 @@ class JSONEncoder(dramatiq.JSONEncoder):
                 },
             }
         return json.dumps(
-            data, separators=(",", ":"), default=_json_obj_serializer
+            data, separators=(",", ":"), default=json_obj_serializer
         ).encode("utf-8")

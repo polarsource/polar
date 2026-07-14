@@ -2,6 +2,7 @@ import contextlib
 import typing
 import uuid
 from collections.abc import AsyncGenerator, Sequence
+from datetime import datetime
 
 import sentry_sdk
 import stripe as stripe_lib
@@ -265,6 +266,8 @@ class CheckoutService:
         external_customer_id: Sequence[str] | None = None,
         status: Sequence[CheckoutStatus] | None = None,
         query: str | None = None,
+        created_at_after: datetime | None = None,
+        created_at_before: datetime | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[CheckoutSortProperty]] = [
             (CheckoutSortProperty.created_at, True)
@@ -297,6 +300,12 @@ class CheckoutService:
 
         if query is not None:
             statement = statement.where(Checkout.customer_email.ilike(f"%{query}%"))
+
+        if created_at_after is not None:
+            statement = statement.where(Checkout.created_at >= created_at_after)
+
+        if created_at_before is not None:
+            statement = statement.where(Checkout.created_at < created_at_before)
 
         statement = repository.apply_sorting(statement, sorting)
 
@@ -988,6 +997,17 @@ class CheckoutService:
         try:
             checkout = await self._update_checkout_tax(session, checkout)
         except TaxCalculationLogicalError as e:
+            billing_address = checkout.customer_billing_address
+            log.warning(
+                "Checkout confirmation blocked by tax calculation error",
+                error_type=type(e).__name__,
+                error_message=e.message,
+                checkout_id=str(checkout.id),
+                organization_id=str(checkout.organization_id),
+                product_id=str(checkout.product_id) if checkout.product_id else None,
+                billing_country=billing_address.country if billing_address else None,
+                billing_state=billing_address.state if billing_address else None,
+            )
             errors.append(
                 {
                     "type": "value_error",

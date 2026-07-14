@@ -1,11 +1,11 @@
 from generator.ir import (
+    APIVersion,
     ArrayType,
     EnumRef,
     LiteralType,
     MapType,
     ModelRef,
     NullableType,
-    OpenAPIIR,
     PrimitiveType,
     TypeRef,
     UnionRef,
@@ -15,7 +15,6 @@ from generator.ir import (
 
 def convert_type_to_typescript(
     type_ref: TypeRef,
-    ir: OpenAPIIR,
     ref_suffix: str = "",
     in_union: bool = False,
 ) -> str:
@@ -23,9 +22,7 @@ def convert_type_to_typescript(
 
     # Handle nullability - wrap in parentheses if in a union
     if isinstance(type_ref, NullableType):
-        inner = convert_type_to_typescript(
-            type_ref.inner, ir, ref_suffix, in_union=True
-        )
+        inner = convert_type_to_typescript(type_ref.inner, ref_suffix, in_union=True)
         if in_union:
             return f"({inner} | null)"
         return f"{inner} | null"
@@ -70,7 +67,7 @@ def convert_type_to_typescript(
         if len(type_ref.variants) == 0:
             return "unknown"
         variant_strs = [
-            convert_type_to_typescript(v, ir, ref_suffix, in_union=True)
+            convert_type_to_typescript(v, ref_suffix, in_union=True)
             for v in type_ref.variants
         ]
         # Join with |, wrapping nullable types in parens if needed
@@ -81,19 +78,17 @@ def convert_type_to_typescript(
 
     # ArrayType -> Type[]
     if isinstance(type_ref, ArrayType):
-        items = convert_type_to_typescript(
-            type_ref.items, ir, ref_suffix, in_union=True
-        )
+        items = convert_type_to_typescript(type_ref.items, ref_suffix, in_union=True)
         return f"{items}[]"
 
     # MapType -> Record<KeyType, ValueType>
     if isinstance(type_ref, MapType):
         value_type = convert_type_to_typescript(
-            type_ref.value_type, ir, ref_suffix, in_union=True
+            type_ref.value_type, ref_suffix, in_union=True
         )
         if type_ref.key_type is not None:
             key_type = convert_type_to_typescript(
-                type_ref.key_type, ir, ref_suffix, in_union=True
+                type_ref.key_type, ref_suffix, in_union=True
             )
             return f"Record<{key_type}, {value_type}>"
         return f"Record<string, {value_type}>"
@@ -101,7 +96,7 @@ def convert_type_to_typescript(
     return "unknown"
 
 
-def collect_type_imports(type_ref: TypeRef | None, ir: OpenAPIIR) -> set[str]:
+def collect_type_imports(type_ref: TypeRef | None, api: APIVersion) -> set[str]:
     """Collect all model and union names from a TypeRef."""
     if type_ref is None:
         return set()
@@ -111,22 +106,53 @@ def collect_type_imports(type_ref: TypeRef | None, ir: OpenAPIIR) -> set[str]:
     if isinstance(type_ref, (ModelRef, UnionRef)):
         names.add(type_ref.name)
     elif isinstance(type_ref, NullableType):
-        names.update(collect_type_imports(type_ref.inner, ir))
+        names.update(collect_type_imports(type_ref.inner, api))
     elif isinstance(type_ref, ArrayType):
-        names.update(collect_type_imports(type_ref.items, ir))
+        names.update(collect_type_imports(type_ref.items, api))
     elif isinstance(type_ref, MapType):
-        names.update(collect_type_imports(type_ref.value_type, ir))
+        names.update(collect_type_imports(type_ref.value_type, api))
         if type_ref.key_type is not None:
-            names.update(collect_type_imports(type_ref.key_type, ir))
+            names.update(collect_type_imports(type_ref.key_type, api))
     elif isinstance(type_ref, UnionType):
         for variant in type_ref.variants:
-            names.update(collect_type_imports(variant, ir))
+            names.update(collect_type_imports(variant, api))
 
     return names
 
 
+def collect_enum_names(type_ref: object | None, api: APIVersion) -> set[str]:
+    """Collect all enum names from a TypeRef."""
+
+    if type_ref is None:
+        return set()
+
+    enum_imports: set[str] = set()
+
+    if isinstance(type_ref, EnumRef):
+        enum_imports.add(type_ref.name)
+    elif isinstance(type_ref, NullableType):
+        enum_imports.update(collect_enum_names(type_ref.inner, api))
+    elif isinstance(type_ref, ArrayType):
+        enum_imports.update(collect_enum_names(type_ref.items, api))
+    elif isinstance(type_ref, MapType):
+        enum_imports.update(collect_enum_names(type_ref.value_type, api))
+        if type_ref.key_type is not None:
+            enum_imports.update(collect_enum_names(type_ref.key_type, api))
+    elif isinstance(type_ref, UnionType):
+        for variant in type_ref.variants:
+            enum_imports.update(collect_enum_names(variant, api))
+    elif isinstance(type_ref, UnionRef):
+        for union in api.input_unions + api.output_unions:
+            if union.name == type_ref.name:
+                for variant in union.variants:
+                    enum_imports.update(collect_enum_names(variant, api))
+                break
+
+    return enum_imports
+
+
 def collect_enum_imports(
-    type_ref: TypeRef | None, enum_imports: set[str], ir: OpenAPIIR
+    type_ref: TypeRef | None, enum_imports: set[str], api: APIVersion
 ) -> None:
     """Collect all enum names from a TypeRef."""
     if type_ref is None:
@@ -135,25 +161,25 @@ def collect_enum_imports(
     if isinstance(type_ref, EnumRef):
         enum_imports.add(type_ref.name)
     elif isinstance(type_ref, NullableType):
-        collect_enum_imports(type_ref.inner, enum_imports, ir)
+        collect_enum_imports(type_ref.inner, enum_imports, api)
     elif isinstance(type_ref, ArrayType):
-        collect_enum_imports(type_ref.items, enum_imports, ir)
+        collect_enum_imports(type_ref.items, enum_imports, api)
     elif isinstance(type_ref, MapType):
-        collect_enum_imports(type_ref.value_type, enum_imports, ir)
+        collect_enum_imports(type_ref.value_type, enum_imports, api)
         if type_ref.key_type is not None:
-            collect_enum_imports(type_ref.key_type, enum_imports, ir)
+            collect_enum_imports(type_ref.key_type, enum_imports, api)
     elif isinstance(type_ref, UnionType):
         for variant in type_ref.variants:
-            collect_enum_imports(variant, enum_imports, ir)
+            collect_enum_imports(variant, enum_imports, api)
     elif isinstance(type_ref, UnionRef):
-        for union in ir.input_unions + ir.output_unions:
+        for union in api.input_unions + api.output_unions:
             if union.name == type_ref.name:
                 for variant in union.variants:
-                    collect_enum_imports(variant, enum_imports, ir)
+                    collect_enum_imports(variant, enum_imports, api)
                 break
 
 
-def collect_union_imports(type_ref: TypeRef | None, ir: OpenAPIIR) -> set[str]:
+def collect_union_imports(type_ref: TypeRef | None, api: APIVersion) -> set[str]:
     """Collect all union type imports from a TypeRef."""
     if type_ref is None:
         return set()
@@ -163,15 +189,15 @@ def collect_union_imports(type_ref: TypeRef | None, ir: OpenAPIIR) -> set[str]:
     if isinstance(type_ref, UnionRef):
         names.add(type_ref.name)
     elif isinstance(type_ref, NullableType):
-        names.update(collect_union_imports(type_ref.inner, ir))
+        names.update(collect_union_imports(type_ref.inner, api))
     elif isinstance(type_ref, ArrayType):
-        names.update(collect_union_imports(type_ref.items, ir))
+        names.update(collect_union_imports(type_ref.items, api))
     elif isinstance(type_ref, MapType):
-        names.update(collect_union_imports(type_ref.value_type, ir))
+        names.update(collect_union_imports(type_ref.value_type, api))
         if type_ref.key_type is not None:
-            names.update(collect_union_imports(type_ref.key_type, ir))
+            names.update(collect_union_imports(type_ref.key_type, api))
     elif isinstance(type_ref, UnionType):
         for variant in type_ref.variants:
-            names.update(collect_union_imports(variant, ir))
+            names.update(collect_union_imports(variant, api))
 
     return names

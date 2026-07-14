@@ -33,8 +33,6 @@ export default {
       optional: 'Opcionális',
       apply: 'Alkalmaz',
       fieldRequired: 'Ez a mező kötelező',
-      addBusinessDetails: 'Céges adatok hozzáadása',
-      removeBusinessDetails: 'Céges adatok eltávolítása',
       billingDetails: 'Cégadatok',
       addDiscountCode: 'Kedvezménykód hozzáadása',
     },
@@ -46,20 +44,7 @@ export default {
       payWhatYouWant: 'Választható ár',
       total: 'Végösszeg',
       additionalMeteredUsage: 'További mért használat',
-      perUnit: '/ egység',
       discount: {
-        duration: {
-          months: {
-            '=1': 'az első hónapra',
-            other: 'az első # hónapra',
-            _mode: 'plural',
-          },
-          years: {
-            '=1': 'az első évre',
-            other: 'az első # évre',
-            _mode: 'plural',
-          },
-        },
         until: '{date}-ig',
       },
       everyInterval: {
@@ -111,29 +96,6 @@ export default {
       basePrice: 'Alapár',
     },
     trial: {
-      ends: 'A próbaidőszak ekkor jár le: {endDate}',
-      duration: {
-        days: {
-          '=1': '# napos próbaidőszak',
-          other: '# napos próbaidőszak',
-          _mode: 'plural',
-        },
-        weeks: {
-          '=1': '# hetes próbaidőszak',
-          other: '# hetes próbaidőszak',
-          _mode: 'plural',
-        },
-        months: {
-          '=1': '# hónapos próbaidőszak',
-          other: '# hónapos próbaidőszak',
-          _mode: 'plural',
-        },
-        years: {
-          '=1': '# éves próbaidőszak',
-          other: '# éves próbaidőszak',
-          _mode: 'plural',
-        },
-      },
       hero: {
         free: {
           day: {
@@ -161,11 +123,6 @@ export default {
         then: 'Ezután',
         startingDate: 'kezdés: {date}',
       },
-      summary: {
-        totalWhenTrialEnds: 'Fizetendő a próbaidőszak végén',
-        totalWhenDiscountExpires: 'Fizetendő a kedvezmény lejárta után',
-        totalDueToday: 'Ma fizetendő',
-      },
     },
     pwywForm: {
       label: 'Adjon meg egy méltányos árat',
@@ -178,21 +135,7 @@ export default {
       oneTimePurchase: 'Egyszeri vásárlás',
       fromPrefix: 'Kezdőár',
     },
-    card: {
-      included: 'Tartalmazza',
-    },
     benefits: {
-      moreBenefits: {
-        '=1': '# további előny',
-        other: '# további előny',
-        _mode: 'plural',
-      },
-      showMoreBenefits: {
-        '=1': 'Mutasson # további előnyt',
-        other: 'Mutasson # további előnyt',
-        _mode: 'plural',
-      },
-      showLess: 'Kevesebb megjelenítése',
       granting: 'Előnyök biztosítása...',
       requestNewInvite: 'Új meghívó kérése',
       retryIn: {
@@ -279,15 +222,35 @@ export default {
     },
     productDescription: {
       readMore: 'Bővebben',
-      readLess: 'Kevesebb',
+    },
+    trialUnavailable: {
+      title: 'Ehhez a vásárláshoz nincs ingyenes próbaidőszak',
+      description:
+        'Ehhez a termékhez már felhasznált egy ingyenes próbaidőszakot, így ma kiszámlázzuk az összeget. A vásárlás befejezéséhez folytassa lent.',
     },
   },
   intervals: {
     short: {
-      day: 'nap',
-      week: 'hét',
-      month: 'hó',
-      year: 'év',
+      day: {
+        '=1': 'nap',
+        other: '# nap',
+        _mode: 'plural',
+      },
+      week: {
+        '=1': 'hét',
+        other: '# hét',
+        _mode: 'plural',
+      },
+      month: {
+        '=1': 'hó',
+        other: '# hó',
+        _mode: 'plural',
+      },
+      year: {
+        '=1': 'év',
+        other: '# év',
+        _mode: 'plural',
+      },
     },
   },
   benefitTypes: {

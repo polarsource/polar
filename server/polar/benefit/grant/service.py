@@ -238,6 +238,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 grant.properties,
                 attempt=attempt,
                 member=member,
+                **scope_to_args(scope),
             )
         except BenefitActionRequiredError as e:
             if e.grant_properties is not None:
@@ -521,6 +522,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 update=True,
                 attempt=attempt,
                 member=member,
+                **grant.scope,
             )
         except BenefitActionRequiredError as e:
             if e.grant_properties is not None:

@@ -11,6 +11,7 @@ from polar.auth.service import USER_SESSION_TOKEN_PREFIX
 from polar.config import settings
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.db.postgres import Session
+from polar.kit.encryption import EncryptedString
 from polar.kit.utils import utc_now
 from polar.models import (
     OAuth2AuthorizationCode,
@@ -148,7 +149,17 @@ async def create_oauth2_grant(
 
 @pytest.mark.asyncio
 class TestOAuth2Register:
-    @pytest.mark.parametrize("redirect_uri", ["http://example.com", "foobar"])
+    @pytest.mark.parametrize(
+        "redirect_uri",
+        [
+            "http://example.com",
+            "foobar",
+            f"http://{'a' * 54773}slocalhost/callback",
+            "http://localhost.evil/callback",
+            "http://localhostevil/callback",
+            "http://localhost./callback",
+        ],
+    )
     @pytest.mark.auth
     async def test_invalid_redirect_uri(
         self, redirect_uri: str, client: AsyncClient
@@ -169,6 +180,7 @@ class TestOAuth2Register:
         [
             "https://example.com",
             "http://localhost:8000/callback",
+            "http://foo.localhost:8000/callback",
             "http://127.0.0.1:8000/callback",
         ],
     )
@@ -218,6 +230,52 @@ class TestOAuth2Register:
         assert "client_id" in json
         assert "registration_access_token" in json
         assert json["scope"] == "openid email"
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user"))
+    async def test_writes_hashed_and_encrypted_secrets(
+        self, client: AsyncClient, sync_session: Session
+    ) -> None:
+        response = await client.post(
+            "/v1/oauth2/register",
+            json={
+                "client_name": "Test Client",
+                "redirect_uris": ["https://example.com/callback"],
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+
+        oauth2_client = (
+            sync_session.execute(
+                select(OAuth2Client).where(OAuth2Client.client_id == data["client_id"])
+            )
+            .unique()
+            .scalar_one()
+        )
+
+        assert oauth2_client.client_secret_hash == OAuth2Client.hash_secret(
+            data["client_secret"]
+        )
+        assert oauth2_client.registration_access_token_hash == OAuth2Client.hash_secret(
+            data["registration_access_token"]
+        )
+        assert isinstance(oauth2_client.client_secret_encrypted, EncryptedString)
+        assert isinstance(
+            oauth2_client.registration_access_token_encrypted, EncryptedString
+        )
+        assert (
+            await oauth2_client.client_secret_encrypted.decrypt(
+                id=str(oauth2_client.id)
+            )
+            == data["client_secret"]
+        )
+        assert (
+            await oauth2_client.registration_access_token_encrypted.decrypt(
+                id=str(oauth2_client.id)
+            )
+            == data["registration_access_token"]
+        )
 
 
 @pytest.mark.asyncio
@@ -1009,6 +1067,84 @@ class TestOAuth2Consent:
         assert response.status_code == 302
         location = response.headers["location"]
         assert "error=access_denied" in location
+
+    @pytest.mark.auth
+    async def test_reject_selecting_sso_enforced_organization(
+        self,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        oauth2_client: OAuth2Client,
+        save_fixture: SaveFixture,
+    ) -> None:
+        # A non-SSO session can't scope a token to an SSO-enforced org, even when
+        # the org is passed directly (the UI already hides it from the list).
+        organization.sso_enforced = True
+        await save_fixture(organization)
+        await save_fixture(
+            UserOrganization(
+                user=user, organization=organization, role=OrganizationRole.member
+            )
+        )
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "user",
+            "organizations": str(organization.id),
+        }
+        response = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"] == "invalid_request"
+
+    @pytest.mark.auth
+    async def test_sso_enforced_membership_still_issues_unrestricted_token(
+        self,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        oauth2_client: OAuth2Client,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+    ) -> None:
+        # No explicit selection still mints an unrestricted token; the enforced
+        # org is filtered at request time, not issuance, so there's no lockout.
+        organization.sso_enforced = True
+        await save_fixture(organization)
+        await save_fixture(
+            UserOrganization(
+                user=user, organization=organization, role=OrganizationRole.member
+            )
+        )
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "user",
+        }
+        response = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 302
+        code = parse_qs(urlparse(response.headers["location"]).query)["code"][0]
+
+        authorization_code = (
+            sync_session.execute(
+                select(OAuth2AuthorizationCode).where(
+                    OAuth2AuthorizationCode.code
+                    == get_token_hash(code, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert authorization_code.organization_scopes == []
 
 
 @pytest.mark.asyncio
@@ -1974,6 +2110,106 @@ class TestOAuth2Token:
         access_token = response.json()["access_token"]
         assert access_token.startswith("polar_at_u_")
 
+        oauth2_token = (
+            sync_session.execute(
+                select(OAuth2Token).where(
+                    OAuth2Token.access_token
+                    == get_token_hash(access_token, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert oauth2_token.organization_ids == frozenset({organization.id})
+
+    async def test_web_grant_sub_organization_sso_enforced_non_sso_session_forbidden(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        web_grant_oauth2_client: OAuth2Client,
+    ) -> None:
+        # An unscoped (non-SSO) session can't scope a token to an SSO-enforced org.
+        organization.sso_enforced = True
+        await save_fixture(organization)
+        await save_fixture(
+            UserOrganization(
+                user=user, organization=organization, role=OrganizationRole.member
+            )
+        )
+        token, token_hash = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
+        )
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes=set(Scope),
+            expires_at=utc_now() + timedelta(seconds=60),
+        )
+        await save_fixture(user_session)
+
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "client_id": web_grant_oauth2_client.client_id,
+            "client_secret": web_grant_oauth2_client.client_secret,
+            "sub_type": "organization",
+            "sub": str(organization.id),
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 400
+
+    async def test_web_grant_sub_organization_sso_enforced_within_sso_session(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        web_grant_oauth2_client: OAuth2Client,
+    ) -> None:
+        # An SSO-scoped session carries the enforced org, so it can still mint a
+        # token scoped to it.
+        organization.sso_enforced = True
+        await save_fixture(organization)
+        await save_fixture(
+            UserOrganization(
+                user=user, organization=organization, role=OrganizationRole.member
+            )
+        )
+        token, token_hash = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
+        )
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes=set(Scope),
+            expires_at=utc_now() + timedelta(seconds=60),
+            organization_scopes=[
+                UserSessionOrganization(organization_id=organization.id)
+            ],
+        )
+        await save_fixture(user_session)
+
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "client_id": web_grant_oauth2_client.client_id,
+            "client_secret": web_grant_oauth2_client.client_secret,
+            "sub_type": "organization",
+            "sub": str(organization.id),
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        access_token = response.json()["access_token"]
         oauth2_token = (
             sync_session.execute(
                 select(OAuth2Token).where(

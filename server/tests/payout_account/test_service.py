@@ -167,3 +167,28 @@ class TestDelete:
         stripe_service_mock.delete_account.assert_called_once_with(  # type: ignore[attr-defined]
             payout_account.stripe_id
         )
+
+    @pytest.mark.auth
+    async def test_successful_deletion_unlinked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        """Successfully deletes a payout account if forcing organization unlinking."""
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+
+        stripe_service_mock.account_exists.return_value = True  # type: ignore[attr-defined]
+        stripe_service_mock.retrieve_balance.return_value = ("usd", 0)  # type: ignore[attr-defined]
+        stripe_service_mock.delete_account.return_value = None  # type: ignore[attr-defined]
+
+        await payout_account_service.delete(session, payout_account, unlink=True)
+
+        stripe_service_mock.delete_account.assert_called_once_with(  # type: ignore[attr-defined]
+            payout_account.stripe_id
+        )

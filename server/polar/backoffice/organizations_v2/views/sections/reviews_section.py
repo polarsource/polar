@@ -9,7 +9,7 @@ from tagflow import tag, text
 
 from polar.models import Organization
 from polar.models.organization_agent_review import OrganizationAgentReview
-from polar.organization_review.schemas import ActorType
+from polar.organization_review.schemas import AUP_SECTION_LABELS, ActorType
 
 from ....components import card
 from ._shared import (
@@ -149,6 +149,23 @@ class ReviewsSection:
                                     classes="text-xs text-base-content/70 mt-1 whitespace-pre-wrap"
                                 ):
                                     text(human_feedback.reason)
+
+                            # Violated AUP section
+                            if human_feedback.violated_aup_section:
+                                with tag.div(classes="flex items-center gap-1 mt-1"):
+                                    with tag.span(
+                                        classes="text-xs font-medium text-error"
+                                    ):
+                                        text("Violated AUP: ")
+                                    with tag.span(
+                                        classes="text-xs text-base-content/70"
+                                    ):
+                                        text(
+                                            AUP_SECTION_LABELS.get(
+                                                human_feedback.violated_aup_section,
+                                                human_feedback.violated_aup_section.value,
+                                            )
+                                        )
                         else:
                             with tag.span(classes="text-sm text-base-content/40"):
                                 text("No human decision")

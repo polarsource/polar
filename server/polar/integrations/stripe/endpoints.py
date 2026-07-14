@@ -5,6 +5,7 @@ from starlette.responses import RedirectResponse
 
 from polar.config import settings
 from polar.external_event.service import external_event as external_event_service
+from polar.kit.http import get_safe_return_url
 from polar.models.external_event import ExternalEventSource
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
@@ -60,7 +61,7 @@ async def stripe_connect_refresh(
 ) -> RedirectResponse:
     if return_path is None:
         raise HTTPException(404)
-    return RedirectResponse(settings.generate_frontend_url(return_path))
+    return RedirectResponse(get_safe_return_url(return_path))
 
 
 class WebhookEventGetter:

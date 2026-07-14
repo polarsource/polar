@@ -51,6 +51,9 @@ services:
     expose:
       - "9000"
       - "9001"
+    ports:
+      - "9000:9000"
+      - "9001:9001"
     volumes:
       - minio_data:/minio
     environment:

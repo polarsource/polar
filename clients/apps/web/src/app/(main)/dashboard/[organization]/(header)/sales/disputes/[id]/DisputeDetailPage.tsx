@@ -50,11 +50,16 @@ interface Props {
 }
 
 const DisputeDetailPage = ({ organization, disputeId }: Props) => {
-  const { data: dispute, isLoading } = useDispute(disputeId)
-  const { data: order } = useOrder(dispute?.order_id)
+  const { data: dispute, isLoading: disputeLoading } = useDispute(disputeId)
+  const { data: order, isLoading: orderLoading } = useOrder(dispute?.order_id)
   const { data: thread, isLoading: threadLoading } = useSupportCase(
     dispute?.case_id ?? undefined,
   )
+
+  const isLoading =
+    disputeLoading ||
+    (dispute != null && orderLoading) ||
+    (dispute?.case_id != null && threadLoading)
 
   if (isLoading) {
     return (
@@ -112,8 +117,6 @@ const DisputeDetailPage = ({ organization, disputeId }: Props) => {
         )}
       </Box>
     )
-  } else if (dispute.case_id != null && threadLoading) {
-    body = <Spinner />
   } else if (hasResponded && dispute.case_id) {
     bodyClassName = 'min-h-0 flex-1'
     body = (

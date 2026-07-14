@@ -81,7 +81,7 @@ CHECKSUMS
 EOF
 
 # Stage 5: Final production image
-FROM --platform=$BUILDPLATFORM python:3.14-slim AS production
+FROM --platform=$BUILDPLATFORM python:3.14.6-slim AS production
 LABEL org.opencontainers.image.source=https://github.com/polarsource/polar
 LABEL org.opencontainers.image.description="Polar"
 LABEL org.opencontainers.image.licenses=Apache-2.0

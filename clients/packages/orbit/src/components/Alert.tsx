@@ -13,7 +13,6 @@ import { ButtonGroup, type ButtonGroupActions } from './ButtonGroup'
 import { Grid } from './Grid'
 import { GridItem } from './GridItem'
 import { Text, type TextColor } from './Text'
-import type { BackgroundColorToken } from '../tokens/semantics.stylex'
 
 export type AlertVariant = 'info' | 'warning' | 'danger' | 'success'
 
@@ -23,28 +22,23 @@ const variantStyles: Record<
   AlertVariant,
   {
     icon: LucideIcon
-    backgroundColor: BackgroundColorToken
     accentColor: TextColor
   }
 > = {
   info: {
     icon: Info,
-    backgroundColor: 'background-card',
     accentColor: 'default',
   },
   warning: {
     icon: TriangleAlert,
-    backgroundColor: 'background-warning',
     accentColor: 'warning',
   },
   danger: {
     icon: CircleAlert,
-    backgroundColor: 'background-danger',
     accentColor: 'danger',
   },
   success: {
     icon: CircleCheck,
-    backgroundColor: 'background-success',
     accentColor: 'success',
   },
 }
@@ -108,11 +102,7 @@ export const Alert = ({
   onDismiss,
   actions,
 }: AlertProps) => {
-  const {
-    icon: VariantIcon,
-    backgroundColor,
-    accentColor,
-  } = variantStyles[variant]
+  const { icon: VariantIcon, accentColor } = variantStyles[variant]
   const Icon = loading ? LoaderCircle : VariantIcon
 
   return (
@@ -121,7 +111,7 @@ export const Alert = ({
       columnGap="m"
       rowGap="xs"
       alignItems="center"
-      backgroundColor={backgroundColor}
+      backgroundColor="background-card"
       borderRadius="s"
       paddingVertical="l"
       paddingHorizontal="xl"
@@ -159,9 +149,7 @@ export const Alert = ({
       )}
       {description && (
         <GridItem colStart={2}>
-          <Text color={accentColor === 'default' ? 'muted' : accentColor}>
-            {description}
-          </Text>
+          <Text color="muted">{description}</Text>
         </GridItem>
       )}
       {actions && (

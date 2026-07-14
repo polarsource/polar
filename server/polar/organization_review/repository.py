@@ -30,6 +30,7 @@ from polar.models.webhook_endpoint import WebhookEndpoint
 from polar.organization_review.report import AnyAgentReport
 from polar.organization_review.schemas import (
     ActorType,
+    AUPSection,
     DecisionType,
     ReviewContext,
     ReviewVerdict,
@@ -252,6 +253,7 @@ class OrganizationReviewRepository(
         verdict: ReviewVerdict | None = None,
         risk_score: float | None = None,
         reason: str | None = None,
+        violated_aup_section: AUPSection | None = None,
         is_current: bool = True,
     ) -> OrganizationReviewFeedback:
         """Record a review decision (agent or human)."""
@@ -263,6 +265,7 @@ class OrganizationReviewRepository(
             verdict=verdict,
             risk_score=risk_score,
             reason=reason,
+            violated_aup_section=violated_aup_section,
             is_current=is_current,
             agent_review_id=agent_review_id,
             reviewer_id=reviewer_id,
@@ -278,6 +281,7 @@ class OrganizationReviewRepository(
         decision: DecisionType,
         review_context: ReviewContext | None = None,
         reason: str | None = None,
+        violated_aup_section: AUPSection | None = None,
     ) -> OrganizationReviewFeedback:
         """Record a human review decision with full context from the latest agent review.
 
@@ -318,6 +322,7 @@ class OrganizationReviewRepository(
             verdict=verdict,
             risk_score=risk_score,
             reason=reason,
+            violated_aup_section=violated_aup_section,
         )
 
     async def record_agent_decision(

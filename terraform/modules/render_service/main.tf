@@ -11,8 +11,9 @@ resource "render_env_group" "google" {
   environment_id = var.render_environment_id
   name           = "google-${var.environment}"
   env_vars = {
-    POLAR_GOOGLE_CLIENT_ID     = { value = var.google_secrets.client_id }
-    POLAR_GOOGLE_CLIENT_SECRET = { value = var.google_secrets.client_secret }
+    POLAR_GOOGLE_CLIENT_ID            = { value = var.google_secrets.client_id }
+    POLAR_GOOGLE_CLIENT_SECRET        = { value = var.google_secrets.client_secret }
+    POLAR_GOOGLE_SERVICE_ACCOUNT_JSON = { value = var.google_secrets.service_account_json }
   }
 }
 
@@ -142,13 +143,17 @@ resource "render_env_group" "worker_sqs" {
   count          = var.worker_sqs_config != null ? 1 : 0
   environment_id = var.render_environment_id
   name           = "worker-sqs-${var.environment}"
-  env_vars = {
-    POLAR_WORKER_SQS_ENABLED               = { value = var.worker_sqs_config.enabled }
-    POLAR_WORKER_SQS_ACTORS                = { value = var.worker_sqs_config.actors }
-    POLAR_WORKER_SQS_QUEUE_PREFIX          = { value = var.worker_sqs_config.queue_prefix }
-    POLAR_WORKER_SQS_AWS_ACCESS_KEY_ID     = { value = var.worker_sqs_config.aws_access_key_id }
-    POLAR_WORKER_SQS_AWS_SECRET_ACCESS_KEY = { value = var.worker_sqs_config.aws_secret_access_key }
-  }
+  env_vars = merge(
+    {
+      POLAR_WORKER_SQS_ENABLED      = { value = var.worker_sqs_config.enabled }
+      POLAR_WORKER_SQS_ACTORS       = { value = var.worker_sqs_config.actors }
+      POLAR_WORKER_SQS_QUEUE_PREFIX = { value = var.worker_sqs_config.queue_prefix }
+    },
+    var.worker_sqs_config.aws_access_key_id != null ? {
+      POLAR_WORKER_SQS_AWS_ACCESS_KEY_ID     = { value = var.worker_sqs_config.aws_access_key_id }
+      POLAR_WORKER_SQS_AWS_SECRET_ACCESS_KEY = { value = var.worker_sqs_config.aws_secret_access_key }
+    } : {}
+  )
 }
 
 resource "render_env_group" "github" {
@@ -172,6 +177,8 @@ resource "render_env_group" "stripe" {
     POLAR_STRIPE_CONNECT_WEBHOOK_SECRET = { value = var.stripe_secrets.connect_webhook_secret }
     POLAR_STRIPE_SECRET_KEY             = { value = var.stripe_secrets.secret_key }
     POLAR_STRIPE_WEBHOOK_SECRET         = { value = var.stripe_secrets.webhook_secret }
+    POLAR_STRIPE_APP_CLIENT_ID          = { value = var.stripe_secrets.app_client_id }
+    POLAR_STRIPE_APP_CLIENT_LINK_ID     = { value = var.stripe_secrets.app_client_link_id }
   }
 }
 
@@ -269,18 +276,28 @@ resource "render_env_group" "memory_profile" {
 resource "render_env_group" "database" {
   environment_id = var.render_environment_id
   name           = "database-${var.environment}"
-  env_vars = {
-    POLAR_POSTGRES_DATABASE      = { value = var.api_service_config.postgres_database }
-    POLAR_POSTGRES_HOST          = { value = var.postgres_config.host }
-    POLAR_POSTGRES_PORT          = { value = var.postgres_config.port }
-    POLAR_POSTGRES_USER          = { value = var.postgres_config.user }
-    POLAR_POSTGRES_PWD           = { value = var.postgres_config.password }
-    POLAR_POSTGRES_READ_DATABASE = { value = var.api_service_config.postgres_read_database }
-    POLAR_POSTGRES_READ_HOST     = { value = var.postgres_config.read_host }
-    POLAR_POSTGRES_READ_PORT     = { value = var.postgres_config.read_port }
-    POLAR_POSTGRES_READ_USER     = { value = var.postgres_config.read_user }
-    POLAR_POSTGRES_READ_PWD      = { value = var.postgres_config.read_password }
-  }
+  env_vars = merge(
+    {
+      POLAR_POSTGRES_DATABASE      = { value = var.api_service_config.postgres_database }
+      POLAR_POSTGRES_HOST          = { value = var.postgres_config.host }
+      POLAR_POSTGRES_PORT          = { value = var.postgres_config.port }
+      POLAR_POSTGRES_USER          = { value = var.postgres_config.user }
+      POLAR_POSTGRES_PWD           = { value = var.postgres_config.password }
+      POLAR_POSTGRES_READ_DATABASE = { value = var.api_service_config.postgres_read_database }
+      POLAR_POSTGRES_READ_HOST     = { value = var.postgres_config.read_host }
+      POLAR_POSTGRES_READ_PORT     = { value = var.postgres_config.read_port }
+      POLAR_POSTGRES_READ_USER     = { value = var.postgres_config.read_user }
+      POLAR_POSTGRES_READ_PWD      = { value = var.postgres_config.read_password }
+    },
+    var.postgres_config.host_fallback == null ? {} : {
+      POLAR_POSTGRES_HOST_FALLBACK = { value = var.postgres_config.host_fallback }
+      POLAR_POSTGRES_PORT_FALLBACK = { value = coalesce(var.postgres_config.port_fallback, var.postgres_config.port) }
+    },
+    var.postgres_config.read_host_fallback == null ? {} : {
+      POLAR_POSTGRES_READ_HOST_FALLBACK = { value = var.postgres_config.read_host_fallback }
+      POLAR_POSTGRES_READ_PORT_FALLBACK = { value = coalesce(var.postgres_config.read_port_fallback, var.postgres_config.read_port) }
+    },
+  )
 }
 
 resource "render_env_group" "redis" {

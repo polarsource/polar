@@ -35,6 +35,21 @@ updates:
         dependency-type: "development"
         patterns:
           - "*"
+  - package-ecosystem: "uv"
+    directory: "/lambda/image-resizer"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    groups:
+      image-resizer-production:
+        dependency-type: "production"
+        patterns:
+          - "*"
+      image-resizer-development:
+        dependency-type: "development"
+        patterns:
+          - "*"
   - package-ecosystem: "npm"
     directory: "/clients"
     schedule:

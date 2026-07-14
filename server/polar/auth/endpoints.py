@@ -23,11 +23,12 @@ from reauth.factors.totp import (
 from polar.auth.exceptions import (
     PolarAuthError,
     PolarAuthRedirectionError,
+    SessionNotFreshError,
     UnavailableFactorError,
 )
 from polar.auth.oauth2.github import get_github_factor
 from polar.auth.oauth2.google import get_google_factor
-from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWrite
+from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWriteFresh
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.models import UserSession as UserSession
 from polar.openapi import APITag
@@ -250,9 +251,13 @@ async def totp_status(
     return TOTPStatus(enabled=enrollment.enabled)
 
 
-@router.post("/totp", status_code=201)
+@router.post(
+    "/totp",
+    status_code=201,
+    responses={403: {"model": SessionNotFreshError.schema()}},
+)
 async def totp_enroll(
-    auth_subject: AuthorizeWebUserWrite,
+    auth_subject: AuthorizeWebUserWriteFresh,
     totp_factor: TOTPFactor = Depends(get_totp_factor),
 ) -> TOTPEnrollment:
     user = auth_subject.subject
@@ -271,10 +276,21 @@ async def totp_enroll(
     )
 
 
-@router.post("/totp/enable", status_code=202)
+@router.post(
+    "/totp/enable",
+    status_code=202,
+    responses={
+        403: {
+            "description": (
+                "Session is not fresh, TOTP factor not enrolled, or invalid TOTP code."
+            ),
+            "model": SessionNotFreshError.schema() | PolarAuthError.schema(),
+        }
+    },
+)
 async def totp_enable(
     enable: TOTPEnable,
-    auth_subject: AuthorizeWebUserWrite,
+    auth_subject: AuthorizeWebUserWriteFresh,
     totp_factor: TOTPFactor = Depends(get_totp_factor),
 ) -> None:
     user = auth_subject.subject
@@ -289,9 +305,13 @@ async def totp_enable(
     return None
 
 
-@router.delete("/totp", status_code=204)
+@router.delete(
+    "/totp",
+    status_code=204,
+    responses={403: {"model": SessionNotFreshError.schema()}},
+)
 async def totp_delete(
-    auth_subject: AuthorizeWebUserWrite,
+    auth_subject: AuthorizeWebUserWriteFresh,
     totp_factor: TOTPFactor = Depends(get_totp_factor),
     backup_codes_factor: BackupCodesFactor = Depends(get_backup_codes_factor),
 ) -> None:
@@ -354,9 +374,13 @@ async def backup_codes_status(
     )
 
 
-@router.post("/backup-codes", status_code=201)
+@router.post(
+    "/backup-codes",
+    status_code=201,
+    responses={403: {"model": SessionNotFreshError.schema()}},
+)
 async def backup_codes_enroll(
-    auth_subject: AuthorizeWebUserWrite,
+    auth_subject: AuthorizeWebUserWriteFresh,
     backup_codes_factor: BackupCodesFactor = Depends(get_backup_codes_factor),
 ) -> BackupCodesEnrollment:
     user = auth_subject.subject

@@ -3,7 +3,7 @@
 
 **Created**: 2026-06-15
 
-**Last Updated**: 2026-06-15
+**Last Updated**: 2026-07-01
 </Info>
 
 # Merchant Migrations to Polar
@@ -80,10 +80,55 @@ Subscriptions keep their real status (`active`/`trialing`) but are held from bil
 
 Polar will bill the next billing cycle. If for some reason the payment fails on the next billing cycle, the subscription will enter the normal dunning state where we send an email to the customer.
 
-On import we mirror the source's tax behavior per subscription:
+Before activating, we also decide each subscription's tax treatment and the customer's tax country. See the Taxes section below.
 
-- Source applies **exclusive** tax: import as exclusive, so Polar adds tax on top.
-- Source is **inclusive**, or applies **no tax**: import as inclusive, keeping the customer's current total. This means that the merchant absorbs the tax on their end.
+## Taxes
+
+Migrating billing to Polar changes who computes tax. Many merchants on other providers don't charge tax at all; once on Polar, tax applies, either added on top or absorbed, depending on the tax behavior. Two things must be decided per subscription at import: the **tax behavior** (inclusive/exclusive) and the **customer's tax country**.
+
+### Tax behavior
+
+We mirror the source's tax treatment per subscription so the customer's total doesn't jump. Each subscription falls into one of these buckets:
+
+- **Charges tax on top (exclusive):** import as exclusive, Polar keeps adding tax on top.
+- **Tax included in the price (inclusive):** import as inclusive, keeping the customer's current total.
+- **B2B reverse-charge / exempt:** the customer paid no tax because they're a VAT-registered business in another EU country (reverse charge) or are otherwise exempt, not because anyone absorbed it. Polar already supports reverse charge: it's not a stored flag but emergent from `Customer.tax_id` — Stripe Tax returns zero tax with `taxability_reason = reverse_charge` whenever a valid VAT ID from a different country is present. So the import action is just to **carry the source's VAT ID (Stripe `customer.tax_ids`, or `customer.tax_exempt = reverse`) onto `Customer.tax_id`**; reverse charge then re-derives itself at the first Polar renewal. Miss it and the customer gets re-taxed as B2C — a real new charge. (Note: Polar validates VAT ID format only, not VIES registry validity.)
+- **No tax at all (merchant never charged it):** import as inclusive, keeping the customer's current total, so the merchant absorbs the tax on their end. This one is a **silent revenue cliff**: as merchant of record Polar is broadly tax-registered, so tax gets carved *out* of a price the merchant used to keep in full (a €10 sub at 20% VAT nets ~€8.33). We should surface the per-merchant impact and make this an explicit merchant opt-in, not a silent default.
+
+Polar stores the resolved behavior on the subscription's `tax_behavior` (`inclusive`/`exclusive`), which overrides the product/price and org defaults, so a later change to those defaults doesn't shift an already-migrated subscription. (For reference, the org `location` default resolves to exclusive for `CA`/`IN`/`US` and inclusive elsewhere; we set the value explicitly rather than relying on it.)
+
+Two caveats:
+
+- **Inclusive/exclusive is an EU/VAT frame.** US sales tax is effectively always exclusive (added at checkout, destination-based with per-state nexus), so US customers should import as exclusive where there's nexus, not "inclusive, merchant absorbs".
+- **Pre-registration grandfathering.** Customers who subscribed before the merchant was tax-registered may need to stay untaxed rather than be retroactively taxed. Polar already has `subscription.tax_exempted` for exactly this; decide the policy per migration.
+
+Whatever the bucket, the change bites at the **first renewal on Polar**: an inclusive import lowers the merchant's net, an exclusive import raises the customer's charge (dunning/churn risk). Decide per bucket whether and how the customer is notified.
+
+### Customer country
+
+Polar computes tax **only** from `Customer.billing_address` — Stripe Tax is called with `address_source: "billing"`; the payment method and the customer IP are never consulted. `billing_address` is nullable, but when set, its `country` is required (the other lines are optional). So the minimum we need for correct tax is a country.
+
+If a customer has no country when a renewal is billed, tax silently resolves to **zero**: the renewal path swallows the tax failure and bills the customer untaxed. That's a correctness and compliance risk, not a hard error, so we must resolve the country **at import** rather than discover it at the first renewal.
+
+**The problem:** imported customers frequently arrive without a billing address. Merchants on other providers often never collected one, and PAN copy only carries the address that happened to be stored on the source (the customer's own `address`, or the card's `billing_details.address`); it's commonly null.
+
+**Decision (from RFC discussion):** when a source customer has no billing address, we ask the **merchant to confirm the country**, pre-filled with the card country as a default they can change. Order of preference for the default:
+
+1. Payment method `billing_details.address.country` (the cardholder's billing country) when present.
+2. `card.country` (the card **issuer** country) as a fallback default only.
+
+`card.country` is the issuer/bank country, not the cardholder's residence, and is a weak signal: a UK resident can hold a US-issued card. It is also not sufficient on its own for VAT place-of-supply (issuer country counts as at most one piece of evidence, and above €100k/year of cross-border B2C EU sales you need two non-contradictory pieces; below that, one suffices). We use it only as a pre-filled default the merchant reviews, never as a silent source of truth. Stripe itself only uses `card.country` to *supplement* an incomplete billing address, never alone.
+
+During extraction we can also read Stripe's auto-derived `customer.tax.location` (with a `source` of `billing_address` / `payment_method` / `ip_address` / `shipping_destination`) to pre-fill a better default. This is opportunistic, not reliable: `tax.location` is only populated for merchants who enabled Stripe Tax, and many migrating merchants never did. When `customer.tax.automatic_tax` is `unrecognized_location`, `failed`, or `not_collecting`, we can't trust a derived location and should fall back to merchant (or customer) confirmation.
+
+### Changing the country later
+
+We want to let the country be edited for **future** orders. Polar's customer update already supports changing `billing_address` (used by the next renewal), with two constraints worth noting:
+
+- Once a billing address is set, it can't be reset to null.
+- An existing order's country/state is immutable; tax is locked at order-creation time.
+
+So editing the country only affects renewals going forward, which is exactly the behavior we want.
 
 ## The sources
 
@@ -140,6 +185,7 @@ Before importing, we should run the following checks.
 - **Customers**
 	- Warning: duplicate emails (in case of manual creation), we will reuse the existing ones.
 	- Warning: if we reuse a Polar customer by email but PAN copy preserves the source `cus_…`, the copied card lands under a different customer. We should reconcile `stripe_customer_id` on reuse.
+	- Warning: no billing country (source had no address). We ask the merchant to confirm it; see *Taxes* for the defaults and why it matters.
 - **Subscriptions**
 	- Warning: mention subscriptions that are on trial.
 - **Payments**
@@ -218,12 +264,13 @@ Card move (PAN copy) and the subscription migration are described under *Moving 
 | Stripe | Polar | Notes |
 |---|---|---|
 | `cus_…` | new `Customer` + `stripe_customer_id` | PAN copy preserves `cus_…` (confirmed); `stripe_customer_id` is not DB-unique. |
-| email / name / address / tax id | `Customer` fields | unique per org by lower-cased email. |
+| email / name / address / tax id | `Customer` fields (`billing_address`, `tax_id`) | unique per org by lower-cased email. Carry over `tax_ids` / `tax_exempt` for B2B reverse-charge (see *Taxes*); default a missing country from the card. |
 | Product + Price (`unit_amount`, `currency`) | `Product` + `ProductPriceFixed` | |
 | `recurring.interval[_count]` | interval on the **`Product`** | recurrence lives on the product. |
 | `sub_…` | `user_metadata['stripe_subscription_id']` | a `legacy_stripe_subscription_id` column exists, but we're not using it. |
 | `items.data[].current_period_end`, `billing_cycle_anchor` | `current_period_end`, `anchor_day` | period moved onto the subscription **item** (API `2026-01-28.clover`); read it per item. `anchor_day` is day-of-month, so reduce the anchor timestamp. |
 | `trial_*`, `cancel_at_period_end`, `default_payment_method` | same fields | |
+| tax behavior (`default_tax_rates` / inclusive / none) | `subscription.tax_behavior` (+ `tax_exempted`) | set explicitly per source bucket at import (see *Taxes*). |
 | `discounts[]` (Coupon) | single `Discount` | not reliably on the sub object (came back empty on clover even when expanded). To be confirmed during implementation. |
 | `pm_…` (card) | `PaymentMethod` (`processor_id`) | copied via PAN copy; new `pm_…` id, same underlying card. |
 | Cards, ACH, SEPA `PaymentMethod` | `PaymentMethod` | copyable by PAN copy. |
@@ -250,12 +297,10 @@ On top of the generic ones in Appendix A. What's unique to Stripe:
 - **Warning:** `past_due` / `unpaid` - don't import.
 - **Warning:** in-flight refunds / open disputes on an invoice - don't import, the money is still moving on Stripe.
 
-### Connecting the source (Stripe App OAuth)
+### Connecting the source (merchant-pasted restricted key)
 
-The merchant connects Stripe by installing the Polar Stripe App (one-click OAuth); we never ask for a pasted API key. The access token Stripe returns is a restricted key bound to the merchant account, so it drops straight into the reader below. App permissions: `customer_read`, `product_read`, `plan_read`, `subscription_read`, `coupon_read`, `promotion_code_read`, `payment_method_read`, plus `subscription_write` for the cutover pause. The refund/dispute precheck additionally needs charge/invoice read (not in the POC app yet).
+The merchant pastes a Stripe **restricted API key** (`rk_…`) when creating the migration. We validate up front that it holds every required permission (by exercising each one — Stripe has no key-introspection endpoint), then store it encrypted (`EncryptedString`) and read the account with it directly. No OAuth, no Stripe App.
 
-Notes from building it (POC, validated in test mode):
-- Authorize URL is channel-scoped: `/oauth/v2/{chnlink_…}/authorize?client_id=ca_…&redirect_uri=…&state=…`. Omitting the `chnlink_` segment fails consent with "oauth client is not valid".
-- The token exchange authenticates as the account that owns the app (in prod, Polar's platform account).
-- The callback may arrive without `state` (Stripe-initiated installs); handle it (reconcile by account or require a Polar-initiated install).
-- Refresh tokens rotate on every refresh; persist the new one each time.
+We originally built a Polar Stripe App (one-click OAuth), but Stripe does **not** let a Connect platform account (which Polar is) own the public app that external-merchant OAuth requires. So we fell back to the pasted-restricted-key approach this doc's Appendix D always contemplated.
+
+Required permissions, validated before the migration is saved (matching what `extract()` reads plus the cutover pause): Customers, Products, Prices, Subscriptions (read **and write**), Payment methods. Coupons / promotion codes and charge / invoice reads will be added when discount import and the refund/dispute precheck land. Validation fails closed: a transient Stripe error rejects the key rather than accepting it unchecked.

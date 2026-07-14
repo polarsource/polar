@@ -63,7 +63,10 @@ export const SubscriptionDetailsGrid = ({
   } else if (subscription.ends_at) {
     nextEventDatetime = subscription.ends_at
     cancellationDate = subscription.ends_at
-  } else if (subscription.current_period_end) {
+  } else if (
+    subscription.status !== 'paused' &&
+    subscription.current_period_end
+  ) {
     nextEventDatetime = subscription.current_period_end
   }
 
@@ -126,11 +129,44 @@ export const SubscriptionDetailsGrid = ({
         )}
         {nextEventDatetime && (
           <DetailCell
-            label={subscription.ends_at ? 'Ending date' : 'Renewal date'}
+            label={
+              subscription.ends_at
+                ? 'Ending date'
+                : subscription.pause_at_period_end
+                  ? 'Pauses on'
+                  : 'Renewal date'
+            }
             value={
               <Text variant="body" as="span">
                 <FormattedDateTime datetime={nextEventDatetime} />
               </Text>
+            }
+          />
+        )}
+        {subscription.status === 'paused' && subscription.paused_at && (
+          <DetailCell
+            label="Paused on"
+            value={
+              <Text variant="body" as="span">
+                <FormattedDateTime datetime={subscription.paused_at} />
+              </Text>
+            }
+          />
+        )}
+        {(subscription.status === 'paused' ||
+          subscription.pause_at_period_end) && (
+          <DetailCell
+            label="Resumes on"
+            value={
+              subscription.resumes_at ? (
+                <Text variant="body" as="span">
+                  <FormattedDateTime datetime={subscription.resumes_at} />
+                </Text>
+              ) : (
+                <Text variant="body" as="span" color="muted">
+                  Until resumed
+                </Text>
+              )
             }
           />
         )}

@@ -1,8 +1,10 @@
 import uuid
+from datetime import timedelta
 
 import pytest
 from pytest_mock import MockerFixture
 
+from polar.kit.utils import utc_now
 from polar.models import Customer, Organization, Product, Subscription
 from polar.models.organization import OrganizationStatus
 from polar.models.subscription import SubscriptionStatus
@@ -13,6 +15,7 @@ from polar.subscription.tasks import (  # type: ignore[attr-defined]
     SubscriptionTierDoesNotExist,
     subscription_cancel_for_organization,
     subscription_enqueue_benefits_grants,
+    subscription_resume,
     subscription_service,
     subscription_update_product_benefits_grants,
 )
@@ -146,3 +149,106 @@ class TestSubscriptionEnqueueBenefitsGrants:
         await subscription_enqueue_benefits_grants(subscription.id)
 
         enqueue_benefits_grants_mock.assert_called_once()
+
+
+@pytest.mark.asyncio
+class TestSubscriptionResume:
+    async def test_not_existing_subscription(self, session: AsyncSession) -> None:
+        session.expunge_all()
+
+        with pytest.raises(SubscriptionDoesNotExist):
+            await subscription_resume(uuid.uuid4())
+
+    async def test_due_paused_subscription_is_resumed(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        subscription.resumes_at = utc_now() - timedelta(hours=1)
+        await save_fixture(subscription)
+        resume_mock = mocker.patch.object(
+            subscription_service, "resume", spec=SubscriptionService.resume
+        )
+        session.expunge_all()
+
+        await subscription_resume(subscription.id)
+
+        resume_mock.assert_called_once()
+
+    async def test_not_paused_subscription_is_skipped(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        resume_mock = mocker.patch.object(
+            subscription_service, "resume", spec=SubscriptionService.resume
+        )
+        session.expunge_all()
+
+        await subscription_resume(subscription.id)
+
+        resume_mock.assert_not_called()
+
+    async def test_indefinite_pause_is_skipped(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        resume_mock = mocker.patch.object(
+            subscription_service, "resume", spec=SubscriptionService.resume
+        )
+        session.expunge_all()
+
+        await subscription_resume(subscription.id)
+
+        resume_mock.assert_not_called()
+
+    async def test_postponed_resume_is_skipped(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+            scheduler_locked_at=utc_now(),
+        )
+        subscription.resumes_at = utc_now() + timedelta(days=1)
+        await save_fixture(subscription)
+        resume_mock = mocker.patch.object(
+            subscription_service, "resume", spec=SubscriptionService.resume
+        )
+        session.expunge_all()
+
+        await subscription_resume(subscription.id)
+
+        resume_mock.assert_not_called()

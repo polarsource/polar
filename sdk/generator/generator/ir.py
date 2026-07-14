@@ -224,6 +224,17 @@ class HTTPMethod(enum.StrEnum):
 type ResponseType = typing.Literal["json", "text", "none"]
 
 
+PAGINATION = "x-polar-pagination"
+type PaginationType = typing.Literal["page_limit"]
+
+
+class Pagination(BaseModel):
+    """Pagination metadata for a Method that returns a paginated list of items."""
+
+    type: PaginationType
+    item_schema: TypeRef
+
+
 class Method(BaseModel):
     """A single API endpoint grouped under a Service."""
 
@@ -238,6 +249,7 @@ class Method(BaseModel):
     response: TypeRef | None = None
     errors: list[ErrorResponse] = []
     deprecated: bool | None = None
+    pagination: Pagination | None = None
 
 
 class Service(BaseModel):
@@ -253,9 +265,9 @@ class Service(BaseModel):
     methods: list["Method"]
 
 
-class OpenAPIIR(BaseModel):
+class APIVersion(BaseModel):
     """
-    The root object produced by generate_ir.
+    A single version of an API, with its services and models.
 
     Contains all services and named schemas extracted from the spec. Only
     schemas actually referenced by operations are included.
@@ -267,12 +279,45 @@ class OpenAPIIR(BaseModel):
     Enums are shared across contexts and appear in a single list.
     """
 
+    version: str
     services: list[Service]
     input_models: list[Model]
     output_models: list[Model]
     enums: list[Enum]
     input_unions: list[NamedUnion]
     output_unions: list[NamedUnion]
+
+    @property
+    def all_models(self) -> list[Model]:
+        """All models, deduplicated, sorted alphabetically."""
+        seen: set[str] = set()
+        result: list[Model] = []
+        for m in self.input_models + self.output_models:
+            if m.name not in seen:
+                seen.add(m.name)
+                result.append(m)
+        return sorted(result, key=lambda m: m.name)
+
+    @property
+    def all_unions(self) -> list[NamedUnion]:
+        """All unions, deduplicated, sorted alphabetically."""
+        seen: set[str] = set()
+        result: list[NamedUnion] = []
+        for u in self.input_unions + self.output_unions:
+            if u.name not in seen:
+                seen.add(u.name)
+                result.append(u)
+        return sorted(result, key=lambda u: u.name)
+
+
+class APIIR(BaseModel):
+    """
+    The intermediate representation of our API specifications, generated from OpenAPI specs.
+
+    This IR is used to generate code for the SDK.
+    """
+
+    versions: list[APIVersion]
 
 
 type IsPrivateOperationFilter = typing.Callable[[op.Operation], bool]
@@ -886,7 +931,7 @@ def _topological_sort_unions(
     return result
 
 
-def generate_ir(
+def _generate_ir_version(
     spec: op.OpenAPI,
     *,
     is_private_operation: IsPrivateOperationFilter = _default_is_private_operation,
@@ -894,11 +939,9 @@ def generate_ir(
     get_method_name: MethodNameGetter = _default_get_method_name,
     normalize_model_name: ModelNameNormalizer = _default_model_name_normalizer,
     normalize_service_name: ServiceNameNormalizer = _default_service_name_normalizer,
-) -> OpenAPIIR:
+) -> APIVersion:
     """
-    Generate an intermediate representation of an OpenAPI specification.
-
-    This IR is used to generate code for the SDK.
+    Generate an intermediate representation of a single OpenAPI spec version.
     """
     services: list[Service] = []
 
@@ -1053,6 +1096,27 @@ def generate_ir(
                         )
                     )
 
+                pagination: Pagination | None = None
+                if operation.__pydantic_extra__ and operation.__pydantic_extra__.get(
+                    PAGINATION
+                ):
+                    pagination_extension = operation.__pydantic_extra__[PAGINATION]
+                    pagination_type = pagination_extension["type"]
+                    item_schema = _convert_typeref(
+                        op.Reference.model_validate(
+                            pagination_extension["item_schema"]
+                        ),
+                        component_schemas,
+                        inline_schemas,
+                        referenced_names,
+                        output_names,
+                        normalize_model_name=normalize_model_name,
+                    )
+                    pagination = Pagination(
+                        type=pagination_type,
+                        item_schema=item_schema,
+                    )
+
                 method = Method(
                     name=method_name,
                     description=operation.description or None,
@@ -1065,6 +1129,7 @@ def generate_ir(
                     response=response,
                     errors=errors,
                     deprecated=True if operation.deprecated else None,
+                    pagination=pagination,
                 )
                 current_service.methods.append(method)
 
@@ -1150,7 +1215,8 @@ def generate_ir(
                     normalize_model_name=normalize_model_name,
                 )
 
-    return OpenAPIIR(
+    return APIVersion(
+        version=spec.info.version,
         services=services,
         input_models=sorted(
             [m for name, m in models_dict.items() if name in input_names],
@@ -1164,3 +1230,28 @@ def generate_ir(
         input_unions=_topological_sort_unions(unions_dict, input_names),
         output_unions=_topological_sort_unions(unions_dict, output_names),
     )
+
+
+def generate_ir(
+    *specs: op.OpenAPI,
+    is_private_operation: IsPrivateOperationFilter = _default_is_private_operation,
+    get_service_key: ServiceKeyGetter = _default_get_service_key,
+    get_method_name: MethodNameGetter = _default_get_method_name,
+    normalize_model_name: ModelNameNormalizer = _default_model_name_normalizer,
+    normalize_service_name: ServiceNameNormalizer = _default_service_name_normalizer,
+) -> APIIR:
+    """
+    Generate an intermediate representation of a list of OpenAPI specs.
+    """
+    versions = [
+        _generate_ir_version(
+            spec,
+            is_private_operation=is_private_operation,
+            get_service_key=get_service_key,
+            get_method_name=get_method_name,
+            normalize_model_name=normalize_model_name,
+            normalize_service_name=normalize_service_name,
+        )
+        for spec in specs
+    ]
+    return APIIR(versions=versions)

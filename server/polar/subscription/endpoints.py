@@ -29,6 +29,8 @@ from polar.routing import APIRouter
 from . import auth, sorting
 from .schemas import Subscription as SubscriptionSchema
 from .schemas import (
+    SubscriptionChangePreview,
+    SubscriptionChangePreviewSeats,
     SubscriptionChargePreview,
     SubscriptionCreate,
     SubscriptionID,
@@ -36,6 +38,7 @@ from .schemas import (
 )
 from .service import (
     AlreadyCanceledSubscription,
+    NotASeatBasedSubscription,
     SubscriptionLocked,
     SubscriptionUpdateContext,
 )
@@ -228,15 +231,20 @@ async def get_charge_preview(
 
     For trialing subscriptions, shows what the first charge will be when the trial ends.
     For subscriptions set to cancel at period end, shows the final charge.
-    Only available for active or trialing subscriptions, including those set to cancel.
+    For paused subscriptions scheduled to auto-resume, shows the charge on resume.
+    Available for active, trialing, and paused-with-resume subscriptions.
     """
     subscription = await subscription_service.get(session, auth_subject, id)
 
     if subscription is None:
         raise ResourceNotFound()
 
-    # Allow active, trialing, and subscriptions set to cancel at period end
-    if subscription.status not in ("active", "trialing"):
+    # Allow active/trialing subscriptions, and paused subscriptions scheduled to
+    # auto-resume — they still have an upcoming charge when they resume.
+    is_resumable_pause = (
+        subscription.status == "paused" and subscription.resumes_at is not None
+    )
+    if subscription.status not in ("active", "trialing") and not is_resumable_pause:
         raise ResourceNotFound()
 
     # If subscription will end (cancel_at_period_end or ends_at), ensure there's still a charge coming
@@ -246,6 +254,56 @@ async def get_charge_preview(
             raise ResourceNotFound()
 
     return await subscription_service.calculate_charge_preview(session, subscription)
+
+
+@router.post(
+    "/{id}/change-preview",
+    summary="Preview Subscription Change",
+    response_model=SubscriptionChargePreview,
+    responses={
+        403: {"model": AlreadyCanceledSubscription.schema()},
+        400: {"model": NotASeatBasedSubscription.schema()},
+        404: SubscriptionNotFound,
+    },
+    tags=[APITag.private],
+)
+async def preview_change(
+    id: SubscriptionID,
+    change: SubscriptionChangePreview,
+    auth_subject: auth.SubscriptionsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionChargePreview:
+    """
+    Preview what a subscription change would cost, without applying it.
+
+    Returns the proration breakdown and the amount due today.
+    """
+    subscription = await subscription_service.get(session, auth_subject, id)
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    await assert_resource_permission(
+        session,
+        auth_subject,
+        subscription.product,
+        OrganizationPermission.sales_manage,
+    )
+
+    if isinstance(change, SubscriptionChangePreviewSeats):
+        return await subscription_service.calculate_change_preview(
+            session,
+            subscription,
+            seats=change.seats,
+            proration_behavior=change.proration_behavior,
+        )
+
+    return await subscription_service.calculate_change_preview(
+        session,
+        subscription,
+        product_id=change.product_id,
+        proration_behavior=change.proration_behavior,
+    )
 
 
 @router.post(

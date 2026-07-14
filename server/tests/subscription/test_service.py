@@ -4895,6 +4895,34 @@ class TestUpdateDiscount:
         assert event.customer_id == customer.id
         assert event.organization_id == customer.organization_id
 
+    async def test_fixed_discount_incompatible_currency(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"eur": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_discount(
+                    session, ctx, subscription, discount=discount.id
+                )
+
 
 @pytest.mark.asyncio
 class TestUpdateTrial:

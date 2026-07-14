@@ -1539,6 +1539,7 @@ class SubscriptionService:
             discount,
             subscription.organization,
             products=[product],
+            currency=subscription.currency,
         )
         if resolved_discount is None:
             raise PolarRequestValidationError(

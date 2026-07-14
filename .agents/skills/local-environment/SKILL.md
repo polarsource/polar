@@ -18,16 +18,17 @@ CLI. Use it to start, stop, debug, or reason about the local stack.
 of heavy infra:
 
 - **Shared infra** — one copy per machine, Docker project `polar-shared`:
-  postgres, redis, minio, tinybird, and optional prometheus/grafana. These
-  publish **no host ports**; they're reached by container name on the
-  `polar-shared` network. Use `dev docker exec <service> ...` to reach them.
+  postgres, redis, minio, tinybird, and optional prometheus/grafana. Postgres
+  and redis publish no host ports; MinIO exposes 9000/9001 for browser
+  uploads. Use `dev docker exec <service> ...` for services without host ports.
 - **Per-instance app stack** — one per worktree, project `polar-app-<N>`: api,
   worker, web. Only **api and web** publish host ports, offset per instance so
   worktrees don't collide.
 
 Knowing this prevents the most common confusion: there is no `localhost:5432`
-or MinIO console on a host port. The database lives in the shared stack and is
-reached through `dev docker exec db ...`.
+for the database (it lives in the shared stack and is reached through
+`dev docker exec db ...`). MinIO does expose ports 9000/9001 for browser
+uploads and console access.
 
 ## Instance auto-detection
 
@@ -84,7 +85,7 @@ the correct ports (it's gitignored, so regenerate after `set-instance`).
 | worker | `polar-app-<N>` | none | Background jobs |
 | db | `polar-shared` | none (`exec`) | PostgreSQL; DB `polar_dev_<N>` |
 | redis | `polar-shared` | none (`exec`) | Redis DB index = N |
-| minio | `polar-shared` | none (`exec`) | S3; buckets `polar-s3-<N>` |
+| minio | `polar-shared` | 9000, 9001 | S3; buckets `polar-s3-<N>`; console at 9001 |
 | tinybird | `polar-shared` | none (`exec`) | Analytics |
 | prometheus / grafana | `polar-shared` | none (`exec`) | `--monitoring` only |
 

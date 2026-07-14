@@ -1424,18 +1424,14 @@ async def deny_dialog(
             _parse_stripe_reject_reason(form_data)
         )
 
-        errors = [
-            message
-            for message in (
-                aup_error,
-                None
-                if override_reason
-                else "A reason is required when denying an organization.",
-                stripe_error,
-            )
-            if message
-        ]
-        error_message = " ".join(errors) if errors else None
+        errors = []
+        if aup_error:
+            errors.append(aup_error)
+        if not override_reason:
+            errors.append("A reason is required when denying an organization.")
+        if stripe_error:
+            errors.append(stripe_error)
+        error_message = " ".join(errors) or None
 
         if error_message is None:
             # Record review decision before denying
@@ -1490,7 +1486,7 @@ async def deny_dialog(
 
             if review_report:
                 risk_level = review_report.overall_risk_level.value
-                if review_report.verdict.value == ReviewVerdict.APPROVE.value:
+                if review_report.verdict == ReviewVerdict.APPROVE:
                     with tag.p(classes="text-sm text-error"):
                         text(
                             f"⚠️ Overriding AI recommendation "

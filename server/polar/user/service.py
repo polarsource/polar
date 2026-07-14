@@ -215,14 +215,12 @@ class UserService:
         if user is None:
             raise IdentityVerificationDoesNotExist(verification_session.id)
 
-        # Never downgrade a terminal status back to pending. Stripe delivers the
+        # Never downgrade a verified user back to pending. Stripe delivers the
         # `processing` event alongside the terminal one, and the two webhook tasks
         # can run concurrently; the row lock above serializes them, so here we
-        # read the committed status and skip if it's already verified or failed.
-        if user.identity_verification_status in (
-            IdentityVerificationStatus.verified,
-            IdentityVerificationStatus.failed,
-        ):
+        # read the committed status and skip if it's already verified. `failed`
+        # is not terminal: a user may retry, so `failed` -> `pending` is allowed.
+        if user.identity_verified:
             return user
 
         assert verification_session.status == "processing"
@@ -244,6 +242,12 @@ class UserService:
         )
         if user is None:
             raise IdentityVerificationDoesNotExist(verification_session.id)
+
+        # `verified` is the only absorbing state. Never un-verify a user: a late
+        # or redelivered `requires_input`/`canceled` webhook from an earlier
+        # attempt must not overwrite a status that has since become verified.
+        if user.identity_verified:
+            return user
 
         # TODO: should we send an email?
 

@@ -396,18 +396,22 @@ class TestIdentityVerificationPending:
             == IdentityVerificationStatus.verified
         )
 
-    async def test_does_not_downgrade_failed(
+    async def test_moves_failed_to_pending_on_retry(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         user: User,
     ) -> None:
-        user.identity_verification_id = "vs_failed_race"
+        """`failed` is not terminal. A user may retry on the same (reusable)
+        verification session, so a `processing` webhook must move them back to
+        `pending` — otherwise the status stays `failed` during reprocessing.
+        """
+        user.identity_verification_id = "vs_failed_retry"
         user.identity_verification_status = IdentityVerificationStatus.failed
         await save_fixture(user)
 
         verification_session = stripe_lib.identity.VerificationSession.construct_from(
-            {"id": "vs_failed_race", "status": "processing"}, None
+            {"id": "vs_failed_retry", "status": "processing"}, None
         )
 
         updated_user = await user_service.identity_verification_pending(
@@ -416,5 +420,57 @@ class TestIdentityVerificationPending:
 
         assert (
             updated_user.identity_verification_status
+            == IdentityVerificationStatus.pending
+        )
+
+
+@pytest.mark.asyncio
+class TestIdentityVerificationFailed:
+    async def test_sets_failed_from_pending(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        user.identity_verification_id = "vs_failed_test"
+        user.identity_verification_status = IdentityVerificationStatus.pending
+        await save_fixture(user)
+
+        verification_session = stripe_lib.identity.VerificationSession.construct_from(
+            {"id": "vs_failed_test", "status": "requires_input"}, None
+        )
+
+        updated_user = await user_service.identity_verification_failed(
+            session, verification_session
+        )
+
+        assert (
+            updated_user.identity_verification_status
             == IdentityVerificationStatus.failed
+        )
+
+    async def test_does_not_overwrite_verified(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        """A late or redelivered `requires_input`/`canceled` webhook from an
+        earlier attempt must not un-verify a user who has since verified.
+        """
+        user.identity_verification_id = "vs_verified_stale_fail"
+        user.identity_verification_status = IdentityVerificationStatus.verified
+        await save_fixture(user)
+
+        verification_session = stripe_lib.identity.VerificationSession.construct_from(
+            {"id": "vs_verified_stale_fail", "status": "requires_input"}, None
+        )
+
+        updated_user = await user_service.identity_verification_failed(
+            session, verification_session
+        )
+
+        assert (
+            updated_user.identity_verification_status
+            == IdentityVerificationStatus.verified
         )

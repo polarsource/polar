@@ -21,7 +21,7 @@ from polar.organization_review.thresholds import (
     thresholds_for_prompt,
 )
 
-from ....components import card
+from ....components import button, card
 from ....components._metric_card import Variant
 from ._shared import (
     RISK_LEVEL_BADGE,
@@ -577,11 +577,25 @@ class OverviewSection(ChecklistMixin):
     # ------------------------------------------------------------------
 
     @contextlib.contextmanager
-    def organization_profile_card(self) -> Generator[None]:
-        """Read-only org profile: website, details, social links."""
+    def organization_profile_card(self, request: Request) -> Generator[None]:
+        """Org profile: website, details, social links."""
         with card(bordered=True):
-            with tag.h2(classes="text-lg font-bold mb-4"):
-                text("Organization Profile")
+            with tag.div(classes="flex items-center justify-between mb-4"):
+                with tag.h2(classes="text-lg font-bold"):
+                    text("Organization Profile")
+                with button(
+                    variant="secondary",
+                    size="sm",
+                    ghost=True,
+                    hx_get=str(
+                        request.url_for(
+                            "organizations:edit_details",
+                            organization_id=self.org.id,
+                        )
+                    ),
+                    hx_target="#modal",
+                ):
+                    text("Edit")
 
             has_content = False
 
@@ -760,7 +774,7 @@ class OverviewSection(ChecklistMixin):
                 with self.setup_checklist_card(setup_data):
                     pass
 
-                with self.organization_profile_card():
+                with self.organization_profile_card(request):
                     pass
 
             yield

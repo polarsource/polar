@@ -1027,7 +1027,10 @@ async def get_organization_detail(
             elif section == "support_case":
                 case_rows = (
                     await session.execute(
-                        cases_statement(organization_id=organization.id)
+                        cases_statement(
+                            organization_id=organization.id,
+                            viewer_user_id=user_session.user_id,
+                        )
                     )
                 ).all()
                 support_cases_section = SupportCasesListSection(

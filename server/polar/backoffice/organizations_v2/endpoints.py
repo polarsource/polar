@@ -165,11 +165,8 @@ def _parse_violated_aup_section(
         return raw_section, None, "Invalid AUP section."
 
 
-# AUP sections whose violation is inherently deceptive, infringing, or harmful
-# (scams, counterfeits, piracy, malware, IP/data theft). These map to Stripe's
-# "fraud" reject reason; every other prohibited category maps to
-# "terms_of_service". "other" (risk of delinquency) is a payment-risk reason and
-# is never implied by an AUP section.
+# Deceptive or infringing sections (scams, counterfeits, piracy, malware, theft)
+# map to Stripe's "fraud" reason. Every other section maps to "terms_of_service".
 _FRAUD_AUP_SECTIONS: set[AUPSection] = {
     AUPSection.INTELLECTUAL_PROPERTY_INFRINGEMENT,
     AUPSection.UNAUTHORIZED_DATA_ACCESS,
@@ -242,13 +239,11 @@ def _prefill_aup_section(report: ReviewAgentReport | None) -> str | None:
     return None
 
 
-# Labels map to Stripe's own reject-dialog buckets; the values are the only ones
-# the Account.reject API accepts (fraud, terms_of_service, other). "Risk of
-# delinquency" has no dedicated API value, so it maps to "other".
+# Values are the only ones Stripe's Account.reject API accepts.
 _STRIPE_REJECT_REASON_OPTIONS: list[tuple[str, str]] = [
     ("Violates Stripe AUP / ToS", "terms_of_service"),
     ("Fraudulent", "fraud"),
-    ("Risk of delinquency", "other"),
+    ("Other", "other"),
 ]
 _STRIPE_REJECT_REASONS = {value for _, value in _STRIPE_REJECT_REASON_OPTIONS}
 

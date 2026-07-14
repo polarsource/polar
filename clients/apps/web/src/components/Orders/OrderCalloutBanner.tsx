@@ -6,7 +6,7 @@ import {
   isOrderNonRecoverable,
 } from '@/utils/order'
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
+import { Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { addDays, isPast, min, parseISO } from 'date-fns'
@@ -79,6 +79,36 @@ const ColumnHeading = ({
     {datetime ? (
       <Text variant="body">
         <FormattedDateTime resolution={resolution} datetime={datetime} />
+      </Text>
+    ) : null}
+  </Box>
+)
+
+const DeclineReasonBox = ({
+  declineMessage,
+  unrecoverable = false,
+}: {
+  declineMessage: string
+  unrecoverable?: boolean
+}) => (
+  <Box
+    flexDirection="column"
+    rowGap="xs"
+    backgroundColor="background-card"
+    borderRadius="s"
+    padding="l"
+  >
+    <Box alignItems="center" justifyContent="between" columnGap="s">
+      <Text variant="caption" color="muted">
+        Bank Decline Reason
+      </Text>
+      {unrecoverable ? <Pill color="red">Unrecoverable</Pill> : null}
+    </Box>
+    <Text>{declineMessage}</Text>
+    {unrecoverable ? (
+      <Text variant="caption" color="muted">
+        This reason is permanent — every retry fails the same way, so the card
+        can&apos;t be charged again.
       </Text>
     ) : null}
   </Box>
@@ -174,18 +204,7 @@ export const OrderCalloutBanner = ({
             resolution="time"
           />
           {declineMessage ? (
-            <Box
-              flexDirection="column"
-              rowGap="xs"
-              backgroundColor="background-card"
-              borderRadius="s"
-              padding="l"
-            >
-              <Text variant="caption" color="muted">
-                Bank Decline Reason
-              </Text>
-              <Text>{declineMessage}</Text>
-            </Box>
+            <DeclineReasonBox declineMessage={declineMessage} />
           ) : null}
         </BannerColumn>
 
@@ -213,18 +232,7 @@ export const OrderCalloutBanner = ({
             resolution="time"
           />
           {declineMessage ? (
-            <Box
-              flexDirection="column"
-              rowGap="xs"
-              backgroundColor="background-card"
-              borderRadius="s"
-              padding="l"
-            >
-              <Text variant="caption" color="muted">
-                Bank Decline Reason
-              </Text>
-              <Text>{declineMessage}</Text>
-            </Box>
+            <DeclineReasonBox declineMessage={declineMessage} unrecoverable />
           ) : null}
         </BannerColumn>
 
@@ -238,8 +246,8 @@ export const OrderCalloutBanner = ({
             datetime={revocationDeadline}
           />
           <Text>
-            This card can&apos;t be charged again. The subscription will be
-            canceled unless the customer updates their payment method.
+            The subscription will be canceled unless the customer updates their
+            payment method.
           </Text>
           <BenefitsRevocationText
             benefitsRevoked={benefitsRevoked}
@@ -260,18 +268,7 @@ export const OrderCalloutBanner = ({
           resolution="time"
         />
         {declineMessage ? (
-          <Box
-            flexDirection="column"
-            rowGap="xs"
-            backgroundColor="background-card"
-            borderRadius="s"
-            padding="l"
-          >
-            <Text variant="caption" color="muted">
-              Bank Decline Reason
-            </Text>
-            <Text>{declineMessage}</Text>
-          </Box>
+          <DeclineReasonBox declineMessage={declineMessage} />
         ) : null}
       </BannerColumn>
 

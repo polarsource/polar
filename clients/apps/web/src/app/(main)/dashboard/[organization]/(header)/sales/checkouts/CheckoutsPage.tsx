@@ -244,12 +244,14 @@ const ClientPage: React.FC<ClientPageProps> = ({
     <DashboardBody wide>
       <div className="flex flex-col gap-8">
         <div className="flex w-full flex-row items-center justify-between gap-2">
-          <div className="grid grid-cols-3 gap-4">
-            <Input
-              type="text"
-              placeholder="Filter by email"
-              onChange={(e) => setQuery(e.target.value)}
-            />
+          <div className="grid w-full grid-cols-2 gap-4 sm:w-auto sm:grid-cols-3">
+            <div className="col-span-2 sm:col-span-1">
+              <Input
+                type="text"
+                placeholder="Filter by email"
+                onChange={(e) => setQuery(e.target.value)}
+              />
+            </div>
             <CheckoutStatusSelect value={status || ''} onChange={setStatus} />
             <ProductSelect
               organization={organization}

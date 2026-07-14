@@ -2,7 +2,7 @@ from uuid import UUID
 
 from sqlalchemy import Select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.enums import PaymentProcessor
@@ -97,7 +97,7 @@ class DisputeRepository(
                 Payment.processor == processor,
                 Payment.processor_id == processor_payment_id,
             )
-            .options(*options)
+            .options(contains_eager(Dispute.payment), *options)
             .order_by(Dispute.created_at.asc())
             .limit(1)
         )
@@ -126,6 +126,7 @@ class DisputeRepository(
         return (
             self.get_base_statement()
             .join(Dispute.payment)
+            .options(contains_eager(Dispute.payment))
             .where(Payment.organization_id.in_(org_ids))
         )
 

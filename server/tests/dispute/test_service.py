@@ -263,6 +263,7 @@ class TestUpsertFromStripe:
         assert updated_dispute.status == DisputeStatus.won
         assert updated_dispute.payment_processor == PaymentProcessor.stripe
         assert updated_dispute.payment_processor_id == stripe_dispute.id
+        assert updated_dispute.payment == payment
 
         dispute_transaction_service_mock.create_dispute.assert_awaited_once_with(
             session, dispute=updated_dispute

@@ -48,7 +48,11 @@ class TypeScriptEmitter(EmitterBase):
             self.templates_dir / "oxfmt.config.ts", root_directory / "oxfmt.config.ts"
         )
         self.copy_file(self.templates_dir / "justfile", root_directory / "justfile")
-        self.copy_file(self.templates_dir / "README.md", root_directory / "README.md")
+        self.render_file(
+            "README.md",
+            root_directory / "README.md",
+            self.get_context(),
+        )
 
         self.render_file(
             "package.json",

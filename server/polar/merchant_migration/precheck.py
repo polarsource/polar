@@ -50,9 +50,8 @@ NON_IMPORTABLE_STATUSES = {
     CanonicalSubscriptionStatus.paused,
 }
 
-# Warning codes that mean a record won't be imported (it stays on the source),
-# grouped by the entity they apply to. Kept in sync with the `_check_*` methods
-# so the per-record classification below matches the report's warnings.
+# Codes whose warning means a record won't import, by entity. Keep in sync with
+# the `_check_*` methods so classification matches the report.
 PRODUCT_DROP_CODES = {"one_time_product", "unsupported_recurring_interval"}
 PRICE_DROP_CODES = {
     "unsupported_pricing_scheme",
@@ -292,9 +291,8 @@ class PrecheckEngine:
         products_by_name: dict[str, set[str]],
         existing_product_names: set[str],
     ) -> Iterable[PrecheckIssue]:
-        # Warn (don't block): the source product still imports, but as a new Polar
-        # product alongside the existing one. Mapping onto the existing product is
-        # a separate, merchant-driven step.
+        # Warn, don't block: the product still imports, as a new Polar product next
+        # to the existing one. Mapping onto it is a later, merchant-driven step.
         for name in products_by_name:
             if name.lower() in existing_product_names:
                 yield PrecheckIssue(
@@ -553,8 +551,7 @@ def _duplicate_customer_source_ids(
 def _product_items(
     products: Sequence[CanonicalProduct],
 ) -> list[MerchantMigrationRecordItem]:
-    # Classify with the importer's own plan so the report never promises a product
-    # the importer will later skip (e.g. one with no importable price).
+    # Use the importer's plan, so the report can't promise a product it will skip.
     plans = plan_product_imports(products)
     items: list[MerchantMigrationRecordItem] = []
     for product in products:
@@ -616,8 +613,7 @@ def _price_items(
 def _customer_items(
     customers: Sequence[CanonicalCustomer],
 ) -> list[MerchantMigrationRecordItem]:
-    # Classify with the importer's own plan so the report never promises a customer
-    # the importer will later skip (e.g. one with no email).
+    # Use the importer's plan, so the report can't promise a customer it will skip.
     plans = plan_customer_imports(customers)
     items: list[MerchantMigrationRecordItem] = []
     for customer in customers:
@@ -644,8 +640,7 @@ def _subscription_items(
     products: Sequence[CanonicalProduct],
     customers: Sequence[CanonicalCustomer],
 ) -> list[MerchantMigrationRecordItem]:
-    # Classify with the importer's own plan so the report matches the import;
-    # layer the display-only trialing warning on top.
+    # Use the importer's plan; add the display-only trialing warning on top.
     plans = plan_subscription_imports(subscriptions, products, customers)
     email_by_source = {c.source_id: c.email for c in customers if c.email}
     price_info = _price_info(products)

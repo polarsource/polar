@@ -50,7 +50,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/polar-sh/polar.git",
+    "url": "git+https://github.com/polarsource/polar.git",
     "directory": "sdk/typescript"
   }
 }

@@ -2,6 +2,7 @@ import math
 
 import structlog
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from polar.enums import PaymentProcessor
@@ -131,6 +132,15 @@ class DisputeTransactionService(BaseTransactionService):
             incurred_transactions=[],
         )
         session.add(dispute_transaction)
+        # Flush in a savepoint so a concurrent writer on the same dispute
+        # surfaces as the domain error instead of a double insert, while keeping
+        # the outer transaction usable for the caller.
+        try:
+            async with session.begin_nested():
+                await session.flush()
+        except IntegrityError as e:
+            raise DisputeTransactionAlreadyExistsError(dispute) from e
+
         dispute_fees = await processor_fee_transaction_service.create_dispute_fees(
             session,
             dispute=dispute,

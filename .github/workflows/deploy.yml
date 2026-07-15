@@ -132,11 +132,11 @@ jobs:
           echo "test_enabled=${enabled:-false}"
 
       # Four paths-filter invocations: one per component per env. We can't
-      # combine them because dorny/paths-filter@v4.0.1 uses a single base for
+      # combine them because dorny/paths-filter@v4.0.2 uses a single base for
       # all filters in one invocation, but our design requires the frontend
       # filter to diff against the frontend tag, not the backend tag.
       - name: Detect backend changes since last sandbox backend deploy
-        uses: dorny/paths-filter@v4.0.1
+        uses: dorny/paths-filter@v4.0.2
         id: filter-backend-sandbox
         with:
           base: ${{ steps.bases.outputs.backend-sandbox }}
@@ -150,7 +150,7 @@ jobs:
               - 'server/migrations/**'
 
       - name: Detect frontend changes since last sandbox frontend deploy
-        uses: dorny/paths-filter@v4.0.1
+        uses: dorny/paths-filter@v4.0.2
         id: filter-frontend-sandbox
         with:
           base: ${{ steps.bases.outputs.frontend-sandbox }}
@@ -161,7 +161,7 @@ jobs:
               - '.github/workflows/deploy-environment.yml'
 
       - name: Detect backend changes since last production backend deploy
-        uses: dorny/paths-filter@v4.0.1
+        uses: dorny/paths-filter@v4.0.2
         id: filter-backend-production
         with:
           base: ${{ steps.bases.outputs.backend-production }}
@@ -175,7 +175,7 @@ jobs:
               - 'server/migrations/**'
 
       - name: Detect frontend changes since last production frontend deploy
-        uses: dorny/paths-filter@v4.0.1
+        uses: dorny/paths-filter@v4.0.2
         id: filter-frontend-production
         with:
           base: ${{ steps.bases.outputs.frontend-production }}
@@ -205,7 +205,7 @@ jobs:
         uses: useblacksmith/setup-docker-builder@v1.9.0
 
       - name: Log in to the Container registry
-        uses: docker/login-action@v4.2.0
+        uses: docker/login-action@v4.4.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
@@ -213,7 +213,7 @@ jobs:
 
       - name: Docker meta
         id: meta
-        uses: docker/metadata-action@v6.1.0
+        uses: docker/metadata-action@v6.2.0
         with:
           images: |
             ghcr.io/polarsource/polar
@@ -264,7 +264,7 @@ jobs:
 
       - name: Configure AWS credentials (test)
         if: needs.changes.outputs.test-enabled == 'true'
-        uses: aws-actions/configure-aws-credentials@v6.2.1
+        uses: aws-actions/configure-aws-credentials@6.2.2
         with:
           role-to-assume: ${{ secrets.TEST_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -275,7 +275,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Configure AWS credentials (sandbox)
-        uses: aws-actions/configure-aws-credentials@v6.2.1
+        uses: aws-actions/configure-aws-credentials@6.2.2
         with:
           role-to-assume: ${{ secrets.SANDBOX_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -285,7 +285,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Configure AWS credentials (production)
-        uses: aws-actions/configure-aws-credentials@v6.2.1
+        uses: aws-actions/configure-aws-credentials@6.2.2
         with:
           role-to-assume: ${{ secrets.PRODUCTION_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -325,7 +325,7 @@ jobs:
       id-token: write
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6.2.1
+        uses: aws-actions/configure-aws-credentials@6.2.2
         with:
           role-to-assume: ${{ secrets.TEST_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -349,7 +349,7 @@ jobs:
       id-token: write
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6.2.1
+        uses: aws-actions/configure-aws-credentials@6.2.2
         with:
           role-to-assume: ${{ secrets.SANDBOX_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -373,7 +373,7 @@ jobs:
       id-token: write
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v6.2.1
+        uses: aws-actions/configure-aws-credentials@6.2.2
         with:
           role-to-assume: ${{ secrets.PRODUCTION_AWS_ROLE_ARN }}
           aws-region: us-east-2

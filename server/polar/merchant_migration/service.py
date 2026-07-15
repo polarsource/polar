@@ -12,13 +12,15 @@ from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
 from polar.kit.pagination import PaginationParams
-from polar.models import MerchantMigration
+from polar.models import MerchantMigration, MerchantMigrationRecord
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
+from polar.models.merchant_migration_record import MerchantMigrationRecordType
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
+from polar.product.repository import ProductRepository
 
 from .adapters import SourceAdapter, StripeAdapter
 from .canonical import CanonicalRecord, deserialize
@@ -34,6 +36,14 @@ from .schemas import (
     PrecheckRecordStatus,
     PrecheckReport,
 )
+
+# Entities whose records map 1:1 to a ledger row, so a listing item can carry its
+# record id for selection. Prices live inside a product record and are excluded.
+_ENTITY_RECORD_TYPE = {
+    PrecheckEntity.products: MerchantMigrationRecordType.product,
+    PrecheckEntity.customers: MerchantMigrationRecordType.customer,
+    PrecheckEntity.subscriptions: MerchantMigrationRecordType.subscription,
+}
 
 SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT = {
     "table": "merchant_migrations",
@@ -224,6 +234,9 @@ class MerchantMigrationService:
 
         adapter = await self._build_adapter(migration)
         source_account = await adapter.get_source_account()
+        existing_product_names = await ProductRepository.from_session(
+            session
+        ).get_active_names_by_organization(organization.id)
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         report = await precheck_engine.run(
             self._stage_records(
@@ -231,6 +244,7 @@ class MerchantMigrationService:
             ),
             organization,
             source_account,
+            existing_product_names,
         )
 
         repository = MerchantMigrationRepository.from_session(session)
@@ -266,24 +280,61 @@ class MerchantMigrationService:
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
         *,
-        entity: PrecheckEntity,
+        entity: PrecheckEntity | None,
         status: PrecheckRecordStatus | None,
+        needs_attention: bool = False,
         pagination: PaginationParams,
     ) -> tuple[Sequence[MerchantMigrationRecordItem], int]:
-        """Return the records of one entity type from the staged ledger,
-        classified importable/skipped and paginated in memory. Reads what
-        ``run_precheck`` persisted, so it never re-reads the source."""
+        """Return staged records classified importable/skipped and paginated in
+        memory. ``entity`` scopes to one type; ``None`` returns products, customers
+        and subscriptions together. ``status`` filters to importable or skipped;
+        ``needs_attention`` filters to importable rows carrying a warning. Reads
+        what ``run_precheck`` persisted."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
 
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         staged = await record_repository.list_by_migration(migration.id)
         records = [deserialize(record.type, record.canonical) for record in staged]
-        items = classify_records(records, entity)
+
+        entities = [entity] if entity is not None else list(_ENTITY_RECORD_TYPE)
+        items: list[MerchantMigrationRecordItem] = []
+        for entity_type in entities:
+            entity_items = classify_records(records, entity_type)
+            self._attach_record_ids(entity_items, staged, entity_type)
+            items.extend(entity_items)
+
         if status is not None:
             items = [item for item in items if item.status == status]
+        if needs_attention:
+            items = [
+                item
+                for item in items
+                if item.status == PrecheckRecordStatus.importable and item.reason
+            ]
 
         start = (pagination.page - 1) * pagination.limit
         return items[start : start + pagination.limit], len(items)
+
+    def _attach_record_ids(
+        self,
+        items: Sequence[MerchantMigrationRecordItem],
+        staged: Sequence[MerchantMigrationRecord],
+        entity: PrecheckEntity,
+    ) -> None:
+        """Give each item its ledger record id, so a row can be selected for
+        import. The 1:1 entities (products/customers/subscriptions) map to their
+        staged records in order — both derive from the same `staged` fetch. Prices
+        aren't their own record (they live in a product), so they keep a null id.
+        """
+        record_type = _ENTITY_RECORD_TYPE.get(entity)
+        if record_type is None:
+            return
+        staged_of_type = [record for record in staged if record.type == record_type]
+        if len(staged_of_type) != len(items):
+            return
+        for item, record in zip(items, staged_of_type, strict=True):
+            item.record_id = record.id
+            item.import_status = record.status
 
     async def _stage_records(
         self,

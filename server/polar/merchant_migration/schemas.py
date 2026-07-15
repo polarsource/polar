@@ -8,6 +8,7 @@ from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
+from polar.models.merchant_migration_record import MerchantMigrationRecordStatus
 
 
 class MerchantMigrationCreate(Schema):
@@ -70,14 +71,34 @@ class PrecheckReport(Schema):
 
 
 class MerchantMigrationRecordItem(Schema):
+    record_id: UUID4 | None = Field(
+        description=(
+            "The ledger record id, used to select this row for import. Null for "
+            "price rows, which are imported together with their product."
+        ),
+    )
     entity: PrecheckEntity = Field(description="The source entity type.")
     source_id: str = Field(description="The source identifier (e.g. Stripe `sub_…`).")
     title: str = Field(description="Primary label (name, email or product).")
     subtitle: str | None = Field(
-        description="Secondary detail (interval, amount, country, status)."
+        description="Secondary detail (lifecycle status, country)."
+    )
+    amount: int | None = Field(
+        description="Recurring price in minor units (cents), for priced rows.",
+    )
+    currency: str | None = Field(description="ISO currency for `amount`.")
+    recurring_interval: str | None = Field(
+        description="Billing interval for `amount` (e.g. `month`, `year`).",
     )
     status: PrecheckRecordStatus = Field(
         description="Whether this record will be imported or stays on the source."
+    )
+    import_status: MerchantMigrationRecordStatus | None = Field(
+        description=(
+            "The ledger status of this record: `pending` (not imported yet), "
+            "`imported`, `skipped` or `failed`. Null for price rows, which import "
+            "with their product."
+        ),
     )
     reason: str | None = Field(description="Why the record is skipped, if it is.")
     reason_code: str | None = Field(

@@ -127,14 +127,6 @@ class AuthenticationSessionService(AuthenticationSessionServiceBase):
             authentication_session, factors
         )
 
-    async def get_from_request(
-        self, request: Request
-    ) -> AuthenticationSessionDataclass:
-        token = request.cookies.get(settings.AUTHENTICATION_SESSION_COOKIE_KEY)
-        if token is None:
-            raise InvalidSessionTokenException()
-        return await self.get_by_token(token)
-
 
 async def get_authentication_session_service(
     session: AsyncSession = Depends(get_db_session),

@@ -25,7 +25,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useEffect } from 'react'
+import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 
@@ -83,14 +83,6 @@ const CancelSubscriptionModal = ({
   const stopsCollection =
     subscription.status === 'past_due' &&
     (cancelPreview?.stops_collection ?? false)
-
-  // A past-due subscription with no grace period is always cancelled
-  // immediately, so period-end cancellation isn't offered here.
-  useEffect(() => {
-    if (stopsCollection) {
-      setValue('cancellation_action', 'revoke')
-    }
-  }, [stopsCollection, setValue])
 
   const onSubmit = useCallback(
     async (cancellation: SubscriptionCancelForm) => {
@@ -196,10 +188,7 @@ const CancelSubscriptionModal = ({
                         </SelectTrigger>
                         <SelectContent>
                           <SelectItem value="revoke">Immediately</SelectItem>
-                          <SelectItem
-                            value="cancel_at_period_end"
-                            disabled={stopsCollection}
-                          >
+                          <SelectItem value="cancel_at_period_end">
                             End of current period
                             {periodEndOutput && (
                               <>

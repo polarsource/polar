@@ -16,15 +16,6 @@ from .forms import build_enqueue_task_form_class
 router = APIRouter()
 
 
-# class ExecutionTimeColumn(datatable.DatatableColumn[JobResult]):
-#     def render(self, request: Request, item: JobResult) -> None:
-#         execution_time = item.finish_time - item.start_time
-#         formatted_execution_time = format_decimal(
-#             execution_time.total_seconds(), locale="en_US"
-#         )
-#         text(formatted_execution_time)
-
-
 @router.get("/", name="tasks:list")
 async def list(
     request: Request,
@@ -32,25 +23,6 @@ async def list(
 ) -> None:
     items: Sequence[Any] = []
     if query:
-        cursor = 0
-        # while True:
-        #     cursor, keys = await arq_pool.scan(
-        #         cursor, f"{result_key_prefix}{query}*", count=500
-        #     )
-        #     for value in await arq_pool.mget(keys):
-        #         if value is not None:
-        #             try:
-        #                 items.append(
-        #                     deserialize_result(
-        #                         value, deserializer=arq_pool.job_deserializer
-        #                     )
-        #                 )
-        #             except DeserializationError:
-        #                 pass
-
-        #     if cursor == 0:
-        #         break
-
         items = sorted(items, key=attrgetter("enqueue_time"), reverse=True)
 
     with layout(
@@ -77,7 +49,6 @@ async def list(
             with datatable.Datatable[Any, Any](
                 datatable.DatatableDateTimeColumn("enqueue_time", "Enqueue Time"),
                 datatable.DatatableDateTimeColumn("start_time", "Start Time"),
-                # ExecutionTimeColumn("Execution Time"),
                 datatable.DatatableAttrColumn("function", "Name", clipboard=True),
                 datatable.DatatableAttrColumn("job_try", "Try"),
                 datatable.DatatableBooleanColumn("success", "Success"),

@@ -2,7 +2,7 @@
 
 import { Events } from '@/components/Events/Events'
 import MeterEventsTab from '@/components/Meter/MeterEventsTab'
-import { Spinner } from '@polar-sh/orbit'
+import { Grid, Spinner } from '@polar-sh/orbit'
 import { useEvents } from '@/hooks/queries/events'
 import { useMeterQuantities } from '@/hooks/queries/meters'
 import { ParsedMetricPeriod } from '@/hooks/queries/metrics'
@@ -219,7 +219,10 @@ const MeterActivityCards = ({ meter }: { meter: schemas['Meter'] }) => {
   })
 
   return (
-    <div className="flex flex-row gap-x-8">
+    <Grid
+      templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }}
+      gap="2xl"
+    >
       {[
         {
           title: 'Current Month',
@@ -243,7 +246,7 @@ const MeterActivityCards = ({ meter }: { meter: schemas['Meter'] }) => {
           endDate: dates.allTimeEnd,
         },
       ].map((card, i) => (
-        <Card key={i} className="flex-1 rounded-3xl">
+        <Card key={i} className="rounded-3xl">
           <CardHeader className="flex flex-col gap-y-0">
             <h3 className="text-lg">{card.title}</h3>
             <span className="dark:text-polar-500 text-gray-500">
@@ -272,6 +275,6 @@ const MeterActivityCards = ({ meter }: { meter: schemas['Meter'] }) => {
           </CardContent>
         </Card>
       ))}
-    </div>
+    </Grid>
   )
 }

@@ -11,7 +11,7 @@ from pydantic import (
 
 from polar.backoffice import forms
 from polar.enums import RateLimitGroup
-from polar.kit.schemas import HttpUrlToStr
+from polar.kit.schemas import EmptyStrToNone, HttpUrlToStr
 from polar.organization.schemas import NameInput, SlugInput
 
 
@@ -68,7 +68,7 @@ class UpdateRateLimitGroupForm(forms.BaseForm):
 
 class UpdateOrganizationDetailsDataForm(forms.BaseForm):
     about: Annotated[
-        str | None,
+        EmptyStrToNone,
         forms.TextAreaField(rows=4),
         Field(
             None,
@@ -77,7 +77,7 @@ class UpdateOrganizationDetailsDataForm(forms.BaseForm):
         ),
     ]
     product_description: Annotated[
-        str | None,
+        EmptyStrToNone,
         forms.TextAreaField(rows=4),
         Field(
             None,
@@ -86,7 +86,7 @@ class UpdateOrganizationDetailsDataForm(forms.BaseForm):
         ),
     ]
     intended_use: Annotated[
-        str | None,
+        EmptyStrToNone,
         forms.TextAreaField(rows=3),
         Field(
             None,

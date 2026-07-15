@@ -121,8 +121,8 @@ export const EventRow = ({
           depth === 0 && 'rounded-t-xl!',
         )}
       >
-        <div className="flex flex-row items-center justify-between gap-x-2 p-3 select-none">
-          <div className="flex min-w-0 flex-row items-center gap-x-2 sm:gap-x-4">
+        <div className="flex flex-row items-start justify-between gap-x-2 p-3 select-none sm:items-center">
+          <div className="flex min-w-0 flex-row items-start gap-x-2 sm:items-center sm:gap-x-4">
             {depth === 0 ? (
               <div className="dark:bg-polar-700 dark:hover:bg-polar-600 flex shrink-0 flex-row items-center justify-center rounded-sm border border-gray-200 bg-gray-100 p-1 transition-colors duration-150 hover:bg-gray-200 dark:border-white/5">
                 {isExpanded ? (
@@ -136,18 +136,22 @@ export const EventRow = ({
                 <div className="dark:bg-polar-500 size-1.5 rounded-full bg-gray-300" />
               </div>
             )}
-            <div className="flex min-w-0 flex-row flex-wrap items-center gap-x-2 gap-y-1 sm:gap-x-4">
-              <span className="truncate text-xs">{event.label}</span>
-              <EventSourceBadge source={event.source} />
-              {event.child_count > 0 && (
-                <span className="dark:text-polar-500 dark:bg-polar-700 text-xxs shrink-0 rounded-md bg-gray-100 px-2 py-1 text-gray-500 capitalize">
-                  {event.child_count}{' '}
-                  {event.child_count === 1 ? 'child' : 'children'}
+            <div className="flex min-w-0 flex-col gap-y-1 sm:flex-row sm:flex-wrap sm:items-center sm:gap-x-4">
+              <div className="flex min-w-0 flex-row items-center gap-x-2 sm:contents">
+                <span className="truncate text-xs">{event.label}</span>
+                <EventSourceBadge source={event.source} />
+              </div>
+              <div className="flex flex-row flex-wrap items-center gap-x-2 gap-y-1 sm:contents">
+                {event.child_count > 0 && (
+                  <span className="dark:text-polar-500 dark:bg-polar-700 text-xxs shrink-0 rounded-md bg-gray-100 px-2 py-1 text-gray-500 capitalize">
+                    {event.child_count}{' '}
+                    {event.child_count === 1 ? 'child' : 'children'}
+                  </span>
+                )}
+                <span className="dark:text-polar-500 text-xs whitespace-nowrap text-gray-500 capitalize">
+                  {formattedTimestamp}
                 </span>
-              )}
-              <span className="dark:text-polar-500 w-full text-xs whitespace-nowrap text-gray-500 capitalize sm:w-auto">
-                {formattedTimestamp}
-              </span>
+              </div>
             </div>
           </div>
           <div className="flex shrink-0 flex-row items-center gap-x-2 sm:gap-x-6">

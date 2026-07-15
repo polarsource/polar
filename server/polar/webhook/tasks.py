@@ -192,9 +192,9 @@ async def _webhook_event_send(
                 max_backoff=20 * 60_000,
             )
             raise Retry(delay=delay) from e
-    # Invalid Unicode codepoint in the URL hostname (e.g. em dash):
+    # Invalid IDN hostname in the URL (e.g. em dash, trailing hyphen):
     # permanently fail, no retry.
-    except idna.core.InvalidCodepoint as e:
+    except idna.IDNAError as e:
         bound_log.warning("Unexpected error while sending a webhook", error=e)
         delivery.succeeded = False
         event.succeeded = False

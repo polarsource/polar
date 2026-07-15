@@ -68,19 +68,19 @@ class UpdateRateLimitGroupForm(forms.BaseForm):
 
 class UpdateOrganizationDetailsDataForm(forms.BaseForm):
     about: Annotated[
-        str,
+        str | None,
         forms.TextAreaField(rows=4),
         Field(
-            min_length=1,
+            None,
             title="About",
             description="Brief information about you and your business",
         ),
     ]
     product_description: Annotated[
-        str,
+        str | None,
         forms.TextAreaField(rows=4),
         Field(
-            min_length=1,
+            None,
             title="Product Description",
             description="Description of digital products being sold",
         ),

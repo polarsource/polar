@@ -75,17 +75,15 @@ export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
   if (isIdentifiedCustomerEvent(event)) {
     return (
       <Popover>
-        <PopoverTrigger className="group block">
-          <div className="flex flex-row items-center gap-x-2 font-sans">
-            <div className="flex flex-row items-center gap-x-2 font-sans">
-              <Avatar
-                className="size-6 shrink-0"
-                name={event.customer.name ?? event.customer.email ?? '—'}
-                avatar_url={event.customer.avatar_url ?? null}
-              />
-              <div className="dark:text-polar-200 flex flex-row items-baseline gap-x-2 text-sm whitespace-nowrap text-gray-700">
-                {event.customer.name ?? event.customer.email ?? '—'}
-              </div>
+        <PopoverTrigger className="group block max-w-full min-w-0">
+          <div className="flex min-w-0 flex-row items-center gap-x-2 font-sans">
+            <Avatar
+              className="size-6 shrink-0"
+              name={event.customer.name ?? event.customer.email ?? '—'}
+              avatar_url={event.customer.avatar_url ?? null}
+            />
+            <div className="dark:text-polar-200 min-w-0 truncate text-left text-sm text-gray-700">
+              {event.customer.name ?? event.customer.email ?? '—'}
             </div>
           </div>
         </PopoverTrigger>

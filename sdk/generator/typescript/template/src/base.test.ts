@@ -1,5 +1,29 @@
 import { describe, expect, test } from "vitest";
-import { ClientBase } from "./base";
+import { ClientBase, resolveBaseUrl } from "./base";
+
+const servers = {
+  production: "https://api.polar.sh",
+  sandbox: "https://sandbox-api.polar.sh",
+};
+
+describe("resolveBaseUrl", () => {
+  test.each([
+    ["production", undefined, "https://api.polar.sh"],
+    ["sandbox", undefined, "https://sandbox-api.polar.sh"],
+    ["invalid", "http://localhost:8000", "http://localhost:8000"],
+  ])(
+    "resolves %s with override %s",
+    (environment, baseUrl, expected) => {
+      expect(resolveBaseUrl(servers, environment, baseUrl)).toBe(expected);
+    },
+  );
+
+  test("rejects invalid environments", () => {
+    expect(() => resolveBaseUrl(servers, "invalid")).toThrow(
+      'Invalid environment "invalid"',
+    );
+  });
+});
 
 const client = new ClientBase({
   baseUrl: "https://api.polar.sh",

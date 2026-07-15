@@ -1,9 +1,12 @@
 import builtins
+import collections.abc
 import types
 import typing
 
 import adaptix
 import httpx
+
+_EnvironmentT = typing.TypeVar("_EnvironmentT", bound=str)
 
 
 class PolarError(Exception):
@@ -41,6 +44,22 @@ class PolarRateLimitError(PolarClientError):
     def __init__(self, status_code: typing.Literal[429], retry_after: int | None = None):
         super().__init__(status_code, "Rate limit exceeded")
         self.retry_after = retry_after
+
+
+def resolve_base_url(
+    servers: collections.abc.Mapping[_EnvironmentT, str],
+    environment: _EnvironmentT,
+    base_url: str | None,
+) -> str:
+    if base_url is not None:
+        return base_url
+    try:
+        return servers[environment]
+    except KeyError as e:
+        environments = ", ".join(sorted(servers))
+        raise ValueError(
+            f"Invalid environment {environment!r}. Expected one of: {environments}."
+        ) from e
 
 
 class BuildRequestMixin:

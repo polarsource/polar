@@ -90,6 +90,7 @@ class PythonEmitter(EmitterBase):
             ("tests", "test_base.py"),
             (".python-version",),
             ("justfile",),
+            ("LICENSE",),
             ("pyproject.toml",),
             ("README.md",),
         }:

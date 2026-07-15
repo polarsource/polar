@@ -5,7 +5,7 @@
   "type": "module",
   "sideEffects": false,
   "files": [
-    "dist", "README.md"
+    "dist", "README.md", "LICENSE"
   ],
   "engines": { "node": ">=18" },
   "main": "dist/index.cjs",

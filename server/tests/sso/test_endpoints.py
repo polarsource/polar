@@ -462,6 +462,40 @@ class TestUpdateSSOConnection:
         assert response.json()["name"] == "Acme SSO"
 
     @pytest.mark.auth
+    async def test_null_configuration_is_ignored(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        sso_enabled_organization: Organization,
+        user_organization: UserOrganization,
+        sso_connection: OrganizationSSOConnection,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/sso-connections/{sso_connection.id}",
+            json={"name": "Acme SSO", "configuration": None},
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["name"] == "Acme SSO"
+        assert json["configuration"]["issuer"] == "https://idp.example.com"
+
+    @pytest.mark.auth
+    async def test_null_enabled_is_ignored(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        sso_enabled_organization: Organization,
+        user_organization: UserOrganization,
+        sso_connection: OrganizationSSOConnection,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/sso-connections/{sso_connection.id}",
+            json={"enabled": None},
+        )
+        assert response.status_code == 200
+        assert response.json()["enabled"] is True
+
+    @pytest.mark.auth
     async def test_not_existing(
         self,
         client: AsyncClient,

@@ -89,7 +89,11 @@ class OrganizationSSOConnectionService:
         ):
             raise LastSSOConnectionRequired()
         repository = OrganizationSSOConnectionRepository.from_session(session)
-        update_dict = update.model_dump(exclude_unset=True)
+        update_dict = {
+            field: value
+            for field, value in update.model_dump(exclude_unset=True).items()
+            if value is not None or field == "name"
+        }
         return await repository.update(connection, update_dict=update_dict)
 
     async def delete(

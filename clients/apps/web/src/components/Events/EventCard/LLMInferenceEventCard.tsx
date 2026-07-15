@@ -10,11 +10,13 @@ const DataRow = ({
   value: string | number
 }) => {
   return (
-    <div className="flex flex-row items-center gap-x-4">
-      <div className="flex w-48 flex-row items-center gap-x-4">
+    <div className="flex flex-row items-start gap-x-4">
+      <div className="flex w-32 shrink-0 flex-row items-center gap-x-4 sm:w-48">
         <span>{label}</span>
       </div>
-      <span className="dark:text-polar-500 text-gray-500">{value}</span>
+      <span className="dark:text-polar-500 min-w-0 break-all text-gray-500">
+        {value}
+      </span>
     </div>
   )
 }

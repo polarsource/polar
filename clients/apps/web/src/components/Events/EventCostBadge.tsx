@@ -73,7 +73,7 @@ export type EventCostBadgeProps =
 export const EventCostBadge = (props: EventCostBadgeProps) => {
   if ('nonCostEvent' in props && props.nonCostEvent) {
     return (
-      <div className="flex flex-row items-center gap-x-4 font-mono">
+      <div className="flex flex-row items-center gap-x-2 font-mono sm:gap-x-4">
         <EventCostIndicator type="neutral" />
       </div>
     )
@@ -83,7 +83,7 @@ export const EventCostBadge = (props: EventCostBadgeProps) => {
   const parsedNumber = Number(cost)
 
   return (
-    <div className="flex flex-row items-center gap-x-4 font-mono">
+    <div className="flex flex-row items-center gap-x-2 font-mono sm:gap-x-4">
       {formatCurrency('subcent')(parsedNumber, currency)}
       <EventCostIndicator type={cost === 0 ? 'neutral' : type} />
     </div>

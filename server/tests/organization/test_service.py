@@ -21,6 +21,7 @@ from polar.kit.http import UrlReachability
 from polar.models import (
     Customer,
     Organization,
+    PayoutAccount,
     Product,
     User,
     UserOrganization,
@@ -1237,6 +1238,43 @@ class TestDenyOrganization:
             account_id=organization.account_id,
         )
 
+    async def test_enqueues_stripe_reject_when_reason_given(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        stripe_payout_account: PayoutAccount,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.deny_organization(
+            session, organization, stripe_reject_reason="terms_of_service"
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "payout_account.reject_stripe_account",
+            payout_account_id=stripe_payout_account.id,
+            reason="terms_of_service",
+        )
+
+    async def test_does_not_enqueue_stripe_reject_by_default(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        stripe_payout_account: PayoutAccount,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.deny_organization(session, organization)
+
+        assert not any(
+            call.args and call.args[0] == "payout_account.reject_stripe_account"
+            for call in enqueue_job_mock.call_args_list
+        )
+
 
 @pytest.mark.asyncio
 class TestBlockOrganization:
@@ -1265,6 +1303,26 @@ class TestBlockOrganization:
         enqueue_job_mock.assert_any_call(
             "payout.cancel_account_payouts",
             account_id=organization.account_id,
+        )
+
+    async def test_enqueues_stripe_reject_when_reason_given(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        stripe_payout_account: PayoutAccount,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.block_organization(
+            session, organization, stripe_reject_reason="fraud"
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "payout_account.reject_stripe_account",
+            payout_account_id=stripe_payout_account.id,
+            reason="fraud",
         )
 
 

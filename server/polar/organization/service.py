@@ -26,6 +26,7 @@ from polar.exceptions import (
 )
 from polar.integrations.polar.service import billing_member_role
 from polar.integrations.polar.service import polar_self as polar_self_service
+from polar.integrations.stripe.service import StripeAccountRejectReason
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.http import check_url_reachable
@@ -1038,15 +1039,31 @@ class OrganizationService:
                 account_id=organization.account_id,
             )
 
+    def _enqueue_reject_stripe_account(
+        self, organization: Organization, reason: StripeAccountRejectReason
+    ) -> None:
+        """Reject the org's Stripe connected account when a human reviewer opts
+        in from the backoffice. Rejection is permanent on Stripe's side."""
+        if organization.payout_account_id is not None:
+            enqueue_job(
+                "payout_account.reject_stripe_account",
+                payout_account_id=organization.payout_account_id,
+                reason=reason,
+            )
+
     async def block_organization(
         self,
         session: AsyncSession,
         organization: Organization,
+        *,
+        stripe_reject_reason: StripeAccountRejectReason | None = None,
     ) -> Organization:
         """Block an organization by setting status to BLOCKED."""
         organization.set_status(OrganizationStatus.BLOCKED)
         session.add(organization)
         self._enqueue_cancel_pending_payouts(organization)
+        if stripe_reject_reason is not None:
+            self._enqueue_reject_stripe_account(organization, stripe_reject_reason)
         return organization
 
     async def confirm_organization_reviewed(
@@ -1327,12 +1344,18 @@ class OrganizationService:
         return confirmed is not None
 
     async def deny_organization(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        stripe_reject_reason: StripeAccountRejectReason | None = None,
     ) -> Organization:
         organization.set_status(OrganizationStatus.DENIED)
         session.add(organization)
 
         self._enqueue_cancel_pending_payouts(organization)
+        if stripe_reject_reason is not None:
+            self._enqueue_reject_stripe_account(organization, stripe_reject_reason)
 
         # If there's a pending appeal, mark it as rejected
         review_repository = OrganizationReviewRepository.from_session(session)

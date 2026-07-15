@@ -192,3 +192,46 @@ class TestDelete:
         stripe_service_mock.delete_account.assert_called_once_with(  # type: ignore[attr-defined]
             payout_account.stripe_id
         )
+
+
+@pytest.mark.asyncio
+class TestRejectStripeAccount:
+    async def test_rejects_existing_stripe_account(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        stripe_service_mock.account_exists.return_value = True  # type: ignore[attr-defined]
+
+        await payout_account_service.reject_stripe_account(
+            session, payout_account.id, "fraud"
+        )
+
+        stripe_service_mock.reject_account.assert_called_once_with(  # type: ignore[attr-defined]
+            payout_account.stripe_id, "fraud"
+        )
+
+    async def test_skips_when_stripe_account_missing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        stripe_service_mock.account_exists.return_value = False  # type: ignore[attr-defined]
+
+        await payout_account_service.reject_stripe_account(
+            session, payout_account.id, "terms_of_service"
+        )
+
+        stripe_service_mock.reject_account.assert_not_called()  # type: ignore[attr-defined]

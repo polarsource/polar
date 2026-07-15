@@ -33,8 +33,6 @@ export default {
       optional: 'Optioneel',
       apply: 'Toepassen',
       fieldRequired: 'Dit veld is verplicht',
-      addBusinessDetails: 'Bedrijfsgegevens toevoegen',
-      removeBusinessDetails: 'Bedrijfsgegevens verwijderen',
       billingDetails: 'Bedrijfsgegevens',
       addDiscountCode: 'Kortingscode toevoegen',
     },
@@ -46,20 +44,7 @@ export default {
       payWhatYouWant: 'Betaal wat je wilt',
       total: 'Totaal',
       additionalMeteredUsage: 'Extra verbruikskosten',
-      perUnit: '/ eenheid',
       discount: {
-        duration: {
-          months: {
-            '=1': 'voor de eerste maand',
-            other: 'voor de eerste # maanden',
-            _mode: 'plural',
-          },
-          years: {
-            '=1': 'voor het eerste jaar',
-            other: 'voor de eerste # jaar',
-            _mode: 'plural',
-          },
-        },
         until: 'Tot {date}',
       },
       everyInterval: {
@@ -111,29 +96,6 @@ export default {
       basePrice: 'Basisprijs',
     },
     trial: {
-      ends: 'Proefperiode eindigt op {endDate}',
-      duration: {
-        days: {
-          '=1': '# dag proefperiode',
-          other: '# dagen proefperiode',
-          _mode: 'plural',
-        },
-        weeks: {
-          '=1': '# week proefperiode',
-          other: '# weken proefperiode',
-          _mode: 'plural',
-        },
-        months: {
-          '=1': '# maand proefperiode',
-          other: '# maanden proefperiode',
-          _mode: 'plural',
-        },
-        years: {
-          '=1': '# jaar proefperiode',
-          other: '# jaar proefperiode',
-          _mode: 'plural',
-        },
-      },
       hero: {
         free: {
           day: {
@@ -161,11 +123,6 @@ export default {
         then: 'Daarna',
         startingDate: 'vanaf {date}',
       },
-      summary: {
-        totalWhenTrialEnds: 'Totaal na proefperiode',
-        totalWhenDiscountExpires: 'Totaal na afloop korting',
-        totalDueToday: 'Totaal vandaag te betalen',
-      },
     },
     pwywForm: {
       label: 'Kies een eerlijke prijs',
@@ -178,21 +135,7 @@ export default {
       oneTimePurchase: 'Eenmalige aankoop',
       fromPrefix: 'Vanaf',
     },
-    card: {
-      included: 'Inbegrepen',
-    },
     benefits: {
-      moreBenefits: {
-        '=1': '# extra voordeel',
-        other: '# extra voordelen',
-        _mode: 'plural',
-      },
-      showMoreBenefits: {
-        '=1': 'Toon # extra voordeel',
-        other: 'Toon # extra voordelen',
-        _mode: 'plural',
-      },
-      showLess: 'Toon minder',
       granting: 'Voordelen toekennen...',
       requestNewInvite: 'Nieuwe uitnodiging aanvragen',
       retryIn: {
@@ -281,15 +224,35 @@ export default {
     },
     productDescription: {
       readMore: 'Lees meer',
-      readLess: 'Lees minder',
+    },
+    trialUnavailable: {
+      title: 'Geen gratis proefperiode voor deze aankoop',
+      description:
+        'Je hebt al een gratis proefperiode voor dit product gebruikt, dus er wordt vandaag kosten in rekening gebracht. Ga hieronder verder om je aankoop af te ronden.',
     },
   },
   intervals: {
     short: {
-      day: 'dg',
-      week: 'wk',
-      month: 'mnd',
-      year: 'jr',
+      day: {
+        '=1': 'dg',
+        other: '# dg',
+        _mode: 'plural',
+      },
+      week: {
+        '=1': 'wk',
+        other: '# wk',
+        _mode: 'plural',
+      },
+      month: {
+        '=1': 'mnd',
+        other: '# mnd',
+        _mode: 'plural',
+      },
+      year: {
+        '=1': 'jr',
+        other: '# jr',
+        _mode: 'plural',
+      },
     },
   },
   benefitTypes: {

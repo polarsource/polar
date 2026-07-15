@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import Sequence
 from typing import Annotated
+from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import RedirectResponse
@@ -23,6 +24,7 @@ from polar.models.support_case import (
 )
 from polar.models.user_session import UserSession
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
+from polar.support_case.pdf import is_mergeable
 from polar.support_case.repository import (
     SupportCaseAttachmentRepository,
     SupportCaseMessageRepository,
@@ -31,12 +33,16 @@ from polar.support_case.repository import (
 from polar.support_case.service import support_case as support_case_service
 from polar.worker import enqueue_job
 
-from ..components import datatable, support_tier_badge
+from ..components import datatable, dispute_status_badge, support_tier_badge
 from ..components._tab_nav import Tab, tab_nav
 from ..dependencies import get_admin
 from ..layout import layout
-from ..organizations_v2.views.sections.support_case_section import SupportCaseSection
+from ..organizations_v2.views.sections.support_case_section import (
+    SupportCaseSection,
+    render_merged_pdfs_region,
+)
 from ..responses import HXRedirectResponse
+from ..toast import add_toast
 from .queries import TYPE_LABELS, Row, cases_statement
 from .urls import case_detail_url, is_safe_return_to
 
@@ -44,14 +50,34 @@ router = APIRouter()
 
 
 def _list_url(
-    request: Request, *, status: str, assigned: str, sort: str, case_type: str
+    request: Request,
+    *,
+    status: str,
+    assigned: str,
+    sort: str,
+    case_type: str,
+    self_service: str,
 ) -> str:
     base = str(request.url_for("support_cases:list"))
-    return f"{base}?status={status}&assigned={assigned}&sort={sort}&type={case_type}"
+    query = urlencode(
+        {
+            "status": status,
+            "assigned": assigned,
+            "sort": sort,
+            "type": case_type,
+            "self_service": self_service,
+        }
+    )
+    return f"{base}?{query}"
 
 
 def _list_tabs(
-    request: Request, status: str, assigned: str, sort: str, case_type: str
+    request: Request,
+    status: str,
+    assigned: str,
+    sort: str,
+    case_type: str,
+    self_service: str,
 ) -> list[Tab]:
     def url(new_status: str, new_assigned: str) -> str:
         return _list_url(
@@ -60,6 +86,7 @@ def _list_tabs(
             assigned=new_assigned,
             sort=sort,
             case_type=case_type,
+            self_service=self_service,
         )
 
     # Status (left) filters preserve the current assignment. The assignment
@@ -84,7 +111,12 @@ def _list_tabs(
 
 
 def _type_tabs(
-    request: Request, status: str, assigned: str, sort: str, case_type: str
+    request: Request,
+    status: str,
+    assigned: str,
+    sort: str,
+    case_type: str,
+    self_service: str,
 ) -> list[Tab]:
     def url(new_type: str) -> str:
         return _list_url(
@@ -93,6 +125,7 @@ def _type_tabs(
             assigned=assigned,
             sort=sort,
             case_type=new_type,
+            self_service=self_service,
         )
 
     return [
@@ -106,6 +139,40 @@ def _type_tabs(
             "Disputes",
             url=url(SupportCaseType.dispute.value),
             active=case_type == SupportCaseType.dispute.value,
+        ),
+    ]
+
+
+def _self_service_tabs(
+    request: Request,
+    status: str,
+    assigned: str,
+    sort: str,
+    case_type: str,
+    self_service: str,
+) -> list[Tab]:
+    def url(new_self_service: str) -> str:
+        return _list_url(
+            request,
+            status=status,
+            assigned=assigned,
+            sort=sort,
+            case_type=case_type,
+            self_service=new_self_service,
+        )
+
+    return [
+        Tab(
+            "All merchants",
+            url=url("all"),
+            active=self_service not in ("enabled", "disabled"),
+            extra_classes="ml-auto",
+        ),
+        Tab("Self-service", url=url("enabled"), active=self_service == "enabled"),
+        Tab(
+            "No self-service",
+            url=url("disabled"),
+            active=self_service == "disabled",
         ),
     ]
 
@@ -126,8 +193,7 @@ def _tier_sort_header(request: Request, sort: str) -> None:
     the current tab/assignment filters."""
     params = dict(request.query_params)
     params["sort"] = "recency" if sort == "tier" else "tier"
-    query = "&".join(f"{k}={v}" for k, v in params.items())
-    href = f"{request.url_for('support_cases:list')}?{query}"
+    href = f"{request.url_for('support_cases:list')}?{urlencode(params)}"
     with tag.a(href=href, classes="link link-hover"):
         text("Tier ↓" if sort == "tier" else "Tier")
 
@@ -157,6 +223,7 @@ def _render_table(request: Request, rows: Sequence[Row], sort: str) -> None:
                     assignee_email,
                     _awaiting_platform,
                     unread,
+                    dispute_status,
                 ) in rows:
                     case_url = str(
                         request.url_for("support_cases:detail", case_id=case.id)
@@ -178,6 +245,8 @@ def _render_table(request: Request, rows: Sequence[Row], sort: str) -> None:
                         with tag.td():
                             with tag.div(classes="flex items-center gap-2"):
                                 _status_badge(is_open)
+                                if dispute_status is not None:
+                                    dispute_status_badge(dispute_status)
                                 if unread:
                                     with tag.span(
                                         classes="tooltip text-warning",
@@ -275,15 +344,9 @@ async def reply_case(
 
     form_data = await request.form()
     body = str(form_data.get("body", "")).strip()
-    # Force the message to be internal when there's no live merchant channel:
-    # disputes have no staff ↔ merchant reply channel yet, and a closed case is
-    # internal-notes-only (a merchant-facing message would email the merchant
-    # with no accessible thread to follow up in).
-    internal = (
-        bool(form_data.get("internal"))
-        or case.type == SupportCaseType.dispute
-        or not is_open
-    )
+    # A closed case is internal-notes-only: a merchant-facing message would
+    # email the merchant with no accessible thread to follow up in.
+    internal = bool(form_data.get("internal")) or not is_open
 
     if body:
         audience = [] if internal else [SupportCaseAudience.merchant]
@@ -323,6 +386,98 @@ async def download_attachment(
         raise HTTPException(status_code=404, detail="Attachment not found")
     url, _ = file_service.generate_download_url(attachment.file)
     return RedirectResponse(url)
+
+
+@router.post(
+    "/{case_id}/attachments/merge",
+    name="support_cases:attachments_merge",
+    response_model=None,
+)
+async def merge_case_attachments(
+    request: Request,
+    case_id: UUID4,
+    session: AsyncSession = Depends(get_db_read_session),
+    user_session: UserSession = Depends(get_admin),
+) -> None:
+    """Enqueue the merge and respond with the region in its pending,
+    self-polling state."""
+    del user_session
+    form_data = await request.form()
+    attachments = await SupportCaseAttachmentRepository.from_session(
+        session
+    ).list_by_case(case_id)
+    merged_files = [a for a in attachments if a.message_id is None]
+
+    try:
+        selected_ids = {
+            uuid.UUID(str(raw)) for raw in form_data.getlist("attachment_ids")
+        }
+    except ValueError:
+        await add_toast(request, "Invalid attachment id.", "error")
+        return render_merged_pdfs_region(request, case_id, merged_files)
+    if not selected_ids:
+        await add_toast(request, "Select at least one attachment.", "error")
+        return render_merged_pdfs_region(request, case_id, merged_files)
+
+    selected = [a for a in attachments if a.id in selected_ids]
+    if len(selected) != len(selected_ids):
+        await add_toast(
+            request,
+            "Attachment not found — reload the page and try again.",
+            "error",
+        )
+        return render_merged_pdfs_region(request, case_id, merged_files)
+    unmergeable = [a.file.name for a in selected if not is_mergeable(a.file.mime_type)]
+    if unmergeable:
+        await add_toast(
+            request,
+            f"Cannot merge into PDF: {', '.join(unmergeable)}",
+            "error",
+        )
+        return render_merged_pdfs_region(request, case_id, merged_files)
+
+    enqueue_job(
+        "support_case.merge_attachments",
+        case_id=case_id,
+        attachment_ids=[attachment.id for attachment in selected],
+    )
+    render_merged_pdfs_region(
+        request,
+        case_id,
+        merged_files,
+        expected=len(merged_files) + 1,
+        merging=len(selected),
+    )
+
+
+@router.get(
+    "/{case_id}/attachments/merged",
+    name="support_cases:attachments_merged_partial",
+    response_model=None,
+)
+async def merged_attachments_partial(
+    request: Request,
+    case_id: UUID4,
+    expected: Annotated[int, Query(ge=0)] = 0,
+    merging: Annotated[int, Query(ge=0)] = 0,
+    attempts: Annotated[int, Query(ge=0)] = 0,
+    session: AsyncSession = Depends(get_db_read_session),
+    user_session: UserSession = Depends(get_admin),
+) -> None:
+    """The "Merged PDFs" region, polled while a merge is running."""
+    del user_session
+    attachments = await SupportCaseAttachmentRepository.from_session(
+        session
+    ).list_by_case(case_id)
+    merged_files = [a for a in attachments if a.message_id is None]
+    render_merged_pdfs_region(
+        request,
+        case_id,
+        merged_files,
+        expected=expected or None,
+        merging=merging or None,
+        attempts=attempts,
+    )
 
 
 @router.get("/{case_id}", name="support_cases:detail")
@@ -373,6 +528,7 @@ async def case_detail(
         author_emails=author_emails,
         current_user_id=user_session.user_id,
         attachments_by_message=attachments_by_message,
+        attachments=attachments,
         dispute=dispute,
         return_to=return_to if is_safe_return_to(return_to) else None,
     )
@@ -410,6 +566,7 @@ async def list_cases(
     assigned: Annotated[str, Query()] = "all",
     sort: Annotated[str, Query()] = "recency",
     type: Annotated[str, Query()] = "all",
+    self_service: Annotated[str, Query()] = "all",
     session: AsyncSession = Depends(get_db_read_session),
     user_session: UserSession = Depends(get_admin),
 ) -> None:
@@ -419,6 +576,7 @@ async def list_cases(
         assigned_user_id=user_session.user_id,
         viewer_user_id=user_session.user_id,
         case_type=type,
+        self_service=self_service,
         sort=sort,
     )
     count = (
@@ -442,9 +600,16 @@ async def list_cases(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.h1(classes="text-4xl"):
                 text("Cases")
-            with tab_nav(_list_tabs(request, status, assigned, sort, type)):
+            with tab_nav(
+                _list_tabs(request, status, assigned, sort, type, self_service)
+            ):
                 pass
-            with tab_nav(_type_tabs(request, status, assigned, sort, type)):
+            with tab_nav(
+                _type_tabs(request, status, assigned, sort, type, self_service)
+                + _self_service_tabs(
+                    request, status, assigned, sort, type, self_service
+                )
+            ):
                 pass
             if rows:
                 _render_table(request, rows, sort)

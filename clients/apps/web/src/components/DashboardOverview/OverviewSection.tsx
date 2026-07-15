@@ -1,7 +1,6 @@
 'use client'
 
 import { MetricGroup } from '@/components/Metrics/dashboards/MetricGroup'
-import { SubscriptionMetricsTaxAlert } from '@/components/Metrics/SubscriptionMetricsTaxAlert'
 import { Modal } from '@polar-sh/orbit'
 import { useMetrics } from '@/hooks/queries'
 import { useChartRange } from '@/hooks/useChartRange'
@@ -31,13 +30,11 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
   const { isShown, show, hide } = useMetricSelectorModal()
 
   const initialMetrics = React.useMemo<(keyof schemas['Metrics'])[]>(() => {
-    const stored = organization.feature_settings?.overview_metrics
-    if (stored?.length === 5) {
-      return stored.filter((slug) =>
-        ALL_METRICS.some((m) => m.slug === slug),
-      ) as (keyof schemas['Metrics'])[]
-    }
-    return DEFAULT_OVERVIEW_METRICS
+    const stored = organization.feature_settings?.overview_metrics ?? []
+    const valid = stored.filter((slug) =>
+      ALL_METRICS.some((m) => m.slug === slug),
+    ) as (keyof schemas['Metrics'])[]
+    return valid.length > 0 ? valid : DEFAULT_OVERVIEW_METRICS
   }, [organization.feature_settings?.overview_metrics])
 
   const [activeMetrics, setActiveMetrics] =
@@ -83,7 +80,6 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
           </Button>
         </div>
       </div>
-      <SubscriptionMetricsTaxAlert organization={organization} />
       <MetricGroup
         data={data}
         metricKeys={activeMetrics}

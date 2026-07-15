@@ -1,11 +1,11 @@
 from generator.ir import (
+    APIVersion,
     ArrayType,
     EnumRef,
     LiteralType,
     MapType,
     ModelRef,
     NullableType,
-    OpenAPIIR,
     PrimitiveType,
     TypeRef,
     UnionRef,
@@ -33,26 +33,26 @@ def _convert_literal_type(literal: LiteralType) -> str:
 
 
 def collect_enum_imports(
-    type_ref: TypeRef, enum_imports: set[str], ir: OpenAPIIR
+    type_ref: TypeRef, enum_imports: set[str], version: APIVersion
 ) -> None:
     if isinstance(type_ref, EnumRef):
         enum_imports.add(type_ref.name)
     elif isinstance(type_ref, NullableType):
-        collect_enum_imports(type_ref.inner, enum_imports, ir)
+        collect_enum_imports(type_ref.inner, enum_imports, version)
     elif isinstance(type_ref, ArrayType):
-        collect_enum_imports(type_ref.items, enum_imports, ir)
+        collect_enum_imports(type_ref.items, enum_imports, version)
     elif isinstance(type_ref, MapType):
-        collect_enum_imports(type_ref.value_type, enum_imports, ir)
+        collect_enum_imports(type_ref.value_type, enum_imports, version)
         if type_ref.key_type is not None:
-            collect_enum_imports(type_ref.key_type, enum_imports, ir)
+            collect_enum_imports(type_ref.key_type, enum_imports, version)
     elif isinstance(type_ref, UnionType):
         for variant in type_ref.variants:
-            collect_enum_imports(variant, enum_imports, ir)
+            collect_enum_imports(variant, enum_imports, version)
     elif isinstance(type_ref, UnionRef):
-        for union in ir.input_unions + ir.output_unions:
+        for union in version.input_unions + version.output_unions:
             if union.name == type_ref.name:
                 for variant in union.variants:
-                    collect_enum_imports(variant, enum_imports, ir)
+                    collect_enum_imports(variant, enum_imports, version)
                 break
 
 

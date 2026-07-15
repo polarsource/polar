@@ -405,7 +405,10 @@ sellers. False approvals can expose Polar to risk. Balance both.
 
 SUBMISSION_PREAMBLE = """\
 This is a SUBMISSION review. The user just created their organization, submitted their details. \
-No Stripe account, payments, or products exist yet. \
+Some merchants may already have created products, connected a payout account, set up an integration \
+(API keys, webhooks, checkout URLs), or verified their identity; when such signals are present, treat \
+them as corroborating evidence of a legitimate business. Their absence is normal at this stage and is \
+NOT a reason to deny. \
 Assess only: POLICY_COMPLIANCE, PRODUCT_LEGITIMACY, IDENTITY_TRUST. \
 Skip FINANCIAL_RISK and SETUP_READINESS — set those to LOW risk with confidence 0. \
 Identity verification is NOT expected at this stage — unverified identity is normal and should NOT be flagged. \
@@ -613,6 +616,17 @@ Examples for APPROVE:
 - "Your appeal has been accepted. Your organization has been approved to sell on Polar."
 """
 
+POLICY_NOTE = (
+    "The policy below is a live internal working document. It may contain "
+    "authoring scaffolding — a title banner, reading guide, TODOs, editorial "
+    "comments, assessment dates, section-status labels (e.g. Hard/Soft AUP), "
+    "and links to Slack or the backoffice. Treat that scaffolding as context, "
+    "not as rules: base your decision on the actual prohibited/allowed "
+    "categories and their documented reasoning (Context/Why, Examples, "
+    "Nuances). Where a note records a decision or exception, honor it; where "
+    "it is an unresolved question or TODO, do not treat it as settled policy."
+)
+
 
 def _annotate_domains(domains: list[str]) -> str:
     """Join domain names, tagging known service domains for the AI agent."""
@@ -671,7 +685,7 @@ class ReviewAnalyzer:
         timeout_seconds: int = 60,
         policy_override: str | None = None,
     ) -> tuple[ReviewAgentReport, UsageInfo]:
-        policy_content = policy_override or fetch_policy_content()
+        policy_content = policy_override or await fetch_policy_content()
 
         prompt = self._build_prompt(snapshot)
 
@@ -685,7 +699,7 @@ class ReviewAnalyzer:
             ReviewContext.PRODUCT_CHANGED: THRESHOLD_PREAMBLE,
         }.get(context)
 
-        policy_block = f"## Acceptable Use Policy\n\n{policy_content}"
+        policy_block = f"## Acceptable Use Policy\n\n{POLICY_NOTE}\n\n{policy_content}"
         instructions = f"{preamble}\n\n{policy_block}" if preamble else policy_block
 
         try:
@@ -698,7 +712,7 @@ class ReviewAnalyzer:
                     timeout=timeout_seconds,
                 )
             usage = UsageInfo.from_agent_usage(
-                result.usage(), self.model_provider, self.model_name
+                result.usage, self.model_provider, self.model_name
             )
             return result.output, usage
         except Exception as e:
@@ -786,101 +800,94 @@ class ReviewAnalyzer:
                     f"(overriding the catalog price): {products.adhoc_prices_count}"
                 )
 
-        # Setup & Integration Signals (only for threshold/manual/product-changed reviews)
+        # Setup & Integration Signals
         setup = snapshot.setup
-        if snapshot.context in (
-            ReviewContext.THRESHOLD,
-            ReviewContext.MANUAL,
-            ReviewContext.PRODUCT_CHANGED,
-        ):
-            parts.append("\n## Setup & Integration Signals")
+        parts.append("\n## Setup & Integration Signals")
 
-            if setup.checkout_success_urls.unique_urls:
-                parts.append(
-                    f"Checkout Success URLs ({len(setup.checkout_success_urls.unique_urls)}):"
-                )
-                for url in setup.checkout_success_urls.unique_urls:
-                    parts.append(f"  - {url}")
-                parts.append(
-                    f"Success URL Domains: {', '.join(setup.checkout_success_urls.domains)}"
-                )
-                if setup.checkout_success_urls.redirect_results:
-                    redirected = [
-                        r
-                        for r in setup.checkout_success_urls.redirect_results
-                        if r.redirected
-                    ]
-                    if redirected:
-                        parts.append(
-                            "⚠️ SUCCESS URL REDIRECT DETECTED — these URLs redirect "
-                            "to a DIFFERENT domain:"
-                        )
-                        for r in redirected:
-                            parts.append(
-                                f"  - {r.original_url} → REDIRECTS TO: "
-                                f"{r.final_url} (domain: {r.final_domain})"
-                            )
-            else:
-                parts.append("No custom checkout success URLs configured.")
-
-            if setup.checkout_return_urls.unique_urls:
-                parts.append(
-                    f"Checkout Return URLs ({len(setup.checkout_return_urls.unique_urls)}):"
-                )
-                for url in setup.checkout_return_urls.unique_urls:
-                    parts.append(f"  - {url}")
-                parts.append(
-                    f"Return URL Domains: {', '.join(setup.checkout_return_urls.domains)}"
-                )
-                if setup.checkout_return_urls.redirect_results:
-                    redirected = [
-                        r
-                        for r in setup.checkout_return_urls.redirect_results
-                        if r.redirected
-                    ]
-                    if redirected:
-                        parts.append(
-                            "⚠️ RETURN URL REDIRECT DETECTED — these URLs redirect "
-                            "to a DIFFERENT domain:"
-                        )
-                        for r in redirected:
-                            parts.append(
-                                f"  - {r.original_url} → REDIRECTS TO: "
-                                f"{r.final_url} (domain: {r.final_domain})"
-                            )
-            else:
-                parts.append("No custom checkout return URLs configured.")
-
-            if setup.checkout_links.total_links > 0:
-                parts.append(
-                    f"Checkout Links: {setup.checkout_links.total_links} total, "
-                    f"{setup.checkout_links.links_without_benefits} without benefits"
-                )
-                for link in setup.checkout_links.links[:20]:
-                    products_str = (
-                        ", ".join(link.product_names)
-                        if link.product_names
-                        else "no products"
+        if setup.checkout_success_urls.unique_urls:
+            parts.append(
+                f"Checkout Success URLs ({len(setup.checkout_success_urls.unique_urls)}):"
+            )
+            for url in setup.checkout_success_urls.unique_urls:
+                parts.append(f"  - {url}")
+            parts.append(
+                f"Success URL Domains: {', '.join(setup.checkout_success_urls.domains)}"
+            )
+            if setup.checkout_success_urls.redirect_results:
+                redirected = [
+                    r
+                    for r in setup.checkout_success_urls.redirect_results
+                    if r.redirected
+                ]
+                if redirected:
+                    parts.append(
+                        "⚠️ SUCCESS URL REDIRECT DETECTED — these URLs redirect "
+                        "to a DIFFERENT domain:"
                     )
-                    benefits_flag = (
-                        "has benefits" if link.has_benefits else "NO benefits"
-                    )
-                    label_str = f" [{link.label}]" if link.label else ""
-                    parts.append(f"  - {products_str}{label_str} ({benefits_flag})")
-            else:
-                parts.append("No checkout links created.")
+                    for r in redirected:
+                        parts.append(
+                            f"  - {r.original_url} → REDIRECTS TO: "
+                            f"{r.final_url} (domain: {r.final_domain})"
+                        )
+        else:
+            parts.append("No custom checkout success URLs configured.")
 
-            parts.append(f"API Keys: {setup.integration.api_key_count}")
-            if setup.integration.webhook_endpoints:
-                parts.append(f"Webhooks ({len(setup.integration.webhook_endpoints)}):")
-                for ep in setup.integration.webhook_endpoints:
-                    status = "enabled" if ep.enabled else "DISABLED"
-                    parts.append(f"  - {ep.url} ({status})")
-                parts.append(
-                    f"Webhook Domains: {_annotate_domains(setup.integration.webhook_domains)}"
+        if setup.checkout_return_urls.unique_urls:
+            parts.append(
+                f"Checkout Return URLs ({len(setup.checkout_return_urls.unique_urls)}):"
+            )
+            for url in setup.checkout_return_urls.unique_urls:
+                parts.append(f"  - {url}")
+            parts.append(
+                f"Return URL Domains: {', '.join(setup.checkout_return_urls.domains)}"
+            )
+            if setup.checkout_return_urls.redirect_results:
+                redirected = [
+                    r
+                    for r in setup.checkout_return_urls.redirect_results
+                    if r.redirected
+                ]
+                if redirected:
+                    parts.append(
+                        "⚠️ RETURN URL REDIRECT DETECTED — these URLs redirect "
+                        "to a DIFFERENT domain:"
+                    )
+                    for r in redirected:
+                        parts.append(
+                            f"  - {r.original_url} → REDIRECTS TO: "
+                            f"{r.final_url} (domain: {r.final_domain})"
+                        )
+        else:
+            parts.append("No custom checkout return URLs configured.")
+
+        if setup.checkout_links.total_links > 0:
+            parts.append(
+                f"Checkout Links: {setup.checkout_links.total_links} total, "
+                f"{setup.checkout_links.links_without_benefits} without benefits"
+            )
+            for link in setup.checkout_links.links[:20]:
+                products_str = (
+                    ", ".join(link.product_names)
+                    if link.product_names
+                    else "no products"
                 )
-            else:
-                parts.append("No webhook endpoints configured.")
+                benefits_flag = "has benefits" if link.has_benefits else "NO benefits"
+                label_str = f" [{link.label}]" if link.label else ""
+                parts.append(f"  - {products_str}{label_str} ({benefits_flag})")
+        else:
+            parts.append("No checkout links created.")
+
+        parts.append(f"API Keys: {setup.integration.api_key_count}")
+        if setup.integration.webhook_endpoints:
+            parts.append(f"Webhooks ({len(setup.integration.webhook_endpoints)}):")
+            for ep in setup.integration.webhook_endpoints:
+                status = "enabled" if ep.enabled else "DISABLED"
+                parts.append(f"  - {ep.url} ({status})")
+            parts.append(
+                f"Webhook Domains: {_annotate_domains(setup.integration.webhook_domains)}"
+            )
+        else:
+            parts.append("No webhook endpoints configured.")
 
         # Website Content
         if snapshot.website:

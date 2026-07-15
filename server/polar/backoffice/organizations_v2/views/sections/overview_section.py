@@ -21,12 +21,13 @@ from polar.organization_review.thresholds import (
     thresholds_for_prompt,
 )
 
-from ....components import card
+from ....components import button, card
 from ....components._metric_card import Variant
 from ._shared import (
     RISK_LEVEL_BADGE,
     ChecklistMixin,
     render_checklist_row,
+    render_review_context_badge,
 )
 
 
@@ -52,24 +53,6 @@ class OverviewSection(ChecklistMixin):
     # ------------------------------------------------------------------
     # Full-width: Organization Review card (primary content)
     # ------------------------------------------------------------------
-
-    _REVIEW_CONTEXT_LABELS: dict[str, str] = {
-        "submission": "Submission",
-        "setup_complete": "Setup Complete",
-        "threshold": "Threshold",
-        "manual": "Manual",
-        "product_changed": "Product Changed",
-    }
-
-    def _render_review_context_badge(self, review_type: str | None) -> None:
-        """Render a small badge showing the review trigger context."""
-        if not review_type:
-            return
-        label = self._REVIEW_CONTEXT_LABELS.get(
-            review_type, review_type.replace("_", " ").title()
-        )
-        with tag.div(classes="badge badge-ghost badge-sm badge-outline gap-1"):
-            text(label)
 
     @staticmethod
     def _render_dimension_card(dim: DimensionAssessment) -> None:
@@ -244,7 +227,7 @@ class OverviewSection(ChecklistMixin):
                 with tag.div(classes="flex items-center gap-2"):
                     with tag.h2(classes="text-lg font-bold"):
                         text("Organization Review")
-                    self._render_review_context_badge(ar.review_type)
+                    render_review_context_badge(ar.review_type)
                 if self.agent_reviewed_at:
                     with tag.span(classes="text-xs text-base-content/60"):
                         text(self.agent_reviewed_at.strftime("%Y-%m-%d %H:%M UTC"))
@@ -594,11 +577,25 @@ class OverviewSection(ChecklistMixin):
     # ------------------------------------------------------------------
 
     @contextlib.contextmanager
-    def organization_profile_card(self) -> Generator[None]:
-        """Read-only org profile: website, details, social links."""
+    def organization_profile_card(self, request: Request) -> Generator[None]:
+        """Org profile: website, details, social links."""
         with card(bordered=True):
-            with tag.h2(classes="text-lg font-bold mb-4"):
-                text("Organization Profile")
+            with tag.div(classes="flex items-center justify-between mb-4"):
+                with tag.h2(classes="text-lg font-bold"):
+                    text("Organization Profile")
+                with button(
+                    variant="secondary",
+                    size="sm",
+                    ghost=True,
+                    hx_get=str(
+                        request.url_for(
+                            "organizations:edit_details",
+                            organization_id=self.org.id,
+                        )
+                    ),
+                    hx_target="#modal",
+                ):
+                    text("Edit")
 
             has_content = False
 
@@ -777,7 +774,7 @@ class OverviewSection(ChecklistMixin):
                 with self.setup_checklist_card(setup_data):
                     pass
 
-                with self.organization_profile_card():
+                with self.organization_profile_card(request):
                     pass
 
             yield

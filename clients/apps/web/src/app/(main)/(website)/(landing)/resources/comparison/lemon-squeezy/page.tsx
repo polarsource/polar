@@ -3,9 +3,10 @@ import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Polar vs Lemon Squeezy',
-  description: 'Comparing Polar and Lemon Squeezy',
+  description:
+    'Polar vs Lemon Squeezy: compare two Merchant of Record platforms for developers, including open-source billing, usage-based pricing and transaction fees.',
   keywords:
-    'polar vs lemon squeezy, lemon squeezy, polar, comparison, pricing, pricing for polar, pricing for polar, pricing for polar',
+    'polar vs lemon squeezy, lemon squeezy alternative, merchant of record, saas billing, digital products',
   openGraph: {
     siteName: 'Polar',
     type: 'website',

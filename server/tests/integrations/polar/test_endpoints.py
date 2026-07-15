@@ -264,9 +264,9 @@ class TestWebhook:
     async def test_unhandled_event_type_is_ignored(
         self, client: AsyncClient, enqueue_mock: AsyncMock
     ) -> None:
-        # subscription.canceled is a valid (parseable) Polar event type, but
+        # subscription.uncanceled is a valid (parseable) Polar event type, but
         # not in IMPLEMENTED_WEBHOOKS.
-        body, headers = _sign(_subscription_event("subscription.canceled"))
+        body, headers = _sign(_subscription_event("subscription.uncanceled"))
 
         response = await client.post(WEBHOOK_URL, content=body, headers=headers)
 
@@ -332,15 +332,30 @@ class TestWebhook:
         assert call.args[2] == "polar_self.webhook.order.created"
         assert call.kwargs["delay"] == 60_000
 
-    async def test_subscription_revoked_is_ignored(
+    @pytest.mark.parametrize(
+        "event_type",
+        [
+            "subscription.canceled",
+            "subscription.past_due",
+            "subscription.revoked",
+        ],
+    )
+    async def test_subscription_event_is_enqueued_without_delay(
         self,
         client: AsyncClient,
         enqueue_mock: AsyncMock,
+        event_type: str,
     ) -> None:
-        payload = _subscription_event("subscription.revoked")
-        body, headers = _sign(payload, msg_id="msg_subscription.revoked")
+        payload = _subscription_event(event_type)
+        body, headers = _sign(payload, msg_id=f"msg_{event_type}")
 
         response = await client.post(WEBHOOK_URL, content=body, headers=headers)
 
         assert response.status_code == 202
-        enqueue_mock.assert_not_awaited()
+        enqueue_mock.assert_awaited_once()
+        call = enqueue_mock.await_args
+        assert call is not None
+        assert call.args[2] == f"polar_self.webhook.{event_type}"
+        assert call.args[3] == f"msg_{event_type}"
+        assert call.args[4] == payload
+        assert call.kwargs["delay"] is None

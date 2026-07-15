@@ -6,9 +6,13 @@ from httpx import AsyncClient, ReadError
 from polar.file.repository import FileRepository
 from polar.file.s3 import S3_SERVICES
 from polar.integrations.aws.s3.exceptions import S3FileError
-from polar.models import Organization
+from polar.models import Organization, UserOrganization
+from polar.models.file import FileServiceTypes
 from polar.postgres import AsyncSession
+from tests.fixtures.auth import AuthSubjectFixture
+from tests.fixtures.database import SaveFixture
 from tests.fixtures.file import TestFile
+from tests.fixtures.random_objects import create_support_case_attachment_file
 
 
 @pytest.mark.asyncio
@@ -30,6 +34,22 @@ class TestEndpoints:
         )
 
         assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_create_with_too_many_parts(
+        self, client: AsyncClient, organization: Organization, logo_png: TestFile
+    ) -> None:
+        payload = logo_png.build_create(organization.id).model_dump(mode="json")
+        part = payload["upload"]["parts"][0]
+        payload["upload"]["parts"] = [{**part, "number": i + 1} for i in range(10_001)]
+
+        response = await client.post("/v1/files/", json=payload)
+
+        assert response.status_code == 422
+        errors = response.json()["detail"]
+        assert any(
+            error["type"] == "too_long" and "parts" in error["loc"] for error in errors
+        )
 
     async def test_create_downloadable_with_web_scope(
         self, session: AsyncSession, organization: Organization, logo_png: TestFile
@@ -124,3 +144,89 @@ class TestEndpoints:
         record = await repository.get_by_id(created.id, include_deleted=True)
         assert record
         assert record.is_uploaded is True
+
+
+@pytest.mark.asyncio
+class TestList:
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_excludes_support_case_attachments(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_support_case_attachment_file(save_fixture, organization)
+        visible = await create_support_case_attachment_file(
+            save_fixture,
+            organization,
+            name="media.jpg",
+            service=FileServiceTypes.product_media,
+        )
+
+        response = await client.get(
+            "/v1/files/", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert [item["id"] for item in json["items"]] == [str(visible.id)]
+
+
+@pytest.mark.asyncio
+class TestUpdate:
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_support_case_attachment_not_permitted(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        file = await create_support_case_attachment_file(save_fixture, organization)
+
+        response = await client.patch(
+            f"/v1/files/{file.id}", json={"name": "renamed.pdf"}
+        )
+
+        assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+class TestDelete:
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_support_case_attachment_not_permitted(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        file = await create_support_case_attachment_file(save_fixture, organization)
+
+        response = await client.delete(f"/v1/files/{file.id}")
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_other_services_remain_deletable(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+        logo_png: TestFile,
+    ) -> None:
+        created = await logo_png.create(session, organization)
+
+        response = await client.delete(f"/v1/files/{created.id}")
+
+        assert response.status_code == 204

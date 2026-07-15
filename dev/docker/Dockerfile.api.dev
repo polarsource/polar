@@ -1,7 +1,12 @@
 # Development Dockerfile for Polar API and Worker services
 # Optimized for hot-reloading with mounted source code
 
-FROM python:3.14-slim
+# Keep the patch version in sync with server/.python-version. A floating
+# `3.14-slim` tag drifts behind the pinned interpreter and, once cached, a
+# rebuild won't pick up the newer patch — uv then can't resolve the required
+# Python and boot fails. Pinning the exact patch makes that a clean, visible
+# bump instead of a silent stale-cache break.
+FROM python:3.14.6-slim
 
 # Install system dependencies
 RUN apt-get update && apt-get install -y \
@@ -13,8 +18,8 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uv package manager
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /uvx /bin/
+# Install uv package manager (pinned for reproducible builds)
+COPY --from=ghcr.io/astral-sh/uv:0.11.28 /uv /uvx /bin/
 
 # Install Node.js and pnpm for email templates
 RUN curl -fsSL https://deb.nodesource.com/setup_22.x | bash - \

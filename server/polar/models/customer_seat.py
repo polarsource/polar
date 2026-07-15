@@ -5,6 +5,7 @@ from uuid import UUID
 
 from sqlalchemy import TIMESTAMP, CheckConstraint, ForeignKey, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.exc import InvalidRequestError
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
@@ -139,3 +140,18 @@ class CustomerSeat(RecordModel):
             is_metered_price(spp.product_price)
             for spp in self.subscription.subscription_product_prices
         )
+
+    @property
+    def customer_email(self) -> str | None:
+        if self.email:
+            return self.email
+
+        try:
+            if self.member and self.member.email:
+                return self.member.email
+            if self.customer and self.customer.email:
+                return self.customer.email
+        except InvalidRequestError:
+            pass
+
+        return None

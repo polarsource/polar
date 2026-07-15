@@ -72,7 +72,7 @@ async def trigger_payout(
     async with AsyncSessionMaker() as session:
         repository = PayoutRepository(session)
         payout = await repository.get_by_id(
-            payout_id, options=repository.get_eager_options()
+            payout_id, options=repository.get_eager_options(), for_update=True
         )
         if payout is None:
             raise PayoutDoesNotExist(payout_id)

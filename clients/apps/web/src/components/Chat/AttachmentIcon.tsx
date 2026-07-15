@@ -2,12 +2,13 @@ import React from 'react'
 import { FileTypeIcon } from './FileTypeIcon'
 
 interface Props {
-  file: File
-  preview: string | null
+  name: string
+  mimeType: string
+  preview?: string | null
 }
 
-export const AttachmentIcon = ({ file, preview }: Props) => {
-  if (file.type.startsWith('image/') && preview) {
+export const AttachmentIcon = ({ name, mimeType, preview }: Props) => {
+  if (mimeType.startsWith('image/') && preview) {
     return (
       <div
         className="dark:bg-polar-700 h-5 w-5 shrink-0 rounded-sm bg-gray-100 bg-cover bg-center"
@@ -16,5 +17,5 @@ export const AttachmentIcon = ({ file, preview }: Props) => {
     )
   }
 
-  return <FileTypeIcon name={file.name} mimeType={file.type} />
+  return <FileTypeIcon name={name} mimeType={mimeType} />
 }

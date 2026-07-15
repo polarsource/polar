@@ -2,7 +2,7 @@ import { useInfiniteEvents } from '@/hooks/queries/events'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { TabsContent } from '@polar-sh/orbit'
-import { parseAsString, useQueryState } from 'nuqs'
+import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
 import { Events } from '../Events/Events'
 import EventSelect from '../Events/EventSelect'
 import MeterSelector from '../Meter/MeterSelector'
@@ -19,9 +19,9 @@ export const CustomerEventsView = ({
   dateRange: { startDate: Date; endDate: Date }
 }) => {
   const [meterId, setMeterId] = useQueryState('meterId', parseAsString)
-  const [eventName, setEventName] = useQueryState(
+  const [eventNames, setEventNames] = useQueryState(
     'eventName',
-    parseAsString.withDefault('all'),
+    parseAsArrayOf(parseAsString).withDefault([]),
   )
 
   const {
@@ -33,7 +33,7 @@ export const CustomerEventsView = ({
     limit: 50,
     customer_id: customer.id,
     ...(meterId ? { meter_id: meterId } : {}),
-    ...(eventName !== 'all' ? { name: eventName } : {}),
+    ...(eventNames.length ? { name: eventNames } : {}),
     ...(dateRange?.startDate
       ? { start_timestamp: dateRange.startDate.toISOString() }
       : {}),
@@ -48,15 +48,8 @@ export const CustomerEventsView = ({
         <EventSelect
           className="w-auto min-w-64"
           organizationId={customer.organization_id}
-          allOption
-          value={eventName}
-          onValueChange={(eventName) => {
-            if (eventName === 'all') {
-              setEventName(null)
-            } else {
-              setEventName(eventName)
-            }
-          }}
+          value={eventNames}
+          onChange={(names) => setEventNames(names.length ? names : null)}
         />
         <MeterSelector
           className="min-w-64"

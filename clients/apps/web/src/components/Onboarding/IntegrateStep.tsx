@@ -5,7 +5,6 @@ import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import { Tabs, TabsList, TabsTrigger } from '@polar-sh/orbit'
-import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useContext, useEffect, useMemo, useState } from 'react'
 import slugify from 'slugify'
@@ -238,16 +237,17 @@ export const IntegrateStep = ({ products }: IntegrateStepProps) => {
             ))}
           </Box>
           <Box flexDirection="column" rowGap="l">
-            <Link
+            <a
               href={`https://polar.sh/docs/integrate/sdk/adapters/nextjs`}
               target="_blank"
+              rel="noopener noreferrer"
               className="w-full"
             >
               <Button size="lg" fullWidth variant="secondary">
                 <Box as="span">Explore All Adapters</Box>
                 <ArrowOutwardOutlined className="ml-2" fontSize="small" />
               </Button>
-            </Link>
+            </a>
             <Button size="lg" fullWidth onClick={handleGoToDashboard}>
               Go to Dashboard
             </Button>
@@ -337,12 +337,16 @@ POLAR_SUCCESS_URL=https://example.com/success?checkout_id={CHECKOUT_ID}`}
                   code={currentFramework?.code ?? ''}
                 />
               </CodeWrapper>
-              <Link href={currentFramework?.link ?? ''} target="_blank">
+              <a
+                href={currentFramework?.link ?? ''}
+                target="_blank"
+                rel="noopener noreferrer"
+              >
                 <Button size="lg" variant="secondary" fullWidth>
                   <Box as="span">View Documentation</Box>
                   <ArrowOutwardOutlined className="ml-2" fontSize="small" />
                 </Button>
-              </Link>
+              </a>
             </Box>
           </Box>
         </Box>

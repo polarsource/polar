@@ -20,7 +20,6 @@ import ImageUpload from '@/components/Form/ImageUpload'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
 import { enums } from '@polar-sh/client'
-import Link from 'next/link'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import { TreeMultiSelect } from '../TreeMultiSelect'
 import { EnhancedOAuth2ClientConfiguration } from './NewOAuthClientModal'
@@ -81,14 +80,14 @@ export const FieldClientType = () => {
             If you intend to perform authentication on public clients, like SPA
             or mobile app, select <em>Public Client</em>. Otherwise, choose{' '}
             <em>Confidential Client</em>.{' '}
-            <Link
+            <a
               className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
               href="https://polar.sh/docs/documentation/integration-guides/authenticating-with-polar"
               target="_blank"
               rel="noopener noreferrer"
             >
               Read more
-            </Link>
+            </a>
             .
           </FormDescription>
         </FormItem>
@@ -128,14 +127,14 @@ export const FieldClientSecret = ({
       <FormDescription>
         This is a sensitive value. Don&apos;t embed it in a public client like a
         SPA or mobile app.{' '}
-        <Link
+        <a
           className="text-blue-500 hover:text-blue-400 dark:text-blue-400 dark:hover:text-blue-300"
           href="https://polar.sh/docs/documentation/integration-guides/authenticating-with-polar"
           target="_blank"
           rel="noopener noreferrer"
         >
           Read more
-        </Link>
+        </a>
         .
       </FormDescription>
     </FormItem>

@@ -20,6 +20,15 @@
     }
   },
   "favicon": "./logo/favicon.png",
+  "seo": {
+    "metatags": {
+      "og:site_name": "Polar",
+      "og:image": "https://polar.sh/assets/brand/polar_og.jpg",
+      "og:type": "website",
+      "twitter:card": "summary_large_image",
+      "twitter:site": "@polar_sh"
+    }
+  },
   "integrations": {
     "ga4": {
       "measurementId": "G-MBYW1QZFHE"
@@ -608,7 +617,7 @@
       {
         "tab": "Changelog",
         "icon": "signal-stream",
-        "pages": ["changelog/recent", "changelog/api"]
+        "pages": ["changelog/recent"]
       },
       {
         "tab": "Support",
@@ -684,7 +693,7 @@
     },
     {
       "source": "/docs/support",
-      "destination": "/suppport"
+      "destination": "/support"
     },
     {
       "source": "/documentation/welcome-to-polar",

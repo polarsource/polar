@@ -442,6 +442,8 @@ async def create_product(
     organization: Organization,
     recurring_interval: SubscriptionRecurringInterval | None,
     recurring_interval_count: int | None = 1,
+    meter_interval: SubscriptionRecurringInterval | None = None,
+    meter_interval_count: int | None = None,
     name: str = "Product",
     is_archived: bool = False,
     visibility: Visibility = Visibility.public,
@@ -454,12 +456,17 @@ async def create_product(
     recurring_interval_count = (
         None if recurring_interval is None else recurring_interval_count
     )
+    meter_interval_count = (
+        None if meter_interval is None else (meter_interval_count or 1)
+    )
     product = Product(
         name=name,
         description="Description",
         is_tax_applicable=is_tax_applicable,
         recurring_interval=recurring_interval,
         recurring_interval_count=recurring_interval_count,
+        meter_interval=meter_interval,
+        meter_interval_count=meter_interval_count,
         is_archived=is_archived,
         visibility=visibility,
         organization=organization,
@@ -2383,7 +2390,7 @@ async def create_customer_seat(
     metadata: dict[str, Any] | None = None,
     claimed_at: datetime | None = None,
     revoked_at: datetime | None = None,
-    member_id: uuid.UUID | None = None,
+    member: Member | None = None,
     email: str | None = None,
 ) -> CustomerSeat:
     if subscription is None and order is None:
@@ -2394,23 +2401,18 @@ async def create_customer_seat(
     if invitation_token is None and status == SeatStatus.pending:
         invitation_token = secrets.token_urlsafe(32)
 
-    seat_data: dict[str, Any] = {
-        "status": status,
-        "customer_id": customer.id if customer else None,
-        "invitation_token": invitation_token,
-        "claimed_at": claimed_at,
-        "revoked_at": revoked_at,
-        "seat_metadata": metadata or {},
-        "member_id": member_id,
-        "email": email,
-    }
-
-    if subscription is not None:
-        seat_data["subscription_id"] = subscription.id
-    elif order is not None:
-        seat_data["order_id"] = order.id
-
-    seat = CustomerSeat(**seat_data)
+    seat = CustomerSeat(
+        status=status,
+        customer_id=customer.id if customer else None,
+        invitation_token=invitation_token,
+        claimed_at=claimed_at,
+        revoked_at=revoked_at,
+        seat_metadata=metadata or {},
+        member=member,
+        email=email,
+        subscription=subscription,
+        order=order,
+    )
     await save_fixture(seat)
     return seat
 

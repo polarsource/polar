@@ -2,6 +2,7 @@ import contextlib
 import typing
 import uuid
 from collections.abc import AsyncGenerator, Sequence
+from datetime import datetime
 
 import sentry_sdk
 import stripe as stripe_lib
@@ -265,6 +266,8 @@ class CheckoutService:
         external_customer_id: Sequence[str] | None = None,
         status: Sequence[CheckoutStatus] | None = None,
         query: str | None = None,
+        created_at_after: datetime | None = None,
+        created_at_before: datetime | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[CheckoutSortProperty]] = [
             (CheckoutSortProperty.created_at, True)
@@ -297,6 +300,12 @@ class CheckoutService:
 
         if query is not None:
             statement = statement.where(Checkout.customer_email.ilike(f"%{query}%"))
+
+        if created_at_after is not None:
+            statement = statement.where(Checkout.created_at >= created_at_after)
+
+        if created_at_before is not None:
+            statement = statement.where(Checkout.created_at < created_at_before)
 
         statement = repository.apply_sorting(statement, sorting)
 
@@ -988,6 +997,17 @@ class CheckoutService:
         try:
             checkout = await self._update_checkout_tax(session, checkout)
         except TaxCalculationLogicalError as e:
+            billing_address = checkout.customer_billing_address
+            log.warning(
+                "Checkout confirmation blocked by tax calculation error",
+                error_type=type(e).__name__,
+                error_message=e.message,
+                checkout_id=str(checkout.id),
+                organization_id=str(checkout.organization_id),
+                product_id=str(checkout.product_id) if checkout.product_id else None,
+                billing_country=billing_address.country if billing_address else None,
+                billing_state=billing_address.state if billing_address else None,
+            )
             errors.append(
                 {
                     "type": "value_error",
@@ -2168,16 +2188,22 @@ class CheckoutService:
                         ]
                     ) from e
 
-        if (
-            has_product_checkout(checkout)
-            and checkout_update.custom_field_data is not None
+        if has_product_checkout(checkout) and (
+            isinstance(checkout_update, CheckoutConfirm)
+            or "custom_field_data" in checkout_update.model_fields_set
         ):
             custom_field_data = validate_custom_field_data(
                 checkout.product.attached_custom_fields,
                 checkout_update.custom_field_data,
                 validate_required=isinstance(checkout_update, CheckoutConfirm),
             )
-            checkout.custom_field_data = custom_field_data
+            if isinstance(checkout_update, CheckoutConfirm):
+                checkout.custom_field_data = custom_field_data
+            else:
+                checkout.custom_field_data = {
+                    **(checkout.custom_field_data or {}),
+                    **custom_field_data,
+                }
 
         ip_country = self._get_ip_country(
             ip_geolocation_client, checkout.customer_ip_address
@@ -2628,12 +2654,15 @@ class CheckoutService:
                 stripe_customer_id, tax_id=tax_id, **update_params
             )
 
-        # Only populate customer.name when creating a new customer. For existing
-        # customers (linked via customer_id or matched by email),
-        # checkout.customer_name may be the cardholder name on a wallet/payment
-        # method — e.g. a CFO or office manager paying on behalf of a company
-        # customer — and must not overwrite the company's name.
-        if created and customer_name is not None:
+        # Populate customer.name when it's not already set, even for existing
+        # customers (linked via customer_id or matched by email). We only avoid
+        # *overwriting* an existing name: checkout.customer_name may be the
+        # cardholder name on a wallet/payment method — e.g. a CFO or office
+        # manager paying on behalf of a company customer — and must not clobber
+        # the company's name. But an existing customer with no name at all
+        # (e.g. created through the API without one) should still get an initial
+        # value so invoices can be generated.
+        if customer.name is None and customer_name is not None:
             customer.name = customer_name
         if checkout.customer_billing_name is not None:
             customer.billing_name = checkout.customer_billing_name

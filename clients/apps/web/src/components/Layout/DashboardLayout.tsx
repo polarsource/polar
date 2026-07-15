@@ -1,6 +1,7 @@
 'use client'
 
 import LogoIcon from '@/components/Brand/logos/LogoIcon'
+import { CompassIntroModal } from '@/components/Compass/CompassIntroModal'
 import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { useAuth } from '@/hooks/auth'
@@ -8,27 +9,19 @@ import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { CONFIG } from '@/utils/config'
 import { setLastVisitedEnv, setLastVisitedOrg } from '@/utils/cookies'
 import ViewSidebarOutlined from '@mui/icons-material/ViewSidebarOutlined'
-import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import {
-  SidebarTrigger,
-  useSidebar,
-} from '@polar-sh/ui/components/atoms/Sidebar'
-import { Tabs, TabsList, TabsTrigger } from '@polar-sh/orbit'
+import { SidebarTrigger } from '@polar-sh/ui/components/atoms/Sidebar'
 import { motion } from 'motion/react'
-import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import {
   PropsWithChildren,
   useContext,
   useEffect,
   useRef,
-  useState,
   type JSX,
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { DashboardProvider } from '../Dashboard/DashboardProvider'
-import { SubRouteWithActive } from '../Dashboard/navigation'
 import { useRoute } from '../Navigation/useRoute'
 import { DashboardSidebar } from './Dashboard/DashboardSidebar'
 import TopbarRight from './Public/TopbarRight'
@@ -50,12 +43,11 @@ const DashboardLayout = (
 
   return (
     <DashboardProvider organization={organization}>
+      {props.type !== 'account' && organization && (
+        <CompassIntroModal organization={organization} />
+      )}
       <div className="relative flex h-full w-full flex-col bg-white md:flex-row md:bg-gray-100 md:p-2 dark:bg-transparent">
-        <MobileNav
-          organization={organization}
-          organizations={organizations ?? []}
-          type={props.type}
-        />
+        <MobileNav />
         <div className="hidden md:flex">
           <DashboardSidebar
             organization={organization}
@@ -81,24 +73,8 @@ const DashboardLayout = (
 
 export default DashboardLayout
 
-const MobileNav = ({
-  type = 'organization',
-  organization,
-  organizations,
-}: {
-  type?: 'organization' | 'account'
-  organization?: schemas['Organization']
-  organizations: schemas['Organization'][]
-}) => {
-  const [mobileNavOpen, setMobileNavOpen] = useState(false)
-  const pathname = usePathname()
+const MobileNav = () => {
   const { currentUser } = useAuth()
-
-  /* eslint-disable react-hooks/set-state-in-effect -- close mobile nav on route change */
-  useEffect(() => {
-    setMobileNavOpen(false)
-  }, [pathname])
-  /* eslint-enable react-hooks/set-state-in-effect */
 
   const header = (
     <div className="dark:bg-polar-900 sticky top-0 right-0 left-0 flex w-full flex-row items-center justify-between bg-gray-50 p-4">
@@ -119,44 +95,8 @@ const MobileNav = ({
 
   return (
     <div className="dark:bg-polar-900 relative z-20 flex w-screen flex-col items-center justify-between bg-gray-50 md:hidden">
-      {mobileNavOpen ? (
-        <div className="relative flex h-full w-full flex-col">
-          {header}
-          <div className="dark:bg-polar-900 flex h-full flex-col bg-gray-50 px-4">
-            <DashboardSidebar
-              organization={organization}
-              organizations={organizations}
-              type={type}
-            />
-          </div>
-        </div>
-      ) : (
-        header
-      )}
+      {header}
     </div>
-  )
-}
-
-const SubNav = (props: { items: SubRouteWithActive[] }) => {
-  const current = props.items.find((i) => i.isActive)
-
-  return (
-    <Tabs value={current?.title}>
-      <TabsList className="flex flex-row bg-transparent ring-0 dark:bg-transparent dark:ring-0">
-        {props.items.map((item) => {
-          return (
-            <Link key={item.title} href={item.link} prefetch={true}>
-              <TabsTrigger
-                className="flex flex-row items-center gap-x-2 px-4"
-                value={item.title}
-              >
-                <h3>{item.title}</h3>
-              </TabsTrigger>
-            </Link>
-          )
-        })}
-      </TabsList>
-    </Tabs>
   )
 }
 
@@ -188,10 +128,6 @@ export const DashboardBody = ({
   wide = false,
 }: DashboardBodyProps) => {
   const { currentRoute, currentSubRoute } = useRoute()
-
-  const { state } = useSidebar()
-
-  const isCollapsed = state === 'collapsed'
 
   const current = currentSubRoute ?? currentRoute
 
@@ -264,11 +200,7 @@ export const DashboardBody = ({
                 </div>
               )}
 
-              {header ? (
-                header
-              ) : isCollapsed && currentRoute && 'subs' in currentRoute ? (
-                <SubNav items={currentRoute.subs ?? []} />
-              ) : null}
+              {header}
             </div>
           )}
 

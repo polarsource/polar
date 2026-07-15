@@ -1,11 +1,13 @@
 from collections.abc import AsyncGenerator, AsyncIterator
 from typing import TYPE_CHECKING, Literal, Unpack, cast, overload
+from urllib.parse import urlencode
 
 import stripe as stripe_lib
 import structlog
 
 from polar.config import settings
 from polar.exceptions import PolarError
+from polar.kit.http import get_safe_return_url
 from polar.logfire import instrument_httpx
 from polar.logging import Logger
 
@@ -134,9 +136,9 @@ class StripeService:
         self, stripe_id: str, return_path: str
     ) -> stripe_lib.AccountLink:
         refresh_url = settings.generate_external_url(
-            f"/v1/integrations/stripe/refresh?return_path={return_path}"
+            f"/v1/integrations/stripe/refresh?{urlencode({'return_path': return_path})}"
         )
-        return_url = settings.generate_frontend_url(return_path)
+        return_url = get_safe_return_url(return_path)
         return await stripe_lib.AccountLink.create_async(
             account=stripe_id,
             refresh_url=refresh_url,
@@ -297,6 +299,15 @@ class StripeService:
         return await stripe_lib.Dispute.retrieve_async(
             id, stripe_account=stripe_account, expand=expand or []
         )
+
+    async def close_dispute(
+        self,
+        id: str,
+        *,
+        stripe_account: str | None = None,
+    ) -> stripe_lib.Dispute:
+        """Close the dispute, conceding the chargeback. Settles it as ``lost``."""
+        return await stripe_lib.Dispute.close_async(id, stripe_account=stripe_account)
 
     async def get_confirmation_token(
         self,

@@ -265,6 +265,7 @@ const Checkout = ({
           disabled={disableCheckout}
           isUpdatePending={isUpdatePending}
           locale={locale}
+          embed
           beforeSubmit={
             hasProductCheckout(checkout) && !checkout.is_free_product_price ? (
               <div className="flex flex-col gap-4">

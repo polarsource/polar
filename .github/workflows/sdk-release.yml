@@ -1,0 +1,141 @@
+name: SDK Release
+concurrency: sdk-release
+
+on:
+  push:
+    branches: [main]
+
+# Required for OIDC (Trusted Publishing)
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  detect-release:
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.extract.outputs.version }}
+    steps:
+      - uses: actions/checkout@v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Check for release commit
+        id: check
+        run: |
+          if git log --oneline -1 | grep -qP '^.*sdk\[release\]: \K.+'; then
+            echo "release=true" >> $GITHUB_OUTPUT
+          else
+            echo "release=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Extract version from commit message
+        if: steps.check.outputs.release == 'true'
+        id: extract
+        run: |
+          version=$(git log --oneline -1 | grep -oP 'sdk\[release\]: \K\S+')
+          echo "Extracted version: $version"
+          echo "version=$version" >> $GITHUB_OUTPUT
+
+  tag:
+    needs: detect-release
+    if: needs.detect-release.outputs.version != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.0
+        with:
+          fetch-depth: 0
+
+      - name: Create annotated tag
+        run: |
+          version="${{ needs.detect-release.outputs.version }}"
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "sdk/$version" -m "SDK Release $version"
+          git push origin "sdk/$version"
+
+  publish-python:
+    needs: [detect-release, tag]
+    if: needs.detect-release.outputs.version != ''
+    runs-on: ubuntu-latest
+    environment: sdk-release
+    steps:
+      - uses: actions/checkout@v7.0.0
+        with:
+          ref: "sdk/${{ needs.detect-release.outputs.version }}"
+          fetch-depth: 0
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v8.3.2
+
+      - name: Build Python SDK
+        working-directory: sdk/python
+        run: uv build --no-sources
+
+      - name: Publish to PyPI (Trusted Publishing)
+        working-directory: sdk/python
+        # uv publish automatically uses OIDC in GitHub Actions with id-token: write
+        run: uv publish
+
+  publish-typescript:
+    needs: [detect-release, tag]
+    if: needs.detect-release.outputs.version != ''
+    runs-on: ubuntu-latest
+    environment: sdk-release
+    steps:
+      - uses: actions/checkout@v7.0.0
+        with:
+          ref: "sdk/${{ needs.detect-release.outputs.version }}"
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v6.0.9
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
+        with:
+          node-version: "24"
+          registry-url: "https://registry.npmjs.org"
+          cache: "pnpm"
+
+      - name: Install dependencies
+        working-directory: sdk/typescript
+        run: pnpm install --frozen-lockfile
+
+      - name: Build TypeScript SDK
+        working-directory: sdk/typescript
+        run: pnpm run build
+
+      - name: Select npm dist-tag
+        id: npm_tag
+        working-directory: sdk/typescript
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+            tag=next
+          else
+            tag=latest
+          fi
+
+          echo "Publishing @polar-sh/sdk@$version with dist-tag '$tag'"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Publish to npm (Trusted Publishing)
+        working-directory: sdk/typescript
+        run: npm publish --tag "${{ steps.npm_tag.outputs.tag }}"
+
+  create-github-release:
+    needs: [detect-release, publish-python, publish-typescript]
+    if: needs.detect-release.outputs.version != ''
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7.0.0
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v3.0.1
+        with:
+          tag_name: "sdk/${{ needs.detect-release.outputs.version }}"
+          name: "SDK ${{ needs.detect-release.outputs.version }}"
+          generate_release_notes: true

@@ -18,7 +18,13 @@ from polar.enums import (
 )
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.http import UrlReachability
-from polar.models import Customer, Organization, Product, User, UserOrganization
+from polar.models import (
+    Customer,
+    Organization,
+    Product,
+    User,
+    UserOrganization,
+)
 from polar.models.account import Account
 from polar.models.benefit import BenefitType
 from polar.models.member import MemberRole
@@ -37,6 +43,7 @@ from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_review import OrganizationReview
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
+from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import (
     LegacyOrganizationStatus,
@@ -54,7 +61,10 @@ from polar.organization.schemas import (
     OrganizationSocialPlatforms,
     OrganizationUpdate,
 )
-from polar.organization.service import OrganizationError
+from polar.organization.service import (
+    CannotCreateOrganizationError,
+    OrganizationError,
+)
 from polar.organization.service import organization as organization_service
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
 from polar.organization_review.schemas import ReviewContext, ReviewVerdict
@@ -66,6 +76,7 @@ from polar.user_organization.service import (
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_active_subscription,
     create_benefit,
     create_checkout_link,
     create_dispute,
@@ -99,6 +110,23 @@ class TestCreate:
             await organization_service.create(
                 session,
                 OrganizationCreate(name="My New Organization", slug=slug),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_organization_scoped_session_forbidden(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        auth_subject.organization_ids = frozenset({organization.id})
+        with pytest.raises(CannotCreateOrganizationError):
+            await organization_service.create(
+                session,
+                OrganizationCreate(
+                    name="My New Organization", slug="scoped-session-org"
+                ),
                 auth_subject,
             )
 
@@ -3311,7 +3339,7 @@ class TestSoftDeleteOrganization:
         await save_fixture(organization)
 
         result = await organization_service.soft_delete_organization(
-            session, organization
+            session, organization, release_slug=True
         )
 
         # The live slug should no longer be the original, freeing it for reuse.
@@ -3343,7 +3371,9 @@ class TestSoftDeleteOrganization:
         organization: Organization,
     ) -> None:
         original_slug = organization.slug
-        await organization_service.soft_delete_organization(session, organization)
+        await organization_service.soft_delete_organization(
+            session, organization, release_slug=True
+        )
         await session.flush()
 
         repository = OrganizationRepository.from_session(session)
@@ -3365,7 +3395,7 @@ class TestSoftDeleteOrganization:
         await save_fixture(organization)
 
         result = await organization_service.soft_delete_organization(
-            session, organization
+            session, organization, release_slug=True
         )
 
         assert len(result.slug_history) == 2
@@ -3392,24 +3422,24 @@ class TestSoftDeleteOrganization:
         assert result.details == {}
         assert result.socials == []
 
-
-@pytest.mark.asyncio
-class TestDelete:
-    async def test_enqueues_polar_self_customer_deletion(
+    async def test_scrubs_slug_without_releasing(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        enqueue_delete_customer_mock = mocker.patch(
-            "polar.organization.service.polar_self_service.enqueue_delete_customer"
+        # Backoffice/erasure deletions scrub the slug as PII rather than
+        # archiving it for reuse, leaving no recoverable trace of the original.
+        mocker.patch("polar.organization.service.polar_self_service")
+        original_slug = organization.slug
+
+        result = await organization_service.soft_delete_organization(
+            session, organization
         )
 
-        await organization_service.delete(session, organization)
-
-        enqueue_delete_customer_mock.assert_called_once_with(
-            organization_id=organization.id
-        )
+        assert result.slug != original_slug
+        assert original_slug not in result.slug
+        assert result.slug_history == []
 
 
 @pytest.mark.asyncio
@@ -3730,16 +3760,29 @@ class TestSetOrganizationOffboarding:
         assert result.status == OrganizationStatus.OFFBOARDING
         assert result.status_updated_at is not None
 
+    async def test_from_denied(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+
+        result = await organization_service.set_organization_offboarding(
+            session, organization
+        )
+
+        assert result.status == OrganizationStatus.OFFBOARDING
+        assert result.status_updated_at is not None
+
     @pytest.mark.parametrize(
         "status",
         [
             OrganizationStatus.SNOOZED,
             OrganizationStatus.ACTIVE,
-            OrganizationStatus.DENIED,
             OrganizationStatus.CREATED,
         ],
     )
-    async def test_from_non_review_raises(
+    async def test_from_invalid_status_raises(
         self,
         status: OrganizationStatus,
         session: AsyncSession,
@@ -4510,17 +4553,24 @@ class TestStatusTransitions:
         organization.set_status(OrganizationStatus.REVIEW)
         assert organization.status == OrganizationStatus.REVIEW
 
+    async def test_denied_can_go_to_offboarding(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        organization.set_status(OrganizationStatus.OFFBOARDING)
+        assert organization.status == OrganizationStatus.OFFBOARDING
+
     @pytest.mark.parametrize(
         "current",
         [
             OrganizationStatus.CREATED,
             OrganizationStatus.SNOOZED,
             OrganizationStatus.ACTIVE,
-            OrganizationStatus.DENIED,
             OrganizationStatus.BLOCKED,
         ],
     )
-    async def test_only_review_can_go_to_offboarding(
+    async def test_only_review_or_denied_can_go_to_offboarding(
         self,
         current: OrganizationStatus,
         organization: Organization,
@@ -4967,3 +5017,100 @@ class TestAddUser:
             role=expected_member_role,
             delay=None,
         )
+
+
+@pytest.mark.asyncio
+class TestCancelExpiredOrganizationsSubscriptions:
+    async def test_enqueues_for_expired_org(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = OrganizationStatus.DENIED
+        organization.status_updated_at = datetime.now(UTC) - timedelta(days=8)
+        await save_fixture(organization)
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        result = await organization_service.cancel_expired_organizations_subscriptions(
+            session
+        )
+
+        assert organization.id in {org.id for org in result}
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.cancel_for_organization",
+            organization_id=organization.id,
+        )
+
+    async def test_skips_recent_org(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = OrganizationStatus.DENIED
+        organization.status_updated_at = datetime.now(UTC) - timedelta(days=1)
+        await save_fixture(organization)
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        result = await organization_service.cancel_expired_organizations_subscriptions(
+            session
+        )
+
+        assert organization.id not in {org.id for org in result}
+        enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestUpdateSSOEnforcement:
+    @pytest.mark.auth
+    async def test_enabling_revokes_tokens(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        revoke_mock = mocker.patch.object(
+            oauth2_token_service, "revoke_for_sso_enforcement"
+        )
+        organization.sso_enforced = False
+        session.add(organization)
+        await session.flush()
+
+        await organization_service.update(
+            session, organization, OrganizationUpdate(sso_enforced=True)
+        )
+
+        revoke_mock.assert_awaited_once_with(session, organization.id)
+
+    @pytest.mark.auth
+    async def test_already_enforced_does_not_revoke(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        revoke_mock = mocker.patch.object(
+            oauth2_token_service, "revoke_for_sso_enforcement"
+        )
+        organization.sso_enforced = True
+        session.add(organization)
+        await session.flush()
+
+        await organization_service.update(
+            session, organization, OrganizationUpdate(sso_enforced=True)
+        )
+
+        revoke_mock.assert_not_awaited()

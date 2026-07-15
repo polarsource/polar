@@ -10,6 +10,7 @@ from ..repository import (
     BalanceTransactionRepository,
     PayoutReversalTransactionRepository,
     PayoutTransactionRepository,
+    TransactionRepository,
 )
 from .base import BaseTransactionService
 
@@ -41,11 +42,9 @@ class PayoutTransactionService(BaseTransactionService):
             payout=payout,
         )
 
-        balance_transaction_repository = BalanceTransactionRepository.from_session(
-            session
-        )
+        transaction_repository = TransactionRepository.from_session(session)
         unpaid_balance_transactions = (
-            await balance_transaction_repository.get_all_unpaid_by_account(account.id)
+            await transaction_repository.get_all_unpaid_by_account(account.id)
         )
 
         if payout.processor == PayoutAccountType.stripe:

@@ -8,6 +8,7 @@ from pydantic.json_schema import WithJsonSchema
 from sqlalchemy import (
     TIMESTAMP,
     BigInteger,
+    Boolean,
     CheckConstraint,
     ColumnElement,
     ForeignKey,
@@ -114,6 +115,8 @@ class OrganizationCustomerEmailSettings(TypedDict):
     subscription_cycled: bool
     subscription_cycled_after_trial: bool
     subscription_past_due: bool
+    subscription_paused: bool
+    subscription_resumed: bool
     subscription_renewal_reminder: bool
     subscription_revoked: bool
     subscription_trial_conversion_reminder: bool
@@ -128,6 +131,8 @@ _default_customer_email_settings: OrganizationCustomerEmailSettings = {
     "subscription_cycled": True,
     "subscription_cycled_after_trial": True,
     "subscription_past_due": True,
+    "subscription_paused": True,
+    "subscription_resumed": True,
     "subscription_renewal_reminder": True,
     "subscription_revoked": True,
     "subscription_trial_conversion_reminder": True,
@@ -143,6 +148,7 @@ class CustomerPortalUsageSettings(TypedDict):
 class CustomerPortalSubscriptionSettings(TypedDict):
     update_seats: bool
     update_plan: bool
+    pause: NotRequired[bool]
 
 
 class CustomerPortalCustomerSettings(TypedDict):
@@ -425,6 +431,7 @@ ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatu
         {
             OrganizationStatus.CREATED,
             OrganizationStatus.ACTIVE,
+            OrganizationStatus.OFFBOARDING,
             OrganizationStatus.BLOCKED,
         }
     ),
@@ -629,6 +636,20 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def is_member_model_enabled(self) -> bool:
         return self.feature_settings.get("member_model_enabled", False)
 
+    @property
+    def is_sso_enabled(self) -> bool:
+        return self.feature_settings.get("sso_enabled", False)
+
+    @property
+    def is_compass_enabled(self) -> bool:
+        return self.feature_settings.get("compass_enabled", False)
+
+    @property
+    def is_merchant_migration_enabled(self) -> bool:
+        return self.feature_settings.get("merchant_migration_enabled", False)
+
+    sso_enforced: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
     #
     # Currency and tax settings
     #
@@ -801,6 +822,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         )
 
     @property
+    def customer_portal_subscription_pause(self) -> bool:
+        return self.customer_portal_settings.get("subscription", {}).get("pause", False)
+
+    @property
     def checkout_require_3ds(self) -> bool:
         return self.checkout_settings.get("require_3ds", False)
 
@@ -861,8 +886,13 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def is_blocked(self) -> bool:
         return self.status == OrganizationStatus.BLOCKED
 
-    def is_active(self) -> bool:
-        return self.status == OrganizationStatus.ACTIVE
+    def can_change_plan(self) -> bool:
+        # Active organizations and organizations under silent review (review or
+        # snoozed) may change their plan; all other statuses are blocked.
+        return (
+            self.status == OrganizationStatus.ACTIVE
+            or self.status in OrganizationStatus.review_statuses()
+        )
 
     def statement_descriptor(self, suffix: str = "") -> str:
         max_length = settings.stripe_descriptor_suffix_max_length

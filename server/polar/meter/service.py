@@ -527,13 +527,19 @@ class MeterService:
                     ),
                 ),
             )
-            .order_by(MeterEvent.ingested_at.asc())
+            .order_by(MeterEvent.ingested_at.asc(), MeterEvent.event_id.asc())
             .options(joinedload(Event.customer))
         )
         last_billed_event = meter.last_billed_event
         if last_billed_event is not None:
             statement = statement.where(
-                MeterEvent.ingested_at > last_billed_event.ingested_at
+                or_(
+                    MeterEvent.ingested_at > last_billed_event.ingested_at,
+                    and_(
+                        MeterEvent.ingested_at == last_billed_event.ingested_at,
+                        MeterEvent.event_id > last_billed_event.id,
+                    ),
+                )
             )
 
         subscription_product_price_repository = (

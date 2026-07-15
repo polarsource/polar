@@ -37,7 +37,6 @@ resource "render_postgres" "db" {
   environment_id = local.environment_id
   name           = "db-test"
   database_name  = "polar_cpit"
-  database_user  = "polar_cpit_user"
   plan           = "pro_4gb"
   region         = "ohio"
   version        = "15"
@@ -53,7 +52,6 @@ resource "render_postgres" "db" {
     prevent_destroy = true
     ignore_changes = [
       ip_allow_list,
-      database_user,
       database_name,
     ]
   }
@@ -76,6 +74,14 @@ resource "render_redis" "redis" {
 }
 
 # =============================================================================
+# Cloudflare IP Ranges
+# =============================================================================
+
+module "cloudflare_ips" {
+  source = "../modules/cloudflare_ips"
+}
+
+# =============================================================================
 # Test
 # =============================================================================
 locals {
@@ -84,6 +90,8 @@ locals {
   db_port          = "5432"
   db_user          = render_postgres.db.database_user
   db_password      = render_postgres.db.connection_info.password
+
+  db_external_host = nonsensitive(regex("@([^/:]+)", render_postgres.db.connection_info.external_connection_string)[0])
 
   # Extract actual database name from internal connection string
   # Render appends a suffix to database_name, so we parse it from the connection string
@@ -96,6 +104,10 @@ locals {
   # Redis connection info
   redis_host = local.test_enabled ? render_redis.redis[0].id : ""
   redis_port = "6379"
+
+  # Forwarded allow IPs: Cloudflare ranges + Render proxy
+  render_proxy_cidr   = "10.0.0.0/8"
+  forwarded_allow_ips = "${module.cloudflare_ips.all_ranges},${local.render_proxy_cidr}"
 }
 
 module "test" {
@@ -133,7 +145,7 @@ module "test" {
     cors_origins           = "[\"https://test.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "test-api.polar.sh" }]
     web_concurrency        = "2"
-    forwarded_allow_ips    = "*"
+    forwarded_allow_ips    = local.forwarded_allow_ips
     database_pool_size     = "10"
     postgres_database      = local.db_name
     postgres_read_database = local.db_name
@@ -149,8 +161,9 @@ module "test" {
   }
 
   google_secrets = {
-    client_id     = var.google_client_id
-    client_secret = var.google_client_secret
+    client_id            = var.google_client_id
+    client_secret        = var.google_client_secret
+    service_account_json = var.google_service_account_json
   }
 
   openai_secrets = {
@@ -205,7 +218,7 @@ module "test" {
     region                        = "us-east-2"
     signature_version             = "v4"
     files_presign_ttl             = "600"
-    files_public_bucket_name      = "polar-test-public-files"
+    files_public_bucket_name      = local.files_public_bucket_name
     customer_invoices_bucket_name = "polar-test-customer-invoices"
     customer_receipts_bucket_name = "polar-test-customer-receipts"
     payout_invoices_bucket_name   = "polar-test-payout-invoices"
@@ -217,6 +230,17 @@ module "test" {
     secret_access_key     = var.aws_secret_access_key
     files_download_salt   = var.s3_files_download_salt
     files_download_secret = var.s3_files_download_secret
+  }
+
+  aws_kms_config = {
+    key_id   = one(module.secrets_kms[*].key_arn)
+    role_arn = one(module.secrets_kms[*].role_arn)
+  }
+
+  worker_sqs_config = {
+    enabled      = "true"
+    actors       = var.worker_sqs_actors
+    queue_prefix = "polar-test-tasks"
   }
 
   github_secrets = {
@@ -233,6 +257,8 @@ module "test" {
     connect_webhook_secret = var.stripe_connect_webhook_secret
     secret_key             = var.stripe_secret_key
     webhook_secret         = var.stripe_webhook_secret
+    app_client_id          = var.stripe_app_client_id
+    app_client_link_id     = var.stripe_app_client_link_id
   }
 
   logfire_config = {
@@ -272,6 +298,57 @@ module "test" {
   }
 
   depends_on = [render_registry_credential.ghcr, render_postgres.db, render_redis.redis]
+}
+
+# =============================================================================
+# PgBouncer
+# =============================================================================
+
+module "pgbouncer" {
+  count  = local.test_enabled ? 1 : 0
+  source = "../modules/pgbouncer"
+
+  environment            = "test"
+  render_environment_id  = local.environment_id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = local.db_internal_host
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = {
+    max_client_conn   = "1000"
+    default_pool_size = "20"
+  }
+
+  depends_on = [render_registry_credential.ghcr, render_postgres.db]
+}
+
+module "pgbouncer_read" {
+  count  = local.test_enabled ? 1 : 0
+  source = "../modules/pgbouncer"
+
+  name                   = "pgbouncer-read"
+  environment            = "test"
+  render_environment_id  = local.environment_id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = local.read_replica.id
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = {
+    max_client_conn   = "1000"
+    default_pool_size = "20"
+  }
+
+  depends_on = [render_registry_credential.ghcr, render_postgres.db]
 }
 
 # =============================================================================

@@ -1,4 +1,5 @@
 import typing
+from uuid import UUID
 
 from fastapi import Depends, Request, Response
 from fastapi.responses import RedirectResponse
@@ -22,11 +23,12 @@ from reauth.factors.totp import (
 from polar.auth.exceptions import (
     PolarAuthError,
     PolarAuthRedirectionError,
+    SessionNotFreshError,
     UnavailableFactorError,
 )
 from polar.auth.oauth2.github import get_github_factor
 from polar.auth.oauth2.google import get_google_factor
-from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWrite
+from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWriteFresh
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.models import UserSession as UserSession
 from polar.openapi import APITag
@@ -34,6 +36,7 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
+from polar.user_organization.repository import UserOrganizationRepository
 
 from .authentication_session import (
     AuthenticationSessionService,
@@ -59,12 +62,13 @@ from .schemas import (
     BackupCodesVerify,
     EmailOTPRequest,
     EmailOTPVerify,
-    Factor,
+    LoginMethod,
     TOTPEnable,
     TOTPEnrollment,
     TOTPStatus,
 )
 from .service import auth as auth_service
+from .sso.endpoints import router as sso_login_router
 
 router = APIRouter(prefix="/auth", tags=["auth", APITag.private])
 router.include_router(
@@ -74,6 +78,7 @@ router.include_router(get_oauth_login_router(get_github_factor, "github"))
 router.include_router(get_oauth_link_router(get_github_factor, "github"))
 router.include_router(get_oauth_login_router(get_google_factor, "google"))
 router.include_router(get_oauth_link_router(get_google_factor, "google"))
+router.include_router(sso_login_router)
 
 
 @router.get("/logout")
@@ -143,18 +148,33 @@ async def complete(
     if user is None:
         raise PolarAuthRedirectionError("User not found for authenticated identity")
 
-    return_to = (
-        authentication_session.context.get("return_to")
-        if authentication_session.context
-        else None
-    )
+    context = authentication_session.context or {}
+
+    # An SSO-authenticated session stays scoped to its organization, whichever
+    # completion path (including the global 2FA pages) it reaches.
+    organization_ids: frozenset[UUID] | None = None
+    factor: LoginMethod
+    sso_organization_id = context.get("sso_organization_id")
+    if sso_organization_id is not None:
+        organization_id = UUID(sso_organization_id)
+        user_organization_repository = UserOrganizationRepository.from_session(session)
+        membership = await user_organization_repository.get_by_user_and_organization(
+            user.id, organization_id
+        )
+        if membership is None:
+            raise PolarAuthRedirectionError("You are not a member of this organization")
+        organization_ids = frozenset({organization_id})
+        factor = "sso"
+    else:
+        factor = typing.cast(LoginMethod, authentication_session.used_factors[0])
 
     response = await auth_service.get_login_response(
         session,
         request,
         user,
-        return_to=return_to,
-        factor=typing.cast(Factor, authentication_session.used_factors[0]),
+        return_to=context.get("return_to"),
+        factor=factor,
+        organization_ids=organization_ids,
     )
     await authentication_session_service.set_cookie(request, response, "", 0)
     return response
@@ -231,9 +251,13 @@ async def totp_status(
     return TOTPStatus(enabled=enrollment.enabled)
 
 
-@router.post("/totp", status_code=201)
+@router.post(
+    "/totp",
+    status_code=201,
+    responses={403: {"model": SessionNotFreshError.schema()}},
+)
 async def totp_enroll(
-    auth_subject: AuthorizeWebUserWrite,
+    auth_subject: AuthorizeWebUserWriteFresh,
     totp_factor: TOTPFactor = Depends(get_totp_factor),
 ) -> TOTPEnrollment:
     user = auth_subject.subject
@@ -252,10 +276,21 @@ async def totp_enroll(
     )
 
 
-@router.post("/totp/enable", status_code=202)
+@router.post(
+    "/totp/enable",
+    status_code=202,
+    responses={
+        403: {
+            "description": (
+                "Session is not fresh, TOTP factor not enrolled, or invalid TOTP code."
+            ),
+            "model": SessionNotFreshError.schema() | PolarAuthError.schema(),
+        }
+    },
+)
 async def totp_enable(
     enable: TOTPEnable,
-    auth_subject: AuthorizeWebUserWrite,
+    auth_subject: AuthorizeWebUserWriteFresh,
     totp_factor: TOTPFactor = Depends(get_totp_factor),
 ) -> None:
     user = auth_subject.subject
@@ -270,9 +305,13 @@ async def totp_enable(
     return None
 
 
-@router.delete("/totp", status_code=204)
+@router.delete(
+    "/totp",
+    status_code=204,
+    responses={403: {"model": SessionNotFreshError.schema()}},
+)
 async def totp_delete(
-    auth_subject: AuthorizeWebUserWrite,
+    auth_subject: AuthorizeWebUserWriteFresh,
     totp_factor: TOTPFactor = Depends(get_totp_factor),
     backup_codes_factor: BackupCodesFactor = Depends(get_backup_codes_factor),
 ) -> None:
@@ -335,9 +374,13 @@ async def backup_codes_status(
     )
 
 
-@router.post("/backup-codes", status_code=201)
+@router.post(
+    "/backup-codes",
+    status_code=201,
+    responses={403: {"model": SessionNotFreshError.schema()}},
+)
 async def backup_codes_enroll(
-    auth_subject: AuthorizeWebUserWrite,
+    auth_subject: AuthorizeWebUserWriteFresh,
     backup_codes_factor: BackupCodesFactor = Depends(get_backup_codes_factor),
 ) -> BackupCodesEnrollment:
     user = auth_subject.subject

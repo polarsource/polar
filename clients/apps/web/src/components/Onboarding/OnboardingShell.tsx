@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { useState, type ReactNode } from 'react'
 import LogoIcon from '../Brand/logos/LogoIcon'
 import { type APIPreviewStep, APIPreview } from './APIPreview'
+import { Text } from '@polar-sh/orbit'
 
 const STEPS = ['personal', 'business', 'product'] as const
 const STEP_ROUTES = [
@@ -130,13 +131,11 @@ export function OnboardingShell({
               </Box>
 
               <Box flexDirection="column" rowGap="m">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {title}
-                </h1>
+                <Text variant="heading-s">{title}</Text>
                 {subtitle && (
-                  <p className="dark:text-polar-400 text-sm text-gray-500">
+                  <Text variant="body" color="muted">
                     {subtitle}
-                  </p>
+                  </Text>
                 )}
               </Box>
               {children}

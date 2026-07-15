@@ -21,7 +21,7 @@ jobs:
     runs-on: blacksmith-2vcpu-ubuntu-2404
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
 
       - name: Setup Terraform
         uses: hashicorp/setup-terraform@v4
@@ -31,13 +31,13 @@ jobs:
         run: terraform fmt -check -recursive -diff
 
       - name: Setup TFLint
-        uses: terraform-linters/setup-tflint@v6
+        uses: terraform-linters/setup-tflint@v6.3.0
         with:
           tflint_version: latest
           cache: true
 
       - name: Cache TFLint plugins
-        uses: actions/cache@v5
+        uses: actions/cache@v6.1.0
         with:
           path: ~/.tflint.d/plugins
           key: tflint-plugins-${{ hashFiles('terraform/.tflint.hcl') }}

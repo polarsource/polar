@@ -13,6 +13,17 @@ source ~/.zshrc  # or restart your terminal
 
 Now you can use `dev` from anywhere in the repo.
 
+## Privacy & Analytics
+
+The CLI collects anonymous usage analytics to help improve the tool. This includes:
+- Command name and flags used (secrets/tokens are automatically redacted)
+- Operating system
+- Git user name and email (for identification)
+
+To disable analytics, set either environment variable:
+- `DEV_CLI_NO_ANALYTICS=1` — Polar-specific opt-out
+- `DO_NOT_TRACK=1` — Standard privacy flag
+
 ## Commands
 
 ### Environment Setup
@@ -29,11 +40,16 @@ dev reset --force       # Reset without confirmation
 ### Running Services
 
 ```bash
+dev start               # Start all services (api, worker, web, stripe) in tmux
+dev stop                # Stop all services (kills the tmux session)
 dev api                 # Start backend API (port 8000)
 dev api --port 8080     # Start on custom port
 dev web                 # Start frontend (port 3000)
 dev web --port 3001     # Start on custom port
 dev worker              # Start background job worker
+dev switch my-branch    # Stop web, checkout branch, wipe .next, relaunch web
+dev switch -b my-branch # ...creating the branch (git checkout -b)
+dev switch -i my-branch # ...and reinstall JS deps (skips package prebuilds)
 ```
 
 ### Database

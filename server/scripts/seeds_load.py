@@ -59,6 +59,8 @@ from polar.meter.filter import Filter, FilterClause, FilterConjunction, FilterOp
 from polar.meter.schemas import MeterCreate
 from polar.meter.service import meter as meter_service
 from polar.models.benefit import BenefitType
+from polar.models.checkout import Checkout, CheckoutStatus
+from polar.models.checkout_product import CheckoutProduct
 from polar.models.customer import Customer
 from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
@@ -73,6 +75,10 @@ from polar.models.organization import (
 )
 from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_review import OrganizationReview
+from polar.models.organization_sso_connection import (
+    OrganizationSSOConnection,
+    OrganizationSSOConnectionType,
+)
 from polar.models.payout_account import PayoutAccount
 from polar.models.product import Product
 from polar.models.product_price import (
@@ -93,7 +99,6 @@ from polar.models.webhook_endpoint import (
     WebhookEventType,
     WebhookFormat,
 )
-from polar.oauth2.constants import WEBHOOK_SECRET_PREFIX
 from polar.organization.schemas import OrganizationCreate
 from polar.organization.service import organization as organization_service
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
@@ -113,6 +118,7 @@ from polar.redis import Redis, create_redis
 from polar.support_case.service import support_case as support_case_service
 from polar.user.repository import UserRepository
 from polar.user.service import user as user_service
+from polar.webhook.constants import WEBHOOK_SECRET_PREFIX
 from polar.worker import JobQueueManager
 from scripts.seed_polar_for_polar import (
     BENEFITS as POLAR_SELF_BENEFITS,
@@ -165,6 +171,14 @@ class OrganizationDict(TypedDict):
     feature_settings: NotRequired[dict[str, bool]]
     customer_email_settings: NotRequired[OrganizationCustomerEmailSettings]
     seat_based_customers: NotRequired[list[SeatBasedCustomerDict]]
+    sso_connection: NotRequired["SSOConnectionDict"]
+
+
+class SSOConnectionDict(TypedDict):
+    name: str
+    issuer: str
+    client_id: str
+    client_secret: str
 
 
 class ProductDict(TypedDict):
@@ -1239,6 +1253,9 @@ async def create_seed_data(
             "website": "https://acme-corp.com",
             "bio": "Leading provider of innovative solutions for modern businesses.",
             "status": OrganizationStatus.ACTIVE,
+            "feature_settings": {
+                "compass_enabled": True,
+            },
             "details": {
                 "about": "We provide business intelligence dashboard",
                 "switching": False,
@@ -1523,6 +1540,15 @@ async def create_seed_data(
             "bio": "The admin organization of Polar",
             "status": OrganizationStatus.ACTIVE,
             "is_admin": True,
+            "feature_settings": {
+                "sso_enabled": True,
+            },
+            "sso_connection": {
+                "name": "Local Mock SSO",
+                "issuer": "http://localhost:8080/default",
+                "client_id": "polar",
+                "client_secret": "polar-secret",
+            },
             "details": {
                 "about": "Polar is an open source payment infrastructure platform for developers",
                 "switching": False,
@@ -1569,6 +1595,8 @@ async def create_seed_data(
                 "subscription_trial_conversion_reminder": False,
                 "subscription_uncanceled": False,
                 "subscription_updated": False,
+                "subscription_paused": False,
+                "subscription_resumed": False,
             },
             "products": [],
         },
@@ -1723,6 +1751,25 @@ async def create_seed_data(
         if "customer_email_settings" in org_data:
             organization.customer_email_settings = org_data["customer_email_settings"]
         session.add(organization)
+
+        # Seed an enabled SSO connection pointing at the local mock OIDC IdP.
+        # Written directly so the http:// mock issuer bypasses the HttpsUrl schema.
+        sso_connection_data = org_data.get("sso_connection")
+        if sso_connection_data is not None:
+            session.add(
+                OrganizationSSOConnection(
+                    organization=organization,
+                    name=sso_connection_data["name"],
+                    type=OrganizationSSOConnectionType.oidc,
+                    configuration={
+                        "issuer": sso_connection_data["issuer"],
+                        "client_id": sso_connection_data["client_id"],
+                        "client_secret": sso_connection_data["client_secret"],
+                        "auth_method": "client_secret",
+                    },
+                    enabled=True,
+                )
+            )
 
         # Attach a fake payout account so seeded orgs are payout-ready
         await create_fake_payout_account(session, organization, user)
@@ -2134,6 +2181,172 @@ async def create_seed_data(
 
                 await session.flush()
 
+                # Compass insight scenario: the subscriptions above all start
+                # "now", so 30 days ago there was $0 MRR and every Compass
+                # detector has no baseline to compare against. Seed a set of
+                # backdated cohorts so each registered detector sees a real,
+                # material month-over-month move and emits an insight:
+                #   - base + growth: a base live a month ago plus recent adds
+                #     drives MRR growth and subscriber growth; the base being
+                #     higher-priced than the growth adds drags average revenue
+                #     per subscriber down (the ARPU detector).
+                #   - churn: subscriptions live a month ago that ended inside the
+                #     last 30 days feed the churn detector.
+                #   - trial: subscriptions still in trial carry trialing MRR the
+                #     trial-conversion detector reads.
+                # Metrics gate the historical window on `started_at`/`ended_at`,
+                # so backdating those is what places a subscription in the
+                # 30-day-ago baseline and the trailing churn window.
+                compass_product = recurring_products[0]
+                compass_price = next(
+                    (
+                        price
+                        for price in compass_product.all_prices
+                        if isinstance(price, ProductPriceFixed)
+                    ),
+                    None,
+                )
+                if compass_price is not None:
+                    base_amount = compass_price.price_amount
+                    growth_amount = base_amount // 2
+                    compass_cohorts: list[dict[str, Any]] = [
+                        {
+                            "label": "base",
+                            "count": 6,
+                            "started_ago": 45,
+                            "status": SubscriptionStatus.active,
+                            "amount": base_amount,
+                        },
+                        {
+                            "label": "growth",
+                            "count": 4,
+                            "started_ago": 10,
+                            "status": SubscriptionStatus.active,
+                            "amount": growth_amount,
+                        },
+                        {
+                            "label": "churn",
+                            "count": 3,
+                            "started_ago": 65,
+                            "ended_ago": 12,
+                            "status": SubscriptionStatus.canceled,
+                            "amount": base_amount,
+                        },
+                        {
+                            "label": "trial",
+                            "count": 5,
+                            "started_ago": 4,
+                            "trial_ends_in": 10,
+                            "status": SubscriptionStatus.trialing,
+                            "amount": base_amount,
+                        },
+                    ]
+                    compass_seq = 0
+                    for cohort in compass_cohorts:
+                        started = now - timedelta(days=cohort["started_ago"])
+                        ended_at = (
+                            now - timedelta(days=cohort["ended_ago"])
+                            if "ended_ago" in cohort
+                            else None
+                        )
+                        trial_end = (
+                            now + timedelta(days=cohort["trial_ends_in"])
+                            if "trial_ends_in" in cohort
+                            else None
+                        )
+                        amount = cohort["amount"]
+                        for _ in range(cohort["count"]):
+                            compass_seq += 1
+                            cohort_customer = await customer_service.create(
+                                session=session,
+                                customer_create=CustomerIndividualCreate(
+                                    email=f"compass_{compass_seq}@acme-corp.com",
+                                    name=f"Compass Customer {compass_seq}",
+                                    organization_id=organization.id,
+                                ),
+                                auth_subject=auth_subject,
+                            )
+                            cohort_subscription = Subscription(
+                                amount=amount,
+                                net_amount=amount,
+                                currency=compass_price.price_currency,
+                                tax_behavior=TaxBehavior.exclusive,
+                                recurring_interval=compass_product.recurring_interval,
+                                recurring_interval_count=1,
+                                status=cohort["status"],
+                                current_period_start=started,
+                                current_period_end=ended_at or now + timedelta(days=30),
+                                cancel_at_period_end=False,
+                                started_at=started,
+                                ended_at=ended_at,
+                                ends_at=ended_at,
+                                canceled_at=ended_at,
+                                trial_end=trial_end,
+                                customer_id=cohort_customer.id,
+                                organization_id=compass_product.organization_id,
+                                product_id=compass_product.id,
+                                anchor_day=started.day,
+                            )
+                            session.add(cohort_subscription)
+                            await session.flush()
+
+                            session.add(
+                                SubscriptionProductPrice(
+                                    subscription_id=cohort_subscription.id,
+                                    product_price_id=compass_price.id,
+                                    amount=amount,
+                                )
+                            )
+
+                    await session.flush()
+
+                    # Checkout history for the Compass conversion detector, which
+                    # compares the trailing 30-day checkout conversion rate against
+                    # the prior 30 days. Seed two windows with a deliberate drop —
+                    # 80% a month ago down to 55% now — so the detector fires.
+                    # Post-cutoff checkouts are counted by `opened_at`, so each row
+                    # carries it in `analytics_metadata`.
+                    # (window label, days-ago range, total, succeeded):
+                    checkout_windows = (
+                        ("prior", range(35, 55), 20, 16),
+                        ("recent", range(3, 23), 20, 11),
+                    )
+                    for _label, day_range, total, succeeded in checkout_windows:
+                        offsets = list(day_range)
+                        for index in range(total):
+                            opened = now - timedelta(days=offsets[index % len(offsets)])
+                            converted = index < succeeded
+                            checkout = Checkout(
+                                payment_processor=PaymentProcessor.stripe,
+                                status=(
+                                    CheckoutStatus.succeeded
+                                    if converted
+                                    else CheckoutStatus.expired
+                                ),
+                                client_secret=generate_token(prefix="polar_c_"),
+                                expires_at=opened + timedelta(days=1),
+                                created_at=opened,
+                                allow_discount_codes=True,
+                                require_billing_address=False,
+                                is_business_customer=False,
+                                amount=compass_price.price_amount,
+                                net_amount=compass_price.price_amount,
+                                currency=compass_price.price_currency,
+                                organization_id=organization.id,
+                                analytics_metadata={"opened_at": opened.isoformat()},
+                            )
+                            session.add(checkout)
+                            await session.flush()
+                            session.add(
+                                CheckoutProduct(
+                                    checkout_id=checkout.id,
+                                    product_id=compass_product.id,
+                                    order=0,
+                                )
+                            )
+
+                    await session.flush()
+
         # Create seat-based customers with subscriptions and seats
         seat_based_customers = org_data.get("seat_based_customers", [])
         if seat_based_customers and seat_based_product and seat_based_price:
@@ -2223,10 +2436,10 @@ async def create_seed_data(
                         if member_model_enabled and i < len(members_for_seats):
                             # With member - claimed
                             seat = CustomerSeat(
-                                subscription_id=subscription.id,
+                                subscription=subscription,
                                 status=SeatStatus.claimed,
-                                customer_id=seat_customer.id,
-                                member_id=members_for_seats[i].id,
+                                customer=seat_customer,
+                                member=members_for_seats[i],
                                 email=members_for_seats[i].email,
                                 claimed_at=utc_now(),
                             )
@@ -2245,18 +2458,18 @@ async def create_seed_data(
                                 auth_subject=auth_subject,
                             )
                             seat = CustomerSeat(
-                                subscription_id=subscription.id,
+                                subscription=subscription,
                                 status=SeatStatus.claimed,
-                                customer_id=seat_holder_customer.id,
+                                customer=seat_holder_customer,
                                 email=seat_holder_email,
                                 claimed_at=utc_now(),
                             )
                     else:
                         # Pending seats (not yet allocated)
                         seat = CustomerSeat(
-                            subscription_id=subscription.id,
+                            subscription=subscription,
                             status=SeatStatus.pending,
-                            customer_id=seat_customer.id,
+                            customer=seat_customer,
                         )
                     session.add(seat)
 

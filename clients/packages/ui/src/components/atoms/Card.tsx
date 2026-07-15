@@ -2,11 +2,8 @@ import * as React from 'react'
 
 import {
   CardContent as CardContentPrimitive,
-  CardDescription as CardDescriptionPrimitive,
-  CardFooter as CardFooterPrimitive,
   CardHeader as CardHeaderPrimitive,
   Card as CardPrimitive,
-  CardTitle as CardTitlePrimitive,
 } from '@/components/ui/card'
 import { twMerge } from 'tailwind-merge'
 
@@ -39,28 +36,6 @@ const CardHeader = ({
 )
 CardHeader.displayName = CardHeaderPrimitive.displayName
 
-const CardTitle = ({
-  ref,
-  className,
-  ...props
-}: React.ComponentProps<typeof CardTitlePrimitive>) => (
-  <CardTitlePrimitive ref={ref} className={twMerge('', className)} {...props} />
-)
-CardTitle.displayName = 'CardTitle'
-
-const CardDescription = ({
-  ref,
-  className,
-  ...props
-}: React.ComponentProps<typeof CardDescriptionPrimitive>) => (
-  <CardDescriptionPrimitive
-    ref={ref}
-    className={twMerge('dark:text-polar-400 text-sm text-gray-400', className)}
-    {...props}
-  />
-)
-CardDescription.displayName = CardDescriptionPrimitive.displayName
-
 const CardContent = ({
   ref,
   className,
@@ -74,17 +49,4 @@ const CardContent = ({
 )
 CardContent.displayName = CardContentPrimitive.displayName
 
-const CardFooter = ({
-  ref,
-  className,
-  ...props
-}: React.ComponentProps<typeof CardFooterPrimitive>) => (
-  <CardFooterPrimitive
-    ref={ref}
-    className={twMerge('', className)}
-    {...props}
-  />
-)
-CardFooter.displayName = CardFooterPrimitive.displayName
-
-export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
+export { Card, CardContent, CardHeader }

@@ -9,11 +9,10 @@ import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Pill } from '@polar-sh/orbit'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
+import { ContextCard } from '../Shared/ContextCard'
 import { DetailRow } from '../Shared/DetailRow'
 import { useSubscriptions } from '@/hooks/queries'
-import { PropsWithChildren } from 'react'
 import { getSubscriptionStatusBorderColor } from '../Subscriptions/utils'
 
 interface CustomerContextViewProps {
@@ -152,20 +151,11 @@ export const CustomerContextView = ({
   )
 }
 
-type ContextCardProps = PropsWithChildren & {}
-
-const ContextCard = (props: ContextCardProps) => {
-  return (
-    <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:shadow-xs lg:rounded-2xl">
-      {props.children}
-    </ShadowBox>
-  )
-}
-
 const STATUS_DISPLAY_NAMES: Record<schemas['SubscriptionStatus'], string> = {
   active: 'Active',
   trialing: 'Trialing',
   past_due: 'Past Due',
+  paused: 'Paused',
   unpaid: 'Unpaid',
   canceled: 'Canceled',
   incomplete: 'Incomplete',
@@ -176,10 +166,11 @@ const STATUS_ORDER: Record<schemas['SubscriptionStatus'], number> = {
   active: 0,
   trialing: 1,
   past_due: 2,
-  unpaid: 3,
-  incomplete: 4,
-  canceled: 5,
-  incomplete_expired: 6,
+  paused: 3,
+  unpaid: 4,
+  incomplete: 5,
+  canceled: 6,
+  incomplete_expired: 7,
 }
 
 const INTERVAL_LABELS: Record<schemas['RecurringInterval'], string> = {

@@ -17,7 +17,7 @@ log: Logger = structlog.get_logger()
 class LockerError(PolarError):
     def __init__(
         self,
-        message: str = "A concurrency error occured. Try again later.",
+        message: str = "A concurrency error occurred. Try again later.",
         status_code: int = 500,
     ) -> None:
         super().__init__(message, status_code)

@@ -41,6 +41,7 @@ interface Props {
 
   scrollIntoViewOnMount?: boolean
   className?: string
+  fillHeight?: boolean
 }
 
 export const Chat = ({
@@ -57,6 +58,7 @@ export const Chat = ({
   closedNotice = 'Chat ended',
   scrollIntoViewOnMount = false,
   className,
+  fillHeight = false,
 }: Props) => {
   const [sendSignal, setSendSignal] = useState(0)
 
@@ -81,7 +83,11 @@ export const Chat = ({
     <div
       ref={rootRef}
       {...(dropEnabled ? dropHandlers : {})}
-      className={twMerge('relative', className)}
+      className={twMerge(
+        'relative',
+        fillHeight && 'flex h-full flex-col',
+        className,
+      )}
     >
       {dropEnabled && isDragging && (
         <div className="dark:border-polar-600 dark:bg-polar-800/90 dark:text-polar-50 pointer-events-none absolute inset-0 z-10 flex items-center justify-center gap-2 rounded-[inherit] border-2 border-dashed border-gray-300 bg-white/90 text-sm font-medium text-gray-700">
@@ -89,7 +95,13 @@ export const Chat = ({
           Drop to attach
         </div>
       )}
-      <Box display="flex" flexDirection="column" rowGap="l">
+      <Box
+        display="flex"
+        flexDirection="column"
+        rowGap="l"
+        flexGrow={fillHeight ? 1 : undefined}
+        minHeight={fillHeight ? '0' : undefined}
+      >
         <Box display="flex" flexDirection="column" rowGap="xs">
           <h4 className="font-medium">{title}</h4>
           {description && (
@@ -108,6 +120,7 @@ export const Chat = ({
           scrollToBottomSignal={sendSignal}
           scrollFadeRef={scrollFadeRef}
           suppressSelfAnimation={suppressSelfAnimation}
+          fillHeight={fillHeight}
         />
         {isOpen ? (
           <Composer

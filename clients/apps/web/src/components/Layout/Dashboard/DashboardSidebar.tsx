@@ -1,4 +1,5 @@
 import { SupportButton } from '@/components/Feedback/SupportButton'
+import { useAuth } from '@/hooks/auth'
 import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
 import { OmniSearch } from '@/components/Search/OmniSearch'
 import { CONFIG } from '@/utils/config'
@@ -7,7 +8,7 @@ import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
 import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
-import { Avatar } from '@polar-sh/orbit'
+import { Avatar, Button } from '@polar-sh/orbit'
 import {
   Sidebar,
   SidebarContent,
@@ -16,8 +17,6 @@ import {
   SidebarMenu,
   SidebarMenuButton,
   SidebarMenuItem,
-  SidebarTrigger,
-  useSidebar,
 } from '@polar-sh/ui/components/atoms/Sidebar'
 import {
   DropdownMenu,
@@ -49,9 +48,8 @@ export const DashboardSidebar = ({
   organizations: schemas['Organization'][]
 }) => {
   const router = useRouter()
-  const { state } = useSidebar()
+  const { currentUser } = useAuth()
 
-  const isCollapsed = state === 'collapsed'
   const [searchOpen, setSearchOpen] = useState(false)
 
   const subscriptionPlan = useOrganizationSubscription(organization?.id ?? '')
@@ -84,11 +82,8 @@ export const DashboardSidebar = ({
     <Sidebar variant="inset" collapsible="icon">
       <SidebarHeader
         className={twMerge(
-          'flex md:pt-3.5',
-          isTopBannerVisible ? 'md:pt-10' : '',
-          isCollapsed
-            ? 'flex-row items-center justify-between gap-y-4 md:flex-col md:items-start md:justify-start'
-            : 'flex-row items-center justify-between',
+          'flex flex-row items-center justify-between md:pt-3.5',
+          isTopBannerVisible && 'md:pt-10',
         )}
       >
         <PolarLogotype
@@ -96,52 +91,32 @@ export const DashboardSidebar = ({
           href={organization ? `/dashboard/${organization.slug}` : '/dashboard'}
         />
         <motion.div
-          key={isCollapsed ? 'header-collapsed' : 'header-expanded'}
-          className={`flex ${isCollapsed ? 'flex-row md:flex-col-reverse' : 'flex-row'} items-center gap-2`}
+          className="flex flex-row items-center gap-2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1 }}
         >
           <NotificationsPopover />
-          <SidebarTrigger />
+          <Button
+            className="relative size-8! p-0"
+            variant="ghost"
+            onClick={() => setSearchOpen(true)}
+            aria-label="Search"
+          >
+            <Search fontSize="small" aria-hidden="true" />
+          </Button>
         </motion.div>
       </SidebarHeader>
 
-      <SidebarContent className="gap-4 px-2 py-4">
+      <SidebarContent className="gap-4 px-2 py-2">
         {type === 'organization' && organization && (
-          <>
-            <button
-              onClick={() => setSearchOpen(true)}
-              className={twMerge(
-                'flex cursor-pointer items-center gap-4 rounded-lg border px-2 py-2 text-sm transition-colors',
-                'dark:bg-polar-950 dark:border-polar-800 dark:hover:bg-polar-900 border-gray-200 bg-white hover:bg-gray-50',
-                isCollapsed && 'justify-center px-2',
-              )}
-            >
-              <Search
-                className="dark:text-polar-500 text-gray-500"
-                fontSize="inherit"
-              />
-              {!isCollapsed && (
-                <>
-                  <span className="dark:text-polar-500 flex-1 text-left text-gray-500">
-                    Search...
-                  </span>
-                  <kbd className="dark:border-polar-700 dark:bg-polar-800 dark:text-polar-400 pointer-events-none inline-flex h-5 items-center gap-1 rounded border border-gray-200 bg-gray-100 px-1.5 font-mono text-[11px] text-gray-600 select-none">
-                    <span className="text-sm">⌘</span>K
-                  </kbd>
-                </>
-              )}
-            </button>
-            <OmniSearch
-              open={searchOpen}
-              onOpenChange={setSearchOpen}
-              organization={organization}
-            />
-          </>
+          <OmniSearch
+            open={searchOpen}
+            onOpenChange={setSearchOpen}
+            organization={organization}
+          />
         )}
         <motion.div
-          key={isCollapsed ? 'nav-collapsed' : 'nav-expanded'}
           className="flex flex-col items-center gap-2"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
@@ -154,7 +129,7 @@ export const DashboardSidebar = ({
         </motion.div>
       </SidebarContent>
       <SidebarFooter>
-        {isOnFreePlan && !isCollapsed && (
+        {isOnFreePlan && (
           <div className="dark:bg-polar-900 dark:border-polar-700 flex flex-col gap-y-2 rounded-sm border border-gray-100 bg-white p-4">
             <h3 className="text-sm">Introducing Polar Plans</h3>
             <p className="dark:text-polar-500 text-sm text-gray-500">
@@ -172,20 +147,18 @@ export const DashboardSidebar = ({
         {type === 'organization' && organization && (
           <SupportButton organization={organization} />
         )}
-        <Link
+        <a
           className={twMerge(
             'flex flex-row items-center rounded-lg border border-transparent text-sm transition-colors dark:border-transparent',
             'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
-            isCollapsed && '!dark:text-polar-600',
           )}
           href="https://polar.sh/docs"
           target="_blank"
+          rel="noopener noreferrer"
         >
           <ArrowOutwardOutlined className="ml-2" fontSize="inherit" />
-          {!isCollapsed && (
-            <span className="ml-4 font-medium">Documentation</span>
-          )}
-        </Link>
+          <span className="ml-4 font-medium">Documentation</span>
+        </a>
         <Separator />
         {type === 'organization' && organization && (
           <SidebarMenu>
@@ -198,22 +171,15 @@ export const DashboardSidebar = ({
                       avatar_url={organization.avatar_url}
                       className="h-6 w-6"
                     />
-                    {!isCollapsed && (
-                      <>
-                        <span className="min-w-0 truncate">
-                          {organization.name}
-                        </span>
-                        <KeyboardArrowDown
-                          className="ml-auto"
-                          fontSize="small"
-                        />
-                      </>
-                    )}
+                    <span className="min-w-0 truncate">
+                      {organization.name}
+                    </span>
+                    <KeyboardArrowDown className="ml-auto" fontSize="small" />
                   </SidebarMenuButton>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent
                   side="top"
-                  align={isCollapsed ? 'start' : 'center'}
+                  align="center"
                   className="w-(--radix-popper-anchor-width) min-w-[200px]"
                 >
                   {organizations.map((org) => (
@@ -231,15 +197,17 @@ export const DashboardSidebar = ({
                     </DropdownMenuItem>
                   ))}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() =>
-                      CONFIG.IS_SANDBOX
-                        ? router.push('/onboarding/sandbox')
-                        : router.push('/onboarding/business')
-                    }
-                  >
-                    New Organization
-                  </DropdownMenuItem>
+                  {!currentUser?.organization_scoped && (
+                    <DropdownMenuItem
+                      onClick={() =>
+                        CONFIG.IS_SANDBOX
+                          ? router.push('/onboarding/sandbox')
+                          : router.push('/onboarding/business')
+                      }
+                    >
+                      New Organization
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem
                     onClick={() => router.push('/dashboard/account')}
                   >

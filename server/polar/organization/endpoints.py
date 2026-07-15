@@ -48,7 +48,7 @@ from polar.integrations.polar.schemas import (
     organization_payment_method_from_sdk,
 )
 from polar.integrations.polar.service import polar_self as polar_self_service
-from polar.kit.http import check_url_reachable
+from polar.kit.http import check_url_reachable, get_ip_address
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
 from polar.models import Account, Organization, UserOrganization
 from polar.models.support_case import (
@@ -74,6 +74,7 @@ from polar.postgres import (
     get_db_session,
 )
 from polar.routing import APIRouter
+from polar.sso.repository import OrganizationSSOConnectionRepository
 from polar.startup_program.service import (
     StartupProgramError,
 )
@@ -123,6 +124,7 @@ from .schemas import (
     OrganizationValidateWebsiteRequest,
     OrganizationValidateWebsiteResponse,
 )
+from .service import CannotCreateOrganizationError, SSOEnforcementRequiresConnection
 from .service import organization as organization_service
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
@@ -262,7 +264,10 @@ async def get_kyc(
     response_model=OrganizationSchema,
     status_code=201,
     summary="Create Organization",
-    responses={201: {"description": "Organization created."}},
+    responses={
+        201: {"description": "Organization created."},
+        403: {"model": CannotCreateOrganizationError.schema()},
+    },
     tags=[APITag.public],
 )
 async def create(
@@ -300,6 +305,10 @@ async def check_slug(
             "model": NotPermitted.schema(),
         },
         404: OrganizationNotFound,
+        409: {
+            "description": "Cannot enforce SSO without an enabled connection.",
+            "model": SSOEnforcementRequiresConnection.schema(),
+        },
     },
     tags=[APITag.public],
 )
@@ -309,6 +318,24 @@ async def update(
     session: AsyncSession = Depends(get_db_session),
 ) -> Organization:
     """Update an organization."""
+    if organization_update.sso_enforced:
+        # Only allow enforcing SSO from a session already authenticated through
+        # this organization's SSO — proof it works — and only while an enabled
+        # connection exists, so an admin can't lock everyone out.
+        if (
+            authz.auth_subject.organization_ids is None
+            or authz.organization.id not in authz.auth_subject.organization_ids
+        ):
+            raise NotPermitted(
+                "You must be signed in through SSO for this organization to enforce it."
+            )
+        connection_repository = OrganizationSSOConnectionRepository.from_session(
+            session
+        )
+        if not await connection_repository.get_enabled_by_organization(
+            authz.organization.id
+        ):
+            raise SSOEnforcementRequiresConnection()
     return await organization_service.update(
         session, authz.organization, organization_update
     )
@@ -946,7 +973,7 @@ async def start_subscription_checkout(
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> OrganizationCheckoutResponse:
     """Create a Polar checkout session for an initial paid subscription."""
-    customer_ip_address = request.client.host if request.client else None
+    customer_ip_address = get_ip_address(request)
     checkout = await polar_self_service.start_checkout(
         session=session,
         organization_id=authz.organization.id,
@@ -1044,7 +1071,7 @@ async def claim_startup_program(
     Caller passes ``success_url`` / ``return_url`` defensively; they're only
     used on the Free-plan branch.
     """
-    customer_ip_address = request.client.host if request.client else None
+    customer_ip_address = get_ip_address(request)
     try:
         subscription, checkout = await polar_self_service.claim_startup_program(
             session=session,

@@ -1,4 +1,4 @@
-from typing import Any, cast
+from typing import Any, Unpack, cast
 
 import httpx
 import structlog
@@ -12,6 +12,7 @@ from polar.integrations.discord.service import discord_bot as discord_bot_servic
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
 from polar.models import Benefit, Customer, Member, Organization, User
+from polar.models.benefit_grant import BenefitGrantScopeArgs
 from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 
 from ..base.service import (
@@ -37,6 +38,7 @@ class BenefitDiscordService(
         update: bool = False,
         attempt: int = 1,
         member: Member | None = None,
+        **scope: Unpack[BenefitGrantScopeArgs],
     ) -> BenefitGrantDiscordProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),

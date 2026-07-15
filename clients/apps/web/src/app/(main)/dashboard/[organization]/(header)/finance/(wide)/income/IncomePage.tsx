@@ -1,7 +1,6 @@
 'use client'
 
 import AccessRestricted from '@/components/Finance/AccessRestricted'
-import AccountBalance from '@/components/Payouts/AccountBalance'
 import TransactionsList from '@/components/Transactions/TransactionsList'
 import { useHasPermission } from '@/hooks/permissions'
 import { useOrganizationAccount, useSearchTransactions } from '@/hooks/queries'
@@ -86,15 +85,6 @@ export default function ClientPage({
 
   return (
     <div className="flex flex-col gap-y-8">
-      {account && (
-        <AccountBalance
-          account={account}
-          organization={organization}
-          onWithdrawSuccess={() =>
-            router.push(`/dashboard/${organization.slug}/finance/payouts`)
-          }
-        />
-      )}
       <TransactionsList
         transactions={balances}
         rowCount={rowCount}

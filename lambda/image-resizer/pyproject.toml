@@ -4,19 +4,19 @@ version = "0.0.0"
 readme = "README.md"
 requires-python = ">=3.13.0"
 dependencies = [
-"pillow>=12.0",
-"boto3>=1.38.30",
+"pillow>=12.3.0",
+"boto3>=1.43.42",
 "taskipy>=1.10.3",
 ]
 
 [dependency-groups]
 dev = [
-"pytest>=8.0",
-"mypy>=1.15",
-"boto3-stubs[s3]>=1.38.30",
+"pytest>=9.1.1",
+"mypy>=2.2.0",
+"boto3-stubs[s3]>=1.43.42",
 "types-Pillow>=10.0",
-"moto[s3]>=5.1",
-"ruff>=0.15.2",
+"moto[s3]>=5.2.2",
+"ruff>=0.15.20",
 ]
 
 

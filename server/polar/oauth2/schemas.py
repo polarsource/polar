@@ -1,5 +1,4 @@
 import ipaddress
-import re
 from typing import Annotated, Any, Literal
 
 from fastapi.openapi.constants import REF_TEMPLATE
@@ -25,14 +24,12 @@ from polar.kit.schemas import Schema, TimestampedSchema
 
 from .sub_type import SubType
 
-_LOCALHOST_HOST_PATTERN = re.compile(r"([^\.]+\.)?localhost(\d+)?", flags=re.IGNORECASE)
-
 
 def _is_localhost(host: str) -> bool:
     try:
         return ipaddress.IPv4Address(host).is_private
     except ValueError:
-        return _LOCALHOST_HOST_PATTERN.match(host) is not None
+        return host == "localhost" or host.endswith(".localhost")
 
 
 def _is_https_or_localhost(value: HttpUrl) -> HttpUrl:
@@ -102,6 +99,9 @@ class AuthorizeResponseBase(Schema):
     sub: AuthorizeUser | AuthorizeOrganization | None
     scopes: Scopes
     organizations: list[AuthorizeOrganization]
+    # Whether the resolved request (param or client default) is for an
+    # organization, so the consent screen forces a single-org selection.
+    requires_single_organization: bool = False
     scope_display_names: dict[str, str] = Field(
         default={s.value: name for s, name in SCOPES_SUPPORTED_DISPLAY_NAMES.items()}
     )

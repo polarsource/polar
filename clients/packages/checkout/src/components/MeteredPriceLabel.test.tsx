@@ -91,7 +91,13 @@ describe('MeteredPriceLabel', () => {
       // $10 / 1M tokens → unit_amount = 0.001 cents/token
       const price = createMeteredPrice({
         unit_amount: '0.001',
-        meter: { id: 'meter_1', name: 'LLM Tokens', unit: 'token' },
+        meter: {
+          id: 'meter_1',
+          name: 'LLM Tokens',
+          unit: 'token',
+          custom_label: null,
+          custom_multiplier: null,
+        },
       })
 
       const { container } = render(
@@ -106,7 +112,13 @@ describe('MeteredPriceLabel', () => {
       // $0.50 / 1M tokens → unit_amount = 0.0000005 cents/token
       const price = createMeteredPrice({
         unit_amount: '0.0000005',
-        meter: { id: 'meter_1', name: 'LLM Tokens', unit: 'token' },
+        meter: {
+          id: 'meter_1',
+          name: 'LLM Tokens',
+          unit: 'token',
+          custom_label: null,
+          custom_multiplier: null,
+        },
       })
 
       const { container } = render(
@@ -193,7 +205,13 @@ describe('MeteredPriceLabel', () => {
     it('applies the discount to scaled (per-1M tokens) rates', () => {
       const price = createMeteredPrice({
         unit_amount: '0.001',
-        meter: { id: 'meter_1', name: 'LLM Tokens', unit: 'token' },
+        meter: {
+          id: 'meter_1',
+          name: 'LLM Tokens',
+          unit: 'token',
+          custom_label: null,
+          custom_multiplier: null,
+        },
       })
 
       render(

@@ -20,13 +20,33 @@ updates:
     cooldown:
       default-days: 7
     groups:
+      server-production-core:
+        dependency-type: "production"
+        patterns:
+          - "fastapi"
       server-production:
         dependency-type: "production"
         patterns:
           - "*"
         exclude-patterns:
           - "stripe"
+          - "fastapi"
       server-development:
+        dependency-type: "development"
+        patterns:
+          - "*"
+  - package-ecosystem: "uv"
+    directory: "/lambda/image-resizer"
+    schedule:
+      interval: "weekly"
+    cooldown:
+      default-days: 7
+    groups:
+      image-resizer-production:
+        dependency-type: "production"
+        patterns:
+          - "*"
+      image-resizer-development:
         dependency-type: "development"
         patterns:
           - "*"

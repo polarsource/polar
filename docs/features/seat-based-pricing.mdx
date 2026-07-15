@@ -14,11 +14,15 @@ Seat-based pricing allows you to sell products where a billing manager purchases
 - Products with flat, graduated, or volume-discounted seat pricing
 </Info>
 
-## Feature Flag
+## Customers and members
 
-<Warning>
-  Seat-based pricing is currently in beta. Enable it under Settings → General → Features.
-</Warning>
+Seat-based products separate who pays from who uses, modeled through three entities:
+
+- A **Customer** is the billing entity — who pays. They own subscriptions, orders, and payment methods. On their first seat-based purchase, the customer is permanently upgraded to `type: "team"`, which enables members and team management.
+- A **Member** is a person under a customer — who uses. Each member has their own email, role (`owner`, `billing_manager`, or `member`), and receives benefit grants independently. The purchaser becomes an `owner` member. Both `owner` and `billing_manager` roles can manage seats and the subscription.
+- A **CustomerSeat** is the link between a product and a member. It tracks assignment status (`pending`, `claimed`, `revoked`) and holds the invitation token.
+
+Because benefits are granted to members, not to the billing customer, always identify the end user by their member — not the customer who paid.
 
 ## How it works
 

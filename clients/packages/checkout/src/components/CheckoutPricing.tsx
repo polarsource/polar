@@ -93,7 +93,7 @@ const CheckoutPricing = ({
   return (
     <div className="flex flex-col gap-6">
       <div className="flex flex-col gap-2">
-        <h1 className="text-3xl font-light" data-testid="headline-price">
+        <h1 className="text-3xl font-[350]" data-testid="headline-price">
           {product_price.amount_type !== 'custom' ? (
             <CheckoutProductAmountLabel
               checkout={checkout}

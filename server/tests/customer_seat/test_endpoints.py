@@ -965,7 +965,7 @@ class TestMemberEntityInResponse:
             save_fixture,
             subscription=subscription_with_seats,
             customer=customer,
-            member_id=member.id,
+            member=member,
             email="seat-member@example.com",
         )
 
@@ -1034,7 +1034,7 @@ class TestMemberEntityInResponse:
             save_fixture,
             subscription=subscription_with_seats,
             customer=customer,
-            member_id=member.id,
+            member=member,
             email="ext-member@example.com",
         )
 
@@ -1102,7 +1102,7 @@ class TestMemberEntityInResponse:
             save_fixture,
             subscription=subscription_with_seats,
             customer=customer,
-            member_id=member.id,
+            member=member,
             email="compat-member@example.com",
         )
 

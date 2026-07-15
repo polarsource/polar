@@ -12,6 +12,7 @@ from polar.invoice.generator import (
     InvoiceHeadingItem,
     InvoiceItem,
     InvoiceTotalsItem,
+    escape_markdown,
     format_date,
 )
 from polar.invoice.seller import get_polar_additional_info
@@ -111,9 +112,9 @@ class Receipt(Invoice):
 
         additional_info_parts: list[str] = []
         if order.tax_id:
-            additional_info_parts.append(order.tax_id[0])
+            additional_info_parts.append(escape_markdown(order.tax_id[0]))
         if order.customer.email and order.customer.email != customer_name:
-            additional_info_parts.append(order.customer.email)
+            additional_info_parts.append(escape_markdown(order.customer.email))
         customer_additional_info = (
             "\n".join(additional_info_parts) if additional_info_parts else None
         )

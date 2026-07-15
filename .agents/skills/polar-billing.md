@@ -139,6 +139,7 @@ Individual payment transaction.
 | `status` | PaymentStatus | pending, succeeded, failed |
 | `processor_id` | str | Stripe charge ID |
 | `method` | str | card, bank_transfer, etc. |
+| `trigger` | PaymentTrigger \| None | What initiated payment: purchase, subscription_cycle, retry_dunning, retry_customer, retry_payment_method_update, retry_admin |
 | `decline_reason` | str | Why payment failed |
 | `risk_level`, `risk_score` | str, int | Fraud assessment |
 

@@ -17,9 +17,26 @@ export const CurrentPeriodOverview = ({
   products,
   api,
 }: CurrentPeriodOverviewProps) => {
+  const isTrialing = subscription.status === 'trialing'
+  const isActive = subscription.status === 'active'
+  const isPaused = subscription.status === 'paused'
+  const isCancelingAtPeriodEnd =
+    subscription.cancel_at_period_end && !subscription.ended_at
+
+  const isResumingCharge =
+    (subscription.pause_at_period_end || isPaused) &&
+    subscription.resumes_at !== null &&
+    !isCancelingAtPeriodEnd
+  const isPausingIndefinitely =
+    (subscription.pause_at_period_end || isPaused) && !subscription.resumes_at
+
+  const shouldShowPreview =
+    (isActive || isTrialing || isResumingCharge) && !isPausingIndefinitely
+
   const { data: subscriptionPreview } = useCustomerSubscriptionChargePreview(
     api,
     subscription.id,
+    shouldShowPreview,
   )
   const productId = useMemo(() => {
     if (subscription.pending_update && subscription.pending_update.product_id) {
@@ -41,13 +58,7 @@ export const CurrentPeriodOverview = ({
     return subscription.seats
   }, [subscription])
 
-  const isTrialing = subscription.status === 'trialing'
-  const isActive = subscription.status === 'active'
-  const isCancelingAtPeriodEnd =
-    subscription.cancel_at_period_end && !subscription.ended_at
-
-  // Show for active, trialing, or subscriptions set to cancel at period end
-  if (!isActive && !isTrialing) {
+  if (!shouldShowPreview) {
     return null
   }
 
@@ -79,7 +90,9 @@ export const CurrentPeriodOverview = ({
 
   const chargeDate = isTrialing
     ? subscription.trial_end
-    : subscription.current_period_end
+    : isResumingCharge
+      ? subscription.resumes_at
+      : subscription.current_period_end
 
   // Determine header and label based on subscription state
   let headerTitle = 'Next Charge'
@@ -91,6 +104,9 @@ export const CurrentPeriodOverview = ({
   } else if (isCancelingAtPeriodEnd) {
     headerTitle = 'Final Charge'
     dateLabel = 'Subscription Ends'
+  } else if (isResumingCharge) {
+    headerTitle = 'Charge on Resume'
+    dateLabel = 'Resumes'
   }
 
   const chargeDateLabel = `${dateLabel} — ${

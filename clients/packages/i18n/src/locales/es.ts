@@ -33,8 +33,6 @@ export default {
       optional: 'Opcional',
       apply: 'Aplicar',
       fieldRequired: 'Este campo es obligatorio',
-      addBusinessDetails: 'Añadir datos de empresa',
-      removeBusinessDetails: 'Eliminar datos de empresa',
       billingDetails: 'Datos de la empresa',
       addDiscountCode: 'Añadir código de descuento',
     },
@@ -46,20 +44,7 @@ export default {
       payWhatYouWant: 'Paga lo que quieras',
       total: 'Total',
       additionalMeteredUsage: 'Consumo adicional',
-      perUnit: '/ unidad',
       discount: {
-        duration: {
-          months: {
-            '=1': 'durante el primer mes',
-            other: 'durante los primeros # meses',
-            _mode: 'plural',
-          },
-          years: {
-            '=1': 'durante el primer año',
-            other: 'durante los primeros # años',
-            _mode: 'plural',
-          },
-        },
         until: 'Hasta {date}',
       },
       everyInterval: {
@@ -111,29 +96,6 @@ export default {
       basePrice: 'Precio base',
     },
     trial: {
-      ends: 'La prueba finaliza el {endDate}',
-      duration: {
-        days: {
-          '=1': 'prueba de # día',
-          other: 'prueba de # días',
-          _mode: 'plural',
-        },
-        weeks: {
-          '=1': 'prueba de # semana',
-          other: 'prueba de # semanas',
-          _mode: 'plural',
-        },
-        months: {
-          '=1': 'prueba de # mes',
-          other: 'prueba de # meses',
-          _mode: 'plural',
-        },
-        years: {
-          '=1': 'prueba de # año',
-          other: 'prueba de # años',
-          _mode: 'plural',
-        },
-      },
       hero: {
         free: {
           day: {
@@ -161,11 +123,6 @@ export default {
         then: 'Después',
         startingDate: 'a partir del {date}',
       },
-      summary: {
-        totalWhenTrialEnds: 'Total al finalizar la prueba',
-        totalWhenDiscountExpires: 'Total al finalizar el descuento',
-        totalDueToday: 'Total a pagar hoy',
-      },
     },
     pwywForm: {
       label: 'Pon un precio justo',
@@ -178,21 +135,7 @@ export default {
       oneTimePurchase: 'Compra única',
       fromPrefix: 'Desde',
     },
-    card: {
-      included: 'Incluido',
-    },
     benefits: {
-      moreBenefits: {
-        '=1': '# beneficio más',
-        other: '# beneficios más',
-        _mode: 'plural',
-      },
-      showMoreBenefits: {
-        '=1': 'Mostrar # beneficio más',
-        other: 'Mostrar # beneficios más',
-        _mode: 'plural',
-      },
-      showLess: 'Mostrar menos',
       granting: 'Concediendo beneficios...',
       requestNewInvite: 'Solicitar nueva invitación',
       retryIn: {
@@ -280,15 +223,35 @@ export default {
     },
     productDescription: {
       readMore: 'Leer más',
-      readLess: 'Leer menos',
+    },
+    trialUnavailable: {
+      title: 'No hay prueba gratis para esta compra',
+      description:
+        'Ya has usado una prueba gratis para este producto, así que se te cobrará hoy. Continúa abajo para completar tu compra.',
     },
   },
   intervals: {
     short: {
-      day: 'd',
-      week: 'sem',
-      month: 'm',
-      year: 'a',
+      day: {
+        '=1': 'd',
+        other: '# días',
+        _mode: 'plural',
+      },
+      week: {
+        '=1': 'sem',
+        other: '# sem',
+        _mode: 'plural',
+      },
+      month: {
+        '=1': 'm',
+        other: '# meses',
+        _mode: 'plural',
+      },
+      year: {
+        '=1': 'a',
+        other: '# años',
+        _mode: 'plural',
+      },
     },
   },
   benefitTypes: {

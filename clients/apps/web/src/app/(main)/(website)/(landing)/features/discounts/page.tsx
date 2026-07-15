@@ -2,7 +2,7 @@ import { DiscountsPage } from '@/components/Landing/features/DiscountsPage'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Discounts — Polar',
+  title: 'Discounts & Coupons',
   description:
     'Coupons, promo codes, and recurring discounts. Apply automatically at checkout, prefill via URL, or via the API.',
   keywords:

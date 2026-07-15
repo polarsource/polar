@@ -28,6 +28,14 @@ resource "tfe_variable" "google_client_secret_sandbox" {
   variable_set_id = tfe_variable_set.sandbox.id
 }
 
+resource "tfe_variable" "google_service_account_json_sandbox" {
+  key             = "google_service_account_json"
+  category        = "terraform"
+  description     = "Google service account JSON key for fetching the organization review AUP for sandbox"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
 resource "tfe_variable" "openai_api_key_sandbox" {
   key             = "openai_api_key_sandbox"
   category        = "terraform"
@@ -487,5 +495,34 @@ resource "tfe_variable" "vercel_next_public_stripe_payment_method_configuration_
   category        = "terraform"
   description     = "Stripe payment method configuration ID for the Vercel sandbox frontend"
   sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "worker_sqs_actors_sandbox" {
+  key             = "worker_sqs_actors"
+  category        = "terraform"
+  description     = "JSON array of Dramatiq actor names routed to the SQS execution engine for sandbox"
+  sensitive       = false
+  value           = "[\"dummy\"]"
+  variable_set_id = tfe_variable_set.sandbox.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "stripe_app_client_id_sandbox" {
+  key             = "stripe_app_client_id"
+  category        = "terraform"
+  description     = "Stripe App OAuth client ID for sandbox"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.sandbox.id
+}
+
+resource "tfe_variable" "stripe_app_client_link_id_sandbox" {
+  key             = "stripe_app_client_link_id"
+  category        = "terraform"
+  description     = "Stripe App OAuth client link ID for sandbox"
+  sensitive       = false
   variable_set_id = tfe_variable_set.sandbox.id
 }

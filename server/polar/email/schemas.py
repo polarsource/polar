@@ -36,7 +36,6 @@ class EmailTemplate(StrEnum):
     order_confirmation = "order_confirmation"
     organization_access_token_leaked = "organization_access_token_leaked"
     organization_invite = "organization_invite"
-    organization_account_unlink = "organization_account_unlink"
     organization_offboarded = "organization_offboarded"
     support_case_organization_new_message = "support_case_organization_new_message"
     personal_access_token_leaked = "personal_access_token_leaked"
@@ -47,6 +46,8 @@ class EmailTemplate(StrEnum):
     subscription_cycled_after_trial = "subscription_cycled_after_trial"
     subscription_final_invoice = "subscription_final_invoice"
     subscription_past_due = "subscription_past_due"
+    subscription_paused = "subscription_paused"
+    subscription_resumed = "subscription_resumed"
     subscription_revoked = "subscription_revoked"
     subscription_uncanceled = "subscription_uncanceled"
     subscription_renewal_reminder = "subscription_renewal_reminder"
@@ -57,8 +58,11 @@ class EmailTemplate(StrEnum):
     notification_new_subscription = "notification_new_subscription"
     notification_credits_granted = "notification_credits_granted"
     chargeback_prevention_refund = "chargeback_prevention_refund"
+    polar_self_subscription_cancellation = "polar_self_subscription_cancellation"
     polar_self_subscription_confirmation = "polar_self_subscription_confirmation"
     polar_self_subscription_cycled = "polar_self_subscription_cycled"
+    polar_self_subscription_past_due = "polar_self_subscription_past_due"
+    polar_self_subscription_revoked = "polar_self_subscription_revoked"
     polar_self_startup_program_welcome = "polar_self_startup_program_welcome"
 
 
@@ -370,6 +374,26 @@ class SubscriptionUncanceledEmail(BaseModel):
     props: SubscriptionUncanceledProps
 
 
+class SubscriptionPausedProps(SubscriptionPropsBase): ...
+
+
+class SubscriptionPausedEmail(BaseModel):
+    template: Literal[EmailTemplate.subscription_paused] = (
+        EmailTemplate.subscription_paused
+    )
+    props: SubscriptionPausedProps
+
+
+class SubscriptionResumedProps(SubscriptionPropsBase): ...
+
+
+class SubscriptionResumedEmail(BaseModel):
+    template: Literal[EmailTemplate.subscription_resumed] = (
+        EmailTemplate.subscription_resumed
+    )
+    props: SubscriptionResumedProps
+
+
 class SubscriptionUpdatedProps(SubscriptionPropsBase):
     order: OrderEmail | None
 
@@ -457,6 +481,40 @@ class PolarSelfSubscriptionCycledEmail(BaseModel):
     props: PolarSelfSubscriptionCycledProps
 
 
+class PolarSelfSubscriptionCancellationProps(EmailProps):
+    product_name: str
+    ends_at: str | None = None
+
+
+class PolarSelfSubscriptionCancellationEmail(BaseModel):
+    template: Literal[EmailTemplate.polar_self_subscription_cancellation] = (
+        EmailTemplate.polar_self_subscription_cancellation
+    )
+    props: PolarSelfSubscriptionCancellationProps
+
+
+class PolarSelfSubscriptionPastDueProps(EmailProps):
+    product_name: str
+
+
+class PolarSelfSubscriptionPastDueEmail(BaseModel):
+    template: Literal[EmailTemplate.polar_self_subscription_past_due] = (
+        EmailTemplate.polar_self_subscription_past_due
+    )
+    props: PolarSelfSubscriptionPastDueProps
+
+
+class PolarSelfSubscriptionRevokedProps(EmailProps):
+    product_name: str
+
+
+class PolarSelfSubscriptionRevokedEmail(BaseModel):
+    template: Literal[EmailTemplate.polar_self_subscription_revoked] = (
+        EmailTemplate.polar_self_subscription_revoked
+    )
+    props: PolarSelfSubscriptionRevokedProps
+
+
 class PolarSelfStartupProgramWelcomeProps(EmailProps):
     organization_name: str
     billing_url: str
@@ -467,18 +525,6 @@ class PolarSelfStartupProgramWelcomeEmail(BaseModel):
         EmailTemplate.polar_self_startup_program_welcome
     )
     props: PolarSelfStartupProgramWelcomeProps
-
-
-class OrganizationAccountUnlinkProps(EmailProps):
-    organization_kept_name: str
-    organizations_unlinked: list[str]
-
-
-class OrganizationAccountUnlinkEmail(BaseModel):
-    template: Literal[EmailTemplate.organization_account_unlink] = (
-        EmailTemplate.organization_account_unlink
-    )
-    props: OrganizationAccountUnlinkProps
 
 
 class OrganizationOffboardedProps(EmailProps):
@@ -504,7 +550,6 @@ Email = Annotated[
     | OrderConfirmationEmail
     | OrganizationAccessTokenLeakedEmail
     | OrganizationInviteEmail
-    | OrganizationAccountUnlinkEmail
     | OrganizationOffboardedEmail
     | SupportCaseOrganizationNewMessageEmail
     | PersonalAccessTokenLeakedEmail
@@ -515,6 +560,8 @@ Email = Annotated[
     | SubscriptionCycledAfterTrialEmail
     | SubscriptionFinalInvoiceEmail
     | SubscriptionPastDueEmail
+    | SubscriptionPausedEmail
+    | SubscriptionResumedEmail
     | SubscriptionRenewalReminderEmail
     | SubscriptionTrialConversionReminderEmail
     | SubscriptionRevokedEmail
@@ -525,8 +572,11 @@ Email = Annotated[
     | NotificationNewSubscriptionEmail
     | NotificationCreditsGrantedEmail
     | ChargebackPreventionRefundEmail
+    | PolarSelfSubscriptionCancellationEmail
     | PolarSelfSubscriptionConfirmationEmail
     | PolarSelfSubscriptionCycledEmail
+    | PolarSelfSubscriptionPastDueEmail
+    | PolarSelfSubscriptionRevokedEmail
     | PolarSelfStartupProgramWelcomeEmail,
     Discriminator("template"),
 ]

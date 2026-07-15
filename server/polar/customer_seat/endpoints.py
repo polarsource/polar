@@ -8,6 +8,7 @@ from polar.authz.service import get_accessible_org_ids
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import BadRequest, ResourceNotFound
+from polar.kit.http import get_ip_address
 from polar.models import CustomerSeat, Order, Subscription
 from polar.models.customer_seat import SeatStatus
 from polar.openapi import APITag
@@ -336,7 +337,7 @@ async def claim_seat(
     # Capture request metadata for audit logging
     request_metadata = {
         "user_agent": request.headers.get("user-agent"),
-        "ip": request.client.host if request.client else None,
+        "ip": get_ip_address(request),
     }
 
     seat, customer_session_token = await seat_service.claim_seat(

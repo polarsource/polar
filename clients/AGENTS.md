@@ -37,11 +37,10 @@ clients/
 ├── packages/
 │   ├── ui/                     # Shared UI components
 │   │   └── src/components/
-│   │       ├── atoms/          # Basic components (Button, Input, Card)
+│   │       ├── atoms/          # Legacy basic components (Card, Status, Tabs)
 │   │       ├── molecules/      # Composite components (Banner)
 │   │       └── ui/             # shadcn/ui base components
 │   ├── client/                 # Generated API client
-│   ├── sdk/                    # Published SDK
 │   ├── checkout/               # Checkout package
 │   └── orbit/                  # Polar's design system containing components, design tokens, etc.
 ```
@@ -612,18 +611,18 @@ const MyForm = () => {
 ```tsx
 // Orbit (preferred — design-system primitives)
 import { Box } from '@polar-sh/orbit/Box'
-import { Text, Button, Avatar, SegmentedControl } from '@polar-sh/orbit'
+import {
+  Text,
+  Button,
+  Avatar,
+  SegmentedControl,
+  Input,
+  TextArea,
+} from '@polar-sh/orbit'
 import { DataTable, Select } from '@polar-sh/orbit'
 
 // Legacy @polar-sh/ui (use only when an Orbit equivalent doesn't exist)
 import { Card } from '@polar-sh/ui/components/atoms/Card'
-import { Status } from '@polar-sh/ui/components/atoms/Status'
-import {
-  Tabs,
-  TabsList,
-  TabsTrigger,
-  TabsContent,
-} from '@polar-sh/ui/components/atoms/Tabs'
 import { Banner } from '@polar-sh/ui/components/molecules/Banner'
 ```
 

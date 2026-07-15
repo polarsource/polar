@@ -18,6 +18,7 @@ from .layout import layout
 from .middlewares import SecurityHeadersMiddleware, TagflowMiddleware
 from .orders.endpoints import router as orders_router
 from .organizations_v2.endpoints import router as organizations_v2_router
+from .payout_accounts.endpoints import router as payout_accounts_router
 from .payouts.endpoints import router as payouts_router
 from .products.endpoints import router as products_router
 from .responses import TagResponse
@@ -60,6 +61,7 @@ app.include_router(tasks_router, prefix="/tasks")
 app.include_router(subscriptions_router, prefix="/subscriptions")
 app.include_router(orders_router, prefix="/orders")
 app.include_router(payouts_router, prefix="/payouts")
+app.include_router(payout_accounts_router, prefix="/payout-accounts")
 app.include_router(impersonation_router, prefix="/impersonation")
 app.include_router(webhooks_router, prefix="/webhooks")
 app.include_router(feedbacks_router, prefix="/feedbacks")

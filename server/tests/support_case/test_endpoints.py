@@ -1,8 +1,13 @@
 import pytest
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
+from sqlalchemy import select
 
+from polar.dispute.dispute_case import DISPUTE_GREETING_DELAY_MS
 from polar.models import Customer, Organization, Product
 from polar.models.support_case import (
+    DisputeSupportCase,
+    DisputeWinReason,
     SupportCaseAudience,
     SupportCaseMessageAuthorKind,
 )
@@ -113,7 +118,8 @@ class TestReplyToSupportCase:
     ) -> None:
         case = await create_appeal_case(save_fixture, organization)
         response = await client.post(
-            f"/v1/support-cases/{case.id}/messages", json={"body": "hello"}
+            f"/v1/support-cases/{case.id}/messages",
+            json={"type": "review_appeal", "body": "hello"},
         )
         assert response.status_code == 401
 
@@ -128,7 +134,7 @@ class TestReplyToSupportCase:
         case = await create_appeal_case(save_fixture, organization)
         response = await client.post(
             f"/v1/support-cases/{case.id}/messages",
-            json={"body": "here is more detail"},
+            json={"type": "review_appeal", "body": "here is more detail"},
         )
         assert response.status_code == 201
         assert response.json()["body"] == "here is more detail"
@@ -148,7 +154,11 @@ class TestReplyToSupportCase:
 
         response = await client.post(
             f"/v1/support-cases/{case.id}/messages",
-            json={"body": "see attached", "file_ids": [str(file.id)]},
+            json={
+                "type": "review_appeal",
+                "body": "see attached",
+                "file_ids": [str(file.id)],
+            },
         )
         assert response.status_code == 201
 
@@ -175,7 +185,7 @@ class TestReplyToSupportCase:
 
         response = await client.post(
             f"/v1/support-cases/{case.id}/messages",
-            json={"file_ids": [str(file.id)]},
+            json={"type": "review_appeal", "file_ids": [str(file.id)]},
         )
         assert response.status_code == 404
 
@@ -198,12 +208,28 @@ class TestReplyToSupportCase:
         await session.flush()
 
         response = await client.post(
-            f"/v1/support-cases/{case.id}/messages", json={"body": "reopen?"}
+            f"/v1/support-cases/{case.id}/messages",
+            json={"type": "review_appeal", "body": "reopen?"},
         )
         assert response.status_code == 409
 
     @pytest.mark.auth
-    async def test_dispute_case_is_read_only(
+    async def test_reply_type_must_match_case_type(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        case = await create_appeal_case(save_fixture, organization)
+        response = await client.post(
+            f"/v1/support-cases/{case.id}/messages",
+            json={"type": "dispute", "body": "wrong reply type"},
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_dispute_case_accepts_reply(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -214,9 +240,151 @@ class TestReplyToSupportCase:
     ) -> None:
         case = await create_dispute_case(save_fixture, organization, customer, product)
         response = await client.post(
-            f"/v1/support-cases/{case.id}/messages", json={"body": "my evidence"}
+            f"/v1/support-cases/{case.id}/messages",
+            json={"type": "dispute", "body": "my evidence"},
         )
-        assert response.status_code == 409
+        assert response.status_code == 201
+        assert response.json()["body"] == "my evidence"
+
+    @pytest.mark.auth
+    async def test_dispute_reply_records_win_reason(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        case = await create_dispute_case(save_fixture, organization, customer, product)
+        assert case.win_reason is None
+
+        response = await client.post(
+            f"/v1/support-cases/{case.id}/messages",
+            json={
+                "type": "dispute",
+                "body": "my evidence",
+                "win_reason": "cardholder_withdrew",
+            },
+        )
+        assert response.status_code == 201
+
+        win_reason = await session.scalar(
+            select(DisputeSupportCase.win_reason).where(
+                DisputeSupportCase.id == case.id
+            )
+        )
+        assert win_reason == DisputeWinReason.cardholder_withdrew
+
+    @pytest.mark.auth
+    async def test_dispute_reply_records_win_reason_other(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        case = await create_dispute_case(save_fixture, organization, customer, product)
+
+        response = await client.post(
+            f"/v1/support-cases/{case.id}/messages",
+            json={
+                "type": "dispute",
+                "body": "my evidence",
+                "win_reason": "other",
+                "win_reason_other": "The subscription was reactivated",
+            },
+        )
+        assert response.status_code == 201
+
+        row = (
+            await session.execute(
+                select(
+                    DisputeSupportCase.win_reason,
+                    DisputeSupportCase.win_reason_other,
+                ).where(DisputeSupportCase.id == case.id)
+            )
+        ).one()
+        assert row.win_reason == DisputeWinReason.other
+        assert row.win_reason_other == "The subscription was reactivated"
+
+    @pytest.mark.auth
+    async def test_win_reason_other_without_other_reason_rejected(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        case = await create_dispute_case(save_fixture, organization, customer, product)
+        response = await client.post(
+            f"/v1/support-cases/{case.id}/messages",
+            json={
+                "type": "dispute",
+                "body": "my evidence",
+                "win_reason_other": "would be silently lost",
+            },
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_win_reason_other_required_for_other(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        case = await create_dispute_case(save_fixture, organization, customer, product)
+        response = await client.post(
+            f"/v1/support-cases/{case.id}/messages",
+            json={"type": "dispute", "body": "my evidence", "win_reason": "other"},
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_dispute_first_reply_enqueues_greeting(
+        self,
+        client: AsyncClient,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        case = await create_dispute_case(save_fixture, organization, customer, product)
+        enqueue = mocker.patch("polar.dispute.dispute_case.enqueue_job")
+
+        await client.post(
+            f"/v1/support-cases/{case.id}/messages",
+            json={"type": "dispute", "body": "my evidence"},
+        )
+        enqueue.assert_any_call(
+            "dispute.post_dispute_greeting",
+            case_id=case.id,
+            delay=DISPUTE_GREETING_DELAY_MS,
+        )
+
+        enqueue.reset_mock()
+        await client.post(
+            f"/v1/support-cases/{case.id}/messages",
+            json={"type": "dispute", "body": "one more thing"},
+        )
+        greeting_calls = [
+            call
+            for call in enqueue.call_args_list
+            if call.args and call.args[0] == "dispute.post_dispute_greeting"
+        ]
+        assert greeting_calls == []
 
 
 @pytest.mark.asyncio
@@ -235,7 +403,7 @@ class TestDownloadSupportCaseAttachment:
         await session.flush()
         await client.post(
             f"/v1/support-cases/{case.id}/messages",
-            json={"file_ids": [str(file.id)]},
+            json={"type": "review_appeal", "file_ids": [str(file.id)]},
         )
 
         thread = await client.get(f"/v1/support-cases/{case.id}")
@@ -282,3 +450,96 @@ class TestDownloadSupportCaseAttachment:
             "00000000-0000-4000-8000-000000000000/download"
         )
         assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestListSupportCases:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get("/v1/support-cases/")
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_lists_dispute_cases_with_embedded_dispute(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        case = await create_dispute_case(save_fixture, organization, customer, product)
+
+        response = await client.get("/v1/support-cases/", params={"type": "dispute"})
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["pagination"]["total_count"] == 1
+        item = data["items"][0]
+        assert item["id"] == str(case.id)
+        assert item["type"] == "dispute"
+        assert item["dispute"]["id"] == str(case.dispute_id)
+        assert item["dispute"]["status"] == "needs_response"
+        assert item["dispute"]["customer"]["email"] == customer.email
+
+    @pytest.mark.auth
+    async def test_filters_by_dispute_status(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_dispute_case(save_fixture, organization, customer, product)
+
+        matching = await client.get(
+            "/v1/support-cases/",
+            params={"type": "dispute", "dispute_status": "needs_response"},
+        )
+        assert matching.json()["pagination"]["total_count"] == 1
+
+        other = await client.get(
+            "/v1/support-cases/",
+            params={"type": "dispute", "dispute_status": "won"},
+        )
+        assert other.json()["pagination"]["total_count"] == 0
+
+    @pytest.mark.auth
+    async def test_type_filter_excludes_appeals(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        await create_appeal_case(save_fixture, organization)
+        await create_dispute_case(save_fixture, organization, customer, product)
+
+        response = await client.get("/v1/support-cases/", params={"type": "dispute"})
+
+        data = response.json()
+        assert data["pagination"]["total_count"] == 1
+        assert data["items"][0]["type"] == "dispute"
+
+    @pytest.mark.auth
+    async def test_member_without_manage_sees_nothing(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        user_organization.role = OrganizationRole.member
+        await save_fixture(user_organization)
+        await create_dispute_case(save_fixture, organization, customer, product)
+
+        response = await client.get("/v1/support-cases/", params={"type": "dispute"})
+
+        assert response.status_code == 200
+        assert response.json()["pagination"]["total_count"] == 0

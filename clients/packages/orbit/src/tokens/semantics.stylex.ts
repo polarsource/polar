@@ -89,36 +89,48 @@ export const textRoleStyles = stylex.create({
     fontFamily: fontFamilies.display,
     fontSize: { default: fontSizes[10], [md]: fontSizes[12] },
     lineHeight: lineHeights.none,
+    fontWeight: fontWeights.regular,
+    letterSpacing: '0em',
   },
   'heading-xl': {
     fontFamily: fontFamilies.display,
     fontSize: { default: fontSizes[9], [md]: fontSizes[11] },
     lineHeight: lineHeights.none,
+    fontWeight: fontWeights.regular,
+    letterSpacing: '0em',
   },
   'heading-l': {
     fontFamily: fontFamilies.display,
     fontSize: { default: fontSizes[8], [md]: fontSizes[9] },
     lineHeight: lineHeights.tight,
+    fontWeight: fontWeights.medium,
+    letterSpacing: '0em',
   },
   'heading-m': {
     fontFamily: fontFamilies.sans,
     fontSize: { default: fontSizes[7], [md]: fontSizes[8] },
     lineHeight: lineHeights.tight,
+    fontWeight: fontWeights.medium,
+    letterSpacing: '0em',
   },
   'heading-s': {
     fontFamily: fontFamilies.sans,
     fontSize: { default: fontSizes[6], [md]: fontSizes[7] },
     lineHeight: lineHeights.snug,
+    fontWeight: fontWeights.medium,
+    letterSpacing: '0em',
   },
   'heading-xs': {
     fontFamily: fontFamilies.sans,
     fontSize: { default: fontSizes[5], [md]: fontSizes[6] },
     lineHeight: lineHeights.snug,
+    fontWeight: fontWeights.medium,
   },
   'heading-xxs': {
     fontFamily: fontFamilies.sans,
     fontSize: { default: fontSizes[4], [md]: fontSizes[5] },
     lineHeight: lineHeights.snug,
+    fontWeight: fontWeights.medium,
   },
 })
 

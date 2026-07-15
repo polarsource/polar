@@ -44,6 +44,7 @@ from .service import (
     MissingInvoiceBillingDetails,
     OffSessionChargesNotEnabled,
     OrderNotDraft,
+    OrderNotEligibleForInvoice,
     OrganizationNotReadyForPayments,
     PaymentActionRequired,
     PaymentFailed,
@@ -291,6 +292,10 @@ async def finalize(
     summary="Generate Order Invoice",
     responses={
         404: OrderNotFound,
+        409: {
+            "description": "Order is not eligible for invoice generation (invalid status).",
+            "model": OrderNotEligibleForInvoice.schema(),
+        },
         422: {
             "description": "Order is missing billing name or address.",
             "model": MissingInvoiceBillingDetails.schema(),

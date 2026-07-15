@@ -20,10 +20,15 @@ from polar.models import (
     SubscriptionMeter,
 )
 from polar.models.subscription import CustomerCancellationReason
+from polar.subscription.schemas import SubscriptionChargePreview
 from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 
 from ..schemas.subscription import (
+    CustomerSubscriptionChangePreview,
+    CustomerSubscriptionChangePreviewSeats,
+    CustomerSubscriptionPause,
+    CustomerSubscriptionResume,
     CustomerSubscriptionUpdate,
     CustomerSubscriptionUpdateClear,
     CustomerSubscriptionUpdateProduct,
@@ -43,6 +48,11 @@ class UpdateSubscriptionPlanNotAllowed(CustomerSubscriptionError):
 class UpdateSubscriptionSeatsNotAllowed(CustomerSubscriptionError):
     def __init__(self) -> None:
         super().__init__("Updating subscription seats is not allowed.", 403)
+
+
+class PauseResumeNotAllowed(CustomerSubscriptionError):
+    def __init__(self) -> None:
+        super().__init__("Pausing or resuming a subscription is not allowed.", 403)
 
 
 class CustomerSubscriptionSortProperty(StrEnum):
@@ -173,7 +183,6 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                     ctx,
                     subscription,
                     seats=updates.seats,
-                    proration_behavior=updates.proration_behavior,
                 )
 
         if isinstance(updates, CustomerSubscriptionUpdateClear):
@@ -183,6 +192,30 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                 return await subscription_service.clear_pending_update(
                     session, ctx, subscription
                 )
+
+        if isinstance(updates, CustomerSubscriptionPause):
+            if not organization.customer_portal_subscription_pause:
+                raise PauseResumeNotAllowed()
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                if updates.pause_at_period_end:
+                    return await subscription_service.pause(
+                        session, ctx, subscription, resumes_at=updates.resumes_at
+                    )
+                return await subscription_service.cancel_scheduled_pause(
+                    session, ctx, subscription
+                )
+
+        if isinstance(updates, CustomerSubscriptionResume):
+            if not organization.customer_portal_subscription_pause:
+                raise PauseResumeNotAllowed()
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                return await subscription_service.resume(session, ctx, subscription)
 
         cancel = updates.cancel_at_period_end is True
         uncancel = updates.cancel_at_period_end is False
@@ -198,6 +231,32 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             )
 
         return await self.uncancel(session, subscription)
+
+    async def preview_change(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        change: CustomerSubscriptionChangePreview,
+    ) -> SubscriptionChargePreview:
+        organization = subscription.product.organization
+        if isinstance(change, CustomerSubscriptionChangePreviewSeats):
+            if not organization.customer_portal_subscription_update_seats:
+                raise UpdateSubscriptionSeatsNotAllowed()
+            return await subscription_service.calculate_change_preview(
+                session,
+                subscription,
+                seats=change.seats,
+            )
+
+        if not organization.customer_portal_subscription_update_plan:
+            raise UpdateSubscriptionPlanNotAllowed()
+        return await subscription_service.calculate_change_preview(
+            session,
+            subscription,
+            product_id=change.product_id,
+            allowed_visibilities=frozenset({Visibility.public}),
+        )
 
     async def update_product(
         self,

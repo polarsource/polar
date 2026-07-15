@@ -97,6 +97,19 @@ async def organization_offboard_expired() -> None:
         await organization_service.offboard_expired_organizations(session)
 
 
+@actor(
+    actor_name="organization.cancel_expired_subscriptions",
+    cron_trigger=CronTrigger.from_crontab("0 5 * * *"),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def organization_cancel_expired_subscriptions() -> None:
+    """Cancel customer subscriptions of orgs denied/blocked/offboarded past the
+    cancellation delay. Customers are not notified."""
+    async with AsyncSessionMaker() as session:
+        await organization_service.cancel_expired_organizations_subscriptions(session)
+
+
 @actor(actor_name="organization.offboarded", priority=TaskPriority.LOW)
 async def organization_offboarded(organization_id: uuid.UUID) -> None:
     """Notify an organization's members that it has been offboarded."""
@@ -1033,8 +1046,6 @@ async def _prepare_benefit_grants(
     Since seat.customer_id is unchanged (prepare didn't rewrite it), we can
     match seats by customer_id + subscription/order to find the right member.
     """
-    from polar.models import Order, Subscription
-
     member_repository = MemberRepository.from_session(session)
 
     # Find grants without member_id for this organization's customers
@@ -1052,29 +1063,7 @@ async def _prepare_benefit_grants(
         execution_options={"yield_per": _PREPARE_BATCH_SIZE},
     )
 
-    # Lazy caches
     owner_members_map: dict[uuid.UUID, Member] = {}
-    billing_customer_cache: dict[uuid.UUID, uuid.UUID] = {}
-
-    async def _get_billing_customer_id(grant: BenefitGrant) -> uuid.UUID | None:
-        scope_id = grant.subscription_id or grant.order_id
-        if scope_id is None:
-            return None
-        if scope_id in billing_customer_cache:
-            return billing_customer_cache[scope_id]
-        if grant.subscription_id is not None:
-            cid = await session.scalar(
-                select(Subscription.customer_id).where(
-                    Subscription.id == grant.subscription_id
-                )
-            )
-        else:
-            cid = await session.scalar(
-                select(Order.customer_id).where(Order.id == grant.order_id)
-            )
-        if cid is not None:
-            billing_customer_cache[scope_id] = cid
-        return cid
 
     grants_found = 0
     count = 0
@@ -1082,8 +1071,6 @@ async def _prepare_benefit_grants(
     try:
         async for grant in results:
             grants_found += 1
-
-            billing_customer_id = await _get_billing_customer_id(grant)
 
             # Find the correct member for this grant.
             # Since seat.customer_id is still the original holder's ID,
@@ -1126,23 +1113,26 @@ async def _prepare_benefit_grants(
                     target_member_id = owner.id
 
             if target_member_id is not None:
-                # Check for conflict with benefit_grants_smb_key constraint
-                existing_id = await session.scalar(
+                # Skip if assigning this member would collide with a non-deleted
+                # grant on ix_benefit_grants_scope_unique
+                # (customer, benefit, member, subscription, order). Checking the
+                # full scope, not just the smb_key subset, keeps distinct
+                # one-off orders apart while catching duplicate grants for the
+                # same order (e.g. a revoke + re-grant that left two non-deleted
+                # rows for the same customer).
+                scope_conflict_id = await session.scalar(
                     select(BenefitGrant.id).where(
-                        BenefitGrant.subscription_id == grant.subscription_id,
-                        BenefitGrant.member_id == target_member_id,
+                        BenefitGrant.customer_id == grant.customer_id,
                         BenefitGrant.benefit_id == grant.benefit_id,
+                        BenefitGrant.member_id == target_member_id,
+                        BenefitGrant.subscription_id == grant.subscription_id,
+                        BenefitGrant.order_id == grant.order_id,
                         BenefitGrant.id != grant.id,
                         BenefitGrant.is_deleted.is_(False),
                     )
                 )
-                if existing_id is not None:
-                    if grant.order_id is not None:
-                        # One-off order — each purchase is distinct, keep both
-                        grant.member_id = target_member_id
-                        count += 1
-                    else:
-                        skipped_conflicts += 1
+                if scope_conflict_id is not None:
+                    skipped_conflicts += 1
                 else:
                     grant.member_id = target_member_id
                     count += 1

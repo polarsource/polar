@@ -9,7 +9,7 @@ from polar.config import settings
 from polar.logging import Logger
 
 from ._runner import bootstrap, run_task, shutdown
-from ._sqs import actor_to_queue_name, get_queue_url, get_sqs_client, parse_envelope
+from ._sqs import actor_to_queue_name, get_queue_url, parse_envelope, sqs_client
 
 log: Logger = structlog.get_logger()
 
@@ -32,13 +32,13 @@ def run(actor: str, body: str = typer.Argument("{}")) -> None:
 
 
 async def _poll_loop(actors: list[str], max_iterations: int) -> None:
-    client = get_sqs_client()
+    client = sqs_client
     queue_urls = {a: get_queue_url(client, actor_to_queue_name(a)) for a in actors}
     iterations = 0
     try:
         while max_iterations == 0 or iterations < max_iterations:
             iterations += 1
-            for actor_name, url in queue_urls.items():
+            for url in queue_urls.values():
                 response = await asyncio.to_thread(
                     client.receive_message,
                     QueueUrl=url,
@@ -47,14 +47,15 @@ async def _poll_loop(actors: list[str], max_iterations: int) -> None:
                     MessageSystemAttributeNames=["ApproximateReceiveCount"],
                 )
                 for message in response.get("Messages", []):
-                    actor, args, kwargs, correlation_id = parse_envelope(
+                    actor, args, kwargs, correlation_id, attempt = parse_envelope(
                         message["Body"]
                     )
-                    receive_count = int(
+                    sqs_receive_count = int(
                         message.get("Attributes", {}).get(
                             "ApproximateReceiveCount", "1"
                         )
                     )
+                    receive_count = attempt + (sqs_receive_count - 1)
                     try:
                         await run_task(
                             actor,

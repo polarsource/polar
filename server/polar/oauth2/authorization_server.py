@@ -114,8 +114,11 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
 
         if request.user is not None:
             oauth2_client.user_id = request.user.id
-        oauth2_client.registration_access_token = generate_token(
-            prefix=CLIENT_REGISTRATION_TOKEN_PREFIX
+
+        # Sync: must run while we hold the plaintext, and authlib can't await.
+        oauth2_client.set_client_secret_sync(oauth2_client.client_secret)
+        oauth2_client.set_registration_access_token_sync(
+            generate_token(prefix=CLIENT_REGISTRATION_TOKEN_PREFIX)
         )
 
         self.server.session.add(oauth2_client)
@@ -413,7 +416,6 @@ class AuthorizationServer(_AuthorizationServer):
         request: Request,
         grant_user: User | None = None,
         save_consent: bool = False,
-        session_organization_ids: frozenset[uuid.UUID] | None = None,
     ) -> typing.Any:
         if not isinstance(request, StarletteOAuth2Request):
             oauth2_request = self.create_oauth2_request(request)
@@ -424,8 +426,6 @@ class AuthorizationServer(_AuthorizationServer):
             grant: AuthorizationCodeGrant = self.get_authorization_grant(oauth2_request)
         except UnsupportedResponseTypeError as error:
             return self.handle_error_response(oauth2_request, error)
-
-        grant.session_organization_ids = session_organization_ids
 
         try:
             redirect_uri = grant.validate_authorization_request()

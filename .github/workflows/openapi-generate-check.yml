@@ -19,13 +19,16 @@ jobs:
     outputs:
       relevant: ${{ steps.filter.outputs.relevant }}
     steps:
-      - uses: actions/checkout@v6.0.3
-      - uses: dorny/paths-filter@v4
+      - uses: actions/checkout@v7.0.0
+      - uses: dorny/paths-filter@v4.0.2
         id: filter
         with:
           filters: |
             relevant:
               - 'server/polar/**'
+              - 'server/emails/src/types/openapi.ts'
+              - 'server/emails/package.json'
+              - 'server/emails/pnpm-lock.yaml'
               - 'clients/packages/client/src/v1.ts'
               - 'clients/packages/client/package.json'
               - '.github/workflows/openapi-generate-check.yml'
@@ -45,7 +48,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.0
         with:
           ref: ${{ github.event.pull_request.head.sha || github.sha }}
           fetch-depth: 100
@@ -64,7 +67,7 @@ jobs:
           fi
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.2.0
+        uses: astral-sh/setup-uv@v8.3.2
         with:
           enable-cache: true
 
@@ -73,7 +76,7 @@ jobs:
         with:
           python-version-file: "server/pyproject.toml"
 
-      - uses: pnpm/action-setup@v6.0.8
+      - uses: pnpm/action-setup@v6.0.9
         with:
           package_json_file: clients/package.json
 
@@ -82,7 +85,9 @@ jobs:
         with:
           node-version-file: clients/.node-version
           cache: "pnpm"
-          cache-dependency-path: "clients/pnpm-lock.yaml"
+          cache-dependency-path: |
+            clients/pnpm-lock.yaml
+            server/emails/pnpm-lock.yaml
 
       - name: Create mock email renderer binary
         run: touch /tmp/email-renderer
@@ -101,13 +106,29 @@ jobs:
         working-directory: ./clients
         run: pnpm generate
 
+      - name: Install emails dependencies
+        working-directory: ./server/emails
+        run: pnpm install --frozen-lockfile
+
+      - name: Regenerate emails OpenAPI types
+        working-directory: ./server/emails
+        run: pnpm run types
+
       - name: Build PR comment body
         id: body
         run: |
           stale=false
+          client_stale=false
+          emails_stale=false
           if [[ -n "$(git status --porcelain clients/packages/client/src/v1.ts)" ]]; then
+            client_stale=true
             stale=true
             echo "::warning::Generated client (clients/packages/client/src/v1.ts) is out of date. Run 'pnpm generate' in clients/."
+          fi
+          if [[ -n "$(git status --porcelain server/emails/src/types/openapi.ts)" ]]; then
+            emails_stale=true
+            stale=true
+            echo "::warning::Generated email types (server/emails/src/types/openapi.ts) are out of date. Run 'pnpm run types' in server/emails/."
           fi
           echo "stale=$stale" >> "$GITHUB_OUTPUT"
           if [[ "$stale" == "true" ]]; then
@@ -115,24 +136,46 @@ jobs:
               echo 'body<<COMMENT_EOF'
               echo '<!-- __OPENAPI_CLIENT_REGEN -->'
               echo '## Generated OpenAPI Client'
-              echo ''
-              echo '⚠️ **`clients/packages/client/src/v1.ts` is out of date.**'
-              echo ''
-              echo 'The OpenAPI schema has changed but the generated client has not been regenerated. Please run:'
-              echo ''
-              echo '```bash'
-              echo 'cd clients && pnpm generate'
-              echo '```'
-              echo ''
-              echo 'and commit the updated `clients/packages/client/src/v1.ts`.'
-              echo ''
-              echo '<details><summary>Diff stat</summary>'
-              echo ''
-              echo '```'
-              git diff -- clients/packages/client/src/v1.ts
-              echo '```'
-              echo ''
-              echo '</details>'
+              if [[ "$client_stale" == "true" ]]; then
+                echo ''
+                echo '⚠️ **`clients/packages/client/src/v1.ts` is out of date.**'
+                echo ''
+                echo 'The OpenAPI schema has changed but the generated client has not been regenerated. Please run:'
+                echo ''
+                echo '```bash'
+                echo 'cd clients && pnpm generate'
+                echo '```'
+                echo ''
+                echo 'and commit the updated `clients/packages/client/src/v1.ts`.'
+                echo ''
+                echo '<details><summary>Diff stat</summary>'
+                echo ''
+                echo '```'
+                git diff -- clients/packages/client/src/v1.ts
+                echo '```'
+                echo ''
+                echo '</details>'
+              fi
+              if [[ "$emails_stale" == "true" ]]; then
+                echo ''
+                echo '⚠️ **`server/emails/src/types/openapi.ts` is out of date.**'
+                echo ''
+                echo 'The email schemas have changed but the generated types have not been regenerated. Please run:'
+                echo ''
+                echo '```bash'
+                echo 'cd server/emails && pnpm run types'
+                echo '```'
+                echo ''
+                echo 'and commit the updated `server/emails/src/types/openapi.ts`.'
+                echo ''
+                echo '<details><summary>Diff stat</summary>'
+                echo ''
+                echo '```'
+                git diff -- server/emails/src/types/openapi.ts
+                echo '```'
+                echo ''
+                echo '</details>'
+              fi
               echo 'COMMENT_EOF'
             } >> "$GITHUB_OUTPUT"
           fi
@@ -165,8 +208,8 @@ jobs:
               comment_id: ${{ steps.fc.outputs.comment-id }},
             });
 
-      - name: Fail if generated client is out of date
+      - name: Fail if generated files are out of date
         if: steps.body.outputs.stale == 'true'
         run: |
-          echo "Generated OpenAPI client is out of date. Run 'pnpm generate' in clients/ and commit the result."
+          echo "Generated OpenAPI files are out of date. Run 'pnpm generate' in clients/ and/or 'pnpm run types' in server/emails/ and commit the result."
           exit 1

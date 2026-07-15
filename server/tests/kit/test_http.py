@@ -27,6 +27,10 @@ async def test_get_safe_return_url() -> None:
 
     assert get_safe_return_url("https://whatever.com/hey") == "http://127.0.0.1:3000/"
 
+    assert get_safe_return_url("@example.com") == "http://127.0.0.1:3000/"
+
+    assert get_safe_return_url("@example.com/path") == "http://127.0.0.1:3000/"
+
 
 def _fake_getaddrinfo(*addrs: str) -> list[tuple[int, int, int, str, tuple[str, int]]]:
     """Build a fake getaddrinfo result list from IP strings."""

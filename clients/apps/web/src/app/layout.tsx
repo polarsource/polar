@@ -1,6 +1,7 @@
 import '../styles/globals.css'
 
 import SandboxBanner from '@/components/Sandbox/SandboxBanner'
+import { SessionRefreshModal } from '@/components/SessionRefresh/SessionRefreshModal'
 import { getExperimentNames } from '@/experiments'
 import { getDistinctId } from '@/experiments/distinct-id'
 import { ExperimentProvider } from '@/experiments/ExperimentProvider'
@@ -12,7 +13,6 @@ import { schemas } from '@polar-sh/client'
 import { PHASE_PRODUCTION_BUILD } from 'next/constants'
 import { Viewport } from 'next/types'
 import {
-  NavigationHistoryProvider,
   PolarNuqsProvider,
   PolarPostHogProvider,
   PolarQueryClientProvider,
@@ -85,10 +85,9 @@ export default async function RootLayout({
             <PolarPostHogProvider>
               <PolarQueryClientProvider>
                 <PolarNuqsProvider>
-                  <NavigationHistoryProvider>
-                    {CONFIG.IS_SANDBOX && <SandboxBanner />}
-                    {children}
-                  </NavigationHistoryProvider>
+                  {CONFIG.IS_SANDBOX && <SandboxBanner />}
+                  <SessionRefreshModal />
+                  {children}
                 </PolarNuqsProvider>
               </PolarQueryClientProvider>
             </PolarPostHogProvider>

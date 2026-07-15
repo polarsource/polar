@@ -43,7 +43,6 @@ const getHighlighter = async (): Promise<HighlighterCore> => {
 
 interface SyntaxHighlighterContextType {
   highlighter: HighlighterCore | null
-  loadedLanguages: string[]
   loadLanguage: (lang: keyof typeof LANGUAGE_MAP) => Promise<boolean>
 }
 
@@ -64,12 +63,10 @@ export const SyntaxHighlighterProvider = ({
   children: React.ReactNode
 }) => {
   const [highlighter, setHighlighter] = useState<HighlighterCore | null>(null)
-  const [loadedLanguages, setLoadedLanguages] = useState<string[]>([])
 
   useEffect(() => {
     getHighlighter().then((highlighter) => {
       setHighlighter(highlighter)
-      setLoadedLanguages(highlighter.getLoadedLanguages())
     })
   }, [])
 
@@ -99,7 +96,6 @@ export const SyntaxHighlighterProvider = ({
     <SyntaxHighlighterContext.Provider
       value={{
         highlighter,
-        loadedLanguages,
         loadLanguage: _loadLanguage,
       }}
     >

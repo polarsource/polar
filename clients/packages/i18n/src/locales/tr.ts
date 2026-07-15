@@ -16,8 +16,6 @@ export default {
       email: 'E-posta',
       cardholderName: 'Kart sahibinin adı',
       purchasingAsBusiness: 'Kurumsal olarak satın alıyorum',
-      addBusinessDetails: 'Firma bilgileri ekle',
-      removeBusinessDetails: 'Firma bilgilerini kaldır',
       businessName: 'Firma adı',
       billingDetails: 'Fatura Bilgileri',
       billingAddress: {
@@ -72,20 +70,7 @@ export default {
         },
       },
       additionalMeteredUsage: 'Ek kullanım',
-      perUnit: '/ birim',
       discount: {
-        duration: {
-          months: {
-            '=1': 'ilk ay için',
-            other: 'ilk # ay için',
-            _mode: 'plural',
-          },
-          years: {
-            '=1': 'ilk yıl için',
-            other: 'ilk # yıl için',
-            _mode: 'plural',
-          },
-        },
         until: '{date} tarihine kadar',
       },
       inclTax: 'Vergiler dahil',
@@ -111,29 +96,6 @@ export default {
       basePrice: 'Temel fiyat',
     },
     trial: {
-      ends: 'Deneme süresi {endDate} tarihinde bitiyor',
-      duration: {
-        days: {
-          '=1': '# günlük deneme',
-          other: '# günlük deneme',
-          _mode: 'plural',
-        },
-        weeks: {
-          '=1': '# haftalık deneme',
-          other: '# haftalık deneme',
-          _mode: 'plural',
-        },
-        months: {
-          '=1': '# aylık deneme',
-          other: '# aylık deneme',
-          _mode: 'plural',
-        },
-        years: {
-          '=1': '# yıllık deneme',
-          other: '# yıllık deneme',
-          _mode: 'plural',
-        },
-      },
       hero: {
         free: {
           day: {
@@ -161,11 +123,6 @@ export default {
         then: 'Sonrasında',
         startingDate: '{date} itibarıyla',
       },
-      summary: {
-        totalWhenTrialEnds: 'Deneme süresi bittiğinde toplam',
-        totalWhenDiscountExpires: 'İndirim bittiğinde toplam',
-        totalDueToday: 'Bugün ödenecek toplam',
-      },
     },
     pwywForm: {
       label: 'Adil bir fiyat belirleyin',
@@ -180,23 +137,8 @@ export default {
     },
     productDescription: {
       readMore: 'Daha fazla oku',
-      readLess: 'Daha az göster',
-    },
-    card: {
-      included: 'Dahil',
     },
     benefits: {
-      moreBenefits: {
-        '=1': '# avantaj daha',
-        other: '# avantaj daha',
-        _mode: 'plural',
-      },
-      showMoreBenefits: {
-        '=1': '# avantajı daha göster',
-        other: '# avantajı daha göster',
-        _mode: 'plural',
-      },
-      showLess: 'Daha az göster',
       granting: 'Avantajlar tanımlanıyor...',
       requestNewInvite: 'Yeni davet iste',
       retryIn: {
@@ -281,13 +223,34 @@ export default {
       getFree: 'Ücretsiz al',
       paymentsUnavailable: 'Ödemeler şu anda kullanılamıyor',
     },
+    trialUnavailable: {
+      title: 'Bu satın alma için ücretsiz deneme yok',
+      description:
+        'Bu ürün için ücretsiz denemeyi zaten kullandınız, bu yüzden bugün ücretlendirileceksiniz. Satın alma işleminizi tamamlamak için aşağıdan devam edin.',
+    },
   },
   intervals: {
     short: {
-      day: 'g',
-      week: 'h',
-      month: 'a',
-      year: 'y',
+      day: {
+        '=1': 'g',
+        other: '# gün',
+        _mode: 'plural',
+      },
+      week: {
+        '=1': 'h',
+        other: '# hafta',
+        _mode: 'plural',
+      },
+      month: {
+        '=1': 'a',
+        other: '# ay',
+        _mode: 'plural',
+      },
+      year: {
+        '=1': 'y',
+        other: '# yıl',
+        _mode: 'plural',
+      },
     },
   },
   benefitTypes: {

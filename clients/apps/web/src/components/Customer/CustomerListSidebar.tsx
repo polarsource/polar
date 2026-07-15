@@ -55,7 +55,9 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
   const [query, setQuery] = useQueryState('query', parseAsString)
   const [activeFilter, setActiveFilter] = useQueryState(
     'filter',
-    parseAsStringLiteral(['all', 'active'] as const).withDefault('all'),
+    parseAsStringLiteral(['all', 'active', 'inactive'] as const).withDefault(
+      'all',
+    ),
   )
 
   const { data, fetchNextPage, hasNextPage, isFetchingNextPage } = useCustomers(
@@ -63,7 +65,7 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
     {
       query: query ?? undefined,
       sorting: [sorting],
-      active: activeFilter === 'all' ? undefined : true,
+      active: activeFilter === 'all' ? undefined : activeFilter === 'active',
     },
   )
 
@@ -152,6 +154,15 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
                     )}
                   />
                   <span>Active</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => setActiveFilter('inactive')}>
+                  <CheckOutlined
+                    className={twMerge(
+                      'h-4 w-4',
+                      activeFilter !== 'inactive' && 'invisible',
+                    )}
+                  />
+                  <span>Inactive</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>

@@ -11,6 +11,7 @@ from polar.auth.service import USER_SESSION_TOKEN_PREFIX
 from polar.config import settings
 from polar.kit.crypto import generate_token_hash_pair, get_token_hash
 from polar.kit.db.postgres import Session
+from polar.kit.encryption import EncryptedString
 from polar.kit.utils import utc_now
 from polar.models import (
     OAuth2AuthorizationCode,
@@ -148,7 +149,17 @@ async def create_oauth2_grant(
 
 @pytest.mark.asyncio
 class TestOAuth2Register:
-    @pytest.mark.parametrize("redirect_uri", ["http://example.com", "foobar"])
+    @pytest.mark.parametrize(
+        "redirect_uri",
+        [
+            "http://example.com",
+            "foobar",
+            f"http://{'a' * 54773}slocalhost/callback",
+            "http://localhost.evil/callback",
+            "http://localhostevil/callback",
+            "http://localhost./callback",
+        ],
+    )
     @pytest.mark.auth
     async def test_invalid_redirect_uri(
         self, redirect_uri: str, client: AsyncClient
@@ -169,6 +180,7 @@ class TestOAuth2Register:
         [
             "https://example.com",
             "http://localhost:8000/callback",
+            "http://foo.localhost:8000/callback",
             "http://127.0.0.1:8000/callback",
         ],
     )
@@ -218,6 +230,52 @@ class TestOAuth2Register:
         assert "client_id" in json
         assert "registration_access_token" in json
         assert json["scope"] == "openid email"
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user"))
+    async def test_writes_hashed_and_encrypted_secrets(
+        self, client: AsyncClient, sync_session: Session
+    ) -> None:
+        response = await client.post(
+            "/v1/oauth2/register",
+            json={
+                "client_name": "Test Client",
+                "redirect_uris": ["https://example.com/callback"],
+            },
+        )
+
+        assert response.status_code == 201
+        data = response.json()
+
+        oauth2_client = (
+            sync_session.execute(
+                select(OAuth2Client).where(OAuth2Client.client_id == data["client_id"])
+            )
+            .unique()
+            .scalar_one()
+        )
+
+        assert oauth2_client.client_secret_hash == OAuth2Client.hash_secret(
+            data["client_secret"]
+        )
+        assert oauth2_client.registration_access_token_hash == OAuth2Client.hash_secret(
+            data["registration_access_token"]
+        )
+        assert isinstance(oauth2_client.client_secret_encrypted, EncryptedString)
+        assert isinstance(
+            oauth2_client.registration_access_token_encrypted, EncryptedString
+        )
+        assert (
+            await oauth2_client.client_secret_encrypted.decrypt(
+                id=str(oauth2_client.id)
+            )
+            == data["client_secret"]
+        )
+        assert (
+            await oauth2_client.registration_access_token_encrypted.decrypt(
+                id=str(oauth2_client.id)
+            )
+            == data["registration_access_token"]
+        )
 
 
 @pytest.mark.asyncio
@@ -426,14 +484,10 @@ class TestOAuth2Authorize:
         assert response.status_code == 400
 
     @pytest.mark.auth
-    @pytest.mark.parametrize(
-        ("input_sub_type", "expected_sub_type"),
-        [("user", "user"), (None, "organization"), ("organization", "organization")],
-    )
+    @pytest.mark.parametrize("input_sub_type", [None, "user", "organization"])
     async def test_authenticated(
         self,
         input_sub_type: str | None,
-        expected_sub_type: str,
         client: AsyncClient,
         oauth2_client: OAuth2Client,
     ) -> None:
@@ -452,7 +506,12 @@ class TestOAuth2Authorize:
         json = response.json()
         assert json["client"]["client_id"] == oauth2_client.client_id
         assert set(json["scopes"]) == {"openid", "profile", "email"}
-        assert json["sub_type"] == expected_sub_type
+        # The OAuth server only issues user tokens now, regardless of sub_type.
+        assert json["sub_type"] == "user"
+        # Org mode resolves from the param OR the client's default_sub_type
+        # (here "organization"), and is surfaced so the consent UI can force a
+        # single-org selection.
+        assert json["requires_single_organization"] is (input_sub_type != "user")
 
     @pytest.mark.auth
     async def test_dynamically_registered_client_defaults_to_user(
@@ -693,121 +752,6 @@ class TestOAuth2Authorize:
         assert "error=consent_required" in location
 
     @pytest.mark.auth
-    @pytest.mark.parametrize("scope", ["openid", "openid profile email"])
-    async def test_granted_organization(
-        self,
-        scope: str,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-        oauth2_client: OAuth2Client,
-    ) -> None:
-        await create_oauth2_grant(
-            save_fixture,
-            client=oauth2_client,
-            organization=organization,
-            scopes=["openid", "profile", "email"],
-        )
-        params = {
-            "client_id": oauth2_client.client_id,
-            "response_type": "code",
-            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
-            "scope": scope,
-            "sub_type": "organization",
-            "sub": str(organization.id),
-        }
-        response = await client.get("/v1/oauth2/authorize", params=params)
-
-        assert response.status_code == 302
-        location = response.headers["location"]
-        assert location.startswith(params["redirect_uri"])
-        assert "code=" in location
-
-    @pytest.mark.auth
-    async def test_granted_organization_prompt_consent(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        organization: Organization,
-        user_organization: UserOrganization,
-        oauth2_client: OAuth2Client,
-    ) -> None:
-        await create_oauth2_grant(
-            save_fixture,
-            client=oauth2_client,
-            organization=organization,
-            scopes=["openid", "profile", "email"],
-        )
-        params = {
-            "client_id": oauth2_client.client_id,
-            "response_type": "code",
-            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
-            "scope": "openid profile email",
-            "sub_type": "organization",
-            "sub": str(organization.id),
-            "prompt": "consent",
-        }
-        response = await client.get("/v1/oauth2/authorize", params=params)
-
-        json = response.json()
-        assert json["client"]["client_id"] == oauth2_client.client_id
-        assert set(json["scopes"]) == {"openid", "profile", "email"}
-
-    @pytest.mark.auth
-    async def test_not_granted_organization_prompt_none(
-        self,
-        client: AsyncClient,
-        oauth2_client: OAuth2Client,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        params = {
-            "client_id": oauth2_client.client_id,
-            "response_type": "code",
-            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
-            "scope": "openid profile email",
-            "prompt": "none",
-            "sub_type": "organization",
-            "sub": str(organization.id),
-        }
-        response = await client.get("/v1/oauth2/authorize", params=params)
-
-        assert response.status_code == 302
-        location = response.headers["location"]
-        assert "error=consent_required" in location
-
-    @pytest.mark.auth
-    async def test_organization_list_excludes_member_without_manage(
-        self,
-        client: AsyncClient,
-        user: User,
-        organization: Organization,
-        oauth2_client: OAuth2Client,
-        save_fixture: SaveFixture,
-    ) -> None:
-        await save_fixture(
-            UserOrganization(
-                user=user,
-                organization=organization,
-                role=OrganizationRole.member,
-            )
-        )
-        params = {
-            "client_id": oauth2_client.client_id,
-            "response_type": "code",
-            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
-            "scope": "openid profile email",
-            "sub_type": "organization",
-        }
-        response = await client.get("/v1/oauth2/authorize", params=params)
-
-        assert response.status_code == 200
-        json = response.json()
-        org_ids = {o["id"] for o in (json.get("organizations") or [])}
-        assert str(organization.id) not in org_ids
-
-    @pytest.mark.auth
     async def test_user_response_includes_organizations_field(
         self,
         client: AsyncClient,
@@ -981,56 +925,7 @@ class TestOAuth2Consent:
         ] == [organization.id]
 
     @pytest.mark.auth
-    async def test_organization_missing_sub(
-        self,
-        client: AsyncClient,
-        user: User,
-        organization: Organization,
-        oauth2_client: OAuth2Client,
-        sync_session: Session,
-    ) -> None:
-        params = {
-            "client_id": oauth2_client.client_id,
-            "response_type": "code",
-            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
-            "scope": "openid profile email",
-            "sub_type": "organization",
-        }
-        response = await client.post(
-            "/v1/oauth2/consent", params=params, data={"action": "allow"}
-        )
-
-        assert response.status_code == 400
-        json = response.json()
-        assert json["error"] == "invalid_sub"
-
-    @pytest.mark.auth
-    async def test_organization_not_member(
-        self,
-        client: AsyncClient,
-        user: User,
-        organization: Organization,
-        oauth2_client: OAuth2Client,
-        sync_session: Session,
-    ) -> None:
-        params = {
-            "client_id": oauth2_client.client_id,
-            "response_type": "code",
-            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
-            "scope": "openid profile email",
-            "sub_type": "organization",
-            "sub": str(organization.id),
-        }
-        response = await client.post(
-            "/v1/oauth2/consent", params=params, data={"action": "allow"}
-        )
-
-        assert response.status_code == 400
-        json = response.json()
-        assert json["error"] == "invalid_sub"
-
-    @pytest.mark.auth
-    async def test_organization_member_without_manage_forbidden(
+    async def test_organization_sub_type_issues_user_down_scope(
         self,
         client: AsyncClient,
         user: User,
@@ -1039,6 +934,8 @@ class TestOAuth2Consent:
         save_fixture: SaveFixture,
         sync_session: Session,
     ) -> None:
+        # sub_type=organization now mints a USER code down-scoped to the picked
+        # org (chosen via `organizations`, not `sub`), not an organization code.
         await save_fixture(
             UserOrganization(
                 user=user,
@@ -1052,18 +949,32 @@ class TestOAuth2Consent:
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": "openid profile email",
             "sub_type": "organization",
-            "sub": str(organization.id),
+            "organizations": str(organization.id),
         }
         response = await client.post(
             "/v1/oauth2/consent", params=params, data={"action": "allow"}
         )
 
-        assert response.status_code == 400
-        json = response.json()
-        assert json["error"] == "invalid_sub"
+        assert response.status_code == 302
+        code = parse_qs(urlparse(response.headers["location"]).query)["code"][0]
+
+        authorization_code = (
+            sync_session.execute(
+                select(OAuth2AuthorizationCode).where(
+                    OAuth2AuthorizationCode.code
+                    == get_token_hash(code, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert authorization_code.sub_type == SubType.user
+        assert [
+            scope.organization_id for scope in authorization_code.organization_scopes
+        ] == [organization.id]
 
     @pytest.mark.auth
-    async def test_organization_manage_in_other_org_forbidden(
+    async def test_organization_sub_type_keeps_single_org_on_multiple(
         self,
         client: AsyncClient,
         user: User,
@@ -1073,28 +984,64 @@ class TestOAuth2Consent:
         save_fixture: SaveFixture,
         sync_session: Session,
     ) -> None:
-        await save_fixture(
-            UserOrganization(
-                user=user,
-                organization=organization_second,
-                role=OrganizationRole.owner,
+        # Defensive fallback: sub_type=organization with >1 orgs (URL tampering)
+        # keeps only one.
+        for org in (organization, organization_second):
+            await save_fixture(
+                UserOrganization(
+                    user=user, organization=org, role=OrganizationRole.member
+                )
             )
-        )
         params = {
             "client_id": oauth2_client.client_id,
             "response_type": "code",
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": "openid profile email",
             "sub_type": "organization",
-            "sub": str(organization.id),
+            "organizations": [str(organization.id), str(organization_second.id)],
+        }
+        response = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 302
+        code = parse_qs(urlparse(response.headers["location"]).query)["code"][0]
+
+        authorization_code = (
+            sync_session.execute(
+                select(OAuth2AuthorizationCode).where(
+                    OAuth2AuthorizationCode.code
+                    == get_token_hash(code, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert authorization_code.sub_type == SubType.user
+        assert len(authorization_code.organization_scopes) == 1
+
+    @pytest.mark.auth
+    async def test_organization_sub_type_requires_an_organization(
+        self,
+        client: AsyncClient,
+        user: User,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        # sub_type=organization without a selection must not mint an unrestricted
+        # token — the server enforces it regardless of the UI.
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "organization",
         }
         response = await client.post(
             "/v1/oauth2/consent", params=params, data={"action": "allow"}
         )
 
         assert response.status_code == 400
-        json = response.json()
-        assert json["error"] == "invalid_sub"
+        assert response.json()["error"] == "invalid_request"
 
     @pytest.mark.auth
     async def test_organization_deny(
@@ -1122,39 +1069,82 @@ class TestOAuth2Consent:
         assert "error=access_denied" in location
 
     @pytest.mark.auth
-    async def test_organization_allow(
+    async def test_reject_selecting_sso_enforced_organization(
         self,
         client: AsyncClient,
+        user: User,
         organization: Organization,
-        user_organization: UserOrganization,
         oauth2_client: OAuth2Client,
-        sync_session: Session,
+        save_fixture: SaveFixture,
     ) -> None:
+        # A non-SSO session can't scope a token to an SSO-enforced org, even when
+        # the org is passed directly (the UI already hides it from the list).
+        organization.sso_enforced = True
+        await save_fixture(organization)
+        await save_fixture(
+            UserOrganization(
+                user=user, organization=organization, role=OrganizationRole.member
+            )
+        )
         params = {
             "client_id": oauth2_client.client_id,
             "response_type": "code",
             "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
             "scope": "openid profile email",
-            "sub_type": "organization",
-            "sub": str(organization.id),
+            "sub_type": "user",
+            "organizations": str(organization.id),
+        }
+        response = await client.post(
+            "/v1/oauth2/consent", params=params, data={"action": "allow"}
+        )
+
+        assert response.status_code == 400
+        assert response.json()["error"] == "invalid_request"
+
+    @pytest.mark.auth
+    async def test_sso_enforced_membership_still_issues_unrestricted_token(
+        self,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        oauth2_client: OAuth2Client,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+    ) -> None:
+        # No explicit selection still mints an unrestricted token; the enforced
+        # org is filtered at request time, not issuance, so there's no lockout.
+        organization.sso_enforced = True
+        await save_fixture(organization)
+        await save_fixture(
+            UserOrganization(
+                user=user, organization=organization, role=OrganizationRole.member
+            )
+        )
+        params = {
+            "client_id": oauth2_client.client_id,
+            "response_type": "code",
+            "redirect_uri": "http://127.0.0.1:8000/docs/oauth2-redirect",
+            "scope": "openid profile email",
+            "sub_type": "user",
         }
         response = await client.post(
             "/v1/oauth2/consent", params=params, data={"action": "allow"}
         )
 
         assert response.status_code == 302
-        location = response.headers["location"]
-        assert location.startswith(params["redirect_uri"])
-        assert "code=" in location
+        code = parse_qs(urlparse(response.headers["location"]).query)["code"][0]
 
-        grant = oauth2_grant_service._get_by_sub_and_client_id(
-            sync_session,
-            sub_type=SubType.organization,
-            sub_id=organization.id,
-            client_id=oauth2_client.client_id,
+        authorization_code = (
+            sync_session.execute(
+                select(OAuth2AuthorizationCode).where(
+                    OAuth2AuthorizationCode.code
+                    == get_token_hash(code, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
         )
-        assert grant is not None
-        assert grant.scopes == ["openid", "profile", "email"]
+        assert authorization_code.organization_scopes == []
 
 
 @pytest.mark.asyncio
@@ -1461,6 +1451,102 @@ class TestOAuth2Token:
         refresh_token = json["refresh_token"]
         assert refresh_token.startswith("polar_rt_o_")
 
+    async def test_refresh_token_migrates_single_member_org_token(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        # An org with exactly one member has an unambiguous authorizing user, so
+        # refreshing its legacy org token migrates it to a user token down-scoped
+        # to the org.
+        await save_fixture(
+            UserOrganization(
+                user=user, organization=organization, role=OrganizationRole.member
+            )
+        )
+        await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="ACCESS_TOKEN",
+            refresh_token="REFRESH_TOKEN",
+            scopes=["openid", "profile", "email"],
+            organization=organization,
+        )
+
+        data = {
+            "grant_type": "refresh_token",
+            "refresh_token": "REFRESH_TOKEN",
+            "client_id": oauth2_client.client_id,
+            "client_secret": oauth2_client.client_secret,
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        access_token = response.json()["access_token"]
+        assert access_token.startswith("polar_at_u_")
+
+        oauth2_token = (
+            sync_session.execute(
+                select(OAuth2Token).where(
+                    OAuth2Token.access_token
+                    == get_token_hash(access_token, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert oauth2_token.sub_type == SubType.user
+        assert oauth2_token.user_id == user.id
+        assert {
+            scope.organization_id for scope in oauth2_token.organization_scopes
+        } == {organization.id}
+
+    async def test_refresh_token_keeps_multi_member_org_token(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user: User,
+        user_second: User,
+        organization: Organization,
+        oauth2_client: OAuth2Client,
+    ) -> None:
+        # A multi-member org can't be disambiguated to a single user, so its org
+        # token stays org-bound and simply ages out.
+        for member in (user, user_second):
+            await save_fixture(
+                UserOrganization(
+                    user=member,
+                    organization=organization,
+                    role=OrganizationRole.member,
+                )
+            )
+        await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="ACCESS_TOKEN",
+            refresh_token="REFRESH_TOKEN",
+            scopes=["openid", "profile", "email"],
+            organization=organization,
+        )
+
+        data = {
+            "grant_type": "refresh_token",
+            "refresh_token": "REFRESH_TOKEN",
+            "client_id": oauth2_client.client_id,
+            "client_secret": oauth2_client.client_secret,
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        access_token = response.json()["access_token"]
+        assert access_token.startswith("polar_at_o_")
+
     async def test_refresh_token_unauthenticated_private_client(
         self,
         save_fixture: SaveFixture,
@@ -1721,10 +1807,23 @@ class TestOAuth2Token:
         json = response.json()
 
         access_token = json["access_token"]
-        assert access_token.startswith("polar_at_o_")
+        assert access_token.startswith("polar_at_u_")
         assert "refresh_token" not in json
 
-    async def test_web_grant_sub_organization_member_without_manage_forbidden(
+        oauth2_token = (
+            sync_session.execute(
+                select(OAuth2Token).where(
+                    OAuth2Token.access_token
+                    == get_token_hash(access_token, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert oauth2_token.sub_type == SubType.user
+        assert oauth2_token.organization_ids == frozenset({organization.id})
+
+    async def test_web_grant_sub_organization_member_allowed(
         self,
         save_fixture: SaveFixture,
         sync_session: Session,
@@ -1763,7 +1862,21 @@ class TestOAuth2Token:
 
         response = await client.post("/v1/oauth2/token", data=data)
 
-        assert response.status_code == 400
+        assert response.status_code == 200
+        access_token = response.json()["access_token"]
+        assert access_token.startswith("polar_at_u_")
+
+        oauth2_token = (
+            sync_session.execute(
+                select(OAuth2Token).where(
+                    OAuth2Token.access_token
+                    == get_token_hash(access_token, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert oauth2_token.organization_ids == frozenset({organization.id})
 
     async def test_web_grant_user_inherits_session_down_scope(
         self,
@@ -1900,10 +2013,22 @@ class TestOAuth2Token:
         response = await client.post("/v1/oauth2/token", data=data)
 
         assert response.status_code == 200
-        json = response.json()
-        assert json["access_token"].startswith("polar_at_o_")
+        access_token = response.json()["access_token"]
+        assert access_token.startswith("polar_at_u_")
 
-    async def test_web_grant_sub_organization_manage_in_other_org_forbidden(
+        oauth2_token = (
+            sync_session.execute(
+                select(OAuth2Token).where(
+                    OAuth2Token.access_token
+                    == get_token_hash(access_token, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert oauth2_token.organization_ids == frozenset({organization.id})
+
+    async def test_web_grant_sub_organization_non_member_forbidden(
         self,
         save_fixture: SaveFixture,
         sync_session: Session,
@@ -1929,6 +2054,204 @@ class TestOAuth2Token:
             user=user,
             scopes=set(Scope),
             expires_at=utc_now() + timedelta(seconds=60),
+        )
+        await save_fixture(user_session)
+
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "client_id": web_grant_oauth2_client.client_id,
+            "client_secret": web_grant_oauth2_client.client_secret,
+            "sub_type": "organization",
+            "sub": str(organization.id),
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 400
+
+    async def test_web_grant_sub_organization_within_session_down_scope(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        user_organization: UserOrganization,
+        web_grant_oauth2_client: OAuth2Client,
+    ) -> None:
+        token, token_hash = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
+        )
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes=set(Scope),
+            expires_at=utc_now() + timedelta(seconds=60),
+            organization_scopes=[
+                UserSessionOrganization(organization_id=organization.id)
+            ],
+        )
+        await save_fixture(user_session)
+
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "client_id": web_grant_oauth2_client.client_id,
+            "client_secret": web_grant_oauth2_client.client_secret,
+            "sub_type": "organization",
+            "sub": str(organization.id),
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        access_token = response.json()["access_token"]
+        assert access_token.startswith("polar_at_u_")
+
+        oauth2_token = (
+            sync_session.execute(
+                select(OAuth2Token).where(
+                    OAuth2Token.access_token
+                    == get_token_hash(access_token, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert oauth2_token.organization_ids == frozenset({organization.id})
+
+    async def test_web_grant_sub_organization_sso_enforced_non_sso_session_forbidden(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        web_grant_oauth2_client: OAuth2Client,
+    ) -> None:
+        # An unscoped (non-SSO) session can't scope a token to an SSO-enforced org.
+        organization.sso_enforced = True
+        await save_fixture(organization)
+        await save_fixture(
+            UserOrganization(
+                user=user, organization=organization, role=OrganizationRole.member
+            )
+        )
+        token, token_hash = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
+        )
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes=set(Scope),
+            expires_at=utc_now() + timedelta(seconds=60),
+        )
+        await save_fixture(user_session)
+
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "client_id": web_grant_oauth2_client.client_id,
+            "client_secret": web_grant_oauth2_client.client_secret,
+            "sub_type": "organization",
+            "sub": str(organization.id),
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 400
+
+    async def test_web_grant_sub_organization_sso_enforced_within_sso_session(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        web_grant_oauth2_client: OAuth2Client,
+    ) -> None:
+        # An SSO-scoped session carries the enforced org, so it can still mint a
+        # token scoped to it.
+        organization.sso_enforced = True
+        await save_fixture(organization)
+        await save_fixture(
+            UserOrganization(
+                user=user, organization=organization, role=OrganizationRole.member
+            )
+        )
+        token, token_hash = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
+        )
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes=set(Scope),
+            expires_at=utc_now() + timedelta(seconds=60),
+            organization_scopes=[
+                UserSessionOrganization(organization_id=organization.id)
+            ],
+        )
+        await save_fixture(user_session)
+
+        data = {
+            "grant_type": "web",
+            "session_token": token,
+            "client_id": web_grant_oauth2_client.client_id,
+            "client_secret": web_grant_oauth2_client.client_secret,
+            "sub_type": "organization",
+            "sub": str(organization.id),
+        }
+
+        response = await client.post("/v1/oauth2/token", data=data)
+
+        assert response.status_code == 200
+        access_token = response.json()["access_token"]
+        oauth2_token = (
+            sync_session.execute(
+                select(OAuth2Token).where(
+                    OAuth2Token.access_token
+                    == get_token_hash(access_token, secret=settings.SECRET)
+                )
+            )
+            .unique()
+            .scalar_one()
+        )
+        assert oauth2_token.organization_ids == frozenset({organization.id})
+
+    async def test_web_grant_sub_organization_outside_session_down_scope_forbidden(
+        self,
+        save_fixture: SaveFixture,
+        sync_session: Session,
+        client: AsyncClient,
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+        web_grant_oauth2_client: OAuth2Client,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=user,
+                organization=organization_second,
+                role=OrganizationRole.owner,
+            )
+        )
+        token, token_hash = generate_token_hash_pair(
+            secret=settings.SECRET, prefix=USER_SESSION_TOKEN_PREFIX
+        )
+        user_session = UserSession(
+            token=token_hash,
+            user_agent="tests",
+            user=user,
+            scopes=set(Scope),
+            expires_at=utc_now() + timedelta(seconds=60),
+            organization_scopes=[
+                UserSessionOrganization(organization_id=organization_second.id)
+            ],
         )
         await save_fixture(user_session)
 

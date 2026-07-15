@@ -1,11 +1,16 @@
 output "queue_url" {
-  description = "Task SQS queue URL."
+  description = "Worker profile SQS queue URL."
   value       = aws_sqs_queue.task.url
 }
 
 output "queue_arn" {
-  description = "Task SQS queue ARN."
+  description = "Worker profile SQS queue ARN."
   value       = aws_sqs_queue.task.arn
+}
+
+output "dlq_url" {
+  description = "Dead-letter queue URL."
+  value       = aws_sqs_queue.dlq.url
 }
 
 output "dlq_arn" {

@@ -1,3 +1,4 @@
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
@@ -42,7 +43,10 @@ export const useSubscription = (
     enabled: options?.enabled ?? true,
   })
 
-export const useSubscriptionChargePreview = (id: string) =>
+export const useSubscriptionChargePreview = (
+  id: string,
+  options?: { enabled?: boolean },
+) =>
   useQuery({
     queryKey: ['subscriptions', { id }, 'charge-preview'],
     queryFn: () =>
@@ -52,6 +56,7 @@ export const useSubscriptionChargePreview = (id: string) =>
         }),
       ),
     retry: defaultRetry,
+    enabled: options?.enabled ?? true,
   })
 
 export const useUpdateSubscription = (id: string) =>
@@ -71,6 +76,7 @@ export const useUpdateSubscription = (id: string) =>
       queryClient.setQueriesData<schemas['Subscription']>(
         {
           queryKey: ['subscriptions', { id }],
+          exact: true,
         },
         data,
       )
@@ -109,13 +115,22 @@ export const useUpdateSubscription = (id: string) =>
 
 export const useUncancelSubscription = (id: string) =>
   useMutation({
-    mutationFn: () => {
-      return api.PATCH('/v1/subscriptions/{id}', {
+    mutationFn: async () => {
+      const result = await api.PATCH('/v1/subscriptions/{id}', {
         params: { path: { id } },
         body: {
           cancel_at_period_end: false,
         },
       })
+      if (result.error) {
+        throw new Error(
+          extractApiErrorMessage(
+            result.error,
+            'Failed to uncancel subscription',
+          ),
+        )
+      }
+      return result
     },
     onSuccess: (result) => {
       const { data, error } = result
@@ -126,6 +141,7 @@ export const useUncancelSubscription = (id: string) =>
       queryClient.setQueriesData<schemas['Subscription']>(
         {
           queryKey: ['subscriptions', { id }],
+          exact: true,
         },
         data,
       )
@@ -162,6 +178,129 @@ export const useUncancelSubscription = (id: string) =>
     },
   })
 
+const applySubscriptionUpdateToCache = (
+  id: string,
+  data: schemas['Subscription'],
+) => {
+  const queryClient = getQueryClient()
+  queryClient.setQueriesData<schemas['Subscription']>(
+    {
+      queryKey: ['subscriptions', { id }],
+      exact: true,
+    },
+    data,
+  )
+  queryClient.setQueriesData<schemas['ListResource_Subscription_']>(
+    {
+      queryKey: [
+        'subscriptions',
+        { organizationId: data.product.organization_id },
+      ],
+    },
+    (old) =>
+      old
+        ? {
+            items: old.items.map((item) => (item.id === data.id ? data : item)),
+            pagination: old.pagination,
+          }
+        : {
+            items: [data],
+            pagination: {
+              total_count: 1,
+              max_page: 1,
+            },
+          },
+  )
+  queryClient.invalidateQueries({
+    queryKey: ['subscriptions', { id }, 'charge-preview'],
+  })
+  queryClient.invalidateQueries({
+    queryKey: [
+      'subscriptions',
+      { organizationId: data.product.organization_id },
+    ],
+  })
+}
+
+export const usePauseSubscription = (id: string) =>
+  useMutation({
+    mutationFn: async (body: { resumes_at?: string | null }) => {
+      const result = await api.PATCH('/v1/subscriptions/{id}', {
+        params: { path: { id } },
+        body: {
+          pause_at_period_end: true,
+          resumes_at: body.resumes_at ?? null,
+        },
+      })
+      if (result.error) {
+        throw new Error(
+          extractApiErrorMessage(result.error, 'Failed to pause subscription'),
+        )
+      }
+      return result
+    },
+    onSuccess: (result) => {
+      const { data, error } = result
+      if (error) {
+        return
+      }
+      applySubscriptionUpdateToCache(id, data)
+    },
+  })
+
+export const useCancelScheduledPause = (id: string) =>
+  useMutation({
+    mutationFn: async () => {
+      const result = await api.PATCH('/v1/subscriptions/{id}', {
+        params: { path: { id } },
+        body: {
+          pause_at_period_end: false,
+        },
+      })
+      if (result.error) {
+        throw new Error(
+          extractApiErrorMessage(
+            result.error,
+            'Failed to cancel the scheduled pause',
+          ),
+        )
+      }
+      return result
+    },
+    onSuccess: (result) => {
+      const { data, error } = result
+      if (error) {
+        return
+      }
+      applySubscriptionUpdateToCache(id, data)
+    },
+  })
+
+export const useResumeSubscription = (id: string) =>
+  useMutation({
+    mutationFn: async () => {
+      const result = await api.PATCH('/v1/subscriptions/{id}', {
+        params: { path: { id } },
+        body: {
+          resume: true,
+        },
+      })
+      if (result.error) {
+        throw new Error(
+          extractApiErrorMessage(result.error, 'Failed to resume subscription'),
+        )
+      }
+      return result
+    },
+    onSuccess: (result) => {
+      const { data, error } = result
+      if (error) {
+        return
+      }
+      applySubscriptionUpdateToCache(id, data)
+    },
+  })
+
 export const useClearPendingSubscriptionUpdate = (id: string) =>
   useMutation({
     mutationFn: () => {
@@ -181,6 +320,7 @@ export const useClearPendingSubscriptionUpdate = (id: string) =>
       queryClient.setQueriesData<schemas['Subscription']>(
         {
           queryKey: ['subscriptions', { id }],
+          exact: true,
         },
         data,
       )
@@ -210,5 +350,9 @@ export const useClearPendingSubscriptionUpdate = (id: string) =>
           }
         },
       )
+
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'charge-preview'],
+      })
     },
   })

@@ -18,6 +18,7 @@ from polar.support_case.repository import (
     ReviewAppealSupportCaseRepository,
     SupportCaseMessageRepository,
 )
+from polar.support_case.schemas import ReviewAppealSupportCaseMessageCreate
 from polar.support_case.service import support_case as support_case_service
 from polar.worker import enqueue_job
 
@@ -116,10 +117,10 @@ class AppealCaseService:
         self,
         session: AsyncSession,
         case: ReviewAppealSupportCase,
+        reply: ReviewAppealSupportCaseMessageCreate,
         *,
         author_kind: SupportCaseMessageAuthorKind,
         author_user: User | None = None,
-        body: str | None = None,
         files: Sequence[File] = (),
         internal: bool = False,
     ) -> SupportCaseMessage:
@@ -131,7 +132,7 @@ class AppealCaseService:
             case,
             author_kind=author_kind,
             author_user=author_user,
-            body=body,
+            body=reply.body,
             audience=audience,
         )
         for file in files:

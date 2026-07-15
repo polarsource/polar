@@ -318,7 +318,7 @@ class EmbedPaymentMethod {
     iframe.style.border = 'none'
     iframe.style.zIndex = '2147483647'
     iframe.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
-    iframe.style.colorScheme = 'auto'
+    iframe.style.colorScheme = 'normal'
 
     iframe.allow = buildIframeAllow()
 
@@ -365,7 +365,7 @@ class EmbedPaymentMethod {
     iframe.style.width = '100%'
     iframe.style.height = '0'
     iframe.style.border = 'none'
-    iframe.style.colorScheme = 'auto'
+    iframe.style.colorScheme = 'normal'
     iframe.allow = buildIframeAllow()
 
     element.replaceChildren(iframe)

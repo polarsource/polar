@@ -30,7 +30,7 @@ from sqlalchemy.orm.attributes import OP_BULK_REPLACE, Event
 
 from polar.config import settings
 from polar.custom_field.data import CustomFieldDataMixin
-from polar.enums import SubscriptionRecurringInterval, TaxBehavior
+from polar.enums import MeterInterval, SubscriptionRecurringInterval, TaxBehavior
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
@@ -66,6 +66,7 @@ class SubscriptionStatus(StrEnum):
     past_due = "past_due"
     canceled = "canceled"
     unpaid = "unpaid"
+    paused = "paused"
 
     @classmethod
     def incomplete_statuses(cls) -> set[Self]:
@@ -125,6 +126,19 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
     recurring_interval_count: Mapped[int] = mapped_column(Integer, nullable=False)
 
+    meter_interval: Mapped[MeterInterval | None] = mapped_column(
+        StringEnum(MeterInterval), nullable=True, default=None
+    )
+    """
+    Meter cycle snapshotted from the product at creation, independent of the billing
+    interval. When set, the metered concerns (overage settlement, meter resets and
+    meter-credit grants) run on this cadence via the meter clock below. When unset,
+    they follow the billing interval, exactly as before.
+    """
+    meter_interval_count: Mapped[int | None] = mapped_column(
+        Integer, nullable=True, default=None
+    )
+
     legacy_stripe_subscription_id: Mapped[str | None] = mapped_column(
         String, nullable=True, index=True, default=None
     )
@@ -161,6 +175,20 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     current_period_end: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, default=None
     )
+    current_meter_period_start: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    """
+    Start of the current meter period. Only set when ``meter_interval`` is set; the
+    meter clock is advanced by the meter-cycle task independently of the billing clock.
+    """
+    current_meter_period_end: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    """
+    End of the current meter period. The scheduler wakes the subscription at whichever
+    of ``current_period_end`` / ``current_meter_period_end`` fires first.
+    """
     trial_start: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
@@ -182,6 +210,16 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     )
     past_due_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+
+    pause_at_period_end: Mapped[bool] = mapped_column(
+        Boolean, nullable=False, default=False
+    )
+    paused_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None, index=True
+    )
+    resumes_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None, index=True
     )
 
     scheduler_locked_at: Mapped[datetime | None] = mapped_column(
@@ -351,6 +389,15 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         )
 
     @hybrid_property
+    def paused(self) -> bool:
+        return self.status == SubscriptionStatus.paused
+
+    @paused.inplace.expression
+    @classmethod
+    def _paused_expression(cls) -> ColumnElement[bool]:
+        return cls.status == SubscriptionStatus.paused
+
+    @hybrid_property
     def canceled(self) -> bool:
         return self.canceled_at is not None
 
@@ -358,6 +405,27 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @classmethod
     def _canceled_expression(cls) -> ColumnElement[bool]:
         return cls.canceled_at.is_not(None)
+
+    def initialize_meter_period(self, start: datetime | None) -> None:
+        """
+        Initialize (or clear) the meter clock from the snapshotted ``meter_interval``.
+
+        Set only when a meter cycle is configured and a ``start`` is given; otherwise
+        cleared. During a trial ``start`` is ``None`` and the clock stays empty until
+        conversion, mirroring how the billing period behaves.
+        """
+        if (
+            start is None
+            or self.meter_interval is None
+            or self.meter_interval_count is None
+        ):
+            self.current_meter_period_start = None
+            self.current_meter_period_end = None
+            return
+        self.current_meter_period_start = start
+        self.current_meter_period_end = self.meter_interval.get_next_period(
+            start, self.anchor_day, self.meter_interval_count
+        )
 
     @hybrid_property
     def billable(self) -> bool:
@@ -390,6 +458,11 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return cast(cls.past_due_at + total_interval, TIMESTAMP(timezone=True))
 
     def can_cancel(self, immediately: bool = False) -> bool:
+        # A paused subscription isn't billable, but can still be revoked
+        # immediately instead of having to be resumed first.
+        if immediately and self.status == SubscriptionStatus.paused:
+            return self.ended_at is None
+
         if not SubscriptionStatus.is_billable(self.status):
             return False
 
@@ -408,6 +481,22 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             self.cancel_at_period_end
             and self.status in SubscriptionStatus.billable_statuses()
         )
+
+    def can_pause(self) -> bool:
+        return (
+            self.status == SubscriptionStatus.active
+            and not self.cancel_at_period_end
+            and not self.pause_at_period_end
+            and self.ends_at is None
+        )
+
+    def can_cancel_scheduled_pause(self) -> bool:
+        return bool(self.pause_at_period_end) and (
+            self.status == SubscriptionStatus.active
+        )
+
+    def can_resume(self) -> bool:
+        return self.status == SubscriptionStatus.paused
 
     def update_amount_and_currency(
         self, prices: Sequence["SubscriptionProductPrice"], discount: "Discount | None"

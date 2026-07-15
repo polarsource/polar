@@ -16,14 +16,20 @@ from polar_sdk.models import (
     WebhookBenefitGrantRevokedPayload,
     WebhookBenefitGrantUpdatedPayload,
     WebhookOrderCreatedPayload,
+    WebhookSubscriptionCanceledPayload,
+    WebhookSubscriptionPastDuePayload,
+    WebhookSubscriptionRevokedPayload,
 )
 
 from polar.account.repository import AccountRepository
 from polar.config import settings
 from polar.email.schemas import (
     EmailAdapter,
+    PolarSelfSubscriptionCancellationProps,
     PolarSelfSubscriptionConfirmationProps,
     PolarSelfSubscriptionCycledProps,
+    PolarSelfSubscriptionPastDueProps,
+    PolarSelfSubscriptionRevokedProps,
 )
 from polar.email.sender import Attachment, enqueue_email_template
 from polar.integrations.plain.service import plain as plain_service
@@ -216,6 +222,35 @@ class PolarSelfService:
             input_tokens=input_tokens,
             output_tokens=output_tokens,
             cost_usd=str(cost_decimal),
+        )
+
+    def enqueue_track_compass_assistant_usage(
+        self,
+        *,
+        external_customer_id: str,
+        vendor: str,
+        model: str,
+        input_tokens: int,
+        output_tokens: int,
+        cost_usd: Decimal | float | None,
+        usage_id: str,
+    ) -> None:
+        if not self.is_configured:
+            return
+        if cost_usd is None:
+            return
+        cost_decimal = Decimal(str(cost_usd))
+        if cost_decimal <= 0:
+            return
+        enqueue_job(
+            "polar_self.track_compass_assistant_usage",
+            external_customer_id=external_customer_id,
+            vendor=vendor,
+            model=model,
+            input_tokens=input_tokens,
+            output_tokens=output_tokens,
+            cost_usd=str(cost_decimal),
+            usage_id=usage_id,
         )
 
     async def list_plans(self) -> list["Product"]:
@@ -783,6 +818,119 @@ class PolarSelfService:
                     attachments=attachments,
                 )
 
+    async def handle_subscription_canceled_event(
+        self, payload: WebhookSubscriptionCanceledPayload
+    ) -> None:
+        subscription = payload.data
+        context = await self._resolve_subscription_email_context(subscription)
+        if context is None:
+            return
+        recipients, product_name = context
+        ends_at = subscription.ends_at.isoformat() if subscription.ends_at else None
+
+        with logfire.span(
+            "polar_self.webhook.subscription_canceled",
+            subscription_id=subscription.id,
+        ):
+            for recipient in recipients:
+                email = EmailAdapter.validate_python(
+                    {
+                        "template": "polar_self_subscription_cancellation",
+                        "props": PolarSelfSubscriptionCancellationProps(
+                            email=recipient,
+                            product_name=product_name,
+                            ends_at=ends_at,
+                        ).model_dump(),
+                    }
+                )
+                enqueue_email_template(
+                    email,
+                    to_email_addr=recipient,
+                    subject=f"Your {product_name} subscription has been canceled",
+                )
+
+    async def handle_subscription_past_due_event(
+        self, payload: WebhookSubscriptionPastDuePayload
+    ) -> None:
+        subscription = payload.data
+        context = await self._resolve_subscription_email_context(subscription)
+        if context is None:
+            return
+        recipients, product_name = context
+
+        with logfire.span(
+            "polar_self.webhook.subscription_past_due",
+            subscription_id=subscription.id,
+        ):
+            for recipient in recipients:
+                email = EmailAdapter.validate_python(
+                    {
+                        "template": "polar_self_subscription_past_due",
+                        "props": PolarSelfSubscriptionPastDueProps(
+                            email=recipient,
+                            product_name=product_name,
+                        ).model_dump(),
+                    }
+                )
+                enqueue_email_template(
+                    email,
+                    to_email_addr=recipient,
+                    subject=f"Your {product_name} subscription payment failed",
+                )
+
+    async def handle_subscription_revoked_event(
+        self, payload: WebhookSubscriptionRevokedPayload
+    ) -> None:
+        subscription = payload.data
+        context = await self._resolve_subscription_email_context(subscription)
+        if context is None:
+            return
+        recipients, product_name = context
+
+        with logfire.span(
+            "polar_self.webhook.subscription_revoked",
+            subscription_id=subscription.id,
+        ):
+            for recipient in recipients:
+                email = EmailAdapter.validate_python(
+                    {
+                        "template": "polar_self_subscription_revoked",
+                        "props": PolarSelfSubscriptionRevokedProps(
+                            email=recipient,
+                            product_name=product_name,
+                        ).model_dump(),
+                    }
+                )
+                enqueue_email_template(
+                    email,
+                    to_email_addr=recipient,
+                    subject=f"Your {product_name} subscription has ended",
+                )
+
+    async def _resolve_subscription_email_context(
+        self, subscription: "Subscription"
+    ) -> tuple[list[str], str] | None:
+        """Resolve ``(recipients, product_name)`` for a subscription email.
+
+        Returns ``None`` when no email should be sent: free ($0) subscriptions
+        never have a payment to fail, and a subscription with no billing
+        contacts has nobody to notify.
+        """
+        if subscription.amount == 0:
+            return None
+
+        contacts = await get_client().list_billing_contacts(
+            customer_id=subscription.customer_id
+        )
+        recipients = sorted({contact.email for contact in contacts if contact.email})
+        if not recipients:
+            return None
+
+        product_name = (
+            subscription.product.name if subscription.product is not None else "Polar"
+        )
+        return recipients, product_name
+
     async def _require_approval(
         self,
         session: AsyncReadSession,
@@ -793,7 +941,7 @@ class PolarSelfService:
         organization = await organization_repository.get_by_id(
             organization_id, include_blocked=True
         )
-        if organization is None or not organization.is_active():
+        if organization is None or not organization.can_change_plan():
             raise PolarSelfNotApproved(organization_id)
 
     async def _ensure_plan(self, product_id: str) -> "Product":

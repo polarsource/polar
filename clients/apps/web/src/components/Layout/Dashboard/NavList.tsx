@@ -50,8 +50,7 @@ export const NavList = ({
   navType: NavType
   header?: ReactNode
 }) => {
-  const { state, isMobile, setOpenMobile } = useSidebar()
-  const isCollapsed = state === 'collapsed'
+  const { isMobile, setOpenMobile } = useSidebar()
   const style = NAV_STYLES[navType]
 
   const [expandedRoute, setExpandedRoute] = useState<string | null>(
@@ -79,7 +78,6 @@ export const NavList = ({
                 route.isActive
                   ? style.activeItem
                   : 'dark:text-polar-500 dark:hover:text-polar-200 text-gray-500 hover:text-black',
-                isCollapsed && '!dark:text-polar-600',
               )}
               href={route.link}
               onClick={(e) => {
@@ -106,7 +104,7 @@ export const NavList = ({
               ) : undefined}
               <span className="relative ml-2 overflow-visible! text-sm font-medium">
                 {route.title}
-                {route.extra && !isCollapsed && (
+                {route.extra && (
                   <span className="absolute -top-0.5 -right-2 flex">
                     {route.extra}
                   </span>

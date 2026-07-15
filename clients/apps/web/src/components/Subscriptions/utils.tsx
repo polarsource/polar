@@ -11,6 +11,7 @@ export const subscriptionStatusDisplayNames: {
   trialing: 'Trialing',
   active: 'Active',
   past_due: 'Past due',
+  paused: 'Paused',
   canceled: 'Canceled',
   unpaid: 'Unpaid',
 }
@@ -58,7 +59,9 @@ export const SubscriptionStatusLabel = ({
   const label = useMemo(() => {
     switch (subscription.status) {
       case 'active':
-        return subscription.ends_at ? 'To be cancelled' : 'Active'
+        if (subscription.ends_at) return 'To be cancelled'
+        if (subscription.pause_at_period_end) return 'To be paused'
+        return 'Active'
       default:
         return subscription.status.split('_').join(' ')
     }
@@ -68,9 +71,13 @@ export const SubscriptionStatusLabel = ({
     () =>
       getSubscriptionStatusBorderColor(
         subscription.status,
-        subscription.cancel_at_period_end,
+        subscription.cancel_at_period_end || subscription.pause_at_period_end,
       ),
-    [subscription.status, subscription.cancel_at_period_end],
+    [
+      subscription.status,
+      subscription.cancel_at_period_end,
+      subscription.pause_at_period_end,
+    ],
   )
 
   return (

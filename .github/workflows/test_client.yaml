@@ -25,8 +25,8 @@ jobs:
     outputs:
       clients: ${{ steps.filter.outputs.clients }}
     steps:
-      - uses: actions/checkout@v6.0.3
-      - uses: dorny/paths-filter@v4
+      - uses: actions/checkout@v7.0.0
+      - uses: dorny/paths-filter@v4.0.2
         id: filter
         with:
           filters: |
@@ -48,9 +48,9 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v6.0.3
+        uses: actions/checkout@v7.0.0
 
-      - uses: pnpm/action-setup@v6.0.8
+      - uses: pnpm/action-setup@v6.0.9
         with:
           package_json_file: clients/package.json
 

@@ -2,7 +2,6 @@
 
 import { cookieConsentGiven } from '@/components/Privacy/CookieConsent'
 import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
-import { NavigationHistoryProvider } from '@/providers/navigationHistory'
 import { getQueryClient } from '@/utils/api/query'
 import { CONFIG } from '@/utils/config'
 import { QueryClientProvider } from '@tanstack/react-query'
@@ -12,8 +11,6 @@ import { NuqsAdapter } from 'nuqs/adapters/next/app'
 import posthog from 'posthog-js'
 import { PostHogProvider } from 'posthog-js/react'
 import { PropsWithChildren } from 'react'
-
-export { NavigationHistoryProvider }
 
 if (typeof window !== 'undefined' && CONFIG.POSTHOG_TOKEN) {
   const distinctId = document.cookie

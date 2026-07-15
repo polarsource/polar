@@ -1,8 +1,10 @@
+from datetime import datetime
 from typing import Annotated
 
 from fastapi import Path
 from pydantic import UUID4, Field
 
+from polar.customer.schemas.customer import CustomerBase
 from polar.exceptions import ResourceNotFound
 from polar.kit.schemas import (
     ORDER_ID_EXAMPLE,
@@ -13,6 +15,10 @@ from polar.kit.schemas import (
 from polar.models.dispute import DisputeStatus
 
 DisputeID = Annotated[UUID4, Path(description="The dispute ID.")]
+
+
+class DisputeCustomer(CustomerBase): ...
+
 
 DisputeNotFound = {
     "description": "Dispute not found.",
@@ -55,6 +61,33 @@ class DisputeBase(IDSchema, TimestampedSchema):
     currency: Annotated[
         str, Field(description="Currency code of the dispute.", examples=["usd"])
     ]
+    reason: Annotated[
+        str | None,
+        Field(
+            description=(
+                "The reason for the dispute as reported by the card network "
+                "(e.g. `fraudulent`, `product_not_received`). "
+                "`None` until the processor reports it."
+            ),
+            examples=["fraudulent"],
+        ),
+    ]
+    evidence_due_by: Annotated[
+        datetime | None,
+        Field(
+            description=(
+                "Deadline to submit evidence in response to the dispute. "
+                "`None` when no response is required."
+            ),
+        ),
+    ]
+    past_due: Annotated[
+        bool,
+        Field(
+            description="Whether the evidence submission deadline has passed.",
+            examples=[False],
+        ),
+    ]
     order_id: Annotated[
         UUID4,
         Field(
@@ -78,6 +111,10 @@ class Dispute(DisputeBase):
     A dispute is a challenge raised by a customer or their bank regarding a payment.
     """
 
+    customer: Annotated[
+        DisputeCustomer,
+        Field(description="The customer who was charged for the disputed payment."),
+    ]
     case_id: Annotated[
         UUID4 | None,
         Field(

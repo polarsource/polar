@@ -1,5 +1,4 @@
 import dataclasses
-import json
 from collections.abc import Sequence
 from datetime import datetime
 from typing import Annotated, Any, Literal, cast, get_args, overload
@@ -8,6 +7,7 @@ from annotated_types import Ge, Le
 from pydantic import (
     UUID4,
     AfterValidator,
+    AnyUrl,
     BaseModel,
     ConfigDict,
     Field,
@@ -15,6 +15,7 @@ from pydantic import (
     GetJsonSchemaHandler,
     HttpUrl,
     PlainSerializer,
+    UrlConstraints,
 )
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, core_schema
@@ -67,6 +68,15 @@ SlugValidator = AfterValidator(_validate_slug)
 
 UUID4ToStr = Annotated[UUID4, PlainSerializer(lambda v: str(v), return_type=str)]
 HttpUrlToStr = Annotated[HttpUrl, PlainSerializer(lambda v: str(v), return_type=str)]
+HttpsUrl = Annotated[
+    AnyUrl,
+    UrlConstraints(
+        max_length=2083,
+        allowed_schemes=["https"],
+        host_required=True,
+    ),
+    PlainSerializer(lambda v: str(v), return_type=str),
+]
 
 StripValidator = AfterValidator(lambda v: v.strip())
 
@@ -124,31 +134,6 @@ class SetSchemaReference:
 
     def __hash__(self) -> int:
         return hash(type(self.ref_name))
-
-
-@dataclasses.dataclass(slots=True)
-class SelectorWidget:
-    resource_root: str
-    resource_name: str
-    display_property: str
-
-    def __get_pydantic_json_schema__(
-        self, core_schema: core_schema.CoreSchema, handler: GetJsonSchemaHandler
-    ) -> JsonSchemaValue:
-        json_schema = handler(core_schema)
-        return {**json_schema, **self._get_extra_attributes()}
-
-    def _get_extra_attributes(self) -> dict[str, Any]:
-        return {
-            "x-polar-selector-widget": {
-                "resourceRoot": self.resource_root,
-                "resourceName": self.resource_name,
-                "displayProperty": self.display_property,
-            }
-        }
-
-    def __hash__(self) -> int:
-        return hash(json.dumps(self._get_extra_attributes()))
 
 
 class MultipleQueryFilter[Q](Sequence[Q]):

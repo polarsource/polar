@@ -11,6 +11,12 @@ from sqlalchemy.types import TypeDecorator
 from polar.kit.schemas import EmptyStrToNone
 
 
+def upper_if_str(value: Any) -> Any:
+    if isinstance(value, str):
+        return value.upper()
+    return value
+
+
 class CountryData:
     alpha_2: str
 
@@ -222,7 +228,7 @@ class Address(BaseModel):
 
 
 class AddressInput(Address):
-    country: Annotated[CountryAlpha2Input, BeforeValidator(str.upper)] = Field(  # type: ignore
+    country: Annotated[CountryAlpha2Input, BeforeValidator(upper_if_str)] = Field(  # type: ignore
         examples=["US", "SE", "FR"]
     )
 

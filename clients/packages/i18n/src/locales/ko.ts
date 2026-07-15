@@ -33,8 +33,6 @@ export default {
       optional: '선택 사항',
       apply: '적용',
       fieldRequired: '필수 입력 항목입니다',
-      addBusinessDetails: '사업자 정보 추가',
-      removeBusinessDetails: '사업자 정보 삭제',
       billingDetails: '사업자 정보',
       addDiscountCode: '할인 코드 추가',
     },
@@ -46,20 +44,7 @@ export default {
       payWhatYouWant: '원하는 금액 지불',
       total: '합계',
       additionalMeteredUsage: '추가 종량제 사용량',
-      perUnit: '/ 단위',
       discount: {
-        duration: {
-          months: {
-            '=1': '첫 1개월 동안',
-            other: '첫 #개월 동안',
-            _mode: 'plural',
-          },
-          years: {
-            '=1': '첫 1년 동안',
-            other: '첫 #년 동안',
-            _mode: 'plural',
-          },
-        },
         until: '{date}까지',
       },
       everyInterval: {
@@ -111,29 +96,6 @@ export default {
       basePrice: '기본 가격',
     },
     trial: {
-      ends: '체험 종료일: {endDate}',
-      duration: {
-        days: {
-          '=1': '#일 무료 체험',
-          other: '#일 무료 체험',
-          _mode: 'plural',
-        },
-        weeks: {
-          '=1': '#주 무료 체험',
-          other: '#주 무료 체험',
-          _mode: 'plural',
-        },
-        months: {
-          '=1': '#개월 무료 체험',
-          other: '#개월 무료 체험',
-          _mode: 'plural',
-        },
-        years: {
-          '=1': '#년 무료 체험',
-          other: '#년 무료 체험',
-          _mode: 'plural',
-        },
-      },
       hero: {
         free: {
           day: {
@@ -161,11 +123,6 @@ export default {
         then: '이후',
         startingDate: '{date}부터',
       },
-      summary: {
-        totalWhenTrialEnds: '체험 종료 시 결제 금액',
-        totalWhenDiscountExpires: '할인 종료 시 결제 금액',
-        totalDueToday: '오늘 결제할 금액',
-      },
     },
     pwywForm: {
       label: '원하는 가격 입력',
@@ -178,21 +135,7 @@ export default {
       oneTimePurchase: '1회 결제',
       fromPrefix: '최저',
     },
-    card: {
-      included: '포함됨',
-    },
     benefits: {
-      moreBenefits: {
-        '=1': '#개 추가 혜택',
-        other: '#개 추가 혜택',
-        _mode: 'plural',
-      },
-      showMoreBenefits: {
-        '=1': '혜택 #개 더 보기',
-        other: '혜택 #개 더 보기',
-        _mode: 'plural',
-      },
-      showLess: '접기',
       granting: '헤택 적용 중…',
       requestNewInvite: '새 초대 요청',
       retryIn: {
@@ -277,15 +220,35 @@ export default {
     },
     productDescription: {
       readMore: '더 보기',
-      readLess: '접기',
+    },
+    trialUnavailable: {
+      title: '이 구매에는 무료 체험이 제공되지 않습니다',
+      description:
+        '이 제품의 무료 체험을 이미 사용하셨으므로 오늘 결제가 진행됩니다. 아래에서 계속하여 구매를 완료하세요.',
     },
   },
   intervals: {
     short: {
-      day: '일',
-      week: '주',
-      month: '월',
-      year: '년',
+      day: {
+        '=1': '일',
+        other: '#일',
+        _mode: 'plural',
+      },
+      week: {
+        '=1': '주',
+        other: '#주',
+        _mode: 'plural',
+      },
+      month: {
+        '=1': '월',
+        other: '#개월',
+        _mode: 'plural',
+      },
+      year: {
+        '=1': '년',
+        other: '#년',
+        _mode: 'plural',
+      },
     },
   },
   benefitTypes: {

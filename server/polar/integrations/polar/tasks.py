@@ -9,6 +9,9 @@ from polar_sdk.models import (
     WebhookBenefitGrantRevokedPayload,
     WebhookBenefitGrantUpdatedPayload,
     WebhookOrderCreatedPayload,
+    WebhookSubscriptionCanceledPayload,
+    WebhookSubscriptionPastDuePayload,
+    WebhookSubscriptionRevokedPayload,
 )
 
 from polar.config import settings
@@ -201,6 +204,30 @@ async def track_organization_review_usage(
     )
 
 
+@actor(
+    actor_name="polar_self.track_compass_assistant_usage",
+    priority=TaskPriority.LOW,
+)
+async def track_compass_assistant_usage(
+    external_customer_id: str,
+    vendor: str,
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    cost_usd: str,
+    usage_id: str,
+) -> None:
+    await get_client().track_compass_assistant_usage(
+        external_customer_id=external_customer_id,
+        vendor=vendor,
+        model=model,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        cost_usd=Decimal(cost_usd),
+        usage_id=usage_id,
+    )
+
+
 @actor(actor_name="polar_self.webhook.benefit_grant.created", priority=TaskPriority.LOW)
 async def webhook_benefit_grant_created(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
@@ -244,3 +271,33 @@ async def webhook_order_created(event_id: uuid.UUID) -> None:
                 if can_retry():
                     raise Retry() from e
                 raise
+
+
+@actor(actor_name="polar_self.webhook.subscription.canceled", priority=TaskPriority.LOW)
+async def webhook_subscription_canceled(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle(
+            session, ExternalEventSource.polar, event_id
+        ) as event:
+            payload = WebhookSubscriptionCanceledPayload.model_validate(event.data)
+            await polar_self.handle_subscription_canceled_event(payload)
+
+
+@actor(actor_name="polar_self.webhook.subscription.past_due", priority=TaskPriority.LOW)
+async def webhook_subscription_past_due(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle(
+            session, ExternalEventSource.polar, event_id
+        ) as event:
+            payload = WebhookSubscriptionPastDuePayload.model_validate(event.data)
+            await polar_self.handle_subscription_past_due_event(payload)
+
+
+@actor(actor_name="polar_self.webhook.subscription.revoked", priority=TaskPriority.LOW)
+async def webhook_subscription_revoked(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle(
+            session, ExternalEventSource.polar, event_id
+        ) as event:
+            payload = WebhookSubscriptionRevokedPayload.model_validate(event.data)
+            await polar_self.handle_subscription_revoked_event(payload)

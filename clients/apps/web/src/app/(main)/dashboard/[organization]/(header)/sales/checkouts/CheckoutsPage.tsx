@@ -243,26 +243,22 @@ const ClientPage: React.FC<ClientPageProps> = ({
   return (
     <DashboardBody wide>
       <div className="flex flex-col gap-8">
-        <div className="flex w-full flex-row items-center justify-between gap-2 overflow-x-auto">
-          <div className="flex shrink-0 items-center gap-4">
-            <div className="w-60 shrink-0">
+        <div className="flex w-full flex-row items-center justify-between gap-2">
+          <div className="grid w-full grid-cols-2 gap-4 sm:w-auto sm:grid-cols-3">
+            <div className="col-span-2 sm:col-span-1">
               <Input
                 type="text"
                 placeholder="Filter by email"
                 onChange={(e) => setQuery(e.target.value)}
               />
             </div>
-            <div className="w-60 shrink-0">
-              <CheckoutStatusSelect value={status || ''} onChange={setStatus} />
-            </div>
-            <div className="w-60 shrink-0">
-              <ProductSelect
-                organization={organization}
-                includeArchived
-                value={productId || []}
-                onChange={setProductId}
-              />
-            </div>
+            <CheckoutStatusSelect value={status || ''} onChange={setStatus} />
+            <ProductSelect
+              organization={organization}
+              includeArchived
+              value={productId || []}
+              onChange={setProductId}
+            />
           </div>
         </div>
         <DataTable

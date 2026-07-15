@@ -31,6 +31,7 @@ class MemberSessionRepository(
                 MemberSession.token == token_hash,
                 MemberSession.is_deleted.is_(False),
                 Member.is_deleted.is_(False),
+                Customer.can_authenticate.is_(True),
             )
             .options(
                 contains_eager(MemberSession.member)

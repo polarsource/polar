@@ -188,6 +188,31 @@ class TestGetByToken:
         result = await member_session.get_by_token(session, token)
         assert result is None
 
+    async def test_returns_none_for_deleted_customer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, email="test@example.com"
+        )
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email=customer.email,
+            name="Test Member",
+            role=MemberRole.owner,
+        )
+        await save_fixture(member)
+
+        token, _ = await member_session.create_member_session(session, member)
+        customer.deleted_at = utc_now()
+        await save_fixture(customer)
+
+        result = await member_session.get_by_token(session, token)
+        assert result is None
+
     async def test_eagerly_loads_member_and_customer(
         self,
         save_fixture: SaveFixture,

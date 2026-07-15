@@ -2,9 +2,16 @@ from collections.abc import Sequence
 from datetime import UTC, datetime
 from uuid import UUID
 
+from sqlalchemy import select
+from sqlalchemy.orm import joinedload
+
 from polar.auth.models import AuthSubject, Organization, User
-from polar.models import Customer, File
+from polar.kit.pagination import PaginationParams
+from polar.kit.sorting import Sorting
+from polar.models import Customer, Dispute, File, Order
+from polar.models.dispute import DisputeStatus
 from polar.models.support_case import (
+    DisputeSupportCase,
     SupportCase,
     SupportCaseAttachment,
     SupportCaseAudience,
@@ -13,6 +20,7 @@ from polar.models.support_case import (
     SupportCaseMessageType,
     SupportCaseParticipant,
     SupportCaseParticipantKind,
+    SupportCaseType,
 )
 from polar.postgres import AsyncReadSession, AsyncSession
 
@@ -22,6 +30,7 @@ from .repository import (
     SupportCaseParticipantRepository,
     SupportCaseRepository,
 )
+from .sorting import SupportCaseSortProperty
 
 
 class SupportCaseService:
@@ -59,6 +68,43 @@ class SupportCaseService:
             SupportCase.id == case_id
         )
         return await repository.get_one_or_none(statement)
+
+    async def list(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: Sequence[UUID] | None = None,
+        type: Sequence[SupportCaseType] | None = None,
+        dispute_status: Sequence[DisputeStatus] | None = None,
+        pagination: PaginationParams,
+        sorting: list[Sorting[SupportCaseSortProperty]],
+    ) -> tuple[Sequence[SupportCase], int]:
+        """Cases the subject may read, filtered by type and (for dispute cases)
+        the linked dispute's status. Dispute cases embed their dispute."""
+        repository = SupportCaseRepository.from_session(session)
+        statement = repository.get_readable_statement(auth_subject)
+        if organization_id is not None:
+            statement = statement.where(
+                SupportCase.organization_id.in_(organization_id)
+            )
+        if type is not None:
+            statement = statement.where(SupportCase.type.in_(type))
+        if dispute_status is not None:
+            statement = statement.where(
+                DisputeSupportCase.dispute_id.in_(
+                    select(Dispute.id).where(Dispute.status.in_(dispute_status))
+                )
+            )
+        statement = statement.options(
+            joinedload(DisputeSupportCase.dispute)
+            .joinedload(Dispute.order)
+            .joinedload(Order.customer)
+        )
+        statement = repository.apply_sorting(statement, sorting)
+        return await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
 
     async def get_thread(
         self,

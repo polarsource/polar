@@ -104,16 +104,22 @@ export const useInvoiceDownload = ({
         queryKey: ['organizations', 'account'],
       })
 
-      const { error: generateError } = await api.POST(
-        '/v1/payouts/{id}/invoice',
-        {
+      const { error: generateError, response: generateResponse } =
+        await api.POST('/v1/payouts/{id}/invoice', {
           params: { path: { id: payout.id } },
           body: {
             invoice_number: data.invoice_number,
           },
-        },
-      )
+        })
       if (generateError) {
+        // The invoice already exists (e.g. a stale list still shows it as not
+        // generated). Refresh the list and download the existing one instead
+        // of leaving the user stuck on a repeating generate error.
+        if (generateResponse.status === 409) {
+          await getQueryClient().invalidateQueries({ queryKey: ['payouts'] })
+          await downloadInvoice()
+          return
+        }
         if (isValidationError(generateError.detail)) {
           setValidationErrors(generateError.detail, setError)
         } else {
@@ -123,7 +129,7 @@ export const useInvoiceDownload = ({
         return
       }
     },
-    [payout, account, setError],
+    [payout, account, setError, downloadInvoice],
   )
 
   const eventEmitter = useOrganizationSSE(organization.id)
@@ -132,6 +138,7 @@ export const useInvoiceDownload = ({
 
     const callback = ({ payout_id }: { payout_id: string }) => {
       if (payout_id === payout.id) {
+        getQueryClient().invalidateQueries({ queryKey: ['payouts'] })
         onInvoiceGenerated()
         downloadInvoice()
       }

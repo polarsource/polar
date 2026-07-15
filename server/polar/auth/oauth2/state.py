@@ -1,6 +1,7 @@
 import uuid
 
 from fastapi import Depends
+from reauth.crypto import get_token_hash
 from reauth.factors.oauth2.state import (
     OAuth2State as OAuth2StateDataclass,
 )
@@ -48,6 +49,10 @@ class OAuth2StateService(OAuth2StateServiceBase):
         if oauth2_state_orm is None:
             return None
         return oauth2_state_orm.to_dataclass()
+
+    async def get_by_token(self, token: str) -> OAuth2StateDataclass | None:
+        state_hash = get_token_hash(token, secret=self.hash_secret)
+        return await self.get_by_state_hash(state_hash)
 
     async def delete(self, oauth2_state: OAuth2StateDataclass) -> None:
         statement = delete(OAuth2State).where(OAuth2State.id == oauth2_state.id)

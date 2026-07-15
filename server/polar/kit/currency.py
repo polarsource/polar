@@ -174,7 +174,7 @@ _ZERO_DECIMAL_CURRENCIES: set[str] = {
 }
 
 
-def _get_currency_decimal_factor(currency: PresentmentCurrency | str) -> int:
+def get_currency_decimal_factor(currency: PresentmentCurrency | str) -> int:
     """Get the decimal factor for a given currency.
 
     Args:
@@ -207,7 +207,7 @@ def format_currency(
         The formatted currency string.
     """
     return _format_currency(
-        amount / _get_currency_decimal_factor(currency),
+        amount / get_currency_decimal_factor(currency),
         currency.upper(),
         locale="en_US",
         decimal_quantization=decimal_quantization,
@@ -352,7 +352,7 @@ MINIMUM_PRICE_PER_CURRENCY: dict[str, int] = {
 MINIMUM_PRICE_PER_CURRENCY_DOCSTRING = "\n".join(
     [
         *(
-            f"- {currency.upper()}: {format_decimal(amount / _get_currency_decimal_factor(currency), locale='en_US', decimal_quantization=False)}"
+            f"- {currency.upper()}: {format_decimal(amount / get_currency_decimal_factor(currency), locale='en_US', decimal_quantization=False)}"
             for currency, amount in MINIMUM_PRICE_PER_CURRENCY.items()
         ),
         f"- Other currencies: {format_decimal(MINIMUM_PRICE_PER_CURRENCY_DEFAULT, locale='en_US', decimal_quantization=False)} minor units",
@@ -383,7 +383,7 @@ MAXIMUM_PRICE_PER_CURRENCY: dict[str, int] = {
 MAXIMUM_PRICE_PER_CURRENCY_DOCSTRING = "\n".join(
     [
         *(
-            f"- {currency.upper()}: {format_decimal(amount / _get_currency_decimal_factor(currency), locale='en_US', decimal_quantization=False)}"
+            f"- {currency.upper()}: {format_decimal(amount / get_currency_decimal_factor(currency), locale='en_US', decimal_quantization=False)}"
             for currency, amount in MAXIMUM_PRICE_PER_CURRENCY.items()
         ),
         f"- Other currencies: {format_decimal(MAXIMUM_PRICE_PER_CURRENCY_DEFAULT, locale='en_US', decimal_quantization=False)} minor units",

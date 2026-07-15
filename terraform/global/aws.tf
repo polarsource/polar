@@ -18,6 +18,14 @@ locals {
       account_id = "805865757777"
       workspace  = "test"
     }
+    identity = {
+      account_id = "986542260309"
+      workspace  = "identity"
+    }
+    security = {
+      account_id = "297245370456"
+      workspace  = "security"
+    }
   }
 }
 

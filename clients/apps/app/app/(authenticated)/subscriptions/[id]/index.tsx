@@ -25,6 +25,7 @@ const statusColors = {
   past_due: 'red',
   trialing: 'blue',
   unpaid: 'yellow',
+  paused: 'yellow',
 } as const
 
 export default function Index() {

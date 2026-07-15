@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/sdk",
-  "version": "1.0.0-alpha.9",
+  "version": "1.0.0-alpha.10",
   "description": "Polar SDK — A billing platform for the intelligence era",
   "keywords": [
     "api",
@@ -12,7 +12,7 @@
   "author": "Polar",
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/polar-sh/polar.git",
+    "url": "git+https://github.com/polarsource/polar.git",
     "directory": "sdk/typescript"
   },
   "files": [

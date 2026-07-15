@@ -137,6 +137,29 @@ class SubscriptionRepository(
         result = await self.session.execute(statement)
         return result.scalars().all()
 
+    async def exists_live_by_customer_and_product(
+        self, customer_id: UUID, product_id: UUID
+    ) -> bool:
+        # "Live" = could still bill: not canceled/unpaid/incomplete, not ended.
+        # Used to avoid importing a duplicate subscription.
+        dead_statuses = (
+            SubscriptionStatus.revoked_statuses()
+            | SubscriptionStatus.incomplete_statuses()
+        )
+        statement = (
+            select(Subscription.id)
+            .where(
+                Subscription.customer_id == customer_id,
+                Subscription.product_id == product_id,
+                Subscription.status.not_in(dead_statuses),
+                Subscription.ended_at.is_(None),
+                Subscription.is_deleted.is_(False),
+            )
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.first() is not None
+
     async def get_churn_breakdown(
         self,
         organization_id: UUID,

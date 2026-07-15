@@ -106,6 +106,41 @@ class MerchantMigrationRecordItem(Schema):
     )
 
 
+class MerchantMigrationImportRequest(Schema):
+    record_ids: list[UUID4] | None = Field(
+        default=None,
+        description=(
+            "The ledger record ids to import (from the records listing). When "
+            "omitted, every importable record is imported (subject to "
+            "`exclude_record_ids`). Records not selected stay pending."
+        ),
+    )
+    exclude_record_ids: list[UUID4] | None = Field(
+        default=None,
+        description=(
+            "Import every importable record except these — the opt-out selection "
+            "for large catalogs. Ignored when `record_ids` is set."
+        ),
+    )
+
+
+class MerchantMigrationImportResult(Schema):
+    entity: PrecheckEntity = Field(description="The source entity type.")
+    imported: int = Field(description="How many were created or reused in Polar.")
+    skipped: int = Field(
+        description="How many were left on the source (not importable)."
+    )
+
+
+class MerchantMigrationImportReport(Schema):
+    step: MerchantMigrationStep = Field(
+        description="The migration step after the import."
+    )
+    results: list[MerchantMigrationImportResult] = Field(
+        description="Per-entity counts of what was imported vs skipped."
+    )
+
+
 class MerchantMigration(IDSchema, TimestampedSchema):
     organization_id: UUID4
     source_platform: MerchantMigrationSourcePlatform = Field(

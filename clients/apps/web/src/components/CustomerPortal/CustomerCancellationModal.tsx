@@ -4,6 +4,7 @@ import revalidate from '@/app/actions'
 import { Modal, ModalProps } from '@polar-sh/orbit'
 import {
   useCustomerCancelSubscription,
+  useCustomerRevokeSubscription,
   useCustomerSubscriptionCancelPreview,
 } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
@@ -67,6 +68,15 @@ const CustomerCancellationModal = ({
     subscription.status === 'past_due',
   )
 
+  const revokeSubscription = useCustomerRevokeSubscription(api)
+
+  // Past-due with no grace period: cancelling stops collection, so revoke
+  // immediately instead of scheduling a cancellation at period end.
+  const stopsCollection =
+    subscription.status === 'past_due' && !!cancelPreview?.stops_collection
+
+  const isPending = cancelSubscription.isPending || revokeSubscription.isPending
+
   const handleCancel = useCallback(() => {
     props.hide()
   }, [props])
@@ -82,10 +92,18 @@ const CustomerCancellationModal = ({
 
   const handleCancellation = useCallback(
     async (cancellation: schemas['CustomerSubscriptionCancel']) => {
-      const { error } = await cancelSubscription.mutateAsync({
-        id: subscription.id,
-        body: cancellation,
-      })
+      const { error } = stopsCollection
+        ? await revokeSubscription.mutateAsync({
+            id: subscription.id,
+            body: {
+              cancellation_reason: cancellation.cancellation_reason,
+              cancellation_comment: cancellation.cancellation_comment,
+            },
+          })
+        : await cancelSubscription.mutateAsync({
+            id: subscription.id,
+            body: cancellation,
+          })
 
       await revalidate(`customer_portal`)
 
@@ -104,7 +122,15 @@ const CustomerCancellationModal = ({
       router.refresh()
       props.hide()
     },
-    [subscription.id, cancelSubscription, setError, props, router],
+    [
+      subscription.id,
+      stopsCollection,
+      cancelSubscription,
+      revokeSubscription,
+      setError,
+      props,
+      router,
+    ],
   )
 
   const onReasonSelect = (value: schemas['CustomerCancellationReason']) => {
@@ -203,10 +229,10 @@ const CustomerCancellationModal = ({
                 <Button
                   type="submit"
                   variant="destructive"
-                  loading={cancelSubscription.isPending}
-                  disabled={cancelSubscription.isPending}
+                  loading={isPending}
+                  disabled={isPending}
                 >
-                  Cancel Subscription
+                  {stopsCollection ? 'Cancel now' : 'Cancel Subscription'}
                 </Button>
                 <Button variant="ghost" onClick={handleCancel}>
                   I&apos;ve changed my mind

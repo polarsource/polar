@@ -396,6 +396,30 @@ export const useCustomerCancelSubscription = (api: Client) =>
     },
   })
 
+export const useCustomerRevokeSubscription = (api: Client) =>
+  useMutation({
+    mutationFn: (variables: {
+      id: string
+      body: schemas['CustomerSubscriptionRevoke']
+    }) =>
+      api.POST('/v1/customer-portal/subscriptions/{id}/revoke', {
+        params: { path: { id: variables.id } },
+        body: variables.body,
+      }),
+    onSuccess: (result) => {
+      if (result.error) {
+        return
+      }
+      const queryClient = getQueryClient()
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscriptions'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_charge_preview'],
+      })
+    },
+  })
+
 export const useCustomerUncancelSubscription = (api: Client) =>
   useMutation({
     mutationFn: (variables: { id: string }) =>

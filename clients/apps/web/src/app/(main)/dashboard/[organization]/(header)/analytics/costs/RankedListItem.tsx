@@ -82,7 +82,6 @@ export const RankedListItem = ({
             width={`${sharePct}%`}
             borderRadius="full"
             backgroundColor="background-inverse"
-            transitionProperty="all"
             transitionDuration="base"
           />
         </Box>

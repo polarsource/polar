@@ -16,8 +16,8 @@ import { formatCurrency } from '@polar-sh/currency'
 import { Avatar, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { RankedList, RankedListItem } from './RankedListItem'
+import { TrendBadge } from './TrendBadge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
-import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { endOfDay, subDays } from 'date-fns'
 import {
   AlertTriangle,
@@ -33,7 +33,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
 import { useMemo } from 'react'
-import { getDefaultEndDate, getDefaultStartDate } from './utils'
+import { fmtPct, getDefaultEndDate, getDefaultStartDate } from './utils'
 import { getMetricsForType } from '@/components/Metrics/dashboards/metrics-config'
 import { MetricGroup } from '@/components/Metrics/dashboards/MetricGroup'
 
@@ -862,83 +862,6 @@ export default function ClientPage({
     >
       {content}
     </DashboardBody>
-  )
-}
-
-const fmtDate = (d: Date) =>
-  d.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-  })
-
-const fmtPct = (n: number) =>
-  Math.abs(n).toLocaleString(undefined, {
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  }) + '%'
-
-function TrendBadge({
-  delta,
-  pct,
-  currentStart,
-  currentEnd,
-  prevStart,
-  prevEnd,
-}: {
-  delta: number
-  pct: number
-  currentStart: Date
-  currentEnd: Date
-  prevStart: Date
-  prevEnd: Date
-}) {
-  const isUp = delta > 0
-  const isDown = delta < 0
-  return (
-    <Tooltip>
-      <TooltipTrigger asChild>
-        <Box
-          as="span"
-          display="inline-flex"
-          width="fit-content"
-          alignItems="center"
-          columnGap="xs"
-          paddingHorizontal="s"
-          borderRadius="full"
-          cursor="default"
-          backgroundColor={
-            isUp
-              ? 'background-danger'
-              : isDown
-                ? 'background-success'
-                : 'background-card'
-          }
-          color={
-            isUp ? 'text-danger' : isDown ? 'text-success' : 'text-tertiary'
-          }
-        >
-          {isUp ? (
-            <ArrowUpRight className="size-3" />
-          ) : isDown ? (
-            <ArrowDownRight className="size-3" />
-          ) : (
-            <Minus className="size-3" />
-          )}
-          <Text as="span" variant="label" color="inherit" tabularNums>
-            {fmtPct(pct)}
-          </Text>
-        </Box>
-      </TooltipTrigger>
-      <TooltipContent className="flex flex-col gap-1">
-        <Text as="span" variant="caption">
-          {fmtDate(currentStart)} – {fmtDate(currentEnd)}
-        </Text>
-        <Text as="span" variant="caption" color="muted">
-          vs {fmtDate(prevStart)} – {fmtDate(prevEnd)}
-        </Text>
-      </TooltipContent>
-    </Tooltip>
   )
 }
 

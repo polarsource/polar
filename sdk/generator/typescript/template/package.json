@@ -39,6 +39,7 @@
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"
   },
+  "packageManager": "pnpm@11.13.0",
   "keywords": [
     "polar",
     "sdk",
@@ -49,7 +50,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/polar-sh/polar",
+    "url": "git+https://github.com/polar-sh/polar.git",
     "directory": "sdk/typescript"
   }
 }

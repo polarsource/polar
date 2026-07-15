@@ -12,11 +12,13 @@ import os
 import re
 import shutil
 import subprocess
+import sys
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 
 import typer
+from rich.console import Console
 from rich.table import Table
 
 from shared import (
@@ -26,8 +28,13 @@ from shared import (
     SECRETS_FILE,
     SERVER_DIR,
     console,
+    is_docker_running,
     run_command,
 )
+
+# Diagnostics (e.g. "Using instance N") go to stderr so machine-readable
+# commands like `ports --json` and `launch-json --stdout` keep stdout clean.
+err_console = Console(stderr=True)
 
 DOCKER_DIR = ROOT_DIR / "dev" / "docker"
 COMPOSE_FILE = DOCKER_DIR / "docker-compose.dev.yml"
@@ -82,6 +89,10 @@ def s3_public_bucket(instance: int) -> str:
 # Instance 0 uses the legacy defaults.
 API_PORT_BASE = 8100  # instance 1..99 → 8101..8199
 WEB_PORT_BASE = 3100  # instance 1..99 → 3101..3199
+# Docs (mintlify) is a native, non-Docker preview server. It has no legacy
+# default, so every instance (including 0) uses BASE + instance; 3300 keeps it
+# clear of the web band (3100s) and mintlify's own default 3000.
+DOCS_PORT_BASE = 3300  # instance 0..99 → 3300..3399
 
 # Host ports published by the shared infra and the non-Docker dev tooling.
 # Per-instance app ports must never collide with these.
@@ -107,6 +118,10 @@ def api_port(instance: int) -> int:
 
 def web_port(instance: int) -> int:
     return DEFAULT_WEB_PORT if instance == 0 else WEB_PORT_BASE + instance
+
+
+def docs_port(instance: int) -> int:
+    return DOCS_PORT_BASE + instance
 
 
 def _assert_ports_free(instance: int) -> None:
@@ -205,6 +220,16 @@ def _running_compose_projects() -> set[str]:
     if not result or result.returncode != 0:
         return set()
     return {line.strip() for line in result.stdout.splitlines() if line.strip()}
+
+
+def _ensure_docker_running() -> None:
+    """Fail with a friendly message if the Docker daemon isn't reachable."""
+    if not is_docker_running():
+        console.print(
+            "[red]Docker doesn't appear to be running.[/red] Start Docker, "
+            "then try again."
+        )
+        raise typer.Exit(1)
 
 
 # --------------------------------------------------------------------------- #
@@ -541,6 +566,13 @@ def _build_compose_cmd(instance: int) -> list[str]:
     ]
 
 
+def _build_images_cmd(
+    base_cmd: list[str], pull: bool, services: list[str] | None
+) -> list[str]:
+    """`docker compose build [--pull] [services...]` for a prepared base command."""
+    return base_cmd + ["build"] + (["--pull"] if pull else []) + (services or [])
+
+
 def _get_instance(ctx: typer.Context) -> int:
     # Every caller (action commands) passes ENV_FILE to docker compose via
     # `--env-file`, so the file must exist. Read-only commands like `list`
@@ -614,17 +646,17 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         if instance is None:
             instance, source = _detect_instance()
             if source == "stored":
-                console.print(
+                err_console.print(
                     f"[dim]Using stored instance {instance} (from .env.docker)[/dim]"
                 )
             elif source == "registry":
-                console.print(f"[dim]Using registered instance {instance}[/dim]")
+                err_console.print(f"[dim]Using registered instance {instance}[/dim]")
             elif source == "new":
-                console.print(
+                err_console.print(
                     f"[dim]Allocated new instance {instance} for {ROOT_DIR}[/dim]"
                 )
             else:
-                console.print(f"[dim]Auto-detected instance {instance}[/dim]")
+                err_console.print(f"[dim]Auto-detected instance {instance}[/dim]")
             if source != "registry":
                 _upsert_registry(str(ROOT_DIR), instance)
         ctx.ensure_object(dict)
@@ -647,10 +679,28 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     def docker_up(
         ctx: typer.Context,
         detach: Annotated[
-            bool, typer.Option("--detach", "-d", help="Run in background")
+            bool,
+            typer.Option(
+                "--detach/--no-detach",
+                "-d",
+                help="Run in background (default), or attach to streamed logs",
+            ),
         ] = True,
         build: Annotated[
             bool, typer.Option("--build", "-b", help="Force rebuild images")
+        ] = False,
+        pull: Annotated[
+            bool,
+            typer.Option(
+                "--pull",
+                help="Refresh base images before building (avoids stale cached bases)",
+            ),
+        ] = False,
+        wait: Annotated[
+            bool,
+            typer.Option(
+                "--wait", help="Block until app services are healthy (detached only)"
+            ),
         ] = False,
         monitoring: Annotated[
             bool,
@@ -670,6 +720,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         ] = None,
     ) -> None:
         """Start shared infra (if needed) + this instance's app stack."""
+        _ensure_docker_running()
         instance = _get_instance(ctx)
         _ensure_server_env()
 
@@ -694,17 +745,25 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             f"\n[bold blue]Starting Polar app stack (instance {instance})[/bold blue]\n"
         )
 
-        if build:
+        if build or pull:
             console.print("[dim]Building images...[/dim]")
-            build_cmd = cmd + ["build"] + (services or [])
+            build_cmd = _build_images_cmd(cmd, pull, services)
             result = run_command(build_cmd, env=env)
             if result and result.returncode != 0:
                 console.print("[red]Build failed[/red]")
                 raise typer.Exit(1)
 
+        if wait and not detach:
+            console.print(
+                "[yellow]--wait has no effect with --no-detach; the foreground "
+                "process already streams until you stop it.[/yellow]"
+            )
+
         up_cmd = cmd + ["up"]
         if detach:
             up_cmd.append("-d")
+            if wait:
+                up_cmd.append("--wait")
         up_cmd.extend(services or [])
 
         if detach:
@@ -759,7 +818,12 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     def docker_logs(
         ctx: typer.Context,
         follow: Annotated[
-            bool, typer.Option("--follow", "-f", help="Follow log output")
+            bool,
+            typer.Option(
+                "--follow/--no-follow",
+                "-f",
+                help="Follow log output (default), or print current logs and exit",
+            ),
         ] = True,
         service: Annotated[
             str | None,
@@ -820,6 +884,13 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
     @docker_app.command("build")
     def docker_build(
         ctx: typer.Context,
+        pull: Annotated[
+            bool,
+            typer.Option(
+                "--pull",
+                help="Refresh base images first (avoids stale cached bases)",
+            ),
+        ] = False,
         services: Annotated[
             list[str] | None,
             typer.Argument(
@@ -830,7 +901,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
         """Build/rebuild this instance's app images."""
         instance = _get_instance(ctx)
         env = _build_compose_env(instance)
-        cmd = _build_compose_cmd(instance) + ["build"] + (services or [])
+        cmd = _build_images_cmd(_build_compose_cmd(instance), pull, services)
         console.print("[dim]Building images...[/dim]")
         result = run_command(cmd, env=env)
         if result and result.returncode == 0:
@@ -938,6 +1009,112 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
                 console.print("[red]Shared cleanup failed[/red]")
                 raise typer.Exit(1)
             console.print("[green]Shared infra wiped[/green]")
+
+    @docker_app.command("ports")
+    def docker_ports(
+        ctx: typer.Context,
+        json_output: Annotated[
+            bool, typer.Option("--json", help="Print as JSON for tooling")
+        ] = False,
+    ) -> None:
+        """Print this instance's resolved ports and resource names.
+
+        Machine-readable with --json, so tooling (e.g. .claude/launch.json) can
+        discover the per-instance ports instead of hardcoding the port scheme.
+        """
+        instance = ctx.obj["instance"]
+        info = {
+            "instance": instance,
+            "api_port": api_port(instance),
+            "web_port": web_port(instance),
+            "docs_port": docs_port(instance),
+            "api_url": f"http://localhost:{api_port(instance)}",
+            "web_url": f"http://localhost:{web_port(instance)}",
+            "database": db_name(instance),
+            "redis_db": redis_db(instance),
+            "s3_bucket": s3_bucket(instance),
+            "s3_public_bucket": s3_public_bucket(instance),
+        }
+        if json_output:
+            # Write straight to stdout (not console.print_json) so piped output
+            # stays clean JSON with no Rich styling or width-based wrapping.
+            sys.stdout.write(json.dumps(info, indent=2) + "\n")
+            return
+        console.print(
+            f"[bold]Instance {instance}[/bold] (project {app_project(instance)})"
+        )
+        console.print(f"  API:  {info['api_url']}")
+        console.print(f"  Web:  {info['web_url']}")
+        console.print(f"  Docs: http://localhost:{info['docs_port']} (native)")
+        console.print(
+            f"  Database: {info['database']}  Redis DB: {info['redis_db']}"
+        )
+        console.print(
+            f"  Buckets: {info['s3_bucket']}, {info['s3_public_bucket']}"
+        )
+
+    @docker_app.command("launch-json")
+    def docker_launch_json(
+        ctx: typer.Context,
+        stdout: Annotated[
+            bool,
+            typer.Option("--stdout", help="Print instead of writing the file"),
+        ] = False,
+    ) -> None:
+        """Generate .claude/launch.json for this worktree's instance.
+
+        Ports are per-worktree, so a hardcoded (or committed) launch.json points
+        Claude Code's preview at the wrong port in every other worktree. Generate
+        it here instead, and regenerate after `dev docker set-instance`. dev
+        docker publishes fixed host ports and ignores $PORT, so autoPort is false.
+        """
+        instance = ctx.obj["instance"]
+        api = api_port(instance)
+        web = web_port(instance)
+        docs = docs_port(instance)
+        content = f"""{{
+  // Generated by `dev docker launch-json` for instance {instance}.
+  // Ports are per-worktree; regenerate after `dev docker set-instance`.
+  "version": "0.0.1",
+  "autoVerify": false,
+  "configurations": [
+    {{
+      "name": "polar-app",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-lc", "./dev/cli/dev docker up -d && ./dev/cli/dev docker logs -f"],
+      "port": {web},
+      "autoPort": false
+    }},
+    {{
+      "name": "polar-api",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": ["-lc", "./dev/cli/dev docker up -d api worker && ./dev/cli/dev docker logs -f api"],
+      "port": {api},
+      "autoPort": false
+    }},
+    {{
+      "name": "docs",
+      "runtimeExecutable": "pnpm",
+      "runtimeArgs": ["-C", "docs", "dev", "--", "--port", "{docs}"],
+      "port": {docs},
+      "autoPort": false
+    }}
+  ]
+}}
+"""
+        if stdout:
+            # Write straight to stdout (not console.print) so Rich doesn't wrap
+            # long lines at the console width and corrupt the JSON. content
+            # already ends with "\n".
+            sys.stdout.write(content)
+            return
+        target = ROOT_DIR / ".claude" / "launch.json"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content)
+        console.print(
+            f"[green]Wrote {target}[/green] "
+            f"(instance {instance}: web {web}, api {api}, docs {docs})"
+        )
 
     @docker_app.command("set-instance")
     def docker_set_instance(

@@ -88,7 +88,7 @@ export const ProductListItem = ({
   return (
     <>
       <Link href={`/dashboard/${organization.slug}/products/${product.id}`}>
-        <ListItem className="flex flex-row items-center justify-between gap-x-6">
+        <ListItem className="flex flex-row items-center justify-between gap-x-6 pr-3">
           <div className="flex min-w-0 grow flex-row items-center gap-x-4 text-sm">
             <div className="flex min-w-0 flex-row items-center gap-x-2">
               <span className="truncate">{product.name}</span>
@@ -112,12 +112,18 @@ export const ProductListItem = ({
             ) : (
               <>
                 {isUsageBasedProduct && (
-                  <Pill color="green" className="px-3 py-1 text-xs">
+                  <Pill
+                    color="green"
+                    className="hidden px-3 py-1 text-xs md:block"
+                  >
                     Metered Pricing
                   </Pill>
                 )}
                 {isSeatBasedProduct && (
-                  <Pill color="blue" className="px-3 py-1 text-xs">
+                  <Pill
+                    color="blue"
+                    className="hidden px-3 py-1 text-xs md:block"
+                  >
                     Seat Pricing
                   </Pill>
                 )}
@@ -131,6 +137,7 @@ export const ProductListItem = ({
                 <Button
                   size="sm"
                   variant="secondary"
+                  className="hidden md:inline-flex"
                   onClick={(e) => {
                     e.preventDefault()
                     router.push(

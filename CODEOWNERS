@@ -1,8 +1,4 @@
-# Global code owners
-* @polarsource/engineering
-
 # Backend
-server/** @polarsource/engineering
 server/polar/metrics/** @Yopi @pieterbeulque
 server/tests/metrics/** @Yopi @pieterbeulque
 server/polar/organization_review/** @psincraian

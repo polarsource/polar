@@ -108,7 +108,7 @@ export const AssistantBlockView = ({
       return <MetricChartView block={block} />
     case 'insight_cards':
       return (
-        <Grid templateColumns="repeat(2, 1fr)" gap="m">
+        <Grid templateColumns={{ base: '1fr', sm: 'repeat(2, 1fr)' }} gap="m">
           {block.insights.map((insight) => (
             <GridItem key={insight.id}>
               <Box

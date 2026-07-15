@@ -6,6 +6,7 @@ import botocore
 import structlog
 from botocore.client import ClientError
 
+from polar.config import settings
 from polar.kit.http import get_content_disposition
 from polar.kit.utils import generate_uuid, utc_now
 
@@ -38,7 +39,11 @@ class S3Service:
         self.bucket = bucket
         self.presign_ttl = presign_ttl
         self.client = client
-        self._unsigned_client = get_client(signature_version=botocore.UNSIGNED)
+        self._presign_client = get_client(endpoint_url=settings.s3_presign_endpoint_url)
+        self._unsigned_presign_client = get_client(
+            signature_version=botocore.UNSIGNED,
+            endpoint_url=settings.s3_presign_endpoint_url,
+        )
 
     def upload(
         self,
@@ -149,7 +154,7 @@ class S3Service:
         ret = []
         expires_in = self.presign_ttl
         for part in parts:
-            signed_post_url = self.client.generate_presigned_url(
+            signed_post_url = self._presign_client.generate_presigned_url(
                 "upload_part",
                 Params=dict(
                     UploadId=upload_id,
@@ -219,7 +224,7 @@ class S3Service:
     ) -> tuple[str, datetime]:
         expires_in = self.presign_ttl
         presign_from = utc_now()
-        signed_download_url = self.client.generate_presigned_url(
+        signed_download_url = self._presign_client.generate_presigned_url(
             "get_object",
             Params=dict(
                 Bucket=self.bucket,
@@ -237,7 +242,7 @@ class S3Service:
         # This is apparently the *only* way to get a public URL with boto3,
         # apart from building a URL manually 🙄
         # Ref: https://stackoverflow.com/a/48197923
-        return self._unsigned_client.generate_presigned_url(
+        return self._unsigned_presign_client.generate_presigned_url(
             "get_object", ExpiresIn=0, Params=dict(Bucket=self.bucket, Key=path)
         )
 

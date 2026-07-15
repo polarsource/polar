@@ -1,6 +1,5 @@
 'use client'
 
-import { SubscriptionMetricsTaxAlert } from '@/components/Metrics/SubscriptionMetricsTaxAlert'
 import { useMetrics } from '@/hooks/queries'
 import { fromISODate, METRIC_GROUPS, toISODate } from '@/utils/metrics'
 import { getMetricsRangeDates, type schemas } from '@polar-sh/client'
@@ -80,9 +79,6 @@ export default function ClientPage({ metric, organization }: ClientPageProps) {
 
   return (
     <Box flexDirection="column" rowGap="3xl">
-      {metric === 'subscriptions' && (
-        <SubscriptionMetricsTaxAlert organization={organization} />
-      )}
       {metric === 'cancellations' ? (
         <CancellationsContent
           data={data}

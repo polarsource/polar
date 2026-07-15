@@ -16,7 +16,7 @@ jobs:
     outputs:
       version: ${{ steps.extract.outputs.version }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 0
 
@@ -44,7 +44,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.0
         with:
           fetch-depth: 0
 
@@ -62,13 +62,13 @@ jobs:
     runs-on: ubuntu-latest
     environment: sdk-release
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.0
         with:
           ref: "sdk/${{ needs.detect-release.outputs.version }}"
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v3
+        uses: astral-sh/setup-uv@v8.3.2
 
       - name: Build Python SDK
         working-directory: sdk/python
@@ -85,22 +85,19 @@ jobs:
     runs-on: ubuntu-latest
     environment: sdk-release
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.0
         with:
           ref: "sdk/${{ needs.detect-release.outputs.version }}"
           fetch-depth: 0
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v6.0.9
 
-      - name: Setup Node.js (v22+ required for trusted publishing)
-        uses: actions/setup-node@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v6.4.0
         with:
-          node-version: "22"
+          node-version: "24"
           registry-url: "https://registry.npmjs.org"
           cache: "pnpm"
-
-      - name: Upgrade npm
-        run: npm install -g npm@latest
 
       - name: Install dependencies
         working-directory: sdk/typescript
@@ -110,10 +107,23 @@ jobs:
         working-directory: sdk/typescript
         run: pnpm run build
 
+      - name: Select npm dist-tag
+        id: npm_tag
+        working-directory: sdk/typescript
+        run: |
+          version=$(node -p "require('./package.json').version")
+          if [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+- ]]; then
+            tag=next
+          else
+            tag=latest
+          fi
+
+          echo "Publishing @polar-sh/sdk@$version with dist-tag '$tag'"
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
       - name: Publish to npm (Trusted Publishing)
         working-directory: sdk/typescript
-        # npm automatically uses OIDC in GitHub Actions with id-token: write
-        run: npm publish --access public
+        run: npm publish --tag "${{ steps.npm_tag.outputs.tag }}"
 
   create-github-release:
     needs: [detect-release, publish-python, publish-typescript]
@@ -122,9 +132,9 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7.0.0
       - name: Create GitHub Release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v3.0.1
         with:
           tag_name: "sdk/${{ needs.detect-release.outputs.version }}"
           name: "SDK ${{ needs.detect-release.outputs.version }}"

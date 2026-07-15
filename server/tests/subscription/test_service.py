@@ -5001,6 +5001,34 @@ class TestUpdateDiscount:
         assert event.customer_id == customer.id
         assert event.organization_id == customer.organization_id
 
+    async def test_fixed_discount_incompatible_currency(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"eur": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_discount(
+                    session, ctx, subscription, discount=discount.id
+                )
+
 
 @pytest.mark.asyncio
 class TestUpdateTrial:
@@ -5973,6 +6001,93 @@ class TestUpdateSeats:
 
         events = await get_all_by_name(session, SystemEvent.subscription_updated)
         assert len(events) == 0
+
+    async def test_unchanged_seats_no_pending_does_not_send_webhook(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        webhook_service_send_mock: AsyncMock,
+    ) -> None:
+        # Re-asserting the current seat count with no pending update to cancel
+        # is a true no-op and must not emit a `subscription.updated` webhook.
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=customer, seats=10
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=10,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+        await session.flush()
+
+        webhook_service_send_mock.assert_not_called()
+
+    async def test_unchanged_seats_clearing_pending_sends_webhook(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        webhook_service_send_mock: AsyncMock,
+    ) -> None:
+        # Re-asserting the current seat count cancels a scheduled seat change,
+        # which is a meaningful change and must emit a `subscription.updated`
+        # webhook.
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd")],
+        )
+        subscription = await create_subscription_with_seats(
+            save_fixture, product=product, customer=customer, seats=10
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=15,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
+        await session.flush()
+        webhook_service_send_mock.reset_mock()
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.update_seats(
+                session,
+                ctx,
+                subscription,
+                seats=10,
+                proration_behavior=SubscriptionProrationBehavior.next_period,
+            )
+        await session.flush()
+
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            organization,
+            updated,
+        )
 
     @pytest.mark.parametrize(
         "proration_behavior",

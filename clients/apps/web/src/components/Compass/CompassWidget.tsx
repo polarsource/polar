@@ -192,6 +192,7 @@ export const CompassWidget = ({
           alignItems="center"
           rowGap="m"
           paddingVertical="2xl"
+          paddingHorizontal={{ base: 'xl', sm: '2xl' }}
           borderRadius="l"
           borderWidth={1}
           borderStyle="solid"

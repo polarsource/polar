@@ -34109,10 +34109,42 @@ export interface components {
       /** Account Amount */
       account_amount: number
     }
+    /** TransactionsHeldBalance */
+    TransactionsHeldBalance: {
+      /** Currency */
+      currency: string
+      /** Amount */
+      amount: number
+      /** Account Currency */
+      account_currency: string
+      /** Account Amount */
+      account_amount: number
+      /**
+       * Next Release At
+       * @description When the next chunk of the held balance becomes available for payout.
+       */
+      next_release_at: string | null
+      /**
+       * Next Release Amount
+       * @description Amount becoming available for payout at `next_release_at`.
+       */
+      next_release_amount: number
+      /**
+       * Next Release Account Amount
+       * @description Amount becoming available for payout at `next_release_at`, in the account's currency.
+       */
+      next_release_account_amount: number
+      /**
+       * Fully Available At
+       * @description When the whole held balance has become available for payout.
+       */
+      fully_available_at: string | null
+    }
     /** TransactionsSummary */
     TransactionsSummary: {
       balance: components['schemas']['TransactionsBalance']
       available_balance: components['schemas']['TransactionsBalance']
+      held_balance: components['schemas']['TransactionsHeldBalance']
       payout: components['schemas']['TransactionsBalance']
     }
     /** TrialAlreadyRedeemed */

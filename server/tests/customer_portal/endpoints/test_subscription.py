@@ -453,6 +453,97 @@ class TestCustomerSubscriptionCancel:
 
 
 @pytest.mark.asyncio
+class TestCustomerSubscriptionRevoke:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(
+            f"/v1/customer-portal/subscriptions/{uuid.uuid4()}/revoke", json={}
+        )
+        assert response.status_code == 401
+
+    async def _create_past_due(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> Subscription:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+        await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=utc_now(),
+        )
+        return subscription
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_valid_past_due_no_grace(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await self._create_past_due(save_fixture, product, customer)
+
+        response = await client.post(
+            f"/v1/customer-portal/subscriptions/{subscription.id}/revoke", json={}
+        )
+
+        assert response.status_code == 200
+        updated_subscription = response.json()
+        assert updated_subscription["id"] == str(subscription.id)
+        assert updated_subscription["status"] == SubscriptionStatus.canceled
+        assert updated_subscription["cancel_at_period_end"] is False
+        assert updated_subscription["ended_at"] is not None
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_active_not_allowed(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.post(
+            f"/v1/customer-portal/subscriptions/{subscription.id}/revoke", json={}
+        )
+
+        assert response.status_code == 409
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_past_due_with_grace_not_allowed(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        product.organization.subscription_settings = {
+            **product.organization.subscription_settings,
+            "benefit_revocation_grace_period": 7,
+        }
+        await save_fixture(product.organization)
+        subscription = await self._create_past_due(save_fixture, product, customer)
+
+        response = await client.post(
+            f"/v1/customer-portal/subscriptions/{subscription.id}/revoke", json={}
+        )
+
+        assert response.status_code == 409
+
+
+@pytest.mark.asyncio
 class TestMemberRoleEnforcementSubscriptionUpdate:
     """Tests for role-based access control on subscription update endpoint.
 

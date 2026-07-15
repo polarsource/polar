@@ -29,11 +29,13 @@ from .. import auth
 from ..schemas.subscription import (
     CustomerSubscription,
     CustomerSubscriptionChangePreview,
+    CustomerSubscriptionRevoke,
     CustomerSubscriptionUpdate,
 )
 from ..service.subscription import (
     CustomerSubscriptionSortProperty,
     PauseResumeNotAllowed,
+    RevokeNotAllowed,
     UpdateSubscriptionPlanNotAllowed,
     UpdateSubscriptionSeatsNotAllowed,
 )
@@ -295,3 +297,55 @@ async def cancel(
         **get_audit_context(auth_subject),
     )
     return await customer_subscription_service.cancel(session, subscription)
+
+
+@router.post(
+    "/{id}/revoke",
+    summary="Revoke Subscription",
+    response_model=CustomerSubscription,
+    responses={
+        200: {"description": "Customer subscription is revoked."},
+        403: {
+            "description": (
+                "Customer subscription is already canceled "
+                "or the user lacks billing permissions."
+            ),
+            "model": AlreadyCanceledSubscription.schema(),
+        },
+        409: {
+            "description": "This subscription cannot be revoked in its current state.",
+            "model": RevokeNotAllowed.schema(),
+        },
+        404: SubscriptionNotFound,
+    },
+    tags=[APITag.private],
+)
+async def revoke(
+    id: SubscriptionID,
+    revoke: CustomerSubscriptionRevoke,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    """Revoke a subscription immediately, stopping any further payment attempts.
+
+    Only allowed while the subscription is past-due and the organization has no
+    benefit revocation grace period.
+    """
+    subscription = await customer_subscription_service.get_by_id(
+        session, auth_subject, id, for_update=True
+    )
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    log.info(
+        "customer_portal.subscription.revoke",
+        subscription_id=id,
+        **get_audit_context(auth_subject),
+    )
+    return await customer_subscription_service.revoke(
+        session,
+        subscription,
+        reason=revoke.cancellation_reason,
+        comment=revoke.cancellation_comment,
+    )

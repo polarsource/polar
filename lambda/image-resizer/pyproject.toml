@@ -4,8 +4,8 @@ version = "0.0.0"
 readme = "README.md"
 requires-python = ">=3.13.0"
 dependencies = [
-"pillow>=12.2.0",
-"boto3>=1.43.38",
+"pillow>=12.3.0",
+"boto3>=1.43.42",
 "taskipy>=1.10.3",
 ]
 

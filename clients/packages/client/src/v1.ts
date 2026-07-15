@@ -4879,6 +4879,29 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-portal/subscriptions/{id}/revoke': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Revoke Subscription
+     * @description Revoke a subscription immediately, stopping any further payment attempts.
+     *
+     *     Only allowed while the subscription is past-due and the organization has no
+     *     benefit revocation grace period.
+     */
+    post: operations['customer_portal:subscriptions:revoke']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customer-portal/wallets/': {
     parameters: {
       query?: never
@@ -18727,6 +18750,18 @@ export interface components {
        */
       resume: true
     }
+    /** CustomerSubscriptionRevoke */
+    CustomerSubscriptionRevoke: {
+      /** @description Customer's reason for cancellation. */
+      cancellation_reason?:
+        | components['schemas']['CustomerCancellationReason']
+        | null
+      /**
+       * Cancellation Comment
+       * @description Customer feedback and why they decided to cancel.
+       */
+      cancellation_comment?: string | null
+    }
     /**
      * CustomerSubscriptionSortProperty
      * @enum {string}
@@ -30570,6 +30605,17 @@ export interface components {
        * @enum {string}
        */
       type: 'review_appeal'
+    }
+    /** RevokeNotAllowed */
+    RevokeNotAllowed: {
+      /**
+       * Error
+       * @example RevokeNotAllowed
+       * @constant
+       */
+      error: 'RevokeNotAllowed'
+      /** Detail */
+      detail: string
     }
     /** RevokeTokenResponse */
     RevokeTokenResponse: Record<string, never>
@@ -49703,6 +49749,69 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:subscriptions:revoke': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerSubscriptionRevoke']
+      }
+    }
+    responses: {
+      /** @description Customer subscription is revoked. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSubscription']
+        }
+      }
+      /** @description Customer subscription is already canceled or the user lacks billing permissions. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['AlreadyCanceledSubscription']
+        }
+      }
+      /** @description Customer subscription was not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description This subscription cannot be revoked in its current state. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RevokeNotAllowed']
         }
       }
       /** @description Validation Error */

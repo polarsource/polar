@@ -15,6 +15,8 @@ from polar.models.customer import (
     CustomerType,
 )
 from polar.models.customer_seat import SeatStatus
+from polar.models.downloadable import Downloadable, DownloadableStatus
+from polar.models.file import File, FileServiceTypes
 from polar.models.license_key import LicenseKey
 from polar.models.member import Member, MemberRole
 from polar.models.subscription import SubscriptionStatus
@@ -35,6 +37,22 @@ from tests.fixtures.random_objects import (
     create_subscription,
     create_subscription_with_seats,
 )
+
+
+async def _create_file(
+    save_fixture: SaveFixture,
+    organization_id: uuid.UUID,
+) -> File:
+    file = File(
+        organization_id=organization_id,
+        name="test-file.zip",
+        path=f"files/{uuid.uuid4()}.zip",
+        mime_type="application/zip",
+        size=1024,
+        service=FileServiceTypes.downloadable,
+    )
+    await save_fixture(file)
+    return file
 
 
 @pytest.mark.asyncio
@@ -1407,13 +1425,6 @@ class TestBackfillMembersB2C:
             type=BenefitType.license_keys,
             description="B2C license key",
         )
-        grant = await create_benefit_grant(
-            save_fixture,
-            customer=customer,
-            benefit=benefit,
-            granted=True,
-            subscription=subscription,
-        )
         license_key = LicenseKey(
             organization_id=organization.id,
             customer_id=customer.id,
@@ -1422,14 +1433,151 @@ class TestBackfillMembersB2C:
         )
         await save_fixture(license_key)
         lk_id = license_key.id
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=True,
+            properties={"license_key_id": str(lk_id)},
+            subscription=subscription,
+        )
 
         session.expunge_all()
         await backfill_members(organization.id)
 
-        # License key customer_id unchanged for B2C
+        # License key stays on the same customer but is linked to the owner member
         refreshed_lk = await session.get(LicenseKey, lk_id)
         assert refreshed_lk is not None
         assert refreshed_lk.customer_id == customer.id
+        refreshed_grant = await session.get(BenefitGrant, grant.id)
+        assert refreshed_grant is not None
+        assert refreshed_grant.member_id is not None
+        assert refreshed_lk.member_id == refreshed_grant.member_id
+
+    async def test_downloadables_linked_to_owner_member(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """B2C downloadables stay on the same customer but link to the owner member."""
+        organization = await create_organization(
+            save_fixture, account, feature_settings={"member_model_enabled": True}
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="b2c-dl@test.com",
+            stripe_customer_id="stripe_b2c_dl",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=utc_now(),
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.downloadables,
+            properties={"archived": {}, "files": []},
+        )
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=True,
+            subscription=subscription,
+        )
+        file = await _create_file(save_fixture, organization.id)
+        downloadable = Downloadable(
+            customer_id=customer.id,
+            benefit_id=benefit.id,
+            file_id=file.id,
+            status=DownloadableStatus.granted,
+        )
+        await save_fixture(downloadable)
+        dl_id = downloadable.id
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+
+        refreshed_dl = await session.get(Downloadable, dl_id)
+        assert refreshed_dl is not None
+        assert refreshed_dl.customer_id == customer.id
+        refreshed_grant = await session.get(BenefitGrant, grant.id)
+        assert refreshed_grant is not None
+        assert refreshed_grant.member_id is not None
+        assert refreshed_dl.member_id == refreshed_grant.member_id
+
+    async def test_benefit_records_backfill_is_idempotent(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """Re-running the backfill leaves an already-linked license key unchanged."""
+        organization = await create_organization(
+            save_fixture, account, feature_settings={"member_model_enabled": True}
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="b2c-idem@test.com",
+            stripe_customer_id="stripe_b2c_idem",
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            started_at=utc_now(),
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.license_keys,
+        )
+        license_key = LicenseKey(
+            organization_id=organization.id,
+            customer_id=customer.id,
+            benefit_id=benefit.id,
+            key="POLAR-B2C-IDEM-001",
+        )
+        await save_fixture(license_key)
+        lk_id = license_key.id
+        await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=True,
+            properties={"license_key_id": str(lk_id)},
+            subscription=subscription,
+        )
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+        first = await session.get(LicenseKey, lk_id)
+        assert first is not None
+        first_member_id = first.member_id
+        assert first_member_id is not None
+
+        session.expunge_all()
+        await backfill_members(organization.id)
+        second = await session.get(LicenseKey, lk_id)
+        assert second is not None
+        assert second.member_id == first_member_id
 
 
 @pytest.mark.asyncio

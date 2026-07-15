@@ -134,7 +134,7 @@ export default function EventDetailPage({
         {/* Left column — event rows */}
         <div className="flex flex-col gap-y-8">
           <div className="flex flex-row items-baseline justify-between gap-x-4">
-            <h3 className="min-w-0 break-words text-2xl sm:text-4xl">
+            <h3 className="min-w-0 text-2xl break-words sm:text-4xl">
               {event.label}
             </h3>
             {'_cost' in event.metadata && event.metadata._cost && (

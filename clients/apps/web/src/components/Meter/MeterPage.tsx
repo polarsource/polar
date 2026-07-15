@@ -219,10 +219,7 @@ const MeterActivityCards = ({ meter }: { meter: schemas['Meter'] }) => {
   })
 
   return (
-    <Grid
-      templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }}
-      gap="2xl"
-    >
+    <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap="2xl">
       {[
         {
           title: 'Current Month',

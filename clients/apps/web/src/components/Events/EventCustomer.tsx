@@ -75,7 +75,7 @@ export const EventCustomer = ({ event }: { event: schemas['Event'] }) => {
   if (isIdentifiedCustomerEvent(event)) {
     return (
       <Popover>
-        <PopoverTrigger className="group block min-w-0 max-w-full">
+        <PopoverTrigger className="group block max-w-full min-w-0">
           <div className="flex min-w-0 flex-row items-center gap-x-2 font-sans">
             <Avatar
               className="size-6 shrink-0"

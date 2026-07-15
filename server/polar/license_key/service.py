@@ -9,6 +9,7 @@ from sqlalchemy.orm import joinedload
 from polar.auth.models import AuthSubject, Customer, Member
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.strategies.license_keys.properties import (
     BenefitLicenseKeysProperties,
 )
@@ -148,12 +149,42 @@ class LicenseKeyService:
         updates: LicenseKeyUpdate,
     ) -> LicenseKey:
         update_dict = updates.model_dump(exclude_unset=True)
+        previous_status = license_key.status
         for key, value in update_dict.items():
             setattr(license_key, key, value)
 
         session.add(license_key)
         await session.flush()
+
+        if "status" in update_dict and license_key.status != previous_status:
+            await self._sync_benefit_grant_status(session, license_key)
+
         return license_key
+
+    async def _sync_benefit_grant_status(
+        self, session: AsyncSession, license_key: LicenseKey
+    ) -> None:
+        grant_repository = BenefitGrantRepository.from_session(session)
+        grant = await grant_repository.get_by_property_and_organization(
+            organization_id=license_key.organization_id,
+            key="license_key_id",
+            value=str(license_key.id),
+            benefit_id=license_key.benefit_id,
+        )
+        if grant is None:
+            return
+
+        if license_key.is_active():
+            if grant.is_granted:
+                return
+            grant.set_granted()
+        else:
+            if grant.is_revoked:
+                return
+            grant.set_revoked()
+
+        session.add(grant)
+        await session.flush()
 
     async def validate(
         self,

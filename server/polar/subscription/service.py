@@ -1898,14 +1898,12 @@ class SubscriptionService:
         customer_reason: CustomerCancellationReason | None = None,
         customer_comment: str | None = None,
     ) -> Subscription:
-        immediately = await self._cancel_stops_collection(session, subscription)
         return await self._perform_cancellation(
             session,
             ctx,
             subscription,
             customer_reason=customer_reason,
             customer_comment=customer_comment,
-            immediately=immediately,
         )
 
     async def pause(

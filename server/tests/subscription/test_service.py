@@ -2183,11 +2183,10 @@ class TestCancel:
             ) as ctx:
                 await subscription_service.cancel(session, ctx, subscription)
 
-    async def test_past_due_no_grace_cancels_immediately_and_voids(
+    async def test_past_due_no_grace_cancels_at_period_end(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
-        enqueue_benefits_grants_mock: MagicMock,
         enqueue_job_mock: MagicMock,
         product: Product,
         customer: Customer,
@@ -2212,12 +2211,14 @@ class TestCancel:
         ) as ctx:
             updated = await subscription_service.cancel(session, ctx, subscription)
 
-        assert updated.status == SubscriptionStatus.canceled
-        assert updated.cancel_at_period_end is False
-        assert updated.ended_at is not None
-        enqueue_job_mock.assert_any_call(
-            "order.void_pending_orders_for_subscription", subscription.id
-        )
+        assert updated.status == SubscriptionStatus.past_due
+        assert updated.cancel_at_period_end is True
+        void_calls = [
+            call_args
+            for call_args in enqueue_job_mock.call_args_list
+            if call_args[0][0] == "order.void_pending_orders_for_subscription"
+        ]
+        assert len(void_calls) == 0
 
     async def test_past_due_with_grace_period_cancels_at_period_end(
         self,

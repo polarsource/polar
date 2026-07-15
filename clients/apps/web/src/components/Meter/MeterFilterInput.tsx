@@ -63,9 +63,9 @@ const MeterFilterInput = ({
     <div className="flex flex-col gap-4">
       {/* To make the UI more digest, we don't allow to add single clause at the root level */}
       {prefix !== 'filter' && (
-        <div className="flex items-center justify-between gap-2">
+        <div className="flex flex-wrap items-center justify-between gap-2">
           <h3>Condition group</h3>
-          <div className="flex flex-row items-center gap-x-2">
+          <div className="flex flex-row flex-wrap items-center gap-2">
             <Button
               type="button"
               variant="secondary"
@@ -108,7 +108,7 @@ const MeterFilterInput = ({
                 >
                   {index === 0 ? '|' : conjunction}
                 </div>
-                <div className="grid grow grid-cols-[1fr_1fr_1fr_auto] items-start gap-x-2">
+                <div className="grid grow grid-cols-1 gap-2 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-start sm:gap-y-0">
                   <FormField
                     control={control}
                     name={`${prefix}.clauses.${index}.property`}
@@ -185,7 +185,12 @@ const MeterFilterInput = ({
                       )
                     }}
                   />
-                  <div className="flex h-10 items-center">
+                  <div
+                    className={twMerge(
+                      'h-10 items-center',
+                      index === 0 ? 'hidden sm:flex' : 'flex',
+                    )}
+                  >
                     <Button
                       type="button"
                       variant="secondary"

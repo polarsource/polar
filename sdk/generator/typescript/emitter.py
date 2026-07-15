@@ -49,6 +49,7 @@ class TypeScriptEmitter(EmitterBase):
         )
         self.copy_file(self.templates_dir / "justfile", root_directory / "justfile")
         self.copy_file(self.templates_dir / "README.md", root_directory / "README.md")
+        self.copy_file(self.templates_dir / "LICENSE", root_directory / "LICENSE")
 
         self.render_file(
             "package.json",

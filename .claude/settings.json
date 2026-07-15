@@ -24,7 +24,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": ".claude/hooks/check-patterns.sh",
+            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/check-patterns.sh\"",
             "timeout": 30
           }
         ]

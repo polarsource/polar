@@ -1,0 +1,16 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/.agents/hooks/check-patterns.sh\"",
+            "timeout": 30
+          }
+        ]
+      }
+    ]
+  }
+}

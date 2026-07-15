@@ -1,18 +1,33 @@
 import types
 import typing
 
-from polar.base import AsyncClientBase, SyncClientBase
+from polar.base import AsyncClientBase, SyncClientBase, resolve_base_url
 
 {% for service in api.services %}
 from polar.{{ version }}.{{ service.name | snake }} import {{ service.name }}Async
 from polar.{{ version }}.{{ service.name | snake }} import {{ service.name }}Sync
 {% endfor %}
 
+Environment = typing.Literal[{% for server in api.servers %}"{{ server.environment }}"{% if not loop.last %}, {% endif %}{% endfor %}]
+SERVERS: typing.Final[dict[Environment, str]] = {
+{% for server in api.servers %}
+    "{{ server.environment }}": "{{ server.url }}",
+{% endfor %}
+}
+
+
 class Polar:
     version: str = "{{ api.version }}"
 
-    def __init__(self, base_url: str, access_token: str) -> None:
-        self._client = SyncClientBase(base_url, self.version, access_token)
+    def __init__(
+        self,
+        access_token: str,
+        *,
+        environment: Environment = "production",
+        base_url: str | None = None,
+    ) -> None:
+        resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
+        self._client = SyncClientBase(resolved_base_url, self.version, access_token)
 {% for service in api.services %}
         self.{{ service.name | snake }} = {{ service.name }}Sync(self._client)
 {% endfor %}
@@ -33,8 +48,15 @@ class Polar:
 class PolarAsync:
     version: str = "{{ api.version }}"
 
-    def __init__(self, base_url: str, access_token: str) -> None:
-        self._client = AsyncClientBase(base_url, self.version, access_token)
+    def __init__(
+        self,
+        access_token: str,
+        *,
+        environment: Environment = "production",
+        base_url: str | None = None,
+    ) -> None:
+        resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
+        self._client = AsyncClientBase(resolved_base_url, self.version, access_token)
 {% for service in api.services %}
         self.{{ service.name | snake }} = {{ service.name }}Async(self._client)
 {% endfor %}
@@ -52,4 +74,4 @@ class PolarAsync:
         await self._client.__aexit__(exc_type, exc_val, exc_tb)
 
 
-__all__ = ["Polar", "PolarAsync"]
+__all__ = ["Environment", "Polar", "PolarAsync"]

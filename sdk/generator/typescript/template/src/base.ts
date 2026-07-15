@@ -103,6 +103,23 @@ export interface ClientOptions {
   accessToken: string;
 }
 
+export const resolveBaseUrl = (
+  servers: Record<string, string>,
+  environment: string,
+  baseUrl?: string,
+): string => {
+  if (baseUrl !== undefined) {
+    return baseUrl;
+  }
+  const serverUrl = servers[environment];
+  if (serverUrl === undefined) {
+    throw new Error(
+      `Invalid environment ${JSON.stringify(environment)}. Expected one of: ${Object.keys(servers).sort().join(", ")}.`,
+    );
+  }
+  return serverUrl;
+};
+
 export class ClientBase {
   protected readonly options: ClientOptions;
 

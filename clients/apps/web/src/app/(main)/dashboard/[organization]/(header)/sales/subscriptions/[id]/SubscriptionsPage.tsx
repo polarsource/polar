@@ -139,6 +139,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             subscription={subscription}
             onUpdate={hideUpdateModal}
             organization={organization}
+            hide={hideUpdateModal}
           />
         }
       />

@@ -8,7 +8,7 @@ import { hasLegacyRecurringPrices } from '@/utils/product'
 import { formatTrialEnd, useTrialChangeOutcome } from '@/utils/trial-change'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import { Button } from '@polar-sh/orbit'
+import { Button, InlineModalHeader } from '@polar-sh/orbit'
 import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
 import DateTimePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
 import { Pill } from '@polar-sh/orbit'
@@ -723,19 +723,22 @@ const UpdateSubscriptionModal = ({
   subscription,
   onUpdate,
   organization,
+  hide,
 }: {
   subscription: schemas['Subscription']
   onUpdate?: () => void
   organization: schemas['Organization']
+  hide: () => void
 }) => {
   const isActive =
     subscription.status === 'active' || subscription.status === 'trialing'
 
   return (
-    <div className="flex h-full flex-col gap-8 overflow-y-auto px-8 py-12">
-      <div className="flex flex-row items-center gap-x-4">
+    <div className="flex h-full flex-col overflow-y-auto">
+      <InlineModalHeader hide={hide}>
         <h2 className="text-xl">Update Subscription</h2>
-      </div>
+      </InlineModalHeader>
+      <div className="flex h-full flex-col gap-8 px-8 pb-12">
       <Tabs defaultValue="product">
         <TabsList className="mb-8">
           <TabsTrigger value="product">Product</TabsTrigger>
@@ -776,6 +779,7 @@ const UpdateSubscriptionModal = ({
           </div>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   )
 }

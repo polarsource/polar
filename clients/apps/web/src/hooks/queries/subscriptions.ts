@@ -126,6 +126,9 @@ export const useUpdateSubscription = (id: string) =>
       queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'charge-preview'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'cancel-preview'],
+      })
     },
   })
 
@@ -191,6 +194,9 @@ export const useUncancelSubscription = (id: string) =>
       queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'charge-preview'],
       })
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'cancel-preview'],
+      })
     },
   })
 
@@ -229,6 +235,9 @@ const applySubscriptionUpdateToCache = (
   )
   queryClient.invalidateQueries({
     queryKey: ['subscriptions', { id }, 'charge-preview'],
+  })
+  queryClient.invalidateQueries({
+    queryKey: ['subscriptions', { id }, 'cancel-preview'],
   })
   queryClient.invalidateQueries({
     queryKey: [
@@ -369,6 +378,9 @@ export const useClearPendingSubscriptionUpdate = (id: string) =>
 
       queryClient.invalidateQueries({
         queryKey: ['subscriptions', { id }, 'charge-preview'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['subscriptions', { id }, 'cancel-preview'],
       })
     },
   })

@@ -50,7 +50,7 @@ function SubmitButton({
 
 export function SandboxStep() {
   const router = useRouter()
-  const { setUserOrganizations } = useAuth()
+  const { reloadUser } = useAuth()
   const { clearData } = useOnboardingData()
   const createOrganization = useCreateOrganization()
   const [submitting, setSubmitting] = useState(false)
@@ -98,10 +98,7 @@ export function SandboxStep() {
       return
     }
 
-    setUserOrganizations((prev) => [
-      ...prev,
-      { ...org, role: 'owner' as const, permissions: [] },
-    ])
+    await reloadUser()
     router.push(`/dashboard/${org.slug}`)
     clearData()
   }

@@ -181,6 +181,7 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
               checkoutModal.hide()
               invalidateReviewState()
             }}
+            hide={checkoutModal.hide}
           />
         }
       />
@@ -197,6 +198,7 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
                 editCheckoutLinkModal.hide()
                 invalidateReviewState()
               }}
+              hide={editCheckoutLinkModal.hide}
             />
           ) : null
         }

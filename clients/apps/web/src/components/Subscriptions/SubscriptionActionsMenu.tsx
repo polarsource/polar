@@ -154,6 +154,7 @@ const SubscriptionActionsMenu = ({
           <CancelSubscriptionModal
             subscription={subscription}
             onCancellation={cancellationModal.hide}
+            hide={cancellationModal.hide}
           />
         }
       />
@@ -164,6 +165,7 @@ const SubscriptionActionsMenu = ({
           <PauseSubscriptionModal
             subscription={subscription}
             onPause={pauseModal.hide}
+            hide={pauseModal.hide}
           />
         }
       />

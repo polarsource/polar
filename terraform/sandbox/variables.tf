@@ -211,6 +211,12 @@ variable "stripe_webhook_secret_sandbox" {
   sensitive   = true
 }
 
+variable "stripe_account_risk_webhook_secret_sandbox" {
+  description = "Stripe Account Risk Webhook Secret for sandbox"
+  type        = string
+  sensitive   = true
+}
+
 # Apple (shared across environments)
 variable "apple_client_id" {
   description = "Apple Client ID"

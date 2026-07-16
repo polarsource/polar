@@ -25,7 +25,6 @@ Usage:
 """
 
 import uuid
-from collections import defaultdict
 from typing import cast, get_args
 
 import stripe as stripe_lib
@@ -41,6 +40,7 @@ from polar.integrations.stripe.service import StripeAccountRejectReason
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.models import Organization, PayoutAccount
 from polar.models.organization import OrganizationStatus
+from polar.organization.repository import OrganizationRepository
 from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import create_async_engine
 from scripts.helper import configure_script_console_logging, typer_async
@@ -53,6 +53,7 @@ configure_script_console_logging()
 
 TARGET_STATUS = OrganizationStatus.DENIED
 REJECT_REASONS = set(get_args(StripeAccountRejectReason))
+REJECT_REASONS_HELP = ", ".join(sorted(REJECT_REASONS))
 
 
 async def _denied_stripe_orgs(session: AsyncSession) -> list[Organization]:
@@ -72,32 +73,12 @@ async def _denied_stripe_orgs(session: AsyncSession) -> list[Organization]:
     return list(result.scalars().all())
 
 
-async def _orgs_by_payout_account(
-    session: AsyncSession, payout_account_ids: set[uuid.UUID]
-) -> dict[uuid.UUID, list[Organization]]:
-    """Map each payout account to every non-deleted org that references it, so we
-    can tell whether a Stripe account is shared before rejecting it."""
-    if not payout_account_ids:
-        return {}
-    result = await session.execute(
-        select(Organization).where(
-            Organization.deleted_at.is_(None),
-            Organization.payout_account_id.in_(payout_account_ids),
-        )
-    )
-    grouped: dict[uuid.UUID, list[Organization]] = defaultdict(list)
-    for org in result.scalars().all():
-        assert org.payout_account_id is not None
-        grouped[org.payout_account_id].append(org)
-    return grouped
-
-
-def _render_to_reject(rows: list[tuple[Organization, str]]) -> None:
+def _render_to_reject(rows: list[tuple[Organization, uuid.UUID, str]]) -> None:
     table = Table(title=f"Stripe accounts to reject ({len(rows)})")
     table.add_column("Org slug")
     table.add_column("Org ID", style="dim")
     table.add_column("Stripe account", style="cyan")
-    for org, stripe_id in rows:
+    for org, _, stripe_id in rows:
         table.add_row(org.slug, str(org.id), stripe_id)
     console.print(table)
 
@@ -125,13 +106,11 @@ async def reject(
     ),
     reason: str = typer.Option(
         "terms_of_service",
-        help=f"Stripe reject reason, one of: {', '.join(sorted(REJECT_REASONS))}",
+        help=f"Stripe reject reason, one of: {REJECT_REASONS_HELP}",
     ),
 ) -> None:
     if reason not in REJECT_REASONS:
-        raise typer.BadParameter(
-            f"reason must be one of: {', '.join(sorted(REJECT_REASONS))}"
-        )
+        raise typer.BadParameter(f"reason must be one of: {REJECT_REASONS_HELP}")
     reject_reason = cast(StripeAccountRejectReason, reason)
 
     engine = create_async_engine("script")
@@ -140,14 +119,9 @@ async def reject(
     try:
         async with sessionmaker() as session:
             denied_orgs = await _denied_stripe_orgs(session)
-            payout_account_ids = {
-                org.payout_account_id
-                for org in denied_orgs
-                if org.payout_account_id is not None
-            }
-            orgs_by_account = await _orgs_by_payout_account(session, payout_account_ids)
+            org_repository = OrganizationRepository.from_session(session)
 
-            to_reject: list[tuple[Organization, str]] = []
+            to_reject: list[tuple[Organization, uuid.UUID, str]] = []
             shared: list[tuple[str, list[Organization]]] = []
             seen_accounts: set[uuid.UUID] = set()
             for org in denied_orgs:
@@ -158,11 +132,11 @@ async def reject(
                 seen_accounts.add(account_id)
                 assert org.payout_account is not None
                 stripe_id = cast(str, org.payout_account.stripe_id)
-                linked = orgs_by_account.get(account_id, [org])
+                linked = await org_repository.get_all_by_payout_account(account_id)
                 if len(linked) > 1:
-                    shared.append((stripe_id, linked))
+                    shared.append((stripe_id, list(linked)))
                 else:
-                    to_reject.append((org, stripe_id))
+                    to_reject.append((org, account_id, stripe_id))
 
             _render_to_reject(to_reject)
             console.print()
@@ -182,9 +156,7 @@ async def reject(
 
             console.rule("[bold]Rejecting Stripe accounts")
             rejected = 0
-            for org, stripe_id in to_reject:
-                account_id = org.payout_account_id
-                assert account_id is not None
+            for org, account_id, stripe_id in to_reject:
                 try:
                     await payout_account_service.reject_stripe_account(
                         session, account_id, reject_reason

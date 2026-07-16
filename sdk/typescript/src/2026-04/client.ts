@@ -40,12 +40,18 @@ export interface PolarOptions extends Omit<ClientOptions, "baseUrl" | "version">
   baseUrl?: string;
 }
 
-export function createPolar(options: PolarOptions) {
-  const client = new ClientBase({
+export function createPolarCore(options: PolarOptions) {
+  return new ClientBase({
     ...options,
     baseUrl: resolveBaseUrl(SERVERS, options.environment ?? "production", options.baseUrl),
     version: options.version ?? "2026-04",
   });
+}
+
+export type PolarCore = ReturnType<typeof createPolarCore>;
+
+export function createPolar(options: PolarOptions) {
+  const client = createPolarCore(options);
 
   return {
     organizations: createOrganizationsService(client),

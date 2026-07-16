@@ -1,5 +1,4 @@
 import OrganizationPermissionGuard from '@/components/Auth/OrganizationPermissionGuard'
-import { DashboardBody } from '@/components/Layout/DashboardLayout'
 
 export default async function Layout({
   children,
@@ -11,13 +10,12 @@ export default async function Layout({
   const { organization } = await params
 
   return (
-    <DashboardBody>
-      <OrganizationPermissionGuard
-        organizationSlug={organization}
-        permission="finance:read"
-      >
-        {children}
-      </OrganizationPermissionGuard>
-    </DashboardBody>
+    <OrganizationPermissionGuard
+      organizationSlug={organization}
+      permission="finance:read"
+      standalone
+    >
+      {children}
+    </OrganizationPermissionGuard>
   )
 }

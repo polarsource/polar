@@ -2,7 +2,7 @@ import revalidate from '@/app/actions'
 import { useUpdateCustomer } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, InlineModalHeader } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import {
   Form,
@@ -81,15 +81,16 @@ export const EditCustomerModal = ({
   }
 
   return (
-    <div className="flex flex-col gap-8 overflow-y-auto px-8 py-12">
-      <div className="flex flex-row items-center gap-x-4">
+    <div className="flex flex-col overflow-y-auto">
+      <InlineModalHeader hide={onClose}>
         <h2 className="text-xl">Edit Customer</h2>
-      </div>
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(handleUpdateCustomer)}
-          className="flex flex-col gap-8"
-        >
+      </InlineModalHeader>
+      <div className="flex flex-col gap-8 px-8 pb-12">
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleUpdateCustomer)}
+            className="flex flex-col gap-8"
+          >
           <div className="flex flex-col gap-4">
             <FormField
               control={form.control}
@@ -160,6 +161,7 @@ export const EditCustomerModal = ({
           </Button>
         </form>
       </Form>
+      </div>
     </div>
   )
 }

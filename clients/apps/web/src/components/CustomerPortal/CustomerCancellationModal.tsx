@@ -62,12 +62,11 @@ const CustomerCancellationModal = ({
 }: CustomerCancellationModalProps) => {
   const router = useRouter()
 
-  const { data: cancelPreview, isLoading: cancelPreviewLoading } =
-    useCustomerSubscriptionCancelPreview(
-      api,
-      subscription.id,
-      subscription.status === 'past_due',
-    )
+  const { data: cancelPreview } = useCustomerSubscriptionCancelPreview(
+    api,
+    subscription.id,
+    subscription.status === 'past_due',
+  )
 
   const revokeSubscription = useCustomerRevokeSubscription(api)
 
@@ -76,10 +75,11 @@ const CustomerCancellationModal = ({
   const stopsCollection =
     subscription.status === 'past_due' && !!cancelPreview?.stops_collection
 
-  // Block submission until the preview resolves, so a fast click can't take the
-  // cancel-at-period-end path on a subscription that should be revoked.
-  const previewPending =
-    subscription.status === 'past_due' && cancelPreviewLoading
+  // Block submission until the preview has loaded successfully. Otherwise a fast
+  // click — or a failed preview request — would fall back to the
+  // cancel-at-period-end path on a subscription that should be revoked, leaving
+  // dunning running.
+  const previewPending = subscription.status === 'past_due' && !cancelPreview
 
   const isPending = cancelSubscription.isPending || revokeSubscription.isPending
 

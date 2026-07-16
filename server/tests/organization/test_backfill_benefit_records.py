@@ -989,6 +989,72 @@ class TestBackfillDownloadables:
 
 
 @pytest.mark.asyncio
+class TestDownloadableConflict:
+    async def test_skips_row_when_member_already_holds_file(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """A customer-scoped row is skipped when the target member already holds
+        the same (customer, file, benefit) — otherwise the update would violate
+        ix_downloadables_scope_unique."""
+        organization = await create_organization(
+            save_fixture, account, feature_settings={"member_model_enabled": True}
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, email="conflict@test.com"
+        )
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.downloadables,
+            properties={"archived": {}, "files": []},
+        )
+        file = await _create_file(save_fixture, organization.id)
+
+        existing = Downloadable(
+            customer_id=customer.id,
+            benefit_id=benefit.id,
+            file_id=file.id,
+            member_id=member.id,
+            status=DownloadableStatus.granted,
+        )
+        await save_fixture(existing)
+        leftover = Downloadable(
+            customer_id=customer.id,
+            benefit_id=benefit.id,
+            file_id=file.id,
+            member_id=None,
+            status=DownloadableStatus.granted,
+        )
+        await save_fixture(leftover)
+        leftover_id = leftover.id
+
+        await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=True,
+            member=member,
+        )
+
+        session.expunge_all()
+        await _backfill_downloadables(session)
+        await session.flush()
+
+        refreshed = await session.get(Downloadable, leftover_id)
+        assert refreshed is not None
+        assert refreshed.member_id is None
+
+
+@pytest.mark.asyncio
 class TestMemberModelOnlyScoping:
     async def test_license_keys_skip_non_member_model_orgs(
         self,

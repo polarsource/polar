@@ -91,76 +91,76 @@ export const EditCustomerModal = ({
             onSubmit={form.handleSubmit(handleUpdateCustomer)}
             className="flex flex-col gap-8"
           >
-          <div className="flex flex-col gap-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel> Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} value={field.value || ''} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              rules={{
-                required:
-                  customer.type === 'team' ? false : 'Email is required',
-                validate: (value) => {
-                  if (!value) return true
-                  return (
-                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ||
-                    'Invalid email address'
-                  )
-                },
-              }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input {...field} value={field.value || ''} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="external_id"
-              disabled={!!customer.external_id}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>External ID</FormLabel>
-                  <FormDescription>
-                    An optional ID of the customer in your system. Once set, it
-                    can&apos;t be updated.
-                  </FormDescription>
-                  <FormControl>
-                    <Input {...field} value={field.value || ''} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="metadata"
-              render={() => <CustomerMetadataForm />}
-            />
-          </div>
-          <Button
-            type="submit"
-            className="self-start"
-            loading={updateCustomer.isPending}
-          >
-            Save Customer
-          </Button>
-        </form>
-      </Form>
+            <div className="flex flex-col gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel> Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                rules={{
+                  required:
+                    customer.type === 'team' ? false : 'Email is required',
+                  validate: (value) => {
+                    if (!value) return true
+                    return (
+                      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ||
+                      'Invalid email address'
+                    )
+                  },
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="external_id"
+                disabled={!!customer.external_id}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>External ID</FormLabel>
+                    <FormDescription>
+                      An optional ID of the customer in your system. Once set,
+                      it can&apos;t be updated.
+                    </FormDescription>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="metadata"
+                render={() => <CustomerMetadataForm />}
+              />
+            </div>
+            <Button
+              type="submit"
+              className="self-start"
+              loading={updateCustomer.isPending}
+            >
+              Save Customer
+            </Button>
+          </form>
+        </Form>
       </div>
     </div>
   )

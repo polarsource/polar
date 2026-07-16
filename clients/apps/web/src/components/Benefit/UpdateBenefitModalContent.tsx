@@ -123,44 +123,48 @@ const UpdateBenefitModalContent = ({
         <h2 className="text-lg">Update Benefit</h2>
       </InlineModalHeader>
       <div className="flex flex-col gap-y-6 px-8 pb-10">
-      <div className="flex flex-col gap-y-6">
-        <Form {...form}>
-          <form
-            className="flex flex-col gap-y-6"
-            onSubmit={(e) => {
-              e.stopPropagation()
-              handleSubmit(onValidSubmit)(e)
-            }}
-          >
-            <UpdateBenefitForm
-              organization={organization}
-              type={benefit.type}
-              benefitId={benefit.id}
-              onUploadingChange={setIsUploading}
-            />
-            <div className="mt-4 flex flex-row items-center gap-x-4">
-              <Button
-                className="self-start"
-                type="submit"
-                loading={updateSubscriptionBenefit.isPending}
-                disabled={updateSubscriptionBenefit.isPending}
-              >
-                Update
-              </Button>
-              <Button variant="ghost" className="self-start" onClick={onCancel}>
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </div>
-      <ConfirmModal
-        isShown={isConfirmShown}
-        hide={hideConfirm}
-        title="Update this benefit?"
-        description="Changes to this benefit will be applied to all products that use it, and to existing customers who already have it."
-        onConfirm={handleConfirmUpdate}
-      />
+        <div className="flex flex-col gap-y-6">
+          <Form {...form}>
+            <form
+              className="flex flex-col gap-y-6"
+              onSubmit={(e) => {
+                e.stopPropagation()
+                handleSubmit(onValidSubmit)(e)
+              }}
+            >
+              <UpdateBenefitForm
+                organization={organization}
+                type={benefit.type}
+                benefitId={benefit.id}
+                onUploadingChange={setIsUploading}
+              />
+              <div className="mt-4 flex flex-row items-center gap-x-4">
+                <Button
+                  className="self-start"
+                  type="submit"
+                  loading={updateSubscriptionBenefit.isPending}
+                  disabled={updateSubscriptionBenefit.isPending}
+                >
+                  Update
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="self-start"
+                  onClick={onCancel}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
+        <ConfirmModal
+          isShown={isConfirmShown}
+          hide={hideConfirm}
+          title="Update this benefit?"
+          description="Changes to this benefit will be applied to all products that use it, and to existing customers who already have it."
+          onConfirm={handleConfirmUpdate}
+        />
       </div>
     </div>
   )

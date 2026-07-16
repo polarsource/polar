@@ -111,36 +111,36 @@ const CreateBenefitModalContent = ({
           Created benefits will be available for use in all products of your
           organization
         </p>
-      <div className="flex flex-col gap-y-6">
-        <Form {...form}>
-          <form className="flex flex-col gap-y-6">
-            <NewBenefitForm organization={organization} />
-            {errors.root && (
-              <p className="text-destructive-foreground text-sm">
-                {errors.root.message}
-              </p>
-            )}
-            <div className="mt-4 flex flex-row items-center gap-x-4">
-              <Button
-                className="self-start"
-                type="button"
-                loading={createSubscriptionBenefit.isPending}
-                disabled={createSubscriptionBenefit.isPending}
-                onClick={handleSubmit(handleCreateNewBenefit)}
-              >
-                Create
-              </Button>
-              <Button
-                variant="ghost"
-                className="self-start"
-                onClick={hideModal}
-              >
-                Cancel
-              </Button>
-            </div>
-          </form>
-        </Form>
-      </div>
+        <div className="flex flex-col gap-y-6">
+          <Form {...form}>
+            <form className="flex flex-col gap-y-6">
+              <NewBenefitForm organization={organization} />
+              {errors.root && (
+                <p className="text-destructive-foreground text-sm">
+                  {errors.root.message}
+                </p>
+              )}
+              <div className="mt-4 flex flex-row items-center gap-x-4">
+                <Button
+                  className="self-start"
+                  type="button"
+                  loading={createSubscriptionBenefit.isPending}
+                  disabled={createSubscriptionBenefit.isPending}
+                  onClick={handleSubmit(handleCreateNewBenefit)}
+                >
+                  Create
+                </Button>
+                <Button
+                  variant="ghost"
+                  className="self-start"
+                  onClick={hideModal}
+                >
+                  Cancel
+                </Button>
+              </div>
+            </form>
+          </Form>
+        </div>
       </div>
     </div>
   )

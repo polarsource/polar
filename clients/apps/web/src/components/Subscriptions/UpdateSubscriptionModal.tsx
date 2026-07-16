@@ -739,46 +739,46 @@ const UpdateSubscriptionModal = ({
         <h2 className="text-xl">Update Subscription</h2>
       </InlineModalHeader>
       <div className="flex h-full flex-col gap-8 px-8 pb-12">
-      <Tabs defaultValue="product">
-        <TabsList className="mb-8">
-          <TabsTrigger value="product">Product</TabsTrigger>
-          <TabsTrigger value="discount">Discount</TabsTrigger>
-          {isActive && <TabsTrigger value="trial">Trial</TabsTrigger>}
-          {isActive && (
-            <TabsTrigger value="billing-period">Billing Period</TabsTrigger>
-          )}
-        </TabsList>
-        <TabsContent value="product">
-          <div className="flex h-full flex-col gap-4">
-            <UpdateProduct
-              subscription={subscription}
-              onUpdate={onUpdate}
-              organization={organization}
-            />
-          </div>
-        </TabsContent>
+        <Tabs defaultValue="product">
+          <TabsList className="mb-8">
+            <TabsTrigger value="product">Product</TabsTrigger>
+            <TabsTrigger value="discount">Discount</TabsTrigger>
+            {isActive && <TabsTrigger value="trial">Trial</TabsTrigger>}
+            {isActive && (
+              <TabsTrigger value="billing-period">Billing Period</TabsTrigger>
+            )}
+          </TabsList>
+          <TabsContent value="product">
+            <div className="flex h-full flex-col gap-4">
+              <UpdateProduct
+                subscription={subscription}
+                onUpdate={onUpdate}
+                organization={organization}
+              />
+            </div>
+          </TabsContent>
 
-        <TabsContent value="discount">
-          <div className="flex h-full flex-col gap-4">
-            <UpdateDiscount subscription={subscription} onUpdate={onUpdate} />
-          </div>
-        </TabsContent>
+          <TabsContent value="discount">
+            <div className="flex h-full flex-col gap-4">
+              <UpdateDiscount subscription={subscription} onUpdate={onUpdate} />
+            </div>
+          </TabsContent>
 
-        <TabsContent value="trial">
-          <div className="flex h-full flex-col gap-4">
-            <UpdateTrial subscription={subscription} onUpdate={onUpdate} />
-          </div>
-        </TabsContent>
+          <TabsContent value="trial">
+            <div className="flex h-full flex-col gap-4">
+              <UpdateTrial subscription={subscription} onUpdate={onUpdate} />
+            </div>
+          </TabsContent>
 
-        <TabsContent value="billing-period">
-          <div className="flex h-full flex-col gap-4">
-            <UpdateBillingPeriod
-              subscription={subscription}
-              onUpdate={onUpdate}
-            />
-          </div>
-        </TabsContent>
-      </Tabs>
+          <TabsContent value="billing-period">
+            <div className="flex h-full flex-col gap-4">
+              <UpdateBillingPeriod
+                subscription={subscription}
+                onUpdate={onUpdate}
+              />
+            </div>
+          </TabsContent>
+        </Tabs>
       </div>
     </div>
   )

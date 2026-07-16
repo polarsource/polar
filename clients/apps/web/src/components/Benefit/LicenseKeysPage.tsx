@@ -211,60 +211,60 @@ export const LicenseKeysPage = ({
         paddingHorizontal="2xl"
         paddingBottom="2xl"
       >
-      <Box alignItems="center" columnGap="m">
-        <Avatar
-          className="h-10 w-10"
-          avatar_url={selectedLicenseKey.customer.avatar_url}
-          name={
-            selectedLicenseKey.customer.email ??
-            selectedLicenseKey.customer.name ??
-            '—'
-          }
-        />
-        <Box flexDirection="column">
-          <Text>{selectedLicenseKey.customer.email ?? '—'}</Text>
+        <Box alignItems="center" columnGap="m">
+          <Avatar
+            className="h-10 w-10"
+            avatar_url={selectedLicenseKey.customer.avatar_url}
+            name={
+              selectedLicenseKey.customer.email ??
+              selectedLicenseKey.customer.name ??
+              '—'
+            }
+          />
+          <Box flexDirection="column">
+            <Text>{selectedLicenseKey.customer.email ?? '—'}</Text>
+          </Box>
         </Box>
-      </Box>
-      <Box flexDirection="column" rowGap="xl">
-        <CopyToClipboardInput
-          value={selectedLicenseKey.key}
-          onCopy={() => {
-            toast({
-              title: 'Copied To Clipboard',
-              description: `License Key was copied to clipboard`,
-            })
-          }}
-        />
-        <LicenseKeyDetails licenseKey={selectedLicenseKey} />
-      </Box>
-      <Box columnGap="l">
-        {['disabled', 'revoked'].includes(selectedLicenseKey.status) && (
-          <Button
-            onClick={() => handleToggleLicenseKeyStatus('granted')}
-            loading={statusLoading}
-          >
-            Enable
-          </Button>
-        )}
-        {selectedLicenseKey.status === 'granted' && (
-          <Button
-            onClick={() => handleToggleLicenseKeyStatus('disabled')}
-            variant="secondary"
-            loading={statusLoading}
-          >
-            Disable
-          </Button>
-        )}
-        {selectedLicenseKey.status === 'granted' && (
-          <Button
-            onClick={() => handleToggleLicenseKeyStatus('revoked')}
-            loading={statusLoading}
-            variant="destructive"
-          >
-            Revoke
-          </Button>
-        )}
-      </Box>
+        <Box flexDirection="column" rowGap="xl">
+          <CopyToClipboardInput
+            value={selectedLicenseKey.key}
+            onCopy={() => {
+              toast({
+                title: 'Copied To Clipboard',
+                description: `License Key was copied to clipboard`,
+              })
+            }}
+          />
+          <LicenseKeyDetails licenseKey={selectedLicenseKey} />
+        </Box>
+        <Box columnGap="l">
+          {['disabled', 'revoked'].includes(selectedLicenseKey.status) && (
+            <Button
+              onClick={() => handleToggleLicenseKeyStatus('granted')}
+              loading={statusLoading}
+            >
+              Enable
+            </Button>
+          )}
+          {selectedLicenseKey.status === 'granted' && (
+            <Button
+              onClick={() => handleToggleLicenseKeyStatus('disabled')}
+              variant="secondary"
+              loading={statusLoading}
+            >
+              Disable
+            </Button>
+          )}
+          {selectedLicenseKey.status === 'granted' && (
+            <Button
+              onClick={() => handleToggleLicenseKeyStatus('revoked')}
+              loading={statusLoading}
+              variant="destructive"
+            >
+              Revoke
+            </Button>
+          )}
+        </Box>
       </Box>
     </Box>
   ) : undefined

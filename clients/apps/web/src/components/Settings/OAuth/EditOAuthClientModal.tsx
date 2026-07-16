@@ -18,7 +18,6 @@ import {
   FieldClientSecret,
   FieldClientType,
   FieldClientURI,
-  FieldLogo,
   FieldName,
   FieldPrivacy,
   FieldRedirectURIs,
@@ -130,7 +129,6 @@ export const EditOAuthClientModal = ({
             <FieldClientID clientId={client.client_id} />
             <FieldClientSecret clientSecret={client.client_secret} />
             <FieldClientType />
-            <FieldLogo />
             <FieldRedirectURIs />
             <FieldScopes />
             <FieldClientURI />

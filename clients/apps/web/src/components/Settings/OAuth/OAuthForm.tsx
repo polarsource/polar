@@ -16,7 +16,6 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 
-import ImageUpload from '@/components/Form/ImageUpload'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
 import { enums } from '@polar-sh/client'
@@ -138,38 +137,6 @@ export const FieldClientSecret = ({
         .
       </FormDescription>
     </FormItem>
-  )
-}
-
-export const FieldLogo = () => {
-  const { control } = useFormContext<EnhancedOAuth2ClientConfiguration>()
-
-  return (
-    <FormField
-      control={control}
-      name="logo_uri"
-      render={({ field }) => (
-        <FormItem className="flex flex-col gap-4">
-          <div className="flex flex-col gap-y-2">
-            <FormLabel>Logotype</FormLabel>
-          </div>
-          <FormControl>
-            <ImageUpload
-              height={200}
-              width={200}
-              onUploaded={field.onChange}
-              defaultValue={field.value || undefined}
-              validate={(img) => {
-                return img.width / img.height !== 1
-                  ? 'Image should have a ratio of 1:1'
-                  : undefined
-              }}
-            />
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
   )
 }
 

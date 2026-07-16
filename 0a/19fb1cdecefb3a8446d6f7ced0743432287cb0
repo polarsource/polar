@@ -1,0 +1,54 @@
+server/polar/organization_review/repository.py
+  s_a708218e2a68df::t_91cddeaa1fd64b 22,487-503
+  s_a708218e2a68df::t_a6fd017e1c660c 504-506
+server/polar/organization/service.py
+  s_a708218e2a68df::t_0c6656cfab5a2f 77
+  s_a708218e2a68df::t_ec62b3b9752e99 1548,1551-1553,1555-1557,1559-1560,1562-1564,1566-1572,1574-1595
+  s_a708218e2a68df::t_38fbdef912ea69 44
+  s_a708218e2a68df::t_0e6038a1d72d65 31
+server/polar/integrations/stripe/tasks.py
+  s_a708218e2a68df::t_23fcf3ff54aa90 33
+  s_a708218e2a68df::t_e7bec073d7ff1c 83,86,91
+server/tests/integrations/stripe/test_account_risk.py
+  s_a708218e2a68df::t_2a60e0b04de62d 3-4,6,8-9,12-14,16-17,19-24,26,28,33,35-36,38-60,68,71,73-76,80-83,85
+  s_a708218e2a68df::t_6c73f5710712df 63-65
+server/polar/models/organization_risk_signal.py
+  s_a708218e2a68df::t_cc08e84c8b5aa7 1-4,6-54
+  s_a708218e2a68df::t_e31288fd3a3490 5
+server/polar/integrations/stripe/endpoints.py
+  s_a708218e2a68df::t_0c6656cfab5a2f 13,127
+server/polar/models/__init__.py
+  s_a708218e2a68df::t_7188b7d533095a 69
+  s_a708218e2a68df::t_7ec2128db85325 194
+server/tests/integrations/stripe/test_tasks.py
+  s_a708218e2a68df::t_0984b38c13b8bc 32
+  s_a708218e2a68df::t_9fb27d361dfa7a 70,96,113,120,124
+  s_a708218e2a68df::t_592720c43a4728 33
+server/polar/integrations/stripe/account_risk.py
+  s_a708218e2a68df::t_d0a81911a71e07 1,3-5,9,13,25,31-42,44-45,48-49,52-53,63-75,77,79-80,91-102,104-106
+server/polar/organization_review/risk_signal.py
+  s_a708218e2a68df::t_6473b7d2893fc4 1-34
+server/tests/organization/test_service.py
+  s_a708218e2a68df::t_6c73f5710712df 28,75-78
+  s_a708218e2a68df::t_73b0fe9ab5fc88 1601-1626,1630,1632,1635-1638,1641-1642,1645-1648,1652-1659,1663,1667,1669,1672-1674,1676,1678,1680-1685,1688-1691,1693,1697,1699,1701-1706,1708-1709,1712-1714,1716,1720,1722,1724-1728,1731-1732,1735-1737,1739,1745-1746,1748-1749,1752-1753
+  s_a708218e2a68df::t_630de1564189cc 21
+server/migrations/versions/2026-07-16-1238_add_organization_risk_signals.py
+  s_a708218e2a68df::t_3ff636114210b1 1-28,31-84
+  s_a708218e2a68df::t_69ca90917e67a1 29-30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "0a19fb1cdecefb3a8446d6f7ced0743432287cb0",
+  "prompts": {},
+  "sessions": {
+    "s_a708218e2a68df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6e245698-ccbc-4607-a33c-cd991533bd54",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

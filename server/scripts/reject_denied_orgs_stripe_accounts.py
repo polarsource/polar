@@ -26,6 +26,7 @@ Usage:
 """
 
 import uuid
+from collections import defaultdict
 from typing import cast, get_args
 
 import stripe as stripe_lib
@@ -38,10 +39,10 @@ from sqlalchemy.orm import contains_eager
 
 from polar.enums import PayoutAccountType
 from polar.integrations.stripe.service import StripeAccountRejectReason
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.models import Organization, PayoutAccount
 from polar.models.organization import OrganizationStatus
-from polar.organization.repository import OrganizationRepository
 from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import create_async_engine
 from scripts.helper import configure_script_console_logging, typer_async
@@ -73,6 +74,31 @@ async def _target_stripe_orgs(session: AsyncSession) -> list[Organization]:
         .order_by(Organization.created_at.asc())
     )
     return list(result.scalars().all())
+
+
+async def _orgs_by_stripe_id(
+    session: AsyncSession, stripe_ids: set[str]
+) -> dict[str, list[Organization]]:
+    """Map each Stripe account id to every non-deleted org backed by it.
+
+    A Stripe account is the permanent thing we reject, so sharing is detected by
+    ``stripe_id`` rather than payout-account id: nothing stops two payout-account
+    rows from carrying the same ``stripe_id``, and rejecting one would disable the
+    others too."""
+    if not stripe_ids:
+        return {}
+    result = await session.execute(
+        select(PayoutAccount.stripe_id, Organization)
+        .join(Organization, Organization.payout_account_id == PayoutAccount.id)
+        .where(
+            Organization.deleted_at.is_(None),
+            PayoutAccount.stripe_id.in_(stripe_ids),
+        )
+    )
+    grouped: dict[str, list[Organization]] = defaultdict(list)
+    for stripe_id, org in result.all():
+        grouped[stripe_id].append(org)
+    return grouped
 
 
 def _render_to_reject(rows: list[tuple[Organization, uuid.UUID, str]]) -> None:
@@ -122,22 +148,27 @@ async def reject(
     try:
         async with sessionmaker() as session:
             target_orgs = await _target_stripe_orgs(session)
-            org_repository = OrganizationRepository.from_session(session)
+            target_stripe_ids = {
+                cast(str, org.payout_account.stripe_id)
+                for org in target_orgs
+                if org.payout_account is not None
+            }
+            orgs_by_stripe_id = await _orgs_by_stripe_id(session, target_stripe_ids)
 
             to_reject: list[tuple[Organization, uuid.UUID, str]] = []
             shared: list[tuple[str, list[Organization]]] = []
-            seen_accounts: set[uuid.UUID] = set()
+            seen_stripe_ids: set[str] = set()
             for org in target_orgs:
                 account_id = org.payout_account_id
                 assert account_id is not None
-                if account_id in seen_accounts:
-                    continue
-                seen_accounts.add(account_id)
                 assert org.payout_account is not None
                 stripe_id = cast(str, org.payout_account.stripe_id)
-                linked = await org_repository.get_all_by_payout_account(account_id)
+                if stripe_id in seen_stripe_ids:
+                    continue
+                seen_stripe_ids.add(stripe_id)
+                linked = orgs_by_stripe_id[stripe_id]
                 if len(linked) > 1:
-                    shared.append((stripe_id, list(linked)))
+                    shared.append((stripe_id, linked))
                 else:
                     to_reject.append((org, account_id, stripe_id))
 
@@ -159,7 +190,16 @@ async def reject(
 
             console.rule("[bold]Rejecting Stripe accounts")
             rejected = 0
+            skipped = 0
             for org, account_id, stripe_id in to_reject:
+                if not await stripe_service.account_exists(stripe_id):
+                    skipped += 1
+                    log.info("reject.skipped", org=org.slug, stripe_id=stripe_id)
+                    console.print(
+                        f"[dim]Skipped {org.slug} ({stripe_id}): "
+                        "Stripe account no longer exists."
+                    )
+                    continue
                 try:
                     await payout_account_service.reject_stripe_account(
                         session, account_id, reject_reason
@@ -182,6 +222,10 @@ async def reject(
             console.print(
                 f"\n[green]Rejected {rejected}/{len(to_reject)} Stripe account(s)."
             )
+            if skipped:
+                console.print(
+                    f"[dim]{skipped} account(s) skipped — no longer exist on Stripe."
+                )
             if shared:
                 console.print(
                     f"[yellow]{len(shared)} shared account(s) skipped — "

@@ -196,7 +196,7 @@ export const LicenseKeysPage = ({
     hideLicenseKeyModal()
     setSelectedLicenseKeys({})
     setDeepLinkParam(null)
-  }, [hideLicenseKeyModal, setDeepLinkParam])
+  }, [hideLicenseKeyModal, setSelectedLicenseKeys, setDeepLinkParam])
 
   const LicenseKeyContextView = selectedLicenseKey ? (
     <Box flexDirection="column" overflowY="auto">

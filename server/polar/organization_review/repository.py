@@ -19,6 +19,7 @@ from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.organization_review import OrganizationReview
 from polar.models.organization_review_feedback import OrganizationReviewFeedback
+from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.models.payment import Payment, PaymentStatus
 from polar.models.payout_account import PayoutAccount
 from polar.models.product import Product
@@ -480,6 +481,26 @@ class OrganizationReviewRepository(
         statement = select(WebhookEndpoint).where(
             WebhookEndpoint.organization_id == organization_id,
             WebhookEndpoint.is_deleted.is_(False),
+        )
+        result = await self.session.execute(statement)
+        return list(result.scalars().all())
+
+
+class OrganizationRiskSignalRepository(
+    RepositorySoftDeletionIDMixin[OrganizationRiskSignal, UUID],
+    RepositorySoftDeletionMixin[OrganizationRiskSignal],
+    RepositoryBase[OrganizationRiskSignal],
+):
+    model = OrganizationRiskSignal
+
+    async def list_by_organization(
+        self, organization_id: UUID
+    ) -> list[OrganizationRiskSignal]:
+        """Signals for an organization, most recent first."""
+        statement = (
+            self.get_base_statement()
+            .where(OrganizationRiskSignal.organization_id == organization_id)
+            .order_by(OrganizationRiskSignal.created_at.desc())
         )
         result = await self.session.execute(statement)
         return list(result.scalars().all())

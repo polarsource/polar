@@ -26,6 +26,10 @@ from polar.exceptions import (
 )
 from polar.integrations.polar.service import billing_member_role
 from polar.integrations.polar.service import polar_self as polar_self_service
+from polar.integrations.stripe.account_risk import (
+    ACTIONABLE_RISK_LEVELS,
+    AccountRiskSignal,
+)
 from polar.integrations.stripe.service import StripeAccountRejectReason
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.currency import PresentmentCurrency
@@ -38,6 +42,7 @@ from polar.member.service import member_service
 from polar.models import (
     Customer,
     Organization,
+    OrganizationRiskSignal,
     PayoutAccount,
     User,
     UserOrganization,
@@ -70,6 +75,7 @@ from polar.organization_review.appeal_case import (
 from polar.organization_review.repository import (
     OrganizationReviewRepository as AgentReviewRepository,
 )
+from polar.organization_review.risk_signal import risk_signal as risk_signal_service
 from polar.organization_review.schemas import (
     ActorType,
     DecisionType,
@@ -1539,6 +1545,9 @@ class OrganizationService:
         enqueue_review: bool = True,
     ) -> Organization:
         organization.set_status(OrganizationStatus.REVIEW)
+        # Drop stale snooze metadata when coming from SNOOZED.
+        organization.snoozed_until = None
+        organization.snooze_type = None
         session.add(organization)
 
         # Record a human ESCALATE decision so the agent knows not to auto-act
@@ -1554,6 +1563,49 @@ class OrganizationService:
         if enqueue_review:
             enqueue_job("organization.under_review", organization_id=organization.id)
         return organization
+
+    async def handle_account_risk_signal(
+        self,
+        session: AsyncSession,
+        signal: AccountRiskSignal,
+    ) -> None:
+        """Store an actionable Stripe risk signal and flag the org for a human.
+
+        Only elevated/highest signals are stored. Until we build signal triage,
+        we also pull a live org into review, so a high-risk signal isn't sitting
+        in a table nobody reads yet. We never auto-block.
+        """
+        if signal.risk_level not in ACTIONABLE_RISK_LEVELS:
+            return
+
+        payout_account_repository = PayoutAccountRepository.from_session(session)
+        payout_account = await payout_account_repository.get_by_stripe_id(
+            signal.account_id
+        )
+        if payout_account is None:
+            log.warning(
+                "Risk signal for unknown payout account",
+                stripe_account_id=signal.account_id,
+                signal_type=signal.type,
+            )
+            return
+
+        repository = OrganizationRepository.from_session(session)
+        organizations = await repository.get_all_by_payout_account(payout_account.id)
+        for organization in organizations:
+            await risk_signal_service.record(
+                session,
+                organization,
+                source=OrganizationRiskSignal.Source.STRIPE,
+                type=signal.type,
+                risk_level=signal.risk_level,
+                description=signal.description,
+                payload=signal.payload,
+            )
+            if organization.status == OrganizationStatus.ACTIVE:
+                await self.set_organization_under_review(
+                    session, organization, enqueue_review=False
+                )
 
     async def set_organization_offboarding(
         self,

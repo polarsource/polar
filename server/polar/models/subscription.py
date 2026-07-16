@@ -51,6 +51,7 @@ if TYPE_CHECKING:
         PaymentMethod,
         Product,
         ProductPrice,
+        SubscriptionPause,
         SubscriptionProductPrice,
         SubscriptionUpdate,
     )
@@ -331,6 +332,16 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             lazy="raise",
             order_by="BenefitGrant.benefit_id",
             back_populates="subscription",
+        )
+
+    @declared_attr
+    def pauses(cls) -> Mapped[list["SubscriptionPause"]]:
+        return relationship(
+            "SubscriptionPause",
+            lazy="raise",
+            order_by="SubscriptionPause.started_at",
+            back_populates="subscription",
+            cascade="all, delete-orphan",
         )
 
     @declared_attr

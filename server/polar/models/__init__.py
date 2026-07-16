@@ -94,6 +94,7 @@ from .refund import Refund
 from .slack_app import SlackApp
 from .subscription import Subscription
 from .subscription_meter import SubscriptionMeter
+from .subscription_pause import SubscriptionPause
 from .subscription_product_price import SubscriptionProductPrice
 from .subscription_update import SubscriptionUpdate
 from .support_case import (
@@ -218,6 +219,7 @@ __all__ = [
     "SlackApp",
     "Subscription",
     "SubscriptionMeter",
+    "SubscriptionPause",
     "SubscriptionProductPrice",
     "SubscriptionUpdate",
     "SupportCase",

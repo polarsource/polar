@@ -1,6 +1,11 @@
 'use client'
 
-import { STEP_LABELS } from '@/components/Finance/Account/sections/stepLabels'
+import {
+  STEP_DESCRIPTIONS,
+  STEP_LABELS,
+  isIncompleteStep,
+  isRequiredStep,
+} from '@/components/Finance/Account/sections/stepLabels'
 import { AiSetupModalContent } from './AiSetupModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useOrganizationReviewState } from '@/hooks/queries/org'
@@ -11,21 +16,6 @@ import { Button, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ChevronRight, RocketIcon, SparklesIcon } from 'lucide-react'
 import Link from 'next/link'
-
-const STEP_DESCRIPTIONS: Partial<
-  Record<schemas['OrganizationReviewCheckKey'], string>
-> = {
-  'identity.email': 'Add a support email address customers can reach you at.',
-  'identity.social_links':
-    'Add your social profiles to help verify your identity.',
-  'identity.stripe_identity_verification':
-    'Verify your identity to unlock payouts.',
-  product_description: 'Describe what you’re selling and who it’s for.',
-  product_url: 'Add the website where your product lives.',
-  payout_account: 'Connect a bank account to receive your payouts.',
-  product_configuration: 'Create and configure your first product.',
-  setup_readiness: 'Integrate checkout so customers can pay you.',
-}
 
 interface Props {
   organization: schemas['Organization']
@@ -57,21 +47,21 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
   }
 
   const steps = reviewState?.preliminary_steps ?? []
-  const total = steps.length
+  const requiredSteps = steps.filter(isRequiredStep)
+  const total = requiredSteps.length
 
   if (total === 0) {
     return null
   }
 
-  const completed = steps.filter(
-    (step) => step.status !== 'failed' && step.status !== 'pending',
+  const completed = requiredSteps.filter(
+    (step) => !isIncompleteStep(step),
   ).length
   const progress = Math.round((completed / total) * 100)
   const canSubmit = reviewState?.can_submit ?? false
 
-  const nextStep = steps.find(
-    (step) => step.status === 'failed' || step.status === 'pending',
-  )
+  const nextStep =
+    requiredSteps.find(isIncompleteStep) ?? steps.find(isIncompleteStep)
   const nextLabel = nextStep ? STEP_LABELS[nextStep.key] : null
   const nextDescription = nextStep ? STEP_DESCRIPTIONS[nextStep.key] : null
 
@@ -143,7 +133,7 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
 
             <Box flexDirection="column" rowGap="s">
               <Text color="muted">
-                {completed} of {total} complete
+                {completed} of {total} required steps complete
               </Text>
               <Box
                 display="block"

@@ -110,7 +110,6 @@ export const STEP_CONFIG: Partial<
     label: STEP_LABELS.setup_readiness,
     reasonLabels: {
       'setup_readiness.webhook_missing': 'Creating a webhook is recommended',
-      'setup_readiness.checkout_link_not_fulfillable': 'Invalid checkout link',
     },
     render: ({ organization, step }) => (
       <SetupReadinessSection organization={organization} step={step} />

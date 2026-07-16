@@ -445,6 +445,7 @@ class TestUpdateReconcilesOpenCheckouts:
         self,
         auth_subject: AuthSubject[User],
         user_organization: UserOrganization,
+        mocker: MockerFixture,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -464,7 +465,11 @@ class TestUpdateReconcilesOpenCheckouts:
             discount=discount,
         )
         assert checkout.discount_id == discount.id
-        assert checkout.net_amount == checkout.amount - 500
+        original_net_amount = checkout.net_amount
+        assert original_net_amount == checkout.amount - 500
+
+        tax_spy = mocker.spy(checkout_service, "_update_checkout_tax")
+        after_updated_spy = mocker.spy(checkout_service, "_after_checkout_updated")
 
         await discount_service.update(
             session,
@@ -475,7 +480,12 @@ class TestUpdateReconcilesOpenCheckouts:
 
         await session.refresh(checkout)
         assert checkout.discount_id is None
-        assert checkout.net_amount == checkout.amount
+        # Totals are intentionally not recalculated: the stored net_amount stays
+        # at its previously-discounted value until the customer next updates the
+        # checkout, which will drive the recalc + webhook side effects.
+        assert checkout.net_amount == original_net_amount
+        tax_spy.assert_not_called()
+        after_updated_spy.assert_not_called()
 
     @pytest.mark.auth
     async def test_amounts_change_keeps_discount_for_supported_currency(

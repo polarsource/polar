@@ -957,7 +957,7 @@ class CheckoutService:
     ) -> None:
         repository = CheckoutRepository.from_session(session)
         checkouts = await repository.list_open_by_discount(
-            discount.id, options=repository.get_eager_options()
+            discount.id, options=(joinedload(Checkout.product),)
         )
         for checkout in checkouts:
             if not has_product_checkout(checkout):
@@ -965,12 +965,6 @@ class CheckoutService:
             if discount.is_applicable(checkout.product, checkout.currency):
                 continue
             checkout.discount = None
-            try:
-                checkout = await self._update_checkout_tax(session, checkout)
-            except TaxCalculationLogicalError:
-                pass
-            session.add(checkout)
-            await self._after_checkout_updated(session, checkout)
 
     async def confirm(
         self,

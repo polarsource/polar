@@ -320,7 +320,7 @@ const MetricChartBox = ({
           )}
         </div>
 
-        <div className="flex flex-row items-center gap-x-4">
+        <div className="absolute top-6 right-6 z-10 flex flex-row items-center gap-x-4 md:static md:z-auto">
           {trend !== 0 && !isNaN(trend) && trend !== Infinity && (
             <Status
               status={
@@ -344,20 +344,27 @@ const MetricChartBox = ({
               <TooltipContent>Share Chart</TooltipContent>
             </Tooltip>
           )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hidden rounded-full opacity-0 transition-opacity group-hover:opacity-100 md:flex"
-              >
-                <MoreVertOutlined fontSize="small" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExport}>Export</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {shareable && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="flex rounded-full transition-opacity md:opacity-0 md:group-hover:opacity-100"
+                >
+                  <MoreVertOutlined fontSize="small" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem className="md:hidden" onClick={showModal}>
+                  Share Chart
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={handleExport}>
+                  Export
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
       <div

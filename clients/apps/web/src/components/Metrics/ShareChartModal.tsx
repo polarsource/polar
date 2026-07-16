@@ -91,33 +91,35 @@ export const ShareChartModal = ({
   }
 
   return (
-    <div className="relative flex w-full max-w-4xl flex-col items-center justify-center overflow-y-auto p-16">
-      <div className="flex flex-col items-start gap-8">
-        <div
-          ref={chartRef}
-          className="dark:bg-polar-950 flex w-full max-w-4xl flex-col items-center justify-center gap-12 rounded-4xl bg-blue-50 p-12"
-          style={{
-            backgroundImage:
-              theme === 'mono'
-                ? 'url(/assets/share/share_mono.jpg)'
-                : 'url(/assets/share/share.jpg)',
-            backgroundSize: 'cover',
-            backgroundPosition: 'center',
-          }}
-        >
-          <MetricChartBox
-            className="dark:border-polar-600/50"
-            data={data}
-            previousData={previousData}
-            interval={interval}
-            metric={metric}
-            shareable={false}
-            height={200}
-            width={560}
-            simple
-            chartType="line"
-          />
-          <LogoType className="text-white dark:text-white" height={48} />
+    <div className="relative flex w-full max-w-4xl flex-col items-center justify-center overflow-y-auto p-6 md:p-16">
+      <div className="flex flex-col items-start gap-8 max-md:w-full">
+        <div className="max-md:w-full max-md:overflow-x-auto">
+          <div
+            ref={chartRef}
+            className="dark:bg-polar-950 flex w-full max-w-4xl flex-col items-center justify-center gap-12 rounded-4xl bg-blue-50 p-12 max-md:min-w-[656px]"
+            style={{
+              backgroundImage:
+                theme === 'mono'
+                  ? 'url(/assets/share/share_mono.jpg)'
+                  : 'url(/assets/share/share.jpg)',
+              backgroundSize: 'cover',
+              backgroundPosition: 'center',
+            }}
+          >
+            <MetricChartBox
+              className="dark:border-polar-600/50"
+              data={data}
+              previousData={previousData}
+              interval={interval}
+              metric={metric}
+              shareable={false}
+              height={200}
+              width={560}
+              simple
+              chartType="line"
+            />
+            <LogoType className="text-white dark:text-white" height={48} />
+          </div>
         </div>
         <div className="flex w-full flex-row items-center justify-between gap-6">
           <div className="flex flex-row gap-4">

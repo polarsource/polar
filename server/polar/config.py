@@ -275,6 +275,8 @@ class Settings(BaseSettings):
     # Stripe webhook secrets
     STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_CONNECT_WEBHOOK_SECRET: str = ""
+    # Account risk signals (preview). Empty disables the endpoint.
+    STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET: str = ""
     STRIPE_STATEMENT_DESCRIPTOR: str = "POLAR"
 
     # Numeral

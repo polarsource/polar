@@ -210,6 +210,19 @@ class TestCustomerSubscriptionProductUpdate:
 
 
 @pytest.mark.asyncio
+class TestCustomerSubscriptionUpdateUnknownFields:
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_unknown_field(
+        self, client: AsyncClient, subscription: Subscription
+    ) -> None:
+        response = await client.patch(
+            f"/v1/customer-portal/subscriptions/{subscription.id}",
+            json=dict(pause_at_periodend=True),
+        )
+        assert response.status_code == 422
+
+
+@pytest.mark.asyncio
 class TestCustomerSubscriptionUpdateCancel:
     async def test_anonymous(
         self,

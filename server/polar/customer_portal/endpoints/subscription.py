@@ -3,7 +3,7 @@ from typing import Annotated
 import structlog
 from fastapi import Depends, Query
 
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -313,7 +313,7 @@ async def cancel(
                 "Customer subscription is already canceled "
                 "or the user lacks billing permissions."
             ),
-            "model": AlreadyCanceledSubscription.schema(),
+            "model": AlreadyCanceledSubscription.schema() | NotPermitted.schema(),
         },
         409: {
             "description": "This subscription cannot be revoked in its current state.",

@@ -96,17 +96,23 @@ async def calculate_tax(
             if taxable_amount >= 0:
                 tax_calculation_processor_id = tax_calculation["processor_id"]
                 tax_amount = tax_calculation["amount"]
+                tax_breakdown = tax_calculation["tax_breakdown"]
             else:
                 # When the taxable amount is negative it's usually due to a credit proration
                 # this means we "owe" the customer money -- but we don't pay it back at this
                 # point. This also means that there's no money transaction going on, and we
                 # don't have to record the tax transaction either.
+                # The calculation ran on the absolute value, so negate the tax
+                # amount and each breakdown line to match the credited order.
                 tax_calculation_processor_id = None
                 tax_amount = -tax_calculation["amount"]
+                tax_breakdown = [
+                    {**item, "amount": -item["amount"]}
+                    for item in tax_calculation["tax_breakdown"]
+                ]
 
         if tax_calculation is not None:
             tax_behavior = tax_calculation["tax_behavior"]
-            tax_breakdown = tax_calculation["tax_breakdown"]
 
     return (
         tax_processor,

@@ -2,7 +2,31 @@ import typing
 
 import pytest
 
-from polar.base import SyncClientBase, AsyncClientBase
+from polar.base import AsyncClientBase, SyncClientBase, resolve_base_url
+
+SERVERS = {
+    "production": "https://api.polar.sh",
+    "sandbox": "https://sandbox-api.polar.sh",
+}
+
+
+@pytest.mark.parametrize(
+    ("environment", "base_url", "expected"),
+    [
+        ("production", None, "https://api.polar.sh"),
+        ("sandbox", None, "https://sandbox-api.polar.sh"),
+        ("invalid", "http://localhost:8000", "http://localhost:8000"),
+    ],
+)
+def test_resolve_base_url(
+    environment: str, base_url: str | None, expected: str
+) -> None:
+    assert resolve_base_url(SERVERS, environment, base_url) == expected
+
+
+def test_resolve_base_url_invalid_environment() -> None:
+    with pytest.raises(ValueError, match="Invalid environment 'invalid'"):
+        resolve_base_url(SERVERS, "invalid", None)
 
 
 @pytest.fixture(params=[SyncClientBase, AsyncClientBase])

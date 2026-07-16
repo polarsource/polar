@@ -84,6 +84,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [
                             {
                                 "name": "Products",
@@ -216,6 +217,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [
                             {
                                 "name": "Users",
@@ -312,6 +314,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [],
                         "input_models": [],
                         "output_models": [],
@@ -402,6 +405,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [
                             {
                                 "name": "Products",
@@ -538,6 +542,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [
                             {
                                 "name": "Orders",
@@ -672,6 +677,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [
                             {
                                 "name": "Products",
@@ -799,6 +805,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [
                             {
                                 "name": "Accounts",
@@ -911,6 +918,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [
                             {
                                 "name": "Events",
@@ -1034,6 +1042,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [
                             {
                                 "name": "Payments",
@@ -1134,6 +1143,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [
                             {
                                 "name": "Metadata",
@@ -1253,6 +1263,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [
                             {
                                 "name": "Products",
@@ -1449,6 +1460,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [
                             {
                                 "name": "Items",
@@ -1587,6 +1599,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [
                             {
                                 "name": "Items",
@@ -1696,6 +1709,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [
                             {
                                 "name": "Checkout",
@@ -1837,6 +1851,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [
                             {
                                 "name": "Payment",
@@ -1970,6 +1985,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [
                             {
                                 "name": "Files",
@@ -2102,6 +2118,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [
                             {
                                 "name": "Export",
@@ -2177,6 +2194,53 @@ _STRING = {"kind": "primitive", "type": "string"}
                 {
                     "openapi": "3.1.0",
                     "info": {"title": "Test API", "version": "1.0.0"},
+                    "servers": [
+                        {
+                            "url": "https://api.example.com",
+                            "description": "Production environment",
+                            "x-polar-environment": "production",
+                        },
+                        {
+                            "url": "https://sandbox-api.example.com",
+                            "description": "Sandbox environment",
+                            "x-polar-environment": "sandbox",
+                        },
+                    ],
+                    "paths": {},
+                }
+            ],
+            {
+                "versions": [
+                    {
+                        "version": "1.0.0",
+                        "servers": [
+                            {
+                                "environment": "production",
+                                "url": "https://api.example.com",
+                                "description": "Production environment",
+                            },
+                            {
+                                "environment": "sandbox",
+                                "url": "https://sandbox-api.example.com",
+                                "description": "Sandbox environment",
+                            },
+                        ],
+                        "services": [],
+                        "input_models": [],
+                        "output_models": [],
+                        "enums": [],
+                        "input_unions": [],
+                        "output_unions": [],
+                    }
+                ]
+            },
+            id="Servers use the Polar environment extension",
+        ),
+        pytest.param(
+            [
+                {
+                    "openapi": "3.1.0",
+                    "info": {"title": "Test API", "version": "1.0.0"},
                     "paths": {},
                 },
                 {
@@ -2189,6 +2253,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                 "versions": [
                     {
                         "version": "1.0.0",
+                        "servers": [],
                         "services": [],
                         "input_models": [],
                         "output_models": [],
@@ -2198,6 +2263,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                     },
                     {
                         "version": "2.0.0",
+                        "servers": [],
                         "services": [],
                         "input_models": [],
                         "output_models": [],

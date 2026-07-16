@@ -15,7 +15,7 @@ interface Props {
   status: schemas['IdentityVerificationStatus'] | undefined
   onStart: () => void
   notAuthorized?: boolean
-  unverifiedDescription?: string
+  unverifiedDescription?: React.ReactNode
 }
 
 const DEFAULT_UNVERIFIED_DESCRIPTION =

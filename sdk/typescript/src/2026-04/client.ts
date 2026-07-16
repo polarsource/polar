@@ -1,4 +1,4 @@
-import { ClientBase, ClientOptions } from "../base";
+import { ClientBase, ClientOptions, resolveBaseUrl } from "../base";
 import { createBenefitGrantsService } from "./services/benefit_grants";
 import { createBenefitsService } from "./services/benefits";
 import { createCheckoutLinksService } from "./services/checkout_links";
@@ -27,15 +27,31 @@ import { createRefundsService } from "./services/refunds";
 import { createSubscriptionsService } from "./services/subscriptions";
 import { createWebhooksService } from "./services/webhooks";
 
-export interface PolarOptions extends Omit<ClientOptions, "version"> {
+export type Environment = "production" | "sandbox";
+
+const SERVERS: Record<Environment, string> = {
+  production: "https://api.polar.sh",
+  sandbox: "https://sandbox-api.polar.sh",
+};
+
+export interface PolarOptions extends Omit<ClientOptions, "baseUrl" | "version"> {
   version?: string;
+  environment?: Environment;
+  baseUrl?: string;
 }
 
-export function createPolar(options: PolarOptions) {
-  const client = new ClientBase({
+export function createPolarCore(options: PolarOptions) {
+  return new ClientBase({
     ...options,
+    baseUrl: resolveBaseUrl(SERVERS, options.environment ?? "production", options.baseUrl),
     version: options.version ?? "2026-04",
   });
+}
+
+export type PolarCore = ReturnType<typeof createPolarCore>;
+
+export function createPolar(options: PolarOptions) {
+  const client = createPolarCore(options);
 
   return {
     organizations: createOrganizationsService(client),

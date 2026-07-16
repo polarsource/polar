@@ -15,16 +15,28 @@ import {
 import { useCallback, useState } from 'react'
 import { useForm, useFormContext } from 'react-hook-form'
 
+type PayoutCountry = schemas['PayoutAccountCreate']['country']
+
+const asPayoutCountry = (
+  country: string | null | undefined,
+): PayoutCountry | undefined =>
+  country &&
+  (enums.stripeAccountCountryValues as readonly string[]).includes(country)
+    ? (country as PayoutCountry)
+    : undefined
+
 const AccountCreateModal = ({
   forOrganizationId,
   returnPath,
+  defaultCountry,
 }: {
   forOrganizationId: string
   returnPath: string
+  defaultCountry?: string | null
 }) => {
   const form = useForm<schemas['PayoutAccountCreate']>({
     defaultValues: {
-      country: 'US',
+      country: asPayoutCountry(defaultCountry),
     },
   })
 
@@ -127,6 +139,7 @@ const AccountCountry = () => {
     <FormField
       control={control}
       name="country"
+      rules={{ required: 'Country is required' }}
       render={({ field }) => {
         return (
           <FormItem>
@@ -142,7 +155,7 @@ const AccountCountry = () => {
             <FormDescription>
               If this is a personal account, please select your country of
               residence. If this is an organization or business, select the
-              country of tax residency.
+              country of tax residency. This can&rsquo;t be changed later.
             </FormDescription>
           </FormItem>
         )

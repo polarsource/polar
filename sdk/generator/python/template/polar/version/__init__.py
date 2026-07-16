@@ -1,3 +1,3 @@
-from polar.{{ version }}.client import Polar, PolarAsync
+from polar.{{ version }}.client import Environment, Polar, PolarAsync
 
-__all__ = ["Polar", "PolarAsync"]
+__all__ = ["Environment", "Polar", "PolarAsync"]

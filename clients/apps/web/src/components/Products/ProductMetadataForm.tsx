@@ -2,7 +2,8 @@ import { FormField } from '@polar-sh/ui/components/ui/form'
 
 import ClearOutlined from '@mui/icons-material/ClearOutlined'
 import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { Input } from '@polar-sh/orbit'
 import {
   Select,
@@ -55,7 +56,7 @@ const MetadataValueInput = ({
         value={value === true ? 'true' : 'false'}
         onValueChange={(v) => onChange(v === 'true')}
       >
-        <SelectTrigger className="flex-1 font-mono">
+        <SelectTrigger className="w-full min-w-0 flex-1 font-mono">
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
@@ -76,7 +77,7 @@ const MetadataValueInput = ({
         type="number"
         value={value.toString()}
         placeholder="value"
-        className="font-mono"
+        className="w-full min-w-0 flex-1 font-mono"
         onChange={(e) => {
           const parsed = e.target.valueAsNumber
           onChange(Number.isNaN(parsed) ? 0 : parsed)
@@ -89,11 +90,26 @@ const MetadataValueInput = ({
     <Input
       value={value.toString()}
       placeholder="value"
-      className="font-mono"
+      className="w-full min-w-0 flex-1 font-mono"
       onChange={(e) => onChange(e.target.value)}
     />
   )
 }
+
+const RemoveMetadataButton = ({ onClick }: { onClick: () => void }) => (
+  <Button
+    className={
+      'self-center border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
+    }
+    size="icon"
+    variant="secondary"
+    type="button"
+    aria-label="Remove metadata"
+    onClick={onClick}
+  >
+    <ClearOutlined fontSize="inherit" />
+  </Button>
+)
 
 export const ProductMetadataForm = () => {
   const { control, trigger, getValues } = useFormContext<ProductFormType>()
@@ -128,17 +144,42 @@ export const ProductMetadataForm = () => {
   return (
     <FormItem className="flex flex-col gap-2">
       {fields.length > 0 && (
-        <div className="flex flex-col gap-2">
-          <div className="dark:text-polar-500 flex flex-row items-center gap-2 text-sm text-gray-500">
-            <div className="w-48">Key</div>
-            <div className="flex flex-1 flex-row gap-2">
-              <div className="w-32 shrink-0">Type</div>
-              <div className="flex-1">Value</div>
-            </div>
-            <div className="w-8 shrink-0" />
-          </div>
+        <Box flexDirection="column" gap="s">
+          <Box
+            display={{ base: 'none', sm: 'flex' }}
+            alignItems="center"
+            gap="s"
+          >
+            <Box width={192} flexShrink={0}>
+              <Text variant="caption" color="muted">
+                Key
+              </Text>
+            </Box>
+            <Box flex={1} gap="s">
+              <Box width={128} flexShrink={0}>
+                <Text variant="caption" color="muted">
+                  Type
+                </Text>
+              </Box>
+              <Box flex={1}>
+                <Text variant="caption" color="muted">
+                  Value
+                </Text>
+              </Box>
+            </Box>
+            <Box width={32} flexShrink={0} />
+          </Box>
           {fields.map((field, index) => (
-            <div key={field.id} className="flex flex-row items-start gap-2">
+            <Box
+              key={field.id}
+              flexDirection={{ base: 'column', sm: 'row' }}
+              alignItems="start"
+              gap="s"
+              borderTopWidth={index > 0 ? { base: 1, sm: 0 } : undefined}
+              borderStyle="solid"
+              borderColor="border-primary"
+              paddingTop={index > 0 ? { base: 'l', sm: 'none' } : undefined}
+            >
               <FormField
                 control={control}
                 name={`metadata.${index}.key`}
@@ -146,100 +187,132 @@ export const ProductMetadataForm = () => {
                   validate: (value: string) => validateUniqueKey(value, index),
                 }}
                 render={({ field }) => (
-                  <div className="flex w-48 flex-col gap-2">
-                    <FormControl>
-                      <Input
-                        {...field}
-                        className="font-mono"
-                        value={field.value || ''}
-                        placeholder="key"
-                        onChange={(e) => {
-                          field.onChange(e)
-                          revalidateAllKeys()
-                        }}
-                      />
-                    </FormControl>
+                  <Box
+                    flexDirection="column"
+                    gap="s"
+                    width={{ base: '100%', sm: 192 }}
+                    flexShrink={0}
+                  >
+                    <Box display={{ base: 'flex', sm: 'none' }}>
+                      <Text variant="caption" color="muted">
+                        Key
+                      </Text>
+                    </Box>
+                    <Box alignItems="center" gap="s">
+                      <FormControl>
+                        <Input
+                          {...field}
+                          className="w-full min-w-0 flex-1 font-mono"
+                          value={field.value || ''}
+                          placeholder="key"
+                          onChange={(e) => {
+                            field.onChange(e)
+                            revalidateAllKeys()
+                          }}
+                        />
+                      </FormControl>
+                      <Box
+                        display={{ base: 'flex', sm: 'none' }}
+                        flexShrink={0}
+                      >
+                        <RemoveMetadataButton onClick={() => remove(index)} />
+                      </Box>
+                    </Box>
                     <FormMessage />
-                  </div>
+                  </Box>
                 )}
               />
-              <FormField
-                control={control}
-                name={`metadata.${index}.value`}
-                render={({ field }) => {
-                  const type = getValueType(field.value)
-                  return (
-                    <div className="flex flex-1 flex-col gap-2">
-                      <div className="flex flex-row items-center gap-2">
-                        <Select
-                          value={type}
-                          onValueChange={(nextType) =>
-                            field.onChange(
-                              defaultValueForType(
-                                nextType as MetadataValueType,
-                              ),
-                            )
-                          }
-                        >
-                          <SelectTrigger className="w-32 shrink-0">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="string">String</SelectItem>
-                            <SelectItem value="number">Number</SelectItem>
-                            <SelectItem value="boolean">Boolean</SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <MetadataValueInput
-                          type={type}
-                          value={field.value}
-                          onChange={field.onChange}
-                        />
-                      </div>
-                      <FormMessage />
-                    </div>
-                  )
-                }}
-              />
-              <div className="flex h-10">
-                <Button
-                  className={
-                    'self-center border-none bg-transparent text-[16px] opacity-50 transition-opacity hover:opacity-100 dark:bg-transparent'
-                  }
-                  size="icon"
-                  variant="secondary"
-                  type="button"
-                  onClick={() => remove(index)}
+              <Box
+                width={{ base: '100%', sm: 'auto' }}
+                flex={1}
+                minWidth={0}
+                gap="s"
+              >
+                <FormField
+                  control={control}
+                  name={`metadata.${index}.value`}
+                  render={({ field }) => {
+                    const type = getValueType(field.value)
+                    return (
+                      <Box flexDirection="column" gap="s" flex={1} minWidth={0}>
+                        <Box display={{ base: 'flex', sm: 'none' }}>
+                          <Text variant="caption" color="muted">
+                            Value
+                          </Text>
+                        </Box>
+                        <Box alignItems="center" gap="s">
+                          <Select
+                            value={type}
+                            onValueChange={(nextType) =>
+                              field.onChange(
+                                defaultValueForType(
+                                  nextType as MetadataValueType,
+                                ),
+                              )
+                            }
+                          >
+                            <SelectTrigger className="w-32 shrink-0">
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="string">String</SelectItem>
+                              <SelectItem value="number">Number</SelectItem>
+                              <SelectItem value="boolean">Boolean</SelectItem>
+                            </SelectContent>
+                          </Select>
+                          <MetadataValueInput
+                            type={type}
+                            value={field.value}
+                            onChange={field.onChange}
+                          />
+                        </Box>
+                        <FormMessage />
+                      </Box>
+                    )
+                  }}
+                />
+                <Box
+                  display={{ base: 'none', sm: 'flex' }}
+                  height={40}
+                  flexShrink={0}
                 >
-                  <ClearOutlined fontSize="inherit" />
-                </Button>
-              </div>
-            </div>
+                  <RemoveMetadataButton onClick={() => remove(index)} />
+                </Box>
+              </Box>
+            </Box>
           ))}
-        </div>
+        </Box>
       )}
 
       {fields.length === 0 && (
-        <p className="dark:text-polar-500 dark:border-polar-700 flex items-center justify-center rounded-2xl border border-gray-300 p-8 text-center text-sm text-gray-500">
-          No metadata added
-        </p>
+        <Box
+          alignItems="center"
+          justifyContent="center"
+          borderRadius="l"
+          borderWidth={1}
+          borderStyle="solid"
+          borderColor="border-primary"
+          padding="2xl"
+          textAlign="center"
+        >
+          <Text variant="caption" color="muted">
+            No metadata added
+          </Text>
+        </Box>
       )}
 
-      <div className="flex flex-row items-center justify-end">
-        <p className="dark:text-polar-500 text-sm text-gray-500">
-          <Button
-            size="sm"
-            variant="secondary"
-            className="self-start"
-            type="button"
-            onClick={() => {
-              append({ key: '', value: '' })
-            }}
-          >
-            Add Metadata
-          </Button>
-        </p>
-      </div>
+      <Box alignItems="center" justifyContent="end">
+        <Button
+          size="sm"
+          variant="secondary"
+          type="button"
+          onClick={() => {
+            append({ key: '', value: '' })
+          }}
+        >
+          Add Metadata
+        </Button>
+      </Box>
     </FormItem>
   )
 }

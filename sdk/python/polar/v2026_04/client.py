@@ -1,7 +1,7 @@
 import types
 import typing
 
-from polar.base import AsyncClientBase, SyncClientBase
+from polar.base import AsyncClientBase, SyncClientBase, resolve_base_url
 from polar.v2026_04.benefit_grants import BenefitGrantsAsync, BenefitGrantsSync
 from polar.v2026_04.benefits import BenefitsAsync, BenefitsSync
 from polar.v2026_04.checkout_links import CheckoutLinksAsync, CheckoutLinksSync
@@ -30,12 +30,25 @@ from polar.v2026_04.refunds import RefundsAsync, RefundsSync
 from polar.v2026_04.subscriptions import SubscriptionsAsync, SubscriptionsSync
 from polar.v2026_04.webhooks import WebhooksAsync, WebhooksSync
 
+Environment = typing.Literal["production", "sandbox"]
+SERVERS: typing.Final[dict[Environment, str]] = {
+    "production": "https://api.polar.sh",
+    "sandbox": "https://sandbox-api.polar.sh",
+}
+
 
 class Polar:
     version: str = "2026-04"
 
-    def __init__(self, base_url: str, access_token: str) -> None:
-        self._client = SyncClientBase(base_url, self.version, access_token)
+    def __init__(
+        self,
+        access_token: str,
+        *,
+        environment: Environment = "production",
+        base_url: str | None = None,
+    ) -> None:
+        resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
+        self._client = SyncClientBase(resolved_base_url, self.version, access_token)
         self.organizations = OrganizationsSync(self._client)
         self.subscriptions = SubscriptionsSync(self._client)
         self.oauth2 = Oauth2Sync(self._client)
@@ -80,8 +93,15 @@ class Polar:
 class PolarAsync:
     version: str = "2026-04"
 
-    def __init__(self, base_url: str, access_token: str) -> None:
-        self._client = AsyncClientBase(base_url, self.version, access_token)
+    def __init__(
+        self,
+        access_token: str,
+        *,
+        environment: Environment = "production",
+        base_url: str | None = None,
+    ) -> None:
+        resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
+        self._client = AsyncClientBase(resolved_base_url, self.version, access_token)
         self.organizations = OrganizationsAsync(self._client)
         self.subscriptions = SubscriptionsAsync(self._client)
         self.oauth2 = Oauth2Async(self._client)
@@ -123,4 +143,4 @@ class PolarAsync:
         await self._client.__aexit__(exc_type, exc_val, exc_tb)
 
 
-__all__ = ["Polar", "PolarAsync"]
+__all__ = ["Environment", "Polar", "PolarAsync"]

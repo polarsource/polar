@@ -9,11 +9,15 @@ import type {
 import { AnimatePresence, motion } from 'motion/react'
 import {
   CheckIcon,
+  CircleDashedIcon,
   ClockIcon,
   MinusIcon,
   XIcon,
   type LucideIcon,
 } from 'lucide-react'
+
+const WAITING_REASONS: ReadonlySet<schemas['OrganizationReviewCheckReason']> =
+  new Set(['external_pending', 'not_authorized'])
 
 const STATUS_ICONS: Record<
   schemas['OrganizationReviewCheckStatus'],
@@ -22,7 +26,7 @@ const STATUS_ICONS: Record<
   passed: CheckIcon,
   failed: XIcon,
   warning: MinusIcon,
-  pending: ClockIcon,
+  pending: CircleDashedIcon,
 }
 
 type ReviewCheckStatusAppearance = {
@@ -42,10 +46,14 @@ const STATUS_APPEARANCE: Record<
 
 interface Props {
   status: schemas['OrganizationReviewCheckStatus']
+  reasons?: schemas['OrganizationReviewCheckReason'][] | null
 }
 
-export const StatusIcon = ({ status }: Props) => {
-  const Icon = STATUS_ICONS[status]
+export const StatusIcon = ({ status, reasons }: Props) => {
+  const isWaiting =
+    status === 'pending' &&
+    (reasons ?? []).some((reason) => WAITING_REASONS.has(reason))
+  const Icon = isWaiting ? ClockIcon : STATUS_ICONS[status]
   const appearance = STATUS_APPEARANCE[status]
 
   return (
@@ -61,7 +69,7 @@ export const StatusIcon = ({ status }: Props) => {
     >
       <AnimatePresence mode="popLayout" initial={false}>
         <motion.span
-          key={status}
+          key={`${status}-${isWaiting}`}
           initial={{ opacity: 0, scale: 0.5 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.5 }}

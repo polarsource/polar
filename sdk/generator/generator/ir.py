@@ -265,6 +265,14 @@ class Service(BaseModel):
     methods: list["Method"]
 
 
+class Server(BaseModel):
+    """A named API server extracted from the OpenAPI specification."""
+
+    environment: str
+    url: str
+    description: str | None = None
+
+
 class APIVersion(BaseModel):
     """
     A single version of an API, with its services and models.
@@ -280,6 +288,7 @@ class APIVersion(BaseModel):
     """
 
     version: str
+    servers: list[Server]
     services: list[Service]
     input_models: list[Model]
     output_models: list[Model]
@@ -357,6 +366,8 @@ def _default_model_name_normalizer(input: str) -> str:
 
 
 type ServiceNameNormalizer = typing.Callable[[str], str]
+
+ENVIRONMENT = "x-polar-environment"
 
 
 def _default_service_name_normalizer(input: str) -> str:
@@ -943,6 +954,16 @@ def _generate_ir_version(
     """
     Generate an intermediate representation of a single OpenAPI spec version.
     """
+    servers = [
+        Server(
+            environment=server.model_extra[ENVIRONMENT],
+            url=server.url,
+            description=server.description or None,
+        )
+        for server in spec.servers or []
+        if server.model_extra is not None and ENVIRONMENT in server.model_extra
+    ]
+
     services: list[Service] = []
 
     component_schemas: dict[str, op.Schema] = {}
@@ -1217,6 +1238,7 @@ def _generate_ir_version(
 
     return APIVersion(
         version=spec.info.version,
+        servers=servers,
         services=services,
         input_models=sorted(
             [m for name, m in models_dict.items() if name in input_names],

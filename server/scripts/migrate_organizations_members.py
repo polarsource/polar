@@ -51,7 +51,7 @@ from typing import Any, cast
 
 import structlog
 import typer
-from sqlalchemy import String, func, or_, select, update
+from sqlalchemy import func, or_, select
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.orm import aliased, joinedload
 
@@ -59,6 +59,10 @@ from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Organization
 from polar.models.benefit_grant import BenefitGrant
 from polar.models.organization import OrganizationStatus
+from polar.organization.member_backfill import (
+    downloadable_member_backfill_statement,
+    license_key_member_backfill_statement,
+)
 from polar.organization.repository import OrganizationRepository
 from polar.organization.tasks import (
     _backfill_benefit_grants,
@@ -69,6 +73,7 @@ from polar.organization.tasks import (
     _prepare_seats,
 )
 from polar.postgres import AsyncSession, create_async_engine
+from scripts.helper import run_batched_update
 
 cli = typer.Typer()
 
@@ -844,73 +849,19 @@ async def restore_oneoff_grants(
 
 
 async def _backfill_license_keys(session: AsyncSession) -> int:
-    """Backfill member_id on license keys using the grant's properties->>'license_key_id'."""
-    from polar.models.license_key import LicenseKey
-
-    lk_subq = (
-        select(
-            BenefitGrant.properties["license_key_id"].as_string().label("lk_id"),
-            BenefitGrant.member_id,
-        )
-        .where(
-            BenefitGrant.member_id.is_not(None),
-            BenefitGrant.is_deleted.is_(False),
-            BenefitGrant.properties["license_key_id"].is_not(None),
-        )
-        .subquery()
-    )
-
+    """Backfill member_id on license keys from their linked benefit grant."""
     result = cast(
         CursorResult[Any],
-        await session.execute(
-            update(LicenseKey)
-            .where(
-                LicenseKey.member_id.is_(None),
-                LicenseKey.id.cast(String) == lk_subq.c.lk_id,
-            )
-            .values(member_id=lk_subq.c.member_id)
-        ),
+        await session.execute(license_key_member_backfill_statement()),
     )
     return result.rowcount
 
 
 async def _backfill_downloadables(session: AsyncSession) -> int:
-    """Backfill member_id on downloadables via (customer_id, benefit_id).
-
-    Uses DISTINCT ON to pick the most recently granted grant.
-    """
-    from polar.models.downloadable import Downloadable
-
-    dl_subq = (
-        select(
-            BenefitGrant.customer_id,
-            BenefitGrant.benefit_id,
-            BenefitGrant.member_id,
-        )
-        .where(
-            BenefitGrant.member_id.is_not(None),
-            BenefitGrant.is_deleted.is_(False),
-        )
-        .distinct(BenefitGrant.customer_id, BenefitGrant.benefit_id)
-        .order_by(
-            BenefitGrant.customer_id,
-            BenefitGrant.benefit_id,
-            BenefitGrant.granted_at.desc().nulls_last(),
-        )
-        .subquery()
-    )
-
+    """Backfill member_id on downloadables from their linked benefit grant."""
     result = cast(
         CursorResult[Any],
-        await session.execute(
-            update(Downloadable)
-            .where(
-                Downloadable.member_id.is_(None),
-                Downloadable.customer_id == dl_subq.c.customer_id,
-                Downloadable.benefit_id == dl_subq.c.benefit_id,
-            )
-            .values(member_id=dl_subq.c.member_id)
-        ),
+        await session.execute(downloadable_member_backfill_statement()),
     )
     return result.rowcount
 
@@ -925,11 +876,12 @@ async def backfill_benefit_records(
     """One-time backfill of member_id on license_keys and downloadables.
 
     Uses benefit_grants (which already have member_id set by the migration)
-    to populate the missing member_id on the related benefit records.
+    to populate the missing member_id on the related benefit records. Runs in
+    batches to avoid long locks on large tables.
 
     License keys are matched 1:1 via the grant's properties->>'license_key_id'.
-    Downloadables are matched via (customer_id, benefit_id) with DISTINCT ON
-    to pick the most recently granted grant.
+    Downloadables are matched via (customer_id, benefit_id), taking the most
+    recently granted grant.
     """
     from polar.models.downloadable import Downloadable
     from polar.models.license_key import LicenseKey
@@ -957,14 +909,15 @@ async def backfill_benefit_records(
         typer.echo("DRY RUN - No changes will be made.")
         return
 
-    async with sessionmaker() as session:
-        lk_updated = await _backfill_license_keys(session)
-        typer.echo(f"License keys updated: {lk_updated}")
+    lk_updated = await run_batched_update(
+        license_key_member_backfill_statement(batched=True)
+    )
+    typer.echo(f"License keys updated: {lk_updated}")
 
-        dl_updated = await _backfill_downloadables(session)
-        typer.echo(f"Downloadables updated: {dl_updated}")
-
-        await session.commit()
+    dl_updated = await run_batched_update(
+        downloadable_member_backfill_statement(batched=True)
+    )
+    typer.echo(f"Downloadables updated: {dl_updated}")
 
     typer.echo()
     typer.echo("Backfill complete.")

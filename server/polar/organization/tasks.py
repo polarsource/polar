@@ -1,7 +1,8 @@
 import uuid
+from typing import Any, cast
 
 import structlog
-from sqlalchemy import select
+from sqlalchemy import CursorResult, select
 from sqlalchemy.orm import joinedload
 
 from polar.customer.repository import CustomerRepository
@@ -32,6 +33,10 @@ from polar.worker import (
     enqueue_job,
 )
 
+from .member_backfill import (
+    downloadable_member_backfill_statement,
+    license_key_member_backfill_statement,
+)
 from .repository import OrganizationRepository
 from .service import organization as organization_service
 
@@ -288,6 +293,16 @@ async def backfill_members(organization_id: uuid.UUID) -> None:
             session, organization, orphaned_customer_ids
         )
 
+    # Step E: Link license keys and downloadables to their grant's member
+    async with AsyncSessionMaker() as session:
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            organization_id
+        )
+        assert organization is not None
+        license_keys_linked, downloadables_linked = await _backfill_benefit_records(
+            session, organization
+        )
+
     log.info(
         "organization.backfill_members.complete",
         organization_id=str(organization_id),
@@ -295,6 +310,8 @@ async def backfill_members(organization_id: uuid.UUID) -> None:
         seats_migrated=seats_migrated,
         grants_linked=grants_linked,
         customers_deleted=customers_deleted,
+        license_keys_linked=license_keys_linked,
+        downloadables_linked=downloadables_linked,
     )
 
 
@@ -823,6 +840,30 @@ async def _cleanup_orphaned_seat_customers(
         customers_deleted=count,
     )
     return count
+
+
+async def _backfill_benefit_records(
+    session: AsyncSession,
+    organization: Organization,
+) -> tuple[int, int]:
+    """Link license keys and downloadables to their grant's member (Step C only covers transfers)."""
+    lk_result = cast(
+        "CursorResult[Any]",
+        await session.execute(license_key_member_backfill_statement(organization.id)),
+    )
+    dl_result = cast(
+        "CursorResult[Any]",
+        await session.execute(downloadable_member_backfill_statement(organization.id)),
+    )
+    await session.flush()
+
+    log.info(
+        "organization.backfill_members.step_e_complete",
+        organization_id=str(organization.id),
+        license_keys_linked=lk_result.rowcount,
+        downloadables_linked=dl_result.rowcount,
+    )
+    return lk_result.rowcount, dl_result.rowcount
 
 
 # ---------------------------------------------------------------------------

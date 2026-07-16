@@ -1739,6 +1739,11 @@ class TestCreateSubscriptionOrder:
             assert order.status == OrderStatus.paid
             assert order.tax_calculation_processor_id is None
             assert order.tax_transaction_processor_id is None
+            assert order.tax_breakdown is not None
+            assert all(item["amount"] <= 0 for item in order.tax_breakdown)
+            assert (
+                sum(item["amount"] for item in order.tax_breakdown) == order.tax_amount
+            )
         else:
             assert order.status == OrderStatus.pending
             assert order.tax_calculation_processor_id == "TAX_PROCESSOR_ID"

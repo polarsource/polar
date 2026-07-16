@@ -226,7 +226,7 @@ class TestCustomerSubscriptionUpdateCancel:
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
             json=dict(
-                cancel_at_period_id=True,
+                cancel_at_period_end=True,
             ),
         )
         assert response.status_code == 401
@@ -247,7 +247,7 @@ class TestCustomerSubscriptionUpdateCancel:
         response = await client.patch(
             f"/v1/customer-portal/subscriptions/{subscription.id}",
             json=dict(
-                cancel_at_period_id=True,
+                cancel_at_period_end=True,
             ),
         )
         assert response.status_code == 404

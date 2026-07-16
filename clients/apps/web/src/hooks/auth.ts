@@ -24,9 +24,15 @@ export const useAuth = (): {
   } = useContext(AuthContext)
 
   const reloadUser = async (): Promise<undefined> => {
-    const user = await unwrap(api.GET('/v1/users/me'))
-    setCurrentUser(user)
-    setUserOrganizations(user.organizations ?? [])
+    try {
+      const user = await unwrap(api.GET('/v1/users/me'))
+      setCurrentUser(user)
+      setUserOrganizations(user.organizations ?? [])
+    } catch (error) {
+      // Best-effort refresh: the user is re-seeded from middleware on the next
+      // navigation, so a failed reload is reported but never blocks the caller.
+      Sentry.captureException(error)
+    }
   }
 
   useEffect(() => {

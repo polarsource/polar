@@ -39,7 +39,7 @@
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"
   },
-  "packageManager": "pnpm@11.13.0",
+  "packageManager": "pnpm@11.13.1",
   "keywords": [
     "polar",
     "sdk",

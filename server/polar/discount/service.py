@@ -29,7 +29,7 @@ from polar.models import (
     User,
 )
 from polar.models.checkout import Checkout
-from polar.models.discount import DiscountFixed
+from polar.models.discount import CurrencyAmountMap, DiscountFixed
 from polar.models.discount_redemption import DiscountRedemption
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
@@ -196,6 +196,10 @@ class DiscountService(ResourceServiceReader[Discount]):
             session, auth_subject, discount, OrganizationPermission.products_manage
         )
 
+        original_amounts: CurrencyAmountMap | None = (
+            dict(discount.amounts) if isinstance(discount, DiscountFixed) else None
+        )
+
         if (
             "duration" in discount_update.model_fields_set
             and discount_update.duration != discount.duration
@@ -309,6 +313,16 @@ class DiscountService(ResourceServiceReader[Discount]):
         session.add(discount)
         await session.flush()
         await session.refresh(discount)
+
+        if (
+            isinstance(discount, DiscountFixed)
+            and original_amounts is not None
+            and discount.amounts != original_amounts
+        ):
+            # Deferred import: polar.checkout.service imports discount.service.
+            from polar.checkout.service import checkout as checkout_service
+
+            await checkout_service.reconcile_discount_change(session, discount)
 
         return discount
 

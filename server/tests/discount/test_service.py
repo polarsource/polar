@@ -2,6 +2,7 @@ from datetime import timedelta
 from typing import Any, Literal
 
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject, User
 from polar.checkout.schemas import CheckoutUpdatePublic
@@ -22,6 +23,7 @@ from polar.models import (
     Product,
     UserOrganization,
 )
+from polar.models.checkout import CheckoutStatus
 from polar.models.discount import (
     DiscountDuration,
     DiscountFixed,
@@ -434,6 +436,156 @@ class TestUpdate:
         )
 
         assert updated_discount.code == "mycode"
+
+
+@pytest.mark.asyncio
+class TestUpdateReconcilesOpenCheckouts:
+    @pytest.mark.auth
+    async def test_amounts_drop_currency_nulls_out_discount_on_open_checkout(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product_one_time_multiple_currencies: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 500, "eur": 500},
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time_multiple_currencies],
+            currency="eur",
+            discount=discount,
+        )
+        assert checkout.discount_id == discount.id
+        assert checkout.net_amount == checkout.amount - 500
+
+        await discount_service.update(
+            session,
+            discount,
+            discount_update=DiscountUpdate(amounts={"usd": 500}),
+            auth_subject=auth_subject,
+        )
+
+        await session.refresh(checkout)
+        assert checkout.discount_id is None
+        assert checkout.net_amount == checkout.amount
+
+    @pytest.mark.auth
+    async def test_amounts_change_keeps_discount_for_supported_currency(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product_one_time_multiple_currencies: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 500, "eur": 500},
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time_multiple_currencies],
+            currency="usd",
+            discount=discount,
+        )
+        assert checkout.discount_id == discount.id
+
+        await discount_service.update(
+            session,
+            discount,
+            discount_update=DiscountUpdate(amounts={"usd": 300}),
+            auth_subject=auth_subject,
+        )
+
+        await session.refresh(checkout)
+        assert checkout.discount_id == discount.id
+
+    @pytest.mark.parametrize(
+        "status",
+        [
+            CheckoutStatus.confirmed,
+            CheckoutStatus.succeeded,
+            CheckoutStatus.failed,
+            CheckoutStatus.expired,
+        ],
+    )
+    @pytest.mark.auth
+    async def test_non_open_checkouts_are_not_reconciled(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        status: CheckoutStatus,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product_one_time_multiple_currencies: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"eur": 500},
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_one_time_multiple_currencies],
+            currency="eur",
+            discount=discount,
+            status=status,
+        )
+        assert checkout.discount_id == discount.id
+
+        await discount_service.update(
+            session,
+            discount,
+            discount_update=DiscountUpdate(amounts={"usd": 500}),
+            auth_subject=auth_subject,
+        )
+
+        await session.refresh(checkout)
+        assert checkout.discount_id == discount.id
+        assert checkout.status == status
+
+    @pytest.mark.auth
+    async def test_non_amounts_update_does_not_reconcile(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 500},
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+        spy = mocker.spy(checkout_service, "reconcile_discount_change")
+
+        await discount_service.update(
+            session,
+            discount,
+            discount_update=DiscountUpdate(name="Renamed"),
+            auth_subject=auth_subject,
+        )
+
+        spy.assert_not_called()
 
 
 @pytest.mark.asyncio

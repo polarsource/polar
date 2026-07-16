@@ -543,6 +543,25 @@ class SubscriptionChargePreview(Schema):
     total_amount: int = Field(description="Total amount in cents (final charge amount)")
 
 
+class SubscriptionCancelPreview(Schema):
+    """Preview of the effect of cancelling a subscription right now."""
+
+    stops_collection: bool = Field(
+        description=(
+            "Whether cancelling now also stops collecting the outstanding payment. "
+            "True for a past-due subscription whose organization has no benefit "
+            "revocation grace period: cancelling voids the pending order and stops "
+            "dunning retries."
+        )
+    )
+    outstanding_amount: int | None = Field(
+        description=(
+            "Amount in cents still due on the pending order that would be voided, "
+            "or null when nothing would be dropped."
+        )
+    )
+
+
 class SubscriptionChangePreviewProduct(Schema):
     model_config = ConfigDict(extra="forbid")
 

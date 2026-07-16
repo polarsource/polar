@@ -128,8 +128,13 @@ export const BenefitRow = ({
           >
             {resolveBenefitIcon(benefit.type, 'h-4 w-4')}
           </div>
-          <div className="flex flex-col">
-            <span className={twMerge('text-sm', selected ? 'font-medium' : '')}>
+          <div className="flex min-w-0 flex-col">
+            <span
+              className={twMerge(
+                'truncate text-sm',
+                selected ? 'font-medium' : '',
+              )}
+            >
               {benefit.description}
             </span>
             <div className="flex items-center gap-2">

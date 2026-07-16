@@ -35,7 +35,7 @@ export const ProductCheckoutSection = ({
     <div className={twMerge('flex flex-col gap-12 p-6 md:p-12', className)}>
       <Accordion type="single" collapsible>
         <AccordionItem value="checkout-page" className="border-none px-0">
-          <AccordionTrigger className="cursor-pointer items-start hover:no-underline [&>svg]:mt-1">
+          <AccordionTrigger className="cursor-pointer items-start hover:no-underline md:items-center [&>svg]:mt-1 md:[&>svg]:mt-0">
             <div className="flex flex-col items-start gap-y-2 text-left">
               <h2 className="text-lg font-medium">Checkout Page</h2>
               <p className="dark:text-polar-500 text-sm leading-snug text-gray-500">

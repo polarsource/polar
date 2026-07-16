@@ -9,9 +9,11 @@ from sqlalchemy import (
     and_,
     bindparam,
     cast,
+    not_,
     select,
     update,
 )
+from sqlalchemy.orm import aliased
 
 from polar.models import Benefit, BenefitGrant, Downloadable, LicenseKey, Organization
 
@@ -128,6 +130,23 @@ def downloadable_member_backfill_statement(
                 )
             )
         )
+
+    # Skip rows whose target member already holds this (customer, file, benefit),
+    # otherwise the update collides with ix_downloadables_scope_unique.
+    sibling = aliased(Downloadable)
+    conditions.append(
+        not_(
+            select(sibling.id)
+            .where(
+                sibling.customer_id == Downloadable.customer_id,
+                sibling.file_id == Downloadable.file_id,
+                sibling.benefit_id == Downloadable.benefit_id,
+                sibling.member_id == filter_grants.c.member_id,
+                sibling.deleted_at.is_(None),
+            )
+            .exists()
+        )
+    )
 
     target = (
         select(Downloadable.id)

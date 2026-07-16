@@ -876,6 +876,9 @@ class SubscriptionService:
                     await subscription_update_repository.soft_delete(pending_update)
                 else:
                     await subscription_update_repository.update(pending_update)
+                    if pending_update.product_id is not None:
+                        await session.flush()
+                        await self.enqueue_benefits_grants(session, subscription)
                 subscription.pending_update = None
 
             if update_cycle_dates and not pending_update_changed_interval:

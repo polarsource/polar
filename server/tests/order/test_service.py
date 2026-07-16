@@ -2964,6 +2964,75 @@ class TestHandlePayment:
 
 
 @pytest.mark.asyncio
+class TestOnOrderPaidAdminNotification:
+    @pytest.mark.parametrize(
+        "billing_reason",
+        [
+            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+        ],
+    )
+    async def test_renewal_notifies_org_members(
+        self,
+        billing_reason: OrderBillingReasonInternal,
+        enqueue_job_mock: MagicMock,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        send_admin_notification_mock = mocker.patch.object(
+            order_service, "send_admin_notification"
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            billing_reason=billing_reason,
+        )
+
+        updated_order = await order_service.handle_payment(session, order, None)
+
+        assert updated_order.status == OrderStatus.paid
+        send_admin_notification_mock.assert_awaited_once_with(
+            session, order.organization, updated_order
+        )
+
+    async def test_purchase_does_not_notify_here(
+        self,
+        enqueue_job_mock: MagicMock,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # One-time purchases are notified at checkout, not through the paid hook,
+        # so they must not trigger a second notification here.
+        send_admin_notification_mock = mocker.patch.object(
+            order_service, "send_admin_notification"
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            billing_reason=OrderBillingReasonInternal.purchase,
+        )
+
+        updated_order = await order_service.handle_payment(session, order, None)
+
+        assert updated_order.status == OrderStatus.paid
+        send_admin_notification_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
 class TestHandlePaymentFailure:
     """Test order service handle payment failure functionality"""
 

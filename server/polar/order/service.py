@@ -2728,6 +2728,11 @@ class OrderService:
                 subscription_id=order.subscription_id,
             )
 
+            # Renewals only become paid here; notify organization members like we
+            # do for one-time purchases at checkout. The initial subscription order
+            # is excluded (covered by the "New Subscriptions" notification instead).
+            await self.send_admin_notification(session, order.organization, order)
+
     async def _emit_balance_credit_order_event(
         self,
         session: AsyncSession,

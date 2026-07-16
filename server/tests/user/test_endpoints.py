@@ -2,6 +2,7 @@ import pytest
 from httpx import AsyncClient
 
 from polar.auth.models import AuthSubject
+from polar.auth.permission import OrganizationPermission
 from polar.auth.scope import READ_ONLY_SCOPES
 from polar.kit.utils import utc_now
 from polar.models import Organization, User, UserOrganization
@@ -42,6 +43,29 @@ async def test_get_users_me_embeds_organizations_with_role(
     assert len(organizations) == 1
     assert organizations[0]["id"] == str(organization.id)
     assert organizations[0]["role"] == OrganizationRole.admin.value
+    # Admin embeds the finance scopes the dashboard gates on.
+    permissions = organizations[0]["permissions"]
+    assert OrganizationPermission.finance_read in permissions
+    assert OrganizationPermission.organization_manage in permissions
+
+
+@pytest.mark.asyncio
+@pytest.mark.auth
+async def test_get_users_me_embeds_member_permissions_without_admin_scopes(
+    client: AsyncClient,
+    save_fixture: SaveFixture,
+    organization: Organization,
+    user_organization: UserOrganization,
+) -> None:
+    user_organization.role = OrganizationRole.member
+    await save_fixture(user_organization)
+
+    response = await client.get("/v1/users/me")
+
+    assert response.status_code == 200
+    permissions = response.json()["organizations"][0]["permissions"]
+    assert OrganizationPermission.finance_read not in permissions
+    assert OrganizationPermission.organization_manage not in permissions
 
 
 @pytest.mark.asyncio

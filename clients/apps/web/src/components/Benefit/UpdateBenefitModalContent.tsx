@@ -1,7 +1,7 @@
 import { useUpdateBenefit } from '@/hooks/queries'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, operations, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, InlineModalHeader } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { MouseEvent, useCallback, useEffect, useMemo, useState } from 'react'
@@ -118,10 +118,11 @@ const UpdateBenefitModalContent = ({
   const { handleSubmit } = form
 
   return (
-    <div className="flex flex-col gap-y-6 px-8 py-10">
-      <div>
+    <div className="flex flex-col">
+      <InlineModalHeader hide={requestClose}>
         <h2 className="text-lg">Update Benefit</h2>
-      </div>
+      </InlineModalHeader>
+      <div className="flex flex-col gap-y-6 px-8 pb-10">
       <div className="flex flex-col gap-y-6">
         <Form {...form}>
           <form
@@ -160,6 +161,7 @@ const UpdateBenefitModalContent = ({
         description="Changes to this benefit will be applied to all products that use it, and to existing customers who already have it."
         onConfirm={handleConfirmUpdate}
       />
+      </div>
     </div>
   )
 }

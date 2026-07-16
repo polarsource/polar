@@ -27,7 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useState } from 'react'
-import { InlineModal } from '@polar-sh/orbit'
+import { InlineModal, InlineModalHeader } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import { BenefitPage } from './BenefitPage'
 
@@ -192,11 +192,25 @@ export const LicenseKeysPage = ({
     [updateLicenseKey, selectedLicenseKey, setStatusLoading],
   )
 
+  const closeLicenseKeyModal = useCallback(() => {
+    hideLicenseKeyModal()
+    setSelectedLicenseKeys({})
+    setDeepLinkParam(null)
+  }, [hideLicenseKeyModal, setDeepLinkParam])
+
   const LicenseKeyContextView = selectedLicenseKey ? (
-    <Box flexDirection="column" rowGap="2xl" padding="2xl">
-      <Text variant="heading-xxs" as="h1">
-        License Key
-      </Text>
+    <Box flexDirection="column" overflowY="auto">
+      <InlineModalHeader hide={closeLicenseKeyModal}>
+        <Text variant="heading-xxs" as="h1">
+          License Key
+        </Text>
+      </InlineModalHeader>
+      <Box
+        flexDirection="column"
+        rowGap="2xl"
+        paddingHorizontal="2xl"
+        paddingBottom="2xl"
+      >
       <Box alignItems="center" columnGap="m">
         <Avatar
           className="h-10 w-10"
@@ -251,6 +265,7 @@ export const LicenseKeysPage = ({
           </Button>
         )}
       </Box>
+      </Box>
     </Box>
   ) : undefined
 
@@ -300,11 +315,7 @@ export const LicenseKeysPage = ({
           <InlineModal
             modalContent={LicenseKeyContextView ?? null}
             isShown={isLicenseKeyModalShown}
-            hide={() => {
-              hideLicenseKeyModal()
-              setSelectedLicenseKeys({})
-              setDeepLinkParam(null)
-            }}
+            hide={closeLicenseKeyModal}
           />
         </Box>
       </TabsContent>

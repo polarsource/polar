@@ -3,7 +3,7 @@
 import { useUpdateSubscription } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, InlineModalHeader } from '@polar-sh/orbit'
 import {
   Select,
   SelectContent,
@@ -54,11 +54,13 @@ type SubscriptionCancelForm = schemas['SubscriptionCancel'] & {
 interface CancelSubscriptionModalProps {
   subscription: schemas['Subscription']
   onCancellation?: () => void
+  hide: () => void
 }
 
 const CancelSubscriptionModal = ({
   subscription,
   onCancellation,
+  hide,
 }: CancelSubscriptionModalProps) => {
   const cancelSubscription = useUpdateSubscription(subscription.id)
   const form = useForm<SubscriptionCancelForm>({
@@ -129,11 +131,11 @@ const CancelSubscriptionModal = ({
   }
 
   return (
-    <div className="flex h-full flex-col gap-8 overflow-y-auto px-8 py-12">
-      <div className="flex flex-row items-center gap-x-4">
+    <div className="flex h-full flex-col overflow-y-auto">
+      <InlineModalHeader hide={hide}>
         <h2 className="text-xl">Cancel Subscription</h2>
-      </div>
-      <div className="flex h-full flex-col gap-4">
+      </InlineModalHeader>
+      <div className="flex h-full flex-col gap-4 px-8 pb-12">
         <Form {...form}>
           <form
             className="flex grow flex-col justify-between gap-y-6"

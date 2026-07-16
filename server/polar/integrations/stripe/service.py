@@ -56,7 +56,7 @@ stripe_lib.default_http_client = stripe_http_client
 
 # Radar for Platforms account risk signals live behind this preview version.
 STRIPE_ACCOUNT_RISK_API_VERSION = "2026-03-25.preview"
-stripe_client = stripe_lib.StripeClient(
+stripe_risk_client = stripe_lib.StripeClient(
     settings.STRIPE_SECRET_KEY, http_client=stripe_http_client
 )
 
@@ -610,7 +610,7 @@ class StripeService:
         Result arrives asynchronously as a fraudulent_website_ready event.
         Uses raw_request because the endpoint is preview-only (no typed SDK).
         """
-        response = await stripe_client.raw_request_async(
+        response = await stripe_risk_client.raw_request_async(
             "post",
             "/v2/core/account_evaluations",
             account=account_id,
@@ -621,7 +621,7 @@ class StripeService:
 
     async def get_account_risk_event(self, event_id: str) -> dict[str, Any]:
         """Fetch the full risk-signal event by id (thin events carry no data)."""
-        response = await stripe_client.raw_request_async(
+        response = await stripe_risk_client.raw_request_async(
             "get",
             f"/v2/core/events/{event_id}",
             stripe_version=STRIPE_ACCOUNT_RISK_API_VERSION,

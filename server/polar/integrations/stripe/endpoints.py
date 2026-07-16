@@ -49,11 +49,9 @@ CONNECT_IMPLEMENTED_WEBHOOKS = {
 }
 
 
-async def enqueue(
-    session: AsyncSession, event: stripe.Event, task_name: str | None = None
-) -> None:
-    # Default: one actor per event type. Callers with a dedicated actor override.
-    task_name = task_name or f"stripe.webhook.{event['type']}"
+async def enqueue(session: AsyncSession, event: stripe.Event) -> None:
+    event_type: str = event["type"]
+    task_name = f"stripe.webhook.{event_type}"
     await external_event_service.enqueue(
         session, ExternalEventSource.stripe, task_name, event.id, event
     )
@@ -125,4 +123,10 @@ async def webhook_account_risk(
     ),
 ) -> None:
     if is_account_risk_event(event["type"]):
-        return await enqueue(session, event, "stripe.account_risk_signal")
+        await external_event_service.enqueue(
+            session,
+            ExternalEventSource.stripe,
+            "stripe.account_risk_signal",
+            event.id,
+            event,
+        )

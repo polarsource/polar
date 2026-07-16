@@ -88,10 +88,14 @@ class CustomerSubscription(SubscriptionBase):
 
 
 class CustomerSubscriptionUpdateProduct(Schema):
+    model_config = ConfigDict(extra="forbid")
+
     product_id: UUID4 = Field(description="Update subscription to another product.")
 
 
 class CustomerSubscriptionUpdateSeats(Schema):
+    model_config = ConfigDict(extra="forbid")
+
     seats: Int32 = Field(
         description="Update the number of seats for this subscription.",
         ge=1,
@@ -122,6 +126,8 @@ CustomerSubscriptionChangePreview = Annotated[
 
 
 class CustomerSubscriptionCancel(Schema):
+    model_config = ConfigDict(extra="forbid")
+
     cancel_at_period_end: bool | None = Field(
         None,
         description=inspect.cleandoc(
@@ -165,6 +171,8 @@ class CustomerSubscriptionRevoke(Schema):
 
 
 class CustomerSubscriptionPause(Schema):
+    model_config = ConfigDict(extra="forbid")
+
     pause_at_period_end: bool = Field(
         description=inspect.cleandoc(
             """
@@ -186,6 +194,8 @@ class CustomerSubscriptionPause(Schema):
 
 
 class CustomerSubscriptionResume(Schema):
+    model_config = ConfigDict(extra="forbid")
+
     resume: Literal[True] = Field(
         description=(
             "Resume a paused subscription immediately, "
@@ -195,6 +205,8 @@ class CustomerSubscriptionResume(Schema):
 
 
 class CustomerSubscriptionUpdateClear(Schema):
+    model_config = ConfigDict(extra="forbid")
+
     pending_update: None = Field(description="Clear the pending subscription update.")
 
 

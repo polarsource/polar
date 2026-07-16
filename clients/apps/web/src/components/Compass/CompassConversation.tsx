@@ -142,7 +142,7 @@ export const CompassConversation = ({
       >
         {empty ? (
           <Box display="flex" flexDirection="column" rowGap="xl">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 gap-2.5 sm:grid-cols-2 sm:gap-4">
               {presets.map(({ question, Icon }) => (
                 <button
                   key={question}
@@ -150,9 +150,9 @@ export const CompassConversation = ({
                   onClick={() => onAsk(question)}
                   className="dark:border-polar-700 dark:hover:border-polar-600 dark:hover:bg-polar-700 flex cursor-pointer flex-col gap-3 rounded-2xl border border-gray-200 p-4 text-left transition-colors hover:border-gray-300 hover:bg-gray-50"
                 >
-                  <Box columnGap="m" alignItems="start">
+                  <Box columnGap={{ base: 's', sm: 'm' }} alignItems="start">
                     <Icon
-                      className="dark:text-polar-500 text-gray-400"
+                      className="dark:text-polar-500 shrink-0 text-gray-400"
                       style={{ fontSize: '1rem', marginTop: '.2rem' }}
                     />
 

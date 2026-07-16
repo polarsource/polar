@@ -133,10 +133,12 @@ export default function EventDetailPage({
       <div className="grid grid-cols-1 items-start gap-12 md:grid-cols-[1fr_300px]">
         {/* Left column — event rows */}
         <div className="flex flex-col gap-y-8">
-          <div className="flex flex-row items-center justify-between gap-x-4">
-            <h3 className="text-4xl">{event.label}</h3>
+          <div className="flex flex-row items-baseline justify-between gap-x-4">
+            <h3 className="min-w-0 text-2xl break-words sm:text-4xl">
+              {event.label}
+            </h3>
             {'_cost' in event.metadata && event.metadata._cost && (
-              <h3 className="dark:text-polar-500 font-mono text-4xl text-gray-400">
+              <h3 className="dark:text-polar-500 shrink-0 font-mono text-2xl whitespace-nowrap text-gray-400 sm:text-4xl">
                 {formatCurrency('subcent')(
                   Number(event.metadata._cost?.amount ?? 0),
                   event.metadata._cost?.currency ?? 'usd',
@@ -156,9 +158,9 @@ export default function EventDetailPage({
           </div>
           {children.length > 0 && (
             <div className="flex flex-col gap-y-8">
-              <div className="flex flex-row justify-between">
-                <h3 className="text-2xl">Child Events</h3>
-                <h3 className="dark:text-polar-500 text-2xl text-gray-400">
+              <div className="flex flex-row items-baseline justify-between">
+                <h3 className="text-xl sm:text-2xl">Child Events</h3>
+                <h3 className="dark:text-polar-500 text-xl text-gray-400 sm:text-2xl">
                   {children.length} {children.length === 1 ? 'Event' : 'Events'}
                 </h3>
               </div>

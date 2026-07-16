@@ -1,6 +1,8 @@
 [project]
 name = "polar-sdk"
 authors = [{ name = "Polar", email = "contact@polar.sh" }]
+license = "MIT"
+license-files = ["LICENSE"]
 description = "Polar SDK — A billing platform for the intelligence era"
 readme = "README.md"
 dynamic = ["version"]
@@ -39,3 +41,4 @@ extend-select = ["I", "UP"]
 
 [tool.uv]
 default-groups = ["dev"]
+exclude-newer = "1 week"

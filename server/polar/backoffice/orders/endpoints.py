@@ -49,24 +49,6 @@ class StatusDescriptionListItem(description_list.DescriptionListItem[Order]):
         return None
 
 
-class TaxRateItem(description_list.DescriptionListItem[Order]):
-    def __init__(self, rate: float):
-        super().__init__("Tax Rate")
-        self.rate = rate
-
-    def render(self, request: Request, item: Order) -> Generator[None] | None:
-        text(f"{self.rate:.2f}%")
-        return None
-
-
-class TaxIDItem(description_list.DescriptionListAttrItem[Order]):
-    def get_value(self, item: Order) -> Any:
-        value = self.get_raw_value(item)
-        if value is None:
-            return None
-        return formatters.tax_id(value)
-
-
 class InvoicePDFItem(description_list.DescriptionListItem[Order]):
     def __init__(self, url: str | None):
         super().__init__("Invoice PDF")

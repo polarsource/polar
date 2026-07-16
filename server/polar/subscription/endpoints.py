@@ -29,6 +29,7 @@ from polar.routing import APIRouter
 from . import auth, sorting
 from .schemas import Subscription as SubscriptionSchema
 from .schemas import (
+    SubscriptionCancelPreview,
     SubscriptionChangePreview,
     SubscriptionChangePreviewSeats,
     SubscriptionChargePreview,
@@ -254,6 +255,31 @@ async def get_charge_preview(
             raise ResourceNotFound()
 
     return await subscription_service.calculate_charge_preview(session, subscription)
+
+
+@router.get(
+    "/{id}/cancel-preview",
+    summary="Preview Subscription Cancellation",
+    response_model=SubscriptionCancelPreview,
+    responses={404: SubscriptionNotFound},
+    tags=[APITag.private],
+)
+async def get_cancel_preview(
+    id: SubscriptionID,
+    auth_subject: auth.SubscriptionsRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionCancelPreview:
+    """Preview the effect of cancelling a subscription right now.
+
+    Reports whether cancelling also stops collecting the outstanding payment,
+    and the amount that would no longer be collected.
+    """
+    subscription = await subscription_service.get(session, auth_subject, id)
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    return await subscription_service.calculate_cancel_preview(session, subscription)
 
 
 @router.post(

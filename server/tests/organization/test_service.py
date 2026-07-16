@@ -21,6 +21,7 @@ from polar.kit.http import UrlReachability
 from polar.models import (
     Customer,
     Organization,
+    PayoutAccount,
     Product,
     User,
     UserOrganization,
@@ -1237,6 +1238,43 @@ class TestDenyOrganization:
             account_id=organization.account_id,
         )
 
+    async def test_enqueues_stripe_reject_when_reason_given(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        stripe_payout_account: PayoutAccount,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.deny_organization(
+            session, organization, stripe_reject_reason="terms_of_service"
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "payout_account.reject_stripe_account",
+            payout_account_id=stripe_payout_account.id,
+            reason="terms_of_service",
+        )
+
+    async def test_does_not_enqueue_stripe_reject_by_default(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        stripe_payout_account: PayoutAccount,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.deny_organization(session, organization)
+
+        assert not any(
+            call.args and call.args[0] == "payout_account.reject_stripe_account"
+            for call in enqueue_job_mock.call_args_list
+        )
+
 
 @pytest.mark.asyncio
 class TestBlockOrganization:
@@ -1265,6 +1303,26 @@ class TestBlockOrganization:
         enqueue_job_mock.assert_any_call(
             "payout.cancel_account_payouts",
             account_id=organization.account_id,
+        )
+
+    async def test_enqueues_stripe_reject_when_reason_given(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        stripe_payout_account: PayoutAccount,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.block_organization(
+            session, organization, stripe_reject_reason="fraud"
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "payout_account.reject_stripe_account",
+            payout_account_id=stripe_payout_account.id,
+            reason="fraud",
         )
 
 
@@ -1653,7 +1711,7 @@ async def _setup_passing_org(
     save_fixture: SaveFixture,
     organization: Organization,
     user: User,
-) -> None:
+) -> Product:
     organization.email = "support@example.com"
     organization.website = "https://example.com"
     organization.socials = [{"platform": "x", "url": "https://x.com/polar"}]
@@ -1686,6 +1744,8 @@ async def _setup_passing_org(
     )
     await set_product_benefits(save_fixture, product=product, benefits=[benefit])
     await create_checkout_link(save_fixture, products=[product])
+
+    return product
 
 
 def _step(
@@ -2300,7 +2360,7 @@ class TestGetReviewState:
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
 
-        assert step.status == OrganizationReviewCheckStatus.FAILED
+        assert step.status == OrganizationReviewCheckStatus.PENDING
         checkout_link_sub = _sub(
             step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
         )
@@ -2309,6 +2369,102 @@ class TestGetReviewState:
             OrganizationReviewCheckReason.SETUP_READINESS_CHECKOUT_LINK_NOT_FULFILLABLE
             in checkout_link_sub.reasons
         )
+
+    async def test_setup_readiness_benefit_missing_on_one_product_is_incomplete(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        product_with_benefit = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.downloadables,
+        )
+        await set_product_benefits(
+            save_fixture, product=product_with_benefit, benefits=[benefit]
+        )
+        product_without_benefit = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        await create_checkout_link(
+            save_fixture, products=[product_with_benefit, product_without_benefit]
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        checkout_link_sub = _sub(
+            step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
+        )
+        assert checkout_link_sub.status == OrganizationReviewCheckStatus.FAILED
+        assert (
+            OrganizationReviewCheckReason.SETUP_READINESS_CHECKOUT_LINK_NOT_FULFILLABLE
+            in checkout_link_sub.reasons
+        )
+
+    async def test_setup_readiness_unfulfillable_second_link_is_incomplete(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        product_with_benefit = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.downloadables,
+        )
+        await set_product_benefits(
+            save_fixture, product=product_with_benefit, benefits=[benefit]
+        )
+        product_without_benefit = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        await create_checkout_link(save_fixture, products=[product_with_benefit])
+        await create_checkout_link(
+            save_fixture, products=[product_with_benefit, product_without_benefit]
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        checkout_link_sub = _sub(
+            step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
+        )
+        assert checkout_link_sub.status == OrganizationReviewCheckStatus.FAILED
+
+    async def test_setup_readiness_success_url_covers_only_its_own_link(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        await create_checkout_link(
+            save_fixture,
+            products=[product],
+            success_url="https://example.com/thank-you",
+        )
+        await create_checkout_link(save_fixture, products=[product])
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        checkout_link_sub = _sub(
+            step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
+        )
+        assert checkout_link_sub.status == OrganizationReviewCheckStatus.FAILED
 
     async def test_setup_readiness_checkout_link_with_success_url_passes(
         self,
@@ -2336,7 +2492,7 @@ class TestGetReviewState:
             == OrganizationReviewCheckStatus.PASSED
         )
 
-    async def test_setup_readiness_checkout_link_without_benefits_or_success_url_fails(
+    async def test_setup_readiness_checkout_link_without_benefits_or_success_url_is_incomplete(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -2350,11 +2506,11 @@ class TestGetReviewState:
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
 
-        assert step.status == OrganizationReviewCheckStatus.FAILED
-        assert (
-            OrganizationReviewCheckReason.SETUP_READINESS_CHECKOUT_LINK_NOT_FULFILLABLE
-            in step.reasons
-        )
+        # An unfulfillable link is in-progress (still blocks submit), not an
+        # error — no "invalid" reason is surfaced on the parent step.
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert step.reasons == []
+        # The sub-check still records that the link can't fulfill.
         checkout_link_sub = _sub(
             step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
         )
@@ -2479,6 +2635,22 @@ class TestGetReviewState:
         socials_step = _step(state, OrganizationReviewCheckKey.IDENTITY_SOCIAL_LINKS)
         assert socials_step.status == OrganizationReviewCheckStatus.PENDING
         assert state.can_submit is True
+
+    async def test_unfulfillable_checkout_link_blocks_submission(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        product = await _setup_passing_org(save_fixture, organization, user)
+        await set_product_benefits(save_fixture, product=product, benefits=[])
+
+        state = await organization_service.get_review_state(session, organization)
+
+        setup_step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+        assert setup_step.status == OrganizationReviewCheckStatus.PENDING
+        assert state.can_submit is False
 
     async def test_submitted_blocks_resubmission(
         self,

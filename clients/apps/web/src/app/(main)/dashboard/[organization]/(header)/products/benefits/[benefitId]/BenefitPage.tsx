@@ -130,7 +130,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     <MasterDetailLayoutContent
       header={
         <>
-          <Box alignItems="center" gap="xl">
+          <Box alignItems={{ base: 'start', sm: 'center' }} gap="xl">
             <Box
               width={48}
               height={48}
@@ -143,21 +143,28 @@ const ClientPage: React.FC<ClientPageProps> = ({
             >
               {resolveBenefitIcon(benefit.type, 'h-4 w-4')}
             </Box>
-            <Box flexDirection="column">
-              <Box minWidth={0} alignItems="center" gap="l">
+            <Box flexDirection="column" rowGap={{ base: 'xs', sm: 'none' }}>
+              <Box
+                minWidth={0}
+                flexDirection={{ base: 'column', sm: 'row' }}
+                alignItems={{ base: 'start', sm: 'center' }}
+                gap={{ base: 'xs', sm: 'l' }}
+              >
                 <Text variant="heading-xxs" as="p" truncate>
                   {(benefit.description?.length ?? 0) > 0
                     ? benefit.description
                     : '—'}
                 </Text>
-                <Status
-                  color="gray"
-                  status={
-                    benefit.visibility === 'public'
-                      ? 'Visible to customers'
-                      : 'Hidden from customers'
-                  }
-                />
+                <Box flexShrink={0}>
+                  <Status
+                    color="gray"
+                    status={
+                      benefit.visibility === 'public'
+                        ? 'Visible to customers'
+                        : 'Hidden from customers'
+                    }
+                  />
+                </Box>
               </Box>
               <Text color="muted">{benefitsDisplayNames[benefit.type]}</Text>
             </Box>

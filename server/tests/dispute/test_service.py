@@ -1,6 +1,6 @@
 from datetime import UTC, datetime
 from typing import Literal
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
@@ -21,7 +21,10 @@ from polar.postgres import AsyncSession
 from polar.refund.service import RefundService
 from polar.support_case.repository import SupportCaseMessageRepository
 from polar.tax.calculation.base import AlreadyRevertedError
-from polar.transaction.service.dispute import DisputeTransactionService
+from polar.transaction.service.dispute import (
+    DisputeTransactionAlreadyExistsError,
+    DisputeTransactionService,
+)
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -226,6 +229,53 @@ class TestUpsertFromStripe:
             session, dispute=updated_dispute
         )
 
+    async def test_update_from_dispute_id_concurrent_transaction_noop(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        dispute_transaction_service_mock: MagicMock,
+        mocker: MockerFixture,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        payment = await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        dispute = await create_dispute(save_fixture, order, payment)
+        assert dispute.payment_processor_id is not None
+
+        # The other writer already recorded the transactions, so this one hits
+        # the uniqueness guard and must no-op instead of raising.
+        dispute_transaction_service_mock.create_dispute.side_effect = (
+            DisputeTransactionAlreadyExistsError(dispute)
+        )
+        revoke_mock = mocker.patch.object(
+            dispute_service, "_revoke", new_callable=AsyncMock
+        )
+
+        stripe_dispute = build_stripe_dispute(
+            status="lost",
+            id=dispute.payment_processor_id,
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[
+                build_stripe_balance_transaction(
+                    amount=-dispute.amount, reporting_category="dispute", fee=1500
+                )
+            ],
+        )
+
+        updated_dispute = await dispute_service.upsert_from_stripe(
+            session, stripe_dispute
+        )
+
+        assert updated_dispute.id == dispute.id
+        assert updated_dispute.status == DisputeStatus.lost
+        dispute_transaction_service_mock.create_dispute.assert_awaited_once()
+        revoke_mock.assert_not_awaited()
+
     async def test_update_from_matching_payment(
         self,
         save_fixture: SaveFixture,
@@ -263,6 +313,7 @@ class TestUpsertFromStripe:
         assert updated_dispute.status == DisputeStatus.won
         assert updated_dispute.payment_processor == PaymentProcessor.stripe
         assert updated_dispute.payment_processor_id == stripe_dispute.id
+        assert updated_dispute.payment == payment
 
         dispute_transaction_service_mock.create_dispute.assert_awaited_once_with(
             session, dispute=updated_dispute

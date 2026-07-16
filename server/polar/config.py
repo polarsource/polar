@@ -462,6 +462,7 @@ class Settings(BaseSettings):
         "cop": 5000,
         "eur": 1300,
         "gbp": 1500,
+        "ghs": 4000,
         "gmd": 4000,
         "gyd": 4000,
         "khr": 4000,

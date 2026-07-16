@@ -1598,6 +1598,31 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/subscriptions/{id}/cancel-preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Preview Subscription Cancellation
+     * @description Preview the effect of cancelling a subscription right now.
+     *
+     *     Reports whether cancelling also stops collecting the outstanding payment,
+     *     and the amount that would no longer be collected.
+     *
+     *     **Scopes**: `subscriptions:read` `subscriptions:write`
+     */
+    get: operations['subscriptions:get_cancel_preview']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/subscriptions/{id}/change-preview': {
     parameters: {
       query?: never
@@ -4812,6 +4837,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customer-portal/subscriptions/{id}/cancel-preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Preview Subscription Cancellation
+     * @description Preview the effect of cancelling a subscription right now.
+     *
+     *     **Scopes**: `customer_portal:read` `customer_portal:write`
+     */
+    get: operations['customer_portal:subscriptions:get_cancel_preview']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customer-portal/subscriptions/{id}/change-preview': {
     parameters: {
       query?: never
@@ -4826,6 +4873,29 @@ export interface paths {
      * @description Preview what a subscription change would cost, without applying it.
      */
     post: operations['customer_portal:subscriptions:preview_change']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customer-portal/subscriptions/{id}/revoke': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Revoke Subscription
+     * @description Revoke a subscription immediately, stopping any further payment attempts.
+     *
+     *     Only allowed while the subscription is past-due and the organization has no
+     *     benefit revocation grace period.
+     */
+    post: operations['customer_portal:subscriptions:revoke']
     delete?: never
     options?: never
     head?: never
@@ -18680,6 +18750,18 @@ export interface components {
        */
       resume: true
     }
+    /** CustomerSubscriptionRevoke */
+    CustomerSubscriptionRevoke: {
+      /** @description Customer's reason for cancellation. */
+      cancellation_reason?:
+        | components['schemas']['CustomerCancellationReason']
+        | null
+      /**
+       * Cancellation Comment
+       * @description Customer feedback and why they decided to cancel.
+       */
+      cancellation_comment?: string | null
+    }
     /**
      * CustomerSubscriptionSortProperty
      * @enum {string}
@@ -30529,6 +30611,17 @@ export interface components {
        */
       type: 'review_appeal'
     }
+    /** RevokeNotAllowed */
+    RevokeNotAllowed: {
+      /**
+       * Error
+       * @example RevokeNotAllowed
+       * @constant
+       */
+      error: 'RevokeNotAllowed'
+      /** Detail */
+      detail: string
+    }
     /** RevokeTokenResponse */
     RevokeTokenResponse: Record<string, never>
     /** S3DownloadURL */
@@ -31626,6 +31719,22 @@ export interface components {
        *     Or uncancel a subscription currently set to be revoked at period end.
        */
       cancel_at_period_end: boolean
+    }
+    /**
+     * SubscriptionCancelPreview
+     * @description Preview of the effect of cancelling a subscription right now.
+     */
+    SubscriptionCancelPreview: {
+      /**
+       * Stops Collection
+       * @description Whether cancelling now also stops collecting the outstanding payment. True for a past-due subscription whose organization has no benefit revocation grace period: cancelling voids the pending order and stops dunning retries.
+       */
+      stops_collection: boolean
+      /**
+       * Outstanding Amount
+       * @description Amount in cents still due on the pending order that would be voided, or null when nothing would be dropped.
+       */
+      outstanding_amount: number | null
     }
     /**
      * SubscriptionCanceledEvent
@@ -39533,6 +39642,47 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['SubscriptionChargePreview']
+        }
+      }
+      /** @description Subscription not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'subscriptions:get_cancel_preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionCancelPreview']
         }
       }
       /** @description Subscription not found. */
@@ -49510,6 +49660,47 @@ export interface operations {
       }
     }
   }
+  'customer_portal:subscriptions:get_cancel_preview': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['SubscriptionCancelPreview']
+        }
+      }
+      /** @description Customer subscription was not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'customer_portal:subscriptions:preview_change': {
     parameters: {
       query?: never
@@ -49563,6 +49754,71 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customer_portal:subscriptions:revoke': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The subscription ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CustomerSubscriptionRevoke']
+      }
+    }
+    responses: {
+      /** @description Customer subscription is revoked. */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerSubscription']
+        }
+      }
+      /** @description Customer subscription is already canceled or the user lacks billing permissions. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['AlreadyCanceledSubscription']
+            | components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Customer subscription was not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description This subscription cannot be revoked in its current state. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['RevokeNotAllowed']
         }
       }
       /** @description Validation Error */

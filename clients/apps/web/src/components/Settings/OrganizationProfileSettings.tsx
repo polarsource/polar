@@ -242,8 +242,8 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
     <div className="space-y-8">
       {/* Basic Info - Always Visible */}
       <div className="space-y-6">
-        <div className="grid grid-cols-1 gap-6 sm:grid-cols-12">
-          <div className="sm:col-span-2">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-[auto_1fr] sm:gap-x-5">
+          <div>
             <label className="mb-2 block text-sm font-medium">Logo</label>
             <FormField
               control={control}
@@ -279,7 +279,7 @@ const OrganizationDetailsForm: React.FC<OrganizationDetailsFormProps> = ({
             />
           </div>
 
-          <div className="space-y-4 sm:col-span-10">
+          <div className="space-y-4">
             <div>
               <label className="mb-2 block text-sm font-medium">
                 Organization Name *
@@ -535,7 +535,6 @@ const OrganizationProfileSettings: React.FC<
         onSubmit={(e) => {
           e.preventDefault()
         }}
-        className="mx-auto max-w-2xl"
       >
         <SettingsGroup>
           <SettingsGroupItem

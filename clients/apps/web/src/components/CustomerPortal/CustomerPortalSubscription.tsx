@@ -397,6 +397,7 @@ const CustomerPortalSubscription = ({
       </div>
 
       <CustomerCancellationModal
+        api={api}
         subscription={subscription}
         isShown={cancelModalIsShown}
         hide={hideCancelModal}

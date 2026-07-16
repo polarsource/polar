@@ -332,7 +332,7 @@ def _merge_customer_email_settings_defaults(value: Any) -> Any:
     """Complete stored settings with defaults so reads tolerate keys added after
     an organization's settings were last written (lazy materialization)."""
     if isinstance(value, dict):
-        return {**_default_customer_email_settings, **value}
+        return {**_default_customer_email_settings(), **value}
     return value
 
 

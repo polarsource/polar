@@ -67,6 +67,8 @@ StripeCancellationReasons = Literal[
     "unused",
 ]
 
+StripeAccountRejectReason = Literal["fraud", "terms_of_service", "other"]
+
 
 class StripeError(PolarError): ...
 
@@ -111,7 +113,8 @@ class StripeService:
         try:
             account = await stripe_lib.Account.retrieve_async(id)
             return bool(account)
-        except stripe_lib.PermissionError:
+        except (stripe_lib.PermissionError, stripe_lib.InvalidRequestError):
+            # No access, or the account was deleted / never existed.
             return False
 
     async def delete_account(self, id: str) -> stripe_lib.Account:
@@ -121,6 +124,16 @@ class StripeService:
             account_id=id,
         )
         return await stripe_lib.Account.delete_async(id)
+
+    async def reject_account(
+        self, id: str, reason: StripeAccountRejectReason
+    ) -> stripe_lib.Account:
+        log.info(
+            "stripe.account.reject",
+            account_id=id,
+            reason=reason,
+        )
+        return await stripe_lib.Account.reject_async(id, reason=reason)
 
     async def retrieve_balance(self, id: str) -> tuple[str, int]:
         # Return available balance in the account's default currency (we assume that

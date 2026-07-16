@@ -9,7 +9,7 @@ from polar.auth.models import AuthSubject
 from polar.authz.service import get_accessible_org_ids
 from polar.enums import PayoutAccountType
 from polar.exceptions import PolarError
-from polar.integrations.stripe.service import stripe
+from polar.integrations.stripe.service import StripeAccountRejectReason, stripe
 from polar.kit.db.postgres import AsyncReadSession
 from polar.models import Organization, PayoutAccount, User
 from polar.organization.repository import OrganizationRepository
@@ -189,6 +189,30 @@ class PayoutAccountService:
 
         repository = PayoutAccountRepository.from_session(session)
         await repository.soft_delete(payout_account)
+
+    async def reject_stripe_account(
+        self,
+        session: AsyncSession,
+        payout_account_id: uuid.UUID,
+        reason: StripeAccountRejectReason,
+    ) -> None:
+        """Reject the Stripe connected account backing a payout account.
+
+        Enqueued when a human denies or blocks an organization and opts in to
+        disabling its Stripe account. A rejected account is permanently disabled
+        on Stripe's side; there is no un-reject.
+        """
+        repository = PayoutAccountRepository.from_session(session)
+        payout_account = await repository.get_by_id(payout_account_id)
+        if (
+            payout_account is None
+            or payout_account.type != PayoutAccountType.stripe
+            or payout_account.stripe_id is None
+        ):
+            return
+        if not await stripe.account_exists(payout_account.stripe_id):
+            return
+        await stripe.reject_account(payout_account.stripe_id, reason)
 
     async def update_account_from_stripe(
         self, session: AsyncSession, *, stripe_account: stripe_lib.Account

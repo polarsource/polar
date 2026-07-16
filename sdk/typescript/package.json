@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/sdk",
-  "version": "1.0.0-alpha.7",
+  "version": "1.0.0-alpha.11",
   "description": "Polar SDK — A billing platform for the intelligence era",
   "keywords": [
     "api",
@@ -12,12 +12,13 @@
   "author": "Polar",
   "repository": {
     "type": "git",
-    "url": "https://github.com/polar-sh/polar",
+    "url": "git+https://github.com/polarsource/polar.git",
     "directory": "sdk/typescript"
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "type": "module",
   "sideEffects": false,
@@ -43,6 +44,46 @@
         "types": "./dist/2026-04/index.d.cts",
         "default": "./dist/2026-04/index.cjs"
       }
+    },
+    "./2026-04/services/*": {
+      "import": {
+        "types": "./dist/2026-04/services/*.d.mts",
+        "default": "./dist/2026-04/services/*.mjs"
+      },
+      "require": {
+        "types": "./dist/2026-04/services/*.d.cts",
+        "default": "./dist/2026-04/services/*.cjs"
+      }
+    },
+    "./2026-04/services/oauth2": {
+      "import": {
+        "types": "./dist/2026-04/services/oauth2/index.d.mts",
+        "default": "./dist/2026-04/services/oauth2/index.mjs"
+      },
+      "require": {
+        "types": "./dist/2026-04/services/oauth2/index.d.cts",
+        "default": "./dist/2026-04/services/oauth2/index.cjs"
+      }
+    },
+    "./2026-04/services/customers": {
+      "import": {
+        "types": "./dist/2026-04/services/customers/index.d.mts",
+        "default": "./dist/2026-04/services/customers/index.mjs"
+      },
+      "require": {
+        "types": "./dist/2026-04/services/customers/index.d.cts",
+        "default": "./dist/2026-04/services/customers/index.cjs"
+      }
+    },
+    "./2026-04/services/customer_portal": {
+      "import": {
+        "types": "./dist/2026-04/services/customer_portal/index.d.mts",
+        "default": "./dist/2026-04/services/customer_portal/index.mjs"
+      },
+      "require": {
+        "types": "./dist/2026-04/services/customer_portal/index.d.cts",
+        "default": "./dist/2026-04/services/customer_portal/index.cjs"
+      }
     }
   },
   "scripts": {
@@ -63,5 +104,6 @@
   },
   "engines": {
     "node": ">=18"
-  }
+  },
+  "packageManager": "pnpm@11.13.1"
 }

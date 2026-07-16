@@ -107,10 +107,7 @@ export const ProductDescriptionSection = ({ organization }: Props) => {
 
     reset(values)
     aup.reset()
-    getQueryClient().invalidateQueries({
-      queryKey: ['organizationReviewState', organization.id],
-    })
-    getQueryClient().invalidateQueries({
+    await getQueryClient().invalidateQueries({
       queryKey: ['organizations', organization.id, 'kyc'],
     })
     return true

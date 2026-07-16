@@ -29,6 +29,9 @@ from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from polar.transaction.service.dispute import (
+    DisputeTransactionAlreadyExistsError,
+)
+from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
 )
 
@@ -233,10 +236,15 @@ class DisputeService:
             dispute.status = new_status
             # If won or lost, record the transactions
             if dispute.resolved:
-                await dispute_transaction_service.create_dispute(
-                    session, dispute=dispute
-                )
-                await self._revoke(session, dispute)
+                try:
+                    await dispute_transaction_service.create_dispute(
+                        session, dispute=dispute
+                    )
+                    await self._revoke(session, dispute)
+                except DisputeTransactionAlreadyExistsError:
+                    # A concurrent writer already recorded the transactions and
+                    # revoked; the idempotent updates below still apply.
+                    pass
 
         dispute = await repository.update(dispute)
         await self._sync_support_case(session, dispute, previous_status=previous_status)

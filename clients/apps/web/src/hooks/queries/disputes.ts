@@ -21,6 +21,7 @@ export const useAcceptDispute = () => {
       ),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['disputes'] })
+      queryClient.invalidateQueries({ queryKey: ['supportCases'] })
     },
   })
 }

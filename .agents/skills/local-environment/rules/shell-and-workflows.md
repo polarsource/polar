@@ -74,10 +74,10 @@ dev docker exec web pnpm test
 
 Backend tests do **not** run in the `dev docker` api container. The suite's
 session-wide `empty_test_bucket` fixture hard-requires S3 at
-`http://127.0.0.1:9000` with `testing`-prefixed buckets, but the container
-reaches the shared MinIO at `minio:9000` (per-instance `polar-s3-<N>` buckets,
-no host port), so every test errors at setup. Run backend tests on the host
-with the standard setup in `server/AGENTS.md` (`uv run task test`).
+`http://127.0.0.1:9000` with `testing`-prefixed buckets, but containers can't
+reach `localhost:9000` on the host — they use `minio:9000` internally with
+per-instance `polar-s3-<N>` buckets. Run backend tests on the host with the
+standard setup in `server/AGENTS.md` (`uv run task test`).
 
 **Database operations:**
 ```bash

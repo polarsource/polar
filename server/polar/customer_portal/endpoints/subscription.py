@@ -3,7 +3,7 @@ from typing import Annotated
 import structlog
 from fastapi import Depends, Query
 
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -14,7 +14,11 @@ from polar.order.service import PaymentFailed
 from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
-from polar.subscription.schemas import SubscriptionChargePreview, SubscriptionID
+from polar.subscription.schemas import (
+    SubscriptionCancelPreview,
+    SubscriptionChargePreview,
+    SubscriptionID,
+)
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
     NotASeatBasedSubscription,
@@ -25,11 +29,13 @@ from .. import auth
 from ..schemas.subscription import (
     CustomerSubscription,
     CustomerSubscriptionChangePreview,
+    CustomerSubscriptionRevoke,
     CustomerSubscriptionUpdate,
 )
 from ..service.subscription import (
     CustomerSubscriptionSortProperty,
     PauseResumeNotAllowed,
+    RevokeNotAllowed,
     UpdateSubscriptionPlanNotAllowed,
     UpdateSubscriptionSeatsNotAllowed,
 )
@@ -147,6 +153,29 @@ async def get_charge_preview(
             raise ResourceNotFound()
 
     return await subscription_service.calculate_charge_preview(session, subscription)
+
+
+@router.get(
+    "/{id}/cancel-preview",
+    summary="Preview Subscription Cancellation",
+    response_model=SubscriptionCancelPreview,
+    responses={404: SubscriptionNotFound},
+    tags=[APITag.private],
+)
+async def get_cancel_preview(
+    id: SubscriptionID,
+    auth_subject: auth.CustomerPortalUnionRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionCancelPreview:
+    """Preview the effect of cancelling a subscription right now."""
+    subscription = await customer_subscription_service.get_by_id(
+        session, auth_subject, id
+    )
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    return await subscription_service.calculate_cancel_preview(session, subscription)
 
 
 @router.post(
@@ -268,3 +297,58 @@ async def cancel(
         **get_audit_context(auth_subject),
     )
     return await customer_subscription_service.cancel(session, subscription)
+
+
+# TODO(api-vNext): fold this into DELETE /{id} as a hard-revoke to mirror the
+# merchant API. Kept as a separate private endpoint for now because the public
+# DELETE cancels at period end and has external usage we can't break mid-version.
+@router.post(
+    "/{id}/revoke",
+    summary="Revoke Subscription",
+    response_model=CustomerSubscription,
+    responses={
+        200: {"description": "Customer subscription is revoked."},
+        403: {
+            "description": (
+                "Customer subscription is already canceled "
+                "or the user lacks billing permissions."
+            ),
+            "model": AlreadyCanceledSubscription.schema() | NotPermitted.schema(),
+        },
+        409: {
+            "description": "This subscription cannot be revoked in its current state.",
+            "model": RevokeNotAllowed.schema(),
+        },
+        404: SubscriptionNotFound,
+    },
+    tags=[APITag.private],
+)
+async def revoke(
+    id: SubscriptionID,
+    revoke: CustomerSubscriptionRevoke,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    """Revoke a subscription immediately, stopping any further payment attempts.
+
+    Only allowed while the subscription is past-due and the organization has no
+    benefit revocation grace period.
+    """
+    subscription = await customer_subscription_service.get_by_id(
+        session, auth_subject, id, for_update=True
+    )
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    log.info(
+        "customer_portal.subscription.revoke",
+        subscription_id=id,
+        **get_audit_context(auth_subject),
+    )
+    return await customer_subscription_service.revoke(
+        session,
+        subscription,
+        reason=revoke.cancellation_reason,
+        comment=revoke.cancellation_comment,
+    )

@@ -29,11 +29,13 @@ import ProductForm from './ProductForm/ProductForm'
 export interface EditProductPageProps {
   organization: schemas['Organization']
   product: schemas['Product']
+  returnTo?: string
 }
 
 export const EditProductPage = ({
   organization,
   product,
+  returnTo,
 }: EditProductPageProps) => {
   const router = useRouter()
   const { toast } = useToast()
@@ -158,7 +160,8 @@ export const EditProductPage = ({
 
         router.push(
           getStatusRedirect(
-            `/dashboard/${organization.slug}/products/${product.id}`,
+            returnTo ??
+              `/dashboard/${organization.slug}/products/${product.id}`,
             'Product Updated',
             `Product ${updatedProduct.name} was updated successfully`,
           ),
@@ -177,6 +180,7 @@ export const EditProductPage = ({
       hasBenefitsChanged,
       router,
       organization.slug,
+      returnTo,
       setError,
       toast,
       updateBenefits,

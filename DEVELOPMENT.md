@@ -294,11 +294,12 @@ This single command will:
 
 ### Access Points
 
-| Service       | URL                   |
-| ------------- | --------------------- |
-| Web Frontend  | http://localhost:3000 |
-| API Server    | http://localhost:8000 |
-| MinIO Console | http://localhost:9001 |
+| Service      | URL                   |
+| ------------ | --------------------- |
+| Web Frontend | http://localhost:3000 |
+| API Server   | http://localhost:8000 |
+
+Run `dev docker ports` to see instance-specific ports and URLs.
 
 ### Common Commands
 
@@ -333,30 +334,31 @@ For parallel development or testing, you can run multiple isolated instances:
 # Instance 0 (default): API on 8000, Web on 3000
 dev docker up -d
 
-# Instance 1: API on 8100, Web on 3100
+# Instance 1: API on 8101, Web on 3101
 dev docker up -i 1 -d
 
-# Instance 2: API on 8200, Web on 3200
+# Instance 2: API on 8102, Web on 3102
 dev docker up -i 2 -d
 ```
 
 Each instance has its own:
 
 - Docker containers and networks
-- PostgreSQL database
-- Redis instance
-- MinIO storage
+- PostgreSQL database (`polar_dev_<N>`)
+- Redis database index (`<N>`)
+- MinIO buckets (`polar-s3-<N>`)
 
 ### Port Mapping
 
-| Service       | Instance 0 | Instance 1 | Instance 2 |
-| ------------- | ---------- | ---------- | ---------- |
-| API           | 8000       | 8100       | 8200       |
-| Web           | 3000       | 3100       | 3200       |
-| PostgreSQL    | 5432       | 5532       | 5632       |
-| Redis         | 6379       | 6479       | 6579       |
-| MinIO API     | 9000       | 9100       | 9200       |
-| MinIO Console | 9001       | 9101       | 9201       |
+Only API and Web have host ports. PostgreSQL, Redis, and MinIO run in a shared
+project with no host ports — reach them via `dev docker exec <service>`.
+
+| Service | Instance 0 | Instance 1 | Instance 2 |
+| ------- | ---------- | ---------- | ---------- |
+| API     | 8000       | 8101       | 8102       |
+| Web     | 3000       | 3101       | 3102       |
+
+Run `dev docker ports` to see resolved ports for the current worktree.
 
 ### Hot-Reloading
 

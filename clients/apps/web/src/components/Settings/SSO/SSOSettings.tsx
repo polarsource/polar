@@ -14,6 +14,7 @@ import { schemas } from '@polar-sh/client'
 import { Button, InlineModal, ListGroup, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
+import { useRouter } from 'next/navigation'
 import { ConfirmModal } from '../../Modal/ConfirmModal'
 import { useModal } from '../../Modal/useModal'
 import EditSSOConnectionModal from './EditSSOConnectionModal'
@@ -27,6 +28,7 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
     hide: hideEnforceModal,
   } = useModal()
   const { currentUser } = useAuth()
+  const router = useRouter()
   const connections = useSSOConnections(org.id)
   const updateOrganization = useUpdateOrganization()
 
@@ -48,7 +50,10 @@ const SSOSettings = ({ org }: { org: schemas['Organization'] }) => {
         title: 'Update failed',
         description: extractApiErrorMessage(error),
       })
+      return
     }
+    // Refresh the router to get the updated organization data from the server
+    router.refresh()
   }
 
   return (

@@ -23,6 +23,7 @@ async def create_sso_connection(
     save_fixture: SaveFixture,
     organization: Organization,
     *,
+    name: str | None = None,
     auth_method: OIDCAuthMethod = OIDCAuthMethod.client_secret,
     client_secret: str | None = "secret",
     enabled: bool = True,
@@ -36,6 +37,7 @@ async def create_sso_connection(
         configuration["client_secret"] = client_secret
     connection = OrganizationSSOConnection(
         organization=organization,
+        name=name,
         type=OrganizationSSOConnectionType.oidc,
         configuration=configuration,
         enabled=enabled,
@@ -382,6 +384,116 @@ class TestUpdateSSOConnection:
             },
         )
         assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_set_name(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        sso_enabled_organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        connection = await create_sso_connection(
+            save_fixture, organization, name="Acme SSO"
+        )
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/sso-connections/{connection.id}",
+            json={"name": "New name"},
+        )
+        assert response.status_code == 200
+        assert response.json()["name"] == "New name"
+
+    @pytest.mark.auth
+    async def test_clear_name_with_null(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        sso_enabled_organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        connection = await create_sso_connection(
+            save_fixture, organization, name="Acme SSO"
+        )
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/sso-connections/{connection.id}",
+            json={"name": None},
+        )
+        assert response.status_code == 200
+        assert response.json()["name"] is None
+
+    @pytest.mark.auth
+    async def test_clear_name_with_empty_string(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        sso_enabled_organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        connection = await create_sso_connection(
+            save_fixture, organization, name="Acme SSO"
+        )
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/sso-connections/{connection.id}",
+            json={"name": ""},
+        )
+        assert response.status_code == 200
+        assert response.json()["name"] is None
+
+    @pytest.mark.auth
+    async def test_name_preserved_when_not_provided(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        sso_enabled_organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        connection = await create_sso_connection(
+            save_fixture, organization, name="Acme SSO"
+        )
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/sso-connections/{connection.id}",
+            json={"enabled": False},
+        )
+        assert response.status_code == 200
+        assert response.json()["name"] == "Acme SSO"
+
+    @pytest.mark.auth
+    async def test_null_configuration_is_ignored(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        sso_enabled_organization: Organization,
+        user_organization: UserOrganization,
+        sso_connection: OrganizationSSOConnection,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/sso-connections/{sso_connection.id}",
+            json={"name": "Acme SSO", "configuration": None},
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["name"] == "Acme SSO"
+        assert json["configuration"]["issuer"] == "https://idp.example.com"
+
+    @pytest.mark.auth
+    async def test_null_enabled_is_ignored(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        sso_enabled_organization: Organization,
+        user_organization: UserOrganization,
+        sso_connection: OrganizationSSOConnection,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}/sso-connections/{sso_connection.id}",
+            json={"enabled": None},
+        )
+        assert response.status_code == 200
+        assert response.json()["enabled"] is True
 
     @pytest.mark.auth
     async def test_not_existing(

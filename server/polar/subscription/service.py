@@ -93,6 +93,7 @@ from polar.notifications.notification import (
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.order.amounts import compute_order_amounts
+from polar.order.repository import OrderRepository
 from polar.organization.repository import (
     SUBSCRIPTION_CANCELLATION_STATUSES,
     OrganizationRepository,
@@ -112,6 +113,7 @@ from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 from .repository import SubscriptionRepository, SubscriptionUpdateRepository
 from .schemas import (
     SubscriptionCancel,
+    SubscriptionCancelPreview,
     SubscriptionChargePreview,
     SubscriptionChargePreviewProration,
     SubscriptionCreate,
@@ -285,6 +287,7 @@ class SubscriptionUpdateContext:
 
         self._billing_effect: Literal["invoice", "cycle"] | None = None
         self._event_metadata: SubscriptionUpdatedMetadataFields = {}
+        self._has_changes = True
 
     async def __aenter__(self) -> "SubscriptionUpdateContext":
         return self
@@ -321,13 +324,17 @@ class SubscriptionUpdateContext:
                 ),
             )
 
-        await self.service._after_subscription_updated(
-            self.session,
-            self.subscription,
-            previous_status=self._previous_status,
-            previous_is_canceled=self._previous_is_canceled,
-            notify_customer=self._notify_customer,
-        )
+        if self._has_changes:
+            await self.service._after_subscription_updated(
+                self.session,
+                self.subscription,
+                previous_status=self._previous_status,
+                previous_is_canceled=self._previous_is_canceled,
+                notify_customer=self._notify_customer,
+            )
+
+    def mark_unchanged(self) -> None:
+        self._has_changes = False
 
     def set_billing_effect(self, effect: Literal["invoice", "cycle"]) -> None:
         if effect == "cycle":
@@ -1539,6 +1546,7 @@ class SubscriptionService:
             discount,
             subscription.organization,
             products=[product],
+            currency=subscription.currency,
         )
         if resolved_discount is None:
             raise PolarRequestValidationError(
@@ -1712,6 +1720,11 @@ class SubscriptionService:
                 else:
                     pending.seats = None
                     await subscription_update_repository.update(pending)
+            else:
+                # Nothing changed: re-asserting the current seat count with no
+                # pending seat change to cancel is a true no-op, so don't emit
+                # a `subscription.updated` webhook.
+                ctx.mark_unchanged()
             return subscription
 
         event = await event_service.create_event(
@@ -2127,6 +2140,31 @@ class SubscriptionService:
         session.add(subscription)
         return subscription
 
+    async def _revoke_stops_collection(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> bool:
+        """Whether revoking this subscription would stop collecting its pending order.
+
+        True only for a ``past_due`` subscription whose organization has no benefit
+        revocation grace period: the customer never retained access, so revoking
+        (an immediate cancellation) drops the failed payment. Drives the cancel
+        preview and gates the customer-portal revoke path.
+        """
+        if subscription.status != SubscriptionStatus.past_due:
+            return False
+
+        product_repository = ProductRepository.from_session(session)
+        product = await product_repository.get_by_id(subscription.product_id)
+        assert product is not None
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            product.organization_id, include_deleted=True, include_blocked=True
+        )
+        assert organization is not None
+
+        return int(organization.benefit_revocation_grace_period) == 0
+
     async def update_meters(
         self, session: AsyncSession, subscription: Subscription
     ) -> Subscription:
@@ -2288,6 +2326,25 @@ class SubscriptionService:
             net_amount=amounts.net_amount,
             tax_amount=amounts.tax_amount,
             total_amount=amounts.total_amount,
+        )
+
+    async def calculate_cancel_preview(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> SubscriptionCancelPreview:
+        stops_collection = await self._revoke_stops_collection(session, subscription)
+
+        outstanding_amount: int | None = None
+        if stops_collection:
+            order_repository = OrderRepository.from_session(session)
+            pending_orders = await order_repository.get_pending_orders_for_subscription(
+                subscription.id
+            )
+            if pending_orders:
+                outstanding_amount = sum(order.due_amount for order in pending_orders)
+
+        return SubscriptionCancelPreview(
+            stops_collection=stops_collection,
+            outstanding_amount=outstanding_amount,
         )
 
     async def calculate_change_preview(

@@ -5,7 +5,7 @@
   "type": "module",
   "sideEffects": false,
   "files": [
-    "dist", "README.md"
+    "dist", "README.md", "LICENSE"
   ],
   "engines": { "node": ">=18" },
   "main": "dist/index.cjs",
@@ -20,7 +20,20 @@
     "./{{version.version}}": {
       "import": { "types": "./dist/{{version.version}}/index.d.mts", "default": "./dist/{{version.version}}/index.mjs" },
       "require": { "types": "./dist/{{version.version}}/index.d.cts", "default": "./dist/{{version.version}}/index.cjs" }
+    },
+    "./{{version.version}}/services/*": {
+      "import": { "types": "./dist/{{version.version}}/services/*.d.mts", "default": "./dist/{{version.version}}/services/*.mjs" },
+      "require": { "types": "./dist/{{version.version}}/services/*.d.cts", "default": "./dist/{{version.version}}/services/*.cjs" }
     }
+{% for service in version.services %}
+{% if service.services %}
+    ,
+    "./{{version.version}}/services/{{ service.name | snake }}": {
+      "import": { "types": "./dist/{{version.version}}/services/{{ service.name | snake }}/index.d.mts", "default": "./dist/{{version.version}}/services/{{ service.name | snake }}/index.mjs" },
+      "require": { "types": "./dist/{{version.version}}/services/{{ service.name | snake }}/index.d.cts", "default": "./dist/{{version.version}}/services/{{ service.name | snake }}/index.cjs" }
+    }
+{% endif %}
+{% endfor %}
 {% endfor %}
   },
   "scripts": {
@@ -39,6 +52,7 @@
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"
   },
+  "packageManager": "pnpm@11.13.1",
   "keywords": [
     "polar",
     "sdk",
@@ -49,7 +63,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/polar-sh/polar",
+    "url": "git+https://github.com/polarsource/polar.git",
     "directory": "sdk/typescript"
   }
 }

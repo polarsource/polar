@@ -214,6 +214,13 @@ class Transaction(RecordModel):
             unique=True,
             postgresql_where="type = 'payment'",
         ),
+        Index(
+            "ix_dispute_transaction_dispute_id_uniqueness",
+            "type",
+            "dispute_id",
+            unique=True,
+            postgresql_where="type = 'dispute'",
+        ),
     )
 
     type: Mapped[TransactionType] = mapped_column(String, nullable=False, index=True)

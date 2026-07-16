@@ -1,10 +1,11 @@
 """
-Reject the Stripe connected accounts of organizations that are already denied.
+Reject the Stripe accounts of organizations that are already denied or blocked.
 
 The backoffice deny/block dialog now has an opt-in "Disable Stripe account" box
-that rejects the org's Stripe connected account. Orgs denied *before* that box
-existed still have live Stripe accounts, so this script syncs Stripe with our
-side: it rejects the Stripe account of every currently DENIED organization.
+that rejects the org's Stripe connected account. Orgs denied or blocked *before*
+that box existed still have live Stripe accounts, so this script syncs Stripe
+with our side: it rejects the Stripe account of every currently DENIED or
+BLOCKED organization.
 
 Caveat handled explicitly: rejecting a Stripe account is permanent and affects
 every org backed by it. If a payout account is shared by more than one
@@ -51,20 +52,21 @@ log = structlog.get_logger()
 
 configure_script_console_logging()
 
-TARGET_STATUS = OrganizationStatus.DENIED
+TARGET_STATUSES = (OrganizationStatus.DENIED, OrganizationStatus.BLOCKED)
 REJECT_REASONS = set(get_args(StripeAccountRejectReason))
 REJECT_REASONS_HELP = ", ".join(sorted(REJECT_REASONS))
 
 
-async def _denied_stripe_orgs(session: AsyncSession) -> list[Organization]:
-    """Non-deleted DENIED orgs whose payout account is a live Stripe account."""
+async def _target_stripe_orgs(session: AsyncSession) -> list[Organization]:
+    """Non-deleted denied/blocked orgs whose payout account is a live Stripe
+    account."""
     result = await session.execute(
         select(Organization)
         .join(Organization.payout_account)
         .options(contains_eager(Organization.payout_account))
         .where(
             Organization.deleted_at.is_(None),
-            Organization.status == TARGET_STATUS,
+            Organization.status.in_(TARGET_STATUSES),
             PayoutAccount.type == PayoutAccountType.stripe,
             PayoutAccount.stripe_id.is_not(None),
         )
@@ -76,10 +78,11 @@ async def _denied_stripe_orgs(session: AsyncSession) -> list[Organization]:
 def _render_to_reject(rows: list[tuple[Organization, uuid.UUID, str]]) -> None:
     table = Table(title=f"Stripe accounts to reject ({len(rows)})")
     table.add_column("Org slug")
+    table.add_column("Status", style="yellow")
     table.add_column("Org ID", style="dim")
     table.add_column("Stripe account", style="cyan")
     for org, _, stripe_id in rows:
-        table.add_row(org.slug, str(org.id), stripe_id)
+        table.add_row(org.slug, org.status.value, str(org.id), stripe_id)
     console.print(table)
 
 
@@ -118,13 +121,13 @@ async def reject(
 
     try:
         async with sessionmaker() as session:
-            denied_orgs = await _denied_stripe_orgs(session)
+            target_orgs = await _target_stripe_orgs(session)
             org_repository = OrganizationRepository.from_session(session)
 
             to_reject: list[tuple[Organization, uuid.UUID, str]] = []
             shared: list[tuple[str, list[Organization]]] = []
             seen_accounts: set[uuid.UUID] = set()
-            for org in denied_orgs:
+            for org in target_orgs:
                 account_id = org.payout_account_id
                 assert account_id is not None
                 if account_id in seen_accounts:

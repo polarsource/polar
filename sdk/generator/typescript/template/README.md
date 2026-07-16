@@ -35,3 +35,20 @@ The client uses the production environment by default. To use the sandbox, pass
 
 Keep organization access tokens on the server and never expose them in browser or client-side
 code.
+
+## Individual API Functions
+
+To import individual API functions for tree-shaking, create a core client and pass it to the
+function:
+
+```typescript
+import { createPolarCore } from "@polar-sh/sdk/{{ ir.versions[0].version }}";
+import { getStateExternalCustomers } from "@polar-sh/sdk/{{ ir.versions[0].version }}/services/customers";
+
+const polar = createPolarCore({
+  accessToken: "polar_oat_xxx",
+});
+
+const customerState = await getStateExternalCustomers(polar)("customer_external_id");
+console.log(customerState);
+```

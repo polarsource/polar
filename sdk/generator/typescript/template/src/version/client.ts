@@ -19,8 +19,8 @@ export interface PolarOptions
   baseUrl?: string;
 }
 
-export function createPolar(options: PolarOptions) {
-  const client = new ClientBase({
+export function createPolarCore(options: PolarOptions) {
+  return new ClientBase({
     ...options,
     baseUrl: resolveBaseUrl(
       SERVERS,
@@ -29,6 +29,12 @@ export function createPolar(options: PolarOptions) {
     ),
     version: options.version ?? "{{ api.version }}",
   });
+}
+
+export type PolarCore = ReturnType<typeof createPolarCore>;
+
+export function createPolar(options: PolarOptions) {
+  const client = createPolarCore(options);
 
   return {
     {% for service in api.services %}

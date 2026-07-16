@@ -41,3 +41,4 @@ extend-select = ["I", "UP"]
 
 [tool.uv]
 default-groups = ["dev"]
+exclude-newer = "1 week"

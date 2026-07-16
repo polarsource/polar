@@ -542,6 +542,24 @@ class TestCustomerSubscriptionRevoke:
 
         assert response.status_code == 409
 
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_already_canceled_returns_403(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture, product=product, customer=customer, revoke=True
+        )
+
+        response = await client.post(
+            f"/v1/customer-portal/subscriptions/{subscription.id}/revoke", json={}
+        )
+
+        assert response.status_code == 403
+
 
 @pytest.mark.asyncio
 class TestMemberRoleEnforcementSubscriptionUpdate:

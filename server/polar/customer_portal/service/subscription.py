@@ -21,7 +21,10 @@ from polar.models import (
 )
 from polar.models.subscription import CustomerCancellationReason
 from polar.subscription.schemas import SubscriptionChargePreview
-from polar.subscription.service import SubscriptionUpdateContext
+from polar.subscription.service import (
+    AlreadyCanceledSubscription,
+    SubscriptionUpdateContext,
+)
 from polar.subscription.service import subscription as subscription_service
 
 from ..schemas.subscription import (
@@ -326,6 +329,9 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         reason: CustomerCancellationReason | None = None,
         comment: str | None = None,
     ) -> Subscription:
+        if not subscription.can_cancel(True):
+            raise AlreadyCanceledSubscription(subscription)
+
         preview = await subscription_service.calculate_cancel_preview(
             session, subscription
         )

@@ -28202,6 +28202,11 @@ export interface components {
       capabilities: components['schemas']['OrganizationCapabilities']
       /** @description The user's role on this organization. */
       role: components['schemas']['OrganizationRole']
+      /**
+       * Permissions
+       * @description The permissions the user's role grants on this organization.
+       */
+      permissions: components['schemas']['OrganizationPermission'][]
     }
     /** Pagination */
     Pagination: {

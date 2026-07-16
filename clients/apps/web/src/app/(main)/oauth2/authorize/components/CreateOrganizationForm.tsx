@@ -97,7 +97,7 @@ const CreateOrganizationForm = ({
     await revalidate(`users:${currentUser?.id}:organizations`, { expire: 0 })
     setUserOrganizations((orgs) => [
       ...orgs,
-      { ...organization, role: 'owner' as const },
+      { ...organization, role: 'owner' as const, permissions: [] },
     ])
     onCreated(organization)
   }

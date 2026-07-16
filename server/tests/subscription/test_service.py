@@ -1827,6 +1827,15 @@ class TestCycle:
             OrderBillingReasonInternal.subscription_cycle,
         )
 
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product_second.id,
+            subscription_id=subscription.id,
+            delay=None,
+        )
+
         assert updated_subscription.pending_update is None
 
         subscription_update_repository = SubscriptionUpdateRepository.from_session(
@@ -1905,6 +1914,11 @@ class TestCycle:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
+        )
+
+        assert not any(
+            c.args and c.args[0] == "benefit.enqueue_benefits_grants"
+            for c in enqueue_job_mock.call_args_list
         )
 
         # The scheduled update is soft-deleted, not applied.
@@ -2182,6 +2196,113 @@ class TestCancel:
                 session, subscription, subscription_service
             ) as ctx:
                 await subscription_service.cancel(session, ctx, subscription)
+
+    async def test_past_due_no_grace_cancels_at_period_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+        await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=utc_now(),
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.cancel(session, ctx, subscription)
+
+        assert updated.status == SubscriptionStatus.past_due
+        assert updated.cancel_at_period_end is True
+        void_calls = [
+            call_args
+            for call_args in enqueue_job_mock.call_args_list
+            if call_args[0][0] == "order.void_pending_orders_for_subscription"
+        ]
+        assert len(void_calls) == 0
+
+    async def test_past_due_with_grace_period_cancels_at_period_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        product.organization.subscription_settings = {
+            **product.organization.subscription_settings,
+            "benefit_revocation_grace_period": 7,
+        }
+        await save_fixture(product.organization)
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now() - timedelta(days=8)
+        await save_fixture(subscription)
+        await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=utc_now(),
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.cancel(session, ctx, subscription)
+
+        assert updated.status == SubscriptionStatus.past_due
+        assert updated.cancel_at_period_end is True
+        assert updated.ends_at == subscription.current_period_end
+        void_calls = [
+            call_args
+            for call_args in enqueue_job_mock.call_args_list
+            if call_args[0][0] == "order.void_pending_orders_for_subscription"
+        ]
+        assert len(void_calls) == 0
+
+    async def test_active_cancels_at_period_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.cancel(session, ctx, subscription)
+
+        assert updated.status == SubscriptionStatus.active
+        assert updated.cancel_at_period_end is True
+        void_calls = [
+            call_args
+            for call_args in enqueue_job_mock.call_args_list
+            if call_args[0][0] == "order.void_pending_orders_for_subscription"
+        ]
+        assert len(void_calls) == 0
 
 
 @pytest.mark.asyncio

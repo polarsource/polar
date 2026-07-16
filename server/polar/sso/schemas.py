@@ -2,7 +2,13 @@ from typing import Annotated, Literal
 
 from pydantic import UUID4, Discriminator, Field, StringConstraints
 
-from polar.kit.schemas import HttpsUrl, IDSchema, Schema, TimestampedSchema
+from polar.kit.schemas import (
+    EmptyStrToNone,
+    HttpsUrl,
+    IDSchema,
+    Schema,
+    TimestampedSchema,
+)
 from polar.models.organization_sso_connection import (
     OIDCAuthMethod,
     OrganizationSSOConnectionType,
@@ -66,7 +72,7 @@ class OrganizationSSOConnection(IDSchema, TimestampedSchema):
 
 
 class OrganizationSSOConnectionCreate(Schema):
-    name: NonEmptyStr | None = Field(
+    name: EmptyStrToNone = Field(
         default=None,
         description="Human-friendly label for the connection, shown on the login page.",
     )
@@ -83,7 +89,7 @@ class OrganizationSSOConnectionCreate(Schema):
 
 
 class OrganizationSSOConnectionUpdate(Schema):
-    name: NonEmptyStr | None = Field(
+    name: EmptyStrToNone = Field(
         default=None,
         description="Human-friendly label for the connection, shown on the login page.",
     )

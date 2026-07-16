@@ -1,9 +1,13 @@
 'use client'
 
-import { useUpdateSubscription } from '@/hooks/queries'
+import {
+  useSubscriptionCancelPreview,
+  useUpdateSubscription,
+} from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { Button, InlineModalHeader } from '@polar-sh/orbit'
+import { formatCurrency } from '@polar-sh/currency'
+import { Alert, Button, InlineModalHeader } from '@polar-sh/orbit'
 import {
   Select,
   SelectContent,
@@ -22,7 +26,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
-import { useForm } from 'react-hook-form'
+import { useForm, useWatch } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
 
 const CANCELLATION_REASONS: {
@@ -63,6 +67,12 @@ const CancelSubscriptionModal = ({
   hide,
 }: CancelSubscriptionModalProps) => {
   const cancelSubscription = useUpdateSubscription(subscription.id)
+  const { data: cancelPreview } = useSubscriptionCancelPreview(
+    subscription.id,
+    {
+      enabled: subscription.status === 'past_due',
+    },
+  )
   const form = useForm<SubscriptionCancelForm>({
     defaultValues: {
       cancellation_action: 'cancel_at_period_end',
@@ -71,6 +81,16 @@ const CancelSubscriptionModal = ({
     },
   })
   const { control, handleSubmit, setError, setValue } = form
+  const cancellationAction = useWatch({ control, name: 'cancellation_action' })
+
+  const stopsCollection =
+    subscription.status === 'past_due' &&
+    (cancelPreview?.stops_collection ?? false)
+
+  // The warning only applies to immediate cancellation: ending at period end
+  // keeps collecting the outstanding payment.
+  const showStopsCollectionWarning =
+    stopsCollection && cancellationAction === 'revoke'
 
   const onSubmit = useCallback(
     async (cancellation: SubscriptionCancelForm) => {
@@ -142,6 +162,22 @@ const CancelSubscriptionModal = ({
             onSubmit={handleSubmit(onSubmit)}
           >
             <div className="flex flex-col gap-y-6">
+              {showStopsCollectionWarning && (
+                <Alert
+                  variant="warning"
+                  title="This subscription has a failed payment"
+                  description={
+                    cancelPreview?.outstanding_amount != null
+                      ? `Cancelling now ends it immediately and stops retrying that payment — the outstanding ${formatCurrency(
+                          'standard',
+                        )(
+                          cancelPreview.outstanding_amount,
+                          subscription.currency,
+                        )} won't be collected.`
+                      : 'Cancelling now ends it immediately and stops retrying that payment.'
+                  }
+                />
+              )}
               <FormField
                 control={control}
                 name="cancellation_action"

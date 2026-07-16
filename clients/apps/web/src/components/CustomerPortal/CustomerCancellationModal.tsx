@@ -2,10 +2,14 @@
 
 import revalidate from '@/app/actions'
 import { Modal, ModalProps } from '@polar-sh/orbit'
-import { useCustomerCancelSubscription } from '@/hooks/queries/customerPortal'
+import {
+  useCustomerCancelSubscription,
+  useCustomerRevokeSubscription,
+  useCustomerSubscriptionCancelPreview,
+} from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
-import { isValidationError, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Client, isValidationError, schemas } from '@polar-sh/client'
+import { Alert, Button } from '@polar-sh/orbit'
 import { TextArea } from '@polar-sh/orbit'
 import {
   Form,
@@ -45,16 +49,39 @@ interface CustomerCancellationModalProps extends Omit<
   ModalProps,
   'title' | 'modalContent'
 > {
+  api: Client
   subscription: schemas['CustomerSubscription']
   cancelSubscription: ReturnType<typeof useCustomerCancelSubscription>
 }
 
 const CustomerCancellationModal = ({
+  api,
   subscription,
   cancelSubscription,
   ...props
 }: CustomerCancellationModalProps) => {
   const router = useRouter()
+
+  const { data: cancelPreview } = useCustomerSubscriptionCancelPreview(
+    api,
+    subscription.id,
+    subscription.status === 'past_due',
+  )
+
+  const revokeSubscription = useCustomerRevokeSubscription(api)
+
+  // Past-due with no grace period: cancelling stops collection, so revoke
+  // immediately instead of scheduling a cancellation at period end.
+  const stopsCollection =
+    subscription.status === 'past_due' && !!cancelPreview?.stops_collection
+
+  // Block submission until the preview has loaded successfully. Otherwise a fast
+  // click — or a failed preview request — would fall back to the
+  // cancel-at-period-end path on a subscription that should be revoked, leaving
+  // dunning running.
+  const previewPending = subscription.status === 'past_due' && !cancelPreview
+
+  const isPending = cancelSubscription.isPending || revokeSubscription.isPending
 
   const handleCancel = useCallback(() => {
     props.hide()
@@ -71,10 +98,18 @@ const CustomerCancellationModal = ({
 
   const handleCancellation = useCallback(
     async (cancellation: schemas['CustomerSubscriptionCancel']) => {
-      const { error } = await cancelSubscription.mutateAsync({
-        id: subscription.id,
-        body: cancellation,
-      })
+      const { error } = stopsCollection
+        ? await revokeSubscription.mutateAsync({
+            id: subscription.id,
+            body: {
+              cancellation_reason: cancellation.cancellation_reason,
+              cancellation_comment: cancellation.cancellation_comment,
+            },
+          })
+        : await cancelSubscription.mutateAsync({
+            id: subscription.id,
+            body: cancellation,
+          })
 
       await revalidate(`customer_portal`)
 
@@ -93,7 +128,15 @@ const CustomerCancellationModal = ({
       router.refresh()
       props.hide()
     },
-    [subscription.id, cancelSubscription, setError, props, router],
+    [
+      subscription.id,
+      stopsCollection,
+      cancelSubscription,
+      revokeSubscription,
+      setError,
+      props,
+      router,
+    ],
   )
 
   const onReasonSelect = (value: schemas['CustomerCancellationReason']) => {
@@ -114,6 +157,14 @@ const CustomerCancellationModal = ({
               leaving to help us improve our product.
             </p>
           </div>
+          {subscription.status === 'past_due' &&
+            cancelPreview?.stops_collection && (
+              <Alert
+                variant="warning"
+                title="Your latest payment didn't go through"
+                description="Cancelling now ends your subscription immediately and stops any further payment attempts."
+              />
+            )}
           <Form {...form}>
             <form onSubmit={handleSubmit(handleCancellation)}>
               <FormField
@@ -184,10 +235,10 @@ const CustomerCancellationModal = ({
                 <Button
                   type="submit"
                   variant="destructive"
-                  loading={cancelSubscription.isPending}
-                  disabled={cancelSubscription.isPending}
+                  loading={isPending}
+                  disabled={isPending || previewPending}
                 >
-                  Cancel Subscription
+                  {stopsCollection ? 'Cancel now' : 'Cancel Subscription'}
                 </Button>
                 <Button variant="ghost" onClick={handleCancel}>
                   I&apos;ve changed my mind

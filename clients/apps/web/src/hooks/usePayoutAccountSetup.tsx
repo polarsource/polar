@@ -63,6 +63,7 @@ export const usePayoutAccountSetup = (
           <AccountCreateModal
             forOrganizationId={organization.id}
             returnPath={returnPath}
+            defaultCountry={organization.country}
           />
         }
       />

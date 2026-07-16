@@ -16,7 +16,7 @@ from pydantic import (
 from pydantic.json_schema import SkipJsonSchema
 from pydantic.networks import HttpUrl
 
-from polar.auth.permission import OrganizationPermission
+from polar.auth.permission import ROLE_PERMISSIONS, OrganizationPermission
 from polar.config import settings
 from polar.enums import SubscriptionProrationBehavior, TaxBehaviorOption
 from polar.kit.address import CountryAlpha2, CountryAlpha2Input
@@ -332,7 +332,7 @@ def _merge_customer_email_settings_defaults(value: Any) -> Any:
     """Complete stored settings with defaults so reads tolerate keys added after
     an organization's settings were last written (lazy materialization)."""
     if isinstance(value, dict):
-        return {**_default_customer_email_settings, **value}
+        return {**_default_customer_email_settings(), **value}
     return value
 
 
@@ -500,6 +500,9 @@ class OrganizationWithRole(Organization):
     includes the user's role on the organization."""
 
     role: OrganizationRole = Field(description="The user's role on this organization.")
+    permissions: list[OrganizationPermission] = Field(
+        description="The permissions the user's role grants on this organization."
+    )
 
     @classmethod
     def from_organization(
@@ -507,7 +510,11 @@ class OrganizationWithRole(Organization):
     ) -> "OrganizationWithRole":
         """Build from a SQLAlchemy `Organization` plus the user's role."""
         return cls.model_validate(
-            {**Organization.model_validate(organization).model_dump(), "role": role}
+            {
+                **Organization.model_validate(organization).model_dump(),
+                "role": role,
+                "permissions": sorted(ROLE_PERMISSIONS[role]),
+            }
         )
 
 

@@ -328,6 +328,23 @@ export const useCustomerSubscriptionChargePreview = (
     enabled,
   })
 
+export const useCustomerSubscriptionCancelPreview = (
+  api: Client,
+  id: string,
+  enabled = true,
+) =>
+  useQuery({
+    queryKey: ['customer_subscription_cancel_preview', { id }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/subscriptions/{id}/cancel-preview', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled,
+  })
+
 export const useCustomerUpdateSubscription = (api: Client) =>
   useMutation({
     mutationFn: (variables: {
@@ -362,6 +379,30 @@ export const useCustomerCancelSubscription = (api: Client) =>
       body: schemas['CustomerSubscriptionCancel']
     }) =>
       api.PATCH('/v1/customer-portal/subscriptions/{id}', {
+        params: { path: { id: variables.id } },
+        body: variables.body,
+      }),
+    onSuccess: (result) => {
+      if (result.error) {
+        return
+      }
+      const queryClient = getQueryClient()
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscriptions'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_charge_preview'],
+      })
+    },
+  })
+
+export const useCustomerRevokeSubscription = (api: Client) =>
+  useMutation({
+    mutationFn: (variables: {
+      id: string
+      body: schemas['CustomerSubscriptionRevoke']
+    }) =>
+      api.POST('/v1/customer-portal/subscriptions/{id}/revoke', {
         params: { path: { id: variables.id } },
         body: variables.body,
       }),

@@ -155,6 +155,15 @@ class CustomerSubscriptionCancel(Schema):
     )
 
 
+class CustomerSubscriptionRevoke(Schema):
+    cancellation_reason: CustomerCancellationReason | None = Field(
+        None, description="Customer's reason for cancellation."
+    )
+    cancellation_comment: str | None = Field(
+        None, description="Customer feedback and why they decided to cancel."
+    )
+
+
 class CustomerSubscriptionPause(Schema):
     pause_at_period_end: bool = Field(
         description=inspect.cleandoc(

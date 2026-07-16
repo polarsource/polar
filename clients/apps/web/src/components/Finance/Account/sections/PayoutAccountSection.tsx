@@ -1,11 +1,14 @@
 'use client'
 
+import { toast } from '@/components/Toast/use-toast'
 import { useOrganization } from '@/hooks/queries'
 import { usePayoutAccountSetup } from '@/hooks/usePayoutAccountSetup'
+import { api } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import { ArrowRight, BanknoteIcon, CheckIcon } from 'lucide-react'
+import { useCallback, useState } from 'react'
 import { PathCardBanner } from './PathCardBanner'
 import { StatusBlock } from './StatusBlock'
 
@@ -20,7 +23,11 @@ export const PayoutAccountSection = ({
   step,
   reasonItems,
 }: Props) => {
-  const tone = step.status === 'failed' ? 'danger' : 'warning'
+  const requirementsDue = (step.reasons ?? []).includes(
+    'payout_account.requirements_due',
+  )
+  const tone =
+    step.status === 'failed' && !requirementsDue ? 'danger' : 'warning'
   const banners = reasonItems.length > 0 && (
     <Box flexDirection="column" rowGap="m">
       {reasonItems.map((reason) => (
@@ -33,11 +40,34 @@ export const PayoutAccountSection = ({
     true,
     initialOrg,
   )
+  const returnPath = `/dashboard/${organization.slug}/finance/account`
   const { payoutAccount, openManage, openPrimary, modals } =
-    usePayoutAccountSetup(
-      organization,
-      `/dashboard/${organization.slug}/finance/account`,
+    usePayoutAccountSetup(organization, returnPath)
+
+  const [resumeLoading, setResumeLoading] = useState(false)
+  const resumeOnboarding = useCallback(async () => {
+    if (!payoutAccount) return
+    setResumeLoading(true)
+    const { data, error } = await api.POST(
+      '/v1/payout-accounts/{id}/onboarding-link',
+      {
+        params: {
+          path: { id: payoutAccount.id },
+          query: { return_path: returnPath },
+        },
+      },
     )
+    if (error || !data) {
+      setResumeLoading(false)
+      toast({
+        title: 'Could not resume payout setup',
+        description: 'Please try again from Manage payout accounts.',
+      })
+      openManage()
+      return
+    }
+    window.location.href = data.url
+  }, [payoutAccount, returnPath, openManage])
 
   const isStripeAccount = payoutAccount?.type === 'stripe'
   const isManualAccount = payoutAccount && !isStripeAccount
@@ -84,10 +114,22 @@ export const PayoutAccountSection = ({
               : 'Your Stripe payout account is connected but onboarding isn’t complete yet.'
           }
           action={
-            <Button onClick={openManage}>
-              Manage payout accounts
-              <ArrowRight className="ml-2 h-4 w-4" />
-            </Button>
+            ready ? (
+              <Button onClick={openManage}>
+                Manage payout accounts
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </Button>
+            ) : (
+              <Box flexDirection="column" alignItems="center" rowGap="s">
+                <Button onClick={resumeOnboarding} loading={resumeLoading}>
+                  Finish payout setup
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={openManage}>
+                  Manage payout accounts
+                </Button>
+              </Box>
+            )
           }
         />
         {modals}

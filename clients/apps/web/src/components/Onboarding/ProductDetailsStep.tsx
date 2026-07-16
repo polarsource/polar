@@ -185,7 +185,7 @@ export function ProductDetailsStep() {
 
     setUserOrganizations((previous) => [
       ...previous,
-      { ...organization, role: 'owner' as const },
+      { ...organization, role: 'owner' as const, permissions: [] },
     ])
     updateData({
       organizationId: organization.id,

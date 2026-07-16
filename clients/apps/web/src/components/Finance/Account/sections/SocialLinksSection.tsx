@@ -5,7 +5,6 @@ import { toast } from '@/components/Toast/use-toast'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganization, useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { getQueryClient } from '@/utils/api/query'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
@@ -62,16 +61,13 @@ export const SocialLinksSection = ({ organization: initialOrg }: Props) => {
     }
 
     reset({ socials: data.socials ?? [] })
-    getQueryClient().invalidateQueries({
-      queryKey: ['organizationReviewState', organization.id],
-    })
   }
 
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <SectionLayout
-          description="Link your personal public profiles for additional identity verification. We won't display or share them."
+          description="Linking a public profile (X, GitHub, LinkedIn) can speed up your review. Only visible to our review team."
           footerEnd={
             <Button
               type="submit"

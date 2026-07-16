@@ -29,6 +29,7 @@ from polar.auth.exceptions import (
 from polar.auth.oauth2.github import get_github_factor
 from polar.auth.oauth2.google import get_google_factor
 from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWriteFresh
+from polar.config import settings
 from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.models import UserSession as UserSession
 from polar.openapi import APITag
@@ -69,6 +70,10 @@ from .schemas import (
 )
 from .service import auth as auth_service
 from .sso.endpoints import router as sso_login_router
+
+TOTP_ISSUER = (
+    "Polar" if settings.is_production() else f"Polar {settings.ENV.value.capitalize()}"
+)
 
 router = APIRouter(prefix="/auth", tags=["auth", APITag.private])
 router.include_router(
@@ -272,7 +277,7 @@ async def totp_enroll(
         algorithm=enrollment.algorithm,
         digits=enrollment.code_length,
         period=enrollment.time_step,
-        provisioning_uri=enrollment.get_provisioning_uri(user.email, "Polar"),
+        provisioning_uri=enrollment.get_provisioning_uri(user.email, TOTP_ISSUER),
     )
 
 

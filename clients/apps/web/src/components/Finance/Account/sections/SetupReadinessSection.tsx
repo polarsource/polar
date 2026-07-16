@@ -200,6 +200,7 @@ export const SetupReadinessSection = ({ organization, step }: Props) => {
               hideCreateCheckoutLinkModal()
               invalidateReviewState()
             }}
+            hide={hideCreateCheckoutLinkModal}
           />
         }
       />

@@ -299,6 +299,9 @@ async def cancel(
     return await customer_subscription_service.cancel(session, subscription)
 
 
+# TODO(api-vNext): fold this into DELETE /{id} as a hard-revoke to mirror the
+# merchant API. Kept as a separate private endpoint for now because the public
+# DELETE cancels at period end and has external usage we can't break mid-version.
 @router.post(
     "/{id}/revoke",
     summary="Revoke Subscription",

@@ -1827,6 +1827,15 @@ class TestCycle:
             OrderBillingReasonInternal.subscription_cycle,
         )
 
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="grant",
+            customer_id=customer.id,
+            product_id=product_second.id,
+            subscription_id=subscription.id,
+            delay=None,
+        )
+
         assert updated_subscription.pending_update is None
 
         subscription_update_repository = SubscriptionUpdateRepository.from_session(
@@ -1905,6 +1914,11 @@ class TestCycle:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
+        )
+
+        assert not any(
+            c.args and c.args[0] == "benefit.enqueue_benefits_grants"
+            for c in enqueue_job_mock.call_args_list
         )
 
         # The scheduled update is soft-deleted, not applied.

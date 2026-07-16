@@ -21,7 +21,10 @@ from polar.models import (
 )
 from polar.models.subscription import CustomerCancellationReason
 from polar.subscription.schemas import SubscriptionChargePreview
-from polar.subscription.service import SubscriptionUpdateContext
+from polar.subscription.service import (
+    AlreadyCanceledSubscription,
+    SubscriptionUpdateContext,
+)
 from polar.subscription.service import subscription as subscription_service
 
 from ..schemas.subscription import (
@@ -53,6 +56,15 @@ class UpdateSubscriptionSeatsNotAllowed(CustomerSubscriptionError):
 class PauseResumeNotAllowed(CustomerSubscriptionError):
     def __init__(self) -> None:
         super().__init__("Pausing or resuming a subscription is not allowed.", 403)
+
+
+class RevokeNotAllowed(CustomerSubscriptionError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This subscription can only be revoked while it is past-due "
+            "with no benefit grace period.",
+            409,
+        )
 
 
 class CustomerSubscriptionSortProperty(StrEnum):
@@ -302,6 +314,34 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             session, subscription, subscription_service
         ) as ctx:
             return await subscription_service.cancel(
+                session,
+                ctx,
+                subscription,
+                customer_reason=reason,
+                customer_comment=comment,
+            )
+
+    async def revoke(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        reason: CustomerCancellationReason | None = None,
+        comment: str | None = None,
+    ) -> Subscription:
+        if not subscription.can_cancel(True):
+            raise AlreadyCanceledSubscription(subscription)
+
+        preview = await subscription_service.calculate_cancel_preview(
+            session, subscription
+        )
+        if not preview.stops_collection:
+            raise RevokeNotAllowed()
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            return await subscription_service.revoke(
                 session,
                 ctx,
                 subscription,

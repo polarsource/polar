@@ -2347,13 +2347,16 @@ class TestBackfillBenefitGrantsDuplicates:
         )
         await save_fixture(owner_member)
 
+        old_license_key_id = str(uuid.uuid4())
+        new_license_key_id = str(uuid.uuid4())
+
         # Old grant with old properties
         old_grant = await create_benefit_grant(
             save_fixture,
             customer=customer,
             benefit=benefit,
             granted=False,
-            properties={"license_key_id": "old-key"},
+            properties={"license_key_id": old_license_key_id},
             subscription=subscription,
         )
 
@@ -2364,7 +2367,7 @@ class TestBackfillBenefitGrantsDuplicates:
             benefit=benefit,
             granted=True,
             member=owner_member,
-            properties={"license_key_id": "new-key"},
+            properties={"license_key_id": new_license_key_id},
             subscription=subscription,
         )
 
@@ -2379,7 +2382,7 @@ class TestBackfillBenefitGrantsDuplicates:
         # New grant keeps its own properties (not overwritten)
         refreshed_new = await session.get(BenefitGrant, new_grant.id)
         assert refreshed_new is not None
-        assert dict(refreshed_new.properties) == {"license_key_id": "new-key"}
+        assert dict(refreshed_new.properties) == {"license_key_id": new_license_key_id}
 
     async def test_keeps_both_order_scoped_grants(
         self,

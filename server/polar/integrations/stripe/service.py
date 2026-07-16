@@ -1,5 +1,6 @@
+import json
 from collections.abc import AsyncGenerator, AsyncIterator
-from typing import TYPE_CHECKING, Literal, Unpack, cast, overload
+from typing import TYPE_CHECKING, Any, Literal, Unpack, cast, overload
 from urllib.parse import urlencode
 
 import stripe as stripe_lib
@@ -52,6 +53,12 @@ stripe_lib.api_version = "2026-01-28.clover"
 stripe_http_client = stripe_lib.HTTPXClient(allow_sync_methods=True)
 instrument_httpx(stripe_http_client._client_async)
 stripe_lib.default_http_client = stripe_http_client
+
+# Radar for Platforms account risk signals live behind this preview version.
+STRIPE_ACCOUNT_RISK_API_VERSION = "2026-03-25.preview"
+stripe_client = stripe_lib.StripeClient(
+    settings.STRIPE_SECRET_KEY, http_client=stripe_http_client
+)
 
 log: Logger = structlog.get_logger()
 
@@ -596,6 +603,30 @@ class StripeService:
 
     async def get_tax_rate(self, id: str) -> stripe_lib.TaxRate:
         return await stripe_lib.TaxRate.retrieve_async(id)
+
+    async def create_website_risk_evaluation(self, account_id: str) -> dict[str, Any]:
+        """Ask Stripe to evaluate a connected account's website for fraud.
+
+        Result arrives asynchronously as a fraudulent_website_ready event.
+        Uses raw_request because the endpoint is preview-only (no typed SDK).
+        """
+        response = await stripe_client.raw_request_async(
+            "post",
+            "/v2/core/account_evaluations",
+            account=account_id,
+            signals=["fraudulent_website"],
+            stripe_version=STRIPE_ACCOUNT_RISK_API_VERSION,
+        )
+        return cast(dict[str, Any], json.loads(response.body))
+
+    async def get_account_risk_event(self, event_id: str) -> dict[str, Any]:
+        """Fetch the full risk-signal event by id (thin events carry no data)."""
+        response = await stripe_client.raw_request_async(
+            "get",
+            f"/v2/core/events/{event_id}",
+            stripe_version=STRIPE_ACCOUNT_RISK_API_VERSION,
+        )
+        return cast(dict[str, Any], json.loads(response.body))
 
 
 stripe = StripeService()

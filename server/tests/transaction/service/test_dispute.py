@@ -162,20 +162,23 @@ class TestCreateDispute:
 
         # Pre-check ran before the racing insert was visible, so the unique
         # index must turn it into the domain error, not a leaking IntegrityError.
-        await create_transaction(
+        existing_transaction = await create_transaction(
             save_fixture, type=TransactionType.dispute, dispute=dispute
         )
         mocker.patch.object(
             DisputeTransactionRepository,
             "get_by_dispute_id",
             new_callable=AsyncMock,
-            return_value=None,
+            side_effect=[None, existing_transaction],
         )
 
         with pytest.raises(DisputeTransactionAlreadyExistsError):
             await dispute_transaction_service.create_dispute(session, dispute=dispute)
 
         create_dispute_fees_mock.assert_not_awaited()
+
+        # The savepoint must keep the outer transaction usable for the caller.
+        await session.flush()
 
     async def test_valid_lost(
         self,

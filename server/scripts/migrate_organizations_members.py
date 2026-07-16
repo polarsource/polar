@@ -910,12 +910,12 @@ async def backfill_benefit_records(
         return
 
     lk_updated = await run_batched_update(
-        license_key_member_backfill_statement(batched=True)
+        license_key_member_backfill_statement(member_model_only=True, batched=True)
     )
     typer.echo(f"License keys updated: {lk_updated}")
 
     dl_updated = await run_batched_update(
-        downloadable_member_backfill_statement(batched=True)
+        downloadable_member_backfill_statement(member_model_only=True, batched=True)
     )
     typer.echo(f"Downloadables updated: {dl_updated}")
 

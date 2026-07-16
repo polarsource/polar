@@ -2,6 +2,7 @@ from uuid import UUID
 
 from sqlalchemy import (
     ColumnElement,
+    Select,
     Subquery,
     Update,
     Uuid,
@@ -12,7 +13,13 @@ from sqlalchemy import (
     update,
 )
 
-from polar.models import Benefit, BenefitGrant, Downloadable, LicenseKey
+from polar.models import Benefit, BenefitGrant, Downloadable, LicenseKey, Organization
+
+
+def _member_model_org_ids() -> Select[tuple[UUID]]:
+    return select(Organization.id).where(
+        Organization.feature_settings["member_model_enabled"].as_boolean().is_(True)
+    )
 
 
 def _license_key_grants() -> Subquery:
@@ -56,6 +63,7 @@ def _downloadable_grants() -> Subquery:
 def license_key_member_backfill_statement(
     organization_id: UUID | None = None,
     *,
+    member_model_only: bool = False,
     batched: bool = False,
 ) -> Update:
     value_grants = _license_key_grants()
@@ -67,6 +75,8 @@ def license_key_member_backfill_statement(
     ]
     if organization_id is not None:
         conditions.append(LicenseKey.organization_id == organization_id)
+    elif member_model_only:
+        conditions.append(LicenseKey.organization_id.in_(_member_model_org_ids()))
 
     target = (
         select(LicenseKey.id)
@@ -94,6 +104,7 @@ def license_key_member_backfill_statement(
 def downloadable_member_backfill_statement(
     organization_id: UUID | None = None,
     *,
+    member_model_only: bool = False,
     batched: bool = False,
 ) -> Update:
     value_grants = _downloadable_grants()
@@ -107,6 +118,14 @@ def downloadable_member_backfill_statement(
         conditions.append(
             Downloadable.benefit_id.in_(
                 select(Benefit.id).where(Benefit.organization_id == organization_id)
+            )
+        )
+    elif member_model_only:
+        conditions.append(
+            Downloadable.benefit_id.in_(
+                select(Benefit.id).where(
+                    Benefit.organization_id.in_(_member_model_org_ids())
+                )
             )
         )
 

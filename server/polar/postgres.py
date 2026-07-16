@@ -95,6 +95,13 @@ async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession]:
         yield session
     except:
         await session.rollback()
+        # Import deferred to avoid circular dependency with polar.worker
+        from polar.worker import JobQueueManager
+
+        # Jobs enqueued during the request reference state that was just
+        # rolled back; discard them so they aren't flushed if the exception
+        # is converted into an error response by an exception handler.
+        JobQueueManager.get().reset()
         raise
     else:
         await session.commit()

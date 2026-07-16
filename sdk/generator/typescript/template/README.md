@@ -43,11 +43,12 @@ function:
 
 ```typescript
 import { createPolarCore } from "@polar-sh/sdk/{{ ir.versions[0].version }}";
-import { listProducts } from "@polar-sh/sdk/{{ ir.versions[0].version }}/services/products";
+import { getStateExternalCustomers } from "@polar-sh/sdk/{{ ir.versions[0].version }}/services/customers";
 
 const polar = createPolarCore({
   accessToken: "polar_oat_xxx",
 });
 
-const products = await listProducts(polar)({ limit: 10 });
+const customerState = await getStateExternalCustomers(polar)("customer_external_id");
+console.log(customerState);
 ```

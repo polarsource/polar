@@ -25,7 +25,7 @@ class SubscriptionPause(RecordModel):
             "ix_subscription_pauses_open_pause",
             "subscription_id",
             unique=True,
-            postgresql_where="ended_at IS NULL",
+            postgresql_where="ended_at IS NULL AND deleted_at IS NULL",
         ),
     )
 

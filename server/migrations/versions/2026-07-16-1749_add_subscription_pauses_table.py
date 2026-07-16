@@ -56,7 +56,7 @@ def upgrade() -> None:
         "subscription_pauses",
         ["subscription_id"],
         unique=True,
-        postgresql_where="ended_at IS NULL",
+        postgresql_where="ended_at IS NULL AND deleted_at IS NULL",
     )
     op.create_index(
         op.f("ix_subscription_pauses_subscription_id"),
@@ -77,7 +77,7 @@ def downgrade() -> None:
     op.drop_index(
         "ix_subscription_pauses_open_pause",
         table_name="subscription_pauses",
-        postgresql_where="ended_at IS NULL",
+        postgresql_where="ended_at IS NULL AND deleted_at IS NULL",
     )
     op.drop_index(
         op.f("ix_subscription_pauses_deleted_at"), table_name="subscription_pauses"

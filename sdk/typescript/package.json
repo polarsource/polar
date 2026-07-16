@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/sdk",
-  "version": "1.0.0-alpha.10",
+  "version": "1.0.0-alpha.11",
   "description": "Polar SDK — A billing platform for the intelligence era",
   "keywords": [
     "api",
@@ -17,7 +17,8 @@
   },
   "files": [
     "dist",
-    "README.md"
+    "README.md",
+    "LICENSE"
   ],
   "type": "module",
   "sideEffects": false,
@@ -54,14 +55,14 @@
         "default": "./dist/2026-04/services/*.cjs"
       }
     },
-    "./2026-04/services/customer_portal": {
+    "./2026-04/services/oauth2": {
       "import": {
-        "types": "./dist/2026-04/services/customer_portal/index.d.mts",
-        "default": "./dist/2026-04/services/customer_portal/index.mjs"
+        "types": "./dist/2026-04/services/oauth2/index.d.mts",
+        "default": "./dist/2026-04/services/oauth2/index.mjs"
       },
       "require": {
-        "types": "./dist/2026-04/services/customer_portal/index.d.cts",
-        "default": "./dist/2026-04/services/customer_portal/index.cjs"
+        "types": "./dist/2026-04/services/oauth2/index.d.cts",
+        "default": "./dist/2026-04/services/oauth2/index.cjs"
       }
     },
     "./2026-04/services/customers": {
@@ -74,14 +75,14 @@
         "default": "./dist/2026-04/services/customers/index.cjs"
       }
     },
-    "./2026-04/services/oauth2": {
+    "./2026-04/services/customer_portal": {
       "import": {
-        "types": "./dist/2026-04/services/oauth2/index.d.mts",
-        "default": "./dist/2026-04/services/oauth2/index.mjs"
+        "types": "./dist/2026-04/services/customer_portal/index.d.mts",
+        "default": "./dist/2026-04/services/customer_portal/index.mjs"
       },
       "require": {
-        "types": "./dist/2026-04/services/oauth2/index.d.cts",
-        "default": "./dist/2026-04/services/oauth2/index.cjs"
+        "types": "./dist/2026-04/services/customer_portal/index.d.cts",
+        "default": "./dist/2026-04/services/customer_portal/index.cjs"
       }
     }
   },

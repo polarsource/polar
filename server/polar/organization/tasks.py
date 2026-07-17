@@ -1,6 +1,7 @@
 import uuid
 from typing import Any, cast
 
+import stripe as stripe_lib
 import structlog
 from sqlalchemy import CursorResult, select
 from sqlalchemy.orm import joinedload
@@ -1208,12 +1209,30 @@ async def _prepare_benefit_grants(
 async def evaluate_website_risk(organization_id: uuid.UUID) -> None:
     # Gate the whole feature on the receiving side being configured.
     if not settings.STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET:
+        log.info(
+            "organization.evaluate_website_risk.skipped",
+            reason="webhook_secret_not_configured",
+            organization_id=str(organization_id),
+        )
         return
 
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
         organization = await repository.get_by_id(organization_id)
         if organization is None or organization.payout_account_id is None:
+            log.info(
+                "organization.evaluate_website_risk.skipped",
+                reason="no_payout_account",
+                organization_id=str(organization_id),
+            )
+            return
+
+        if not organization.website:
+            log.info(
+                "organization.evaluate_website_risk.skipped",
+                reason="no_website",
+                organization_id=str(organization_id),
+            )
             return
 
         payout_account_repository = PayoutAccountRepository.from_session(session)
@@ -1221,6 +1240,27 @@ async def evaluate_website_risk(organization_id: uuid.UUID) -> None:
             organization.payout_account_id
         )
         if payout_account is None or payout_account.stripe_id is None:
+            log.info(
+                "organization.evaluate_website_risk.skipped",
+                reason="no_stripe_account",
+                organization_id=str(organization_id),
+            )
             return
 
-        await stripe_service.create_website_risk_evaluation(payout_account.stripe_id)
+        # Stripe evaluates the website attached to the account, so sync it first.
+        await stripe_service.update_account_website(
+            payout_account.stripe_id, organization.website
+        )
+        try:
+            await stripe_service.create_website_risk_evaluation(
+                payout_account.stripe_id
+            )
+        except stripe_lib.InvalidRequestError as e:
+            # Deterministic rejection (e.g. account still missing required
+            # fields): retrying can't succeed, so log instead of raising.
+            log.warning(
+                "organization.evaluate_website_risk.rejected",
+                organization_id=str(organization_id),
+                stripe_account_id=payout_account.stripe_id,
+                error=str(e),
+            )

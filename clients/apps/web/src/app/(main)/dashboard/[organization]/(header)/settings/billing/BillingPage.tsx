@@ -1,6 +1,5 @@
 'use client'
 
-import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
@@ -16,7 +15,6 @@ import { StartupProgramCallout } from '@/components/Settings/Billing/StartupProg
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { toast } from '@/components/Toast/use-toast'
-import { useHasPermission } from '@/hooks/permissions'
 import { usePostHog } from '@/hooks/posthog'
 import { useBillingPlanCompleteListener } from '@/hooks/useBillingPlanTelemetry'
 import {
@@ -46,15 +44,9 @@ export default function BillingPage({
   const theme = useTheme()
   const posthog = usePostHog()
 
-  const canManageBilling = useHasPermission(
-    organization.id,
-    'organization:manage',
-  )
-  const gatedOrgId = canManageBilling ? organization.id : undefined
-
-  const subscriptionQuery = useOrganizationSubscription(gatedOrgId)
-  const plansQuery = useOrganizationPlans(gatedOrgId)
-  const ordersQuery = useOrganizationOrders(gatedOrgId)
+  const subscriptionQuery = useOrganizationSubscription(organization.id)
+  const plansQuery = useOrganizationPlans(organization.id)
+  const ordersQuery = useOrganizationOrders(organization.id)
 
   const customerSessionQuery = useOrganizationCustomerSession(organization.id)
 
@@ -118,17 +110,6 @@ export default function BillingPage({
       current_plan_product_id: subscriptionQuery.data?.product_id ?? null,
     })
     router.push(`/dashboard/${organization.slug}/settings/billing/change-plan`)
-  }
-
-  if (canManageBilling === false) {
-    return (
-      <DashboardBody
-        wrapperClassName="max-w-(--breakpoint-md)!"
-        title="Billing"
-      >
-        <AccessRestricted message="You don't have permission to manage billing for this organization. Ask an admin if you need access." />
-      </DashboardBody>
-    )
   }
 
   if (CONFIG.IS_SANDBOX) {

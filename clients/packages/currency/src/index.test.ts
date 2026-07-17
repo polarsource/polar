@@ -160,6 +160,24 @@ describe('formatCurrency', () => {
         '¥123.46M',
       )
     })
+
+    it('should apply the same thresholds to negative values', () => {
+      expect(formatCurrency('statistics', 'en-US')(-12345, 'usd')).toEqual(
+        '-$123.45',
+      )
+      expect(formatCurrency('statistics', 'en-US')(-1234500, 'usd')).toEqual(
+        '-$12,345',
+      )
+      expect(formatCurrency('statistics', 'en-US')(-12345678, 'usd')).toEqual(
+        '-$123,456',
+      )
+      expect(formatCurrency('statistics', 'en-US')(-123456700, 'usd')).toEqual(
+        '-$1.235M',
+      )
+      expect(formatCurrency('statistics', 'en-US')(-12345678900, 'usd')).toEqual(
+        '-$123.46M',
+      )
+    })
   })
 
   describe('Subcent mode', () => {

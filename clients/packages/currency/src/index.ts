@@ -128,7 +128,7 @@ const formatCurrencyStatistics = (
   const displayValue = cents / decimalFactor
 
   // >= $1M: compact notation with multipliers
-  if (displayValue >= 1_000_000) {
+  if (Math.abs(displayValue) >= 1_000_000) {
     return new Intl.NumberFormat(locales, {
       style: 'currency',
       currency,
@@ -142,7 +142,7 @@ const formatCurrencyStatistics = (
   }
 
   // $10K–$999K: no decimals, truncated
-  if (displayValue >= 10_000) {
+  if (Math.abs(displayValue) >= 10_000) {
     return new Intl.NumberFormat(locales, {
       style: 'currency',
       currency,

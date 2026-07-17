@@ -2610,6 +2610,7 @@ async def create_dispute(
         evidence_due_by=evidence_due_by,
         past_due=past_due,
         order=order,
+        organization_id=order.organization_id,
         payment=payment,
     )
     await save_fixture(dispute)

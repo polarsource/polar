@@ -14,11 +14,11 @@ When you pick a date range, Polar splits it into equal-width **intervals** — o
 
 ## Subscriptions
 
-- **Monthly Recurring Revenue (MRR)** — Sum of every active subscription's amount, normalized to a monthly rate (yearly plans are divided by 12). Trialing subscriptions are excluded.
-- **Committed MRR** — MRR restricted to subscriptions still inside a committed billing period. Subscriptions that have been canceled but are running out the clock until period end are excluded.
+- **Monthly Recurring Revenue (MRR)** — Sum of every ongoing subscription's amount, normalized to a monthly rate (yearly plans are divided by 12). Trialing subscriptions are excluded. Paused and past-due subscriptions are included: a subscriber counts towards MRR until their subscription actually ends.
+- **Committed MRR** — MRR restricted to subscriptions still inside a committed billing period. Subscriptions that have been canceled but are running out the clock until period end are excluded. As with MRR, paused and past-due subscriptions are included.
 - **Trial MRR Including Canceled Trials** — Monthly-normalized amount of every subscription currently in a trial, including trials that have already been canceled.
 - **Trial Committed MRR** — Trial MRR for trials still inside their committed billing period (i.e. canceled trials are excluded).
-- **Active Subscriptions** — Count of subscriptions in the `active` state at the end of each interval. Subscriptions stay active until the end of the period they paid for, even after cancellation.
+- **Active Subscriptions** — Count of ongoing subscriptions at the end of each interval, based on when each subscription started and ended rather than its current status. A subscription counts until it actually ends: those that have been canceled but are running out the clock until period end, as well as paused and past-due subscriptions, are all still included.
 - **New Subscriptions** — Subscriptions whose first paid order falls inside the interval. Each subscription is counted once, at creation.
 - **Committed Subscriptions** — Active subscriptions that have not been canceled, or whose cancellation date is after the interval. These are the subscriptions you can reasonably expect to renew.
 - **Renewed Subscriptions** — Number of orders with billing reason `subscription_cycle` in the interval — i.e. renewals on existing subscriptions.

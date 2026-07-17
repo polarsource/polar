@@ -5,8 +5,8 @@ import {
 } from '@/components/Chat/types'
 import { Upload } from '@/components/FileUpload/Upload'
 import {
+  EXTENSION_TO_MIME,
   getFileMimeType,
-  getMimeTypeFromFileName,
 } from '@/components/FileUpload/mimeType'
 import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
@@ -29,23 +29,9 @@ const ACCEPTED_MIME_TYPES = [
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
 ]
 
-const ACCEPTED_EXTENSIONS = [
-  'pdf',
-  'jpg',
-  'jpeg',
-  'png',
-  'gif',
-  'webp',
-  'mp4',
-  'mov',
-  'webm',
-  'csv',
-  'txt',
-  'doc',
-  'docx',
-  'xls',
-  'xlsx',
-]
+const ACCEPTED_EXTENSIONS = Object.entries(EXTENSION_TO_MIME)
+  .filter(([, mimeType]) => ACCEPTED_MIME_TYPES.includes(mimeType))
+  .map(([extension]) => `.${extension}`)
 
 const isAcceptedFile = (file: File): boolean =>
   ACCEPTED_MIME_TYPES.includes(getFileMimeType(file))
@@ -53,14 +39,7 @@ const isAcceptedFile = (file: File): boolean =>
 export const supportCaseUploader = (
   organization: schemas['Organization'],
 ): ChatUploader => ({
-  accept: [
-    ...ACCEPTED_MIME_TYPES,
-    ...ACCEPTED_EXTENSIONS.filter((extension) =>
-      ACCEPTED_MIME_TYPES.includes(
-        getMimeTypeFromFileName(`file.${extension}`) ?? '',
-      ),
-    ).map((extension) => `.${extension}`),
-  ].join(','),
+  accept: [...ACCEPTED_MIME_TYPES, ...ACCEPTED_EXTENSIONS].join(','),
   isAccepted: isAcceptedFile,
   maxFileSize: 250 * 1024 * 1024,
   maxFiles: 10,

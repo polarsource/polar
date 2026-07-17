@@ -1,4 +1,4 @@
-const EXTENSION_TO_MIME: Record<string, string> = {
+export const EXTENSION_TO_MIME: Record<string, string> = {
   csv: 'text/csv',
   doc: 'application/msword',
   docx: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',

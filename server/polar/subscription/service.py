@@ -92,7 +92,7 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
-from polar.order.amounts import compute_order_amounts
+from polar.order.amounts import apply_wallet_balance, compute_order_amounts
 from polar.order.repository import OrderRepository
 from polar.organization.repository import (
     SUBSCRIPTION_CANCELLATION_STATUSES,
@@ -107,6 +107,7 @@ from polar.product.guard import (
 from polar.product.price_set import NoPricesForCurrencies, PriceSet
 from polar.product.repository import ProductRepository
 from polar.product.service import product as product_service
+from polar.wallet.service import wallet as wallet_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
@@ -2318,6 +2319,9 @@ class SubscriptionService:
             reference=str(subscription.id),
             discount=applicable_discount,
         )
+        applied_balance_amount, due_amount = await self._preview_due_amount(
+            session, subscription, amounts.total_amount
+        )
 
         return SubscriptionChargePreview(
             base_amount=base_price,
@@ -2329,6 +2333,8 @@ class SubscriptionService:
             net_amount=amounts.net_amount,
             tax_amount=amounts.tax_amount,
             total_amount=amounts.total_amount,
+            applied_balance_amount=applied_balance_amount,
+            due_amount=due_amount,
         )
 
     async def calculate_cancel_preview(
@@ -2446,6 +2452,7 @@ class SubscriptionService:
             ):
                 subscription_update.apply_update()
                 return await self._preview_amounts(
+                    session,
                     subscription,
                     [
                         OrderItem(
@@ -2462,7 +2469,7 @@ class SubscriptionService:
                     proration_amount=0,
                 )
             return await self._preview_amounts(
-                subscription, [], prorations=[], proration_amount=0
+                session, subscription, [], prorations=[], proration_amount=0
             )
 
         if applies_now:
@@ -2500,6 +2507,7 @@ class SubscriptionService:
             )
 
         return await self._preview_amounts(
+            session,
             subscription,
             items,
             prorations=prorations,
@@ -2554,8 +2562,23 @@ class SubscriptionService:
         )
         return None if candidate_trial_end <= utc_now() else candidate_trial_end
 
+    async def _preview_due_amount(
+        self, session: AsyncSession, subscription: Subscription, total_amount: int
+    ) -> tuple[int, int]:
+        """Wallet balance applied to a preview total and the resulting amount due.
+
+        Reads the balance without locking (``for_update=False``): a preview must
+        not block a concurrent charge for the same customer.
+        """
+        customer_balance = await wallet_service.get_billing_wallet_balance(
+            session, subscription.customer, subscription.currency, for_update=False
+        )
+        applied_balance_amount = apply_wallet_balance(total_amount, customer_balance)
+        return applied_balance_amount, max(0, total_amount + applied_balance_amount)
+
     async def _preview_amounts(
         self,
+        session: AsyncSession,
         subscription: Subscription,
         items: Sequence[OrderItem],
         *,
@@ -2568,6 +2591,9 @@ class SubscriptionService:
             reference=str(subscription.id),
             discount=subscription.discount,
         )
+        applied_balance_amount, due_amount = await self._preview_due_amount(
+            session, subscription, amounts.total_amount
+        )
 
         return SubscriptionChargePreview(
             base_amount=0,
@@ -2579,6 +2605,8 @@ class SubscriptionService:
             net_amount=amounts.net_amount,
             tax_amount=amounts.tax_amount,
             total_amount=amounts.total_amount,
+            applied_balance_amount=applied_balance_amount,
+            due_amount=due_amount,
         )
 
     async def _after_subscription_updated(

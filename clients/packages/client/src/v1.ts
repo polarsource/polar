@@ -31912,9 +31912,19 @@ export interface components {
       tax_amount: number
       /**
        * Total Amount
-       * @description Total amount in cents (final charge amount)
+       * @description Total amount in cents (net + tax, before applying wallet balance)
        */
       total_amount: number
+      /**
+       * Applied Balance Amount
+       * @description Wallet balance applied to this charge in cents: negative when the customer's account credit reduces the amount due, positive when the charge clears outstanding debt, zero otherwise.
+       */
+      applied_balance_amount: number
+      /**
+       * Due Amount
+       * @description Amount actually due in cents: total_amount plus the applied wallet balance, floored at zero. This is the figure charged today.
+       */
+      due_amount: number
     }
     /**
      * SubscriptionChargePreviewProration

@@ -1009,6 +1009,32 @@ class ReviewAnalyzer:
                 f"Disputes: {metrics.dispute_count} (${metrics.dispute_amount_cents / 100:,.2f})"
             )
 
+        # External risk signals (e.g. Stripe Radar for Platforms)
+        risk_signals = snapshot.risk_signals
+        if risk_signals.entries:
+            parts.append("\n## External Risk Signals")
+            parts.append(
+                "⚠️ The following risk signals were raised against this organization "
+                "by external fraud-detection systems. Only signals at 'elevated' or "
+                "'highest' severity are recorded, so every entry below is significant. "
+                "They are probabilistic — not proof of fraud on their own — but treat "
+                "them as strong corroborating evidence: verify whether the website and "
+                "products match what the signal flags, and weigh them into "
+                "POLICY_COMPLIANCE and PRODUCT_LEGITIMACY."
+            )
+            for signal in risk_signals.entries[:20]:
+                date_str = (
+                    signal.created_at.strftime("%Y-%m-%d")
+                    if signal.created_at
+                    else "unknown date"
+                )
+                parts.append(
+                    f"- [{date_str}] {signal.source}: {signal.type} "
+                    f"(risk level: {signal.risk_level})"
+                )
+                if signal.description:
+                    parts.append(f"  Details: {signal.description}")
+
         # Prior History
         parts.append("\n## User History")
         if history.user_blocked_at:

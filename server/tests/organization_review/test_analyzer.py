@@ -22,6 +22,8 @@ from polar.organization_review.schemas import (
     PayoutAccountData,
     ProductsData,
     ReviewContext,
+    RiskSignalData,
+    RiskSignalEntry,
     WebsiteData,
     WebsitePage,
 )
@@ -152,6 +154,46 @@ def _stub_analyzer_io(
         "run",
         new=AsyncMock(side_effect=run_side_effect),
     )
+
+
+class TestBuildPromptRiskSignals:
+    def test_no_section_without_signals(self, review_analyzer: ReviewAnalyzer) -> None:
+        prompt = review_analyzer._build_prompt(_minimal_snapshot())
+        assert "## External Risk Signals" not in prompt
+
+    def test_renders_signals(self, review_analyzer: ReviewAnalyzer) -> None:
+        snapshot = _minimal_snapshot().model_copy(
+            update={
+                "risk_signals": RiskSignalData(
+                    entries=[
+                        RiskSignalEntry(
+                            source="stripe",
+                            type="fraudulent_website",
+                            risk_level="elevated",
+                            description="Indicators: suspicious_content",
+                            created_at=datetime(2026, 7, 1, tzinfo=UTC),
+                        ),
+                        RiskSignalEntry(
+                            source="stripe",
+                            type="fraudulent_merchant",
+                            risk_level="highest",
+                        ),
+                    ]
+                )
+            }
+        )
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        assert "## External Risk Signals" in prompt
+        assert (
+            "- [2026-07-01] stripe: fraudulent_website (risk level: elevated)" in prompt
+        )
+        assert "  Details: Indicators: suspicious_content" in prompt
+        assert (
+            "- [unknown date] stripe: fraudulent_merchant (risk level: highest)"
+            in prompt
+        )
 
 
 @pytest.mark.asyncio

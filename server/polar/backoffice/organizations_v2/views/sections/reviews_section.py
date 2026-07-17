@@ -9,6 +9,7 @@ from tagflow import tag, text
 
 from polar.models import Organization
 from polar.models.organization_agent_review import OrganizationAgentReview
+from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.organization_review.schemas import AUP_SECTION_LABELS, ActorType
 
 from ....components import card
@@ -18,6 +19,7 @@ from ._shared import (
     render_dimension,
     render_review_context_badge,
 )
+from .risk_signals import render_risk_signals_card
 
 # Badge classes for decision types
 DECISION_BADGE: dict[str, str] = {
@@ -35,14 +37,18 @@ class ReviewsSection:
         self,
         organization: Organization,
         agent_reviews: Sequence[OrganizationAgentReview],
+        risk_signals: Sequence[OrganizationRiskSignal] = (),
     ) -> None:
         self.org = organization
         self.agent_reviews = agent_reviews
+        self.risk_signals = risk_signals
 
     @contextlib.contextmanager
     def render(self, request: Request) -> Generator[None]:
         """Render the reviews section."""
         with tag.div(classes="space-y-6"):
+            render_risk_signals_card(self.risk_signals)
+
             with card(bordered=True):
                 with tag.div(classes="mb-4"):
                     with tag.h2(classes="text-lg font-bold"):

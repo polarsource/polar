@@ -82,7 +82,10 @@ from polar.organization_review.appeal_case import (
 from polar.organization_review.appeal_case import (
     appeal_case as appeal_case_service,
 )
-from polar.organization_review.repository import OrganizationReviewRepository
+from polar.organization_review.repository import (
+    OrganizationReviewRepository,
+    OrganizationRiskSignalRepository,
+)
 from polar.organization_review.schemas import (
     AUP_SECTION_LABELS,
     AUPSection,
@@ -896,6 +899,11 @@ async def get_organization_detail(
             message_repository = SupportCaseMessageRepository.from_session(session)
             appeal_case_open = await message_repository.is_open(appeal_case.id)
 
+    # External risk signals (e.g. Stripe Radar). Shown as a banner on the
+    # overview, a card on the reviews tab, and a dot on the Reviews tab.
+    risk_signal_repo = OrganizationRiskSignalRepository.from_session(session)
+    risk_signals = await risk_signal_repo.list_by_organization(organization_id)
+
     # Any open case (appeal or dispute) lights the Support Cases nav badge.
     open_case_count = await session.scalar(
         select(func.count()).select_from(
@@ -914,6 +922,7 @@ async def get_organization_detail(
         impersonate_user=impersonate_user,
         startup_program_status=startup_program_status,
         has_open_case=has_open_case,
+        has_risk_signals=bool(risk_signals),
     )
 
     # Fetch analytics data for overview section
@@ -1080,6 +1089,7 @@ async def get_organization_detail(
                     agent_report=parsed_agent_report,
                     agent_reviewed_at=agent_reviewed_at,
                     has_open_appeal_case=appeal_case is not None and appeal_case_open,
+                    risk_signals=risk_signals,
                 )
                 with overview.render(
                     request, setup_data=setup_data, payment_stats=payment_stats
@@ -1130,7 +1140,9 @@ async def get_organization_detail(
             elif section == "reviews":
                 agent_reviews = await review_repo.get_all_agent_reviews(organization_id)
                 reviews_section = ReviewsSection(
-                    organization, agent_reviews=agent_reviews
+                    organization,
+                    agent_reviews=agent_reviews,
+                    risk_signals=risk_signals,
                 )
                 with reviews_section.render(request):
                     pass

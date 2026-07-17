@@ -582,7 +582,7 @@ class SupportCaseSection:
             with tag.span(classes="text-base-content/50"):
                 text("—")
             return
-        when = dispute.evidence_due_by.strftime("%b %-d, %Y %H:%M UTC")
+        when = dispute.evidence_due_by.strftime(f"%b {dispute.evidence_due_by.day}, %Y %H:%M UTC")
         if dispute.past_due:
             with tag.span(classes="text-error font-medium"):
                 text(f"{when} · Past due")
@@ -663,7 +663,7 @@ class SupportCaseSection:
     def _meta_lines(
         self, message: SupportCaseMessage, is_event: bool, internal: bool
     ) -> list[str]:
-        when = message.created_at.strftime("%b %-d, %H:%M UTC")
+        when = message.created_at.strftime(f"%b {message.created_at.day}, %H:%M UTC")
         email = (
             self.author_emails.get(message.author_user_id)
             if message.author_user_id

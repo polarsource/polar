@@ -260,7 +260,7 @@ def _render_table(request: Request, rows: Sequence[Row], sort: str) -> None:
                                 with tag.span(classes="text-base-content/40"):
                                     text("Unassigned")
                         with tag.td(classes="text-base-content/60"):
-                            text(case.created_at.strftime("%b %-d, %Y %H:%M UTC"))
+                            text(case.created_at.strftime(f"%b {case.created_at.day}, %Y %H:%M UTC"))
 
 
 def _safe_return_to(request: Request, return_to: str | None) -> str:

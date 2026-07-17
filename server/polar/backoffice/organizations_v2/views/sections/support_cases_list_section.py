@@ -93,7 +93,7 @@ class SupportCasesListSection:
                                     with tag.span(classes="text-base-content/40"):
                                         text("Unassigned")
                             with tag.td(classes="text-base-content/60"):
-                                text(case.created_at.strftime("%b %-d, %Y %H:%M UTC"))
+                                text(case.created_at.strftime(f"%b {case.created_at.day}, %Y %H:%M UTC"))
 
 
 __all__ = ["SupportCasesListSection"]

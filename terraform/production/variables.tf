@@ -242,6 +242,7 @@ variable "stripe_account_risk_webhook_secret_production" {
   description = "Stripe Account Risk Webhook Secret for production"
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 # Logfire

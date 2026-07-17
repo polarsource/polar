@@ -215,6 +215,7 @@ variable "stripe_account_risk_webhook_secret_sandbox" {
   description = "Stripe Account Risk Webhook Secret for sandbox"
   type        = string
   sensitive   = true
+  default     = ""
 }
 
 # Apple (shared across environments)

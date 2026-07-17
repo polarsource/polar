@@ -66,6 +66,7 @@ from polar.logging import Logger
 from polar.models import (
     Checkout,
     Customer,
+    Discount,
     Order,
     OrderItem,
     Organization,
@@ -1325,24 +1326,20 @@ class OrderService:
         billing_reason: OrderBillingReasonInternal,
         *,
         lock_balance: bool,
+        discount: Discount | None,
+        reference: str | None = None,
     ) -> Order:
-        """
-        Build an in-memory subscription order from ``items``: compute discount,
-        tax and totals, and apply the customer's wallet balance. Allocates no
-        invoice number, persists nothing, and triggers no side effects — the
-        cycle persists and dispatches it, the preview reads its fields.
-
-        ``lock_balance`` takes a ``FOR UPDATE`` lock on the wallet balance; the
-        persist path must, a preview must not.
-        """
+        """Build the subscription order for ``items`` without persisting: no invoice
+        number, no side effects. ``lock_balance`` locks the wallet balance (the
+        persist path must; a preview must not); ``reference`` keys the tax calc."""
         order_id = uuid.uuid4()
         customer = subscription.customer
 
         amounts = await compute_order_amounts(
             subscription,
             items,
-            reference=str(order_id),
-            discount=subscription.discount,
+            reference=reference or str(order_id),
+            discount=discount,
         )
         total_amount = amounts.total_amount
 
@@ -1371,7 +1368,7 @@ class OrderService:
             organization=subscription.organization,
             customer=customer,
             product=subscription.product,
-            discount=subscription.discount,
+            discount=discount,
             subscription=subscription,
             checkout=None,
             items=items,
@@ -1393,7 +1390,12 @@ class OrderService:
         customer = subscription.customer
 
         order = await self.build_subscription_order(
-            session, subscription, items, billing_reason, lock_balance=True
+            session,
+            subscription,
+            items,
+            billing_reason,
+            lock_balance=True,
+            discount=subscription.discount,
         )
         balance_change = (
             order.applied_balance_amount

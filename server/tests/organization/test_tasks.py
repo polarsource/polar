@@ -182,11 +182,11 @@ class TestEvaluateWebsiteRisk:
             save_fixture, organization, user, stripe_id="acct_website_test"
         )
         update_website_mock = mocker.patch(
-            "polar.organization.tasks.stripe_service.update_account_website",
+            "polar.organization.service.stripe_service.update_account_website",
             new=AsyncMock(),
         )
         evaluate_mock = mocker.patch(
-            "polar.organization.tasks.stripe_service.create_website_risk_evaluation",
+            "polar.organization.service.stripe_service.create_website_risk_evaluation",
             new=AsyncMock(return_value={}),
         )
 
@@ -211,11 +211,11 @@ class TestEvaluateWebsiteRisk:
             save_fixture, organization, user, stripe_id="acct_website_test"
         )
         update_website_mock = mocker.patch(
-            "polar.organization.tasks.stripe_service.update_account_website",
+            "polar.organization.service.stripe_service.update_account_website",
             new=AsyncMock(),
         )
         evaluate_mock = mocker.patch(
-            "polar.organization.tasks.stripe_service.create_website_risk_evaluation",
+            "polar.organization.service.stripe_service.create_website_risk_evaluation",
             new=AsyncMock(),
         )
 
@@ -240,11 +240,11 @@ class TestEvaluateWebsiteRisk:
             save_fixture, organization, user, stripe_id="acct_website_test"
         )
         mocker.patch(
-            "polar.organization.tasks.stripe_service.update_account_website",
+            "polar.organization.service.stripe_service.update_account_website",
             new=AsyncMock(),
         )
         mocker.patch(
-            "polar.organization.tasks.stripe_service.create_website_risk_evaluation",
+            "polar.organization.service.stripe_service.create_website_risk_evaluation",
             new=AsyncMock(
                 side_effect=stripe_lib.InvalidRequestError(
                     "The account or account data does not have the required fields"
@@ -272,13 +272,13 @@ class TestEvaluateWebsiteRisk:
             save_fixture, organization, user, stripe_id="acct_website_test"
         )
         mocker.patch(
-            "polar.organization.tasks.stripe_service.update_account_website",
+            "polar.organization.service.stripe_service.update_account_website",
             new=AsyncMock(
                 side_effect=stripe_lib.InvalidRequestError("Invalid URL", None)
             ),
         )
         evaluate_mock = mocker.patch(
-            "polar.organization.tasks.stripe_service.create_website_risk_evaluation",
+            "polar.organization.service.stripe_service.create_website_risk_evaluation",
             new=AsyncMock(),
         )
 
@@ -293,7 +293,7 @@ class TestEvaluateWebsiteRisk:
     ) -> None:
         mocker.patch.object(settings, "STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET", "")
         evaluate_mock = mocker.patch(
-            "polar.organization.tasks.stripe_service.create_website_risk_evaluation",
+            "polar.organization.service.stripe_service.create_website_risk_evaluation",
             new=AsyncMock(),
         )
 
@@ -310,7 +310,7 @@ class TestEvaluateWebsiteRisk:
             settings, "STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET", "whsec_test"
         )
         evaluate_mock = mocker.patch(
-            "polar.organization.tasks.stripe_service.create_website_risk_evaluation",
+            "polar.organization.service.stripe_service.create_website_risk_evaluation",
             new=AsyncMock(),
         )
 

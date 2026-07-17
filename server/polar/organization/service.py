@@ -7,6 +7,7 @@ from urllib.parse import urlparse
 from uuid import UUID
 
 import email_validator
+import stripe as stripe_lib
 import structlog
 from pydantic import BaseModel, Field, TypeAdapter
 from pydantic import ValidationError as PydanticValidationError
@@ -31,6 +32,7 @@ from polar.integrations.stripe.account_risk import (
     AccountRiskSignal,
 )
 from polar.integrations.stripe.service import StripeAccountRejectReason
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.http import check_url_reachable
@@ -1563,6 +1565,78 @@ class OrganizationService:
         if enqueue_review:
             enqueue_job("organization.under_review", organization_id=organization.id)
         return organization
+
+    async def evaluate_website_risk(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        # Gate the whole feature on the receiving side being configured.
+        if not settings.STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET:
+            log.info(
+                "organization.evaluate_website_risk.skipped",
+                reason="webhook_secret_not_configured",
+                organization_id=str(organization.id),
+            )
+            return
+
+        if organization.payout_account_id is None:
+            log.info(
+                "organization.evaluate_website_risk.skipped",
+                reason="no_payout_account",
+                organization_id=str(organization.id),
+            )
+            return
+
+        website = organization.website.strip() if organization.website else ""
+        if not website:
+            log.info(
+                "organization.evaluate_website_risk.skipped",
+                reason="no_website",
+                organization_id=str(organization.id),
+            )
+            return
+
+        payout_account_repository = PayoutAccountRepository.from_session(session)
+        payout_account = await payout_account_repository.get_by_id(
+            organization.payout_account_id
+        )
+        if payout_account is None or payout_account.stripe_id is None:
+            log.info(
+                "organization.evaluate_website_risk.skipped",
+                reason="no_stripe_account",
+                organization_id=str(organization.id),
+            )
+            return
+
+        # Stripe evaluates the website attached to the account, so sync it
+        # first. InvalidRequestError is a deterministic rejection (a URL
+        # Stripe won't accept, an account missing required fields): retrying
+        # can't succeed, so log instead of raising.
+        try:
+            await stripe_service.update_account_website(
+                payout_account.stripe_id, website
+            )
+        except stripe_lib.InvalidRequestError as e:
+            log.warning(
+                "organization.evaluate_website_risk.rejected",
+                step="sync_website",
+                organization_id=str(organization.id),
+                stripe_account_id=payout_account.stripe_id,
+                error=str(e),
+            )
+            return
+
+        try:
+            await stripe_service.create_website_risk_evaluation(
+                payout_account.stripe_id
+            )
+        except stripe_lib.InvalidRequestError as e:
+            log.warning(
+                "organization.evaluate_website_risk.rejected",
+                step="create_evaluation",
+                organization_id=str(organization.id),
+                stripe_account_id=payout_account.stripe_id,
+                error=str(e),
+            )
 
     async def handle_account_risk_signal(
         self,

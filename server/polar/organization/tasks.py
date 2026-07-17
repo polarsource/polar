@@ -1,12 +1,10 @@
 import uuid
 from typing import Any, cast
 
-import stripe as stripe_lib
 import structlog
 from sqlalchemy import CursorResult, select
 from sqlalchemy.orm import joinedload
 
-from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.email.schemas import (
     OrganizationOffboardedEmail,
@@ -15,7 +13,6 @@ from polar.email.schemas import (
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarTaskError
 from polar.integrations.plain.service import plain as plain_service
-from polar.integrations.stripe.service import stripe as stripe_service
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import Customer, CustomerSeat, Organization
@@ -23,7 +20,6 @@ from polar.models.benefit_grant import BenefitGrant
 from polar.models.customer_seat import SeatStatus
 from polar.models.member import Member, MemberRole
 from polar.models.organization import OrganizationStatus
-from polar.payout_account.repository import PayoutAccountRepository
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
 from polar.user_organization.service import (
@@ -1207,77 +1203,10 @@ async def _prepare_benefit_grants(
 
 @actor(actor_name="organization.evaluate_website_risk", priority=TaskPriority.LOW)
 async def evaluate_website_risk(organization_id: uuid.UUID) -> None:
-    # Gate the whole feature on the receiving side being configured.
-    if not settings.STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET:
-        log.info(
-            "organization.evaluate_website_risk.skipped",
-            reason="webhook_secret_not_configured",
-            organization_id=str(organization_id),
-        )
-        return
-
     async with AsyncSessionMaker() as session:
         repository = OrganizationRepository.from_session(session)
         organization = await repository.get_by_id(organization_id)
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
 
-        if organization.payout_account_id is None:
-            log.info(
-                "organization.evaluate_website_risk.skipped",
-                reason="no_payout_account",
-                organization_id=str(organization_id),
-            )
-            return
-
-        website = organization.website.strip() if organization.website else ""
-        if not website:
-            log.info(
-                "organization.evaluate_website_risk.skipped",
-                reason="no_website",
-                organization_id=str(organization_id),
-            )
-            return
-
-        payout_account_repository = PayoutAccountRepository.from_session(session)
-        payout_account = await payout_account_repository.get_by_id(
-            organization.payout_account_id
-        )
-        if payout_account is None or payout_account.stripe_id is None:
-            log.info(
-                "organization.evaluate_website_risk.skipped",
-                reason="no_stripe_account",
-                organization_id=str(organization_id),
-            )
-            return
-
-        # Stripe evaluates the website attached to the account, so sync it
-        # first. InvalidRequestError is a deterministic rejection (a URL
-        # Stripe won't accept, an account missing required fields): retrying
-        # can't succeed, so log instead of raising.
-        try:
-            await stripe_service.update_account_website(
-                payout_account.stripe_id, website
-            )
-        except stripe_lib.InvalidRequestError as e:
-            log.warning(
-                "organization.evaluate_website_risk.rejected",
-                step="sync_website",
-                organization_id=str(organization_id),
-                stripe_account_id=payout_account.stripe_id,
-                error=str(e),
-            )
-            return
-
-        try:
-            await stripe_service.create_website_risk_evaluation(
-                payout_account.stripe_id
-            )
-        except stripe_lib.InvalidRequestError as e:
-            log.warning(
-                "organization.evaluate_website_risk.rejected",
-                step="create_evaluation",
-                organization_id=str(organization_id),
-                stripe_account_id=payout_account.stripe_id,
-                error=str(e),
-            )
+        await organization_service.evaluate_website_risk(session, organization)

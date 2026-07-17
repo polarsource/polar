@@ -364,10 +364,39 @@ class OrderRepository(
         return result.rowcount > 0
 
     async def release_payment_lock(self, order: Order, *, flush: bool = False) -> Order:
-        """Release a payment lock for an order."""
+        """Release a payment lock for an order.
+
+        Clears the tracked PaymentIntent alongside the lock timestamp so a
+        released order never keeps a dangling reference to an abandoned intent.
+        """
         return await self.update(
-            order, update_dict={"payment_lock_acquired_at": None}, flush=flush
+            order,
+            update_dict={
+                "payment_lock_acquired_at": None,
+                "payment_lock_payment_intent_id": None,
+            },
+            flush=flush,
         )
+
+    async def get_stale_payment_lock_orders(
+        self, older_than: datetime, *, options: Options = ()
+    ) -> Sequence[Order]:
+        """Get orders whose payment lock was acquired before ``older_than``.
+
+        A lock this old is presumed wedged: typically an off-session SCA
+        PaymentIntent that never received a resolving webhook, which would
+        otherwise block every future dunning attempt on the order.
+        """
+        statement = (
+            self.get_base_statement()
+            .where(
+                Order.payment_lock_acquired_at.is_not(None),
+                Order.payment_lock_acquired_at < older_than,
+            )
+            .order_by(Order.payment_lock_acquired_at.asc())
+            .options(*options)
+        )
+        return await self.get_all(statement)
 
     async def start_finalization(self, order_id: UUID) -> bool:
         """

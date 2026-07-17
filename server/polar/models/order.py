@@ -196,6 +196,10 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
+    payment_lock_payment_intent_id: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
+    )
+
     refunds_blocked_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )

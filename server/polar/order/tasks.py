@@ -1,10 +1,12 @@
 import uuid
+from datetime import timedelta
 
 import stripe as stripe_lib
 import structlog
 from dramatiq import Retry
 
 from polar.exceptions import PolarTaskError
+from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models.order import OrderBillingReasonInternal
 from polar.models.payment import PaymentTrigger
@@ -33,6 +35,13 @@ from .service import order as order_service
 log: Logger = structlog.get_logger()
 
 MAX_RETRIES = 10
+
+# A payment lock held longer than this is treated as wedged. It's set on an
+# off-session charge attempt and normally cleared within seconds by the
+# resolving Stripe webhook (success/failure). An hour comfortably exceeds a
+# healthy charge + webhook round-trip while still recovering wedged orders the
+# same day, well before the next hourly dunning run would repeatedly dead-letter.
+STALE_PAYMENT_LOCK_THRESHOLD = timedelta(hours=1)
 
 
 class OrderTaskError(PolarTaskError): ...
@@ -125,6 +134,16 @@ async def trigger_payment(
             await order_service.trigger_payment(
                 session, order, payment_method, payment_trigger=trigger
             )
+        except PaymentAlreadyInProgress:
+            # A payment lock is already held for this order (e.g. an unresolved
+            # off-session SCA PaymentIntent). Don't dead-letter: the stale lock
+            # cleanup job will cancel the wedged intent and dunning will retry
+            # this order on its normal schedule.
+            log.info(
+                "Payment already in progress, skipping trigger",
+                order_id=order_id,
+            )
+            return
         except PaymentFailed:
             # Payment failures should not be retried - they will be handled by the dunning process
             # Log the failure but don't retry the task
@@ -246,6 +265,39 @@ async def process_dunning_order(order_id: uuid.UUID) -> None:
             raise OrderDoesNotExist(order_id)
 
         await order_service.process_dunning_order(session, order)
+
+
+@actor(
+    actor_name="order.process_stale_payment_locks",
+    cron_trigger=CronTrigger.from_crontab("15 * * * *"),
+    priority=TaskPriority.MEDIUM,
+)
+async def process_stale_payment_locks() -> None:
+    """Find orders whose payment lock has wedged and request cancellation."""
+    async with AsyncSessionMaker() as session:
+        order_repository = OrderRepository.from_session(session)
+        stale_orders = await order_repository.get_stale_payment_lock_orders(
+            utc_now() - STALE_PAYMENT_LOCK_THRESHOLD
+        )
+
+    for order in stale_orders:
+        enqueue_job("order.process_stale_payment_lock_order", order.id)
+
+
+@actor(
+    actor_name="order.process_stale_payment_lock_order", priority=TaskPriority.MEDIUM
+)
+async def process_stale_payment_lock_order(order_id: uuid.UUID) -> None:
+    """Request cancellation of the PaymentIntent behind a single stale lock."""
+    async with AsyncSessionMaker() as session:
+        order_repository = OrderRepository.from_session(session)
+        order = await order_repository.get_by_id(
+            order_id, options=order_repository.get_eager_options()
+        )
+        if order is None:
+            raise OrderDoesNotExist(order_id)
+
+        await order_service.cancel_stale_payment_lock(session, order)
 
 
 @actor(

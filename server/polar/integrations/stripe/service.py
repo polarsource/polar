@@ -22,6 +22,7 @@ if TYPE_CHECKING:
         CustomerCreateParamsTaxIdDatum,
     )
     from stripe.params._customer_modify_params import CustomerModifyParams
+    from stripe.params._payment_intent_cancel_params import PaymentIntentCancelParams
     from stripe.params._payment_intent_create_params import PaymentIntentCreateParams
     from stripe.params._payment_intent_modify_params import PaymentIntentModifyParams
     from stripe.params._setup_intent_confirm_params import SetupIntentConfirmParams
@@ -412,6 +413,12 @@ class StripeService:
     ) -> stripe_lib.PaymentIntent:
         log.info("stripe.payment_intent.modify", payment_intent_id=id)
         return await stripe_lib.PaymentIntent.modify_async(id, **params)
+
+    async def cancel_payment_intent(
+        self, id: str, **params: Unpack[PaymentIntentCancelParams]
+    ) -> stripe_lib.PaymentIntent:
+        log.info("stripe.payment_intent.cancel", payment_intent_id=id)
+        return await stripe_lib.PaymentIntent.cancel_async(id, **params)
 
     async def get_setup_intent(
         self, id: str, **params: Unpack[SetupIntentRetrieveParams]

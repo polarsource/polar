@@ -962,6 +962,7 @@ async def create_order(
     discount: Discount | None = None,
     next_payment_attempt_at: datetime | None = None,
     payment_lock_acquired_at: datetime | None = None,
+    payment_lock_payment_intent_id: str | None = None,
     tax_processor: TaxProcessor | None = None,
     tax_transaction_processor_id: str | None = None,
 ) -> Order:
@@ -1005,6 +1006,7 @@ async def create_order(
         user_metadata=user_metadata or {},
         next_payment_attempt_at=next_payment_attempt_at,
         payment_lock_acquired_at=payment_lock_acquired_at,
+        payment_lock_payment_intent_id=payment_lock_payment_intent_id,
         tax_processor=tax_processor,
         tax_transaction_processor_id=tax_transaction_processor_id,
     )

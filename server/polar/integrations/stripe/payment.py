@@ -307,7 +307,21 @@ async def handle_failure(
         )
 
 
+async def handle_cancellation(
+    session: AsyncSession,
+    object: stripe_lib.PaymentIntent,
+) -> None:
+    # Only off-session order charges track a payment lock we need to release;
+    # resolve the order from the intent's `order_id` metadata. Any other
+    # canceled intent (e.g. one without an order) is a no-op.
+    order = await resolve_order(session, object, checkout=None)
+
+    if order is not None:
+        await order_service.handle_payment_cancellation(session, order)
+
+
 __all__ = [
+    "handle_cancellation",
     "handle_failure",
     "handle_success",
     "resolve_checkout",

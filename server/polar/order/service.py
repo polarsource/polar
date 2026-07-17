@@ -1788,6 +1788,15 @@ class OrderService:
 
                     raise
 
+                # Track which PaymentIntent this locked attempt created, so a
+                # later cleanup can cancel it if the lock wedges (e.g. an
+                # off-session SCA intent whose resolving webhook never arrives).
+                repository = OrderRepository.from_session(session)
+                order = await repository.update(
+                    order,
+                    update_dict={"payment_lock_payment_intent_id": payment_intent.id},
+                )
+
                 # Off-session SCA / 3DS challenges return a non-raising intent
                 # in one of the `requires_*` statuses. Only sync callers
                 # (draft-order finalize) surface a typed error so the merchant
@@ -1950,6 +1959,15 @@ class OrderService:
                         metadata=metadata,
                     )
 
+                # Track which PaymentIntent this locked attempt created, so a
+                # later cleanup can cancel it if the lock wedges (e.g. a 3DS
+                # challenge the customer never completes).
+                repository = OrderRepository.from_session(session)
+                await repository.update(
+                    order,
+                    update_dict={"payment_lock_payment_intent_id": payment_intent.id},
+                )
+
                 if payment_intent.status == "succeeded":
                     log.info(
                         "Retry payment succeeded immediately",
@@ -2057,12 +2075,16 @@ class OrderService:
             update_dict["next_payment_attempt_at"] = None
 
         # Clear payment lock on successful payment
-        if order.payment_lock_acquired_at is not None:
+        if (
+            order.payment_lock_acquired_at is not None
+            or order.payment_lock_payment_intent_id is not None
+        ):
             log.info(
                 "Clearing payment lock on order due to successful payment",
                 order_id=order.id,
             )
             update_dict["payment_lock_acquired_at"] = None
+            update_dict["payment_lock_payment_intent_id"] = None
 
         # Balance the order in the ledger
         if payment is not None:
@@ -2775,6 +2797,106 @@ class OrderService:
         except Exception as e:
             log.error("Could not save balance.credit_order event", error=str(e))
             raise
+
+    async def cancel_stale_payment_lock(
+        self, session: AsyncSession, order: Order
+    ) -> None:
+        """Request cancellation of the PaymentIntent behind a stale payment lock.
+
+        Called by the scheduled cleanup for orders whose ``payment_lock_acquired_at``
+        is older than the stale threshold — typically an off-session SCA
+        PaymentIntent whose resolving webhook never arrived, wedging the lock
+        and blocking every future dunning attempt.
+
+        This deliberately does NOT release the lock: cancellation is confirmed
+        asynchronously via the ``payment_intent.canceled`` webhook
+        (:meth:`handle_payment_cancellation`), and a still-resolving intent
+        could yet settle to ``succeeded`` (Stripe can email off-session
+        customers an SCA-recovery link). Releasing here would risk a double
+        charge.
+        """
+        payment_intent_id = order.payment_lock_payment_intent_id
+        if order.payment_lock_acquired_at is None or payment_intent_id is None:
+            # Nothing actionable — either the lock was released concurrently or
+            # it never tracked a PaymentIntent (e.g. a legacy lock).
+            log.info(
+                "Stale payment lock has no tracked PaymentIntent, skipping",
+                order_id=order.id,
+                payment_lock_acquired_at=order.payment_lock_acquired_at,
+            )
+            return
+
+        try:
+            await stripe_service.cancel_payment_intent(payment_intent_id)
+        except stripe_lib.InvalidRequestError as e:
+            # The PaymentIntent already reached a terminal state (e.g. it
+            # succeeded or was already canceled), so Stripe rejects the cancel.
+            # That's fine: the corresponding webhook will release the lock
+            # normally. Leave the lock untouched here.
+            log.info(
+                "Stale payment lock PaymentIntent already resolved, "
+                "skipping cancellation",
+                order_id=order.id,
+                payment_intent_id=payment_intent_id,
+                error_message=str(e),
+            )
+            return
+        except stripe_lib.StripeError as e:
+            # Transient / unexpected Stripe error: keep the lock so the next
+            # scheduled cleanup run retries the cancellation.
+            log.warning(
+                "Failed to cancel stale payment lock PaymentIntent, "
+                "will retry on next scheduled run",
+                order_id=order.id,
+                payment_intent_id=payment_intent_id,
+                error_message=str(e),
+            )
+            return
+
+        log.info(
+            "Requested cancellation of stale payment lock PaymentIntent",
+            order_id=order.id,
+            payment_intent_id=payment_intent_id,
+        )
+
+    async def handle_payment_cancellation(
+        self, session: AsyncSession, order: Order
+    ) -> Order:
+        """Handle a canceled PaymentIntent for an order's payment lock.
+
+        Triggered by the ``payment_intent.canceled`` webhook — usually the
+        stale-lock cleanup cancelling an off-session SCA intent that never
+        resolved. Release the lock, clear the tracked PaymentIntent, and
+        progress dunning exactly as a payment failure would, so the next
+        scheduled retry attempts a fresh charge.
+        """
+        # A resolving intent may have succeeded before this cancellation was
+        # processed; never undo a paid order.
+        if order.status == OrderStatus.paid:
+            log.warning(
+                "Ignoring payment cancellation for already paid order",
+                order_id=order.id,
+            )
+            return order
+
+        if (
+            order.payment_lock_acquired_at is not None
+            or order.payment_lock_payment_intent_id is not None
+        ):
+            log.info(
+                "Clearing payment lock on order due to payment cancellation",
+                order_id=order.id,
+            )
+            repository = OrderRepository.from_session(session)
+            order = await repository.release_payment_lock(order)
+
+        if order.subscription is None:
+            return order
+
+        if order.next_payment_attempt_at is None:
+            return await self._handle_first_dunning_attempt(session, order)
+
+        return await self._handle_consecutive_dunning_attempts(session, order)
 
     async def handle_payment_failure(
         self, session: AsyncSession, order: Order, *, skip_dunning: bool = False

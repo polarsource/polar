@@ -20,6 +20,8 @@ from polar.order.tasks import (
     OrderDoesNotExist,
     process_dunning,
     process_dunning_order,
+    process_stale_payment_lock_order,
+    process_stale_payment_locks,
     trigger_payment,
 )
 from polar.subscription.repository import SubscriptionRepository
@@ -647,3 +649,262 @@ class TestTriggerPayment:
         mock_create_payment_intent.assert_called_once()
         call_kwargs = mock_create_payment_intent.call_args[1]
         assert "payment_trigger" not in call_kwargs["metadata"]
+
+    async def test_trigger_payment_already_in_progress_does_not_raise(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        """A wedged payment lock must not dead-letter the dunning retry: the
+        task should swallow PaymentAlreadyInProgress and return cleanly."""
+        customer = await create_customer(save_fixture, organization=organization)
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=utc_now() - timedelta(hours=2),
+            payment_lock_payment_intent_id="pi_wedged",
+        )
+
+        mock_create_payment_intent = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent",
+        )
+
+        # When / Then — must not raise
+        await trigger_payment(order.id, payment_method.id)
+
+        # No new charge attempted while the lock is held
+        mock_create_payment_intent.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestProcessStalePaymentLocks:
+    async def test_enqueues_stale_locked_orders(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Given
+        customer = await create_customer(save_fixture, organization=organization)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=utc_now() - timedelta(hours=2),
+            payment_lock_payment_intent_id="pi_stale",
+        )
+
+        enqueue_job_mock = mocker.patch("polar.order.tasks.enqueue_job")
+
+        # When
+        await process_stale_payment_locks()
+
+        # Then
+        enqueue_job_mock.assert_called_once_with(
+            "order.process_stale_payment_lock_order",
+            order.id,
+        )
+
+    async def test_fresh_lock_skipped(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Given a lock acquired recently (within the stale threshold)
+        customer = await create_customer(save_fixture, organization=organization)
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=utc_now(),
+            payment_lock_payment_intent_id="pi_fresh",
+        )
+
+        enqueue_job_mock = mocker.patch("polar.order.tasks.enqueue_job")
+
+        # When
+        await process_stale_payment_locks()
+
+        # Then
+        enqueue_job_mock.assert_not_called()
+
+    async def test_unlocked_order_skipped(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Given an order without a payment lock
+        customer = await create_customer(save_fixture, organization=organization)
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        enqueue_job_mock = mocker.patch("polar.order.tasks.enqueue_job")
+
+        # When
+        await process_stale_payment_locks()
+
+        # Then
+        enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestProcessStalePaymentLockOrder:
+    async def test_requests_cancellation_without_releasing_lock(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Given
+        customer = await create_customer(save_fixture, organization=organization)
+        acquired_at = utc_now() - timedelta(hours=2)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=acquired_at,
+            payment_lock_payment_intent_id="pi_stale",
+        )
+
+        cancel_mock = mocker.patch(
+            "polar.order.service.stripe_service.cancel_payment_intent",
+            return_value=MagicMock(status="canceled", id="pi_stale"),
+        )
+
+        # When
+        await process_stale_payment_lock_order(order.id)
+
+        # Then — cancellation requested, lock left in place for the webhook
+        cancel_mock.assert_called_once_with("pi_stale")
+        order_repository = OrderRepository.from_session(session)
+        updated_order = await order_repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.payment_lock_acquired_at is not None
+        assert updated_order.payment_lock_payment_intent_id == "pi_stale"
+
+    async def test_already_resolved_payment_intent_skipped(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        """If the PaymentIntent already reached a terminal state, Stripe rejects
+        the cancel; we log and leave the lock for the resolving webhook."""
+        customer = await create_customer(save_fixture, organization=organization)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=utc_now() - timedelta(hours=2),
+            payment_lock_payment_intent_id="pi_succeeded",
+        )
+
+        cancel_mock = mocker.patch(
+            "polar.order.service.stripe_service.cancel_payment_intent",
+            side_effect=stripe_lib.InvalidRequestError(
+                "You cannot cancel this PaymentIntent because it has a status of "
+                "succeeded.",
+                param="intent",
+                code="payment_intent_unexpected_state",
+            ),
+        )
+
+        # When / Then — must not raise
+        await process_stale_payment_lock_order(order.id)
+
+        cancel_mock.assert_called_once_with("pi_succeeded")
+        order_repository = OrderRepository.from_session(session)
+        updated_order = await order_repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.payment_lock_acquired_at is not None
+
+    async def test_generic_stripe_error_retries_next_run(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        """A transient Stripe error must not release the lock; the next scheduled
+        run retries the cancellation."""
+        customer = await create_customer(save_fixture, organization=organization)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=utc_now() - timedelta(hours=2),
+            payment_lock_payment_intent_id="pi_stale",
+        )
+
+        cancel_mock = mocker.patch(
+            "polar.order.service.stripe_service.cancel_payment_intent",
+            side_effect=stripe_lib.APIError("Stripe is down"),
+        )
+
+        # When / Then — must not raise
+        await process_stale_payment_lock_order(order.id)
+
+        cancel_mock.assert_called_once_with("pi_stale")
+        order_repository = OrderRepository.from_session(session)
+        updated_order = await order_repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.payment_lock_acquired_at is not None
+        assert updated_order.payment_lock_payment_intent_id == "pi_stale"
+
+    async def test_missing_payment_intent_id_skipped(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Given a lock with no tracked PaymentIntent
+        customer = await create_customer(save_fixture, organization=organization)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=utc_now() - timedelta(hours=2),
+        )
+
+        cancel_mock = mocker.patch(
+            "polar.order.service.stripe_service.cancel_payment_intent",
+        )
+
+        # When
+        await process_stale_payment_lock_order(order.id)
+
+        # Then — nothing to cancel
+        cancel_mock.assert_not_called()
+
+    async def test_order_not_found(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        with pytest.raises(OrderDoesNotExist):
+            await process_stale_payment_lock_order(uuid.uuid4())

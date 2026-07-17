@@ -152,8 +152,10 @@ class PythonEmitter(EmitterBase):
                 },
             )
 
+            services_dir = version_dir / "services"
+            self._write_file(services_dir / "__init__.py", "")
             for service in api.services:
-                self._emit_service(service, api, version_dir)
+                self._emit_service(service, api, services_dir)
 
     def get_version_string(self, api: APIVersion) -> str:
         """Return the version string for a given APIVersion."""
@@ -187,7 +189,7 @@ class PythonEmitter(EmitterBase):
             service_path = output_path / f"{to_snake_case(service.name)}.py"
 
         self.render_file(
-            "polar/version/service.py",
+            "polar/version/services/service.py",
             service_path,
             {
                 **self.get_version_context(api),

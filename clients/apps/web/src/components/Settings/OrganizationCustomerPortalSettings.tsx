@@ -26,6 +26,10 @@ const OrganizationCustomerPortalSettings: React.FC<
   const form = useForm<schemas['OrganizationCustomerPortalSettings']>({
     defaultValues: {
       ...organization.customer_portal_settings,
+      subscription: {
+        pause: false,
+        ...organization.customer_portal_settings.subscription,
+      },
       customer: {
         allow_email_change: false,
         ...organization.customer_portal_settings.customer,
@@ -150,6 +154,28 @@ const OrganizationCustomerPortalSettings: React.FC<
             <FormField
               control={control}
               name="subscription.update_plan"
+              render={({ field }) => (
+                <FormItem>
+                  <FormControl>
+                    <Switch
+                      checked={field.value}
+                      onCheckedChange={field.onChange}
+                      disabled={readOnly}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </SettingsGroupItem>
+
+          <SettingsGroupItem
+            title="Enable subscription pausing"
+            description="Allow customers to pause and resume their subscriptions from the portal."
+          >
+            <FormField
+              control={control}
+              name="subscription.pause"
               render={({ field }) => (
                 <FormItem>
                   <FormControl>

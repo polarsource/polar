@@ -194,6 +194,30 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             statement, limit=pagination.limit, page=pagination.page
         )
 
+    async def get_standalone(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        id: UUID,
+    ) -> BenefitGrant | None:
+        repository = BenefitGrantRepository.from_session(session)
+        org_ids = await get_accessible_org_ids(session, auth_subject)
+        statement = (
+            repository.get_statement_by_org_ids(org_ids)
+            .where(
+                BenefitGrant.id == id,
+                BenefitGrant.standalone_grant_id.is_not(None),
+                BenefitGrant.is_deleted.is_(False),
+            )
+            .options(
+                joinedload(BenefitGrant.customer),
+                joinedload(BenefitGrant.benefit).joinedload(Benefit.organization),
+                joinedload(BenefitGrant.member),
+                joinedload(BenefitGrant.standalone_grant),
+            )
+        )
+        return await repository.get_one_or_none(statement)
+
     async def grant_benefit(
         self,
         session: AsyncSession,
@@ -214,7 +238,11 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         repository = BenefitGrantRepository.from_session(session)
         grant = await repository.get_by_benefit_and_scope(
-            customer, benefit, member=member, **scope
+            customer,
+            benefit,
+            member=member,
+            for_update=scope.get("standalone_grant") is not None,
+            **scope,
         )
 
         if grant is None:
@@ -226,6 +254,11 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 **scope,
             )
             session.add(grant)
+        elif (
+            scope.get("standalone_grant") is not None
+            and grant.revoke_requested_at is not None
+        ):
+            return grant
         elif grant.is_granted:
             return grant
 
@@ -303,7 +336,11 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         repository = BenefitGrantRepository.from_session(session)
         grant = await repository.get_by_benefit_and_scope(
-            customer, benefit, member=member, **scope
+            customer,
+            benefit,
+            member=member,
+            for_update=scope.get("standalone_grant") is not None,
+            **scope,
         )
 
         if grant is None:
@@ -342,6 +379,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 pass
 
         grant.set_revoked()
+        if scope.get("standalone_grant") is not None:
+            grant.error = None
 
         session.add(grant)
         await session.flush()

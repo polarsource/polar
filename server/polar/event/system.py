@@ -15,6 +15,8 @@ from polar.models.event import EventSource
 class SystemEvent(StrEnum):
     meter_credited = "meter.credited"
     meter_reset = "meter.reset"
+    benefit_grant_requested = "benefit.grant_requested"
+    benefit_revoke_requested = "benefit.revoke_requested"
     benefit_granted = "benefit.granted"
     benefit_cycled = "benefit.cycled"
     benefit_updated = "benefit.updated"
@@ -51,6 +53,8 @@ class SystemEvent(StrEnum):
 
 
 SYSTEM_EVENT_LABELS: dict[str, str] = {
+    "benefit.grant_requested": "Benefit Grant Requested",
+    "benefit.revoke_requested": "Benefit Revocation Requested",
     "benefit.granted": "Benefit Granted",
     "benefit.cycled": "Benefit Cycled",
     "benefit.updated": "Benefit Updated",
@@ -118,6 +122,14 @@ class BenefitGrantMetadata(TypedDict):
     benefit_grant_id: str
     benefit_type: BenefitType
     member_id: NotRequired[str]
+
+
+class BenefitGrantRequestMetadata(BenefitGrantMetadata):
+    standalone_grant_id: str
+    requested_by_type: Literal["user", "organization", "system"]
+    requested_by_id: str
+    reason: NotRequired[str]
+    expires_at: NotRequired[str]
 
 
 class BenefitGrantedEvent(Event):
@@ -644,6 +656,18 @@ def build_system_event(
     metadata: MeterResetMetadata,
     *,
     timestamp: datetime | None = None,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[
+        SystemEvent.benefit_grant_requested,
+        SystemEvent.benefit_revoke_requested,
+    ],
+    customer: Customer,
+    organization: Organization,
+    metadata: BenefitGrantRequestMetadata,
 ) -> Event: ...
 
 

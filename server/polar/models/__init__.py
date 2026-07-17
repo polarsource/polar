@@ -35,7 +35,7 @@ from .file import File
 from .issue_reward import IssueReward
 from .license_key import LicenseKey
 from .license_key_activation import LicenseKeyActivation
-from .manual_grant import ManualGrant
+from .standalone_grant import StandaloneGrant
 from .member import Member, MemberRole
 from .member_session import MemberSession
 from .merchant_migration import (
@@ -162,7 +162,7 @@ __all__ = [
     "LicenseKey",
     "LicenseKeyActivation",
     "LoginCode",
-    "ManualGrant",
+    "StandaloneGrant",
     "Member",
     "MemberRole",
     "MemberSession",

@@ -13,6 +13,7 @@ from polar.models.benefit_grant import BenefitGrantScopeArgs
 from polar.product.repository import ProductRepository
 from polar.worker import (
     AsyncSessionMaker,
+    CronTrigger,
     RedisMiddleware,
     TaskPriority,
     actor,
@@ -23,6 +24,7 @@ from polar.worker import (
 
 from .grant.scope import resolve_member, resolve_scope
 from .grant.service import benefit_grant as benefit_grant_service
+from .standalone_grant.service import standalone_grant as standalone_grant_service
 from .strategies import BenefitRetriableError
 
 log: Logger = structlog.get_logger()
@@ -64,6 +66,18 @@ class OrganizationDoesNotExist(BenefitTaskError):
         self.organization_id = organization_id
         message = f"The organization with id {organization_id} does not exist."
         super().__init__(message)
+
+
+@actor(
+    actor_name="standalone_grant.scan_expired",
+    cron_trigger=CronTrigger.from_crontab("* * * * *"),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def scan_expired_standalone_grants() -> None:
+    async with AsyncSessionMaker() as session:
+        count = await standalone_grant_service.revoke_expired(session, limit=500)
+        log.info("Scanned expired standalone grants", count=count)
 
 
 @actor(actor_name="benefit.enqueue_benefits_grants", priority=TaskPriority.MEDIUM)

@@ -1,15 +1,26 @@
+import builtins
+from collections.abc import Sequence
+from uuid import UUID
+
 from fastapi import Depends, Query
 
+from polar.benefit.standalone_grant.schemas import StandaloneGrantBenefitCreate
+from polar.benefit.standalone_grant.service import (
+    standalone_grant as standalone_grant_service,
+)
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
+from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
+from polar.models import BenefitGrant as BenefitGrantModel
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
-from ..auth import BenefitsRead
+from ..auth import BenefitsRead, BenefitsWrite
 from ..schemas import BenefitGrant
+from .schemas import BenefitGrantBatchCreate, BenefitGrantCreate
 from .service import benefit_grant as benefit_grant_service
 from .sorting import ListSorting
 
@@ -63,3 +74,103 @@ async def list(
         count,
         pagination,
     )
+
+
+@router.post(
+    "/",
+    response_model=BenefitGrant,
+    status_code=201,
+    summary="Create Benefit Grant",
+    responses={
+        201: {"description": "Benefit grant queued."},
+        404: {
+            "description": "Customer not found.",
+            "model": ResourceNotFound.schema(),
+        },
+    },
+)
+async def create(
+    benefit_grant_create: BenefitGrantCreate,
+    auth_subject: BenefitsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> BenefitGrantModel:
+    """Queue a standalone benefit grant and return its stable pending resource."""
+    standalone_grant = await standalone_grant_service.create(
+        session,
+        auth_subject,
+        customer_id=benefit_grant_create.customer_id,
+        grants=[
+            StandaloneGrantBenefitCreate(
+                benefit_id=benefit_grant_create.benefit_id,
+                member_id=benefit_grant_create.member_id,
+            )
+        ],
+        expires_at=benefit_grant_create.expires_at,
+        reason=benefit_grant_create.reason,
+    )
+    return standalone_grant.grants[0]
+
+
+@router.post(
+    "/batch",
+    response_model=builtins.list[BenefitGrant],
+    status_code=201,
+    summary="Create Benefit Grant Batch",
+    responses={
+        201: {"description": "Benefit grant batch queued."},
+        404: {
+            "description": "Customer not found.",
+            "model": ResourceNotFound.schema(),
+        },
+    },
+)
+async def create_batch(
+    benefit_grant_create: BenefitGrantBatchCreate,
+    auth_subject: BenefitsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Sequence[BenefitGrantModel]:
+    """Queue standalone benefit grants with shared provenance and expiration."""
+    standalone_grant = await standalone_grant_service.create(
+        session,
+        auth_subject,
+        customer_id=benefit_grant_create.customer_id,
+        grants=[
+            StandaloneGrantBenefitCreate(
+                benefit_id=grant.benefit_id,
+                member_id=grant.member_id,
+            )
+            for grant in benefit_grant_create.grants
+        ],
+        expires_at=benefit_grant_create.expires_at,
+        reason=benefit_grant_create.reason,
+    )
+    return standalone_grant.grants
+
+
+@router.delete(
+    "/{id}",
+    response_model=BenefitGrant,
+    status_code=202,
+    summary="Revoke Benefit Grant",
+    responses={
+        202: {"description": "Benefit grant revocation queued."},
+        404: {
+            "description": "Benefit grant not found.",
+            "model": ResourceNotFound.schema(),
+        },
+    },
+)
+async def revoke(
+    id: UUID,
+    auth_subject: BenefitsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> BenefitGrantModel:
+    """Queue revocation of a standalone benefit grant."""
+    grant = await benefit_grant_service.get_standalone(session, auth_subject, id)
+    if grant is None:
+        raise ResourceNotFound("Benefit grant not found")
+
+    standalone_grant = grant.standalone_grant
+    assert standalone_grant is not None
+    await standalone_grant_service.revoke_grant(session, auth_subject, standalone_grant, grant)
+    return grant

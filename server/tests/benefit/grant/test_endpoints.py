@@ -1,18 +1,28 @@
+from datetime import UTC, datetime, timedelta
+from uuid import UUID
+
 import pytest
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
+from sqlalchemy import select
 
+from polar.event.system import SystemEvent
 from polar.models import (
     Benefit,
+    BenefitGrant,
     Customer,
+    Event,
     Organization,
     Subscription,
     UserOrganization,
 )
+from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
     create_benefit_grant,
+    create_standalone_grant,
 )
 
 
@@ -171,3 +181,182 @@ class TestListBenefitGrants:
         )
         assert response.status_code == 200
         assert response.json()["pagination"]["total_count"] == 0
+
+
+@pytest.mark.asyncio
+class TestCreateBenefitGrant:
+    async def test_anonymous(
+        self,
+        client: AsyncClient,
+        customer: Customer,
+        benefit_organization: Benefit,
+    ) -> None:
+        response = await client.post(
+            "/v1/benefit-grants/",
+            json={
+                "customer_id": str(customer.id),
+                "benefit_id": str(benefit_organization.id),
+            },
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_returns_persisted_pending_grant(
+        self,
+        client: AsyncClient,
+        mocker: MockerFixture,
+        user_organization: UserOrganization,
+        customer: Customer,
+        benefit_organization: Benefit,
+    ) -> None:
+        enqueue_mock = mocker.patch("polar.benefit.standalone_grant.service.enqueue_job")
+        expires_at = datetime.now(UTC) + timedelta(days=7)
+
+        response = await client.post(
+            "/v1/benefit-grants/",
+            json={
+                "customer_id": str(customer.id),
+                "benefit_id": str(benefit_organization.id),
+                "expires_at": expires_at.isoformat(),
+                "reason": "Customer success exception",
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["customer_id"] == str(customer.id)
+        assert json["benefit_id"] == str(benefit_organization.id)
+        assert json["standalone_grant_id"] is not None
+        assert json["is_granted"] is False
+        assert json["is_revoked"] is False
+        enqueue_mock.assert_called_once_with(
+            "benefit.grant",
+            customer_id=customer.id,
+            benefit_id=benefit_organization.id,
+            member_id=mocker.ANY,
+            standalone_grant_id=mocker.ANY,
+        )
+
+    @pytest.mark.auth
+    async def test_batch_returns_grants_with_shared_scope(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+        benefit_organization: Benefit,
+    ) -> None:
+        enqueue_mock = mocker.patch("polar.benefit.standalone_grant.service.enqueue_job")
+        other_benefit = await create_benefit(save_fixture, organization=organization)
+
+        response = await client.post(
+            "/v1/benefit-grants/batch",
+            json={
+                "customer_id": str(customer.id),
+                "grants": [
+                    {"benefit_id": str(benefit_organization.id)},
+                    {"benefit_id": str(other_benefit.id)},
+                ],
+                "reason": "Customer success exception",
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert {grant["benefit_id"] for grant in json} == {
+            str(benefit_organization.id),
+            str(other_benefit.id),
+        }
+        grants = (
+            (
+                await session.execute(
+                    select(BenefitGrant).where(
+                        BenefitGrant.id.in_([UUID(grant["id"]) for grant in json])
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        assert {grant.standalone_grant_id for grant in grants} == {
+            grants[0].standalone_grant_id
+        }
+        assert enqueue_mock.call_count == 2
+
+
+@pytest.mark.asyncio
+class TestRevokeBenefitGrant:
+    @pytest.mark.auth
+    async def test_returns_revoking_grant(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        user_organization: UserOrganization,
+        customer: Customer,
+        benefit_organization: Benefit,
+    ) -> None:
+        standalone_grant = await create_standalone_grant(save_fixture, customer=customer)
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            standalone_grant=standalone_grant,
+        )
+        enqueue_mock = mocker.patch("polar.benefit.standalone_grant.service.enqueue_job")
+
+        response = await client.delete(f"/v1/benefit-grants/{grant.id}")
+        duplicate_response = await client.delete(f"/v1/benefit-grants/{grant.id}")
+
+        assert response.status_code == 202
+        assert response.json()["is_granted"] is True
+        assert response.json()["is_revoked"] is False
+        assert duplicate_response.status_code == 202
+        assert duplicate_response.json()["is_revoked"] is False
+        refreshed_grant = (
+            await session.execute(
+                select(BenefitGrant).where(BenefitGrant.id == grant.id)
+            )
+        ).scalar_one()
+        assert refreshed_grant.revoke_requested_at is not None
+        event = (
+            await session.execute(
+                select(Event).where(Event.name == SystemEvent.benefit_revoke_requested)
+            )
+        ).scalar_one()
+        assert event.user_metadata["benefit_grant_id"] == str(grant.id)
+        enqueue_mock.assert_called_once_with(
+            "benefit.revoke",
+            customer_id=grant.customer_id,
+            benefit_id=grant.benefit_id,
+            member_id=grant.member_id,
+            standalone_grant_id=standalone_grant.id,
+        )
+
+    @pytest.mark.auth
+    async def test_rejects_purchase_grant(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        customer: Customer,
+        benefit_organization: Benefit,
+        subscription: Subscription,
+    ) -> None:
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            subscription=subscription,
+        )
+
+        response = await client.delete(f"/v1/benefit-grants/{grant.id}")
+
+        assert response.status_code == 404

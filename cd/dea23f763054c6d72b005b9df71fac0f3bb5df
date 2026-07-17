@@ -1,0 +1,67 @@
+server/polar/backoffice/organizations_v2/views/detail_view.py
+  s_ea66c55a12e201::t_49d7836180ea6d 49,56
+  s_ea66c55a12e201::t_3826be33912915 107-108
+server/tests/organization_review/collectors/test_risk_signals.py
+  s_ea66c55a12e201::t_4e9bc2e0ad9a1f 1-35,37-41
+  s_ea66c55a12e201::t_2e2517abedbeb3 36
+server/polar/backoffice/organizations_v2/views/sections/risk_signals.py
+  s_ea66c55a12e201::t_a21255693be680 24
+  s_ea66c55a12e201::t_2e2517abedbeb3 28
+  s_ea66c55a12e201::t_46fa3688660742 29-37
+  s_ea66c55a12e201::t_486bea79c18613 1-23,25-27,38-71,73-74
+  s_ea66c55a12e201::t_017cf33f07df44 72,75-92
+server/tests/organization_review/test_analyzer.py
+  s_ea66c55a12e201::t_a1deb99f4a4aa8 25-26
+  s_ea66c55a12e201::t_2e2517abedbeb3 160,190
+  s_ea66c55a12e201::t_3349ff6dec499d 159,161-189,191-198
+server/polar/organization_review/collectors/__init__.py
+  s_ea66c55a12e201::t_4472c9a6aac22a 8
+  s_ea66c55a12e201::t_10e813719fdc0d 20
+server/polar/backoffice/organizations_v2/views/sections/reviews_section.py
+  s_ea66c55a12e201::t_ea16ed1a7f2937 12,22
+  s_ea66c55a12e201::t_999d2a66504c14 40,44,50-51
+server/tests/backoffice/organizations_v2/test_endpoints.py
+  s_ea66c55a12e201::t_90665117e0889a 14
+  s_ea66c55a12e201::t_5b0dbae0081025 293-339
+server/polar/organization_review/collectors/risk_signals.py
+  s_ea66c55a12e201::t_1890d2d0bb8e04 1-20
+server/polar/backoffice/organizations_v2/views/sections/overview_section.py
+  s_ea66c55a12e201::t_7e0aeebc0bc404 221-222
+  s_ea66c55a12e201::t_e738bcf11b6c1b 320-321
+  s_ea66c55a12e201::t_f8ef8cb57e3be7 33
+  s_ea66c55a12e201::t_8f7e04a8f295af 5,12
+  s_ea66c55a12e201::t_5e22b85be72a12 47,55
+server/polar/backoffice/organizations_v2/endpoints.py
+  s_ea66c55a12e201::t_23fd9a481e4aef 1143-1145
+  s_ea66c55a12e201::t_3f24ed40e73a3e 85-88
+  s_ea66c55a12e201::t_fec737ed85e081 1092
+  s_ea66c55a12e201::t_697e3e12ccf99a 925
+  s_ea66c55a12e201::t_f95cce17048de3 902-906
+server/polar/organization_review/schemas.py
+  s_ea66c55a12e201::t_0918545ede10d0 510
+  s_ea66c55a12e201::t_9d968b873eb947 477-496
+server/polar/organization_review/analyzer.py
+  s_ea66c55a12e201::t_c5b244370f599a 1012-1037
+server/polar/organization_review/agent.py
+  s_ea66c55a12e201::t_b2c75842643828 420
+  s_ea66c55a12e201::t_6156e137501860 31-34,45
+  s_ea66c55a12e201::t_c3591591238359 26
+  s_ea66c55a12e201::t_e6d48f69430169 385,395,406
+  s_ea66c55a12e201::t_c9660f30663e9f 350-356
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "cddea23f763054c6d72b005b9df71fac0f3bb5df",
+  "prompts": {},
+  "sessions": {
+    "s_ea66c55a12e201": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d89a5cd7-a9a5-4811-a3ec-5bfdce2de0b6",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

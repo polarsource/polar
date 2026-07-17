@@ -234,11 +234,12 @@ variable "github_secrets" {
 variable "stripe_secrets" {
   description = "Stripe secrets (sensitive)"
   type = object({
-    connect_webhook_secret = string
-    secret_key             = string
-    webhook_secret         = string
-    app_client_id          = optional(string, "")
-    app_client_link_id     = optional(string, "")
+    connect_webhook_secret      = string
+    secret_key                  = string
+    webhook_secret              = string
+    account_risk_webhook_secret = optional(string, "")
+    app_client_id               = optional(string, "")
+    app_client_link_id          = optional(string, "")
   })
   sensitive = true
 }

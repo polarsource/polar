@@ -300,6 +300,14 @@ resource "tfe_variable" "stripe_webhook_secret_production" {
   variable_set_id = tfe_variable_set.production.id
 }
 
+resource "tfe_variable" "stripe_account_risk_webhook_secret_production" {
+  key             = "stripe_account_risk_webhook_secret_production"
+  category        = "terraform"
+  description     = "Stripe Account Risk Webhook Secret for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
 
 
 resource "tfe_variable" "backend_app_review_email" {

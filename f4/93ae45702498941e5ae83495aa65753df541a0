@@ -1,0 +1,19 @@
+terraform/.tflint.hcl
+  s_5027af5d7f8409::t_e4ff63836d2c51 14-17
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "f493ae45702498941e5ae83495aa65753df541a0",
+  "prompts": {},
+  "sessions": {
+    "s_5027af5d7f8409": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3c7912a4-690c-4c0d-972e-688924af8fca",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

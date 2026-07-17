@@ -11,7 +11,7 @@ from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.exceptions import ResourceNotFound
 from polar.kit.http import get_ip_address
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.schemas import EmptyStrToNone, MultipleQueryFilter
 from polar.models import CheckoutLink
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -161,22 +161,22 @@ async def redirect(
     request: Request,
     client_secret: CheckoutLinkClientSecret,
     ip_geolocation_client: ip_geolocation.IPGeolocationClient,
-    embed_origin: str | None = Query(None),
+    embed_origin: Annotated[EmptyStrToNone, Query()] = None,
     session: AsyncSession = Depends(get_db_session),
     # Product pre-selection & query parameter prefill
     product_id: UUID4 | None = Query(None),
-    amount: str | None = Query(None),
-    customer_email: str | None = Query(None),
-    customer_name: str | None = Query(None),
-    discount_code: str | None = Query(None),
-    locale: str | None = Query(None),
+    amount: Annotated[EmptyStrToNone, Query()] = None,
+    customer_email: Annotated[EmptyStrToNone, Query()] = None,
+    customer_name: Annotated[EmptyStrToNone, Query()] = None,
+    discount_code: Annotated[EmptyStrToNone, Query()] = None,
+    locale: Annotated[EmptyStrToNone, Query()] = None,
     # Metadata that can be set from query parameters
-    reference_id: str | None = Query(None),
-    utm_source: str | None = Query(None),
-    utm_medium: str | None = Query(None),
-    utm_campaign: str | None = Query(None),
-    utm_term: str | None = Query(None),
-    utm_content: str | None = Query(None),
+    reference_id: Annotated[EmptyStrToNone, Query()] = None,
+    utm_source: Annotated[EmptyStrToNone, Query()] = None,
+    utm_medium: Annotated[EmptyStrToNone, Query()] = None,
+    utm_campaign: Annotated[EmptyStrToNone, Query()] = None,
+    utm_term: Annotated[EmptyStrToNone, Query()] = None,
+    utm_content: Annotated[EmptyStrToNone, Query()] = None,
 ) -> RedirectResponse:
     """Use a checkout link to create a checkout session and redirect to it."""
     repository = CheckoutLinkRepository.from_session(session)

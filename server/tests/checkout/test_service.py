@@ -2824,6 +2824,24 @@ class TestCheckoutLinkCreate:
         assert checkout.custom_field_data == {"company": "Acme Inc"}
         assert "invalid_field" not in checkout.custom_field_data
 
+    async def test_query_prefill_empty_customer_email_is_none(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_one_time]
+        )
+
+        checkout = await checkout_service.checkout_link_create(
+            session,
+            checkout_link,
+            query_prefill={"customer_email": ""},
+        )
+
+        assert checkout.customer_email is None
+
     @pytest.mark.parametrize(
         ("ip_country", "product_currencies", "expected_currency"),
         [

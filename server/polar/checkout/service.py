@@ -60,6 +60,7 @@ from polar.kit.currency import (
 from polar.kit.db.locking import is_lock_not_available_error
 from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
+from polar.kit.schemas import empty_str_to_none
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
@@ -829,6 +830,8 @@ class CheckoutService:
         # Handle query parameter prefill
         if query_prefill:
             customer_email = query_prefill.get("customer_email")
+            if isinstance(customer_email, str):
+                customer_email = empty_str_to_none(customer_email)
             if customer_email is not None and isinstance(customer_email, str):
                 checkout.customer_email = customer_email
 

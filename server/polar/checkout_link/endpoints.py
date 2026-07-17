@@ -11,7 +11,7 @@ from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.exceptions import ResourceNotFound
 from polar.kit.http import get_ip_address
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.schemas import EmptyStrToNone, MultipleQueryFilter
 from polar.models import CheckoutLink
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -166,7 +166,7 @@ async def redirect(
     # Product pre-selection & query parameter prefill
     product_id: UUID4 | None = Query(None),
     amount: str | None = Query(None),
-    customer_email: str | None = Query(None),
+    customer_email: EmptyStrToNone = Query(None),
     customer_name: str | None = Query(None),
     discount_code: str | None = Query(None),
     locale: str | None = Query(None),

@@ -393,3 +393,22 @@ class TestRedirect:
             "reference_id": "test_reference_id",
             "utm_campaign": "test_campaign",
         }
+
+    async def test_empty_customer_email_prefill_is_ignored(
+        self, session: AsyncSession, client: AsyncClient, checkout_link: CheckoutLink
+    ) -> None:
+        response = await client.get(
+            f"/v1/checkout-links/{checkout_link.client_secret}/redirect",
+            params={"customer_email": ""},
+        )
+
+        assert response.status_code == 307
+
+        checkout_repository = CheckoutRepository.from_session(session)
+        checkouts = await checkout_repository.get_all(
+            checkout_repository.get_base_statement().order_by(
+                Checkout.created_at.desc()
+            )
+        )
+        checkout = checkouts[0]
+        assert checkout.customer_email is None

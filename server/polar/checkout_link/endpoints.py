@@ -233,7 +233,7 @@ async def redirect(
         k: v
         for k, v in request.query_params.items()
         if k != "embed_origin"
-        and (k not in query_prefill or query_prefill[k] is None)
+        and k not in query_prefill
         and not (
             k.startswith("custom_field_data.")
             and k.replace("custom_field_data.", "") in validated_custom_field_keys

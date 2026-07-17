@@ -1,12 +1,16 @@
 import { useAuth } from '@/hooks'
 import { useCreateIdentityVerification } from '@/hooks/queries'
 import { toast } from '@/components/Toast/use-toast'
-import { isTerminalIdentityVerificationStatus } from '@/utils/identityVerification'
+import { schemas } from '@polar-sh/client'
 import { loadPolarStripe } from '@/utils/stripe'
 import { useCallback, useEffect, useRef } from 'react'
 
 const POLL_INTERVAL_MS = 3000
 const POLL_TIMEOUT_MS = 30_000
+
+export const isTerminalStatus = (
+  status: schemas['IdentityVerificationStatus'] | null | undefined,
+) => status === 'verified' || status === 'failed'
 
 const isProcessingError = (
   detail: string | { error?: string; detail?: string } | undefined,
@@ -31,10 +35,7 @@ export const useStartIdentityVerification = () => {
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
 
   useEffect(() => {
-    if (
-      pollingRef.current &&
-      isTerminalIdentityVerificationStatus(identityVerificationStatus)
-    ) {
+    if (pollingRef.current && isTerminalStatus(identityVerificationStatus)) {
       clearInterval(pollingRef.current)
       pollingRef.current = null
     }

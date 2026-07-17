@@ -5,12 +5,12 @@ import PayoutAccountStep from '@/components/Finance/Steps/PayoutAccountStep'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import { toast } from '@/components/Toast/use-toast'
+import { isTerminalStatus } from '@/hooks/identityVerification'
 import { useAuth } from '@/hooks'
 import { useCreateIdentityVerification } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { CheckIcon } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
-import { isTerminalIdentityVerificationStatus } from '@/utils/identityVerification'
 import { loadPolarStripe } from '@/utils/stripe'
 
 interface Props {
@@ -88,10 +88,7 @@ export const AccountPageApproved = ({ organization }: Props) => {
   }, [createIdentityVerification, stripePromise, reloadUser])
 
   useEffect(() => {
-    if (
-      pollingRef.current &&
-      isTerminalIdentityVerificationStatus(identityVerificationStatus)
-    ) {
+    if (pollingRef.current && isTerminalStatus(identityVerificationStatus)) {
       clearInterval(pollingRef.current)
       pollingRef.current = null
     }

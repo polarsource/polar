@@ -14,13 +14,19 @@ describe('supportCaseUploader', () => {
     expect(supportCaseUploader(mockOrganization).isAccepted(file)).toBe(true)
   })
 
-  it('rejects files when the browser does not provide a MIME type', () => {
+  it('accepts files when the browser does not provide a MIME type but the extension is supported', () => {
     const file = new File(['test'], 'image.jpg', { type: '' })
+
+    expect(supportCaseUploader(mockOrganization).isAccepted(file)).toBe(true)
+  })
+
+  it('rejects files when both the MIME type and extension are unsupported', () => {
+    const file = new File(['test'], 'archive.bin', { type: '' })
 
     expect(supportCaseUploader(mockOrganization).isAccepted(file)).toBe(false)
   })
 
-  it('only advertises supported MIME types in the file picker', () => {
+  it('advertises supported MIME types and file extensions in the file picker', () => {
     expect(supportCaseUploader(mockOrganization).accept).toBe(
       [
         'application/pdf',
@@ -37,6 +43,21 @@ describe('supportCaseUploader', () => {
         'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
         'application/vnd.ms-excel',
         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+        '.pdf',
+        '.jpg',
+        '.jpeg',
+        '.png',
+        '.gif',
+        '.webp',
+        '.mp4',
+        '.mov',
+        '.webm',
+        '.csv',
+        '.txt',
+        '.doc',
+        '.docx',
+        '.xls',
+        '.xlsx',
       ].join(','),
     )
   })

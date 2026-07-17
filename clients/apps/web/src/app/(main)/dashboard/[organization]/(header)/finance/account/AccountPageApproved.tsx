@@ -10,6 +10,7 @@ import { useCreateIdentityVerification } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { CheckIcon } from 'lucide-react'
 import { useCallback, useEffect, useRef } from 'react'
+import { isTerminalIdentityVerificationStatus } from '@/utils/identityVerification'
 import { loadPolarStripe } from '@/utils/stripe'
 
 interface Props {
@@ -20,7 +21,6 @@ export const AccountPageApproved = ({ organization }: Props) => {
   const { currentUser, reloadUser } = useAuth()
   const identityVerificationStatus = currentUser?.identity_verification_status
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const pollingInitialStatusRef = useRef<string | undefined | null>(null)
 
   const stripePromise = loadPolarStripe()
   const createIdentityVerification = useCreateIdentityVerification()
@@ -75,7 +75,6 @@ export const AccountPageApproved = ({ organization }: Props) => {
       })
       return
     }
-    pollingInitialStatusRef.current = identityVerificationStatus
     await reloadUser()
     pollingRef.current = setInterval(async () => {
       await reloadUser()
@@ -86,17 +85,12 @@ export const AccountPageApproved = ({ organization }: Props) => {
         pollingRef.current = null
       }
     }, 30_000)
-  }, [
-    createIdentityVerification,
-    stripePromise,
-    reloadUser,
-    identityVerificationStatus,
-  ])
+  }, [createIdentityVerification, stripePromise, reloadUser])
 
   useEffect(() => {
     if (
       pollingRef.current &&
-      identityVerificationStatus !== pollingInitialStatusRef.current
+      isTerminalIdentityVerificationStatus(identityVerificationStatus)
     ) {
       clearInterval(pollingRef.current)
       pollingRef.current = null

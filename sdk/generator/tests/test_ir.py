@@ -145,6 +145,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 ],
                             },
                         ],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [],
@@ -152,6 +153,243 @@ _STRING = {"kind": "primitive", "type": "string"}
                 ]
             },
             id="Schemas referenced in components.schemas should appear in models; response TypeRef uses ModelRef.",
+        ),
+        pytest.param(
+            [
+                {
+                    "openapi": "3.1.0",
+                    "info": {"title": "Test API", "version": "1.0.0"},
+                    "paths": {},
+                    "webhooks": {
+                        "customer.updated": {
+                            "post": {
+                                "description": "Sent when a customer is updated.",
+                                "requestBody": {
+                                    "required": True,
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/WebhookCustomerUpdatedPayload"
+                                            }
+                                        }
+                                    },
+                                },
+                                "responses": {
+                                    "200": {"description": "Successful Response"}
+                                },
+                            }
+                        },
+                        "customer.created": {
+                            "post": {
+                                "description": "Sent when a customer is created.",
+                                "requestBody": {
+                                    "required": True,
+                                    "content": {
+                                        "application/json": {
+                                            "schema": {
+                                                "$ref": "#/components/schemas/WebhookCustomerCreatedPayload"
+                                            }
+                                        }
+                                    },
+                                },
+                                "responses": {
+                                    "200": {"description": "Successful Response"}
+                                },
+                            }
+                        },
+                    },
+                    "components": {
+                        "schemas": {
+                            "WebhookCustomerUpdatedPayload": {
+                                "type": "object",
+                                "title": "WebhookCustomerUpdatedPayload",
+                                "description": "Sent when a customer is updated.",
+                                "properties": {
+                                    "type": {
+                                        "type": "string",
+                                        "const": "customer.updated",
+                                    },
+                                    "data": {"$ref": "#/components/schemas/Customer"},
+                                },
+                                "required": ["type", "data"],
+                            },
+                            "WebhookCustomerCreatedPayload": {
+                                "type": "object",
+                                "title": "WebhookCustomerCreatedPayload",
+                                "description": "Sent when a customer is created.",
+                                "properties": {
+                                    "type": {
+                                        "type": "string",
+                                        "const": "customer.created",
+                                    },
+                                    "data": {"$ref": "#/components/schemas/Customer"},
+                                },
+                                "required": ["type", "data"],
+                            },
+                            "Customer": {
+                                "type": "object",
+                                "title": "Customer",
+                                "properties": {
+                                    "id": {"type": "string"},
+                                    "status": {
+                                        "$ref": "#/components/schemas/CustomerStatus"
+                                    },
+                                    "subject": {
+                                        "$ref": "#/components/schemas/CustomerSubject"
+                                    },
+                                },
+                                "required": ["id", "status", "subject"],
+                            },
+                            "CustomerStatus": {
+                                "type": "string",
+                                "title": "CustomerStatus",
+                                "enum": ["active", "deleted"],
+                            },
+                            "CustomerSubject": {
+                                "title": "CustomerSubject",
+                                "oneOf": [
+                                    {"$ref": "#/components/schemas/Individual"},
+                                    {"$ref": "#/components/schemas/Business"},
+                                ],
+                            },
+                            "Individual": {
+                                "type": "object",
+                                "title": "Individual",
+                                "properties": {"name": {"type": "string"}},
+                                "required": ["name"],
+                            },
+                            "Business": {
+                                "type": "object",
+                                "title": "Business",
+                                "properties": {"company_name": {"type": "string"}},
+                                "required": ["company_name"],
+                            },
+                        }
+                    },
+                }
+            ],
+            {
+                "versions": [
+                    {
+                        "version": "1.0.0",
+                        "servers": [],
+                        "services": [],
+                        "input_models": [],
+                        "output_models": [
+                            {
+                                "name": "Business",
+                                "fields": [
+                                    {
+                                        "name": "company_name",
+                                        "type": _STRING,
+                                        "required": True,
+                                    }
+                                ],
+                            },
+                            {
+                                "name": "Customer",
+                                "fields": [
+                                    {"name": "id", "type": _STRING, "required": True},
+                                    {
+                                        "name": "status",
+                                        "type": {
+                                            "kind": "enum",
+                                            "name": "CustomerStatus",
+                                        },
+                                        "required": True,
+                                    },
+                                    {
+                                        "name": "subject",
+                                        "type": {
+                                            "kind": "union_ref",
+                                            "name": "CustomerSubject",
+                                        },
+                                        "required": True,
+                                    },
+                                ],
+                            },
+                            {
+                                "name": "Individual",
+                                "fields": [
+                                    {
+                                        "name": "name",
+                                        "type": _STRING,
+                                        "required": True,
+                                    }
+                                ],
+                            },
+                        ],
+                        "webhooks": [
+                            {
+                                "name": "WebhookCustomerCreatedPayload",
+                                "description": "Sent when a customer is created.",
+                                "fields": [
+                                    {
+                                        "name": "type",
+                                        "type": {
+                                            "kind": "literal",
+                                            "value": "customer.created",
+                                        },
+                                        "required": True,
+                                    },
+                                    {
+                                        "name": "data",
+                                        "type": {
+                                            "kind": "model",
+                                            "name": "Customer",
+                                        },
+                                        "required": True,
+                                    },
+                                ],
+                            },
+                            {
+                                "name": "WebhookCustomerUpdatedPayload",
+                                "description": "Sent when a customer is updated.",
+                                "fields": [
+                                    {
+                                        "name": "type",
+                                        "type": {
+                                            "kind": "literal",
+                                            "value": "customer.updated",
+                                        },
+                                        "required": True,
+                                    },
+                                    {
+                                        "name": "data",
+                                        "type": {
+                                            "kind": "model",
+                                            "name": "Customer",
+                                        },
+                                        "required": True,
+                                    },
+                                ],
+                            },
+                        ],
+                        "enums": [
+                            {
+                                "name": "CustomerStatus",
+                                "type": "string",
+                                "values": [
+                                    {"name": "ACTIVE", "value": "active"},
+                                    {"name": "DELETED", "value": "deleted"},
+                                ],
+                            }
+                        ],
+                        "input_unions": [],
+                        "output_unions": [
+                            {
+                                "name": "CustomerSubject",
+                                "variants": [
+                                    {"kind": "model", "name": "Individual"},
+                                    {"kind": "model", "name": "Business"},
+                                ],
+                                "composition_kind": "oneOf",
+                            }
+                        ],
+                    }
+                ]
+            },
+            id="Webhook schemas are emitted separately with transitive output dependencies.",
         ),
         pytest.param(
             [
@@ -276,6 +514,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 ],
                             },
                         ],
+                        "webhooks": [],
                         "enums": [
                             {
                                 "name": "UserType",
@@ -318,6 +557,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                         "services": [],
                         "input_models": [],
                         "output_models": [],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [],
@@ -468,6 +708,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 ],
                             },
                         ],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [],
@@ -600,6 +841,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 ],
                             }
                         ],
+                        "webhooks": [],
                         "enums": [
                             {
                                 "name": "OrderStatus",
@@ -748,6 +990,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                         ],
                         "input_models": [],
                         "output_models": [],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [],
@@ -849,6 +1092,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 ],
                             }
                         ],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [],
@@ -964,6 +1208,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 ],
                             },
                         ],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [
@@ -1080,6 +1325,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 ],
                             },
                         ],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [
@@ -1173,6 +1419,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "fields": [],
                             }
                         ],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [],
@@ -1349,6 +1596,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 ],
                             },
                         ],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [],
@@ -1532,6 +1780,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 ],
                             },
                         ],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [],
@@ -1644,6 +1893,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 ],
                             },
                         ],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [],
@@ -1776,6 +2026,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 ],
                             },
                         ],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [],
@@ -1903,6 +2154,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 ],
                             },
                         ],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [
@@ -2041,6 +2293,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                             }
                         ],
                         "output_models": [],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [],
@@ -2181,6 +2434,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                         ],
                         "input_models": [],
                         "output_models": [],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [],
@@ -2228,6 +2482,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                         "services": [],
                         "input_models": [],
                         "output_models": [],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [],
@@ -2257,6 +2512,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                         "services": [],
                         "input_models": [],
                         "output_models": [],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [],
@@ -2267,6 +2523,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                         "services": [],
                         "input_models": [],
                         "output_models": [],
+                        "webhooks": [],
                         "enums": [],
                         "input_unions": [],
                         "output_unions": [],

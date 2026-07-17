@@ -107,6 +107,7 @@ class TypeScriptEmitter(EmitterBase):
 
             # Emit models
             self._emit_models(version_dir, api)
+            self._emit_webhooks(version_dir, api)
 
             # Emit services
             for service in api.services:
@@ -153,6 +154,21 @@ class TypeScriptEmitter(EmitterBase):
                 "enums": api.enums,
                 "models": api.all_models,
                 "unions": api.all_unions,
+            },
+        )
+
+    def _emit_webhooks(self, version_dir: pathlib.Path, api: APIVersion) -> None:
+        imports: set[str] = set()
+        for model in api.webhooks:
+            for field in model.fields:
+                imports.update(collect_type_imports(field.type, api))
+                imports.update(collect_enum_names(field.type, api))
+        self.render_file(
+            "src/version/webhooks.ts",
+            version_dir / "webhooks.ts",
+            {
+                **self.get_version_context(api),
+                "imports": sorted(imports),
             },
         )
 

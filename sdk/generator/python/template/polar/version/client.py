@@ -4,8 +4,8 @@ import typing
 from polar.base import AsyncClientBase, SyncClientBase, resolve_base_url
 
 {% for service in api.services %}
-from polar.{{ version }}.{{ service.name | snake }} import {{ service.name }}Async
-from polar.{{ version }}.{{ service.name | snake }} import {{ service.name }}Sync
+from polar.{{ version }}.services.{{ service.name | snake }} import {{ service.name }}Async
+from polar.{{ version }}.services.{{ service.name | snake }} import {{ service.name }}Sync
 {% endfor %}
 
 Environment = typing.Literal[{% for server in api.servers %}"{{ server.environment }}"{% if not loop.last %}, {% endif %}{% endfor %}]

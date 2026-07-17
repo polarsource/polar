@@ -140,6 +140,15 @@ class PythonEmitter(EmitterBase):
                     "output_enum_imports": self._get_output_enum_imports(api),
                 },
             )
+            self.render_file(
+                "polar/version/webhooks.py",
+                version_dir / "webhooks.py",
+                {
+                    **self.get_version_context(api),
+                    "imports": self._get_webhook_imports(api),
+                    "enum_imports": self._get_webhook_enum_imports(api),
+                },
+            )
 
             errors = self._collect_all_errors(api)
             self.render_file(
@@ -152,8 +161,10 @@ class PythonEmitter(EmitterBase):
                 },
             )
 
+            services_dir = version_dir / "services"
+            self._write_file(services_dir / "__init__.py", "")
             for service in api.services:
-                self._emit_service(service, api, version_dir)
+                self._emit_service(service, api, services_dir)
 
     def get_version_string(self, api: APIVersion) -> str:
         """Return the version string for a given APIVersion."""
@@ -187,7 +198,7 @@ class PythonEmitter(EmitterBase):
             service_path = output_path / f"{to_snake_case(service.name)}.py"
 
         self.render_file(
-            "polar/version/service.py",
+            "polar/version/services/service.py",
             service_path,
             {
                 **self.get_version_context(api),
@@ -209,6 +220,20 @@ class PythonEmitter(EmitterBase):
             for field in model.fields:
                 collect_enum_imports(field.type, enum_imports, api)
         return enum_imports
+
+    def _get_webhook_imports(self, api: APIVersion) -> list[str]:
+        imports: set[str] = set()
+        for model in api.webhooks:
+            for field in model.fields:
+                imports.update(_collect_type_ref_names(field.type, api))
+        return sorted(imports)
+
+    def _get_webhook_enum_imports(self, api: APIVersion) -> list[str]:
+        enum_imports: set[str] = set()
+        for model in api.webhooks:
+            for field in model.fields:
+                collect_enum_imports(field.type, enum_imports, api)
+        return sorted(enum_imports)
 
     def _collect_all_errors(self, api: APIVersion) -> list[ErrorResponse]:
         """Collect all unique error responses from all services and methods."""

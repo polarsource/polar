@@ -1,841 +1,614 @@
 from __future__ import annotations
 
+import dataclasses
 import typing
 
-from polar.base import (
-    AsyncServiceBase,
-    SyncServiceBase,
-    parse_response_json,
-    parse_response_none,
-)
-from polar.v2026_04.errors import (
-    HTTPValidationError,
-    ResourceNotFound,
-)
-from polar.v2026_04.inputs import (
-    WebhookEndpointCreate,
-    WebhookEndpointUpdate,
-)
-from polar.v2026_04.literals import (
-    WebhookEventType,
-)
 from polar.v2026_04.outputs import (
-    ListResourceWebhookDelivery,
-    ListResourceWebhookEndpoint,
-    WebhookDelivery,
-    WebhookEndpoint,
+    Benefit,
+    BenefitGrantWebhook,
+    Checkout,
+    Customer,
+    CustomerSeat,
+    CustomerState,
+    Member,
+    Order,
+    Organization,
+    Product,
+    Refund,
+    Subscription,
 )
 
 
-class WebhooksSync(SyncServiceBase):
-    def list_webhook_endpoints(
-        self,
-        *,
-        organization_id: str | list[str] | None = None,
-        page: int = 1,
-        limit: int = 10,
-    ) -> ListResourceWebhookEndpoint:
-        """
-        List webhook endpoints.
-
-        **Scopes**: `webhooks:read` `webhooks:write`
-
-        Args:
-            organization_id: Filter by organization ID.
-            page: Page number, defaults to 1.
-            limit: Size of a page, defaults to 10. Maximum is 100.
-
-        Raises:
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="GET",
-            url="/v1/webhooks/endpoints",
-            path_params={},
-            query_params={
-                "organization_id": organization_id,
-                "page": page,
-                "limit": limit,
-            },
-        )
-        response = self.client.send_request(request)
-        method_errors = {
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, ListResourceWebhookEndpoint, method_errors)
-
-    def iter_list_webhook_endpoints(
-        self,
-        *,
-        organization_id: str | list[str] | None = None,
-        page: int = 1,
-        limit: int = 10,
-    ) -> typing.Generator[WebhookEndpoint, None, None]:
-        """
-        List webhook endpoints.
-
-        **Scopes**: `webhooks:read` `webhooks:write`
-
-        Args:
-            organization_id: Filter by organization ID.
-            page: Page number, defaults to 1.
-            limit: Size of a page, defaults to 10. Maximum is 100.
-
-        Returns:
-            A generator that yields items of type WebhookEndpoint.
-
-        Raises:
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        while True:
-            response = self.list_webhook_endpoints(
-                organization_id=organization_id,
-                page=page,
-                limit=limit,
-            )
-            yield from response.items
-            if page >= response.pagination.max_page:
-                break
-            page += 1
-
-    def create_webhook_endpoint(
-        self,
-        **kwargs: typing.Unpack[WebhookEndpointCreate],
-    ) -> WebhookEndpoint:
-        """
-        Create a webhook endpoint.
-
-        **Scopes**: `webhooks:write`
-
-        Args:
-            **kwargs: Request body parameters
-
-        Raises:
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="POST",
-            url="/v1/webhooks/endpoints",
-            path_params={},
-            query_params={},
-            body=kwargs,
-        )
-        response = self.client.send_request(request)
-        method_errors = {
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, WebhookEndpoint, method_errors)
-
-    def get_webhook_endpoint(
-        self,
-        id: str,
-    ) -> WebhookEndpoint:
-        """
-        Get a webhook endpoint by ID.
-
-        **Scopes**: `webhooks:read` `webhooks:write`
-
-        Args:
-            id: The webhook endpoint ID.
-
-        Raises:
-            ResourceNotFound: Webhook endpoint not found.
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="GET",
-            url="/v1/webhooks/endpoints/{id}",
-            path_params={
-                "id": id,
-            },
-            query_params={},
-        )
-        response = self.client.send_request(request)
-        method_errors = {
-            404: ResourceNotFound,
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, WebhookEndpoint, method_errors)
-
-    def delete_webhook_endpoint(
-        self,
-        id: str,
-    ) -> None:
-        """
-        Delete a webhook endpoint.
-
-        **Scopes**: `webhooks:write`
-
-        Args:
-            id: The webhook endpoint ID.
-
-        Raises:
-            ResourceNotFound: Webhook endpoint not found.
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="DELETE",
-            url="/v1/webhooks/endpoints/{id}",
-            path_params={
-                "id": id,
-            },
-            query_params={},
-        )
-        response = self.client.send_request(request)
-        method_errors = {
-            404: ResourceNotFound,
-            422: HTTPValidationError,
-        }
-        return parse_response_none(response, method_errors)
-
-    def update_webhook_endpoint(
-        self,
-        id: str,
-        **kwargs: typing.Unpack[WebhookEndpointUpdate],
-    ) -> WebhookEndpoint:
-        """
-        Update a webhook endpoint.
-
-        **Scopes**: `webhooks:write`
-
-        Args:
-            id: The webhook endpoint ID.
-            **kwargs: Request body parameters
-
-        Raises:
-            ResourceNotFound: Webhook endpoint not found.
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="PATCH",
-            url="/v1/webhooks/endpoints/{id}",
-            path_params={
-                "id": id,
-            },
-            query_params={},
-            body=kwargs,
-        )
-        response = self.client.send_request(request)
-        method_errors = {
-            404: ResourceNotFound,
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, WebhookEndpoint, method_errors)
-
-    def reset_webhook_endpoint_secret(
-        self,
-        id: str,
-    ) -> WebhookEndpoint:
-        """
-        Regenerate a webhook endpoint secret.
-
-        **Scopes**: `webhooks:write`
-
-        Args:
-            id: The webhook endpoint ID.
-
-        Raises:
-            ResourceNotFound: Webhook endpoint not found.
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="PATCH",
-            url="/v1/webhooks/endpoints/{id}/secret",
-            path_params={
-                "id": id,
-            },
-            query_params={},
-        )
-        response = self.client.send_request(request)
-        method_errors = {
-            404: ResourceNotFound,
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, WebhookEndpoint, method_errors)
-
-    def list_webhook_deliveries(
-        self,
-        *,
-        endpoint_id: str | list[str] | None = None,
-        start_timestamp: str | None = None,
-        end_timestamp: str | None = None,
-        succeeded: bool | None = None,
-        query: str | None = None,
-        http_code_class: typing.Literal["2xx"]
-        | typing.Literal["3xx"]
-        | typing.Literal["4xx"]
-        | typing.Literal["5xx"]
-        | None = None,
-        event_type: WebhookEventType | list[WebhookEventType] | None = None,
-        page: int = 1,
-        limit: int = 10,
-    ) -> ListResourceWebhookDelivery:
-        """
-        List webhook deliveries.
-
-        Deliveries are all the attempts to deliver a webhook event to an endpoint.
-
-        **Scopes**: `webhooks:read` `webhooks:write`
-
-        Args:
-            endpoint_id: Filter by webhook endpoint ID.
-            start_timestamp: Filter deliveries after this timestamp.
-            end_timestamp: Filter deliveries before this timestamp.
-            succeeded: Filter by delivery success status.
-            query: Query to filter webhook deliveries.
-            http_code_class: Filter by HTTP response code class (2xx, 3xx, 4xx, 5xx).
-            event_type: Filter by webhook event type.
-            page: Page number, defaults to 1.
-            limit: Size of a page, defaults to 10. Maximum is 100.
-
-        Raises:
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="GET",
-            url="/v1/webhooks/deliveries",
-            path_params={},
-            query_params={
-                "endpoint_id": endpoint_id,
-                "start_timestamp": start_timestamp,
-                "end_timestamp": end_timestamp,
-                "succeeded": succeeded,
-                "query": query,
-                "http_code_class": http_code_class,
-                "event_type": event_type,
-                "page": page,
-                "limit": limit,
-            },
-        )
-        response = self.client.send_request(request)
-        method_errors = {
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, ListResourceWebhookDelivery, method_errors)
-
-    def iter_list_webhook_deliveries(
-        self,
-        *,
-        endpoint_id: str | list[str] | None = None,
-        start_timestamp: str | None = None,
-        end_timestamp: str | None = None,
-        succeeded: bool | None = None,
-        query: str | None = None,
-        http_code_class: typing.Literal["2xx"]
-        | typing.Literal["3xx"]
-        | typing.Literal["4xx"]
-        | typing.Literal["5xx"]
-        | None = None,
-        event_type: WebhookEventType | list[WebhookEventType] | None = None,
-        page: int = 1,
-        limit: int = 10,
-    ) -> typing.Generator[WebhookDelivery, None, None]:
-        """
-        List webhook deliveries.
-
-        Deliveries are all the attempts to deliver a webhook event to an endpoint.
-
-        **Scopes**: `webhooks:read` `webhooks:write`
-
-        Args:
-            endpoint_id: Filter by webhook endpoint ID.
-            start_timestamp: Filter deliveries after this timestamp.
-            end_timestamp: Filter deliveries before this timestamp.
-            succeeded: Filter by delivery success status.
-            query: Query to filter webhook deliveries.
-            http_code_class: Filter by HTTP response code class (2xx, 3xx, 4xx, 5xx).
-            event_type: Filter by webhook event type.
-            page: Page number, defaults to 1.
-            limit: Size of a page, defaults to 10. Maximum is 100.
-
-        Returns:
-            A generator that yields items of type WebhookDelivery.
-
-        Raises:
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        while True:
-            response = self.list_webhook_deliveries(
-                endpoint_id=endpoint_id,
-                start_timestamp=start_timestamp,
-                end_timestamp=end_timestamp,
-                succeeded=succeeded,
-                query=query,
-                http_code_class=http_code_class,
-                event_type=event_type,
-                page=page,
-                limit=limit,
-            )
-            yield from response.items
-            if page >= response.pagination.max_page:
-                break
-            page += 1
-
-    def redeliver_webhook_event(
-        self,
-        id: str,
-    ) -> typing.Any:
-        """
-        Schedule the re-delivery of a webhook event.
-
-        **Scopes**: `webhooks:write`
-
-        Args:
-            id: The webhook event ID.
-
-        Raises:
-            ResourceNotFound: Webhook event not found.
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="POST",
-            url="/v1/webhooks/events/{id}/redeliver",
-            path_params={
-                "id": id,
-            },
-            query_params={},
-        )
-        response = self.client.send_request(request)
-        method_errors = {
-            404: ResourceNotFound,
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, typing.Any, method_errors)
-
-
-class WebhooksAsync(AsyncServiceBase):
-    async def list_webhook_endpoints(
-        self,
-        *,
-        organization_id: str | list[str] | None = None,
-        page: int = 1,
-        limit: int = 10,
-    ) -> ListResourceWebhookEndpoint:
-        """
-        List webhook endpoints.
-
-        **Scopes**: `webhooks:read` `webhooks:write`
-
-        Args:
-            organization_id: Filter by organization ID.
-            page: Page number, defaults to 1.
-            limit: Size of a page, defaults to 10. Maximum is 100.
-
-        Raises:
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="GET",
-            url="/v1/webhooks/endpoints",
-            path_params={},
-            query_params={
-                "organization_id": organization_id,
-                "page": page,
-                "limit": limit,
-            },
-        )
-        response = await self.client.send_request(request)
-        method_errors = {
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, ListResourceWebhookEndpoint, method_errors)
-
-    async def iter_list_webhook_endpoints(
-        self,
-        *,
-        organization_id: str | list[str] | None = None,
-        page: int = 1,
-        limit: int = 10,
-    ) -> typing.AsyncGenerator[WebhookEndpoint, None]:
-        """
-        List webhook endpoints.
-
-        **Scopes**: `webhooks:read` `webhooks:write`
-
-        Args:
-            organization_id: Filter by organization ID.
-            page: Page number, defaults to 1.
-            limit: Size of a page, defaults to 10. Maximum is 100.
-
-        Returns:
-            An async generator that yields items of type WebhookEndpoint.
-
-        Raises:
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        while True:
-            response = await self.list_webhook_endpoints(
-                organization_id=organization_id,
-                page=page,
-                limit=limit,
-            )
-            for item in response.items:
-                yield item
-            if page >= response.pagination.max_page:
-                break
-            page += 1
-
-    async def create_webhook_endpoint(
-        self,
-        **kwargs: typing.Unpack[WebhookEndpointCreate],
-    ) -> WebhookEndpoint:
-        """
-        Create a webhook endpoint.
-
-        **Scopes**: `webhooks:write`
-
-        Args:
-            **kwargs: Request body parameters
-
-        Raises:
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="POST",
-            url="/v1/webhooks/endpoints",
-            path_params={},
-            query_params={},
-            body=kwargs,
-        )
-        response = await self.client.send_request(request)
-        method_errors = {
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, WebhookEndpoint, method_errors)
-
-    async def get_webhook_endpoint(
-        self,
-        id: str,
-    ) -> WebhookEndpoint:
-        """
-        Get a webhook endpoint by ID.
-
-        **Scopes**: `webhooks:read` `webhooks:write`
-
-        Args:
-            id: The webhook endpoint ID.
-
-        Raises:
-            ResourceNotFound: Webhook endpoint not found.
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="GET",
-            url="/v1/webhooks/endpoints/{id}",
-            path_params={
-                "id": id,
-            },
-            query_params={},
-        )
-        response = await self.client.send_request(request)
-        method_errors = {
-            404: ResourceNotFound,
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, WebhookEndpoint, method_errors)
-
-    async def delete_webhook_endpoint(
-        self,
-        id: str,
-    ) -> None:
-        """
-        Delete a webhook endpoint.
-
-        **Scopes**: `webhooks:write`
-
-        Args:
-            id: The webhook endpoint ID.
-
-        Raises:
-            ResourceNotFound: Webhook endpoint not found.
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="DELETE",
-            url="/v1/webhooks/endpoints/{id}",
-            path_params={
-                "id": id,
-            },
-            query_params={},
-        )
-        response = await self.client.send_request(request)
-        method_errors = {
-            404: ResourceNotFound,
-            422: HTTPValidationError,
-        }
-        return parse_response_none(response, method_errors)
-
-    async def update_webhook_endpoint(
-        self,
-        id: str,
-        **kwargs: typing.Unpack[WebhookEndpointUpdate],
-    ) -> WebhookEndpoint:
-        """
-        Update a webhook endpoint.
-
-        **Scopes**: `webhooks:write`
-
-        Args:
-            id: The webhook endpoint ID.
-            **kwargs: Request body parameters
-
-        Raises:
-            ResourceNotFound: Webhook endpoint not found.
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="PATCH",
-            url="/v1/webhooks/endpoints/{id}",
-            path_params={
-                "id": id,
-            },
-            query_params={},
-            body=kwargs,
-        )
-        response = await self.client.send_request(request)
-        method_errors = {
-            404: ResourceNotFound,
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, WebhookEndpoint, method_errors)
-
-    async def reset_webhook_endpoint_secret(
-        self,
-        id: str,
-    ) -> WebhookEndpoint:
-        """
-        Regenerate a webhook endpoint secret.
-
-        **Scopes**: `webhooks:write`
-
-        Args:
-            id: The webhook endpoint ID.
-
-        Raises:
-            ResourceNotFound: Webhook endpoint not found.
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="PATCH",
-            url="/v1/webhooks/endpoints/{id}/secret",
-            path_params={
-                "id": id,
-            },
-            query_params={},
-        )
-        response = await self.client.send_request(request)
-        method_errors = {
-            404: ResourceNotFound,
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, WebhookEndpoint, method_errors)
-
-    async def list_webhook_deliveries(
-        self,
-        *,
-        endpoint_id: str | list[str] | None = None,
-        start_timestamp: str | None = None,
-        end_timestamp: str | None = None,
-        succeeded: bool | None = None,
-        query: str | None = None,
-        http_code_class: typing.Literal["2xx"]
-        | typing.Literal["3xx"]
-        | typing.Literal["4xx"]
-        | typing.Literal["5xx"]
-        | None = None,
-        event_type: WebhookEventType | list[WebhookEventType] | None = None,
-        page: int = 1,
-        limit: int = 10,
-    ) -> ListResourceWebhookDelivery:
-        """
-        List webhook deliveries.
-
-        Deliveries are all the attempts to deliver a webhook event to an endpoint.
-
-        **Scopes**: `webhooks:read` `webhooks:write`
-
-        Args:
-            endpoint_id: Filter by webhook endpoint ID.
-            start_timestamp: Filter deliveries after this timestamp.
-            end_timestamp: Filter deliveries before this timestamp.
-            succeeded: Filter by delivery success status.
-            query: Query to filter webhook deliveries.
-            http_code_class: Filter by HTTP response code class (2xx, 3xx, 4xx, 5xx).
-            event_type: Filter by webhook event type.
-            page: Page number, defaults to 1.
-            limit: Size of a page, defaults to 10. Maximum is 100.
-
-        Raises:
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="GET",
-            url="/v1/webhooks/deliveries",
-            path_params={},
-            query_params={
-                "endpoint_id": endpoint_id,
-                "start_timestamp": start_timestamp,
-                "end_timestamp": end_timestamp,
-                "succeeded": succeeded,
-                "query": query,
-                "http_code_class": http_code_class,
-                "event_type": event_type,
-                "page": page,
-                "limit": limit,
-            },
-        )
-        response = await self.client.send_request(request)
-        method_errors = {
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, ListResourceWebhookDelivery, method_errors)
-
-    async def iter_list_webhook_deliveries(
-        self,
-        *,
-        endpoint_id: str | list[str] | None = None,
-        start_timestamp: str | None = None,
-        end_timestamp: str | None = None,
-        succeeded: bool | None = None,
-        query: str | None = None,
-        http_code_class: typing.Literal["2xx"]
-        | typing.Literal["3xx"]
-        | typing.Literal["4xx"]
-        | typing.Literal["5xx"]
-        | None = None,
-        event_type: WebhookEventType | list[WebhookEventType] | None = None,
-        page: int = 1,
-        limit: int = 10,
-    ) -> typing.AsyncGenerator[WebhookDelivery, None]:
-        """
-        List webhook deliveries.
-
-        Deliveries are all the attempts to deliver a webhook event to an endpoint.
-
-        **Scopes**: `webhooks:read` `webhooks:write`
-
-        Args:
-            endpoint_id: Filter by webhook endpoint ID.
-            start_timestamp: Filter deliveries after this timestamp.
-            end_timestamp: Filter deliveries before this timestamp.
-            succeeded: Filter by delivery success status.
-            query: Query to filter webhook deliveries.
-            http_code_class: Filter by HTTP response code class (2xx, 3xx, 4xx, 5xx).
-            event_type: Filter by webhook event type.
-            page: Page number, defaults to 1.
-            limit: Size of a page, defaults to 10. Maximum is 100.
-
-        Returns:
-            An async generator that yields items of type WebhookDelivery.
-
-        Raises:
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        while True:
-            response = await self.list_webhook_deliveries(
-                endpoint_id=endpoint_id,
-                start_timestamp=start_timestamp,
-                end_timestamp=end_timestamp,
-                succeeded=succeeded,
-                query=query,
-                http_code_class=http_code_class,
-                event_type=event_type,
-                page=page,
-                limit=limit,
-            )
-            for item in response.items:
-                yield item
-            if page >= response.pagination.max_page:
-                break
-            page += 1
-
-    async def redeliver_webhook_event(
-        self,
-        id: str,
-    ) -> typing.Any:
-        """
-        Schedule the re-delivery of a webhook event.
-
-        **Scopes**: `webhooks:write`
-
-        Args:
-            id: The webhook event ID.
-
-        Raises:
-            ResourceNotFound: Webhook event not found.
-            HTTPValidationError: Validation Error
-            PolarNetworkError: Raised when a network error occurs while making the request.
-            PolarRateLimitError: Raised when the rate limit is exceeded.
-            PolarServerError: Raised when the server returns a 5xx error response.
-        """
-        request = self.client.build_request(
-            method="POST",
-            url="/v1/webhooks/events/{id}/redeliver",
-            path_params={
-                "id": id,
-            },
-            query_params={},
-        )
-        response = await self.client.send_request(request)
-        method_errors = {
-            404: ResourceNotFound,
-            422: HTTPValidationError,
-        }
-        return parse_response_json(response, typing.Any, method_errors)
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookBenefitCreatedPayload:
+    """Sent when a new benefit is created.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["benefit.created"]
+
+    timestamp: str
+
+    data: Benefit
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookBenefitGrantCreatedPayload:
+    """Sent when a new benefit grant is created.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["benefit_grant.created"]
+
+    timestamp: str
+
+    data: BenefitGrantWebhook
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookBenefitGrantCycledPayload:
+    """Sent when a benefit grant is cycled,
+    meaning the related subscription has been renewed for another period.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["benefit_grant.cycled"]
+
+    timestamp: str
+
+    data: BenefitGrantWebhook
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookBenefitGrantRevokedPayload:
+    """Sent when a benefit grant is revoked.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["benefit_grant.revoked"]
+
+    timestamp: str
+
+    data: BenefitGrantWebhook
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookBenefitGrantUpdatedPayload:
+    """Sent when a benefit grant is updated.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["benefit_grant.updated"]
+
+    timestamp: str
+
+    data: BenefitGrantWebhook
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookBenefitUpdatedPayload:
+    """Sent when a benefit is updated.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["benefit.updated"]
+
+    timestamp: str
+
+    data: Benefit
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookCheckoutCreatedPayload:
+    """Sent when a new checkout is created.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["checkout.created"]
+
+    timestamp: str
+
+    data: Checkout
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookCheckoutExpiredPayload:
+    """Sent when a checkout expires.
+
+    This event fires when a checkout reaches its expiration time without being completed.
+    Developers can use this to send reminder emails or track checkout abandonment.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["checkout.expired"]
+
+    timestamp: str
+
+    data: Checkout
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookCheckoutUpdatedPayload:
+    """Sent when a checkout is updated.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["checkout.updated"]
+
+    timestamp: str
+
+    data: Checkout
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookCustomerCreatedPayload:
+    """Sent when a new customer is created.
+
+    A customer can be created:
+
+    * After a successful checkout.
+    * Programmatically via the API.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["customer.created"]
+
+    timestamp: str
+
+    data: Customer
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookCustomerDeletedPayload:
+    """Sent when a customer is deleted.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["customer.deleted"]
+
+    timestamp: str
+
+    data: Customer
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookCustomerSeatAssignedPayload:
+    """Sent when a new customer seat is assigned.
+
+    This event is triggered when a seat is assigned to a customer by the organization.
+    The customer will receive an invitation email to claim the seat."""
+
+    type: typing.Literal["customer_seat.assigned"]
+
+    timestamp: str
+
+    data: CustomerSeat
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookCustomerSeatClaimedPayload:
+    """Sent when a customer seat is claimed.
+
+    This event is triggered when a customer accepts the seat invitation and claims their access."""
+
+    type: typing.Literal["customer_seat.claimed"]
+
+    timestamp: str
+
+    data: CustomerSeat
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookCustomerSeatRevokedPayload:
+    """Sent when a customer seat is revoked.
+
+    This event is triggered when access to a seat is revoked, either manually by the organization or automatically when a subscription is canceled."""
+
+    type: typing.Literal["customer_seat.revoked"]
+
+    timestamp: str
+
+    data: CustomerSeat
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookCustomerStateChangedPayload:
+    """Sent when a customer state has changed.
+
+    It's triggered when:
+
+    * Customer is created, updated or deleted.
+    * A subscription is created or updated.
+    * A benefit is granted or revoked.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["customer.state_changed"]
+
+    timestamp: str
+
+    data: CustomerState
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookCustomerUpdatedPayload:
+    """Sent when a customer is updated.
+
+    This event is fired when the customer details are updated.
+
+    If you want to be notified when a customer subscription or benefit state changes, you should listen to the `customer_state_changed` event.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["customer.updated"]
+
+    timestamp: str
+
+    data: Customer
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookMemberCreatedPayload:
+    """Sent when a new member is created.
+
+    A member represents an individual within a customer (team).
+    This event is triggered when a member is added to a customer,
+    either programmatically via the API or when an owner is automatically
+    created for a new customer.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["member.created"]
+
+    timestamp: str
+
+    data: Member
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookMemberDeletedPayload:
+    """Sent when a member is deleted.
+
+    This event is triggered when a member is removed from a customer.
+    Any active seats assigned to the member will be automatically revoked.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["member.deleted"]
+
+    timestamp: str
+
+    data: Member
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookMemberUpdatedPayload:
+    """Sent when a member is updated.
+
+    This event is triggered when member details are updated,
+    such as their name or role within the customer.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["member.updated"]
+
+    timestamp: str
+
+    data: Member
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookOrderCreatedPayload:
+    """Sent when a new order is created.
+
+    A new order is created when:
+
+    * A customer purchases a one-time product. In this case, `billing_reason` is set to `purchase`.
+    * A customer starts a subscription. In this case, `billing_reason` is set to `subscription_create`.
+    * A subscription is renewed. In this case, `billing_reason` is set to `subscription_cycle`.
+    * A subscription is upgraded or downgraded with an immediate proration invoice. In this case, `billing_reason` is set to `subscription_update`.
+
+    > [!WARNING]
+    > The order might not be paid yet, so the `status` field might be `pending`.
+
+    **Discord & Slack support:** Full"""
+
+    type: typing.Literal["order.created"]
+
+    timestamp: str
+
+    data: Order
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookOrderPaidPayload:
+    """Sent when an order is paid.
+
+    When you receive this event, the order is fully processed and payment has been received.
+
+    **Discord & Slack support:** Full"""
+
+    type: typing.Literal["order.paid"]
+
+    timestamp: str
+
+    data: Order
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookOrderRefundedPayload:
+    """Sent when an order is fully or partially refunded.
+
+    **Discord & Slack support:** Full"""
+
+    type: typing.Literal["order.refunded"]
+
+    timestamp: str
+
+    data: Order
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookOrderUpdatedPayload:
+    """Sent when an order is updated.
+
+    An order is updated when:
+
+    * Its status changes, e.g. from `pending` to `paid`.
+    * It's refunded, partially or fully.
+
+    **Discord & Slack support:** Full"""
+
+    type: typing.Literal["order.updated"]
+
+    timestamp: str
+
+    data: Order
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookOrganizationUpdatedPayload:
+    """Sent when a organization is updated.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["organization.updated"]
+
+    timestamp: str
+
+    data: Organization
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookProductCreatedPayload:
+    """Sent when a new product is created.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["product.created"]
+
+    timestamp: str
+
+    data: Product
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookProductUpdatedPayload:
+    """Sent when a product is updated.
+
+    **Discord & Slack support:** Basic"""
+
+    type: typing.Literal["product.updated"]
+
+    timestamp: str
+
+    data: Product
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookRefundCreatedPayload:
+    """Sent when a refund is created regardless of status.
+
+    **Discord & Slack support:** Full"""
+
+    type: typing.Literal["refund.created"]
+
+    timestamp: str
+
+    data: Refund
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookRefundUpdatedPayload:
+    """Sent when a refund is updated.
+
+    **Discord & Slack support:** Full"""
+
+    type: typing.Literal["refund.updated"]
+
+    timestamp: str
+
+    data: Refund
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookSubscriptionActivePayload:
+    """Sent when a subscription becomes active,
+    whether because it's a new paid subscription or because payment was recovered.
+
+    **Discord & Slack support:** Full"""
+
+    type: typing.Literal["subscription.active"]
+
+    timestamp: str
+
+    data: Subscription
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookSubscriptionCanceledPayload:
+    """Sent when a subscription is canceled.
+    Customers might still have access until the end of the current period.
+
+    **Discord & Slack support:** Full"""
+
+    type: typing.Literal["subscription.canceled"]
+
+    timestamp: str
+
+    data: Subscription
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookSubscriptionCreatedPayload:
+    """Sent when a new subscription is created.
+
+    When this event occurs, the subscription `status` might not be `active` yet, as we can still have to wait for the first payment to be processed.
+
+    **Discord & Slack support:** Full"""
+
+    type: typing.Literal["subscription.created"]
+
+    timestamp: str
+
+    data: Subscription
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookSubscriptionPastDuePayload:
+    """Sent when a subscription payment fails and the subscription enters `past_due` status.
+
+    This is a recoverable state - the customer can update their payment method to restore the subscription.
+    Benefits may be revoked depending on the organization's grace period settings.
+
+    If payment retries are exhausted, a `subscription.revoked` event will be sent.
+
+    **Discord & Slack support:** Full"""
+
+    type: typing.Literal["subscription.past_due"]
+
+    timestamp: str
+
+    data: Subscription
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookSubscriptionPausedPayload:
+    """Sent when a subscription is paused and the customer temporarily loses access.
+
+    No order is created while paused. The subscription resumes either on its
+    scheduled resume date or when resumed manually, starting a new billing period.
+
+    **Discord & Slack support:** Full"""
+
+    type: typing.Literal["subscription.paused"]
+
+    timestamp: str
+
+    data: Subscription
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookSubscriptionResumedPayload:
+    """Sent when a paused subscription resumes, restoring the customer's access.
+
+    Resuming starts a new billing period and charges the customer immediately.
+
+    **Discord & Slack support:** Full"""
+
+    type: typing.Literal["subscription.resumed"]
+
+    timestamp: str
+
+    data: Subscription
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookSubscriptionRevokedPayload:
+    """Sent when a subscription is revoked and the user loses access immediately.
+    Happens when the subscription is canceled or payment retries are exhausted (status becomes `unpaid`).
+
+    For payment failures that can still be recovered, see `subscription.past_due`.
+
+    **Discord & Slack support:** Full"""
+
+    type: typing.Literal["subscription.revoked"]
+
+    timestamp: str
+
+    data: Subscription
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookSubscriptionUncanceledPayload:
+    """Sent when a customer revokes a pending cancellation.
+
+    When a customer cancels with "at period end", they retain access until the
+    subscription would renew. During this time, they can change their mind and
+    undo the cancellation. This event is triggered when they do so.
+
+    **Discord & Slack support:** Full"""
+
+    type: typing.Literal["subscription.uncanceled"]
+
+    timestamp: str
+
+    data: Subscription
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class WebhookSubscriptionUpdatedPayload:
+    """Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.
+
+    If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.
+
+    To listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.
+
+    **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped."""
+
+    type: typing.Literal["subscription.updated"]
+
+    timestamp: str
+
+    data: Subscription
+
+
+WebhookPayload: typing.TypeAlias = (
+    WebhookBenefitCreatedPayload
+    | WebhookBenefitGrantCreatedPayload
+    | WebhookBenefitGrantCycledPayload
+    | WebhookBenefitGrantRevokedPayload
+    | WebhookBenefitGrantUpdatedPayload
+    | WebhookBenefitUpdatedPayload
+    | WebhookCheckoutCreatedPayload
+    | WebhookCheckoutExpiredPayload
+    | WebhookCheckoutUpdatedPayload
+    | WebhookCustomerCreatedPayload
+    | WebhookCustomerDeletedPayload
+    | WebhookCustomerSeatAssignedPayload
+    | WebhookCustomerSeatClaimedPayload
+    | WebhookCustomerSeatRevokedPayload
+    | WebhookCustomerStateChangedPayload
+    | WebhookCustomerUpdatedPayload
+    | WebhookMemberCreatedPayload
+    | WebhookMemberDeletedPayload
+    | WebhookMemberUpdatedPayload
+    | WebhookOrderCreatedPayload
+    | WebhookOrderPaidPayload
+    | WebhookOrderRefundedPayload
+    | WebhookOrderUpdatedPayload
+    | WebhookOrganizationUpdatedPayload
+    | WebhookProductCreatedPayload
+    | WebhookProductUpdatedPayload
+    | WebhookRefundCreatedPayload
+    | WebhookRefundUpdatedPayload
+    | WebhookSubscriptionActivePayload
+    | WebhookSubscriptionCanceledPayload
+    | WebhookSubscriptionCreatedPayload
+    | WebhookSubscriptionPastDuePayload
+    | WebhookSubscriptionPausedPayload
+    | WebhookSubscriptionResumedPayload
+    | WebhookSubscriptionRevokedPayload
+    | WebhookSubscriptionUncanceledPayload
+    | WebhookSubscriptionUpdatedPayload
+)

@@ -1268,6 +1268,58 @@ class BenefitGrantCustomProperties: ...
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitGrantCustomWebhook:
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    id: str
+    """The ID of the grant."""
+
+    granted_at: str | None = None
+    """The timestamp when the benefit was granted. If `None`, the benefit is not granted."""
+
+    is_granted: bool
+    """Whether the benefit is granted."""
+
+    revoked_at: str | None = None
+    """The timestamp when the benefit was revoked. If `None`, the benefit is not revoked."""
+
+    is_revoked: bool
+    """Whether the benefit is revoked."""
+
+    subscription_id: str | None
+    """The ID of the subscription that granted this benefit."""
+
+    order_id: str | None
+    """The ID of the order that granted this benefit."""
+
+    customer_id: str
+    """The ID of the customer concerned by this grant."""
+
+    member_id: str | None = None
+    """The ID of the member concerned by this grant."""
+
+    benefit_id: str
+    """The ID of the benefit concerned by this grant."""
+
+    error: BenefitGrantError | None = None
+    """The error information if the benefit grant failed with an unrecoverable error."""
+
+    customer: Customer
+
+    member: Member | None = None
+
+    benefit: BenefitCustom
+
+    properties: BenefitGrantCustomProperties
+
+    previous_properties: BenefitGrantCustomProperties | None = None
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantDiscordProperties:
     account_id: str | None = None
 
@@ -1279,8 +1331,112 @@ class BenefitGrantDiscordProperties:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitGrantDiscordWebhook:
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    id: str
+    """The ID of the grant."""
+
+    granted_at: str | None = None
+    """The timestamp when the benefit was granted. If `None`, the benefit is not granted."""
+
+    is_granted: bool
+    """Whether the benefit is granted."""
+
+    revoked_at: str | None = None
+    """The timestamp when the benefit was revoked. If `None`, the benefit is not revoked."""
+
+    is_revoked: bool
+    """Whether the benefit is revoked."""
+
+    subscription_id: str | None
+    """The ID of the subscription that granted this benefit."""
+
+    order_id: str | None
+    """The ID of the order that granted this benefit."""
+
+    customer_id: str
+    """The ID of the customer concerned by this grant."""
+
+    member_id: str | None = None
+    """The ID of the member concerned by this grant."""
+
+    benefit_id: str
+    """The ID of the benefit concerned by this grant."""
+
+    error: BenefitGrantError | None = None
+    """The error information if the benefit grant failed with an unrecoverable error."""
+
+    customer: Customer
+
+    member: Member | None = None
+
+    benefit: BenefitDiscord
+
+    properties: BenefitGrantDiscordProperties
+
+    previous_properties: BenefitGrantDiscordProperties | None = None
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantDownloadablesProperties:
     files: list[str] | None = None
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitGrantDownloadablesWebhook:
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    id: str
+    """The ID of the grant."""
+
+    granted_at: str | None = None
+    """The timestamp when the benefit was granted. If `None`, the benefit is not granted."""
+
+    is_granted: bool
+    """Whether the benefit is granted."""
+
+    revoked_at: str | None = None
+    """The timestamp when the benefit was revoked. If `None`, the benefit is not revoked."""
+
+    is_revoked: bool
+    """Whether the benefit is revoked."""
+
+    subscription_id: str | None
+    """The ID of the subscription that granted this benefit."""
+
+    order_id: str | None
+    """The ID of the order that granted this benefit."""
+
+    customer_id: str
+    """The ID of the customer concerned by this grant."""
+
+    member_id: str | None = None
+    """The ID of the member concerned by this grant."""
+
+    benefit_id: str
+    """The ID of the benefit concerned by this grant."""
+
+    error: BenefitGrantError | None = None
+    """The error information if the benefit grant failed with an unrecoverable error."""
+
+    customer: Customer
+
+    member: Member | None = None
+
+    benefit: BenefitDownloadables
+
+    properties: BenefitGrantDownloadablesProperties
+
+    previous_properties: BenefitGrantDownloadablesProperties | None = None
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -1297,6 +1453,58 @@ class BenefitGrantFeatureFlagProperties: ...
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitGrantFeatureFlagWebhook:
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    id: str
+    """The ID of the grant."""
+
+    granted_at: str | None = None
+    """The timestamp when the benefit was granted. If `None`, the benefit is not granted."""
+
+    is_granted: bool
+    """Whether the benefit is granted."""
+
+    revoked_at: str | None = None
+    """The timestamp when the benefit was revoked. If `None`, the benefit is not revoked."""
+
+    is_revoked: bool
+    """Whether the benefit is revoked."""
+
+    subscription_id: str | None
+    """The ID of the subscription that granted this benefit."""
+
+    order_id: str | None
+    """The ID of the order that granted this benefit."""
+
+    customer_id: str
+    """The ID of the customer concerned by this grant."""
+
+    member_id: str | None = None
+    """The ID of the member concerned by this grant."""
+
+    benefit_id: str
+    """The ID of the benefit concerned by this grant."""
+
+    error: BenefitGrantError | None = None
+    """The error information if the benefit grant failed with an unrecoverable error."""
+
+    customer: Customer
+
+    member: Member | None = None
+
+    benefit: BenefitFeatureFlag
+
+    properties: BenefitGrantFeatureFlagProperties
+
+    previous_properties: BenefitGrantFeatureFlagProperties | None = None
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantGitHubRepositoryProperties:
     account_id: str | None = None
 
@@ -1310,12 +1518,116 @@ class BenefitGrantGitHubRepositoryProperties:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitGrantGitHubRepositoryWebhook:
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    id: str
+    """The ID of the grant."""
+
+    granted_at: str | None = None
+    """The timestamp when the benefit was granted. If `None`, the benefit is not granted."""
+
+    is_granted: bool
+    """Whether the benefit is granted."""
+
+    revoked_at: str | None = None
+    """The timestamp when the benefit was revoked. If `None`, the benefit is not revoked."""
+
+    is_revoked: bool
+    """Whether the benefit is revoked."""
+
+    subscription_id: str | None
+    """The ID of the subscription that granted this benefit."""
+
+    order_id: str | None
+    """The ID of the order that granted this benefit."""
+
+    customer_id: str
+    """The ID of the customer concerned by this grant."""
+
+    member_id: str | None = None
+    """The ID of the member concerned by this grant."""
+
+    benefit_id: str
+    """The ID of the benefit concerned by this grant."""
+
+    error: BenefitGrantError | None = None
+    """The error information if the benefit grant failed with an unrecoverable error."""
+
+    customer: Customer
+
+    member: Member | None = None
+
+    benefit: BenefitGitHubRepository
+
+    properties: BenefitGrantGitHubRepositoryProperties
+
+    previous_properties: BenefitGrantGitHubRepositoryProperties | None = None
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantLicenseKeysProperties:
     user_provided_key: str | None = None
 
     license_key_id: str | None = None
 
     display_key: str | None = None
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitGrantLicenseKeysWebhook:
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    id: str
+    """The ID of the grant."""
+
+    granted_at: str | None = None
+    """The timestamp when the benefit was granted. If `None`, the benefit is not granted."""
+
+    is_granted: bool
+    """Whether the benefit is granted."""
+
+    revoked_at: str | None = None
+    """The timestamp when the benefit was revoked. If `None`, the benefit is not revoked."""
+
+    is_revoked: bool
+    """Whether the benefit is revoked."""
+
+    subscription_id: str | None
+    """The ID of the subscription that granted this benefit."""
+
+    order_id: str | None
+    """The ID of the order that granted this benefit."""
+
+    customer_id: str
+    """The ID of the customer concerned by this grant."""
+
+    member_id: str | None = None
+    """The ID of the member concerned by this grant."""
+
+    benefit_id: str
+    """The ID of the benefit concerned by this grant."""
+
+    error: BenefitGrantError | None = None
+    """The error information if the benefit grant failed with an unrecoverable error."""
+
+    customer: Customer
+
+    member: Member | None = None
+
+    benefit: BenefitLicenseKeys
+
+    properties: BenefitGrantLicenseKeysProperties
+
+    previous_properties: BenefitGrantLicenseKeysProperties | None = None
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -1339,6 +1651,58 @@ class BenefitGrantMeterCreditProperties:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitGrantMeterCreditWebhook:
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    id: str
+    """The ID of the grant."""
+
+    granted_at: str | None = None
+    """The timestamp when the benefit was granted. If `None`, the benefit is not granted."""
+
+    is_granted: bool
+    """Whether the benefit is granted."""
+
+    revoked_at: str | None = None
+    """The timestamp when the benefit was revoked. If `None`, the benefit is not revoked."""
+
+    is_revoked: bool
+    """Whether the benefit is revoked."""
+
+    subscription_id: str | None
+    """The ID of the subscription that granted this benefit."""
+
+    order_id: str | None
+    """The ID of the order that granted this benefit."""
+
+    customer_id: str
+    """The ID of the customer concerned by this grant."""
+
+    member_id: str | None = None
+    """The ID of the member concerned by this grant."""
+
+    benefit_id: str
+    """The ID of the benefit concerned by this grant."""
+
+    error: BenefitGrantError | None = None
+    """The error information if the benefit grant failed with an unrecoverable error."""
+
+    customer: Customer
+
+    member: Member | None = None
+
+    benefit: BenefitMeterCredit
+
+    properties: BenefitGrantMeterCreditProperties
+
+    previous_properties: BenefitGrantMeterCreditProperties | None = None
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class BenefitGrantSlackSharedChannelProperties:
     invited_email: str | None = None
 
@@ -1351,6 +1715,58 @@ class BenefitGrantSlackSharedChannelProperties:
     invite_url: str | None = None
 
     connected_team_id: str | None = None
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class BenefitGrantSlackSharedChannelWebhook:
+    created_at: str
+    """Creation timestamp of the object."""
+
+    modified_at: str | None
+    """Last modification timestamp of the object."""
+
+    id: str
+    """The ID of the grant."""
+
+    granted_at: str | None = None
+    """The timestamp when the benefit was granted. If `None`, the benefit is not granted."""
+
+    is_granted: bool
+    """Whether the benefit is granted."""
+
+    revoked_at: str | None = None
+    """The timestamp when the benefit was revoked. If `None`, the benefit is not revoked."""
+
+    is_revoked: bool
+    """Whether the benefit is revoked."""
+
+    subscription_id: str | None
+    """The ID of the subscription that granted this benefit."""
+
+    order_id: str | None
+    """The ID of the order that granted this benefit."""
+
+    customer_id: str
+    """The ID of the customer concerned by this grant."""
+
+    member_id: str | None = None
+    """The ID of the member concerned by this grant."""
+
+    benefit_id: str
+    """The ID of the benefit concerned by this grant."""
+
+    error: BenefitGrantError | None = None
+    """The error information if the benefit grant failed with an unrecoverable error."""
+
+    customer: Customer
+
+    member: Member | None = None
+
+    benefit: BenefitSlackSharedChannel
+
+    properties: BenefitGrantSlackSharedChannelProperties
+
+    previous_properties: BenefitGrantSlackSharedChannelProperties | None = None
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -9644,6 +10060,17 @@ Benefit: typing.TypeAlias = (
     | BenefitMeterCredit
     | BenefitFeatureFlag
     | BenefitSlackSharedChannel
+)
+
+BenefitGrantWebhook: typing.TypeAlias = (
+    BenefitGrantDiscordWebhook
+    | BenefitGrantCustomWebhook
+    | BenefitGrantGitHubRepositoryWebhook
+    | BenefitGrantDownloadablesWebhook
+    | BenefitGrantLicenseKeysWebhook
+    | BenefitGrantMeterCreditWebhook
+    | BenefitGrantFeatureFlagWebhook
+    | BenefitGrantSlackSharedChannelWebhook
 )
 
 CheckoutForbiddenError: typing.TypeAlias = (

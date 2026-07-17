@@ -23,11 +23,15 @@ from .collectors import (
     collect_metrics_data,
     collect_organization_data,
     collect_products_data,
+    collect_risk_signal_data,
     collect_setup_data,
     collect_website_data,
 )
 from .collectors.setup import resolve_url_redirects
-from .repository import OrganizationReviewRepository
+from .repository import (
+    OrganizationReviewRepository,
+    OrganizationRiskSignalRepository,
+)
 from .schemas import (
     AgentReviewResult,
     DataSnapshot,
@@ -38,6 +42,7 @@ from .schemas import (
     PriorFeedbackData,
     ProductsData,
     ReviewContext,
+    RiskSignalData,
     SetupData,
     UsageInfo,
     WebsiteData,
@@ -342,6 +347,13 @@ async def _collect_prior_feedback(organization_id: UUID) -> PriorFeedbackData:
         return collect_feedback_data(records)
 
 
+async def _collect_risk_signals(organization_id: UUID) -> RiskSignalData:
+    async with AsyncReadSessionMaker() as session:
+        repo = OrganizationRiskSignalRepository.from_session(session)
+        signals = await repo.list_by_organization(organization_id)
+        return collect_risk_signal_data(signals)
+
+
 async def _collect_data(
     organization: Organization,
     context: ReviewContext,
@@ -370,6 +382,7 @@ async def _collect_data(
             tuple[PayoutAccountData, IdentityData],
             WebsiteData | None,
             PriorFeedbackData,
+            RiskSignalData,
         ],
         await asyncio.gather(
             _collect_products(organization.id, context),
@@ -379,6 +392,7 @@ async def _collect_data(
             _collect_account_identity(organization, context),
             _collect_website(organization),
             _collect_prior_feedback(organization.id),
+            _collect_risk_signals(organization.id),
         ),
     )
     (
@@ -389,6 +403,7 @@ async def _collect_data(
         (account_data, identity_data),
         website_data,
         prior_feedback_data,
+        risk_signal_data,
     ) = results
 
     return DataSnapshot(
@@ -402,5 +417,6 @@ async def _collect_data(
         setup=setup_data,
         website=website_data,
         prior_feedback=prior_feedback_data,
+        risk_signals=risk_signal_data,
         collected_at=datetime.now(UTC),
     )

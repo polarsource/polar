@@ -162,7 +162,6 @@ class TypeScriptEmitter(EmitterBase):
         for model in api.webhooks:
             for field in model.fields:
                 imports.update(collect_type_imports(field.type, api))
-                imports.update(collect_union_imports(field.type, api))
                 imports.update(collect_enum_names(field.type, api))
         self.render_file(
             "src/version/webhooks.ts",

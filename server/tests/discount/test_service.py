@@ -186,10 +186,10 @@ class TestUpdate:
             )
 
     @pytest.mark.parametrize(
-        ("field",),
+        "field",
         [
-            ("amounts",),
-            ("basis_points",),
+            "amounts",
+            "basis_points",
         ],
     )
     @pytest.mark.auth

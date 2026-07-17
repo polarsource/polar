@@ -182,3 +182,12 @@ async def compute_order_amounts(
         tax_calculation_processor_id=tax_calculation_processor_id,
         tax_breakdown=tax_breakdown,
     )
+
+
+def apply_wallet_balance(total_amount: int, customer_balance: int) -> int:
+    """Signed balance applied to ``total_amount``: charges consume credit, credits clear debt."""
+    if total_amount >= 0:
+        return -min(total_amount, customer_balance)
+    if customer_balance < 0:
+        return min(-total_amount, -customer_balance)
+    return 0

@@ -127,7 +127,7 @@ from polar.wallet.service import wallet as wallet_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
-from .amounts import calculate_tax, compute_order_amounts
+from .amounts import apply_wallet_balance, calculate_tax, compute_order_amounts
 from .repository import OrderRepository
 from .schemas import OrderCreate, OrderInvoice, OrderReceipt, OrderUpdate
 from .sorting import OrderSortProperty
@@ -1349,15 +1349,7 @@ class OrderService:
         customer_balance = await wallet_service.get_billing_wallet_balance(
             session, customer, subscription.currency, for_update=lock_balance
         )
-
-        if total_amount >= 0:
-            # Charge: consume the available balance
-            applied_balance_amount = -min(total_amount, customer_balance)
-        elif customer_balance < 0:
-            # Credit: clear as much of the outstanding debt as it covers
-            applied_balance_amount = min(-total_amount, -customer_balance)
-        else:
-            applied_balance_amount = 0
+        applied_balance_amount = apply_wallet_balance(total_amount, customer_balance)
 
         return Order(
             id=order_id,

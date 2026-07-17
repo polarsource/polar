@@ -2,12 +2,12 @@ from typing import Any, Unpack, cast
 
 import httpx
 import structlog
-from httpx_oauth.clients.discord import DiscordOAuth2
 from httpx_oauth.oauth2 import RefreshTokenError
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.integrations.discord.oauth import DiscordOAuth2WithProxy
 from polar.integrations.discord.service import discord_bot as discord_bot_service
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
@@ -260,7 +260,7 @@ class BenefitDiscordService(
                 customer_id=str(customer.id),
                 member_id=str(member.id) if member else None,
             )
-            client = DiscordOAuth2(
+            client = DiscordOAuth2WithProxy(
                 settings.DISCORD_CLIENT_ID,
                 settings.DISCORD_CLIENT_SECRET,
                 scopes=["identify", "email", "guilds.join"],

@@ -291,6 +291,48 @@ class TestCalculateChargePreview:
         assert preview.net_amount == 3250 - 250
         assert preview.total_amount == 3000
 
+    async def test_pending_update_archived_prices_falls_back_to_current_product(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        """When a pending update's target product has all prices archived, the
+        preview must not raise and should reflect the current product instead."""
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(5000, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        from polar.subscription.update import generate_subscription_update
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.prorate,
+            product=new_product,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        for price in new_product.prices:
+            price.is_archived = True
+            await save_fixture(price)
+        session.expire(new_product, ["prices"])
+
+        preview = await subscription_service.calculate_charge_preview(
+            session, subscription
+        )
+
+        assert preview.base_amount == 1000
+
 
 @pytest.mark.asyncio
 class TestCalculateChargePreviewTaxMatchesOrder:

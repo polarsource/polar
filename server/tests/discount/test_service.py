@@ -186,6 +186,55 @@ class TestUpdate:
             )
 
     @pytest.mark.parametrize(
+        ("field",),
+        [
+            ("amounts",),
+            ("basis_points",),
+        ],
+    )
+    @pytest.mark.auth
+    async def test_update_forbidden_field_null_with_redemptions(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        field: Literal["amounts", "basis_points"],
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount: Discount
+        if field == "amounts":
+            discount = await create_discount(
+                save_fixture,
+                type=DiscountType.fixed,
+                amounts={"usd": 5000},
+                duration=DiscountDuration.once,
+                organization=organization,
+            )
+        else:
+            discount = await create_discount(
+                save_fixture,
+                type=DiscountType.percentage,
+                basis_points=5000,
+                duration=DiscountDuration.once,
+                organization=organization,
+            )
+        checkout = await create_checkout(save_fixture, products=[product])
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=checkout
+        )
+        await session.refresh(discount, ["organization", "redemptions_count"])
+
+        with pytest.raises(PolarRequestValidationError):
+            await discount_service.update(
+                session,
+                discount,
+                discount_update=DiscountUpdate.model_validate({field: None}),
+                auth_subject=auth_subject,
+            )
+
+    @pytest.mark.parametrize(
         ("type", "payload"),
         [
             (

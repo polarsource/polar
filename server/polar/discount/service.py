@@ -246,24 +246,22 @@ class DiscountService(ResourceServiceReader[Discount]):
                 else {"basis_points"}
             )
             for field in forbidden_fields:
-                discount_update_value = getattr(discount_update, field, None)
-                if (
-                    discount_update_value is not None
-                    and discount_update_value != getattr(discount, field, None)
-                ):
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", field),
-                                "msg": (
-                                    "This field cannot be changed because "
-                                    "the discount has already been redeemed."
-                                ),
-                                "input": getattr(discount, field),
-                            }
-                        ]
-                    )
+                if field in discount_update.model_fields_set:
+                    discount_update_value = getattr(discount_update, field)
+                    if discount_update_value != getattr(discount, field, None):
+                        raise PolarRequestValidationError(
+                            [
+                                {
+                                    "type": "value_error",
+                                    "loc": ("body", field),
+                                    "msg": (
+                                        "This field cannot be changed because "
+                                        "the discount has already been redeemed."
+                                    ),
+                                    "input": getattr(discount, field),
+                                }
+                            ]
+                        )
 
         if discount_update.products is not None:
             nested = await session.begin_nested()

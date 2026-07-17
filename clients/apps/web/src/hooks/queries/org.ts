@@ -90,7 +90,7 @@ export const useListOrganizations = (
   useQuery({
     queryKey: ['organizations', params],
     queryFn: () =>
-      unwrap(api.GET('/v1/organizations/', { param: { query: params } })),
+      unwrap(api.GET('/v1/organizations/', { params: { query: params } })),
     retry: defaultRetry,
     enabled,
   })

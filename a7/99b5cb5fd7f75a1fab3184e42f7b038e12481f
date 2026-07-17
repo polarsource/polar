@@ -1,0 +1,26 @@
+server/polar/integrations/stripe/service.py
+  s_aea30a40d2486f::t_87ff18059a3646 119-122
+server/polar/organization/tasks.py
+  s_aea30a40d2486f::t_b30c8b91489dc9 4
+  s_aea30a40d2486f::t_410b64970d6209 1212-1216,1223-1235,1243-1247,1250-1266
+server/tests/organization/test_tasks.py
+  s_aea30a40d2486f::t_f9cda6eb94d927 5
+  s_aea30a40d2486f::t_eeedb61ff2cb5e 168-169,173-176,184-186,189-246
+  s_aea30a40d2486f::t_41caaf6946fe68 247
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "a799b5cb5fd7f75a1fab3184e42f7b038e12481f",
+  "prompts": {},
+  "sessions": {
+    "s_aea30a40d2486f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "23b9ab61-144c-48af-91d9-9af4dd8f537d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

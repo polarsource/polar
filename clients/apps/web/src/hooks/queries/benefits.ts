@@ -242,23 +242,23 @@ export const useBenefitGrants = (
       : undefined,
   })
 
-export const useCreateManualGrant = () =>
+export const useCreateBenefitGrants = () =>
   useMutation({
-    mutationFn: (body: schemas['ManualGrantCreate']) =>
-      api.POST('/v1/manual-grants/', { body }),
+    mutationFn: (body: schemas['BenefitGrantBatchCreate']) =>
+      api.POST('/v1/benefit-grants/batch', { body }),
     onSuccess: (result) => {
-      if (result.error) {
+      if (!result.data) {
         return
       }
       getQueryClient().invalidateQueries({ queryKey: ['benefit-grants'] })
     },
   })
 
-export const useRevokeManualGrant = () =>
+export const useRevokeBenefitGrant = () =>
   useMutation({
-    mutationFn: ({ id, grantId }: { id: string; grantId: string }) =>
-      api.POST('/v1/manual-grants/{id}/grants/{grant_id}/revoke', {
-        params: { path: { id, grant_id: grantId } },
+    mutationFn: ({ id }: { id: string }) =>
+      api.DELETE('/v1/benefit-grants/{id}', {
+        params: { path: { id } },
       }),
     onSuccess: (result) => {
       if (result.error) {

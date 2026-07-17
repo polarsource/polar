@@ -2,7 +2,7 @@
 
 import BenefitSelector from '@/components/Benefit/BenefitSelector'
 import { GrantBenefitSelectedItem } from '@/components/Customer/GrantBenefitSelectedItem'
-import { useCreateManualGrant } from '@/hooks/queries/benefits'
+import { useCreateBenefitGrants } from '@/hooks/queries/benefits'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button, Input, Switch, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -13,22 +13,31 @@ interface GrantBenefitModalContentProps {
   organization: schemas['Organization']
   customer: schemas['Customer']
   hideModal: () => void
-  onGranted: (manualGrantId: string) => void
+}
+
+function getErrorMessage(detail: unknown): string {
+  if (isValidationError(detail)) {
+    return detail.map((error) => error.msg).join(' ')
+  }
+  if (typeof detail === 'string') {
+    return detail
+  }
+  return 'Something went wrong. Please try again.'
 }
 
 const GrantBenefitModalContent = ({
   organization,
   customer,
   hideModal,
-  onGranted,
 }: GrantBenefitModalContentProps) => {
   const { toast } = useToast()
   const [selected, setSelected] = useState<schemas['Benefit'][]>([])
   const [hasExpiration, setHasExpiration] = useState(false)
   const [expiresAt, setExpiresAt] = useState('')
+  const [reason, setReason] = useState('')
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
-  const createManualGrant = useCreateManualGrant()
+  const createBenefitGrants = useCreateBenefitGrants()
 
   const addBenefit = (
     _benefitId: string | null,
@@ -47,33 +56,27 @@ const GrantBenefitModalContent = ({
     setSelected((prev) => prev.filter((b) => b.id !== benefitId))
 
   const onSubmit = async () => {
-    if (selected.length === 0) {
+    if (selected.length === 0 || (hasExpiration && !expiresAt)) {
       return
     }
     setErrorMessage(null)
 
-    const { data, error } = await createManualGrant.mutateAsync({
+    const result = await createBenefitGrants.mutateAsync({
       customer_id: customer.id,
-      grants: selected.map((benefit) => ({ benefit_id: benefit.id })),
+      grants: selected.map((benefit) => ({
+        benefit_id: benefit.id,
+      })),
       expires_at:
         hasExpiration && expiresAt
           ? new Date(expiresAt).toISOString()
           : undefined,
+      reason: reason.trim() || undefined,
     })
 
-    if (error) {
-      const detail = error.detail
-      setErrorMessage(
-        isValidationError(detail)
-          ? detail.map((e) => e.msg).join(' ')
-          : typeof detail === 'string'
-            ? detail
-            : 'Something went wrong. Please try again.',
-      )
+    if (result.error) {
+      setErrorMessage(getErrorMessage(result.error.detail))
       return
     }
-
-    onGranted(data.id)
 
     const plural = selected.length > 1
     toast({
@@ -90,7 +93,10 @@ const GrantBenefitModalContent = ({
     [selected],
   )
 
-  const canSubmit = selected.length > 0 && !createManualGrant.isPending
+  const canSubmit =
+    selected.length > 0 &&
+    (!hasExpiration || expiresAt.length > 0) &&
+    !createBenefitGrants.isPending
 
   return (
     <Box flexDirection="column" height="100%">
@@ -106,8 +112,8 @@ const GrantBenefitModalContent = ({
           Grant benefits
         </Text>
         <Text color="muted">
-          Manually grant one or more benefits to {customer.email}, independent of
-          any subscription or order.
+          Grant one or more benefits to {customer.email} as a standalone grant,
+          independent of any subscription or order.
         </Text>
       </Box>
 
@@ -129,7 +135,7 @@ const GrantBenefitModalContent = ({
           />
           <Text variant="caption" color="muted">
             Only feature flag, custom and license key benefits can be granted
-            manually.
+            as standalone grants.
           </Text>
         </Box>
 
@@ -195,8 +201,22 @@ const GrantBenefitModalContent = ({
               type="datetime-local"
               value={expiresAt}
               onChange={(e) => setExpiresAt(e.target.value)}
+              required
             />
           )}
+        </Box>
+
+        <Box flexDirection="column" rowGap="s">
+          <Text variant="label">Reason</Text>
+          <Input
+            value={reason}
+            onChange={(event) => setReason(event.target.value)}
+            placeholder="Why is this benefit being granted?"
+            maxLength={500}
+          />
+          <Text variant="caption" color="muted">
+            Optional. Stored with the grant request for audit purposes.
+          </Text>
         </Box>
 
         {errorMessage && (
@@ -215,7 +235,7 @@ const GrantBenefitModalContent = ({
       >
         <Button
           onClick={onSubmit}
-          loading={createManualGrant.isPending}
+          loading={createBenefitGrants.isPending}
           disabled={!canSubmit}
         >
           {selected.length > 1

@@ -1,13 +1,12 @@
 'use client'
 
-import { BenefitGrantSource } from '@/components/Benefit/BenefitGrantSource'
 import { BenefitGrantStatus } from '@/components/Benefit/BenefitGrantStatus'
 import { benefitsDisplayNames } from '@/components/Benefit/utils'
 import GrantBenefitModalContent from '@/components/Customer/GrantBenefitModalContent'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { useToast } from '@/components/Toast/use-toast'
-import { useBenefitGrants, useRevokeManualGrant } from '@/hooks/queries'
+import { useBenefitGrants, useRevokeBenefitGrant } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import {
   Button,
@@ -21,8 +20,6 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
 import { useMemo, useState } from 'react'
 
-const PENDING_GRANT_TIMEOUT_MS = 20_000
-
 export const CustomerBenefitGrantsSection = ({
   organization,
   customer,
@@ -32,42 +29,32 @@ export const CustomerBenefitGrantsSection = ({
 }) => {
   const { toast } = useToast()
 
-  const [pendingManualGrantIds, setPendingManualGrantIds] = useState<string[]>(
-    [],
-  )
-
   const { data: benefitGrants, isLoading } = useBenefitGrants(
     customer.organization_id,
     { customer_id: [customer.id], limit: 999, sorting: ['-granted_at'] },
     (grants) =>
-      pendingManualGrantIds.some(
-        (id) => !grants.some((grant) => grant.manual_grant_id === id),
+      grants.some(
+        (grant) =>
+          !!grant.standalone_grant_id &&
+          !grant.is_granted &&
+          grant.revoked_at === null &&
+          grant.error === null,
       ),
   )
-
-  const onGranted = (manualGrantId: string) => {
-    setPendingManualGrantIds((prev) => [...prev, manualGrantId])
-    setTimeout(() => {
-      setPendingManualGrantIds((prev) =>
-        prev.filter((id) => id !== manualGrantId),
-      )
-    }, PENDING_GRANT_TIMEOUT_MS)
-  }
 
   const { isShown: isGrantShown, show: showGrant, hide: hideGrant } = useModal()
 
   const [grantToRevoke, setGrantToRevoke] = useState<
     schemas['BenefitGrant'] | null
   >(null)
-  const revokeManualGrant = useRevokeManualGrant()
+  const revokeBenefitGrant = useRevokeBenefitGrant()
 
   const onConfirmRevoke = async () => {
-    if (!grantToRevoke?.manual_grant_id) {
+    if (!grantToRevoke?.standalone_grant_id) {
       return
     }
-    const { error } = await revokeManualGrant.mutateAsync({
-      id: grantToRevoke.manual_grant_id,
-      grantId: grantToRevoke.id,
+    const { error } = await revokeBenefitGrant.mutateAsync({
+      id: grantToRevoke.id,
     })
     if (error) {
       toast({
@@ -80,6 +67,7 @@ export const CustomerBenefitGrantsSection = ({
       title: 'Benefit revocation requested',
       description: 'The benefit will be revoked from the customer shortly.',
     })
+    setGrantToRevoke(null)
   }
 
   const columns = useMemo<DataTableColumnDef<schemas['BenefitGrant']>[]>(
@@ -94,13 +82,6 @@ export const CustomerBenefitGrantsSection = ({
               {benefitsDisplayNames[original.benefit.type]}
             </Text>
           </Box>
-        ),
-      },
-      {
-        header: 'Source',
-        accessorKey: 'source',
-        cell: ({ row: { original } }) => (
-          <BenefitGrantSource grant={original} organization={organization} />
         ),
       },
       {
@@ -135,7 +116,7 @@ export const CustomerBenefitGrantsSection = ({
         accessorKey: 'benefit_action',
         cell: ({ row: { original } }) => {
           const isRevocable =
-            !!original.manual_grant_id && original.revoked_at === null
+            !!original.standalone_grant_id && original.revoked_at === null
           const licenseKeyId =
             original.benefit.type === 'license_keys' &&
             'license_key_id' in original.properties
@@ -195,7 +176,6 @@ export const CustomerBenefitGrantsSection = ({
             organization={organization}
             customer={customer}
             hideModal={hideGrant}
-            onGranted={onGranted}
           />
         }
       />
@@ -205,7 +185,7 @@ export const CustomerBenefitGrantsSection = ({
         title="Revoke benefit"
         description={`Are you sure you want to revoke "${
           grantToRevoke?.benefit.description ?? 'this benefit'
-        }" from ${customer.email}? This only affects the manual grant.`}
+        }" from ${customer.email}? This only affects the standalone grant.`}
         destructive
         destructiveText="Revoke"
         onConfirm={onConfirmRevoke}

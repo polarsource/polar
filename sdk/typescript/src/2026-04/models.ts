@@ -3988,6 +3988,83 @@ export interface BenefitGrant {
  */
 export interface BenefitGrantCustomProperties extends Record<string, never> {}
 /**
+ * BenefitGrantCustomWebhook
+ */
+export interface BenefitGrantCustomWebhook {
+  /**
+   * Creation timestamp of the object.
+   */
+  created_at: string;
+  /**
+   * Last modification timestamp of the object.
+   */
+  modified_at: string | null;
+  /**
+   * The ID of the grant.
+   */
+  id: string;
+  /**
+   * The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+   */
+  granted_at?: string | null;
+  /**
+   * Whether the benefit is granted.
+   */
+  is_granted: boolean;
+  /**
+   * The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+   */
+  revoked_at?: string | null;
+  /**
+   * Whether the benefit is revoked.
+   */
+  is_revoked: boolean;
+  /**
+   * The ID of the subscription that granted this benefit.
+   */
+  subscription_id: string | null;
+  /**
+   * The ID of the order that granted this benefit.
+   */
+  order_id: string | null;
+  /**
+   * The ID of the customer concerned by this grant.
+   */
+  customer_id: string;
+  /**
+   * The ID of the member concerned by this grant.
+   */
+  member_id?: string | null;
+  /**
+   * The ID of the benefit concerned by this grant.
+   */
+  benefit_id: string;
+  /**
+   * The error information if the benefit grant failed with an unrecoverable error.
+   */
+  error?: BenefitGrantError | null;
+  /**
+   * customer
+   */
+  customer: Customer;
+  /**
+   * member
+   */
+  member?: Member | null;
+  /**
+   * benefit
+   */
+  benefit: BenefitCustom;
+  /**
+   * properties
+   */
+  properties: BenefitGrantCustomProperties;
+  /**
+   * previous_properties
+   */
+  previous_properties?: BenefitGrantCustomProperties | null;
+}
+/**
  * BenefitGrantDiscordProperties
  */
 export interface BenefitGrantDiscordProperties {
@@ -4009,6 +4086,83 @@ export interface BenefitGrantDiscordProperties {
   granted_account_id?: string;
 }
 /**
+ * BenefitGrantDiscordWebhook
+ */
+export interface BenefitGrantDiscordWebhook {
+  /**
+   * Creation timestamp of the object.
+   */
+  created_at: string;
+  /**
+   * Last modification timestamp of the object.
+   */
+  modified_at: string | null;
+  /**
+   * The ID of the grant.
+   */
+  id: string;
+  /**
+   * The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+   */
+  granted_at?: string | null;
+  /**
+   * Whether the benefit is granted.
+   */
+  is_granted: boolean;
+  /**
+   * The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+   */
+  revoked_at?: string | null;
+  /**
+   * Whether the benefit is revoked.
+   */
+  is_revoked: boolean;
+  /**
+   * The ID of the subscription that granted this benefit.
+   */
+  subscription_id: string | null;
+  /**
+   * The ID of the order that granted this benefit.
+   */
+  order_id: string | null;
+  /**
+   * The ID of the customer concerned by this grant.
+   */
+  customer_id: string;
+  /**
+   * The ID of the member concerned by this grant.
+   */
+  member_id?: string | null;
+  /**
+   * The ID of the benefit concerned by this grant.
+   */
+  benefit_id: string;
+  /**
+   * The error information if the benefit grant failed with an unrecoverable error.
+   */
+  error?: BenefitGrantError | null;
+  /**
+   * customer
+   */
+  customer: Customer;
+  /**
+   * member
+   */
+  member?: Member | null;
+  /**
+   * benefit
+   */
+  benefit: BenefitDiscord;
+  /**
+   * properties
+   */
+  properties: BenefitGrantDiscordProperties;
+  /**
+   * previous_properties
+   */
+  previous_properties?: BenefitGrantDiscordProperties | null;
+}
+/**
  * BenefitGrantDownloadablesProperties
  */
 export interface BenefitGrantDownloadablesProperties {
@@ -4016,6 +4170,83 @@ export interface BenefitGrantDownloadablesProperties {
    * files
    */
   files?: string[];
+}
+/**
+ * BenefitGrantDownloadablesWebhook
+ */
+export interface BenefitGrantDownloadablesWebhook {
+  /**
+   * Creation timestamp of the object.
+   */
+  created_at: string;
+  /**
+   * Last modification timestamp of the object.
+   */
+  modified_at: string | null;
+  /**
+   * The ID of the grant.
+   */
+  id: string;
+  /**
+   * The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+   */
+  granted_at?: string | null;
+  /**
+   * Whether the benefit is granted.
+   */
+  is_granted: boolean;
+  /**
+   * The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+   */
+  revoked_at?: string | null;
+  /**
+   * Whether the benefit is revoked.
+   */
+  is_revoked: boolean;
+  /**
+   * The ID of the subscription that granted this benefit.
+   */
+  subscription_id: string | null;
+  /**
+   * The ID of the order that granted this benefit.
+   */
+  order_id: string | null;
+  /**
+   * The ID of the customer concerned by this grant.
+   */
+  customer_id: string;
+  /**
+   * The ID of the member concerned by this grant.
+   */
+  member_id?: string | null;
+  /**
+   * The ID of the benefit concerned by this grant.
+   */
+  benefit_id: string;
+  /**
+   * The error information if the benefit grant failed with an unrecoverable error.
+   */
+  error?: BenefitGrantError | null;
+  /**
+   * customer
+   */
+  customer: Customer;
+  /**
+   * member
+   */
+  member?: Member | null;
+  /**
+   * benefit
+   */
+  benefit: BenefitDownloadables;
+  /**
+   * properties
+   */
+  properties: BenefitGrantDownloadablesProperties;
+  /**
+   * previous_properties
+   */
+  previous_properties?: BenefitGrantDownloadablesProperties | null;
 }
 /**
  * BenefitGrantError
@@ -4038,6 +4269,83 @@ export interface BenefitGrantError {
  * BenefitGrantFeatureFlagProperties
  */
 export interface BenefitGrantFeatureFlagProperties extends Record<string, never> {}
+/**
+ * BenefitGrantFeatureFlagWebhook
+ */
+export interface BenefitGrantFeatureFlagWebhook {
+  /**
+   * Creation timestamp of the object.
+   */
+  created_at: string;
+  /**
+   * Last modification timestamp of the object.
+   */
+  modified_at: string | null;
+  /**
+   * The ID of the grant.
+   */
+  id: string;
+  /**
+   * The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+   */
+  granted_at?: string | null;
+  /**
+   * Whether the benefit is granted.
+   */
+  is_granted: boolean;
+  /**
+   * The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+   */
+  revoked_at?: string | null;
+  /**
+   * Whether the benefit is revoked.
+   */
+  is_revoked: boolean;
+  /**
+   * The ID of the subscription that granted this benefit.
+   */
+  subscription_id: string | null;
+  /**
+   * The ID of the order that granted this benefit.
+   */
+  order_id: string | null;
+  /**
+   * The ID of the customer concerned by this grant.
+   */
+  customer_id: string;
+  /**
+   * The ID of the member concerned by this grant.
+   */
+  member_id?: string | null;
+  /**
+   * The ID of the benefit concerned by this grant.
+   */
+  benefit_id: string;
+  /**
+   * The error information if the benefit grant failed with an unrecoverable error.
+   */
+  error?: BenefitGrantError | null;
+  /**
+   * customer
+   */
+  customer: Customer;
+  /**
+   * member
+   */
+  member?: Member | null;
+  /**
+   * benefit
+   */
+  benefit: BenefitFeatureFlag;
+  /**
+   * properties
+   */
+  properties: BenefitGrantFeatureFlagProperties;
+  /**
+   * previous_properties
+   */
+  previous_properties?: BenefitGrantFeatureFlagProperties | null;
+}
 /**
  * BenefitGrantGitHubRepositoryProperties
  */
@@ -4064,6 +4372,83 @@ export interface BenefitGrantGitHubRepositoryProperties {
   granted_account_id?: string;
 }
 /**
+ * BenefitGrantGitHubRepositoryWebhook
+ */
+export interface BenefitGrantGitHubRepositoryWebhook {
+  /**
+   * Creation timestamp of the object.
+   */
+  created_at: string;
+  /**
+   * Last modification timestamp of the object.
+   */
+  modified_at: string | null;
+  /**
+   * The ID of the grant.
+   */
+  id: string;
+  /**
+   * The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+   */
+  granted_at?: string | null;
+  /**
+   * Whether the benefit is granted.
+   */
+  is_granted: boolean;
+  /**
+   * The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+   */
+  revoked_at?: string | null;
+  /**
+   * Whether the benefit is revoked.
+   */
+  is_revoked: boolean;
+  /**
+   * The ID of the subscription that granted this benefit.
+   */
+  subscription_id: string | null;
+  /**
+   * The ID of the order that granted this benefit.
+   */
+  order_id: string | null;
+  /**
+   * The ID of the customer concerned by this grant.
+   */
+  customer_id: string;
+  /**
+   * The ID of the member concerned by this grant.
+   */
+  member_id?: string | null;
+  /**
+   * The ID of the benefit concerned by this grant.
+   */
+  benefit_id: string;
+  /**
+   * The error information if the benefit grant failed with an unrecoverable error.
+   */
+  error?: BenefitGrantError | null;
+  /**
+   * customer
+   */
+  customer: Customer;
+  /**
+   * member
+   */
+  member?: Member | null;
+  /**
+   * benefit
+   */
+  benefit: BenefitGitHubRepository;
+  /**
+   * properties
+   */
+  properties: BenefitGrantGitHubRepositoryProperties;
+  /**
+   * previous_properties
+   */
+  previous_properties?: BenefitGrantGitHubRepositoryProperties | null;
+}
+/**
  * BenefitGrantLicenseKeysProperties
  */
 export interface BenefitGrantLicenseKeysProperties {
@@ -4079,6 +4464,83 @@ export interface BenefitGrantLicenseKeysProperties {
    * display_key
    */
   display_key?: string;
+}
+/**
+ * BenefitGrantLicenseKeysWebhook
+ */
+export interface BenefitGrantLicenseKeysWebhook {
+  /**
+   * Creation timestamp of the object.
+   */
+  created_at: string;
+  /**
+   * Last modification timestamp of the object.
+   */
+  modified_at: string | null;
+  /**
+   * The ID of the grant.
+   */
+  id: string;
+  /**
+   * The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+   */
+  granted_at?: string | null;
+  /**
+   * Whether the benefit is granted.
+   */
+  is_granted: boolean;
+  /**
+   * The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+   */
+  revoked_at?: string | null;
+  /**
+   * Whether the benefit is revoked.
+   */
+  is_revoked: boolean;
+  /**
+   * The ID of the subscription that granted this benefit.
+   */
+  subscription_id: string | null;
+  /**
+   * The ID of the order that granted this benefit.
+   */
+  order_id: string | null;
+  /**
+   * The ID of the customer concerned by this grant.
+   */
+  customer_id: string;
+  /**
+   * The ID of the member concerned by this grant.
+   */
+  member_id?: string | null;
+  /**
+   * The ID of the benefit concerned by this grant.
+   */
+  benefit_id: string;
+  /**
+   * The error information if the benefit grant failed with an unrecoverable error.
+   */
+  error?: BenefitGrantError | null;
+  /**
+   * customer
+   */
+  customer: Customer;
+  /**
+   * member
+   */
+  member?: Member | null;
+  /**
+   * benefit
+   */
+  benefit: BenefitLicenseKeys;
+  /**
+   * properties
+   */
+  properties: BenefitGrantLicenseKeysProperties;
+  /**
+   * previous_properties
+   */
+  previous_properties?: BenefitGrantLicenseKeysProperties | null;
 }
 /**
  * BenefitGrantMetadata
@@ -4119,6 +4581,83 @@ export interface BenefitGrantMeterCreditProperties {
   last_credited_at?: string;
 }
 /**
+ * BenefitGrantMeterCreditWebhook
+ */
+export interface BenefitGrantMeterCreditWebhook {
+  /**
+   * Creation timestamp of the object.
+   */
+  created_at: string;
+  /**
+   * Last modification timestamp of the object.
+   */
+  modified_at: string | null;
+  /**
+   * The ID of the grant.
+   */
+  id: string;
+  /**
+   * The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+   */
+  granted_at?: string | null;
+  /**
+   * Whether the benefit is granted.
+   */
+  is_granted: boolean;
+  /**
+   * The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+   */
+  revoked_at?: string | null;
+  /**
+   * Whether the benefit is revoked.
+   */
+  is_revoked: boolean;
+  /**
+   * The ID of the subscription that granted this benefit.
+   */
+  subscription_id: string | null;
+  /**
+   * The ID of the order that granted this benefit.
+   */
+  order_id: string | null;
+  /**
+   * The ID of the customer concerned by this grant.
+   */
+  customer_id: string;
+  /**
+   * The ID of the member concerned by this grant.
+   */
+  member_id?: string | null;
+  /**
+   * The ID of the benefit concerned by this grant.
+   */
+  benefit_id: string;
+  /**
+   * The error information if the benefit grant failed with an unrecoverable error.
+   */
+  error?: BenefitGrantError | null;
+  /**
+   * customer
+   */
+  customer: Customer;
+  /**
+   * member
+   */
+  member?: Member | null;
+  /**
+   * benefit
+   */
+  benefit: BenefitMeterCredit;
+  /**
+   * properties
+   */
+  properties: BenefitGrantMeterCreditProperties;
+  /**
+   * previous_properties
+   */
+  previous_properties?: BenefitGrantMeterCreditProperties | null;
+}
+/**
  * BenefitGrantSlackSharedChannelProperties
  */
 export interface BenefitGrantSlackSharedChannelProperties {
@@ -4146,6 +4685,83 @@ export interface BenefitGrantSlackSharedChannelProperties {
    * connected_team_id
    */
   connected_team_id?: string;
+}
+/**
+ * BenefitGrantSlackSharedChannelWebhook
+ */
+export interface BenefitGrantSlackSharedChannelWebhook {
+  /**
+   * Creation timestamp of the object.
+   */
+  created_at: string;
+  /**
+   * Last modification timestamp of the object.
+   */
+  modified_at: string | null;
+  /**
+   * The ID of the grant.
+   */
+  id: string;
+  /**
+   * The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+   */
+  granted_at?: string | null;
+  /**
+   * Whether the benefit is granted.
+   */
+  is_granted: boolean;
+  /**
+   * The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+   */
+  revoked_at?: string | null;
+  /**
+   * Whether the benefit is revoked.
+   */
+  is_revoked: boolean;
+  /**
+   * The ID of the subscription that granted this benefit.
+   */
+  subscription_id: string | null;
+  /**
+   * The ID of the order that granted this benefit.
+   */
+  order_id: string | null;
+  /**
+   * The ID of the customer concerned by this grant.
+   */
+  customer_id: string;
+  /**
+   * The ID of the member concerned by this grant.
+   */
+  member_id?: string | null;
+  /**
+   * The ID of the benefit concerned by this grant.
+   */
+  benefit_id: string;
+  /**
+   * The error information if the benefit grant failed with an unrecoverable error.
+   */
+  error?: BenefitGrantError | null;
+  /**
+   * customer
+   */
+  customer: Customer;
+  /**
+   * member
+   */
+  member?: Member | null;
+  /**
+   * benefit
+   */
+  benefit: BenefitSlackSharedChannel;
+  /**
+   * properties
+   */
+  properties: BenefitGrantSlackSharedChannelProperties;
+  /**
+   * previous_properties
+   */
+  previous_properties?: BenefitGrantSlackSharedChannelProperties | null;
 }
 /**
  * An event created by Polar when a benefit is granted to a customer.
@@ -21138,6 +21754,18 @@ export type BenefitCreate =
   | BenefitMeterCreditCreate
   | BenefitFeatureFlagCreate
   | BenefitSlackSharedChannelCreate;
+/**
+ * BenefitGrantWebhook
+ */
+export type BenefitGrantWebhook =
+  | BenefitGrantDiscordWebhook
+  | BenefitGrantCustomWebhook
+  | BenefitGrantGitHubRepositoryWebhook
+  | BenefitGrantDownloadablesWebhook
+  | BenefitGrantLicenseKeysWebhook
+  | BenefitGrantMeterCreditWebhook
+  | BenefitGrantFeatureFlagWebhook
+  | BenefitGrantSlackSharedChannelWebhook;
 /**
  * CheckoutForbiddenError
  */

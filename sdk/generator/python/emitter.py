@@ -140,6 +140,15 @@ class PythonEmitter(EmitterBase):
                     "output_enum_imports": self._get_output_enum_imports(api),
                 },
             )
+            self.render_file(
+                "polar/version/webhooks.py",
+                version_dir / "webhooks.py",
+                {
+                    **self.get_version_context(api),
+                    "imports": self._get_webhook_imports(api),
+                    "enum_imports": self._get_webhook_enum_imports(api),
+                },
+            )
 
             errors = self._collect_all_errors(api)
             self.render_file(
@@ -211,6 +220,20 @@ class PythonEmitter(EmitterBase):
             for field in model.fields:
                 collect_enum_imports(field.type, enum_imports, api)
         return enum_imports
+
+    def _get_webhook_imports(self, api: APIVersion) -> list[str]:
+        imports: set[str] = set()
+        for model in api.webhooks:
+            for field in model.fields:
+                imports.update(_collect_type_ref_names(field.type, api))
+        return sorted(imports)
+
+    def _get_webhook_enum_imports(self, api: APIVersion) -> list[str]:
+        enum_imports: set[str] = set()
+        for model in api.webhooks:
+            for field in model.fields:
+                collect_enum_imports(field.type, enum_imports, api)
+        return sorted(enum_imports)
 
     def _collect_all_errors(self, api: APIVersion) -> list[ErrorResponse]:
         """Collect all unique error responses from all services and methods."""

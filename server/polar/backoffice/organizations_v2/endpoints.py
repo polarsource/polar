@@ -60,6 +60,7 @@ from polar.models.organization import (
 )
 from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.organization_review import OrganizationReview
+from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.models.support_case import (
     ReviewAppealSupportCase,
     SupportCaseMessageAuthorKind,
@@ -899,10 +900,17 @@ async def get_organization_detail(
             message_repository = SupportCaseMessageRepository.from_session(session)
             appeal_case_open = await message_repository.is_open(appeal_case.id)
 
-    # External risk signals (e.g. Stripe Radar). Shown as a banner on the
-    # overview, a card on the reviews tab, and a dot on the Reviews tab.
+    # External risk signals (e.g. Stripe Radar). Only the overview and reviews
+    # sections render the rows; every section needs existence for the tab dot.
     risk_signal_repo = OrganizationRiskSignalRepository.from_session(session)
-    risk_signals = await risk_signal_repo.list_by_organization(organization_id)
+    risk_signals: Sequence[OrganizationRiskSignal] = []
+    if section in ("overview", "reviews"):
+        risk_signals = await risk_signal_repo.list_by_organization(
+            organization_id, limit=100
+        )
+        has_risk_signals = bool(risk_signals)
+    else:
+        has_risk_signals = await risk_signal_repo.has_any(organization_id)
 
     # Any open case (appeal or dispute) lights the Support Cases nav badge.
     open_case_count = await session.scalar(
@@ -922,7 +930,7 @@ async def get_organization_detail(
         impersonate_user=impersonate_user,
         startup_program_status=startup_program_status,
         has_open_case=has_open_case,
-        has_risk_signals=bool(risk_signals),
+        has_risk_signals=has_risk_signals,
     )
 
     # Fetch analytics data for overview section

@@ -485,7 +485,7 @@ class RiskSignalEntry(Schema):
         description="Severity reported by the source, e.g. 'elevated' or 'highest'"
     )
     description: str | None = None
-    created_at: datetime | None = None
+    created_at: datetime
 
 
 class RiskSignalData(Schema):

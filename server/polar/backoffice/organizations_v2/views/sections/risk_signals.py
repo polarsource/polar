@@ -5,25 +5,20 @@ from collections.abc import Sequence
 
 from tagflow import tag, text
 
+from polar.integrations.stripe.account_risk import StripeAccountRiskLevel
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 
 from ....components import card
-
-# DaisyUI badge class per risk level. Only 'elevated' and 'highest' are
-# recorded today; anything else falls back to a neutral badge.
-SIGNAL_RISK_BADGE: dict[str, str] = {
-    "elevated": "badge-warning",
-    "highest": "badge-error",
-}
 
 
 def _signal_type_label(signal: OrganizationRiskSignal) -> str:
     return signal.type.value.replace("_", " ").title()
 
 
-def render_risk_signal_row(signal: OrganizationRiskSignal) -> None:
-    badge_class = SIGNAL_RISK_BADGE.get(signal.risk_level, "badge-ghost")
-    accent = "border-l-error" if signal.risk_level == "highest" else "border-l-warning"
+def _render_signal_row(signal: OrganizationRiskSignal) -> None:
+    is_highest = signal.risk_level == StripeAccountRiskLevel.HIGHEST
+    badge_class = "badge-error" if is_highest else "badge-warning"
+    accent = "border-l-error" if is_highest else "border-l-warning"
 
     with tag.div(classes=f"border border-base-200 rounded p-3 border-l-4 {accent}"):
         with tag.div(classes="flex flex-wrap items-center gap-x-2 gap-y-1 mb-1"):
@@ -63,13 +58,13 @@ def render_risk_signals_card(signals: Sequence[OrganizationRiskSignal]) -> None:
                 text("Risk Signals")
             with tag.span(classes="text-sm text-base-content/60"):
                 text(
-                    "Raised by external fraud-detection systems. Only 'elevated' "
-                    "and 'highest' severity signals are recorded."
+                    "Raised by external fraud-detection systems. Only "
+                    "high-severity signals are recorded."
                 )
 
         with tag.div(classes="space-y-3"):
             for signal in signals:
-                render_risk_signal_row(signal)
+                _render_signal_row(signal)
 
 
 def render_risk_signals_block(signals: Sequence[OrganizationRiskSignal]) -> None:
@@ -82,11 +77,10 @@ def render_risk_signals_block(signals: Sequence[OrganizationRiskSignal]) -> None
             text("External Risk Signals")
         with tag.div(classes="space-y-3"):
             for signal in signals:
-                render_risk_signal_row(signal)
+                _render_signal_row(signal)
 
 
 __all__ = [
-    "render_risk_signal_row",
     "render_risk_signals_block",
     "render_risk_signals_card",
 ]

@@ -37,7 +37,7 @@ class ReviewsSection:
         self,
         organization: Organization,
         agent_reviews: Sequence[OrganizationAgentReview],
-        risk_signals: Sequence[OrganizationRiskSignal] = (),
+        risk_signals: Sequence[OrganizationRiskSignal],
     ) -> None:
         self.org = organization
         self.agent_reviews = agent_reviews

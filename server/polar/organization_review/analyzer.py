@@ -587,10 +587,12 @@ data contradicts it, APPROVE.
 - If the appeal is vague, evasive, or does not address the original concern, \
 DENY.
 - If the appeal asserts something that directly contradicts hard data \
-(prohibited products visible on Polar, Stripe fraud signals), DENY \
-regardless of the appeal text. Do NOT use prior denied or blocked \
-organizations as a signal at the appeal stage — judge this organization \
-on its own merits and the appeal text.
+(prohibited products visible on Polar, Stripe account fraud indicators \
+such as fraudulent verification documents), DENY regardless of the \
+appeal text. Probabilistic entries under "## External Risk Signals" are \
+NOT hard data by themselves — weigh them together with the appeal. Do \
+NOT use prior denied or blocked organizations as a signal at the appeal \
+stage — judge this organization on its own merits and the appeal text.
 - A short or generic appeal ("please approve me", "I disagree") with no \
 specific information is grounds for DENY.
 
@@ -1022,18 +1024,23 @@ class ReviewAnalyzer:
                 "products match what the signal flags, and weigh them into "
                 "POLICY_COMPLIANCE and PRODUCT_LEGITIMACY."
             )
-            for signal in risk_signals.entries[:20]:
-                date_str = (
-                    signal.created_at.strftime("%Y-%m-%d")
-                    if signal.created_at
-                    else "unknown date"
-                )
+            # Highest severity first so the cap never drops the worst signals.
+            entries = sorted(
+                risk_signals.entries,
+                key=lambda e: 0 if e.risk_level == "highest" else 1,
+            )
+            shown = entries[:20]
+            for signal in shown:
+                date_str = signal.created_at.strftime("%Y-%m-%d")
                 parts.append(
                     f"- [{date_str}] {signal.source}: {signal.type} "
                     f"(risk level: {signal.risk_level})"
                 )
                 if signal.description:
-                    parts.append(f"  Details: {signal.description}")
+                    parts.append(f"  Details: {signal.description[:500]}")
+            omitted = len(entries) - len(shown)
+            if omitted > 0:
+                parts.append(f"({omitted} more signal(s) omitted)")
 
         # Prior History
         parts.append("\n## User History")

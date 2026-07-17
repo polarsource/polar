@@ -494,7 +494,7 @@ class OrganizationRiskSignalRepository(
     model = OrganizationRiskSignal
 
     async def list_by_organization(
-        self, organization_id: UUID
+        self, organization_id: UUID, *, limit: int | None = None
     ) -> list[OrganizationRiskSignal]:
         """Signals for an organization, most recent first."""
         statement = (
@@ -502,5 +502,18 @@ class OrganizationRiskSignalRepository(
             .where(OrganizationRiskSignal.organization_id == organization_id)
             .order_by(OrganizationRiskSignal.created_at.desc())
         )
+        if limit is not None:
+            statement = statement.limit(limit)
         result = await self.session.execute(statement)
         return list(result.scalars().all())
+
+    async def has_any(self, organization_id: UUID) -> bool:
+        """Whether the organization has at least one signal, without loading rows."""
+        statement = (
+            self.get_base_statement()
+            .where(OrganizationRiskSignal.organization_id == organization_id)
+            .with_only_columns(OrganizationRiskSignal.id)
+            .limit(1)
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none() is not None

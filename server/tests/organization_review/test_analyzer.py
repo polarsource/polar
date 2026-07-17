@@ -177,6 +177,7 @@ class TestBuildPromptRiskSignals:
                             source="stripe",
                             type="fraudulent_merchant",
                             risk_level="highest",
+                            created_at=datetime(2026, 6, 15, tzinfo=UTC),
                         ),
                     ]
                 )
@@ -191,9 +192,43 @@ class TestBuildPromptRiskSignals:
         )
         assert "  Details: Indicators: suspicious_content" in prompt
         assert (
-            "- [unknown date] stripe: fraudulent_merchant (risk level: highest)"
-            in prompt
+            "- [2026-06-15] stripe: fraudulent_merchant (risk level: highest)" in prompt
         )
+        # Highest severity sorts first so a cap never drops the worst signals.
+        assert prompt.index("fraudulent_merchant") < prompt.index(
+            "fraudulent_website (risk level: elevated)"
+        )
+        assert "omitted" not in prompt
+
+    def test_caps_signals_and_notes_omission(
+        self, review_analyzer: ReviewAnalyzer
+    ) -> None:
+        entries = [
+            RiskSignalEntry(
+                source="stripe",
+                type="fraudulent_website",
+                risk_level="elevated",
+                created_at=datetime(2026, 7, 1, tzinfo=UTC),
+            )
+            for _ in range(24)
+        ]
+        entries.append(
+            RiskSignalEntry(
+                source="stripe",
+                type="fraudulent_merchant",
+                risk_level="highest",
+                created_at=datetime(2026, 1, 1, tzinfo=UTC),
+            )
+        )
+        snapshot = _minimal_snapshot().model_copy(
+            update={"risk_signals": RiskSignalData(entries=entries)}
+        )
+
+        prompt = review_analyzer._build_prompt(snapshot)
+
+        # The old 'highest' signal survives the cap because severity sorts first.
+        assert "fraudulent_merchant (risk level: highest)" in prompt
+        assert "(5 more signal(s) omitted)" in prompt
 
 
 @pytest.mark.asyncio

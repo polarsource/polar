@@ -308,6 +308,9 @@ class TestDetailRiskSignals:
         await save_fixture(signal)
         return signal
 
+    # The exact class list of the tab "needs attention" dot (tab_nav component).
+    TAB_DOT = "ml-2 inline-block w-1.5 h-1.5 rounded-full bg-error"
+
     async def test_reviews_section_shows_signals(
         self,
         backoffice_client: httpx.AsyncClient,
@@ -325,6 +328,23 @@ class TestDetailRiskSignals:
         assert "Fraudulent Website" in response.text
         assert "elevated" in response.text
         assert "Indicators: suspicious_content" in response.text
+        assert self.TAB_DOT in response.text
+
+    async def test_overview_section_shows_signals(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await self._create_signal(save_fixture, organization)
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}?section=overview"
+        )
+
+        assert response.status_code == 200
+        assert "External Risk Signals" in response.text
+        assert "Fraudulent Website" in response.text
 
     async def test_reviews_section_without_signals(
         self,
@@ -337,3 +357,4 @@ class TestDetailRiskSignals:
 
         assert response.status_code == 200
         assert "Risk Signals" not in response.text
+        assert self.TAB_DOT not in response.text

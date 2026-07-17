@@ -5,7 +5,6 @@ from collections.abc import Sequence
 
 from tagflow import tag, text
 
-from polar.integrations.stripe.account_risk import StripeAccountRiskLevel
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 
 from ....components import card
@@ -15,8 +14,14 @@ def _signal_type_label(signal: OrganizationRiskSignal) -> str:
     return signal.type.value.replace("_", " ").title()
 
 
+def _render_signal_list(signals: Sequence[OrganizationRiskSignal]) -> None:
+    with tag.div(classes="space-y-3"):
+        for signal in signals:
+            _render_signal_row(signal)
+
+
 def _render_signal_row(signal: OrganizationRiskSignal) -> None:
-    is_highest = signal.risk_level == StripeAccountRiskLevel.HIGHEST
+    is_highest = signal.risk_level == OrganizationRiskSignal.HIGHEST_RISK_LEVEL
     badge_class = "badge-error" if is_highest else "badge-warning"
     accent = "border-l-error" if is_highest else "border-l-warning"
 
@@ -62,9 +67,7 @@ def render_risk_signals_card(signals: Sequence[OrganizationRiskSignal]) -> None:
                     "high-severity signals are recorded."
                 )
 
-        with tag.div(classes="space-y-3"):
-            for signal in signals:
-                _render_signal_row(signal)
+        _render_signal_list(signals)
 
 
 def render_risk_signals_block(signals: Sequence[OrganizationRiskSignal]) -> None:
@@ -75,9 +78,7 @@ def render_risk_signals_block(signals: Sequence[OrganizationRiskSignal]) -> None
     with tag.div(classes="mb-4"):
         with tag.h3(classes="text-sm font-bold mb-3"):
             text("External Risk Signals")
-        with tag.div(classes="space-y-3"):
-            for signal in signals:
-                _render_signal_row(signal)
+        _render_signal_list(signals)
 
 
 __all__ = [

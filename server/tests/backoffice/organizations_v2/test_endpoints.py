@@ -308,8 +308,8 @@ class TestDetailRiskSignals:
         await save_fixture(signal)
         return signal
 
-    # The exact class list of the tab "needs attention" dot (tab_nav component).
-    TAB_DOT = "ml-2 inline-block w-1.5 h-1.5 rounded-full bg-error"
+    # Semantic marker class of the tab "needs attention" dot (tab_nav component).
+    TAB_DOT = "tab-dot"
 
     async def test_reviews_section_shows_signals(
         self,

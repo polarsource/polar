@@ -5,6 +5,7 @@ import structlog
 from pydantic_ai import Agent
 
 from polar.config import settings
+from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.observability.baggage import organization_baggage
 
 from .known_domains import known_domains_for_prompt, match_known_domain
@@ -1027,7 +1028,11 @@ class ReviewAnalyzer:
             # Highest severity first so the cap never drops the worst signals.
             entries = sorted(
                 risk_signals.entries,
-                key=lambda e: 0 if e.risk_level == "highest" else 1,
+                key=lambda e: (
+                    0
+                    if e.risk_level == OrganizationRiskSignal.HIGHEST_RISK_LEVEL
+                    else 1
+                ),
             )
             shown = entries[:20]
             for signal in shown:

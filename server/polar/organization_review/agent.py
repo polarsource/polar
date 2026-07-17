@@ -350,7 +350,7 @@ async def _collect_prior_feedback(organization_id: UUID) -> PriorFeedbackData:
 async def _collect_risk_signals(organization_id: UUID) -> RiskSignalData:
     async with AsyncReadSessionMaker() as session:
         repo = OrganizationRiskSignalRepository.from_session(session)
-        signals = await repo.list_by_organization(organization_id, limit=100)
+        signals = await repo.list_by_organization(organization_id)
         return collect_risk_signal_data(signals)
 
 

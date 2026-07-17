@@ -1051,6 +1051,43 @@ class TestSlackSharedChannelGrant:
             email="admin@customer.example",
         )
 
+    @pytest.mark.parametrize(
+        "error",
+        ["ratelimited", "internal_error", "fatal_error", "service_unavailable"],
+    )
+    async def test_grant_existing_channel_unarchive_transient_error_retries(
+        self,
+        error: str,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        customer.name = "Acme"
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(
+            mocker,
+            conversations_unarchive=AsyncMock(return_value={"ok": False, "error": error}),
+        )
+        strategy = _strategy(session, redis, client)
+
+        existing: BenefitGrantSlackSharedChannelProperties = {
+            "invited_email": "admin@customer.example",
+            "channel_id": "CARCHIVED",
+            "channel_name": "support-acme",
+        }
+
+        with pytest.raises(BenefitRetriableError):
+            await strategy.grant(benefit, customer, existing)
+
     async def test_grant_retries_on_name_taken(
         self,
         session: AsyncSession,

@@ -3,6 +3,13 @@ from __future__ import annotations
 import dataclasses
 import typing
 
+from polar.base import retort
+from polar.webhooks import (
+    PolarWebhookError as PolarWebhookError,
+    PolarWebhookUnknownTypeError as PolarWebhookUnknownTypeError,
+    PolarWebhookVerificationError as PolarWebhookVerificationError,
+    validate_event as _validate_event,
+)
 {% if enum_imports %}
 from polar.{{ version }}.literals import (
 {% for enum_name in enum_imports %}
@@ -50,3 +57,20 @@ WebhookPayload: typing.TypeAlias = (
 {% else %}
 WebhookPayload: typing.TypeAlias = typing.Never
 {% endif %}
+
+_KNOWN_EVENT_TYPES = frozenset({
+{% for event_type in webhook_event_types %}
+    {{ event_type | format_default }},
+{% endfor %}
+})
+
+
+def validate_event(
+    body: str | bytes, headers: dict[str, str], secret: str
+) -> WebhookPayload:
+    """Verify a raw Polar webhook request and load its typed payload."""
+    return _validate_event(body, headers, secret, _KNOWN_EVENT_TYPES, _load_payload)
+
+
+def _load_payload(data: dict[str, typing.Any]) -> WebhookPayload:
+    return typing.cast(WebhookPayload, retort.load(data, WebhookPayload))

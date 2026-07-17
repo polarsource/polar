@@ -31,7 +31,7 @@ path = "polar/__init__.py"
 packages = ["polar"]
 
 [dependency-groups]
-dev = ["ty", "ruff", "pytest"]
+dev = ["ty", "ruff", "pytest", "standardwebhooks>=1.0.0,<2.0.0"]
 
 [tool.ruff]
 target-version = "py311"

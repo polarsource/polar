@@ -115,11 +115,11 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
       metricKey: keyof schemas['MetricsTotals'],
     ):
       | {
-        value: number
-        direction: 'up' | 'down' | 'none'
-        metric: schemas['Metric']
-        previousValue: number
-      }
+          value: number
+          direction: 'up' | 'down' | 'none'
+          metric: schemas['Metric']
+          previousValue: number
+        }
       | undefined => {
       if (!metricsData?.totals || !previousPeriodMetrics?.totals) {
         return undefined
@@ -214,6 +214,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
     <Tabs defaultValue="overview" className="flex flex-col">
       <TabsList className="mb-8 max-w-full justify-start overflow-x-auto">
         <TabsTrigger value="overview">Overview</TabsTrigger>
+        <TabsTrigger value="benefits">Benefits</TabsTrigger>
         <TabsTrigger value="events">Events</TabsTrigger>
         <TabsTrigger value="usage">Usage</TabsTrigger>
         <TabsTrigger value="costs">Costs</TabsTrigger>
@@ -247,9 +248,9 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           >
             {typeof metricsData?.totals.gross_margin === 'number'
               ? formatCurrency('statistics')(
-                metricsData.totals.gross_margin,
-                'usd',
-              )
+                  metricsData.totals.gross_margin,
+                  'usd',
+                )
               : '—'}
           </CustomerTrendStatBox>
           <CustomerTrendStatBox
@@ -264,13 +265,13 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           <StatisticCard title="Customer Balance" size="lg">
             {billingWallets && billingWallets.items.length > 0
               ? billingWallets.items.map((wallet) => (
-                <div key={wallet.id}>
-                  {formatCurrency('statistics')(
-                    wallet.balance,
-                    wallet.currency,
-                  )}
-                </div>
-              ))
+                  <div key={wallet.id}>
+                    {formatCurrency('statistics')(
+                      wallet.balance,
+                      wallet.currency,
+                    )}
+                  </div>
+                ))
               : '—'}
           </StatisticCard>
         </div>
@@ -460,11 +461,6 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           />
         </div>
 
-        <CustomerBenefitGrantsSection
-          organization={organization}
-          customer={customer}
-        />
-
         <ShadowBox className="flex flex-col gap-8">
           <div className="flex flex-col gap-4">
             <h2 className="text-lg">Customer Details</h2>
@@ -550,6 +546,12 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
             </div>
           )}
         </ShadowBox>
+      </TabsContent>
+      <TabsContent value="benefits">
+        <CustomerBenefitGrantsSection
+          organization={organization}
+          customer={customer}
+        />
       </TabsContent>
       <CustomerUsageView
         customer={customer}

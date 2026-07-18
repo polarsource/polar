@@ -112,8 +112,8 @@ const GrantBenefitModalContent = ({
           Grant benefits
         </Text>
         <Text color="muted">
-          Grant one or more benefits to {customer.email} as a standalone grant,
-          independent of any subscription or order.
+          Grant one or more benefits to {customer.email} manually, independent
+          of any subscription or order.
         </Text>
       </Box>
 
@@ -135,7 +135,7 @@ const GrantBenefitModalContent = ({
           />
           <Text variant="caption" color="muted">
             Only feature flag, custom and license key benefits can be granted
-            as standalone grants.
+            manually.
           </Text>
         </Box>
 

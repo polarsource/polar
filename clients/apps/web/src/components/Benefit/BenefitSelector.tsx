@@ -54,9 +54,7 @@ export default function BenefitSelector({
       items={items}
       value={value}
       selectedItem={
-        selectedBenefit ??
-        items.find((benefit) => benefit.id === value) ??
-        null
+        selectedBenefit ?? items.find((benefit) => benefit.id === value) ?? null
       }
       onChange={(benefitId) =>
         onChange(
@@ -85,9 +83,11 @@ export default function BenefitSelector({
             <Text variant="default" color="inherit">
               {benefit.description}
             </Text>
-            <Text variant="caption" color="inherit" style={{ opacity: 0.6 }}>
-              {benefitsDisplayNames[benefit.type]}
-            </Text>
+            <Box opacity={0.6}>
+              <Text variant="caption" color="inherit">
+                {benefitsDisplayNames[benefit.type]}
+              </Text>
+            </Box>
           </Box>
         </Box>
       )}

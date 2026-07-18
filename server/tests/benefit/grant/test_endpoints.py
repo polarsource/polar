@@ -6,12 +6,10 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
-from polar.event.system import SystemEvent
 from polar.models import (
     Benefit,
     BenefitGrant,
     Customer,
-    Event,
     Organization,
     Subscription,
     UserOrganization,
@@ -296,7 +294,6 @@ class TestRevokeBenefitGrant:
         client: AsyncClient,
         save_fixture: SaveFixture,
         mocker: MockerFixture,
-        session: AsyncSession,
         user_organization: UserOrganization,
         customer: Customer,
         benefit_organization: Benefit,
@@ -319,19 +316,9 @@ class TestRevokeBenefitGrant:
         assert response.json()["is_revoked"] is False
         assert duplicate_response.status_code == 202
         assert duplicate_response.json()["is_revoked"] is False
-        refreshed_grant = (
-            await session.execute(
-                select(BenefitGrant).where(BenefitGrant.id == grant.id)
-            )
-        ).scalar_one()
-        assert refreshed_grant.revoke_requested_at is not None
-        event = (
-            await session.execute(
-                select(Event).where(Event.name == SystemEvent.benefit_revoke_requested)
-            )
-        ).scalar_one()
-        assert event.user_metadata["benefit_grant_id"] == str(grant.id)
-        enqueue_mock.assert_called_once_with(
+        # Duplicate DELETE before the worker runs may enqueue again; revoke is idempotent.
+        assert enqueue_mock.call_count == 2
+        enqueue_mock.assert_called_with(
             "benefit.revoke",
             customer_id=grant.customer_id,
             benefit_id=grant.benefit_id,

@@ -1,22 +1,15 @@
 from collections.abc import Sequence
 from datetime import UTC, datetime
-from typing import Literal
 from uuid import UUID
 
 from sqlalchemy.orm import joinedload
 
-from polar.auth.models import AuthSubject, is_organization, is_user
+from polar.auth.models import AuthSubject
 from polar.authz.service import get_accessible_org_ids
 from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.grant.scope import resolve_member
 from polar.benefit.repository import BenefitRepository
 from polar.customer.repository import CustomerRepository
-from polar.event.service import event as event_service
-from polar.event.system import (
-    BenefitGrantRequestMetadata,
-    SystemEvent,
-    build_system_event,
-)
 from polar.exceptions import (
     PolarRequestValidationError,
     ResourceNotFound,
@@ -26,9 +19,9 @@ from polar.models import (
     Benefit,
     BenefitGrant,
     Customer,
-    StandaloneGrant,
     Member,
     Organization,
+    StandaloneGrant,
     User,
 )
 from polar.models.benefit import BenefitType
@@ -149,10 +142,6 @@ class StandaloneGrantService:
             customer=customer,
             expires_at=expires_at,
             reason=reason,
-            created_by_user=auth_subject.subject if is_user(auth_subject) else None,
-            created_by_organization=(
-                auth_subject.subject if is_organization(auth_subject) else None
-            ),
         )
         await repository.create(standalone_grant, flush=True)
 
@@ -170,19 +159,6 @@ class StandaloneGrantService:
         await session.flush()
 
         for benefit_grant in benefit_grants:
-            await event_service.create_event(
-                session,
-                build_system_event(
-                    SystemEvent.benefit_grant_requested,
-                    customer=customer,
-                    organization=customer.organization,
-                    metadata=self._build_request_metadata(
-                        auth_subject, standalone_grant, benefit_grant
-                    ),
-                ),
-            )
-
-        for benefit_grant in benefit_grants:
             enqueue_job(
                 "benefit.grant",
                 customer_id=customer.id,
@@ -194,42 +170,28 @@ class StandaloneGrantService:
         await session.refresh(standalone_grant, {"grants"})
         return standalone_grant
 
-    async def revoke_grant(
+    async def request_revoke(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
         standalone_grant: StandaloneGrant,
         grant: BenefitGrant,
     ) -> StandaloneGrant:
         grant_repository = BenefitGrantRepository.from_session(session)
-        locked_grant = await grant_repository.get_by_id(grant.id, for_update=True)
+        locked_grant = await grant_repository.get_by_id(
+            grant.id,
+            for_update=True,
+            options=(
+                joinedload(BenefitGrant.customer),
+                joinedload(BenefitGrant.benefit).joinedload(Benefit.organization),
+            ),
+        )
         if locked_grant is None:
             raise ResourceNotFound("Benefit grant not found")
-        await session.refresh(
-            locked_grant,
-            {"granted_at", "revoked_at", "revoke_requested_at"},
-        )
         grant = locked_grant
 
         if grant.is_revoked:
             return standalone_grant
-        if grant.revoke_requested_at is not None and grant.error is None:
-            return standalone_grant
 
-        grant.set_revoke_requested()
-        session.add(grant)
-        await session.flush()
-        await event_service.create_event(
-            session,
-            build_system_event(
-                SystemEvent.benefit_revoke_requested,
-                customer=grant.customer,
-                organization=grant.benefit.organization,
-                metadata=self._build_request_metadata(
-                    auth_subject, standalone_grant, grant
-                ),
-            ),
-        )
         enqueue_job(
             "benefit.revoke",
             customer_id=grant.customer_id,
@@ -239,7 +201,7 @@ class StandaloneGrantService:
         )
         return standalone_grant
 
-    async def revoke_expired(
+    async def request_revoke_expired(
         self,
         session: AsyncSession,
         *,
@@ -248,87 +210,24 @@ class StandaloneGrantService:
         now = datetime.now(UTC)
         repository = StandaloneGrantRepository.from_session(session)
         standalone_grants = await repository.list_expired_for_update(now, limit=limit)
-        grants_to_revoke: list[tuple[StandaloneGrant, BenefitGrant]] = []
+        grants_to_revoke: list[BenefitGrant] = []
 
         for standalone_grant in standalone_grants:
-            standalone_grant.revocation_requested_at = now
-            session.add(standalone_grant)
             for grant in standalone_grant.grants:
-                if grant.is_revoked or grant.revoke_requested_at is not None:
+                if grant.is_revoked:
                     continue
-                grant.set_revoke_requested()
-                session.add(grant)
-                grants_to_revoke.append((standalone_grant, grant))
+                grants_to_revoke.append(grant)
 
-        await session.flush()
-
-        for standalone_grant, grant in grants_to_revoke:
-            await event_service.create_event(
-                session,
-                build_system_event(
-                    SystemEvent.benefit_revoke_requested,
-                    customer=grant.customer,
-                    organization=grant.benefit.organization,
-                    metadata=self._build_expiration_request_metadata(
-                        standalone_grant, grant
-                    ),
-                ),
-            )
+        for grant in grants_to_revoke:
             enqueue_job(
                 "benefit.revoke",
                 customer_id=grant.customer_id,
                 benefit_id=grant.benefit_id,
                 member_id=grant.member_id,
-                standalone_grant_id=standalone_grant.id,
+                standalone_grant_id=grant.standalone_grant_id,
             )
 
         return len(standalone_grants)
-
-    def _build_request_metadata(
-        self,
-        auth_subject: AuthSubject[User | Organization],
-        standalone_grant: StandaloneGrant,
-        grant: BenefitGrant,
-    ) -> BenefitGrantRequestMetadata:
-        requested_by_type: Literal["user", "organization"] = (
-            "user" if is_user(auth_subject) else "organization"
-        )
-        metadata: BenefitGrantRequestMetadata = {
-            "benefit_id": str(grant.benefit_id),
-            "benefit_grant_id": str(grant.id),
-            "benefit_type": grant.benefit.type,
-            "standalone_grant_id": str(standalone_grant.id),
-            "requested_by_type": requested_by_type,
-            "requested_by_id": str(auth_subject.subject.id),
-        }
-        if grant.member_id is not None:
-            metadata["member_id"] = str(grant.member_id)
-        if standalone_grant.reason is not None:
-            metadata["reason"] = standalone_grant.reason
-        if standalone_grant.expires_at is not None:
-            metadata["expires_at"] = standalone_grant.expires_at.isoformat()
-        return metadata
-
-    def _build_expiration_request_metadata(
-        self,
-        standalone_grant: StandaloneGrant,
-        grant: BenefitGrant,
-    ) -> BenefitGrantRequestMetadata:
-        metadata: BenefitGrantRequestMetadata = {
-            "benefit_id": str(grant.benefit_id),
-            "benefit_grant_id": str(grant.id),
-            "benefit_type": grant.benefit.type,
-            "standalone_grant_id": str(standalone_grant.id),
-            "requested_by_type": "system",
-            "requested_by_id": "standalone_grant.expiration",
-        }
-        if grant.member_id is not None:
-            metadata["member_id"] = str(grant.member_id)
-        if standalone_grant.reason is not None:
-            metadata["reason"] = standalone_grant.reason
-        if standalone_grant.expires_at is not None:
-            metadata["expires_at"] = standalone_grant.expires_at.isoformat()
-        return metadata
 
 
 standalone_grant = StandaloneGrantService()

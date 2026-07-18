@@ -2,6 +2,7 @@ from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
 
+from sqlalchemy import exists, select
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.kit.repository import (
@@ -34,13 +35,20 @@ class StandaloneGrantRepository(
         *,
         limit: int,
     ) -> Sequence[StandaloneGrant]:
+        has_active_grant = exists(
+            select(BenefitGrant.id).where(
+                BenefitGrant.standalone_grant_id == StandaloneGrant.id,
+                BenefitGrant.revoked_at.is_(None),
+                BenefitGrant.deleted_at.is_(None),
+            )
+        )
         statement = (
             self.get_base_statement()
             .where(
                 StandaloneGrant.expires_at.is_not(None),
                 StandaloneGrant.expires_at <= now,
-                StandaloneGrant.revocation_requested_at.is_(None),
                 StandaloneGrant.deleted_at.is_(None),
+                has_active_grant,
             )
             .order_by(StandaloneGrant.expires_at.asc())
             .limit(limit)

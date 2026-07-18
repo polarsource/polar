@@ -32,9 +32,9 @@ if TYPE_CHECKING:
     from polar.models import (
         Benefit,
         Customer,
-        StandaloneGrant,
         Member,
         Order,
+        StandaloneGrant,
         Subscription,
     )
 
@@ -134,9 +134,6 @@ class BenefitGrant(RecordModel):
         TIMESTAMP(timezone=True), nullable=True
     )
     revoked_at: Mapped[datetime | None] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=True
-    )
-    revoke_requested_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
     )
 
@@ -239,11 +236,6 @@ class BenefitGrant(RecordModel):
     @classmethod
     def _is_revoked_expression(cls) -> ColumnElement[bool]:
         return type_coerce(cls.revoked_at.is_not(None), Boolean)
-
-    def set_revoke_requested(self) -> None:
-        if self.revoke_requested_at is None:
-            self.revoke_requested_at = datetime.now(UTC)
-        self.error = None
 
     def set_granted(self) -> None:
         self.granted_at = datetime.now(UTC)

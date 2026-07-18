@@ -172,5 +172,5 @@ async def revoke(
 
     standalone_grant = grant.standalone_grant
     assert standalone_grant is not None
-    await standalone_grant_service.revoke_grant(session, auth_subject, standalone_grant, grant)
+    await standalone_grant_service.request_revoke(session, standalone_grant, grant)
     return grant

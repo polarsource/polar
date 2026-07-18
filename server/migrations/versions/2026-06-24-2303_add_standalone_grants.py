@@ -1,7 +1,7 @@
 """add standalone grants
 
 Revision ID: b15961219bd6
-Revises: 4741016efa61
+Revises: 638a2f04c7ce
 Create Date: 2026-06-24 23:03:33.346828
 
 """
@@ -13,7 +13,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "b15961219bd6"
-down_revision = "4741016efa61"
+down_revision = "638a2f04c7ce"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 
@@ -25,29 +25,12 @@ def upgrade() -> None:
     op.create_table(
         "standalone_grants",
         sa.Column("customer_id", sa.Uuid(), nullable=False),
-        sa.Column("created_by_user_id", sa.Uuid(), nullable=True),
-        sa.Column("created_by_organization_id", sa.Uuid(), nullable=True),
         sa.Column("reason", sa.String(), nullable=True),
         sa.Column("expires_at", sa.TIMESTAMP(timezone=True), nullable=True),
-        sa.Column(
-            "revocation_requested_at", sa.TIMESTAMP(timezone=True), nullable=True
-        ),
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("deleted_at", sa.TIMESTAMP(timezone=True), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["created_by_organization_id"],
-            ["organizations.id"],
-            name=op.f("standalone_grants_created_by_organization_id_fkey"),
-            ondelete="set null",
-        ),
-        sa.ForeignKeyConstraint(
-            ["created_by_user_id"],
-            ["users.id"],
-            name=op.f("standalone_grants_created_by_user_id_fkey"),
-            ondelete="set null",
-        ),
         sa.ForeignKeyConstraint(
             ["customer_id"],
             ["customers.id"],
@@ -79,16 +62,10 @@ def upgrade() -> None:
         "standalone_grants",
         ["expires_at"],
         unique=False,
-        postgresql_where=sa.text(
-            "revocation_requested_at IS NULL AND deleted_at IS NULL"
-        ),
+        postgresql_where=sa.text("deleted_at IS NULL"),
     )
     op.add_column(
         "benefit_grants", sa.Column("standalone_grant_id", sa.Uuid(), nullable=True)
-    )
-    op.add_column(
-        "benefit_grants",
-        sa.Column("revoke_requested_at", sa.TIMESTAMP(timezone=True), nullable=True),
     )
     # The ix_benefit_grants_scope_unique rebuild (appending standalone_grant_id) is done
     # CONCURRENTLY in the following migration to avoid locking benefit_grants.
@@ -123,7 +100,6 @@ def downgrade() -> None:
     )
     # The ix_benefit_grants_scope_unique 5-column form is restored CONCURRENTLY in
     # the following migration's downgrade, which runs before this one.
-    op.drop_column("benefit_grants", "revoke_requested_at")
     op.drop_column("benefit_grants", "standalone_grant_id")
     op.drop_index(
         "ix_standalone_grants_pending_expiration",

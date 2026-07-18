@@ -254,10 +254,9 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 **scope,
             )
             session.add(grant)
-        elif (
-            scope.get("standalone_grant") is not None
-            and grant.revoke_requested_at is not None
-        ):
+        elif grant.is_revoked and scope.get("standalone_grant") is not None:
+            # Standalone revocation is terminal; don't let a racing grant job
+            # re-apply after revoke won the race.
             return grant
         elif grant.is_granted:
             return grant
@@ -379,8 +378,6 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 pass
 
         grant.set_revoked()
-        if scope.get("standalone_grant") is not None:
-            grant.error = None
 
         session.add(grant)
         await session.flush()

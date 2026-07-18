@@ -70,13 +70,15 @@ class OrganizationDoesNotExist(BenefitTaskError):
 
 @actor(
     actor_name="standalone_grant.scan_expired",
-    cron_trigger=CronTrigger.from_crontab("* * * * *"),
+    cron_trigger=CronTrigger.from_crontab("*/15 * * * *"),
     priority=TaskPriority.LOW,
     max_retries=0,
 )
 async def scan_expired_standalone_grants() -> None:
     async with AsyncSessionMaker() as session:
-        count = await standalone_grant_service.revoke_expired(session, limit=500)
+        count = await standalone_grant_service.request_revoke_expired(
+            session, limit=500
+        )
         log.info("Scanned expired standalone grants", count=count)
 
 

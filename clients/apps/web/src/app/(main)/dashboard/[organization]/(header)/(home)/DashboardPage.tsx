@@ -8,6 +8,7 @@ import { PlanUpsell } from '@/components/Upsell/PlanUpsell'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
 import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
+import { useHasPermission } from '@/hooks/permissions'
 import { schemas } from '@polar-sh/client'
 import { DisputesBanner } from './DisputesBanner'
 import { OrganizationStatusBanner } from './OrganizationStatusBanner'
@@ -20,15 +21,19 @@ interface OverviewPageProps {
 }
 
 export default function OverviewPage({ organization }: OverviewPageProps) {
+  // The Compass box links into the Compass route, which is gated on
+  // `analytics:read`, so without this it would deep-link into a denial.
+  const canReadAnalytics = useHasPermission(organization.id, 'analytics:read')
+  const showCompassBox =
+    !!organization.feature_settings?.compass_enabled && canReadAnalytics
+
   return (
     <DashboardBody
       className="gap-y-8 md:gap-y-16"
       wrapperClassName={
         // Room for the sticky Compass box; without it the page would end in
         // a large blank strip for organizations without the feature.
-        organization.feature_settings?.compass_enabled
-          ? 'pb-40 md:pb-48'
-          : undefined
+        showCompassBox ? 'pb-40 md:pb-48' : undefined
       }
       title={null}
     >
@@ -45,9 +50,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
           <AccountWidget className={cellClassName} />
         </div>
       </div>
-      {organization.feature_settings?.compass_enabled && (
-        <CompassBox organization={organization} />
-      )}
+      {showCompassBox && <CompassBox organization={organization} />}
     </DashboardBody>
   )
 }

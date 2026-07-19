@@ -1,5 +1,6 @@
 'use client'
 
+import { useHasPermission } from '@/hooks/permissions'
 import { useSupportCases } from '@/hooks/queries/supportCases'
 import { schemas } from '@polar-sh/client'
 import { Alert } from '@polar-sh/orbit'
@@ -13,7 +14,14 @@ interface DisputesBannerProps {
 
 export const DisputesBanner = ({ organization }: DisputesBannerProps) => {
   const router = useRouter()
-  const disputesEnabled = !!organization.feature_settings?.disputes_enabled
+  // Support cases are gated on `organization:manage` server-side, so only
+  // admins can act on a dispute.
+  const canManageOrganization = useHasPermission(
+    organization.id,
+    'organization:manage',
+  )
+  const disputesEnabled =
+    !!organization.feature_settings?.disputes_enabled && canManageOrganization
 
   const { data } = useSupportCases(
     organization.id,

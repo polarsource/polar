@@ -8,6 +8,7 @@ import {
 } from '@/components/Finance/Account/sections/stepLabels'
 import { AiSetupModalContent } from './AiSetupModal'
 import { useModal } from '@/components/Modal/useModal'
+import { useHasPermission } from '@/hooks/permissions'
 import { useOrganizationReviewState } from '@/hooks/queries/org'
 import { usePostHog } from '@/hooks/posthog'
 import { useAccountSetup } from '@/providers/accountSetup'
@@ -22,8 +23,15 @@ interface Props {
 }
 
 export const OnboardingChecklistCard = ({ organization }: Props) => {
+  // The review state is gated on `organization:manage`, and the whole card
+  // walks through account setup only an admin can complete.
+  const canManageOrganization = useHasPermission(
+    organization.id,
+    'organization:manage',
+  )
   const { data: reviewState, isLoading } = useOrganizationReviewState(
     organization.id,
+    canManageOrganization,
   )
   const { setTargetStepKey } = useAccountSetup()
   const posthog = usePostHog()
@@ -42,7 +50,7 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
 
   const accountHref = `/dashboard/${organization.slug}/finance/account`
 
-  if (isLoading) {
+  if (isLoading || !canManageOrganization) {
     return null
   }
 

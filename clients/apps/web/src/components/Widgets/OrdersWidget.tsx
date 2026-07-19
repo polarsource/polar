@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { WidgetContainer } from './WidgetContainer'
+import { WidgetGuard } from './WidgetGuard'
 
 const orderStatusBadgeColor = (
   order: schemas['Order'],
@@ -66,14 +67,26 @@ export interface OrdersWidgetProps {
   className?: string
 }
 
-export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
+const WIDGET_TITLE = 'Latest Orders'
+
+export const OrdersWidget = ({ className }: OrdersWidgetProps) => (
+  <WidgetGuard
+    permission="sales:read"
+    title={WIDGET_TITLE}
+    className={twMerge('min-h-80', className)}
+  >
+    <OrdersWidgetContent className={className} />
+  </WidgetGuard>
+)
+
+const OrdersWidgetContent = ({ className }: OrdersWidgetProps) => {
   const { organization: org } = useContext(OrganizationContext)
 
   const orders = useOrders(org.id, { limit: 10, sorting: ['-created_at'] })
 
   return (
     <WidgetContainer
-      title="Latest Orders"
+      title={WIDGET_TITLE}
       action={
         <Link href={`/dashboard/${org.slug}/sales`}>
           <Button

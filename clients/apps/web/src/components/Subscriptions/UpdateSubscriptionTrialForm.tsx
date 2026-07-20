@@ -18,11 +18,7 @@ import { useForm } from 'react-hook-form'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
 import { toast } from '../Toast/use-toast'
-
-const validationDiscriminators = [
-  'SubscriptionUpdateBase',
-  'SubscriptionUpdateBillingPeriod',
-]
+import { subscriptionUpdateValidationDiscriminators } from './utils'
 
 export const UpdateSubscriptionTrialForm = ({
   subscription,
@@ -69,7 +65,7 @@ export const UpdateSubscriptionTrialForm = ({
                   error.detail,
                   setError,
                   undefined,
-                  validationDiscriminators,
+                  subscriptionUpdateValidationDiscriminators,
                 )
               } else {
                 toast({
@@ -107,7 +103,7 @@ export const UpdateSubscriptionTrialForm = ({
                 error.detail,
                 setError,
                 undefined,
-                validationDiscriminators,
+                subscriptionUpdateValidationDiscriminators,
               )
             } else {
               toast({

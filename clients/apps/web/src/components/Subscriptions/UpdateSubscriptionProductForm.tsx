@@ -28,12 +28,8 @@ import { useForm } from 'react-hook-form'
 import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { ProrationBehavior } from '../Settings/ProrationBehavior'
 import { toast } from '../Toast/use-toast'
+import { subscriptionUpdateValidationDiscriminators } from './utils'
 import { UpdateSubscriptionProductWarning } from './UpdateSubscriptionProductWarning'
-
-const validationDiscriminators = [
-  'SubscriptionUpdateBase',
-  'SubscriptionUpdateBillingPeriod',
-]
 
 export const UpdateSubscriptionProductForm = ({
   subscription,
@@ -106,7 +102,7 @@ export const UpdateSubscriptionProductForm = ({
                 error.detail,
                 setError,
                 undefined,
-                validationDiscriminators,
+                subscriptionUpdateValidationDiscriminators,
               )
             } else {
               toast({

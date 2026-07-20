@@ -19,11 +19,7 @@ import { XIcon } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
-
-const validationDiscriminators = [
-  'SubscriptionUpdateBase',
-  'SubscriptionUpdateBillingPeriod',
-]
+import { subscriptionUpdateValidationDiscriminators } from './utils'
 
 export const UpdateSubscriptionDiscountForm = ({
   subscription,
@@ -66,7 +62,7 @@ export const UpdateSubscriptionDiscountForm = ({
                 error.detail,
                 setError,
                 undefined,
-                validationDiscriminators,
+                subscriptionUpdateValidationDiscriminators,
               )
             } else {
               toast({

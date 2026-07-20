@@ -801,6 +801,40 @@ class TestProcessStalePaymentLockOrder:
         assert updated_order is not None
         assert updated_order.payment_lock_acquired_at is not None
 
+    async def test_lock_refreshed_since_scan_left_alone(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        """A lock re-acquired between the scan and this job belongs to a live
+        attempt, whose intent must not be cancelled."""
+        customer = await create_customer(save_fixture, organization=organization)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=utc_now(),
+        )
+
+        mocker.patch(
+            "polar.order.service.stripe_service.get_payment_intents_for_order",
+            return_value=[
+                build_stripe_payment_intent(id="pi_live", status="requires_action")
+            ],
+        )
+        cancel_mock = mocker.patch(
+            "polar.order.service.stripe_service.cancel_payment_intent",
+        )
+
+        # When
+        await process_stale_payment_lock_order(order.id)
+
+        # Then
+        cancel_mock.assert_not_called()
+
     async def test_resolved_payment_intents_left_alone(
         self,
         save_fixture: SaveFixture,

@@ -145,6 +145,14 @@ AWAITING_PAYMENT_INTENT_STATUSES = {
 }
 
 
+def _payment_lock_is_stale(order: Order) -> bool:
+    if order.payment_lock_acquired_at is None:
+        return False
+    return order.payment_lock_acquired_at <= (
+        utc_now() - settings.PAYMENT_LOCK_STALE_THRESHOLD
+    )
+
+
 class OrderError(PolarError): ...
 
 
@@ -2818,6 +2826,14 @@ class OrderService:
         if order.payment_lock_acquired_at is None:
             return
 
+        if not _payment_lock_is_stale(order):
+            log.info(
+                "Payment lock refreshed since the stale scan, skipping cancellation",
+                order_id=order.id,
+                payment_lock_acquired_at=order.payment_lock_acquired_at,
+            )
+            return
+
         payment_intents = await stripe_service.get_payment_intents_for_order(order.id)
         pending_intents = [
             payment_intent
@@ -2892,9 +2908,7 @@ class OrderService:
         # Only a stale lock is ours to release. A fresh one belongs to a live
         # attempt, so this cancellation is for an older intent of the same
         # order — releasing would let a second charge fire alongside it.
-        if order.payment_lock_acquired_at > (
-            utc_now() - settings.PAYMENT_LOCK_STALE_THRESHOLD
-        ):
+        if not _payment_lock_is_stale(order):
             log.info(
                 "Ignoring payment cancellation for a live payment attempt",
                 order_id=order.id,

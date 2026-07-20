@@ -5,6 +5,7 @@ import PayoutAccountStep from '@/components/Finance/Steps/PayoutAccountStep'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import { toast } from '@/components/Toast/use-toast'
+import { isTerminalStatus } from '@/hooks/identityVerification'
 import { useAuth } from '@/hooks'
 import { useCreateIdentityVerification } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
@@ -20,7 +21,6 @@ export const AccountPageApproved = ({ organization }: Props) => {
   const { currentUser, reloadUser } = useAuth()
   const identityVerificationStatus = currentUser?.identity_verification_status
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const pollingInitialStatusRef = useRef<string | undefined | null>(null)
 
   const stripePromise = loadPolarStripe()
   const createIdentityVerification = useCreateIdentityVerification()
@@ -75,7 +75,6 @@ export const AccountPageApproved = ({ organization }: Props) => {
       })
       return
     }
-    pollingInitialStatusRef.current = identityVerificationStatus
     await reloadUser()
     pollingRef.current = setInterval(async () => {
       await reloadUser()
@@ -86,18 +85,10 @@ export const AccountPageApproved = ({ organization }: Props) => {
         pollingRef.current = null
       }
     }, 30_000)
-  }, [
-    createIdentityVerification,
-    stripePromise,
-    reloadUser,
-    identityVerificationStatus,
-  ])
+  }, [createIdentityVerification, stripePromise, reloadUser])
 
   useEffect(() => {
-    if (
-      pollingRef.current &&
-      identityVerificationStatus !== pollingInitialStatusRef.current
-    ) {
+    if (pollingRef.current && isTerminalStatus(identityVerificationStatus)) {
       clearInterval(pollingRef.current)
       pollingRef.current = null
     }

@@ -125,6 +125,16 @@ async def trigger_payment(
             await order_service.trigger_payment(
                 session, order, payment_method, payment_trigger=trigger
             )
+        except PaymentAlreadyInProgress:
+            # A payment lock is already held for this order (e.g. an unresolved
+            # off-session SCA PaymentIntent). Don't dead-letter: the stale lock
+            # cleanup will cancel the wedged intent and dunning will retry this
+            # order on its normal schedule.
+            log.info(
+                "Payment already in progress, skipping trigger",
+                order_id=order_id,
+            )
+            return
         except PaymentFailed:
             # Payment failures should not be retried - they will be handled by the dunning process
             # Log the failure but don't retry the task

@@ -647,3 +647,32 @@ class TestTriggerPayment:
         mock_create_payment_intent.assert_called_once()
         call_kwargs = mock_create_payment_intent.call_args[1]
         assert "payment_trigger" not in call_kwargs["metadata"]
+
+    async def test_trigger_payment_already_in_progress_does_not_raise(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        """A wedged payment lock must not dead-letter the dunning retry: the
+        task should swallow PaymentAlreadyInProgress and return cleanly."""
+        customer = await create_customer(save_fixture, organization=organization)
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=utc_now() - timedelta(hours=2),
+        )
+
+        mock_create_payment_intent = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent",
+        )
+
+        # When / Then — must not raise
+        await trigger_payment(order.id, payment_method.id)
+
+        # No new charge attempted while the lock is held
+        mock_create_payment_intent.assert_not_called()

@@ -130,7 +130,11 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
             <Box flexDirection="column" rowGap="m">
               <Box alignItems="center" columnGap="m">
                 <RocketIcon className="h-4 w-4 shrink-0" />
-                <Text variant="title">Finish setting up your account</Text>
+                <Text variant="title">
+                  {canManageOrganization
+                    ? 'Finish setting up your account'
+                    : 'Account setup in progress'}
+                </Text>
               </Box>
               <Text color="muted">
                 Set up your products and integrate into your app. Test the full
@@ -177,10 +181,12 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
             <Box flexDirection="column" rowGap="xs">
               {!canManageOrganization ? (
                 <>
-                  <Text variant="title">Not ready to sell yet</Text>
+                  <Text variant="title">
+                    Payments aren&rsquo;t enabled for your organization yet
+                  </Text>
                   <Text color="muted">
-                    An organization admin needs to finish account setup before
-                    you can start accepting payments.
+                    An owner or admin needs to finish account setup before you
+                    can accept payments.
                   </Text>
                 </>
               ) : nextLabel ? (

@@ -154,7 +154,7 @@ export const ShareChartModal = ({
             <LogoType className="text-white dark:text-white" height={48} />
           </div>
         </div>
-        <div className="flex w-full flex-row items-center justify-between gap-6">
+        <div className="flex w-full flex-col items-start gap-4 md:flex-row md:items-center md:justify-between md:gap-6">
           <div className="flex flex-row gap-4">
             <MetricThemeSelector
               name="Monochrome"
@@ -169,7 +169,7 @@ export const ShareChartModal = ({
               onClick={setTheme}
             />
           </div>
-          <div className="flex flex-row gap-2">
+          <div className="flex w-full flex-row gap-2 md:w-auto">
             <Button fullWidth variant="ghost" onClick={copyToClipboard}>
               Copy
             </Button>

@@ -34,7 +34,12 @@ export const UpdateSubscriptionBillingPeriodForm = ({
       current_billing_period_end: subscription.current_period_end || undefined,
     },
   })
-  const { control, handleSubmit, setError } = form
+  const {
+    control,
+    handleSubmit,
+    setError,
+    formState: { isDirty },
+  } = form
 
   const onSubmit = useCallback(
     async (body: schemas['SubscriptionUpdateBillingPeriod']) => {
@@ -109,7 +114,7 @@ export const UpdateSubscriptionBillingPeriodForm = ({
           <Button
             type="submit"
             loading={updateSubscription.isPending}
-            disabled={updateSubscription.isPending}
+            disabled={!isDirty || updateSubscription.isPending}
             className="w-fit"
           >
             Update Billing Period

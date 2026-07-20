@@ -42,11 +42,7 @@ const SubscriptionProductOption = ({
         flexGrow={1}
         overflow="hidden"
       >
-        <span className="min-w-0 flex-1 truncate">
-          <Text as="span" variant="default" color="inherit">
-            {product.name}
-          </Text>
-        </span>
+        <span className="min-w-0 flex-1 truncate">{product.name}</span>
         <span className="shrink-0 opacity-70 [&_*]:!text-current">
           <ProductPriceLabel product={product} currency={currency} />
         </span>
@@ -63,20 +59,10 @@ const SubscriptionProductOption = ({
       overflow="hidden"
       paddingRight="s"
     >
-      <span className="truncate leading-snug">
-        <Text as="span" variant="default" color="inherit">
-          {product.name}
-        </Text>
-      </span>
-      <span className="flex items-center gap-2 text-xs leading-snug opacity-70">
-        <span className="[&_*]:!text-current">
-          <ProductPriceLabel product={product} currency={currency} />
-        </span>
-        {showNewPricing ? (
-          <Text as="span" variant="caption" color="inherit">
-            · New pricing
-          </Text>
-        ) : null}
+      <span className="truncate leading-snug">{product.name}</span>
+      <span className="flex items-center gap-2 text-xs leading-snug opacity-70 [&_*]:!text-current">
+        <ProductPriceLabel product={product} currency={currency} />
+        {showNewPricing ? <span>· New pricing</span> : null}
       </span>
     </Box>
   )
@@ -148,16 +134,19 @@ export const SubscriptionProductPicker = ({
       </PopoverTrigger>
       <PopoverContent
         align="start"
-        className="w-(--radix-popover-trigger-width) rounded-xl p-0"
+        className="dark:bg-polar-800 dark:border-polar-700 w-(--radix-popover-trigger-width) rounded-xl border p-0"
       >
-        <Command shouldFilter={false} className="rounded-xl">
+        <Command
+          shouldFilter={false}
+          className="dark:bg-polar-800 rounded-xl bg-white text-gray-950 dark:text-white"
+        >
           <CommandInput
             placeholder="Search products…"
             className="h-9 border-0 focus:ring-0 focus:outline-0"
             value={query}
             onValueChange={setQuery}
           />
-          <CommandList>
+          <CommandList className="dark:[scrollbar-color:var(--color-polar-500)_transparent]">
             {isLoading ? (
               <Box
                 alignItems="center"
@@ -182,7 +171,7 @@ export const SubscriptionProductPicker = ({
                         setOpen(false)
                         setQuery('')
                       }}
-                      className="items-center rounded-md"
+                      className="data-[selected=true]:text-accent-foreground items-center rounded-md text-gray-950 dark:text-white"
                     >
                       <span className="min-w-0 flex-1">
                         <SubscriptionProductOption

@@ -2,6 +2,7 @@ import uuid
 from unittest.mock import AsyncMock
 
 import pytest
+import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.config import settings
@@ -154,6 +155,17 @@ class TestOrganizationCancelExpiredSubscriptions:
 
 @pytest.mark.asyncio
 class TestEvaluateWebsiteRisk:
+    async def test_not_existing_organization(
+        self, mocker: MockerFixture, session: AsyncSession
+    ) -> None:
+        mocker.patch.object(
+            settings, "STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET", "whsec_test"
+        )
+        session.expunge_all()
+
+        with pytest.raises(OrganizationDoesNotExist):
+            await evaluate_website_risk(uuid.uuid4())
+
     async def test_triggers_evaluation_for_org_with_stripe_account(
         self,
         mocker: MockerFixture,
@@ -164,17 +176,115 @@ class TestEvaluateWebsiteRisk:
         mocker.patch.object(
             settings, "STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET", "whsec_test"
         )
+        organization.website = "https://example.com"
+        await save_fixture(organization)
         payout_account = await create_payout_account(
             save_fixture, organization, user, stripe_id="acct_website_test"
         )
+        update_website_mock = mocker.patch(
+            "polar.organization.service.stripe_service.update_account_website",
+            new=AsyncMock(),
+        )
         evaluate_mock = mocker.patch(
-            "polar.organization.tasks.stripe_service.create_website_risk_evaluation",
+            "polar.organization.service.stripe_service.create_website_risk_evaluation",
             new=AsyncMock(return_value={}),
         )
 
         await evaluate_website_risk(organization.id)
 
+        update_website_mock.assert_awaited_once_with(
+            payout_account.stripe_id, "https://example.com"
+        )
         evaluate_mock.assert_awaited_once_with(payout_account.stripe_id)
+
+    async def test_noop_without_website(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        mocker.patch.object(
+            settings, "STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET", "whsec_test"
+        )
+        await create_payout_account(
+            save_fixture, organization, user, stripe_id="acct_website_test"
+        )
+        update_website_mock = mocker.patch(
+            "polar.organization.service.stripe_service.update_account_website",
+            new=AsyncMock(),
+        )
+        evaluate_mock = mocker.patch(
+            "polar.organization.service.stripe_service.create_website_risk_evaluation",
+            new=AsyncMock(),
+        )
+
+        await evaluate_website_risk(organization.id)
+
+        update_website_mock.assert_not_awaited()
+        evaluate_mock.assert_not_awaited()
+
+    async def test_evaluation_rejection_does_not_raise(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        mocker.patch.object(
+            settings, "STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET", "whsec_test"
+        )
+        organization.website = "https://example.com"
+        await save_fixture(organization)
+        await create_payout_account(
+            save_fixture, organization, user, stripe_id="acct_website_test"
+        )
+        mocker.patch(
+            "polar.organization.service.stripe_service.update_account_website",
+            new=AsyncMock(),
+        )
+        mocker.patch(
+            "polar.organization.service.stripe_service.create_website_risk_evaluation",
+            new=AsyncMock(
+                side_effect=stripe_lib.InvalidRequestError(
+                    "The account or account data does not have the required fields"
+                    " to perform requested evaluations.",
+                    None,
+                )
+            ),
+        )
+
+        await evaluate_website_risk(organization.id)
+
+    async def test_website_sync_rejection_does_not_raise(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        mocker.patch.object(
+            settings, "STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET", "whsec_test"
+        )
+        organization.website = "https://example.com"
+        await save_fixture(organization)
+        await create_payout_account(
+            save_fixture, organization, user, stripe_id="acct_website_test"
+        )
+        mocker.patch(
+            "polar.organization.service.stripe_service.update_account_website",
+            new=AsyncMock(
+                side_effect=stripe_lib.InvalidRequestError("Invalid URL", None)
+            ),
+        )
+        evaluate_mock = mocker.patch(
+            "polar.organization.service.stripe_service.create_website_risk_evaluation",
+            new=AsyncMock(),
+        )
+
+        await evaluate_website_risk(organization.id)
+
+        evaluate_mock.assert_not_awaited()
 
     async def test_noop_when_secret_unset(
         self,
@@ -183,7 +293,7 @@ class TestEvaluateWebsiteRisk:
     ) -> None:
         mocker.patch.object(settings, "STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET", "")
         evaluate_mock = mocker.patch(
-            "polar.organization.tasks.stripe_service.create_website_risk_evaluation",
+            "polar.organization.service.stripe_service.create_website_risk_evaluation",
             new=AsyncMock(),
         )
 
@@ -200,7 +310,7 @@ class TestEvaluateWebsiteRisk:
             settings, "STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET", "whsec_test"
         )
         evaluate_mock = mocker.patch(
-            "polar.organization.tasks.stripe_service.create_website_risk_evaluation",
+            "polar.organization.service.stripe_service.create_website_risk_evaluation",
             new=AsyncMock(),
         )
 

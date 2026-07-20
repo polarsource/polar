@@ -474,6 +474,26 @@ class PriorFeedbackData(Schema):
     entries: list[PriorFeedbackEntry] = Field(default_factory=list)
 
 
+class RiskSignalEntry(Schema):
+    """A single external risk signal recorded against the organization."""
+
+    source: str = Field(description="Where the signal came from, e.g. 'stripe'")
+    type: str = Field(
+        description="Signal type, e.g. fraudulent_website or fraudulent_merchant"
+    )
+    risk_level: str = Field(
+        description="Severity reported by the source, e.g. 'elevated' or 'highest'"
+    )
+    description: str | None = None
+    created_at: datetime
+
+
+class RiskSignalData(Schema):
+    """External risk signals recorded against the organization."""
+
+    entries: list[RiskSignalEntry] = Field(default_factory=list)
+
+
 class DataSnapshot(Schema):
     """All collected data for the AI analyzer."""
 
@@ -487,6 +507,7 @@ class DataSnapshot(Schema):
     setup: SetupData = Field(default_factory=SetupData)
     website: WebsiteData | None = None
     prior_feedback: PriorFeedbackData = Field(default_factory=PriorFeedbackData)
+    risk_signals: RiskSignalData = Field(default_factory=RiskSignalData)
     appeal_reason: str | None = None
     original_denial_reason: str | None = None
     collected_at: datetime

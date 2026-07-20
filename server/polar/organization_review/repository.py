@@ -494,13 +494,14 @@ class OrganizationRiskSignalRepository(
     model = OrganizationRiskSignal
 
     async def list_by_organization(
-        self, organization_id: UUID
+        self, organization_id: UUID, *, limit: int = 100
     ) -> list[OrganizationRiskSignal]:
-        """Signals for an organization, most recent first."""
+        """Signals for an organization, most recent first, capped at `limit`."""
         statement = (
             self.get_base_statement()
             .where(OrganizationRiskSignal.organization_id == organization_id)
             .order_by(OrganizationRiskSignal.created_at.desc())
+            .limit(limit)
         )
         result = await self.session.execute(statement)
         return list(result.scalars().all())

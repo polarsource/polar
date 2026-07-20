@@ -23,6 +23,7 @@ from polar.models.organization_sso_connection import (
     OrganizationSSOConnectionType,
 )
 from polar.sso.discovery import DISCOVERY_PATH
+from polar.sso.schemas import RESERVED_AUTHORIZATION_PARAMETERS
 from tests.fixtures.database import SaveFixture
 
 DISCOVERY_ROUTE = re.compile(rf".*{re.escape(DISCOVERY_PATH)}$")
@@ -311,6 +312,79 @@ class TestCreateSSOConnection:
         )
         assert response.status_code == 201
         assert response.json()["configuration"]["issuer"] == "https://idp.example.com/"
+
+    @pytest.mark.auth
+    async def test_authorization_parameters(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        sso_enabled_organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/sso-connections/",
+            json={
+                "configuration": {
+                    "issuer": "https://idp.example.com",
+                    "client_id": "client-id",
+                    "auth_method": "client_secret",
+                    "client_secret": "secret",
+                    "authorization_parameters": {"hd": "polar.sh"},
+                }
+            },
+        )
+        assert response.status_code == 201
+        assert response.json()["configuration"]["authorization_parameters"] == {
+            "hd": "polar.sh"
+        }
+
+    @pytest.mark.auth
+    @pytest.mark.parametrize("key", sorted(RESERVED_AUTHORIZATION_PARAMETERS))
+    async def test_reserved_authorization_parameter(
+        self,
+        key: str,
+        client: AsyncClient,
+        organization: Organization,
+        sso_enabled_organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/sso-connections/",
+            json={
+                "configuration": {
+                    "issuer": "https://idp.example.com",
+                    "client_id": "client-id",
+                    "auth_method": "client_secret",
+                    "client_secret": "secret",
+                    "authorization_parameters": {key: "attacker-controlled"},
+                }
+            },
+        )
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_too_many_authorization_parameters(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        sso_enabled_organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            f"/v1/organizations/{organization.id}/sso-connections/",
+            json={
+                "configuration": {
+                    "issuer": "https://idp.example.com",
+                    "client_id": "client-id",
+                    "auth_method": "client_secret",
+                    "client_secret": "secret",
+                    "authorization_parameters": {
+                        f"param_{index}": "value" for index in range(11)
+                    },
+                }
+            },
+        )
+        assert response.status_code == 422
 
     @pytest.mark.auth
     async def test_unreachable_discovery_document(

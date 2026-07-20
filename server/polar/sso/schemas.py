@@ -1,6 +1,13 @@
 from typing import Annotated, Any, Literal
 
-from pydantic import UUID4, BeforeValidator, Discriminator, Field, StringConstraints
+from pydantic import (
+    UUID4,
+    BeforeValidator,
+    Discriminator,
+    Field,
+    StringConstraints,
+    field_validator,
+)
 
 from polar.kit.schemas import (
     EmptyStrToNone,
@@ -29,12 +36,47 @@ def _strip_discovery_path(value: Any) -> Any:
 
 IssuerUrl = Annotated[HttpsUrl, BeforeValidator(_strip_discovery_path)]
 
+RESERVED_AUTHORIZATION_PARAMETERS = {
+    "response_type",
+    "client_id",
+    "redirect_uri",
+    "scope",
+    "state",
+    "nonce",
+    "code_challenge",
+    "code_challenge_method",
+}
+
+AuthorizationParameters = Annotated[
+    dict[
+        Annotated[str, StringConstraints(pattern=r"^[a-zA-Z0-9_.-]{1,64}$")],
+        Annotated[str, StringConstraints(max_length=256)],
+    ],
+    Field(max_length=10),
+]
+
+AUTHORIZATION_PARAMETERS_DESCRIPTION = (
+    "Additional parameters appended to the authorization request, "
+    "e.g. `hd` to pin a Google Workspace domain."
+)
+
 
 class OIDCConfigurationBase(Schema):
     issuer: IssuerUrl = Field(description="OIDC issuer URL of the identity provider.")
     client_id: NonEmptyStr = Field(
         description="OAuth client ID registered with the identity provider."
     )
+    authorization_parameters: AuthorizationParameters = Field(
+        default_factory=dict, description=AUTHORIZATION_PARAMETERS_DESCRIPTION
+    )
+
+    @field_validator("authorization_parameters")
+    @classmethod
+    def validate_authorization_parameters(cls, value: dict[str, str]) -> dict[str, str]:
+        for key in value:
+            if key in RESERVED_AUTHORIZATION_PARAMETERS:
+                raise ValueError(f"`{key}` is set by Polar and can't be overridden.")
+        return value
 
 
 class OIDCConfigurationClientSecret(OIDCConfigurationBase):
@@ -65,6 +107,9 @@ class OIDCConfigurationRead(Schema):
     )
     auth_method: OIDCAuthMethod = Field(
         description="Authentication method used against the identity provider."
+    )
+    authorization_parameters: dict[str, str] = Field(
+        default_factory=dict, description=AUTHORIZATION_PARAMETERS_DESCRIPTION
     )
 
 

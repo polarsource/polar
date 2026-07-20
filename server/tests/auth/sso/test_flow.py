@@ -109,7 +109,10 @@ def _id_token(
 
 
 async def create_sso_connection(
-    save_fixture: SaveFixture, organization: Organization
+    save_fixture: SaveFixture,
+    organization: Organization,
+    *,
+    authorization_parameters: dict[str, str] | None = None,
 ) -> OrganizationSSOConnection:
     configuration: OIDCConfiguration = {
         "issuer": ISSUER,
@@ -117,6 +120,8 @@ async def create_sso_connection(
         "auth_method": OIDCAuthMethod.client_secret,
         "client_secret": "secret",
     }
+    if authorization_parameters is not None:
+        configuration["authorization_parameters"] = authorization_parameters
     connection = OrganizationSSOConnection(
         organization=organization,
         type=OrganizationSSOConnectionType.oidc,
@@ -190,6 +195,35 @@ async def _user_session_count(session: AsyncSession, user: User) -> int:
         select(UserSession).where(UserSession.user_id == user.id)
     )
     return len(result.scalars().unique().all())
+
+
+@pytest.mark.asyncio
+class TestSSOAuthorize:
+    async def test_authorization_parameters_are_appended(
+        self,
+        sso_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        connection = await create_sso_connection(
+            save_fixture, organization, authorization_parameters={"hd": "polar.sh"}
+        )
+
+        with respx.mock(assert_all_mocked=False) as mock:
+            mock.get(f"{ISSUER}/.well-known/openid-configuration").mock(
+                return_value=httpx.Response(200, json=_discovery_document())
+            )
+            await sso_client.post(f"/v1/auth/{organization.slug}/start", json={})
+            authorize = await sso_client.get(
+                f"/v1/auth/{organization.slug}/sso/{connection.id}/authorize"
+            )
+
+        assert authorize.status_code == 303
+        query = parse_qs(urlsplit(authorize.headers["location"]).query)
+        assert query["hd"] == ["polar.sh"]
+        assert query["client_id"] == [CLIENT_ID]
 
 
 @pytest.mark.asyncio

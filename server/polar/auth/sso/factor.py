@@ -1,8 +1,10 @@
 import uuid
+from typing import Any, cast
 
 import jwt
 from reauth.factors.oauth2.base import OAuth2Enrollment as OAuth2EnrollmentDataclass
 from reauth.factors.oauth2.oidc import (
+    OIDCExtraParams,
     OIDCFactor,
     OIDCFactorBase,
     PrivateKeyJWTOIDCFactor,
@@ -16,7 +18,7 @@ from polar.sso.discovery import discovery_endpoint
 from ..oauth2.state import OAuth2StateService
 
 
-class SSOFactorMixin:
+class SSOFactorMixin(OIDCFactorBase):
     """Shared behavior for organization SSO OIDC factors.
 
     An SSO login resolves the user from the verified `id_token` email and never
@@ -28,6 +30,16 @@ class SSOFactorMixin:
     connection_id: uuid.UUID
     organization_slug: str
     name: str | None
+    authorization_parameters: dict[str, str]
+
+    async def get_authorization_url(
+        self, *, extra: OIDCExtraParams | None = None, **kwargs: Any
+    ) -> str:
+        merged = {**self.authorization_parameters, **(extra or {})}
+        return await super().get_authorization_url(
+            extra=cast(OIDCExtraParams, merged) if merged else None,
+            **kwargs,
+        )
 
     async def get_enrollment(
         self, identity_id: uuid.UUID
@@ -56,6 +68,7 @@ class SSOClientSecretFactor(SSOFactorMixin, OIDCFactor):
         issuer: str,
         client_id: str,
         client_secret: str,
+        authorization_parameters: dict[str, str],
         state_service: OAuth2StateService,
     ) -> None:
         super().__init__(
@@ -68,6 +81,7 @@ class SSOClientSecretFactor(SSOFactorMixin, OIDCFactor):
         self.connection_id = connection_id
         self.organization_slug = organization_slug
         self.name = name
+        self.authorization_parameters = authorization_parameters
 
 
 class SSOPrivateKeyJWTFactor(SSOFactorMixin, PrivateKeyJWTOIDCFactor):
@@ -79,6 +93,7 @@ class SSOPrivateKeyJWTFactor(SSOFactorMixin, PrivateKeyJWTOIDCFactor):
         name: str | None,
         issuer: str,
         client_id: str,
+        authorization_parameters: dict[str, str],
         state_service: OAuth2StateService,
     ) -> None:
         super().__init__(
@@ -92,6 +107,7 @@ class SSOPrivateKeyJWTFactor(SSOFactorMixin, PrivateKeyJWTOIDCFactor):
         self.connection_id = connection_id
         self.organization_slug = organization_slug
         self.name = name
+        self.authorization_parameters = authorization_parameters
 
 
 def build_sso_factor(
@@ -101,6 +117,7 @@ def build_sso_factor(
     state_service: OAuth2StateService,
 ) -> OIDCFactorBase:
     configuration = connection.configuration
+    authorization_parameters = configuration.get("authorization_parameters") or {}
     if configuration["auth_method"] == OIDCAuthMethod.client_secret:
         client_secret = configuration.get("client_secret")
         assert client_secret is not None, (
@@ -113,6 +130,7 @@ def build_sso_factor(
             issuer=configuration["issuer"],
             client_id=configuration["client_id"],
             client_secret=client_secret,
+            authorization_parameters=authorization_parameters,
             state_service=state_service,
         )
     return SSOPrivateKeyJWTFactor(
@@ -121,5 +139,6 @@ def build_sso_factor(
         name=connection.name,
         issuer=configuration["issuer"],
         client_id=configuration["client_id"],
+        authorization_parameters=authorization_parameters,
         state_service=state_service,
     )

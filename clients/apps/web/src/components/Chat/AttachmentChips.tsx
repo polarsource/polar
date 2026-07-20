@@ -1,3 +1,4 @@
+import { getFileMimeType } from '@/components/FileUpload/mimeType'
 import { AnimatePresence } from 'motion/react'
 import React from 'react'
 import { FileAttachmentPill } from './FileAttachmentPill'
@@ -18,7 +19,7 @@ export const AttachmentChips = ({ attachments, onRemove }: Props) => {
           <FileAttachmentPill
             key={id}
             name={file.name}
-            mimeType={file.type}
+            mimeType={getFileMimeType(file)}
             preview={preview}
             status={status}
             progress={progress}

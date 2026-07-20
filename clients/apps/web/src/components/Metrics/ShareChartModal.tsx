@@ -3,7 +3,7 @@ import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import domtoimage from 'dom-to-image'
-import { useRef, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import LogoType from '../Brand/logos/LogoType'
 import { toast } from '../Toast/use-toast'
@@ -23,7 +23,30 @@ export const ShareChartModal = ({
   previousData,
 }: ShareChartModalProps) => {
   const chartRef = useRef<HTMLDivElement>(null)
+  const containerRef = useRef<HTMLDivElement>(null)
   const [theme, setTheme] = useState<MetricTheme>('mono')
+  const [preview, setPreview] = useState({ scale: 1, height: 0 })
+
+  useEffect(() => {
+    const container = containerRef.current
+    const card = chartRef.current
+
+    if (!container || !card) return
+
+    const observer = new ResizeObserver(() => {
+      setPreview({
+        scale: Math.min(1, container.clientWidth / card.offsetWidth),
+        height: card.offsetHeight,
+      })
+    })
+
+    observer.observe(container)
+    observer.observe(card)
+
+    return () => observer.disconnect()
+  }, [])
+
+  const isScaled = preview.scale < 1
 
   const getParams = () => {
     const scale = 3
@@ -92,8 +115,16 @@ export const ShareChartModal = ({
 
   return (
     <div className="relative flex w-full max-w-4xl flex-col items-center justify-center overflow-y-auto p-6 md:p-16">
-      <div className="flex flex-col items-start gap-8 max-md:w-full">
-        <div className="max-md:w-full max-md:overflow-x-auto">
+      <div
+        ref={containerRef}
+        className="flex flex-col items-start gap-8 max-md:w-full"
+      >
+        <div
+          className="max-md:w-full max-md:overflow-x-auto"
+          style={
+            isScaled ? { height: preview.height * preview.scale } : undefined
+          }
+        >
           <div
             ref={chartRef}
             className="dark:bg-polar-950 flex w-full max-w-4xl flex-col items-center justify-center gap-12 rounded-4xl bg-blue-50 p-12 max-md:min-w-[656px]"
@@ -104,6 +135,8 @@ export const ShareChartModal = ({
                   : 'url(/assets/share/share.jpg)',
               backgroundSize: 'cover',
               backgroundPosition: 'center',
+              transform: isScaled ? `scale(${preview.scale})` : undefined,
+              transformOrigin: 'top left',
             }}
           >
             <MetricChartBox

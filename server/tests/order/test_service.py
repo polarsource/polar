@@ -2295,6 +2295,49 @@ class TestCreateSubscriptionOrder:
             == 1
         )
 
+    async def test_missing_payment_method_emits_order_updated_with_dunning_state(
+        self,
+        mocker: MockerFixture,
+        calculate_tax_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        # `order.created` is emitted before dunning starts, so merchants only
+        # learn the retry schedule from the follow-up `order.updated`.
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        assert subscription.payment_method is None
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        send_webhook_mock = mocker.patch.object(order_service, "send_webhook")
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
+        )
+
+        assert order.next_payment_attempt_at is not None
+        send_webhook_mock.assert_any_await(
+            session, order, WebhookEventType.order_updated
+        )
+
     async def test_cycle_does_not_send_confirmation_email_before_payment(
         self,
         calculate_tax_mock: MagicMock,

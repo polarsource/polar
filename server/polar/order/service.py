@@ -1452,7 +1452,11 @@ class OrderService:
                 subscription.payment_method_id or customer.default_payment_method_id
             )
             if payment_method_id is None:
+                previous_status = order.status
                 order = await self.handle_payment_failure(session, order)
+                # Dunning state lands after `order.created` was emitted, so emit
+                # the update that carries the retry schedule to merchants.
+                await self._on_order_updated(session, order, previous_status)
             else:
                 enqueue_job(
                     "order.trigger_payment",

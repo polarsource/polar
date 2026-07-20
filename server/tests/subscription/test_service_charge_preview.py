@@ -38,6 +38,7 @@ from tests.fixtures.random_objects import (
     create_discount,
     create_meter,
     create_product,
+    create_wallet_billing,
 )
 
 
@@ -99,6 +100,32 @@ class TestCalculateChargePreview:
         assert preview.net_amount == 1000
         assert preview.tax_amount == 0
         assert preview.total_amount == 1000
+
+    async def test_wallet_credit_reduces_due_amount(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        await create_wallet_billing(
+            save_fixture, customer=customer, initial_balance=300
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        preview = await subscription_service.calculate_charge_preview(
+            session, subscription
+        )
+
+        assert preview.total_amount == 1000
+        assert preview.applied_balance_amount == -300
+        assert preview.due_amount == 700
+        assert preview.due_amount == max(
+            0, preview.total_amount + preview.applied_balance_amount
+        )
+        assert preview.due_amount != preview.total_amount
 
     async def test_cancel_at_period_end_zeroes_base(
         self,

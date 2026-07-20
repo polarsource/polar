@@ -92,7 +92,6 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
-from polar.order.amounts import compute_order_amounts
 from polar.order.repository import OrderRepository
 from polar.organization.repository import (
     SUBSCRIPTION_CANCELLATION_STATUSES,
@@ -2282,31 +2281,12 @@ class SubscriptionService:
 
         # Pending mid-period prorations (seat/product changes) already exist as
         # billing entries; surface them so the preview matches the next invoice.
-        prorations: list[SubscriptionChargePreviewProration] = []
-        proration_amount = 0
-        async for (
-            line_item,
-            _,
-        ) in billing_entry_service.compute_pending_subscription_line_items(
-            session, subscription
-        ):
-            if not line_item.proration:
-                continue
-            prorations.append(
-                SubscriptionChargePreviewProration(
-                    label=line_item.label, amount=line_item.amount
-                )
-            )
-            proration_amount += line_item.amount
-            items.append(
-                OrderItem(
-                    label=line_item.label,
-                    amount=line_item.amount,
-                    net_amount=line_item.amount,
-                    tax_amount=0,
-                    proration=True,
-                )
-            )
+        (
+            prorations,
+            proration_items,
+            proration_amount,
+        ) = await self._collect_pending_prorations(session, subscription)
+        items.extend(proration_items)
 
         applicable_discount = None
         # Ensure the discount has not expired yet for the next charge (so at current_period_end)
@@ -2322,23 +2302,16 @@ class SubscriptionService:
             ):
                 applicable_discount = subscription.discount
 
-        amounts = await compute_order_amounts(
+        return await self._build_preview(
+            session,
             subscription,
             items,
-            reference=str(subscription.id),
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
             discount=applicable_discount,
-        )
-
-        return SubscriptionChargePreview(
             base_amount=base_price,
             metered_amount=metered_amount,
-            proration_amount=proration_amount,
             prorations=prorations,
-            subtotal_amount=amounts.subtotal_amount,
-            discount_amount=amounts.discount_amount,
-            net_amount=amounts.net_amount,
-            tax_amount=amounts.tax_amount,
-            total_amount=amounts.total_amount,
+            proration_amount=proration_amount,
         )
 
     async def calculate_cancel_preview(
@@ -2455,7 +2428,8 @@ class SubscriptionService:
                 and self._resolve_trial_end(subscription, product) is None
             ):
                 subscription_update.apply_update()
-                return await self._preview_amounts(
+                return await self._build_preview(
+                    session,
                     subscription,
                     [
                         OrderItem(
@@ -2468,11 +2442,23 @@ class SubscriptionService:
                         for spp in subscription.subscription_product_prices
                         if is_static_price(spp.product_price)
                     ],
+                    billing_reason=OrderBillingReasonInternal.subscription_update,
+                    discount=subscription.discount,
+                    base_amount=0,
+                    metered_amount=0,
                     prorations=[],
                     proration_amount=0,
                 )
-            return await self._preview_amounts(
-                subscription, [], prorations=[], proration_amount=0
+            return await self._build_preview(
+                session,
+                subscription,
+                [],
+                billing_reason=OrderBillingReasonInternal.subscription_update,
+                discount=subscription.discount,
+                base_amount=0,
+                metered_amount=0,
+                prorations=[],
+                proration_amount=0,
             )
 
         if applies_now:
@@ -2482,36 +2468,18 @@ class SubscriptionService:
                 session.add(entry)
             await session.flush()
 
-        prorations: list[SubscriptionChargePreviewProration] = []
-        proration_amount = 0
-        items: list[OrderItem] = []
-        async for (
-            line_item,
-            _,
-        ) in billing_entry_service.compute_pending_subscription_line_items(
+        prorations, items, proration_amount = await self._collect_pending_prorations(
             session, subscription
-        ):
-            if not line_item.proration:
-                continue
-            prorations.append(
-                SubscriptionChargePreviewProration(
-                    label=line_item.label, amount=line_item.amount
-                )
-            )
-            proration_amount += line_item.amount
-            items.append(
-                OrderItem(
-                    label=line_item.label,
-                    amount=line_item.amount,
-                    net_amount=line_item.amount,
-                    tax_amount=0,
-                    proration=True,
-                )
-            )
+        )
 
-        return await self._preview_amounts(
+        return await self._build_preview(
+            session,
             subscription,
             items,
+            billing_reason=OrderBillingReasonInternal.subscription_update,
+            discount=subscription.discount,
+            base_amount=0,
+            metered_amount=0,
             prorations=prorations,
             proration_amount=proration_amount,
         )
@@ -2564,31 +2532,78 @@ class SubscriptionService:
         )
         return None if candidate_trial_end <= utc_now() else candidate_trial_end
 
-    async def _preview_amounts(
+    async def _collect_pending_prorations(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> tuple[Sequence[SubscriptionChargePreviewProration], Sequence[OrderItem], int]:
+        """Pending proration billing entries as display rows, order items and net."""
+        prorations: list[SubscriptionChargePreviewProration] = []
+        items: list[OrderItem] = []
+        proration_amount = 0
+        async for (
+            line_item,
+            _,
+        ) in billing_entry_service.compute_pending_subscription_line_items(
+            session, subscription
+        ):
+            if not line_item.proration:
+                continue
+            prorations.append(
+                SubscriptionChargePreviewProration(
+                    label=line_item.label, amount=line_item.amount
+                )
+            )
+            items.append(
+                OrderItem(
+                    label=line_item.label,
+                    amount=line_item.amount,
+                    net_amount=line_item.amount,
+                    tax_amount=0,
+                    proration=True,
+                )
+            )
+            proration_amount += line_item.amount
+        return prorations, items, proration_amount
+
+    async def _build_preview(
         self,
+        session: AsyncSession,
         subscription: Subscription,
         items: Sequence[OrderItem],
         *,
+        billing_reason: OrderBillingReasonInternal,
+        discount: Discount | None,
+        base_amount: int,
+        metered_amount: int,
         prorations: Sequence[SubscriptionChargePreviewProration],
         proration_amount: int,
     ) -> SubscriptionChargePreview:
-        amounts = await compute_order_amounts(
+        """Price ``items`` through the cycle's builder and read the resulting order.
+        Non-locking and keyed on the subscription: a preview must not lock the
+        balance, and repeated identical previews reuse the tax calculation."""
+        from polar.order.service import order as order_service
+
+        order = await order_service.build_subscription_order(
+            session,
             subscription,
             items,
+            billing_reason,
+            lock_balance=False,
+            discount=discount,
             reference=str(subscription.id),
-            discount=subscription.discount,
         )
 
         return SubscriptionChargePreview(
-            base_amount=0,
-            metered_amount=0,
+            base_amount=base_amount,
+            metered_amount=metered_amount,
             proration_amount=proration_amount,
             prorations=list(prorations),
-            subtotal_amount=amounts.subtotal_amount,
-            discount_amount=amounts.discount_amount,
-            net_amount=amounts.net_amount,
-            tax_amount=amounts.tax_amount,
-            total_amount=amounts.total_amount,
+            subtotal_amount=order.subtotal_amount,
+            discount_amount=order.discount_amount,
+            net_amount=order.net_amount,
+            tax_amount=order.tax_amount,
+            total_amount=order.total_amount,
+            applied_balance_amount=order.applied_balance_amount,
+            due_amount=order.due_amount,
         )
 
     async def _after_subscription_updated(

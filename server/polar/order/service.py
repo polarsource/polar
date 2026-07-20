@@ -66,6 +66,7 @@ from polar.logging import Logger
 from polar.models import (
     Checkout,
     Customer,
+    Discount,
     Order,
     OrderItem,
     Organization,
@@ -127,7 +128,7 @@ from polar.wallet.service import wallet as wallet_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
-from .amounts import calculate_tax, compute_order_amounts
+from .amounts import apply_wallet_balance, calculate_tax, compute_order_amounts
 from .repository import OrderRepository
 from .schemas import OrderCreate, OrderInvoice, OrderReceipt, OrderUpdate
 from .sorting import OrderSortProperty
@@ -1317,6 +1318,64 @@ class OrderService:
                 payment_mode=payment_mode,
             )
 
+    async def build_subscription_order(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        items: Sequence[OrderItem],
+        billing_reason: OrderBillingReasonInternal,
+        *,
+        lock_balance: bool,
+        discount: Discount | None,
+        reference: str | None = None,
+    ) -> Order:
+        """Build the subscription order for ``items`` without persisting: no invoice
+        number, no side effects. ``lock_balance`` locks the wallet balance (the
+        persist path must; a preview must not); ``reference`` keys the tax calc."""
+        order_id = uuid.uuid4()
+        customer = subscription.customer
+
+        amounts = await compute_order_amounts(
+            subscription,
+            items,
+            reference=reference or str(order_id),
+            discount=discount,
+        )
+        total_amount = amounts.total_amount
+
+        customer_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, subscription.currency, for_update=lock_balance
+        )
+        applied_balance_amount = apply_wallet_balance(total_amount, customer_balance)
+
+        return Order(
+            id=order_id,
+            status=OrderStatus.pending,
+            subtotal_amount=amounts.subtotal_amount,
+            discount_amount=amounts.discount_amount,
+            tax_amount=amounts.tax_amount,
+            net_amount=amounts.net_amount,
+            applied_balance_amount=applied_balance_amount,
+            currency=subscription.currency,
+            billing_reason=billing_reason,
+            billing_name=customer.billing_name,
+            billing_address=customer.billing_address,
+            tax_behavior=amounts.tax_behavior,
+            tax_id=customer.tax_id,
+            tax_breakdown=amounts.tax_breakdown or None,
+            tax_processor=amounts.tax_processor,
+            tax_calculation_processor_id=amounts.tax_calculation_processor_id,
+            organization=subscription.organization,
+            customer=customer,
+            product=subscription.product,
+            discount=discount,
+            subscription=subscription,
+            checkout=None,
+            items=items,
+            user_metadata=subscription.user_metadata,
+            custom_field_data=subscription.custom_field_data,
+        )
+
     async def _create_order(
         self,
         session: AsyncSession,
@@ -1326,77 +1385,30 @@ class OrderService:
         *,
         payment_mode: PaymentMode = PaymentMode.background,
     ) -> Order:
-        """
-        Finalize a subscription order from already-built line items: compute the
-        discount, tax, balance and totals, persist the order, optionally reset
-        meters, and settle or trigger payment. Callers are responsible for
-        building ``items`` (from pending billing entries, carried overage, …).
-        """
-        order_id = uuid.uuid4()
+        """Build, persist and dispatch a subscription order from ``items``: invoice
+        number, balance impact, optional meter reset, then payment."""
         customer = subscription.customer
 
-        amounts = await compute_order_amounts(
+        order = await self.build_subscription_order(
+            session,
             subscription,
             items,
-            reference=str(order_id),
+            billing_reason,
+            lock_balance=True,
             discount=subscription.discount,
         )
-        total_amount = amounts.total_amount
+        balance_change = (
+            order.applied_balance_amount
+            if order.total_amount >= 0
+            else -order.total_amount
+        )
 
-        invoice_number = await organization_service.get_next_invoice_number(
+        order.invoice_number = await organization_service.get_next_invoice_number(
             session, subscription.organization, customer
         )
 
-        customer_balance = await wallet_service.get_billing_wallet_balance(
-            session, customer, subscription.currency, for_update=True
-        )
-
-        # Calculate balance change and applied amount
-        if total_amount >= 0:
-            # Order is a charge: use customer balance if available
-            balance_change = -min(total_amount, customer_balance)
-            applied_balance_amount = balance_change
-        else:
-            # Order is a credit: always add to balance
-            balance_change = -total_amount
-            # Track how much existing debt was cleared
-            if customer_balance < 0:
-                applied_balance_amount = min(-total_amount, -customer_balance)
-            else:
-                applied_balance_amount = 0
-
         repository = OrderRepository.from_session(session)
-        order = await repository.create(
-            Order(
-                id=order_id,
-                status=OrderStatus.pending,
-                subtotal_amount=amounts.subtotal_amount,
-                discount_amount=amounts.discount_amount,
-                tax_amount=amounts.tax_amount,
-                net_amount=amounts.net_amount,
-                applied_balance_amount=applied_balance_amount,
-                currency=subscription.currency,
-                billing_reason=billing_reason,
-                billing_name=customer.billing_name,
-                billing_address=customer.billing_address,
-                tax_behavior=amounts.tax_behavior,
-                tax_id=customer.tax_id,
-                tax_breakdown=amounts.tax_breakdown or None,
-                tax_processor=amounts.tax_processor,
-                tax_calculation_processor_id=amounts.tax_calculation_processor_id,
-                invoice_number=invoice_number,
-                organization=subscription.organization,
-                customer=customer,
-                product=subscription.product,
-                discount=subscription.discount,
-                subscription=subscription,
-                checkout=None,
-                items=items,
-                user_metadata=subscription.user_metadata,
-                custom_field_data=subscription.custom_field_data,
-            ),
-            flush=True,
-        )
+        order = await repository.create(order, flush=True)
 
         subscription.update_net_amount_from(order)
 

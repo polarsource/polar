@@ -540,7 +540,22 @@ class SubscriptionChargePreview(Schema):
     discount_amount: int = Field(description="Discount amount in cents")
     net_amount: int = Field(description="Net amount in cents before taxes")
     tax_amount: int = Field(description="Tax amount in cents")
-    total_amount: int = Field(description="Total amount in cents (final charge amount)")
+    total_amount: int = Field(
+        description="Total amount in cents (net + tax, before applying wallet balance)"
+    )
+    applied_balance_amount: int = Field(
+        description=(
+            "Wallet balance applied to this charge in cents: negative when the "
+            "customer's account credit reduces the amount due, positive when the "
+            "charge clears outstanding debt, zero otherwise."
+        )
+    )
+    due_amount: int = Field(
+        description=(
+            "Amount actually due in cents: total_amount plus the applied wallet "
+            "balance, floored at zero. This is the figure charged today."
+        )
+    )
 
 
 class SubscriptionCancelPreview(Schema):

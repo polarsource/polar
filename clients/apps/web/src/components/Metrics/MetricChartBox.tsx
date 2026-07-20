@@ -49,6 +49,7 @@ interface MetricChartBoxProps {
   loading?: boolean
   compact?: boolean
   shareable?: boolean
+  exportable?: boolean
   simple?: boolean
   chartType?: 'line' | 'bar'
   /** Override the list of metrics shown in the dropdown. If not provided, uses metrics from data. */
@@ -82,6 +83,7 @@ const MetricChartBox = ({
   loading,
   compact = false,
   shareable = true,
+  exportable = true,
   simple = false,
   chartType = 'line',
   availableMetrics,
@@ -344,25 +346,31 @@ const MetricChartBox = ({
               <TooltipContent>Share Chart</TooltipContent>
             </Tooltip>
           )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="flex rounded-full transition-opacity md:opacity-0 md:group-hover:opacity-100"
-              >
-                <MoreVertOutlined fontSize="small" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              {shareable && (
-                <DropdownMenuItem className="md:hidden" onClick={showModal}>
-                  Share Chart
-                </DropdownMenuItem>
-              )}
-              <DropdownMenuItem onClick={handleExport}>Export</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {(shareable || exportable) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="flex rounded-full transition-opacity md:opacity-0 md:group-hover:opacity-100"
+                >
+                  <MoreVertOutlined fontSize="small" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {shareable && (
+                  <DropdownMenuItem className="md:hidden" onClick={showModal}>
+                    Share Chart
+                  </DropdownMenuItem>
+                )}
+                {exportable && (
+                  <DropdownMenuItem onClick={handleExport}>
+                    Export
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
       <div

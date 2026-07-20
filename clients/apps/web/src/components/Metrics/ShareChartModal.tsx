@@ -146,6 +146,7 @@ export const ShareChartModal = ({
               interval={interval}
               metric={metric}
               shareable={false}
+              exportable={false}
               height={200}
               width={560}
               simple

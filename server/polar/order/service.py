@@ -135,6 +135,15 @@ from .sorting import OrderSortProperty
 
 log: Logger = structlog.get_logger()
 
+# Statuses where a PaymentIntent is waiting on the customer or on confirmation,
+# and can therefore be cancelled. `processing` is excluded: Stripe is settling
+# it and will resolve it on its own.
+AWAITING_PAYMENT_INTENT_STATUSES = {
+    "requires_payment_method",
+    "requires_confirmation",
+    "requires_action",
+}
+
 
 class OrderError(PolarError): ...
 
@@ -2788,6 +2797,75 @@ class OrderService:
         except Exception as e:
             log.error("Could not save balance.credit_order event", error=str(e))
             raise
+
+    async def cancel_stale_payment_lock(
+        self, session: AsyncSession, order: Order
+    ) -> None:
+        """Request cancellation of the PaymentIntent behind a stale payment lock.
+
+        Called by the scheduled cleanup for orders whose ``payment_lock_acquired_at``
+        is older than the stale threshold — typically an off-session SCA
+        PaymentIntent whose resolving webhook never arrived, wedging the lock
+        and blocking every future dunning attempt.
+
+        This deliberately does NOT release the lock: cancellation is confirmed
+        asynchronously via the ``payment_intent.canceled`` webhook
+        (:meth:`handle_payment_cancellation`), and a still-resolving intent
+        could yet settle to ``succeeded`` (Stripe can email off-session
+        customers an SCA-recovery link). Releasing here would risk a double
+        charge.
+        """
+        if order.payment_lock_acquired_at is None:
+            return
+
+        payment_intents = await stripe_service.get_payment_intents_for_order(order.id)
+        pending_intents = [
+            payment_intent
+            for payment_intent in payment_intents
+            if payment_intent.status in AWAITING_PAYMENT_INTENT_STATUSES
+        ]
+
+        if not pending_intents:
+            # The lock is stale but nothing is left to cancel: the intent
+            # resolved and we never received (or failed to process) its
+            # webhook. Releasing here would be speculative, so leave it for
+            # manual reconciliation.
+            log.warning(
+                "Stale payment lock has no cancellable PaymentIntent",
+                order_id=order.id,
+                payment_lock_acquired_at=order.payment_lock_acquired_at,
+            )
+            return
+
+        for payment_intent in pending_intents:
+            try:
+                await stripe_service.cancel_payment_intent(payment_intent.id)
+            except stripe_lib.InvalidRequestError as e:
+                # The intent reached a terminal state between the search and
+                # the cancellation, so Stripe rejects it. Its own webhook
+                # releases the lock normally.
+                log.info(
+                    "Stale PaymentIntent already resolved, skipping cancellation",
+                    order_id=order.id,
+                    payment_intent_id=payment_intent.id,
+                    error_message=str(e),
+                )
+            except stripe_lib.StripeError as e:
+                # Transient / unexpected Stripe error: keep the lock so the
+                # next scheduled run retries the cancellation.
+                log.warning(
+                    "Failed to cancel stale PaymentIntent, "
+                    "will retry on next scheduled run",
+                    order_id=order.id,
+                    payment_intent_id=payment_intent.id,
+                    error_message=str(e),
+                )
+            else:
+                log.info(
+                    "Requested cancellation of stale PaymentIntent",
+                    order_id=order.id,
+                    payment_intent_id=payment_intent.id,
+                )
 
     async def handle_payment_cancellation(
         self, session: AsyncSession, order: Order

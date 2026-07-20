@@ -228,7 +228,11 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
         isShown={isAiSetupShown}
         hide={hideAiSetup}
         modalContent={
-          <AiSetupModalContent organization={organization} hide={hideAiSetup} />
+          <AiSetupModalContent
+            organization={organization}
+            hide={hideAiSetup}
+            canManageOrganization={canManageOrganization}
+          />
         }
       />
     </>

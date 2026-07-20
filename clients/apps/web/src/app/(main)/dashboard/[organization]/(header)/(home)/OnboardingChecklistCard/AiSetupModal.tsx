@@ -4,16 +4,21 @@ import { toast } from '@/components/Toast/use-toast'
 import { useSafeCopy } from '@/hooks/clipboard'
 import { usePostHog } from '@/hooks/posthog'
 import { schemas } from '@polar-sh/client'
-import { Button, Text } from '@polar-sh/orbit'
+import { Alert, Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { buildAiSetupPrompt } from './aiSetupPrompt'
 
 interface Props {
   organization: schemas['Organization']
   hide: () => void
+  canManageOrganization: boolean
 }
 
-export const AiSetupModalContent = ({ organization, hide }: Props) => {
+export const AiSetupModalContent = ({
+  organization,
+  hide,
+  canManageOrganization,
+}: Props) => {
   const safeCopy = useSafeCopy(toast)
   const posthog = usePostHog()
   const prompt = buildAiSetupPrompt(organization)
@@ -41,6 +46,13 @@ export const AiSetupModalContent = ({ organization, hide }: Props) => {
           creates a test product and leaves you with a checkout link to verify
           the flow end-to-end.
         </Text>
+        {!canManageOrganization && (
+          <Alert
+            variant="info"
+            title="You'll need an admin for two steps"
+            description="Creating the access token and the webhook endpoint requires owner or admin permissions."
+          />
+        )}
         <Box
           display="block"
           maxHeight={360}

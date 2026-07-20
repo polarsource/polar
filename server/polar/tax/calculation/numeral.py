@@ -102,9 +102,16 @@ def _numeral_jurisdiction_to_breakdown_item(
     country: str,
     state: str | None,
     customer_exempt: bool,
+    has_tax_ids: bool,
 ) -> TaxBreakdownItem:
     taxability_reason = TaxabilityReason.from_numeral(
-        jurisdiction["rate_type"], customer_exempt
+        tax_rate=jurisdiction["tax_rate"],
+        fee_amount=jurisdiction["fee_amount"],
+        rate_type=jurisdiction["rate_type"],
+        tax_authority_type=jurisdiction["tax_authority_type"],
+        tax_type=jurisdiction["tax_type"],
+        customer_exempt=customer_exempt,
+        has_tax_ids=has_tax_ids,
     )
 
     is_fixed = jurisdiction["fee_amount"] > 0
@@ -132,7 +139,31 @@ def _build_numeral_tax_breakdown(
     country: str,
     state: str | None,
     customer_exempt: bool,
+    has_tax_ids: bool,
 ) -> list[TaxBreakdownItem]:
+    if not jurisdictions:
+        return [
+            TaxBreakdownItem(
+                rate_type="percentage",
+                rate=0,
+                display_name="",
+                country=country,
+                state=state,
+                subdivision=None,
+                amount=0,
+                taxability_reason=TaxabilityReason.from_numeral(
+                    tax_rate=0,
+                    fee_amount=0,
+                    rate_type="",
+                    tax_authority_type="",
+                    tax_type="",
+                    customer_exempt=customer_exempt,
+                    has_tax_ids=has_tax_ids,
+                    has_jurisdiction=False,
+                ),
+            )
+        ]
+
     tax_breakdown: list[TaxBreakdownItem] = []
 
     for jurisdiction in jurisdictions:
@@ -142,6 +173,7 @@ def _build_numeral_tax_breakdown(
                 country=country,
                 state=state,
                 customer_exempt=customer_exempt,
+                has_tax_ids=has_tax_ids,
             )
         )
 
@@ -288,6 +320,7 @@ class NumeralTaxService(TaxServiceProtocol):
             country=country,
             state=state,
             customer_exempt=customer_exempt,
+            has_tax_ids=len(tax_ids) > 0,
         )
 
         if sum(item["amount"] for item in tax_breakdown) != total_tax_amount:

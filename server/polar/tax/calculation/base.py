@@ -116,13 +116,55 @@ class TaxabilityReason(StrEnum):
         return cls(stripe_reason)
 
     @classmethod
-    def from_numeral(cls, rate_type: str, customer_exempt: bool) -> "TaxabilityReason":
+    def from_numeral(
+        cls,
+        *,
+        tax_rate: float,
+        fee_amount: int,
+        rate_type: str,
+        tax_authority_type: str,
+        tax_type: str,
+        customer_exempt: bool,
+        has_tax_ids: bool,
+        has_jurisdiction: bool = True,
+    ) -> "TaxabilityReason":
+        """Infer taxability from a Numeral 2026-03-01 tax jurisdiction.
+
+        Numeral no longer returns the explicit exemption `note` available in older
+        API versions, so the reason is inferred from the request context and the
+        jurisdiction response. Rules are applied in this order:
+
+        1. Explicit Polar customer exemption -> `customer_exempt`.
+        2. No jurisdiction and a customer tax ID -> `not_subject_to_tax`.
+        3. No jurisdiction and no customer tax ID -> `not_collecting`.
+        4. Zero rate and fee with `EXEMPT` in the rate type -> `product_exempt`.
+        5. Zero-rate VAT or GST with a customer tax ID and a `Country` tax
+           authority -> `reverse_charge`.
+        6. Any other zero rate and fee with a customer tax ID ->
+           `not_subject_to_tax`.
+        7. Any other zero rate and fee -> `not_collecting`.
+        8. Positive percentage rate or fixed fee -> `standard_rated`.
+
+        Unsupported countries are handled separately from Numeral's
+        `INVALID_COUNTRY_CODE` error response.
+        """
         if customer_exempt:
             return TaxabilityReason.customer_exempt
-        rate_type_lower = rate_type.lower()
-        if "reverse" in rate_type_lower and "charge" in rate_type_lower:
-            return TaxabilityReason.reverse_charge
-        if "no_collection" in rate_type_lower or "no collection" in rate_type_lower:
+        if not has_jurisdiction:
+            if has_tax_ids:
+                return TaxabilityReason.not_subject_to_tax
+            return TaxabilityReason.not_collecting
+        if tax_rate == 0 and fee_amount == 0:
+            if "EXEMPT" in rate_type.upper():
+                return TaxabilityReason.product_exempt
+            if (
+                has_tax_ids
+                and tax_type.upper() in {"VAT", "GST"}
+                and tax_authority_type.upper() == "COUNTRY"
+            ):
+                return TaxabilityReason.reverse_charge
+            if has_tax_ids:
+                return TaxabilityReason.not_subject_to_tax
             return TaxabilityReason.not_collecting
 
         return TaxabilityReason.standard_rated

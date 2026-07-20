@@ -138,9 +138,9 @@ export const SubscriptionProductPicker = ({
                 layout="trigger"
               />
             ) : (
-              <span className="text-muted-foreground">
+              <Text as="span" color="muted">
                 Select a new product
-              </span>
+              </Text>
             )}
           </span>
           <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
@@ -159,9 +159,9 @@ export const SubscriptionProductPicker = ({
           />
           <CommandList>
             {isLoading ? (
-              <div className="flex items-center justify-center py-6">
+              <Box alignItems="center" justifyContent="center" paddingVertical="xl">
                 <Loader2 className="h-4 w-4 animate-spin opacity-50" />
-              </div>
+              </Box>
             ) : filteredProducts.length === 0 ? (
               <CommandEmpty>No products found</CommandEmpty>
             ) : (

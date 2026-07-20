@@ -1,6 +1,6 @@
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import UUID4, Discriminator, Field, StringConstraints
+from pydantic import UUID4, BeforeValidator, Discriminator, Field, StringConstraints
 
 from polar.kit.schemas import (
     EmptyStrToNone,
@@ -14,11 +14,24 @@ from polar.models.organization_sso_connection import (
     OrganizationSSOConnectionType,
 )
 
+from .discovery import DISCOVERY_PATH
+
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
 
+def _strip_discovery_path(value: Any) -> Any:
+    """Accept the discovery URL where the issuer is expected: it's what providers
+    document and what people paste."""
+    if isinstance(value, str):
+        return value.strip().removesuffix(DISCOVERY_PATH)
+    return value
+
+
+IssuerUrl = Annotated[HttpsUrl, BeforeValidator(_strip_discovery_path)]
+
+
 class OIDCConfigurationBase(Schema):
-    issuer: HttpsUrl = Field(description="OIDC issuer URL of the identity provider.")
+    issuer: IssuerUrl = Field(description="OIDC issuer URL of the identity provider.")
     client_id: NonEmptyStr = Field(
         description="OAuth client ID registered with the identity provider."
     )

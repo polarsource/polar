@@ -6,6 +6,7 @@ from polar.kit.pagination import PaginationParams, paginate
 from polar.models import Organization, OrganizationSSOConnection
 from polar.postgres import AsyncReadSession, AsyncSession
 
+from .discovery import validate_oidc_configuration
 from .repository import OrganizationSSOConnectionRepository
 from .schemas import (
     OrganizationSSOConnectionCreate,
@@ -66,6 +67,9 @@ class OrganizationSSOConnectionService:
     ) -> OrganizationSSOConnection:
         if not organization.is_sso_enabled:
             raise SSONotEnabled(organization)
+        await validate_oidc_configuration(
+            str(create.configuration.issuer), create.configuration.auth_method
+        )
         repository = OrganizationSSOConnectionRepository.from_session(session)
         connection = OrganizationSSOConnection(
             organization=organization,
@@ -88,6 +92,18 @@ class OrganizationSSOConnectionService:
             )
         ):
             raise LastSSOConnectionRequired()
+
+        configuration = update.configuration
+        if configuration is not None:
+            await validate_oidc_configuration(
+                str(configuration.issuer), configuration.auth_method
+            )
+        elif update.enabled and not connection.enabled:
+            await validate_oidc_configuration(
+                connection.configuration["issuer"],
+                connection.configuration["auth_method"],
+            )
+
         repository = OrganizationSSOConnectionRepository.from_session(session)
         update_dict = {
             field: value

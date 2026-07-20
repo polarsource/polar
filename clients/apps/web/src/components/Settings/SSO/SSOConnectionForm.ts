@@ -56,6 +56,6 @@ export const toConfiguration = (
 export const toFormParameters = (
   configuration: schemas['OIDCConfigurationRead'],
 ): SSOConnectionFormValues['authorization_parameters'] =>
-  Object.entries(configuration.authorization_parameters ?? {}).map(
+  Object.entries(configuration.authorization_parameters).map(
     ([key, value]) => ({ key, value }),
   )

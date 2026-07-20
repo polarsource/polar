@@ -112,7 +112,7 @@ class OIDCConfigurationRead(Schema):
         description="Authentication method used against the identity provider."
     )
     authorization_parameters: dict[str, str] = Field(
-        default_factory=dict, description=AUTHORIZATION_PARAMETERS_DESCRIPTION
+        description=AUTHORIZATION_PARAMETERS_DESCRIPTION
     )
 
 

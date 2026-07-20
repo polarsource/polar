@@ -24169,7 +24169,7 @@ export interface components {
        * Authorization Parameters
        * @description Additional parameters appended to the authorization request, e.g. `hd` to pin a Google Workspace domain.
        */
-      authorization_parameters?: {
+      authorization_parameters: {
         [key: string]: string
       }
     }

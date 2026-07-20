@@ -33,6 +33,7 @@ async def create_sso_connection(
         "issuer": "https://idp.example.com",
         "client_id": "client-id",
         "auth_method": auth_method,
+        "authorization_parameters": {},
     }
     if client_secret is not None:
         configuration["client_secret"] = client_secret
@@ -468,6 +469,7 @@ class TestUpdateSSOConnection:
         assert json["configuration"]["issuer"] == "https://new-idp.example.com/"
         assert json["configuration"]["client_id"] == "new-client-id"
         assert "client_secret" not in json["configuration"]
+        assert json["configuration"]["authorization_parameters"] == {}
 
     @pytest.mark.auth
     async def test_configuration_client_secret_required(

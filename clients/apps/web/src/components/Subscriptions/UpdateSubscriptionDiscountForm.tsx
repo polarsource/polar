@@ -132,6 +132,7 @@ export const UpdateSubscriptionDiscountForm = ({
                         size="icon"
                         variant="ghost"
                         type="button"
+                        aria-label="Remove discount"
                         onClick={() => field.onChange(null)}
                       >
                         <XIcon className="h-4 w-4" />

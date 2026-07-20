@@ -1108,10 +1108,8 @@ class OrderService:
         )
 
         # Fire the `order.created` webhook so merchants are notified about the
-        # draft. We deliberately don't route through `_on_order_created`: a draft
-        # isn't charged yet, so the customer-facing confirmation email it
-        # enqueues would be premature. The `order.paid`/`order.updated` events
-        # are emitted later by finalize_order once the charge settles.
+        # draft. The `order.paid`/`order.updated` events are emitted later by
+        # finalize_order once the charge settles.
         await self.send_webhook(session, order, WebhookEventType.order_created)
 
         return order
@@ -1195,13 +1193,6 @@ class OrderService:
                 session, charge, organization, None, None, order
             )
             order = await self.handle_payment(session, order, payment)
-
-        # Unlike the checkout flow, the off-session draft flow skips the
-        # confirmation email at draft creation (nothing is charged yet). Now that
-        # finalize has settled the order as paid, send it so the customer gets
-        # their confirmation.
-        if order.paid:
-            enqueue_job("order.confirmation_email", order.id)
 
         return order
 
@@ -1433,14 +1424,21 @@ class OrderService:
         }:
             await subscription_service.reset_meters(session, subscription)
 
+        # Emit creation events before settling payment, so `order.created` always
+        # precedes `order.paid` and the settling branches below own the paid
+        # transition.
+        await self._on_order_created(session, order)
+
         # If the due amount is less or equal than zero, mark it as paid immediately
         if order.due_amount <= 0:
+            previous_status = order.status
             order = await repository.update(
                 order, update_dict={"status": OrderStatus.paid}
             )
             await self._emit_balance_credit_order_event(
                 session, order, subscription.organization
             )
+            await self._on_order_updated(session, order, previous_status)
         # Sync mode, attempt payment immediately and raise if it fails
         elif payment_mode == PaymentMode.sync:
             payment_method_id = (
@@ -1466,7 +1464,11 @@ class OrderService:
                 subscription.payment_method_id or customer.default_payment_method_id
             )
             if payment_method_id is None:
+                previous_status = order.status
                 order = await self.handle_payment_failure(session, order)
+                # Dunning state lands after `order.created` was emitted, so emit
+                # the update that carries the retry schedule to merchants.
+                await self._on_order_updated(session, order, previous_status)
             else:
                 enqueue_job(
                     "order.trigger_payment",
@@ -1474,8 +1476,6 @@ class OrderService:
                     payment_method_id=payment_method_id,
                     payment_trigger=PaymentTrigger.subscription_cycle,
                 )
-
-        await self._on_order_created(session, order)
 
         return order
 
@@ -2662,7 +2662,6 @@ class OrderService:
 
     async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
         enqueue_job("order.created", order.id)
-        enqueue_job("order.confirmation_email", order.id)
         await self.send_webhook(session, order, WebhookEventType.order_created)
 
         if order.paid:
@@ -2691,6 +2690,8 @@ class OrderService:
 
     async def _on_order_paid(self, session: AsyncSession, order: Order) -> None:
         assert order.paid
+
+        enqueue_job("order.confirmation_email", order.id)
 
         await receipt_service.allocate(session, order)
 

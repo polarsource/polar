@@ -1,6 +1,5 @@
 import {
   Button,
-  EmailLink,
   FooterCustomer,
   Intro,
   Text,
@@ -14,39 +13,61 @@ export function SubscriptionPastDue({
   organization,
   product,
   url,
-  payment_url,
+  access_ends_at,
+  deadline,
 }: schemas['SubscriptionPastDueProps']) {
+  const formatDate = (value: string) =>
+    new Date(value).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'long',
+      day: 'numeric',
+    })
+
   return (
     <WrapperOrganization
       organization={organization}
-      preview={`Action needed: update your payment method for ${product.name}`}
+      preview={`Action needed: your ${product.name} payment failed`}
     >
-      <Intro headline="We couldn&rsquo;t process your payment">
-        We tried to charge your payment method for your{' '}
+      <Intro headline="Your payment failed">
+        We couldn&rsquo;t charge your card on file for your{' '}
         <Text as="span" weight="medium">
           {product.name}
         </Text>{' '}
-        subscription, but it didn&rsquo;t go through. This can happen for a
-        number of reasons, like an expired card or a temporary bank hold.
+        subscription renewal. This is usually an expired card, insufficient
+        funds, or a temporary bank hold. We&rsquo;ll try again over the next few
+        days.
       </Intro>
-      <Text>
-        Until the payment goes through, your access to{' '}
-        <Text as="span" weight="medium">
-          {product.name}
-        </Text>{' '}
-        won&rsquo;t be available.
-      </Text>
-      {payment_url ? (
-        <>
-          <Button href={payment_url}>Update payment method</Button>
-          <Text>
-            You can also{' '}
-            <EmailLink href={url}>manage your subscription</EmailLink>.
-          </Text>
-        </>
+      {access_ends_at ? (
+        <Text>
+          You&rsquo;ll keep access to{' '}
+          <Text as="span" weight="medium">
+            {product.name}
+          </Text>{' '}
+          until {formatDate(access_ends_at)}. Update your payment method before
+          then to avoid any interruption.
+        </Text>
       ) : (
-        <Button href={url}>Manage subscription</Button>
+        <>
+          <Text>
+            Your access to{' '}
+            <Text as="span" weight="medium">
+              {product.name}
+            </Text>{' '}
+            is paused until payment goes through.
+          </Text>
+          {deadline && (
+            <Text>
+              If we still can&rsquo;t charge your card, your subscription will
+              be canceled on{' '}
+              <Text as="span" weight="medium">
+                {formatDate(deadline)}
+              </Text>
+              .
+            </Text>
+          )}
+        </>
       )}
+      <Button href={url}>Update payment method</Button>
       <FooterCustomer organization={organization} email={email} />
     </WrapperOrganization>
   )
@@ -57,7 +78,8 @@ SubscriptionPastDue.PreviewProps = {
   organization,
   product,
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
-  payment_url: 'https://invoice.stripe.com/i/acct_123/test',
+  access_ends_at: null,
+  deadline: new Date(Date.now() + 21 * 24 * 60 * 60 * 1000).toISOString(),
 }
 
 export default SubscriptionPastDue

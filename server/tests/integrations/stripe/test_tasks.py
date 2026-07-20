@@ -6,10 +6,13 @@ import stripe as stripe_lib
 from pytest_mock import MockerFixture
 from sqlalchemy.orm import selectinload
 
+from polar.customer.repository import CustomerRepository
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.integrations.stripe.tasks import (
     account_risk_signal,
     payment_intent_succeeded,
+    payment_method_automatically_updated,
+    payment_method_detached,
 )
 from polar.models import (
     Customer,
@@ -19,12 +22,14 @@ from polar.models import (
 )
 from polar.models.organization import OrganizationStatus
 from polar.organization.repository import OrganizationRepository
+from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_order,
+    create_payment_method,
     create_payout_account,
     create_product,
 )
@@ -301,3 +306,171 @@ class TestPaymentIntentSucceeded:
 
         # Then: Payment method service is not called (no retry metadata)
         payment_method_service_mock.assert_not_called()
+
+
+def build_stripe_card_payment_method(
+    *,
+    payment_method_id: str = "pm_test",
+    customer_id: str | None = None,
+    brand: str = "visa",
+    last4: str = "4242",
+    exp_month: int = 12,
+    exp_year: int = 2030,
+) -> stripe_lib.PaymentMethod:
+    return stripe_lib.PaymentMethod.construct_from(
+        {
+            "id": payment_method_id,
+            "object": "payment_method",
+            "type": "card",
+            "customer": customer_id,
+            "card": {
+                "brand": brand,
+                "last4": last4,
+                "exp_month": exp_month,
+                "exp_year": exp_year,
+            },
+        },
+        stripe_lib.api_key,
+    )
+
+
+def patch_stripe_event(
+    mocker: MockerFixture, stripe_object: stripe_lib.StripeObject
+) -> None:
+    event_mock = mocker.MagicMock()
+    event_mock.stripe_data.data.object = stripe_object
+
+    context_mock = mocker.patch(
+        "polar.integrations.stripe.tasks.external_event_service.handle_stripe"
+    )
+    context_mock.return_value.__aenter__ = AsyncMock(return_value=event_mock)
+    context_mock.return_value.__aexit__ = AsyncMock(return_value=None)
+
+
+@pytest.mark.asyncio
+class TestPaymentMethodDetached:
+    async def test_soft_deletes_matching_payment_method(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+    ) -> None:
+        # Given: Customer with a stored payment method set as default
+        payment_method = await create_payment_method(
+            save_fixture,
+            customer,
+            processor_id="pm_detach_test",
+            method_metadata={"brand": "visa", "last4": "4242"},
+        )
+        customer.default_payment_method = payment_method
+        await save_fixture(customer)
+
+        patch_stripe_event(
+            mocker,
+            build_stripe_card_payment_method(payment_method_id="pm_detach_test"),
+        )
+        # Stripe already detached on their side; our delete_payment_method call
+        # would fail — swallow it.
+        mocker.patch(
+            "polar.payment_method.service.stripe_service.delete_payment_method",
+            side_effect=stripe_lib.InvalidRequestError("already detached", param=None),
+        )
+
+        # When: Process webhook
+        await payment_method_detached(uuid.uuid4())
+
+        # Then: Payment method is soft-deleted and unlinked from the customer
+        pm_repo = PaymentMethodRepository.from_session(session)
+        stored = await pm_repo.get_by_processor_id(
+            PaymentProcessor.stripe, "pm_detach_test"
+        )
+        assert stored is None
+
+        customer_repo = CustomerRepository.from_session(session)
+        refreshed_customer = await customer_repo.get_by_id(customer.id)
+        assert refreshed_customer is not None
+        assert refreshed_customer.default_payment_method_id is None
+
+    async def test_unknown_payment_method_is_noop(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        # Given: Webhook for a payment method we don't have on file
+        patch_stripe_event(
+            mocker,
+            build_stripe_card_payment_method(payment_method_id="pm_unknown"),
+        )
+        delete_mock = mocker.patch(
+            "polar.integrations.stripe.tasks.payment_method_service.delete"
+        )
+
+        # When: Process webhook
+        await payment_method_detached(uuid.uuid4())
+
+        # Then: The service is not invoked
+        delete_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestPaymentMethodAutomaticallyUpdated:
+    async def test_updates_matching_payment_method(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+    ) -> None:
+        await create_payment_method(
+            save_fixture,
+            customer,
+            processor_id="pm_update_test",
+            method_metadata={
+                "brand": "visa",
+                "last4": "4242",
+                "exp_month": 12,
+                "exp_year": 2026,
+            },
+        )
+
+        patch_stripe_event(
+            mocker,
+            build_stripe_card_payment_method(
+                payment_method_id="pm_update_test",
+                customer_id="cus_test",
+                brand="mastercard",
+                last4="9999",
+                exp_month=6,
+                exp_year=2032,
+            ),
+        )
+
+        await payment_method_automatically_updated(uuid.uuid4())
+
+        repository = PaymentMethodRepository.from_session(session)
+        payment_method = await repository.get_by_processor_id(
+            PaymentProcessor.stripe, "pm_update_test"
+        )
+        assert payment_method is not None
+        assert payment_method.method_metadata == {
+            "brand": "mastercard",
+            "last4": "9999",
+            "exp_month": 6,
+            "exp_year": 2032,
+        }
+
+    async def test_unknown_payment_method_is_noop(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        patch_stripe_event(
+            mocker,
+            build_stripe_card_payment_method(payment_method_id="pm_unknown"),
+        )
+        upsert_mock = mocker.patch(
+            "polar.integrations.stripe.tasks.payment_method_service.upsert_from_stripe"
+        )
+
+        await payment_method_automatically_updated(uuid.uuid4())
+
+        upsert_mock.assert_not_called()

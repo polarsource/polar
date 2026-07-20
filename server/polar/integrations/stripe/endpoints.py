@@ -36,6 +36,8 @@ DIRECT_IMPLEMENTED_WEBHOOKS = {
     "refund.created",
     "refund.updated",
     "refund.failed",
+    "payment_method.automatically_updated",
+    "payment_method.detached",
     "identity.verification_session.verified",
     "identity.verification_session.processing",
     "identity.verification_session.requires_input",

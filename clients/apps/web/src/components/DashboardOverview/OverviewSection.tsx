@@ -66,7 +66,7 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
         <h2 className="text-2xl font-medium text-gray-900 dark:text-white">
           Overview
         </h2>
-        {canReadAnalytics && (
+        {canReadAnalytics ? (
           <div className="flex items-center justify-between md:gap-x-4">
             <SegmentedControl
               options={(
@@ -87,7 +87,7 @@ export function OverviewSection({ organization }: OverviewSectionProps) {
               <span className="hidden md:inline">Customize</span>
             </Button>
           </div>
-        )}
+        ) : null}
       </div>
       {canReadAnalytics ? (
         <MetricGroup

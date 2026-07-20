@@ -344,27 +344,25 @@ const MetricChartBox = ({
               <TooltipContent>Share Chart</TooltipContent>
             </Tooltip>
           )}
-          {shareable && (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button
-                  variant="ghost"
-                  size="icon"
-                  className="flex rounded-full transition-opacity md:opacity-0 md:group-hover:opacity-100"
-                >
-                  <MoreVertOutlined fontSize="small" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="flex rounded-full transition-opacity md:opacity-0 md:group-hover:opacity-100"
+              >
+                <MoreVertOutlined fontSize="small" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              {shareable && (
                 <DropdownMenuItem className="md:hidden" onClick={showModal}>
                   Share Chart
                 </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleExport}>
-                  Export
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          )}
+              )}
+              <DropdownMenuItem onClick={handleExport}>Export</DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
         </div>
       </div>
       <div

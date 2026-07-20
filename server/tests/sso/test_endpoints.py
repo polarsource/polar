@@ -1,14 +1,8 @@
-import re
 import uuid
-from collections.abc import Iterator
-from typing import Any
 
-import httpx
 import pytest
 import pytest_asyncio
-import respx
 from httpx import AsyncClient
-from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.models import (
@@ -22,36 +16,8 @@ from polar.models.organization_sso_connection import (
     OIDCConfiguration,
     OrganizationSSOConnectionType,
 )
-from polar.sso.discovery import DISCOVERY_PATH
 from polar.sso.schemas import RESERVED_AUTHORIZATION_PARAMETERS
 from tests.fixtures.database import SaveFixture
-
-DISCOVERY_ROUTE = re.compile(rf".*{re.escape(DISCOVERY_PATH)}$")
-
-
-def discovery_document(issuer: str, **overrides: Any) -> dict[str, Any]:
-    return {
-        "issuer": issuer,
-        "authorization_endpoint": f"{issuer}/authorize",
-        "token_endpoint": f"{issuer}/token",
-        "jwks_uri": f"{issuer}/jwks",
-        "id_token_signing_alg_values_supported": ["RS256"],
-        "token_endpoint_auth_methods_supported": ["client_secret_post"],
-        **overrides,
-    }
-
-
-@pytest.fixture(autouse=True)
-def discovery_mock(mocker: MockerFixture) -> Iterator[respx.MockRouter]:
-    mocker.patch("polar.sso.discovery.resolve_and_validate_ip")
-
-    def respond(request: httpx.Request) -> httpx.Response:
-        issuer = str(request.url).removesuffix(DISCOVERY_PATH)
-        return httpx.Response(200, json=discovery_document(issuer))
-
-    with respx.mock(assert_all_mocked=False, assert_all_called=False) as mock:
-        mock.get(url__regex=DISCOVERY_ROUTE).mock(side_effect=respond)
-        yield mock
 
 
 async def create_sso_connection(
@@ -292,7 +258,14 @@ class TestCreateSSOConnection:
         assert response.status_code == 422
 
     @pytest.mark.auth
-    @pytest.mark.parametrize("suffix", [DISCOVERY_PATH, f"{DISCOVERY_PATH}/", "/"])
+    @pytest.mark.parametrize(
+        "suffix",
+        [
+            "/.well-known/openid-configuration",
+            "/.well-known/openid-configuration/",
+            "/",
+        ],
+    )
     async def test_issuer_pasted_as_discovery_url(
         self,
         suffix: str,
@@ -387,172 +360,6 @@ class TestCreateSSOConnection:
             },
         )
         assert response.status_code == 422
-
-    @pytest.mark.auth
-    async def test_unreachable_discovery_document(
-        self,
-        client: AsyncClient,
-        discovery_mock: respx.MockRouter,
-        organization: Organization,
-        sso_enabled_organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        discovery_mock.get(url__regex=DISCOVERY_ROUTE).mock(
-            side_effect=httpx.ConnectError("nope")
-        )
-        response = await client.post(
-            f"/v1/organizations/{organization.id}/sso-connections/",
-            json={
-                "configuration": {
-                    "issuer": "https://idp.example.com",
-                    "client_id": "client-id",
-                    "auth_method": "client_secret",
-                    "client_secret": "secret",
-                }
-            },
-        )
-        assert response.status_code == 422
-        assert response.json()["detail"][0]["loc"] == [
-            "body",
-            "configuration",
-            "issuer",
-        ]
-
-    @pytest.mark.auth
-    async def test_discovery_document_not_found(
-        self,
-        client: AsyncClient,
-        discovery_mock: respx.MockRouter,
-        organization: Organization,
-        sso_enabled_organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        discovery_mock.get(url__regex=DISCOVERY_ROUTE).mock(
-            return_value=httpx.Response(404)
-        )
-        response = await client.post(
-            f"/v1/organizations/{organization.id}/sso-connections/",
-            json={
-                "configuration": {
-                    "issuer": "https://idp.example.com",
-                    "client_id": "client-id",
-                    "auth_method": "client_secret",
-                    "client_secret": "secret",
-                }
-            },
-        )
-        assert response.status_code == 422
-
-    @pytest.mark.auth
-    async def test_issuer_mismatch(
-        self,
-        client: AsyncClient,
-        discovery_mock: respx.MockRouter,
-        organization: Organization,
-        sso_enabled_organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        discovery_mock.get(url__regex=DISCOVERY_ROUTE).mock(
-            return_value=httpx.Response(
-                200, json=discovery_document("https://other.example.com")
-            )
-        )
-        response = await client.post(
-            f"/v1/organizations/{organization.id}/sso-connections/",
-            json={
-                "configuration": {
-                    "issuer": "https://idp.example.com",
-                    "client_id": "client-id",
-                    "auth_method": "client_secret",
-                    "client_secret": "secret",
-                }
-            },
-        )
-        assert response.status_code == 422
-        assert "https://other.example.com" in response.json()["detail"][0]["msg"]
-
-    @pytest.mark.auth
-    async def test_missing_required_metadata(
-        self,
-        client: AsyncClient,
-        discovery_mock: respx.MockRouter,
-        organization: Organization,
-        sso_enabled_organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        document = discovery_document("https://idp.example.com")
-        del document["jwks_uri"]
-        discovery_mock.get(url__regex=DISCOVERY_ROUTE).mock(
-            return_value=httpx.Response(200, json=document)
-        )
-        response = await client.post(
-            f"/v1/organizations/{organization.id}/sso-connections/",
-            json={
-                "configuration": {
-                    "issuer": "https://idp.example.com",
-                    "client_id": "client-id",
-                    "auth_method": "client_secret",
-                    "client_secret": "secret",
-                }
-            },
-        )
-        assert response.status_code == 422
-        assert "jwks_uri" in response.json()["detail"][0]["msg"]
-
-    @pytest.mark.auth
-    async def test_private_key_jwt_not_supported(
-        self,
-        client: AsyncClient,
-        organization: Organization,
-        sso_enabled_organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        response = await client.post(
-            f"/v1/organizations/{organization.id}/sso-connections/",
-            json={
-                "configuration": {
-                    "issuer": "https://idp.example.com",
-                    "client_id": "client-id",
-                    "auth_method": "private_key_jwt",
-                }
-            },
-        )
-        assert response.status_code == 422
-        assert response.json()["detail"][0]["loc"] == [
-            "body",
-            "configuration",
-            "auth_method",
-        ]
-
-    @pytest.mark.auth
-    async def test_private_key_jwt_supported(
-        self,
-        client: AsyncClient,
-        discovery_mock: respx.MockRouter,
-        organization: Organization,
-        sso_enabled_organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        discovery_mock.get(url__regex=DISCOVERY_ROUTE).mock(
-            return_value=httpx.Response(
-                200,
-                json=discovery_document(
-                    "https://idp.example.com",
-                    token_endpoint_auth_methods_supported=["private_key_jwt"],
-                ),
-            )
-        )
-        response = await client.post(
-            f"/v1/organizations/{organization.id}/sso-connections/",
-            json={
-                "configuration": {
-                    "issuer": "https://idp.example.com",
-                    "client_id": "client-id",
-                    "auth_method": "private_key_jwt",
-                }
-            },
-        )
-        assert response.status_code == 201
 
     @pytest.mark.auth
     async def test_non_https_issuer(
@@ -680,47 +487,6 @@ class TestUpdateSSOConnection:
                     "auth_method": "client_secret",
                 }
             },
-        )
-        assert response.status_code == 422
-
-    @pytest.mark.auth
-    async def test_rename_is_not_validated(
-        self,
-        client: AsyncClient,
-        discovery_mock: respx.MockRouter,
-        organization: Organization,
-        sso_enabled_organization: Organization,
-        user_organization: UserOrganization,
-        sso_connection: OrganizationSSOConnection,
-    ) -> None:
-        response = await client.patch(
-            f"/v1/organizations/{organization.id}/sso-connections/{sso_connection.id}",
-            json={"name": "New name"},
-        )
-        assert response.status_code == 200
-        assert not discovery_mock.calls
-
-    @pytest.mark.auth
-    async def test_enabling_is_validated(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        discovery_mock: respx.MockRouter,
-        organization: Organization,
-        sso_enabled_organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        connection = await create_sso_connection(
-            save_fixture, organization, enabled=False
-        )
-        discovery_mock.get(url__regex=DISCOVERY_ROUTE).mock(
-            return_value=httpx.Response(
-                200, json=discovery_document("https://other.example.com")
-            )
-        )
-        response = await client.patch(
-            f"/v1/organizations/{organization.id}/sso-connections/{connection.id}",
-            json={"enabled": True},
         )
         assert response.status_code == 422
 

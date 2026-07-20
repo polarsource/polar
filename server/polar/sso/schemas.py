@@ -21,7 +21,7 @@ from polar.models.organization_sso_connection import (
     OrganizationSSOConnectionType,
 )
 
-from .discovery import DISCOVERY_PATH
+DISCOVERY_PATH = "/.well-known/openid-configuration"
 
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 

@@ -1195,13 +1195,6 @@ class OrderService:
             )
             order = await self.handle_payment(session, order, payment)
 
-        # Unlike the checkout flow, the off-session draft flow skips the
-        # confirmation email at draft creation (nothing is charged yet). Now that
-        # finalize has settled the order as paid, send it so the customer gets
-        # their confirmation.
-        if order.paid:
-            enqueue_job("order.confirmation_email", order.id)
-
         return order
 
     def _get_intent_charge(
@@ -2650,7 +2643,6 @@ class OrderService:
 
     async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
         enqueue_job("order.created", order.id)
-        enqueue_job("order.confirmation_email", order.id)
         await self.send_webhook(session, order, WebhookEventType.order_created)
 
         if order.paid:
@@ -2679,6 +2671,8 @@ class OrderService:
 
     async def _on_order_paid(self, session: AsyncSession, order: Order) -> None:
         assert order.paid
+
+        enqueue_job("order.confirmation_email", order.id)
 
         await receipt_service.allocate(session, order)
 

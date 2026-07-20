@@ -2241,6 +2241,51 @@ class TestCreateSubscriptionOrder:
         call_args = trigger_payment_mock.call_args
         assert call_args.args[2].id == default_pm.id
 
+    async def test_cycle_does_not_send_confirmation_email_before_payment(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+        payment_method: PaymentMethod,
+    ) -> None:
+        # The async cycle order is created `pending` and charged by a later task,
+        # so a confirmation must not be promised before the charge is attempted.
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
+        )
+
+        assert order.status == OrderStatus.pending
+        assert (
+            call("order.confirmation_email", order.id)
+            not in enqueue_job_mock.call_args_list
+        )
+
 
 @pytest.mark.asyncio
 class TestCreateTrialOrder:
@@ -2832,6 +2877,36 @@ class TestHandlePayment:
         assert result is order
         assert result.status == OrderStatus.paid
 
+    async def test_sends_confirmation_email_once_on_paid_transition(
+        self,
+        enqueue_job_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
+        )
+        payment = await create_payment(
+            save_fixture, organization, processor_id="ch_cycle_success"
+        )
+
+        result = await order_service.handle_payment(session, order, payment)
+
+        assert result.status == OrderStatus.paid
+        assert (
+            enqueue_job_mock.call_args_list.count(
+                call("order.confirmation_email", order.id)
+            )
+            == 1
+        )
+
     async def test_order_not_pending_raises_for_non_paid(
         self,
         session: AsyncSession,
@@ -2889,7 +2964,7 @@ class TestHandlePayment:
         assert updated_order.tax_transaction_processor_id == "TAX_TRANSACTION_ID"
 
         # Verify enqueue_job was called to balance the order
-        enqueue_job_mock.assert_called_once_with(
+        enqueue_job_mock.assert_any_call(
             "order.balance", order_id=order.id, charge_id="stripe_payment_123"
         )
 
@@ -2963,7 +3038,7 @@ class TestHandlePayment:
         assert updated_order.tax_processor == TaxProcessor.numeral
 
         # The balance job should still be enqueued
-        enqueue_job_mock.assert_called_once_with(
+        enqueue_job_mock.assert_any_call(
             "order.balance", order_id=order.id, charge_id="stripe_payment_456"
         )
 
@@ -6170,16 +6245,14 @@ class TestFinalizeOrder:
         )
         stripe_service_mock.create_payment_intent.return_value = payment_intent
 
-        def _settle(_session: AsyncSession, settled: Order, _payment: object) -> Order:
-            settled.status = OrderStatus.paid
-            return settled
-
+        payment = await create_payment(
+            save_fixture,
+            off_session_organization,
+            processor_id="ch_finalize_success",
+        )
         mocker.patch(
             "polar.order.service.payment_service.upsert_from_stripe_charge",
-            new=AsyncMock(return_value=MagicMock()),
-        )
-        mocker.patch.object(
-            order_service, "handle_payment", new=AsyncMock(side_effect=_settle)
+            new=AsyncMock(return_value=payment),
         )
 
         result = await order_service.finalize_order(

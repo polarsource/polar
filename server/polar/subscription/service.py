@@ -994,34 +994,42 @@ class SubscriptionService:
         This should be called when creating a new subscription or cycling an
         existing one.
         """
-        customer = subscription.customer
         for subscription_meter in subscription.meters:
-            rollover_units = await customer_meter_service.get_rollover_units(
-                session, customer, subscription_meter.meter
-            )
+            await self.reset_meter(session, subscription, subscription_meter)
+
+    async def reset_meter(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        subscription_meter: SubscriptionMeter,
+    ) -> None:
+        customer = subscription.customer
+        rollover_units = await customer_meter_service.get_rollover_units(
+            session, customer, subscription_meter.meter
+        )
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.meter_reset,
+                customer=customer,
+                organization=subscription.organization,
+                metadata={"meter_id": str(subscription_meter.meter_id)},
+            ),
+        )
+        if rollover_units > 0:
             await event_service.create_event(
                 session,
                 build_system_event(
-                    SystemEvent.meter_reset,
+                    SystemEvent.meter_credited,
                     customer=customer,
                     organization=subscription.organization,
-                    metadata={"meter_id": str(subscription_meter.meter_id)},
+                    metadata={
+                        "meter_id": str(subscription_meter.meter_id),
+                        "units": rollover_units,
+                        "rollover": True,
+                    },
                 ),
             )
-            if rollover_units > 0:
-                await event_service.create_event(
-                    session,
-                    build_system_event(
-                        SystemEvent.meter_credited,
-                        customer=customer,
-                        organization=subscription.organization,
-                        metadata={
-                            "meter_id": str(subscription_meter.meter_id),
-                            "units": rollover_units,
-                            "rollover": True,
-                        },
-                    ),
-                )
 
     async def _after_subscription_created(
         self, session: AsyncSession, subscription: Subscription

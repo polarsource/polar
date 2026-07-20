@@ -2781,6 +2781,70 @@ async def update_meters_fixtures(
 
 
 @pytest.mark.asyncio
+class TestResetMeter:
+    async def test_without_rollover(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product_recurring_metered, customer=customer
+        )
+        subscription_meter = subscription.meters[0]
+        get_rollover_units_mock = mocker.patch(
+            "polar.subscription.service.customer_meter_service.get_rollover_units",
+            return_value=0,
+        )
+
+        await subscription_service.reset_meter(
+            session, subscription, subscription_meter
+        )
+
+        get_rollover_units_mock.assert_awaited_once_with(
+            session, customer, subscription_meter.meter
+        )
+        reset_events = await get_all_by_name(session, SystemEvent.meter_reset)
+        assert len(reset_events) == 1
+        assert reset_events[0].user_metadata == {
+            "meter_id": str(subscription_meter.meter_id)
+        }
+        credited_events = await get_all_by_name(session, SystemEvent.meter_credited)
+        assert len(credited_events) == 0
+
+    async def test_with_rollover(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product_recurring_metered, customer=customer
+        )
+        subscription_meter = subscription.meters[0]
+        mocker.patch(
+            "polar.subscription.service.customer_meter_service.get_rollover_units",
+            return_value=25,
+        )
+
+        await subscription_service.reset_meter(
+            session, subscription, subscription_meter
+        )
+
+        credited_events = await get_all_by_name(session, SystemEvent.meter_credited)
+        assert len(credited_events) == 1
+        assert credited_events[0].user_metadata == {
+            "meter_id": str(subscription_meter.meter_id),
+            "units": 25,
+            "rollover": True,
+        }
+
+
+@pytest.mark.asyncio
 class TestUpdateMeters:
     async def test_no_entries(
         self,

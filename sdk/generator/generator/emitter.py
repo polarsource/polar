@@ -8,7 +8,7 @@ from typing import Literal
 
 from jinja2 import Environment, FileSystemLoader, Template
 
-from generator.ir import APIIR, APIVersion
+from generator.ir import APIIR, APIVersion, LiteralType
 
 _LOOP_DIRECTORY_PATTERN = re.compile(r"^\[\[([\w\.]+)\]\]$")
 
@@ -92,7 +92,12 @@ class EmitterBase(abc.ABC):
 
         Override this method in subclasses to add custom context variables for a specific version.
         """
-        return {"ir": self.ir, "api": api, "version": self.get_version_string(api)}
+        return {
+            "ir": self.ir,
+            "api": api,
+            "version": self.get_version_string(api),
+            "webhook_event_types": self._get_webhook_event_types(api),
+        }
 
     def copy_file(
         self, source: pathlib.Path | str, destination: pathlib.Path | str
@@ -149,3 +154,15 @@ class EmitterBase(abc.ABC):
         if isinstance(template, str):
             template = self._load_template(template)
         return template.render(**context)
+
+    def _get_webhook_event_types(self, api: APIVersion) -> list[str]:
+        event_types: set[str] = set()
+        for model in api.webhooks:
+            for field in model.fields:
+                if (
+                    field.name == "type"
+                    and isinstance(field.type, LiteralType)
+                    and isinstance(field.type.value, str)
+                ):
+                    event_types.add(field.type.value)
+        return sorted(event_types)

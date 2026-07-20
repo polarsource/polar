@@ -36,3 +36,47 @@ separate.
 
 Keep organization access tokens on the server and never expose them in browser or client-side
 code.
+
+## Webhooks
+
+Use `validate_event` to verify that a webhook was sent by Polar and parse it into a typed payload
+for the selected API version. Pass the raw request body, the request headers, and your webhook
+signing secret:
+
+```python
+import os
+
+from fastapi import FastAPI, HTTPException, Request
+
+from polar.v2026_04.webhooks import (
+    PolarWebhookError,
+    PolarWebhookVerificationError,
+    validate_event,
+)
+
+app = FastAPI()
+webhook_secret = os.environ["POLAR_WEBHOOK_SECRET"]
+
+
+@app.post("/webhooks/polar")
+async def polar_webhook(request: Request) -> dict[str, bool]:
+    try:
+        event = validate_event(
+            await request.body(),
+            dict(request.headers),
+            webhook_secret,
+        )
+    except PolarWebhookVerificationError as exc:
+        raise HTTPException(status_code=403, detail="Invalid webhook signature") from exc
+    except PolarWebhookError as exc:
+        raise HTTPException(status_code=400, detail="Invalid webhook payload") from exc
+
+    if event.type == "order.created":
+        print(event.data.id)
+
+    return {"received": True}
+```
+
+The signature is checked before the body is parsed. `validate_event` raises
+`PolarWebhookVerificationError` for invalid signatures and `PolarWebhookUnknownTypeError` when the
+event is not supported by the selected API version. Both inherit from `PolarWebhookError`.

@@ -3,6 +3,7 @@ from __future__ import annotations
 import dataclasses
 import typing
 
+from polar.base import retort
 from polar.v2026_04.outputs import (
     Benefit,
     BenefitGrantWebhook,
@@ -16,6 +17,18 @@ from polar.v2026_04.outputs import (
     Product,
     Refund,
     Subscription,
+)
+from polar.webhooks import (
+    PolarWebhookError as PolarWebhookError,
+)
+from polar.webhooks import (
+    PolarWebhookUnknownTypeError as PolarWebhookUnknownTypeError,
+)
+from polar.webhooks import (
+    PolarWebhookVerificationError as PolarWebhookVerificationError,
+)
+from polar.webhooks import (
+    validate_event as _validate_event,
 )
 
 
@@ -612,3 +625,56 @@ WebhookPayload: typing.TypeAlias = (
     | WebhookSubscriptionUncanceledPayload
     | WebhookSubscriptionUpdatedPayload
 )
+
+_KNOWN_EVENT_TYPES = frozenset(
+    {
+        "benefit.created",
+        "benefit.updated",
+        "benefit_grant.created",
+        "benefit_grant.cycled",
+        "benefit_grant.revoked",
+        "benefit_grant.updated",
+        "checkout.created",
+        "checkout.expired",
+        "checkout.updated",
+        "customer.created",
+        "customer.deleted",
+        "customer.state_changed",
+        "customer.updated",
+        "customer_seat.assigned",
+        "customer_seat.claimed",
+        "customer_seat.revoked",
+        "member.created",
+        "member.deleted",
+        "member.updated",
+        "order.created",
+        "order.paid",
+        "order.refunded",
+        "order.updated",
+        "organization.updated",
+        "product.created",
+        "product.updated",
+        "refund.created",
+        "refund.updated",
+        "subscription.active",
+        "subscription.canceled",
+        "subscription.created",
+        "subscription.past_due",
+        "subscription.paused",
+        "subscription.resumed",
+        "subscription.revoked",
+        "subscription.uncanceled",
+        "subscription.updated",
+    }
+)
+
+
+def validate_event(
+    body: str | bytes, headers: dict[str, str], secret: str
+) -> WebhookPayload:
+    """Verify a raw Polar webhook request and load its typed payload."""
+    return _validate_event(body, headers, secret, _KNOWN_EVENT_TYPES, _load_payload)
+
+
+def _load_payload(data: dict[str, typing.Any]) -> WebhookPayload:
+    return typing.cast(WebhookPayload, retort.load(data, WebhookPayload))

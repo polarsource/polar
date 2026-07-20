@@ -86,8 +86,10 @@ class PythonEmitter(EmitterBase):
             (".zed", "settings.json"),
             ("polar", "__init__.py"),
             ("polar", "base.py"),
+            ("polar", "webhooks.py"),
             ("tests", "__init__.py"),
             ("tests", "test_base.py"),
+            ("tests", "test_webhooks.py"),
             (".python-version",),
             ("justfile",),
             ("LICENSE",),
@@ -149,7 +151,6 @@ class PythonEmitter(EmitterBase):
                     "enum_imports": self._get_webhook_enum_imports(api),
                 },
             )
-
             errors = self._collect_all_errors(api)
             self.render_file(
                 "polar/version/errors.py",

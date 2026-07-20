@@ -13,6 +13,14 @@ import type {
   Subscription,
 } from "./models";
 
+import { validateWebhook } from "../webhooks";
+
+export {
+  PolarWebhookError,
+  PolarWebhookUnknownTypeError,
+  PolarWebhookVerificationError,
+} from "../webhooks";
+
 /**
  * Sent when a new benefit is created.
  *
@@ -827,3 +835,54 @@ export type WebhookPayload =
   | WebhookSubscriptionRevokedPayload
   | WebhookSubscriptionUncanceledPayload
   | WebhookSubscriptionUpdatedPayload;
+
+const knownEventTypes = new Set<string>([
+  "benefit.created",
+  "benefit.updated",
+  "benefit_grant.created",
+  "benefit_grant.cycled",
+  "benefit_grant.revoked",
+  "benefit_grant.updated",
+  "checkout.created",
+  "checkout.expired",
+  "checkout.updated",
+  "customer.created",
+  "customer.deleted",
+  "customer.state_changed",
+  "customer.updated",
+  "customer_seat.assigned",
+  "customer_seat.claimed",
+  "customer_seat.revoked",
+  "member.created",
+  "member.deleted",
+  "member.updated",
+  "order.created",
+  "order.paid",
+  "order.refunded",
+  "order.updated",
+  "organization.updated",
+  "product.created",
+  "product.updated",
+  "refund.created",
+  "refund.updated",
+  "subscription.active",
+  "subscription.canceled",
+  "subscription.created",
+  "subscription.past_due",
+  "subscription.paused",
+  "subscription.resumed",
+  "subscription.revoked",
+  "subscription.uncanceled",
+  "subscription.updated",
+]);
+
+/**
+ * Verify a raw Polar webhook request and return its typed payload.
+ */
+export const validateEvent = (
+  body: string | Uint8Array,
+  headers: Record<string, string>,
+  secret: string,
+): Promise<WebhookPayload> => {
+  return validateWebhook<WebhookPayload>(body, headers, secret, knownEventTypes);
+};

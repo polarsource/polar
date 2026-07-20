@@ -76,6 +76,16 @@ class TypeScriptEmitter(EmitterBase):
             self.get_context(),
         )
         self.render_file(
+            "src/webhooks.ts",
+            src_dir / "webhooks.ts",
+            self.get_context(),
+        )
+        self.render_file(
+            "src/webhooks.test.ts",
+            src_dir / "webhooks.test.ts",
+            self.get_context(),
+        )
+        self.render_file(
             "src/index.ts",
             src_dir / "index.ts",
             self.get_context(),
@@ -108,7 +118,6 @@ class TypeScriptEmitter(EmitterBase):
             # Emit models
             self._emit_models(version_dir, api)
             self._emit_webhooks(version_dir, api)
-
             # Emit services
             for service in api.services:
                 self._emit_service(service, api, version_dir / "services")

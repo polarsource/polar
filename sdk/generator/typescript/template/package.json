@@ -7,7 +7,7 @@
   "files": [
     "dist", "README.md", "LICENSE"
   ],
-  "engines": { "node": ">=18" },
+  "engines": { "node": ">=22" },
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "exports": {
@@ -46,8 +46,10 @@
     "test": "vitest run"
   },
   "devDependencies": {
+    "@types/node": "^22.0.0",
     "oxfmt": "^0.56.0",
     "oxlint": "^1.71.0",
+    "standardwebhooks": "^1.0.0",
     "tsdown": "^0.22.3",
     "typescript": "^6.0.3",
     "vitest": "^4.1.9"

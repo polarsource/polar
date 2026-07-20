@@ -1,11 +1,11 @@
 import base64
 import hashlib
 from datetime import datetime
-from typing import Any, Self
+from typing import Annotated, Any, Self
 
 from pydantic import UUID4, Field, computed_field
 
-from polar.kit.schemas import IDSchema, Schema
+from polar.kit.schemas import IDSchema, Schema, StripValidator
 from polar.kit.utils import human_readable_size
 from polar.organization.schemas import OrganizationID
 
@@ -127,7 +127,7 @@ class S3FileUpload(S3File):
 
 class S3FileUploadCompletedPart(Schema):
     number: int
-    checksum_etag: str
+    checksum_etag: Annotated[str, StripValidator]
     checksum_sha256_base64: str | None
 
 

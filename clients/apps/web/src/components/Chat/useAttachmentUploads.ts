@@ -1,4 +1,5 @@
 import { UploadAbortedError } from '@/components/FileUpload/Upload'
+import { getFileMimeType } from '@/components/FileUpload/mimeType'
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { formatFileSize } from './fileUtils'
 import { type ChatUploader } from './types'
@@ -72,7 +73,7 @@ export const useAttachmentUploads = (uploader: ChatUploader) => {
       const entries = toAdd.map<UploadingAttachment>((file) => ({
         id: crypto.randomUUID(),
         file,
-        preview: file.type.startsWith('image/')
+        preview: getFileMimeType(file).startsWith('image/')
           ? URL.createObjectURL(file)
           : null,
         status: 'uploading',

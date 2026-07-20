@@ -2,13 +2,14 @@
 
 import contextlib
 import json
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from datetime import datetime
 
 from fastapi import Request
 from tagflow import tag, text
 
 from polar.models import Organization
+from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.organization_review.report import AnyAgentReport
 from polar.organization_review.schemas import DimensionAssessment, ReviewVerdict
 from polar.organization_review.thresholds import (
@@ -29,6 +30,7 @@ from ._shared import (
     render_checklist_row,
     render_review_context_badge,
 )
+from .risk_signals import render_risk_signals_block
 
 
 class OverviewSection(ChecklistMixin):
@@ -42,6 +44,7 @@ class OverviewSection(ChecklistMixin):
         agent_report: AnyAgentReport | None = None,
         agent_reviewed_at: datetime | None = None,
         has_open_appeal_case: bool = False,
+        risk_signals: Sequence[OrganizationRiskSignal] = (),
     ) -> None:
         self.org = organization
         self.orders_count = orders_count
@@ -49,6 +52,7 @@ class OverviewSection(ChecklistMixin):
         self.agent_report = agent_report
         self.agent_reviewed_at = agent_reviewed_at
         self.has_open_appeal_case = has_open_appeal_case
+        self.risk_signals = risk_signals
 
     # ------------------------------------------------------------------
     # Full-width: Organization Review card (primary content)
@@ -214,6 +218,8 @@ class OverviewSection(ChecklistMixin):
                     with tag.p(classes="text-sm text-base-content/60 mb-4"):
                         text("No agent review yet")
 
+                render_risk_signals_block(self.risk_signals)
+
                 yield
                 return
 
@@ -310,6 +316,8 @@ class OverviewSection(ChecklistMixin):
                             with tag.div(classes="space-y-3"):
                                 for dim in low:
                                     self._render_dimension_card(dim)
+
+            render_risk_signals_block(self.risk_signals)
 
             # Appeal information
             if self.org.review and self.org.review.appeal_submitted_at:

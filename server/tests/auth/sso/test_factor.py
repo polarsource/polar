@@ -54,7 +54,7 @@ class TestBuildSSOFactor:
         assert factor.organization_slug == "acme"
         assert factor.client_id == "client-id"
         assert (
-            factor.DISCOVERY_ENDPOINT
+            factor.discovery_endpoint
             == "https://idp.example.com/.well-known/openid-configuration"
         )
 
@@ -100,6 +100,6 @@ class TestBuildSSOFactor:
         )
 
         assert (
-            factor.DISCOVERY_ENDPOINT
+            factor.discovery_endpoint
             == "https://idp.example.com/.well-known/openid-configuration"
         )

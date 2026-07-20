@@ -2242,7 +2242,17 @@ class SubscriptionService:
                 )
             else:
                 pending_update.discount = None
-            pending_update.apply_update()
+            try:
+                pending_update.apply_update()
+            except NoPricesForCurrencies:
+                log.warning(
+                    "Skipping scheduled subscription update in charge preview: "
+                    "target product has no price for the subscription currency",
+                    subscription_id=subscription.id,
+                    subscription_update_id=pending_update.id,
+                    product_id=pending_update.product_id,
+                    currency=subscription.currency,
+                )
 
         # If subscription is set to cancel at period end, there's no base charge
         # Only metered charges accumulated during the period will be billed

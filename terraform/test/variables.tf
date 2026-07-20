@@ -205,6 +205,13 @@ variable "stripe_webhook_secret" {
   sensitive   = true
 }
 
+variable "stripe_account_risk_webhook_secret" {
+  description = "Stripe Account Risk Webhook Secret for test"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 # Logfire
 variable "logfire_token" {
   description = "Logfire Token"

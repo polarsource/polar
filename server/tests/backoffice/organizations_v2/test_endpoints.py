@@ -11,6 +11,7 @@ from polar.backoffice.dependencies import get_admin
 from polar.backoffice.organizations_v2.endpoints import _stripe_reject_reason_for_aup
 from polar.models import PayoutAccount
 from polar.models.organization import Organization, OrganizationStatus
+from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.models.user import User
 from polar.models.user_session import UserSession
 from polar.organization_review.repository import OrganizationReviewRepository
@@ -289,3 +290,71 @@ class TestDeletePayoutAccount:
 
         assert response.status_code == 200
         assert "Delete Payout Account" in response.text
+
+
+@pytest.mark.asyncio
+class TestDetailRiskSignals:
+    async def _create_signal(
+        self, save_fixture: SaveFixture, organization: Organization
+    ) -> OrganizationRiskSignal:
+        signal = OrganizationRiskSignal(
+            organization=organization,
+            source=OrganizationRiskSignal.Source.STRIPE,
+            type=OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE,
+            risk_level="elevated",
+            description="Indicators: suspicious_content",
+            payload={"risk_level": "elevated"},
+        )
+        await save_fixture(signal)
+        return signal
+
+    # Semantic marker class of the tab "needs attention" dot (tab_nav component).
+    TAB_DOT = "tab-dot"
+
+    async def test_reviews_section_shows_signals(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await self._create_signal(save_fixture, organization)
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}?section=reviews"
+        )
+
+        assert response.status_code == 200
+        assert "Risk Signals" in response.text
+        assert "Fraudulent Website" in response.text
+        assert "elevated" in response.text
+        assert "Indicators: suspicious_content" in response.text
+        assert self.TAB_DOT in response.text
+
+    async def test_overview_section_shows_signals(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await self._create_signal(save_fixture, organization)
+
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}?section=overview"
+        )
+
+        assert response.status_code == 200
+        assert "External Risk Signals" in response.text
+        assert "Fraudulent Website" in response.text
+
+    async def test_reviews_section_without_signals(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        organization: Organization,
+    ) -> None:
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}?section=reviews"
+        )
+
+        assert response.status_code == 200
+        assert "Risk Signals" not in response.text
+        assert self.TAB_DOT not in response.text

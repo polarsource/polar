@@ -1,6 +1,7 @@
 from unittest.mock import AsyncMock
 from urllib.parse import parse_qs, urlparse
 
+import httpx
 import pytest
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
@@ -245,6 +246,104 @@ class TestCallback:
             .all()
         )
         assert existing == []
+
+    async def test_access_token_timeout_redirects_with_error(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        session: AsyncSession,
+        mocker: MockerFixture,
+    ) -> None:
+        """A network timeout while exchanging the code must be handled as an
+        operational error (redirect), not surface as an unhandled 500.
+        """
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="token-timeout@example.com",
+        )
+        state = _encode_state(str(customer.id))
+
+        oauth_client = OAUTH_CLIENTS[CustomerOAuthPlatform.discord]
+        mocker.patch.object(
+            oauth_client,
+            "get_access_token",
+            new=AsyncMock(side_effect=httpx.ReadTimeout("timeout")),
+        )
+
+        response = await client.get(
+            "/v1/customer-portal/oauth-accounts/callback",
+            params={"state": state, "code": "some-code"},
+            follow_redirects=False,
+        )
+
+        assert response.status_code == 303
+        location = response.headers["location"]
+        assert "error=Failed+to+get+access+token" in location.replace("%20", "+")
+        assert f"error_platform={CustomerOAuthPlatform.discord.value}" in location
+        assert "customer_session_token=" not in location
+        assert "member_session_token=" not in location
+
+        existing = (
+            (
+                await session.execute(
+                    select(CustomerSession).where(
+                        CustomerSession.customer_id == customer.id
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        assert existing == []
+
+    async def test_profile_timeout_redirects_with_error(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        session: AsyncSession,
+        mocker: MockerFixture,
+    ) -> None:
+        """A network timeout while fetching the profile must be handled as an
+        operational error (redirect), not surface as an unhandled 500.
+        """
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="profile-timeout@example.com",
+        )
+        state = _encode_state(str(customer.id))
+
+        oauth_client = OAUTH_CLIENTS[CustomerOAuthPlatform.discord]
+        mocker.patch.object(
+            oauth_client,
+            "get_access_token",
+            new=AsyncMock(
+                return_value={
+                    "access_token": "access-token",
+                    "expires_at": 0,
+                    "refresh_token": "refresh-token",
+                }
+            ),
+        )
+        mocker.patch.object(
+            oauth_client,
+            "get_profile",
+            new=AsyncMock(side_effect=httpx.ReadTimeout("timeout")),
+        )
+
+        response = await client.get(
+            "/v1/customer-portal/oauth-accounts/callback",
+            params={"state": state, "code": "some-code"},
+            follow_redirects=False,
+        )
+
+        assert response.status_code == 303
+        location = response.headers["location"]
+        assert "error=Failed+to+get+profile+information" in location.replace("%20", "+")
+        assert f"error_platform={CustomerOAuthPlatform.discord.value}" in location
 
     async def test_access_token_missing_from_response_redirects_with_error(
         self,

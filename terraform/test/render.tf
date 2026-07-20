@@ -254,11 +254,12 @@ module "test" {
   }
 
   stripe_secrets = {
-    connect_webhook_secret = var.stripe_connect_webhook_secret
-    secret_key             = var.stripe_secret_key
-    webhook_secret         = var.stripe_webhook_secret
-    app_client_id          = var.stripe_app_client_id
-    app_client_link_id     = var.stripe_app_client_link_id
+    connect_webhook_secret      = var.stripe_connect_webhook_secret
+    secret_key                  = var.stripe_secret_key
+    webhook_secret              = var.stripe_webhook_secret
+    account_risk_webhook_secret = var.stripe_account_risk_webhook_secret
+    app_client_id               = var.stripe_app_client_id
+    app_client_link_id          = var.stripe_app_client_link_id
   }
 
   logfire_config = {

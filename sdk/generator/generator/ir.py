@@ -283,6 +283,7 @@ class APIVersion(BaseModel):
     Schemas are split by usage context:
     - input_*  : referenced from request bodies or parameters (client → server).
     - output_* : referenced from success/error responses (server → client).
+    - webhooks : referenced from webhook request bodies (server → webhook consumer).
     A schema referenced in both contexts appears in both lists.
     Enums are shared across contexts and appear in a single list.
     """
@@ -292,6 +293,7 @@ class APIVersion(BaseModel):
     services: list[Service]
     input_models: list[Model]
     output_models: list[Model]
+    webhooks: list[Model]
     enums: list[Enum]
     input_unions: list[NamedUnion]
     output_unions: list[NamedUnion]
@@ -974,6 +976,7 @@ def _generate_ir_version(
     referenced_names: set[str] = set()
     input_names: set[str] = set()
     output_names: set[str] = set()
+    webhook_names: set[str] = set()
     # Map from normalized names to original names for component schemas
     normalized_to_original: dict[str, str] = {}
     for original_name in component_schemas:
@@ -1154,6 +1157,24 @@ def _generate_ir_version(
                 )
                 current_service.methods.append(method)
 
+    if spec.webhooks is not None:
+        for path_item_or_ref in spec.webhooks.values():
+            path_item = _resolve_reference(path_item_or_ref, spec)
+            for _, operation in _get_operations(path_item):
+                raw_body = _get_body_schema_raw(operation, spec)
+                if raw_body is None:
+                    continue
+                webhook_type = _convert_typeref(
+                    raw_body,
+                    component_schemas,
+                    inline_schemas,
+                    referenced_names,
+                    output_names,
+                    normalize_model_name=normalize_model_name,
+                )
+                if isinstance(webhook_type, ModelRef):
+                    webhook_names.add(webhook_type.name)
+
     # Iteratively resolve all referenced schemas into named models and enums.
     # Processing a schema may discover new references (transitive deps), so we
     # loop until the referenced set stabilises.
@@ -1245,7 +1266,15 @@ def _generate_ir_version(
             key=lambda m: m.name,
         ),
         output_models=sorted(
-            [m for name, m in models_dict.items() if name in output_names],
+            [
+                m
+                for name, m in models_dict.items()
+                if name in output_names and name not in webhook_names
+            ],
+            key=lambda m: m.name,
+        ),
+        webhooks=sorted(
+            [m for name, m in models_dict.items() if name in webhook_names],
             key=lambda m: m.name,
         ),
         enums=sorted(enums_dict.values(), key=lambda e: e.name),

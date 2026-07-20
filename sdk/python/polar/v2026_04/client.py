@@ -2,33 +2,42 @@ import types
 import typing
 
 from polar.base import AsyncClientBase, SyncClientBase, resolve_base_url
-from polar.v2026_04.benefit_grants import BenefitGrantsAsync, BenefitGrantsSync
-from polar.v2026_04.benefits import BenefitsAsync, BenefitsSync
-from polar.v2026_04.checkout_links import CheckoutLinksAsync, CheckoutLinksSync
-from polar.v2026_04.checkouts import CheckoutsAsync, CheckoutsSync
-from polar.v2026_04.custom_fields import CustomFieldsAsync, CustomFieldsSync
-from polar.v2026_04.customer_meters import CustomerMetersAsync, CustomerMetersSync
-from polar.v2026_04.customer_portal import CustomerPortalAsync, CustomerPortalSync
-from polar.v2026_04.customer_seats import CustomerSeatsAsync, CustomerSeatsSync
-from polar.v2026_04.customer_sessions import CustomerSessionsAsync, CustomerSessionsSync
-from polar.v2026_04.customers import CustomersAsync, CustomersSync
-from polar.v2026_04.discounts import DiscountsAsync, DiscountsSync
-from polar.v2026_04.disputes import DisputesAsync, DisputesSync
-from polar.v2026_04.event_types import EventTypesAsync, EventTypesSync
-from polar.v2026_04.events import EventsAsync, EventsSync
-from polar.v2026_04.files import FilesAsync, FilesSync
-from polar.v2026_04.license_keys import LicenseKeysAsync, LicenseKeysSync
-from polar.v2026_04.members import MembersAsync, MembersSync
-from polar.v2026_04.meters import MetersAsync, MetersSync
-from polar.v2026_04.metrics import MetricsAsync, MetricsSync
-from polar.v2026_04.oauth2 import Oauth2Async, Oauth2Sync
-from polar.v2026_04.orders import OrdersAsync, OrdersSync
-from polar.v2026_04.organizations import OrganizationsAsync, OrganizationsSync
-from polar.v2026_04.payments import PaymentsAsync, PaymentsSync
-from polar.v2026_04.products import ProductsAsync, ProductsSync
-from polar.v2026_04.refunds import RefundsAsync, RefundsSync
-from polar.v2026_04.subscriptions import SubscriptionsAsync, SubscriptionsSync
-from polar.v2026_04.webhooks import WebhooksAsync, WebhooksSync
+from polar.v2026_04.services.benefit_grants import BenefitGrantsAsync, BenefitGrantsSync
+from polar.v2026_04.services.benefits import BenefitsAsync, BenefitsSync
+from polar.v2026_04.services.checkout_links import CheckoutLinksAsync, CheckoutLinksSync
+from polar.v2026_04.services.checkouts import CheckoutsAsync, CheckoutsSync
+from polar.v2026_04.services.custom_fields import CustomFieldsAsync, CustomFieldsSync
+from polar.v2026_04.services.customer_meters import (
+    CustomerMetersAsync,
+    CustomerMetersSync,
+)
+from polar.v2026_04.services.customer_portal import (
+    CustomerPortalAsync,
+    CustomerPortalSync,
+)
+from polar.v2026_04.services.customer_seats import CustomerSeatsAsync, CustomerSeatsSync
+from polar.v2026_04.services.customer_sessions import (
+    CustomerSessionsAsync,
+    CustomerSessionsSync,
+)
+from polar.v2026_04.services.customers import CustomersAsync, CustomersSync
+from polar.v2026_04.services.discounts import DiscountsAsync, DiscountsSync
+from polar.v2026_04.services.disputes import DisputesAsync, DisputesSync
+from polar.v2026_04.services.event_types import EventTypesAsync, EventTypesSync
+from polar.v2026_04.services.events import EventsAsync, EventsSync
+from polar.v2026_04.services.files import FilesAsync, FilesSync
+from polar.v2026_04.services.license_keys import LicenseKeysAsync, LicenseKeysSync
+from polar.v2026_04.services.members import MembersAsync, MembersSync
+from polar.v2026_04.services.meters import MetersAsync, MetersSync
+from polar.v2026_04.services.metrics import MetricsAsync, MetricsSync
+from polar.v2026_04.services.oauth2 import Oauth2Async, Oauth2Sync
+from polar.v2026_04.services.orders import OrdersAsync, OrdersSync
+from polar.v2026_04.services.organizations import OrganizationsAsync, OrganizationsSync
+from polar.v2026_04.services.payments import PaymentsAsync, PaymentsSync
+from polar.v2026_04.services.products import ProductsAsync, ProductsSync
+from polar.v2026_04.services.refunds import RefundsAsync, RefundsSync
+from polar.v2026_04.services.subscriptions import SubscriptionsAsync, SubscriptionsSync
+from polar.v2026_04.services.webhooks import WebhooksAsync, WebhooksSync
 
 Environment = typing.Literal["production", "sandbox"]
 SERVERS: typing.Final[dict[Environment, str]] = {

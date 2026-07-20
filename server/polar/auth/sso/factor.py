@@ -22,9 +22,6 @@ def _discovery_endpoint(issuer: str) -> str:
 class SSOFactorMixin:
     """Shared behavior for organization SSO OIDC factors.
 
-    The discovery endpoint is resolved per connection from its issuer, so it's an
-    instance property here rather than reauth's class-level constant.
-
     An SSO login resolves the user from the verified `id_token` email and never
     persists an enrollment, so the storage hooks go unused: enrollment lookups
     return `None` (steering reauth's callback to its identity-less path) and the
@@ -34,15 +31,6 @@ class SSOFactorMixin:
     connection_id: uuid.UUID
     organization_slug: str
     name: str | None
-    _discovery_endpoint: str
-
-    @property
-    def DISCOVERY_ENDPOINT(self) -> str:
-        return self._discovery_endpoint
-
-    @DISCOVERY_ENDPOINT.setter
-    def DISCOVERY_ENDPOINT(self, value: str) -> None:
-        self._discovery_endpoint = value
 
     async def get_enrollment(
         self, identity_id: uuid.UUID
@@ -77,12 +65,12 @@ class SSOClientSecretFactor(SSOFactorMixin, OIDCFactor):
             identifier=str(connection_id),
             client_id=client_id,
             client_secret=client_secret,
+            discovery_endpoint=_discovery_endpoint(issuer),
             state_service=state_service,
         )
         self.connection_id = connection_id
         self.organization_slug = organization_slug
         self.name = name
-        self.DISCOVERY_ENDPOINT = _discovery_endpoint(issuer)
 
 
 class SSOPrivateKeyJWTFactor(SSOFactorMixin, PrivateKeyJWTOIDCFactor):
@@ -101,12 +89,12 @@ class SSOPrivateKeyJWTFactor(SSOFactorMixin, PrivateKeyJWTOIDCFactor):
             client_id=client_id,
             jwks=jwt.PyJWKSet.from_dict(settings.JWKS.as_dict(is_private=True)),
             kid=settings.CURRENT_JWK_KID,
+            discovery_endpoint=_discovery_endpoint(issuer),
             state_service=state_service,
         )
         self.connection_id = connection_id
         self.organization_slug = organization_slug
         self.name = name
-        self.DISCOVERY_ENDPOINT = _discovery_endpoint(issuer)
 
 
 def build_sso_factor(

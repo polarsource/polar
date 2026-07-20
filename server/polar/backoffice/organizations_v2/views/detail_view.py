@@ -46,12 +46,14 @@ class OrganizationDetailView:
         impersonate_user: User | None = None,
         startup_program_status: str | None = None,
         has_open_case: bool = False,
+        has_risk_signals: bool = False,
     ):
         self.org = organization
         self.ai_verdict = ai_verdict
         self.owner_email = owner_email
         self.impersonate_user = impersonate_user
         self.has_open_case = has_open_case
+        self.has_risk_signals = has_risk_signals
         # Startup Program status string is derived via the Polar API and
         # populated by the endpoint; ``None`` means "feature disabled" OR
         # "not invited". The card collapses both into the same rendering.
@@ -102,6 +104,8 @@ class OrganizationDetailView:
                 )
                 + "?section=reviews",
                 active=current_section == "reviews",
+                dot=self.has_risk_signals,
+                badge_variant="error",
             ),
             Tab(
                 "Support Cases",

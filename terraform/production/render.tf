@@ -374,11 +374,12 @@ module "production" {
   }
 
   stripe_secrets = {
-    connect_webhook_secret = var.stripe_connect_webhook_secret_production
-    secret_key             = var.stripe_secret_key_production
-    webhook_secret         = var.stripe_webhook_secret_production
-    app_client_id          = var.stripe_app_client_id
-    app_client_link_id     = var.stripe_app_client_link_id
+    connect_webhook_secret      = var.stripe_connect_webhook_secret_production
+    secret_key                  = var.stripe_secret_key_production
+    webhook_secret              = var.stripe_webhook_secret_production
+    account_risk_webhook_secret = var.stripe_account_risk_webhook_secret_production
+    app_client_id               = var.stripe_app_client_id
+    app_client_link_id          = var.stripe_app_client_link_id
   }
 
   logfire_config = {

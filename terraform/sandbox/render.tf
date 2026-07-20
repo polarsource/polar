@@ -65,10 +65,6 @@ locals {
   redis_host = render_redis.redis_sandbox.id
   redis_port = "6379"
 
-  # Production Redis connection info - for the drain worker
-  production_redis_host = data.render_redis.redis.id
-  production_redis_port = "6379"
-
   # Forwarded allow IPs: Cloudflare ranges + Render proxy
   render_proxy_cidr   = "10.0.0.0/8"
   forwarded_allow_ips = "${module.cloudflare_ips.all_ranges},${local.render_proxy_cidr}"
@@ -161,17 +157,6 @@ module "sandbox" {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
       plan               = "standard"
       dramatiq_prom_port = "10003"
-    }
-
-    # Temporary drain worker - listens to ALL queues on production Redis
-    # This allows draining in-flight tasks from the current shared Redis
-    worker-sandbox-drain = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues high_priority medium_priority low_priority webhooks tinybird invoices_and_receipts"
-      dramatiq_prom_port = "10004"
-      plan               = "standard"
-      redis_host         = local.production_redis_host
-      redis_port         = local.production_redis_port
-      redis_db           = "1"
     }
   }
 
@@ -269,11 +254,12 @@ module "sandbox" {
   }
 
   stripe_secrets = {
-    connect_webhook_secret = var.stripe_connect_webhook_secret_sandbox
-    secret_key             = var.stripe_secret_key_sandbox
-    webhook_secret         = var.stripe_webhook_secret_sandbox
-    app_client_id          = var.stripe_app_client_id
-    app_client_link_id     = var.stripe_app_client_link_id
+    connect_webhook_secret      = var.stripe_connect_webhook_secret_sandbox
+    secret_key                  = var.stripe_secret_key_sandbox
+    webhook_secret              = var.stripe_webhook_secret_sandbox
+    account_risk_webhook_secret = var.stripe_account_risk_webhook_secret_sandbox
+    app_client_id               = var.stripe_app_client_id
+    app_client_link_id          = var.stripe_app_client_link_id
   }
 
   apple_secrets = {

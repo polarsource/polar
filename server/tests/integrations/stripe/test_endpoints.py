@@ -1,7 +1,10 @@
 import pytest
+from fastapi import HTTPException
 from httpx import AsyncClient
+from starlette.requests import Request
 
 from polar.config import settings
+from polar.integrations.stripe.endpoints import WebhookEventGetter
 
 
 @pytest.mark.asyncio
@@ -42,3 +45,39 @@ class TestStripeConnectRefresh:
         assert response.headers["location"] == settings.generate_frontend_url(
             settings.FRONTEND_DEFAULT_RETURN_PATH
         )
+
+
+@pytest.mark.asyncio
+class TestWebhookAccountRisk:
+    async def test_disabled_when_secret_unset(self, client: AsyncClient) -> None:
+        # STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET defaults to "" in tests; the endpoint
+        # must reject rather than verify a forgeable empty-key signature.
+        assert settings.STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET == ""
+
+        response = await client.post(
+            "/v1/integrations/stripe/webhook-account-risk",
+            headers={"Stripe-Signature": "t=1,v1=forged"},
+            content=b"{}",
+        )
+
+        assert response.status_code == 404
+
+
+def _request_without_signature() -> Request:
+    async def receive() -> dict[str, object]:
+        return {"type": "http.request", "body": b"{}", "more_body": False}
+
+    return Request({"type": "http", "headers": []}, receive)
+
+
+@pytest.mark.asyncio
+class TestWebhookEventGetter:
+    async def test_empty_secret_returns_404(self) -> None:
+        with pytest.raises(HTTPException) as exc_info:
+            await WebhookEventGetter("")(_request_without_signature())
+        assert exc_info.value.status_code == 404
+
+    async def test_missing_signature_header_returns_400(self) -> None:
+        with pytest.raises(HTTPException) as exc_info:
+            await WebhookEventGetter("whsec_test")(_request_without_signature())
+        assert exc_info.value.status_code == 400

@@ -7,20 +7,29 @@ from pytest_mock import MockerFixture
 from sqlalchemy.orm import selectinload
 
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
-from polar.integrations.stripe.tasks import payment_intent_succeeded
+from polar.integrations.stripe.tasks import (
+    account_risk_signal,
+    payment_intent_succeeded,
+)
 from polar.models import (
     Customer,
     Organization,
     PaymentMethod,
+    User,
 )
+from polar.models.organization import OrganizationStatus
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_order,
+    create_payout_account,
     create_product,
 )
+
+WEBSITE_EVENT_TYPE = "v2.core.account_signals.fraudulent_website_ready"
 
 
 def build_stripe_payment_intent(
@@ -52,6 +61,72 @@ def build_stripe_payment_intent(
         },
         stripe_lib.api_key,
     )
+
+
+@pytest.mark.asyncio
+class TestAccountRiskSignal:
+    def _mock_thin_event(self, mocker: MockerFixture) -> None:
+        event_mock = mocker.MagicMock()
+        event_mock.data = {"id": "evt_test", "type": WEBSITE_EVENT_TYPE}
+        context_mock = mocker.patch(
+            "polar.integrations.stripe.tasks.external_event_service.handle_stripe"
+        )
+        context_mock.return_value.__aenter__ = AsyncMock(return_value=event_mock)
+        context_mock.return_value.__aexit__ = AsyncMock(return_value=None)
+
+    async def test_actionable_signal_puts_org_under_review(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.status = OrganizationStatus.ACTIVE
+        await save_fixture(organization)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, stripe_id="acct_risk_test"
+        )
+
+        self._mock_thin_event(mocker)
+        mocker.patch(
+            "polar.integrations.stripe.tasks.stripe_service.get_account_risk_event",
+            new=AsyncMock(
+                return_value={
+                    "type": WEBSITE_EVENT_TYPE,
+                    "data": {
+                        "account": payout_account.stripe_id,
+                        "risk_level": "elevated",
+                        "details": "Deceptive website",
+                    },
+                }
+            ),
+        )
+
+        await account_risk_signal(uuid.uuid4())
+
+        organization_repository = OrganizationRepository.from_session(session)
+        updated = await organization_repository.get_by_id(organization.id)
+        assert updated is not None
+        assert updated.status == OrganizationStatus.REVIEW
+
+    async def test_unparseable_event_is_a_noop(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        self._mock_thin_event(mocker)
+        mocker.patch(
+            "polar.integrations.stripe.tasks.stripe_service.get_account_risk_event",
+            new=AsyncMock(return_value={"type": "charge.succeeded", "data": {}}),
+        )
+        handle_mock = mocker.patch(
+            "polar.integrations.stripe.tasks.organization_service"
+            ".handle_account_risk_signal"
+        )
+
+        await account_risk_signal(uuid.uuid4())
+
+        handle_mock.assert_not_called()
 
 
 @pytest.mark.asyncio

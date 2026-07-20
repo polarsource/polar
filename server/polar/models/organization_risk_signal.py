@@ -28,6 +28,10 @@ class OrganizationRiskSignal(RecordModel):
         FRAUDULENT_WEBSITE = "fraudulent_website"
         FRAUDULENT_MERCHANT = "fraudulent_merchant"
 
+    # risk_level is a free-form string so future sources can use their own
+    # vocabulary; this is the one value all consumers treat as most severe.
+    HIGHEST_RISK_LEVEL = "highest"
+
     __tablename__ = "organization_risk_signals"
 
     organization_id: Mapped[UUID] = mapped_column(

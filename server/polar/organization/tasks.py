@@ -192,6 +192,10 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
             organization_id=organization_id,
             auto_approve_eligible=is_auto_approve_eligible,
         )
+        enqueue_job(
+            "organization.evaluate_website_risk",
+            organization_id=organization_id,
+        )
 
 
 @actor(actor_name="organization.deletion_requested", priority=TaskPriority.HIGH)
@@ -1195,3 +1199,14 @@ async def _prepare_benefit_grants(
         skipped_conflicts=skipped_conflicts,
     )
     return count
+
+
+@actor(actor_name="organization.evaluate_website_risk", priority=TaskPriority.LOW)
+async def evaluate_website_risk(organization_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(organization_id)
+        if organization is None:
+            raise OrganizationDoesNotExist(organization_id)
+
+        await organization_service.evaluate_website_risk(session, organization)

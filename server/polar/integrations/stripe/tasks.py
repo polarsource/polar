@@ -13,6 +13,7 @@ from polar.external_event.service import external_event as external_event_servic
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.logging import Logger
 from polar.models.dispute import DisputeStatus
+from polar.organization.service import organization as organization_service
 from polar.payment.service import UnhandledPaymentIntent
 from polar.payment.service import payment as payment_service
 from polar.payment_method.service import payment_method as payment_method_service
@@ -29,6 +30,7 @@ from polar.user.service import user as user_service
 from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry, get_retries
 
 from . import payment
+from .account_risk import parse_account_risk_event
 
 log: Logger = structlog.get_logger()
 
@@ -64,6 +66,29 @@ async def account_updated(event_id: uuid.UUID) -> None:
             await payout_account_service.update_account_from_stripe(
                 session, stripe_account=stripe_account
             )
+
+
+@actor(actor_name="stripe.account_risk_signal", priority=TaskPriority.MEDIUM)
+@stripe_api_connection_error_retry
+async def account_risk_signal(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            stripe_event_id = event.data.get("id")
+            if not stripe_event_id:
+                log.warning("Stripe risk event without id")
+                return
+
+            # These are thin events with no inline data; fetch the full event.
+            full_event = await stripe_service.get_account_risk_event(stripe_event_id)
+            signal = parse_account_risk_event(full_event)
+            if signal is None:
+                log.warning(
+                    "Unparseable Stripe risk event",
+                    stripe_event_id=stripe_event_id,
+                )
+                return
+
+            await organization_service.handle_account_risk_signal(session, signal)
 
 
 @actor(actor_name="stripe.webhook.payment_intent.succeeded", priority=TaskPriority.HIGH)

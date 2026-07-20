@@ -73,17 +73,13 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
         for criterion, is_desc in sorting:
             clause_function = desc if is_desc else asc
             if criterion == CustomFieldSortProperty.created_at:
-                order_by_clauses.append(
-                    clause_function(CustomFieldSortProperty.created_at)
-                )
+                order_by_clauses.append(clause_function(CustomField.created_at))
             elif criterion == CustomFieldSortProperty.slug:
-                order_by_clauses.append(clause_function(CustomFieldSortProperty.slug))
+                order_by_clauses.append(clause_function(CustomField.slug))
             elif criterion == CustomFieldSortProperty.custom_field_name:
-                order_by_clauses.append(
-                    clause_function(CustomFieldSortProperty.custom_field_name)
-                )
+                order_by_clauses.append(clause_function(CustomField.name))
             elif criterion == CustomFieldSortProperty.type:
-                order_by_clauses.append(clause_function(CustomFieldSortProperty.type))
+                order_by_clauses.append(clause_function(CustomField.type))
         statement = statement.order_by(*order_by_clauses)
 
         return await paginate(session, statement, pagination=pagination)

@@ -10,6 +10,8 @@ from polar.models.external_event import ExternalEventSource
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
+from .account_risk import is_account_risk_event
+
 log = structlog.get_logger()
 
 stripe.api_key = settings.STRIPE_SECRET_KEY
@@ -69,8 +71,15 @@ class WebhookEventGetter:
         self.secret = secret
 
     async def __call__(self, request: Request) -> stripe.Event:
+        # An empty secret verifies against an empty key, which anyone can forge.
+        # Treat it as a disabled endpoint.
+        if not self.secret:
+            raise HTTPException(status_code=404)
+
         payload = await request.body()
-        sig_header = request.headers["Stripe-Signature"]
+        sig_header = request.headers.get("Stripe-Signature")
+        if sig_header is None:
+            raise HTTPException(status_code=400)
 
         try:
             return stripe.Webhook.construct_event(payload, sig_header, self.secret)
@@ -100,3 +109,24 @@ async def webhook_connect(
 ) -> None:
     if event["type"] in CONNECT_IMPLEMENTED_WEBHOOKS:
         return await enqueue(session, event)
+
+
+@router.post(
+    "/webhook-account-risk",
+    status_code=202,
+    name="integrations.stripe.webhook_account_risk",
+)
+async def webhook_account_risk(
+    session: AsyncSession = Depends(get_db_session),
+    event: stripe.Event = Depends(
+        WebhookEventGetter(settings.STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET)
+    ),
+) -> None:
+    if is_account_risk_event(event["type"]):
+        await external_event_service.enqueue(
+            session,
+            ExternalEventSource.stripe,
+            "stripe.account_risk_signal",
+            event.id,
+            event,
+        )

@@ -7,7 +7,7 @@
   "files": [
     "dist", "README.md", "LICENSE"
   ],
-  "engines": { "node": ">=18" },
+  "engines": { "node": ">=22" },
   "main": "dist/index.cjs",
   "module": "dist/index.mjs",
   "exports": {

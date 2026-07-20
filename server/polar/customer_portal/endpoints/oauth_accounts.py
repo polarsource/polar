@@ -36,6 +36,7 @@ log = structlog.get_logger()
 
 router = APIRouter(prefix="/oauth-accounts", tags=["oauth-accounts", APITag.private])
 
+
 OAUTH_CLIENTS: dict[CustomerOAuthPlatform, BaseOAuth2[Any]] = {
     CustomerOAuthPlatform.github: GitHubOAuth2(
         settings.GITHUB_CLIENT_ID, settings.GITHUB_CLIENT_SECRET
@@ -196,6 +197,19 @@ async def callback(
             for k, v in _get_response_attributes(e.response).items():
                 span.set_attribute(k, v)
         return RedirectResponse(redirect_url, 303)
+    except httpx.RequestError as e:
+        log.warning(
+            "customer_portal.oauth_accounts.callback.access_token_network_error",
+            platform=platform.value,
+            customer_id=str(customer.id),
+            error=str(e),
+        )
+        redirect_url = add_query_parameters(
+            redirect_url,
+            error="Failed to get access token. Please try again later.",
+            error_platform=platform.value,
+        )
+        return RedirectResponse(redirect_url, 303)
 
     # httpx-oauth only raises on status >= 400, but some providers (e.g. GitHub)
     # return HTTP 200 with an error body for invalid/expired/reused codes.
@@ -245,6 +259,19 @@ async def callback(
         ) as span:
             for k, v in _get_response_attributes(e.response).items():
                 span.set_attribute(k, v)
+        return RedirectResponse(redirect_url, 303)
+    except httpx.RequestError as e:
+        log.warning(
+            "customer_portal.oauth_accounts.callback.profile_network_error",
+            platform=platform.value,
+            customer_id=str(customer.id),
+            error=str(e),
+        )
+        redirect_url = add_query_parameters(
+            redirect_url,
+            error="Failed to get profile information. Please try again later.",
+            error_platform=platform.value,
+        )
         return RedirectResponse(redirect_url, 303)
 
     oauth_account = CustomerOAuthAccount(

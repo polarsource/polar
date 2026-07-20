@@ -65,10 +65,6 @@ locals {
   redis_host = render_redis.redis_sandbox.id
   redis_port = "6379"
 
-  # Production Redis connection info - for the drain worker
-  production_redis_host = data.render_redis.redis.id
-  production_redis_port = "6379"
-
   # Forwarded allow IPs: Cloudflare ranges + Render proxy
   render_proxy_cidr   = "10.0.0.0/8"
   forwarded_allow_ips = "${module.cloudflare_ips.all_ranges},${local.render_proxy_cidr}"
@@ -161,17 +157,6 @@ module "sandbox" {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
       plan               = "standard"
       dramatiq_prom_port = "10003"
-    }
-
-    # Temporary drain worker - listens to ALL queues on production Redis
-    # This allows draining in-flight tasks from the current shared Redis
-    worker-sandbox-drain = {
-      start_command      = "uv run dramatiq polar.worker.run -p 2 -t 4 --queues high_priority medium_priority low_priority webhooks tinybird invoices_and_receipts"
-      dramatiq_prom_port = "10004"
-      plan               = "standard"
-      redis_host         = local.production_redis_host
-      redis_port         = local.production_redis_port
-      redis_db           = "1"
     }
   }
 

@@ -418,6 +418,30 @@ async def payment_method_detached(event_id: uuid.UUID) -> None:
 
 
 @actor(
+    actor_name="stripe.webhook.payment_method.automatically_updated",
+    priority=TaskPriority.HIGH,
+)
+@stripe_api_connection_error_retry
+async def payment_method_automatically_updated(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            stripe_payment_method = cast(
+                stripe_lib.PaymentMethod, event.stripe_data.data.object
+            )
+            repository = PaymentMethodRepository.from_session(session)
+            payment_method = await repository.get_by_processor_id(
+                PaymentProcessor.stripe,
+                stripe_payment_method.id,
+                options=repository.get_eager_options(),
+            )
+            if payment_method is None:
+                return
+            await payment_method_service.upsert_from_stripe(
+                session, payment_method.customer, stripe_payment_method
+            )
+
+
+@actor(
     actor_name="stripe.webhook.identity.verification_session.verified",
     priority=TaskPriority.HIGH,
 )

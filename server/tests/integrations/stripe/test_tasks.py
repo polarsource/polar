@@ -11,6 +11,7 @@ from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.integrations.stripe.tasks import (
     account_risk_signal,
     payment_intent_succeeded,
+    payment_method_automatically_updated,
     payment_method_detached,
 )
 from polar.models import (
@@ -307,20 +308,26 @@ class TestPaymentIntentSucceeded:
         payment_method_service_mock.assert_not_called()
 
 
-def build_stripe_detached_payment_method(
-    *, payment_method_id: str = "pm_test"
+def build_stripe_card_payment_method(
+    *,
+    payment_method_id: str = "pm_test",
+    customer_id: str | None = None,
+    brand: str = "visa",
+    last4: str = "4242",
+    exp_month: int = 12,
+    exp_year: int = 2030,
 ) -> stripe_lib.PaymentMethod:
     return stripe_lib.PaymentMethod.construct_from(
         {
             "id": payment_method_id,
             "object": "payment_method",
             "type": "card",
-            "customer": None,
+            "customer": customer_id,
             "card": {
-                "brand": "visa",
-                "last4": "4242",
-                "exp_month": 12,
-                "exp_year": 2030,
+                "brand": brand,
+                "last4": last4,
+                "exp_month": exp_month,
+                "exp_year": exp_year,
             },
         },
         stripe_lib.api_key,
@@ -361,7 +368,7 @@ class TestPaymentMethodDetached:
 
         patch_stripe_event(
             mocker,
-            build_stripe_detached_payment_method(payment_method_id="pm_detach_test"),
+            build_stripe_card_payment_method(payment_method_id="pm_detach_test"),
         )
         # Stripe already detached on their side; our delete_payment_method call
         # would fail — swallow it.
@@ -392,7 +399,7 @@ class TestPaymentMethodDetached:
         # Given: Webhook for a payment method we don't have on file
         patch_stripe_event(
             mocker,
-            build_stripe_detached_payment_method(payment_method_id="pm_unknown"),
+            build_stripe_card_payment_method(payment_method_id="pm_unknown"),
         )
         delete_mock = mocker.patch(
             "polar.integrations.stripe.tasks.payment_method_service.delete"
@@ -403,3 +410,67 @@ class TestPaymentMethodDetached:
 
         # Then: The service is not invoked
         delete_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestPaymentMethodAutomaticallyUpdated:
+    async def test_updates_matching_payment_method(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+    ) -> None:
+        await create_payment_method(
+            save_fixture,
+            customer,
+            processor_id="pm_update_test",
+            method_metadata={
+                "brand": "visa",
+                "last4": "4242",
+                "exp_month": 12,
+                "exp_year": 2026,
+            },
+        )
+
+        patch_stripe_event(
+            mocker,
+            build_stripe_card_payment_method(
+                payment_method_id="pm_update_test",
+                customer_id="cus_test",
+                brand="mastercard",
+                last4="9999",
+                exp_month=6,
+                exp_year=2032,
+            ),
+        )
+
+        await payment_method_automatically_updated(uuid.uuid4())
+
+        repository = PaymentMethodRepository.from_session(session)
+        payment_method = await repository.get_by_processor_id(
+            PaymentProcessor.stripe, "pm_update_test"
+        )
+        assert payment_method is not None
+        assert payment_method.method_metadata == {
+            "brand": "mastercard",
+            "last4": "9999",
+            "exp_month": 6,
+            "exp_year": 2032,
+        }
+
+    async def test_unknown_payment_method_is_noop(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        patch_stripe_event(
+            mocker,
+            build_stripe_card_payment_method(payment_method_id="pm_unknown"),
+        )
+        upsert_mock = mocker.patch(
+            "polar.integrations.stripe.tasks.payment_method_service.upsert_from_stripe"
+        )
+
+        await payment_method_automatically_updated(uuid.uuid4())
+
+        upsert_mock.assert_not_called()

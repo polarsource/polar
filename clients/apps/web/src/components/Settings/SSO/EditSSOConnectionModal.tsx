@@ -41,9 +41,10 @@ export default function EditSSOConnectionModal({
   })
   const { control, handleSubmit, setError } = form
   const authMethod = useWatch({ control, name: 'auth_method' })
-  const preset = connection.configuration.issuer.startsWith(GOOGLE_ISSUER)
-    ? 'google'
-    : 'custom'
+  // Follows the edited issuer, so retargeting the connection at another provider
+  // brings the authentication method back.
+  const issuer = useWatch({ control, name: 'issuer' })
+  const preset = issuer?.startsWith(GOOGLE_ISSUER) ? 'google' : 'custom'
 
   const updateConnection = useUpdateSSOConnection(
     organization.id,

@@ -16,7 +16,6 @@ import {
   SSOConnectionFormValues,
   SSOProviderPreset,
   toConfiguration,
-  WORKSPACE_DOMAIN_PARAMETER,
 } from './SSOConnectionForm'
 
 export default function NewSSOConnectionModal({
@@ -36,32 +35,18 @@ export default function NewSSOConnectionModal({
       authorization_parameters: [],
     },
   })
-  const { control, handleSubmit, setError, setValue, getValues } = form
+  const { control, handleSubmit, setError, setValue } = form
   const authMethod = useWatch({ control, name: 'auth_method' })
 
   const onPresetChange = useCallback(
     (value: SSOProviderPreset) => {
       setPreset(value)
-      const parameters = getValues('authorization_parameters')
-
-      if (value !== 'google') {
-        setValue(
-          'authorization_parameters',
-          parameters.filter(({ key }) => key !== WORKSPACE_DOMAIN_PARAMETER),
-        )
-        return
-      }
-
-      setValue('issuer', GOOGLE_ISSUER)
-      setValue('auth_method', 'client_secret')
-      if (!parameters.some(({ key }) => key === WORKSPACE_DOMAIN_PARAMETER)) {
-        setValue('authorization_parameters', [
-          ...parameters,
-          { key: WORKSPACE_DOMAIN_PARAMETER, value: '' },
-        ])
+      if (value === 'google') {
+        setValue('issuer', GOOGLE_ISSUER, { shouldValidate: true })
+        setValue('auth_method', 'client_secret')
       }
     },
-    [setValue, getValues],
+    [setValue],
   )
 
   const createConnection = useCreateSSOConnection(organization.id)

@@ -9,6 +9,7 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
+import { useEffect } from 'react'
 import { useFieldArray, useFormContext } from 'react-hook-form'
 import {
   SSOConnectionFormValues,
@@ -29,14 +30,27 @@ const SSOAuthorizationParamsFields = ({
 
   // Under the Google preset, the `hd` entry is surfaced as a friendly Workspace
   // domain input. It's the same array entry, so the two views can't diverge.
-  const workspaceDomainIndex =
-    preset === 'google'
-      ? fields.findIndex(({ key }) => key === WORKSPACE_DOMAIN_PARAMETER)
-      : -1
+  const workspaceDomainIndex = fields.findIndex(
+    ({ key }) => key === WORKSPACE_DOMAIN_PARAMETER,
+  )
+  const showWorkspaceDomain = preset === 'google' && workspaceDomainIndex >= 0
+
+  // The entry has to exist for the input to bind to, including on a connection
+  // saved without one — an empty domain isn't persisted.
+  useEffect(() => {
+    if (preset === 'google' && workspaceDomainIndex < 0) {
+      append(
+        { key: WORKSPACE_DOMAIN_PARAMETER, value: '' },
+        { shouldFocus: false },
+      )
+    } else if (preset !== 'google' && workspaceDomainIndex >= 0) {
+      remove(workspaceDomainIndex)
+    }
+  }, [preset, workspaceDomainIndex, append, remove])
 
   return (
     <Box flexDirection="column" gap="l">
-      {workspaceDomainIndex >= 0 && (
+      {showWorkspaceDomain && (
         <FormField
           control={control}
           name={`authorization_parameters.${workspaceDomainIndex}.value`}
@@ -63,7 +77,7 @@ const SSOAuthorizationParamsFields = ({
       <Box flexDirection="column" gap="s">
         <Text variant="label">Additional authorization parameters</Text>
         {fields.map((entry, index) =>
-          index === workspaceDomainIndex ? null : (
+          showWorkspaceDomain && index === workspaceDomainIndex ? null : (
             <Box key={entry.id} gap="s" alignItems="start">
               <FormField
                 control={control}

@@ -292,8 +292,10 @@ class TestCreateSSOConnection:
         assert response.status_code == 422
 
     @pytest.mark.auth
+    @pytest.mark.parametrize("suffix", [DISCOVERY_PATH, f"{DISCOVERY_PATH}/", "/"])
     async def test_issuer_pasted_as_discovery_url(
         self,
+        suffix: str,
         client: AsyncClient,
         organization: Organization,
         sso_enabled_organization: Organization,
@@ -303,7 +305,7 @@ class TestCreateSSOConnection:
             f"/v1/organizations/{organization.id}/sso-connections/",
             json={
                 "configuration": {
-                    "issuer": f"https://idp.example.com{DISCOVERY_PATH}",
+                    "issuer": f"https://idp.example.com{suffix}",
                     "client_id": "client-id",
                     "auth_method": "client_secret",
                     "client_secret": "secret",

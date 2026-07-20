@@ -30,7 +30,7 @@ def _strip_discovery_path(value: Any) -> Any:
     """Accept the discovery URL where the issuer is expected: it's what providers
     document and what people paste."""
     if isinstance(value, str):
-        return value.strip().removesuffix(DISCOVERY_PATH)
+        return value.strip().rstrip("/").removesuffix(DISCOVERY_PATH)
     return value
 
 

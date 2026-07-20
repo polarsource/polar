@@ -28,11 +28,14 @@ export type SSOConnectionConfiguration =
 export const toConfiguration = (
   values: SSOConnectionFormValues,
 ): SSOConnectionConfiguration => {
-  const authorization_parameters = Object.fromEntries(
-    values.authorization_parameters
-      .map(({ key, value }) => [key.trim(), value.trim()] as const)
-      .filter(([key, value]) => key !== '' && value !== ''),
-  )
+  const authorization_parameters: Record<string, string> = {}
+  for (const entry of values.authorization_parameters) {
+    const key = entry.key.trim()
+    const value = entry.value.trim()
+    if (key !== '' && value !== '' && !(key in authorization_parameters)) {
+      authorization_parameters[key] = value
+    }
+  }
 
   return values.auth_method === 'private_key_jwt'
     ? {

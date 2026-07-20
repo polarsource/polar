@@ -2,11 +2,11 @@ from typing import Annotated, Any, Literal
 
 from pydantic import (
     UUID4,
+    AfterValidator,
     BeforeValidator,
     Discriminator,
     Field,
     StringConstraints,
-    field_validator,
 )
 
 from polar.kit.schemas import (
@@ -47,9 +47,20 @@ RESERVED_AUTHORIZATION_PARAMETERS = {
     "code_challenge_method",
 }
 
+
+def _validate_authorization_parameter_key(key: str) -> str:
+    if key in RESERVED_AUTHORIZATION_PARAMETERS:
+        raise ValueError(f"`{key}` is set by Polar and can't be overridden.")
+    return key
+
+
 AuthorizationParameters = Annotated[
     dict[
-        Annotated[str, StringConstraints(pattern=r"^[a-zA-Z0-9_.-]{1,64}$")],
+        Annotated[
+            str,
+            StringConstraints(pattern=r"^[a-zA-Z0-9_.-]{1,64}$"),
+            AfterValidator(_validate_authorization_parameter_key),
+        ],
         Annotated[str, StringConstraints(max_length=256)],
     ],
     Field(max_length=10),
@@ -69,14 +80,6 @@ class OIDCConfigurationBase(Schema):
     authorization_parameters: AuthorizationParameters = Field(
         default_factory=dict, description=AUTHORIZATION_PARAMETERS_DESCRIPTION
     )
-
-    @field_validator("authorization_parameters")
-    @classmethod
-    def validate_authorization_parameters(cls, value: dict[str, str]) -> dict[str, str]:
-        for key in value:
-            if key in RESERVED_AUTHORIZATION_PARAMETERS:
-                raise ValueError(f"`{key}` is set by Polar and can't be overridden.")
-        return value
 
 
 class OIDCConfigurationClientSecret(OIDCConfigurationBase):

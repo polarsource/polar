@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from typing import Any
 from uuid import UUID
 
 from polar.exceptions import PolarError
@@ -89,11 +90,17 @@ class OrganizationSSOConnectionService:
         ):
             raise LastSSOConnectionRequired()
         repository = OrganizationSSOConnectionRepository.from_session(session)
-        update_dict = {
+        update_dict: dict[str, Any] = {
             field: value
-            for field, value in update.model_dump(exclude_unset=True).items()
+            for field, value in update.model_dump(
+                exclude_unset=True, exclude={"configuration"}
+            ).items()
             if value is not None or field == "name"
         }
+
+        if update.configuration is not None:
+            update_dict["configuration"] = update.configuration.model_dump()
+
         return await repository.update(connection, update_dict=update_dict)
 
     async def delete(

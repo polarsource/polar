@@ -21,14 +21,12 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import type { Control } from 'react-hook-form'
-
-export interface SSOConnectionFormValues {
-  name: string
-  issuer: string
-  client_id: string
-  auth_method: 'client_secret' | 'private_key_jwt'
-  client_secret: string
-}
+import SSOAuthorizationParamsFields from './SSOAuthorizationParamsFields'
+import {
+  SSO_PROVIDER_PRESETS,
+  SSOConnectionFormValues,
+  SSOProviderPreset,
+} from './SSOConnectionForm'
 
 export const CopyField = ({
   label,
@@ -57,13 +55,37 @@ const SSOConnectionFormFields = ({
   authMethod,
   callbackURL,
   secretRequired,
+  preset,
+  onPresetChange,
 }: {
   control: Control<SSOConnectionFormValues>
   authMethod: SSOConnectionFormValues['auth_method']
   callbackURL: string
   secretRequired: boolean
+  preset: SSOProviderPreset
+  onPresetChange?: (preset: SSOProviderPreset) => void
 }) => (
   <>
+    {onPresetChange && (
+      <Box flexDirection="column" gap="xs">
+        <Text variant="label">Identity provider</Text>
+        <Select
+          onValueChange={(value) => onPresetChange(value as SSOProviderPreset)}
+          value={preset}
+        >
+          <SelectTrigger>
+            <SelectValue />
+          </SelectTrigger>
+          <SelectContent>
+            {SSO_PROVIDER_PRESETS.map(({ value, label }) => (
+              <SelectItem key={value} value={value}>
+                {label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Box>
+    )}
     <CopyField
       label="Callback URL"
       value={callbackURL}
@@ -118,27 +140,33 @@ const SSOConnectionFormFields = ({
         </FormItem>
       )}
     />
-    <FormField
-      control={control}
-      name="auth_method"
-      render={({ field }) => (
-        <FormItem className="flex flex-col gap-1">
-          <FormLabel>Authentication method</FormLabel>
-          <FormControl>
-            <Select onValueChange={field.onChange} value={field.value}>
-              <SelectTrigger>
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="client_secret">Client secret</SelectItem>
-                <SelectItem value="private_key_jwt">Private key JWT</SelectItem>
-              </SelectContent>
-            </Select>
-          </FormControl>
-          <FormMessage />
-        </FormItem>
-      )}
-    />
+    {/* Google only advertises client_secret, so the choice is the preset's. A
+        legacy connection stored with another method keeps the select. */}
+    {!(preset === 'google' && authMethod === 'client_secret') && (
+      <FormField
+        control={control}
+        name="auth_method"
+        render={({ field }) => (
+          <FormItem className="flex flex-col gap-1">
+            <FormLabel>Authentication method</FormLabel>
+            <FormControl>
+              <Select onValueChange={field.onChange} value={field.value}>
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="client_secret">Client secret</SelectItem>
+                  <SelectItem value="private_key_jwt">
+                    Private key JWT
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+            </FormControl>
+            <FormMessage />
+          </FormItem>
+        )}
+      />
+    )}
     {authMethod === 'private_key_jwt' ? (
       <CopyField
         label="JWKS URL"
@@ -163,6 +191,7 @@ const SSOConnectionFormFields = ({
         )}
       />
     )}
+    <SSOAuthorizationParamsFields preset={preset} />
   </>
 )
 

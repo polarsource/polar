@@ -24108,6 +24108,13 @@ export interface components {
        */
       client_id: string
       /**
+       * Authorization Parameters
+       * @description Additional parameters appended to the authorization request, e.g. `hd` to pin a Google Workspace domain.
+       */
+      authorization_parameters?: {
+        [key: string]: string
+      }
+      /**
        * @description Authentication method used against the identity provider. (enum property replaced by openapi-typescript)
        * @enum {string}
        */
@@ -24132,6 +24139,13 @@ export interface components {
        */
       client_id: string
       /**
+       * Authorization Parameters
+       * @description Additional parameters appended to the authorization request, e.g. `hd` to pin a Google Workspace domain.
+       */
+      authorization_parameters?: {
+        [key: string]: string
+      }
+      /**
        * @description Authentication method used against the identity provider. (enum property replaced by openapi-typescript)
        * @enum {string}
        */
@@ -24151,6 +24165,13 @@ export interface components {
       client_id: string
       /** @description Authentication method used against the identity provider. */
       auth_method: components['schemas']['OIDCAuthMethod']
+      /**
+       * Authorization Parameters
+       * @description Additional parameters appended to the authorization request, e.g. `hd` to pin a Google Workspace domain.
+       */
+      authorization_parameters: {
+        [key: string]: string
+      }
     }
     /** OffSessionChargesNotEnabled */
     OffSessionChargesNotEnabled: {

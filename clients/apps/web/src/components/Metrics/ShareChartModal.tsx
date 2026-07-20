@@ -120,14 +120,14 @@ export const ShareChartModal = ({
         className="flex flex-col items-start gap-8 max-md:w-full"
       >
         <div
-          className="max-md:w-full max-md:overflow-x-auto"
+          className="max-md:w-full max-md:overflow-x-clip"
           style={
             isScaled ? { height: preview.height * preview.scale } : undefined
           }
         >
           <div
             ref={chartRef}
-            className="dark:bg-polar-950 flex w-full max-w-4xl flex-col items-center justify-center gap-12 rounded-4xl bg-blue-50 p-12 max-md:min-w-[656px]"
+            className="dark:bg-polar-950 flex w-full max-w-4xl flex-col items-center justify-center gap-12 rounded-4xl bg-blue-50 p-12 max-md:min-w-[672px]"
             style={{
               backgroundImage:
                 theme === 'mono'

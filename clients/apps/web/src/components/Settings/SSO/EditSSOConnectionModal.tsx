@@ -2,7 +2,7 @@
 
 import { toast } from '@/components/Toast/use-toast'
 import { useUpdateSSOConnection } from '@/hooks/queries'
-import { extractApiErrorMessage } from '@/utils/api/errors'
+import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { getSSOCallbackURL } from '@/utils/auth'
 import { schemas } from '@polar-sh/client'
 import { Button, InlineModalHeader, Text } from '@polar-sh/orbit'
@@ -10,9 +10,13 @@ import { Box } from '@polar-sh/orbit/Box'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import SSOConnectionFormFields, {
+import SSOConnectionFormFields from './SSOConnectionFormFields'
+import {
+  GOOGLE_ISSUER,
   SSOConnectionFormValues,
-} from './SSOConnectionFormFields'
+  toConfiguration,
+  toFormParameters,
+} from './SSOConnectionForm'
 
 export default function EditSSOConnectionModal({
   organization,
@@ -32,10 +36,14 @@ export default function EditSSOConnectionModal({
       client_id: connection.configuration.client_id,
       auth_method: connection.configuration.auth_method,
       client_secret: '',
+      authorization_parameters: toFormParameters(connection.configuration),
     },
   })
-  const { control, handleSubmit } = form
+  const { control, handleSubmit, setError } = form
   const authMethod = useWatch({ control, name: 'auth_method' })
+  const preset = connection.configuration.issuer.startsWith(GOOGLE_ISSUER)
+    ? 'google'
+    : 'custom'
 
   const updateConnection = useUpdateSSOConnection(
     organization.id,
@@ -44,25 +52,17 @@ export default function EditSSOConnectionModal({
 
   const onSubmit = useCallback(
     async (values: SSOConnectionFormValues) => {
-      const configuration: schemas['OrganizationSSOConnectionUpdate']['configuration'] =
-        values.auth_method === 'private_key_jwt'
-          ? {
-              auth_method: 'private_key_jwt',
-              issuer: values.issuer,
-              client_id: values.client_id,
-            }
-          : {
-              auth_method: 'client_secret',
-              issuer: values.issuer,
-              client_id: values.client_id,
-              client_secret: values.client_secret,
-            }
-
       const { error } = await updateConnection.mutateAsync({
         name: values.name || null,
-        configuration,
+        configuration: toConfiguration(values),
       })
       if (error) {
+        if (Array.isArray(error.detail)) {
+          setValidationErrors(error.detail, setError, 2, [
+            'client_secret',
+            'private_key_jwt',
+          ])
+        }
         toast({
           title: 'Update failed',
           description: extractApiErrorMessage(error),
@@ -72,7 +72,7 @@ export default function EditSSOConnectionModal({
       toast({ title: 'SSO connection updated' })
       hide()
     },
-    [updateConnection, hide],
+    [updateConnection, setError, hide],
   )
 
   return (
@@ -91,6 +91,7 @@ export default function EditSSOConnectionModal({
                 authMethod={authMethod}
                 callbackURL={callbackURL}
                 secretRequired
+                preset={preset}
               />
               <Button
                 type="submit"

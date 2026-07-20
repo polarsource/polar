@@ -13,6 +13,7 @@ class MetadataSchema(MetadataInputMixin): ...
         pytest.param({"k" * 100: "value"}, id="too long key"),
         pytest.param({"key": "v" * 1000}, id="too long value"),
         pytest.param({f"key{i}": "value" for i in range(51)}, id="too many keys"),
+        pytest.param({"key": "va\x00lue"}, id="nul character in value"),
     ],
 )
 def test_invalid_input(metadata: dict[str, str | int | bool | float]) -> None:

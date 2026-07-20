@@ -55,6 +55,20 @@ EmptyStrToNoneValidator = AfterValidator(empty_str_to_none)
 EmptyStrToNone = Annotated[str | None, EmptyStrToNoneValidator]
 
 
+def reject_nul_character(value: str | None) -> str | None:
+    # PostgreSQL/asyncpg can't store the NUL character in `text`
+    # columns and rejects it at flush time with an opaque `DBAPIError`. Reject
+    # it at the validation boundary so the client gets a clear 422 instead of a
+    # broken request. We reject rather than strip: a NUL is usually a corrupted
+    # character (e.g. a mangled "º"), so silently dropping it would mask bad data.
+    if isinstance(value, str) and "\x00" in value:
+        raise ValueError("Input must not contain a NUL character (\\u0000).")
+    return value
+
+
+NoNulCharacterValidator = AfterValidator(reject_nul_character)
+
+
 def _validate_slug(value: str) -> str:
     slugified = slugify(value)
     if slugified != value:

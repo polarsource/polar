@@ -27,6 +27,7 @@ from polar.kit.schemas import (
     EmptyStrToNoneValidator,
     IDSchema,
     MergeJSONSchema,
+    NoNulCharacterValidator,
     Schema,
     SetSchemaReference,
     TimestampedSchema,
@@ -58,6 +59,7 @@ CustomerNameInput = Annotated[
     MaxLen(256),
     Field(description=_name_description, examples=[_name_example]),
     EmptyStrToNoneValidator,
+    NoNulCharacterValidator,
 ]
 
 
@@ -72,7 +74,9 @@ class CustomerCreateBase(MetadataInputMixin, Schema):
     )
     name: CustomerNameInput | None = None
     billing_address: AddressInput | None = None
-    tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
+    tax_id: Annotated[str | None, EmptyStrToNoneValidator, NoNulCharacterValidator] = (
+        None
+    )
     locale: Locale | None = None
     organization_id: OrganizationID | None = Field(
         default=None,
@@ -143,7 +147,9 @@ class CustomerUpdateBase(MetadataInputMixin, Schema):
     )
     name: CustomerNameInput | None = None
     billing_address: AddressInput | None = None
-    tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
+    tax_id: Annotated[str | None, EmptyStrToNoneValidator, NoNulCharacterValidator] = (
+        None
+    )
     locale: Locale | None = None
 
 

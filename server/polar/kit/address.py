@@ -8,7 +8,9 @@ from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.types import TypeDecorator
 
-from polar.kit.schemas import EmptyStrToNone
+from polar.kit.schemas import EmptyStrToNone, NoNulCharacterValidator
+
+AddressStringInput = Annotated[EmptyStrToNone, NoNulCharacterValidator]
 
 
 def upper_if_str(value: Any) -> Any:
@@ -150,11 +152,11 @@ class AddressDict(TypedDict):
 
 
 class Address(BaseModel):
-    line1: EmptyStrToNone | None = None
-    line2: EmptyStrToNone | None = None
-    postal_code: EmptyStrToNone | None = None
-    city: EmptyStrToNone | None = None
-    state: EmptyStrToNone | None = None
+    line1: AddressStringInput | None = None
+    line2: AddressStringInput | None = None
+    postal_code: AddressStringInput | None = None
+    city: AddressStringInput | None = None
+    state: AddressStringInput | None = None
     country: CountryAlpha2 = Field(examples=["US", "SE", "FR"])
 
     @model_validator(mode="after")

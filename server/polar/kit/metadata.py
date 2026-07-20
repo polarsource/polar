@@ -8,6 +8,8 @@ from sqlalchemy import ColumnExpressionArgument, Select, and_, or_, true
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, mapped_column
 
+from polar.kit.schemas import NoNulCharacterValidator
+
 MetadataColumn = Annotated[
     dict[str, Any], mapped_column(JSONB, nullable=False, default=dict)
 ]
@@ -31,6 +33,7 @@ _MetadataValueString = Annotated[
     StringConstraints(
         min_length=_MINIMUM_VALUE_LENGTH, max_length=_MAXIMUM_VALUE_LENGTH
     ),
+    NoNulCharacterValidator,
 ]
 MetadataValue = _MetadataValueString | int | float | bool
 

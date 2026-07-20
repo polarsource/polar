@@ -65,6 +65,15 @@ def test_valid(input: dict[str, str], expected: dict[str, str]) -> None:
     assert address.to_dict() == expected
 
 
+@pytest.mark.parametrize(
+    "field",
+    ["line1", "line2", "city", "state", "postal_code"],
+)
+def test_nul_character_raises_validation_error(field: str) -> None:
+    with pytest.raises(ValidationError):
+        Address.model_validate({"country": "FR", field: "va\x00lue"})
+
+
 class TestAddressInput:
     def test_lowercase_country_is_normalized_to_uppercase(self) -> None:
         address = AddressInput.model_validate({"country": "us"})

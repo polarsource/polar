@@ -44,6 +44,7 @@ from polar.kit.schemas import (
     HttpUrlToStr,
     IDSchema,
     Int32,
+    NoNulCharacterValidator,
     Schema,
     SetSchemaReference,
     StripValidator,
@@ -249,9 +250,13 @@ class CheckoutCreateBase(
     customer_name: CustomerNameInput | None = None
     customer_email: CustomerEmail | None = None
     customer_ip_address: CustomerIPAddress | None = None
-    customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
+    customer_billing_name: Annotated[
+        str | None, EmptyStrToNoneValidator, NoNulCharacterValidator
+    ] = None
     customer_billing_address: CustomerBillingAddressInput | None = None
-    customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
+    customer_tax_id: Annotated[
+        str | None, EmptyStrToNoneValidator, NoNulCharacterValidator
+    ] = None
     customer_metadata: MetadataField = Field(
         default_factory=dict, description=_customer_metadata_description
     )
@@ -371,9 +376,13 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     is_business_customer: bool | None = None
     customer_name: CustomerNameInput | None = None
     customer_email: CustomerEmail | None = None
-    customer_billing_name: Annotated[str | None, EmptyStrToNoneValidator] = None
+    customer_billing_name: Annotated[
+        str | None, EmptyStrToNoneValidator, NoNulCharacterValidator
+    ] = None
     customer_billing_address: CustomerBillingAddressInput | None = None
-    customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
+    customer_tax_id: Annotated[
+        str | None, EmptyStrToNoneValidator, NoNulCharacterValidator
+    ] = None
     locale: Locale | None = None
 
 

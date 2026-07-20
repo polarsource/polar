@@ -194,5 +194,5 @@ exclude-newer = "1 week"
 exclude-newer-package = { reauth = false } # Reauth is brand new, but remember to remove this exclusion when stabilized
 
 [tool.uv.sources]
-dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }
+dramatiq = { git = "https://github.com/LincolnPuzey/dramatiq", rev = "fix_asyncio_exc_ref_cycle" }
 polar-sdk = { url = "https://files.pythonhosted.org/packages/dc/e0/a88026b9432c7e2c0c096911ddc97cb06f483036a00a8afd5254efe1c16a/polar_sdk-0.31.7-py3-none-any.whl" }

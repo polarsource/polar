@@ -26,7 +26,9 @@ export const UpdateSubscriptionProductWarning = ({
       {trialOutcome?.kind === 'ends' && (
         <p className="text-sm text-yellow-700">
           This change will end the current trial and{' '}
-          <strong className="font-medium">charge the customer immediately</strong>{' '}
+          <strong className="font-medium">
+            charge the customer immediately
+          </strong>{' '}
           for the first billing period of{' '}
           <strong className="font-medium">{selectedProduct.name}</strong>.
         </p>
@@ -42,8 +44,8 @@ export const UpdateSubscriptionProductWarning = ({
       )}
       <p className="text-sm text-yellow-700">
         By updating this subscription, the customer will get access to{' '}
-        <strong className="font-medium">{selectedProduct.name}</strong> benefits,
-        and lose access to{' '}
+        <strong className="font-medium">{selectedProduct.name}</strong>{' '}
+        benefits, and lose access to{' '}
         <strong className="font-medium">{subscription.product.name}</strong>{' '}
         benefits.
       </p>

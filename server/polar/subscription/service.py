@@ -3106,7 +3106,7 @@ class SubscriptionService:
         return await self._send_customer_email(
             session,
             subscription,
-            subject_template="Your {product.name} subscription payment is past due",
+            subject_template="Your {product.name} payment failed",
             template_name="subscription_past_due",
         )
 

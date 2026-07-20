@@ -6,6 +6,7 @@ import {
   Text,
   WrapperOrganization,
 } from '../components/foundation'
+import InfoBox from '../components/InfoBox'
 import { organization, product } from '../preview'
 import type { schemas } from '../types'
 
@@ -19,23 +20,24 @@ export function SubscriptionPastDue({
   return (
     <WrapperOrganization
       organization={organization}
-      preview={`Action needed: update your payment method for ${product.name}`}
+      preview={`Action needed: your ${product.name} payment failed`}
     >
-      <Intro headline="We couldn&rsquo;t process your payment">
-        We tried to charge your payment method for your{' '}
+      <Intro headline="Your payment failed">
+        We couldn&rsquo;t charge your payment method for your{' '}
         <Text as="span" weight="medium">
           {product.name}
         </Text>{' '}
-        subscription, but it didn&rsquo;t go through. This can happen for a
-        number of reasons, like an expired card or a temporary bank hold.
+        subscription. This is usually an expired card or a temporary bank hold.
       </Intro>
-      <Text>
-        Until the payment goes through, your access to{' '}
-        <Text as="span" weight="medium">
-          {product.name}
-        </Text>{' '}
-        won&rsquo;t be available.
-      </Text>
+      <InfoBox title="Your subscription is on hold" variant="error">
+        <Text noMargin>
+          Access to{' '}
+          <Text as="span" weight="medium">
+            {product.name}
+          </Text>{' '}
+          stays unavailable until the payment goes through.
+        </Text>
+      </InfoBox>
       {payment_url ? (
         <>
           <Button href={payment_url}>Update payment method</Button>

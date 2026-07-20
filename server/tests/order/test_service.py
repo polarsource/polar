@@ -2246,6 +2246,7 @@ class TestCreateSubscriptionOrder:
 
     async def test_sync_under_minimum_emits_paid_transition_once(
         self,
+        mocker: MockerFixture,
         calculate_tax_mock: MagicMock,
         enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
@@ -2279,6 +2280,8 @@ class TestCreateSubscriptionOrder:
             subscription=subscription,
         )
 
+        on_order_paid_spy = mocker.spy(order_service, "_on_order_paid")
+
         order = await order_service.create_subscription_order(
             session,
             subscription,
@@ -2288,6 +2291,59 @@ class TestCreateSubscriptionOrder:
 
         assert order.status == OrderStatus.paid
         assert order.due_amount < get_minimum_currency_amount(order.currency)
+        assert on_order_paid_spy.await_count == 1
+        assert (
+            enqueue_job_mock.call_args_list.count(
+                call("order.confirmation_email", order.id)
+            )
+            == 1
+        )
+
+    async def test_zero_due_emits_paid_transition_once(
+        self,
+        mocker: MockerFixture,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+        payment_method: PaymentMethod,
+    ) -> None:
+        # A zero-due cycle settles without any charge, so the branch marking it
+        # paid owns the transition that sends the confirmation.
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=customer,
+            product_price=price,
+            amount=0,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        on_order_paid_spy = mocker.spy(order_service, "_on_order_paid")
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
+        )
+
+        assert order.due_amount == 0
+        assert order.status == OrderStatus.paid
+        assert on_order_paid_spy.await_count == 1
         assert (
             enqueue_job_mock.call_args_list.count(
                 call("order.confirmation_email", order.id)
@@ -3061,8 +3117,11 @@ class TestHandlePayment:
         assert updated_order.tax_transaction_processor_id == "TAX_TRANSACTION_ID"
 
         # Verify enqueue_job was called to balance the order
-        enqueue_job_mock.assert_any_call(
-            "order.balance", order_id=order.id, charge_id="stripe_payment_123"
+        assert (
+            enqueue_job_mock.call_args_list.count(
+                call("order.balance", order_id=order.id, charge_id="stripe_payment_123")
+            )
+            == 1
         )
 
         # Verify tax transaction was created
@@ -3135,8 +3194,11 @@ class TestHandlePayment:
         assert updated_order.tax_processor == TaxProcessor.numeral
 
         # The balance job should still be enqueued
-        enqueue_job_mock.assert_any_call(
-            "order.balance", order_id=order.id, charge_id="stripe_payment_456"
+        assert (
+            enqueue_job_mock.call_args_list.count(
+                call("order.balance", order_id=order.id, charge_id="stripe_payment_456")
+            )
+            == 1
         )
 
 
@@ -6358,8 +6420,10 @@ class TestFinalizeOrder:
 
         assert result.status == OrderStatus.paid
         assert (
-            call("order.confirmation_email", order.id)
-            in enqueue_job_mock.call_args_list
+            enqueue_job_mock.call_args_list.count(
+                call("order.confirmation_email", order.id)
+            )
+            == 1
         )
 
     async def test_sends_confirmation_email_for_free_product(
@@ -6395,6 +6459,8 @@ class TestFinalizeOrder:
 
         assert result.status == OrderStatus.paid
         assert (
-            call("order.confirmation_email", order.id)
-            in enqueue_job_mock.call_args_list
+            enqueue_job_mock.call_args_list.count(
+                call("order.confirmation_email", order.id)
+            )
+            == 1
         )

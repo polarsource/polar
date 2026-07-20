@@ -36,7 +36,10 @@ from polar.kit.address import (
     CountryAlpha2,
     CountryAlpha2Input,
 )
-from polar.kit.currency import get_maximum_currency_amount
+from polar.kit.currency import (
+    get_maximum_currency_amount,
+    get_minimum_currency_amount,
+)
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.math import polar_round
 from polar.kit.pagination import PaginationParams
@@ -2240,6 +2243,57 @@ class TestCreateSubscriptionOrder:
         trigger_payment_mock.assert_called_once()
         call_args = trigger_payment_mock.call_args
         assert call_args.args[2].id == default_pm.id
+
+    async def test_sync_under_minimum_emits_paid_transition_once(
+        self,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+        payment_method: PaymentMethod,
+    ) -> None:
+        # A sub-minimum sync charge (typical of a proration) is settled inside
+        # trigger_payment, which already emits the paid transition.
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=customer,
+            product_price=price,
+            amount=10,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        order = await order_service.create_subscription_order(
+            session,
+            subscription,
+            OrderBillingReasonInternal.subscription_update,
+            payment_mode=PaymentMode.sync,
+        )
+
+        assert order.status == OrderStatus.paid
+        assert order.due_amount < get_minimum_currency_amount(order.currency)
+        assert (
+            enqueue_job_mock.call_args_list.count(
+                call("order.confirmation_email", order.id)
+            )
+            == 1
+        )
 
     async def test_cycle_does_not_send_confirmation_email_before_payment(
         self,

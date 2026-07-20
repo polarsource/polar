@@ -1107,10 +1107,8 @@ class OrderService:
         )
 
         # Fire the `order.created` webhook so merchants are notified about the
-        # draft. We deliberately don't route through `_on_order_created`: a draft
-        # isn't charged yet, so the customer-facing confirmation email it
-        # enqueues would be premature. The `order.paid`/`order.updated` events
-        # are emitted later by finalize_order once the charge settles.
+        # draft. The `order.paid`/`order.updated` events are emitted later by
+        # finalize_order once the charge settles.
         await self.send_webhook(session, order, WebhookEventType.order_created)
 
         return order
@@ -1414,14 +1412,21 @@ class OrderService:
         }:
             await subscription_service.reset_meters(session, subscription)
 
+        # Emit creation events before settling payment, so `order.created` always
+        # precedes `order.paid` and the settling branches below own the paid
+        # transition.
+        await self._on_order_created(session, order)
+
         # If the due amount is less or equal than zero, mark it as paid immediately
         if order.due_amount <= 0:
+            previous_status = order.status
             order = await repository.update(
                 order, update_dict={"status": OrderStatus.paid}
             )
             await self._emit_balance_credit_order_event(
                 session, order, subscription.organization
             )
+            await self._on_order_updated(session, order, previous_status)
         # Sync mode, attempt payment immediately and raise if it fails
         elif payment_mode == PaymentMode.sync:
             payment_method_id = (
@@ -1455,8 +1460,6 @@ class OrderService:
                     payment_method_id=payment_method_id,
                     payment_trigger=PaymentTrigger.subscription_cycle,
                 )
-
-        await self._on_order_created(session, order)
 
         return order
 

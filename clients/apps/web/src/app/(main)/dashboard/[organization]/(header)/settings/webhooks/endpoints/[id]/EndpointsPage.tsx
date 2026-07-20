@@ -1,6 +1,5 @@
 'use client'
 
-import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { DateRange } from '@/components/Metrics/DateRangePicker'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
@@ -10,7 +9,6 @@ import DeliveriesTable from '@/components/Settings/Webhook/WebhookDeliveriesTabl
 import { WebhookFilter } from '@/components/Settings/Webhook/WebhookFilter'
 import { toast } from '@/components/Toast/use-toast'
 import { getStatusRedirect } from '@/components/Toast/utils'
-import { useHasPermission } from '@/hooks/permissions'
 import {
   useDeleteWebhookEndpoint,
   useEditWebhookEndpoint,
@@ -41,10 +39,6 @@ export default function ClientPage({
 }) {
   const { id }: { id: string } = useParams()
   const router = useRouter()
-  const canManageWebhooks = useHasPermission(
-    organization.id,
-    'organization:manage',
-  )
   const [dateRange, setDateRange] = useState<DateRange | undefined>()
 
   const [succeeded, setSucceeded] = useQueryState(
@@ -151,14 +145,6 @@ export default function ClientPage({
       ),
     )
   }, [deleteWebhookEndpoint, hideDeleteModal, router, endpoint, organization])
-
-  if (canManageWebhooks === false) {
-    return (
-      <DashboardBody title="Webhook">
-        <AccessRestricted message="You don't have permission to manage webhooks for this organization. Ask an admin if you need access." />
-      </DashboardBody>
-    )
-  }
 
   if (!endpoint) {
     return null

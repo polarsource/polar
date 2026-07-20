@@ -30,6 +30,7 @@ class Schema(BaseModel):
     @classmethod
     def _reject_nul_characters(cls, value: Any) -> Any:
         pending = [value]
+        visited: set[int] = set()
 
         while pending:
             current = pending.pop()
@@ -39,11 +40,17 @@ class Schema(BaseModel):
             elif isinstance(current, BaseModel):
                 continue
             elif isinstance(current, Mapping):
+                if id(current) in visited:
+                    continue
+                visited.add(id(current))
                 pending.extend(current.keys())
                 pending.extend(current.values())
             elif isinstance(current, Collection) and not isinstance(
                 current, (bytes, bytearray)
             ):
+                if id(current) in visited:
+                    continue
+                visited.add(id(current))
                 pending.extend(current)
 
         return value

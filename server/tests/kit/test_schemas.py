@@ -1,3 +1,5 @@
+from typing import Any
+
 import pytest
 from pydantic import ValidationError
 
@@ -20,6 +22,10 @@ class NonStringSchema(Schema):
     integer: int
     boolean: bool
     none: None
+
+
+class AnySchema(Schema):
+    value: Any
 
 
 def test_rejects_nul_character_in_string() -> None:
@@ -56,3 +62,21 @@ def test_leaves_non_string_fields_unchanged() -> None:
     assert schema.integer == 42
     assert schema.boolean is True
     assert schema.none is None
+
+
+def test_handles_circular_collections() -> None:
+    circular_dict: dict[str, Any] = {}
+    circular_dict["self"] = circular_dict
+    circular_list: list[Any] = []
+    circular_list.append(circular_list)
+
+    assert AnySchema(value=circular_dict).value is circular_dict
+    assert AnySchema(value=circular_list).value is circular_list
+
+
+def test_rejects_nul_character_in_circular_collection() -> None:
+    circular_dict: dict[str, Any] = {"invalid": "invalid\x00string"}
+    circular_dict["self"] = circular_dict
+
+    with pytest.raises(ValidationError, match="This value contains invalid characters"):
+        AnySchema(value=circular_dict)

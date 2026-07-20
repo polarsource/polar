@@ -1,4 +1,3 @@
-import { useHasPermission } from '@/hooks/permissions'
 import { useOrganizationPaymentStatus } from '@/hooks/queries'
 import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
@@ -14,18 +13,11 @@ interface OrganizationStatusBannerProps {
 export const OrganizationStatusBanner = ({
   organization,
 }: OrganizationStatusBannerProps) => {
-  // Hidden from members deliberately, warnings included: every branch is an
-  // admin-only account action.
-  const canManageOrganization = useHasPermission(
-    organization.id,
-    'organization:manage',
-  )
-
   const { data: paymentStatus, isLoading } = useOrganizationPaymentStatus(
     organization.id,
   )
 
-  if (isLoading || CONFIG.IS_SANDBOX || !canManageOrganization) {
+  if (isLoading || CONFIG.IS_SANDBOX) {
     return null
   }
 

@@ -70,39 +70,36 @@ if (!webhookSecret) {
   throw new Error("POLAR_WEBHOOK_SECRET is required");
 }
 
-app.post(
-  "/webhooks/polar",
-  express.raw({ type: "application/json" }),
-  (request, response) => {
-    try {
-      const event = webhooks.validateEvent(
-        request.body,
-        {
-          "webhook-id": request.header("webhook-id") ?? "",
-          "webhook-timestamp": request.header("webhook-timestamp") ?? "",
-          "webhook-signature": request.header("webhook-signature") ?? "",
-        },
-        webhookSecret,
-      );
+const rawBody = express.raw({ type: "application/json" });
+app.post("/webhooks/polar", rawBody, async (request, response) => {
+  try {
+    const event = await webhooks.validateEvent(
+      request.body,
+      {
+        "webhook-id": request.header("webhook-id") ?? "",
+        "webhook-timestamp": request.header("webhook-timestamp") ?? "",
+        "webhook-signature": request.header("webhook-signature") ?? "",
+      },
+      webhookSecret,
+    );
 
-      if (event.type === "order.created") {
-        console.log(event.data.id);
-      }
-
-      response.status(200).json({ received: true });
-    } catch (error) {
-      if (error instanceof webhooks.PolarWebhookVerificationError) {
-        response.status(403).json({ error: "Invalid webhook signature" });
-        return;
-      }
-      if (error instanceof webhooks.PolarWebhookError) {
-        response.status(400).json({ error: "Invalid webhook payload" });
-        return;
-      }
-      throw error;
+    if (event.type === "order.created") {
+      console.log(event.data.id);
     }
-  },
-);
+
+    response.status(200).json({ received: true });
+  } catch (error) {
+    if (error instanceof webhooks.PolarWebhookVerificationError) {
+      response.status(403).json({ error: "Invalid webhook signature" });
+      return;
+    }
+    if (error instanceof webhooks.PolarWebhookError) {
+      response.status(400).json({ error: "Invalid webhook payload" });
+      return;
+    }
+    throw error;
+  }
+});
 ```
 
 The `express.raw` middleware is required because the signature must be checked against the body

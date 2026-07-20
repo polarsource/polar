@@ -1,5 +1,3 @@
-import { Buffer } from "node:buffer";
-
 import type {
   Benefit,
   BenefitGrantWebhook,
@@ -882,9 +880,9 @@ const knownEventTypes = new Set<string>([
  * Verify a raw Polar webhook request and return its typed payload.
  */
 export const validateEvent = (
-  body: string | Buffer,
+  body: string | Uint8Array,
   headers: Record<string, string>,
   secret: string,
-): WebhookPayload => {
+): Promise<WebhookPayload> => {
   return validateWebhook<WebhookPayload>(body, headers, secret, knownEventTypes);
 };

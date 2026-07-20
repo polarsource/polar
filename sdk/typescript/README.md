@@ -70,9 +70,10 @@ if (!webhookSecret) {
     throw new Error("POLAR_WEBHOOK_SECRET is required");
 }
 
-app.post("/webhooks/polar", express.raw({ type: "application/json" }), (request, response) => {
+const rawBody = express.raw({ type: "application/json" });
+app.post("/webhooks/polar", rawBody, async (request, response) => {
     try {
-        const event = webhooks.validateEvent(
+        const event = await webhooks.validateEvent(
             request.body,
             {
                 "webhook-id": request.header("webhook-id") ?? "",

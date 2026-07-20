@@ -37,53 +37,70 @@ const getHeaders = (
 };
 
 const validateEvent = (
-  body: string | Buffer,
+  body: string | Uint8Array,
   headers: Record<string, string>,
-): DummyPayload => {
+): Promise<DummyPayload> => {
   return validateWebhook<DummyPayload>(body, headers, secret, eventTypes);
 };
 
 describe("validateWebhook", () => {
-  test.each([false, true])("validates a known event (buffer: %s)", (asBuffer) => {
+  test.each([
+    ["string", (body: string) => body],
+    ["Buffer", (body: string) => Buffer.from(body)],
+    ["Uint8Array", (body: string) => new TextEncoder().encode(body)],
+  ])("validates a known event from a %s", async (_type, getRawBody) => {
     const body = JSON.stringify({ type: "dummy.event", value: "payload" });
-    const rawBody = asBuffer ? Buffer.from(body) : body;
 
-    expect(validateEvent(rawBody, getHeaders(body))).toEqual({
+    await expect(
+      validateEvent(getRawBody(body), getHeaders(body)),
+    ).resolves.toEqual({
       type: "dummy.event",
       value: "payload",
     });
   });
 
-  test("rejects an invalid signature", () => {
+  test("rejects an invalid signature", async () => {
     const body = JSON.stringify({ type: "dummy.event", value: "payload" });
 
-    expect(() => validateEvent(body, getHeaders("{}"))).toThrow(
+    await expect(validateEvent(body, getHeaders("{}"))).rejects.toThrow(
       PolarWebhookVerificationError,
     );
   });
 
-  test("rejects missing headers", () => {
+  test("rejects malformed signature encoding", async () => {
     const body = JSON.stringify({ type: "dummy.event", value: "payload" });
+    const headers = getHeaders(body);
+    headers["Webhook-Signature"] = "v1,not-base64!";
 
-    expect(() => validateEvent(body, {})).toThrow(
+    await expect(validateEvent(body, headers)).rejects.toThrow(
       PolarWebhookVerificationError,
     );
   });
 
-  test("rejects a stale timestamp", () => {
+  test("rejects missing headers", async () => {
+    const body = JSON.stringify({ type: "dummy.event", value: "payload" });
+
+    await expect(validateEvent(body, {})).rejects.toThrow(
+      PolarWebhookVerificationError,
+    );
+  });
+
+  test("rejects a stale timestamp", async () => {
     const body = JSON.stringify({ type: "dummy.event", value: "payload" });
     const timestamp = new Date(Date.now() - 6 * 60 * 1000);
 
-    expect(() => validateEvent(body, getHeaders(body, timestamp))).toThrow(
+    await expect(
+      validateEvent(body, getHeaders(body, timestamp)),
+    ).rejects.toThrow(
       PolarWebhookVerificationError,
     );
   });
 
-  test("rejects an unknown event type", () => {
+  test("rejects an unknown event type", async () => {
     const body = JSON.stringify({ type: "future.event", value: "payload" });
 
     try {
-      validateEvent(body, getHeaders(body));
+      await validateEvent(body, getHeaders(body));
       throw new Error("Expected validateEvent to throw");
     } catch (error) {
       expect(error).toBeInstanceOf(PolarWebhookUnknownTypeError);
@@ -93,10 +110,10 @@ describe("validateWebhook", () => {
     }
   });
 
-  test("wraps malformed signed payloads", () => {
+  test("wraps malformed signed payloads", async () => {
     const body = "{";
 
-    expect(() => validateEvent(body, getHeaders(body))).toThrow(
+    await expect(validateEvent(body, getHeaders(body))).rejects.toThrow(
       PolarWebhookError,
     );
   });

@@ -1,6 +1,3 @@
-import { Buffer } from "node:buffer";
-import { createHmac, timingSafeEqual } from "node:crypto";
-
 import { PolarError } from "./base";
 
 const webhookToleranceSeconds = 5 * 60;
@@ -26,14 +23,14 @@ export class PolarWebhookUnknownTypeError extends PolarWebhookError {
   }
 }
 
-export const validateWebhook = <Payload>(
-  body: string | Buffer,
+export const validateWebhook = async <Payload>(
+  body: string | Uint8Array,
   headers: Record<string, string>,
   secret: string,
   eventTypes: ReadonlySet<string>,
-): Payload => {
-  const bodyText = body.toString();
-  verifySignature(bodyText, headers, secret);
+): Promise<Payload> => {
+  const bodyText = typeof body === "string" ? body : new TextDecoder().decode(body);
+  await verifySignature(bodyText, headers, secret);
 
   let parsed: unknown;
   try {
@@ -58,7 +55,11 @@ export const validateWebhook = <Payload>(
   return parsed as Payload;
 };
 
-const verifySignature = (body: string, headers: Record<string, string>, secret: string): void => {
+const verifySignature = async (
+  body: string,
+  headers: Record<string, string>,
+  secret: string,
+): Promise<void> => {
   if (secret.length === 0) {
     throw new PolarWebhookVerificationError("Secret can't be empty");
   }
@@ -87,21 +88,47 @@ const verifySignature = (body: string, headers: Record<string, string>, secret: 
   }
 
   const signedContent = `${webhookId}.${Math.floor(timestamp)}.${body}`;
-  const expectedSignature = createHmac("sha256", secret).update(signedContent).digest();
+  const textEncoder = new TextEncoder();
+  const signedContentBytes = textEncoder.encode(signedContent);
+  const signingKey = await globalThis.crypto.subtle.importKey(
+    "raw",
+    textEncoder.encode(secret),
+    { name: "HMAC", hash: "SHA-256" },
+    false,
+    ["verify"],
+  );
 
   for (const versionedSignature of webhookSignature.split(" ")) {
     const [version, signature] = versionedSignature.split(",", 2);
     if (version !== "v1" || signature === undefined) {
       continue;
     }
-    const decodedSignature = Buffer.from(signature, "base64");
+    const decodedSignature = decodeBase64(signature);
     if (
-      decodedSignature.length === expectedSignature.length &&
-      timingSafeEqual(expectedSignature, decodedSignature)
+      decodedSignature !== null &&
+      (await globalThis.crypto.subtle.verify(
+        "HMAC",
+        signingKey,
+        decodedSignature,
+        signedContentBytes,
+      ))
     ) {
       return;
     }
   }
 
   throw new PolarWebhookVerificationError("No matching signature found");
+};
+
+const decodeBase64 = (value: string): Uint8Array<ArrayBuffer> | null => {
+  try {
+    const decodedValue = globalThis.atob(value);
+    const bytes = new Uint8Array(new ArrayBuffer(decodedValue.length));
+    for (let index = 0; index < decodedValue.length; index++) {
+      bytes[index] = decodedValue.charCodeAt(index);
+    }
+    return bytes;
+  } catch {
+    return null;
+  }
 };

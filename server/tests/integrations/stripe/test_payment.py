@@ -6,6 +6,7 @@ from freezegun import freeze_time
 from polar.enums import PaymentProcessor
 from polar.integrations.stripe.payment import (
     _resolve_trigger,
+    handle_cancellation,
     handle_failure,
 )
 from polar.kit.db.postgres import AsyncSession
@@ -85,6 +86,162 @@ class TestHandleFailure:
         updated_subscription = await subscription_repo.get_by_id(subscription.id)
         assert updated_subscription is not None
         assert updated_subscription.status == SubscriptionStatus.past_due
+
+
+@pytest.mark.asyncio
+class TestHandleCancellation:
+    """A canceled PaymentIntent (typically the stale-lock cleanup cancelling an
+    unresolved off-session SCA intent) must release the order's payment lock and
+    progress dunning so a fresh charge is attempted on the next retry."""
+
+    @freeze_time("2024-01-01 12:00:00")
+    async def test_releases_lock_and_advances_dunning(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Given a pending order with a wedged payment lock
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=utc_now() - timedelta(hours=2),
+        )
+        order.next_payment_attempt_at = None
+        assert order.subscription is not None
+        await save_fixture(order)
+
+        payment_intent = build_stripe_payment_intent(
+            id="pi_wedged",
+            status="canceled",
+            metadata={"order_id": str(order.id)},
+        )
+
+        # When
+        await handle_cancellation(session, payment_intent)
+
+        # Then — lock released and dunning scheduled
+        order_repo = OrderRepository.from_session(session)
+        updated_order = await order_repo.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.payment_lock_acquired_at is None
+        assert updated_order.next_payment_attempt_at is not None
+        expected_retry_date = utc_now() + timedelta(days=2)
+        assert updated_order.next_payment_attempt_at == expected_retry_date
+
+        subscription_repo = SubscriptionRepository.from_session(session)
+        updated_subscription = await subscription_repo.get_by_id(subscription.id)
+        assert updated_subscription is not None
+        assert updated_subscription.status == SubscriptionStatus.past_due
+
+    async def test_live_payment_attempt_not_disturbed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """A cancellation for an older intent must not release the lock of an
+        attempt that is still in flight, which would let a second charge fire
+        alongside it."""
+        acquired_at = utc_now() - timedelta(minutes=1)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=acquired_at,
+        )
+
+        payment_intent = build_stripe_payment_intent(
+            id="pi_previous_cycle",
+            status="canceled",
+            metadata={"order_id": str(order.id)},
+        )
+
+        # When
+        await handle_cancellation(session, payment_intent)
+
+        # Then — lock untouched, dunning not advanced
+        order_repo = OrderRepository.from_session(session)
+        updated_order = await order_repo.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.payment_lock_acquired_at == acquired_at
+        assert updated_order.next_payment_attempt_at is None
+
+    async def test_unlocked_order_not_disturbed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """An order holding no lock has no attempt to fail: a cancellation for
+        one of its old intents must not advance dunning."""
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+
+        payment_intent = build_stripe_payment_intent(
+            id="pi_previous_cycle",
+            status="canceled",
+            metadata={"order_id": str(order.id)},
+        )
+
+        # When
+        await handle_cancellation(session, payment_intent)
+
+        # Then
+        order_repo = OrderRepository.from_session(session)
+        updated_order = await order_repo.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.next_payment_attempt_at is None
+
+    async def test_paid_order_not_disturbed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """A resolving intent may have succeeded before the cancellation is
+        processed; a paid order must never be reopened."""
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.paid,
+        )
+
+        payment_intent = build_stripe_payment_intent(
+            id="pi_late_cancel",
+            status="canceled",
+            metadata={"order_id": str(order.id)},
+        )
+
+        # When
+        await handle_cancellation(session, payment_intent)
+
+        # Then
+        order_repo = OrderRepository.from_session(session)
+        updated_order = await order_repo.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.status == OrderStatus.paid
+        assert updated_order.next_payment_attempt_at is None
 
 
 class TestResolveTrigger:

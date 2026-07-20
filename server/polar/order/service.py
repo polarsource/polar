@@ -2789,6 +2789,56 @@ class OrderService:
             log.error("Could not save balance.credit_order event", error=str(e))
             raise
 
+    async def handle_payment_cancellation(
+        self, session: AsyncSession, order: Order
+    ) -> Order:
+        """Handle a canceled PaymentIntent for an order's payment lock.
+
+        Triggered by the ``payment_intent.canceled`` webhook — usually the
+        stale-lock cleanup cancelling an off-session SCA intent that never
+        resolved. Release the lock and progress dunning exactly as a payment
+        failure would, so the next scheduled retry attempts a fresh charge.
+        """
+        # A resolving intent may have succeeded before this cancellation was
+        # processed; never undo a paid order.
+        if order.status == OrderStatus.paid:
+            log.warning(
+                "Ignoring payment cancellation for already paid order",
+                order_id=order.id,
+            )
+            return order
+
+        if order.payment_lock_acquired_at is None:
+            return order
+
+        # Only a stale lock is ours to release. A fresh one belongs to a live
+        # attempt, so this cancellation is for an older intent of the same
+        # order — releasing would let a second charge fire alongside it.
+        if order.payment_lock_acquired_at > (
+            utc_now() - settings.PAYMENT_LOCK_STALE_THRESHOLD
+        ):
+            log.info(
+                "Ignoring payment cancellation for a live payment attempt",
+                order_id=order.id,
+                payment_lock_acquired_at=order.payment_lock_acquired_at,
+            )
+            return order
+
+        log.info(
+            "Clearing payment lock on order due to payment cancellation",
+            order_id=order.id,
+        )
+        repository = OrderRepository.from_session(session)
+        order = await repository.release_payment_lock(order)
+
+        if order.subscription is None:
+            return order
+
+        if order.next_payment_attempt_at is None:
+            return await self._handle_first_dunning_attempt(session, order)
+
+        return await self._handle_consecutive_dunning_attempts(session, order)
+
     async def handle_payment_failure(
         self, session: AsyncSession, order: Order, *, skip_dunning: bool = False
     ) -> Order:
@@ -2939,8 +2989,9 @@ class OrderService:
 
             return order
 
-        # Schedule next retry using the appropriate interval
-        next_interval = settings.DUNNING_RETRY_INTERVALS[failed_attempts - 1]
+        # Schedule next retry using the appropriate interval. A cancelled
+        # attempt records no Payment, so the count can still be zero here.
+        next_interval = settings.DUNNING_RETRY_INTERVALS[max(failed_attempts - 1, 0)]
         next_retry_date = now + next_interval
 
         order = await repository.update(

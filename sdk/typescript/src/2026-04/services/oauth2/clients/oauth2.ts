@@ -97,13 +97,13 @@ export const deleteClientOauth2 = (client: ClientBase) => {
    * Delete an OAuth2 client.
    *
    * @param client_id
-   * @returns {unknown}
+   * @returns {void}
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {HTTPValidationError} Validation Error
    */
-  return async (client_id: string): Promise<unknown> => {
+  return async (client_id: string): Promise<void> => {
     const pathParams = {
       client_id: client_id,
     };
@@ -116,7 +116,7 @@ export const deleteClientOauth2 = (client: ClientBase) => {
       undefined,
     );
     const response = await client.sendRequest(request);
-    return client.parseResponse<unknown>(response, "json", {
+    return client.parseResponse<void>(response, "none", {
       422: HTTPValidationError,
     });
   };

@@ -97,36 +97,39 @@ export const AccountPageDetailsRequired = ({ organization }: Props) => {
       onClick={handleSubmit}
       disabled={!canSubmit || isExiting}
       loading={isExiting}
+      className="w-full sm:w-auto"
     >
       Submit for review
     </Button>
   )
 
+  const submitAction =
+    canSubmit || remainingSteps.length === 0 ? (
+      submitButton
+    ) : (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Box display="block" width={{ base: '100%', sm: 'auto' }}>
+            {submitButton}
+          </Box>
+        </TooltipTrigger>
+        <TooltipContent>
+          <Box flexDirection="column" rowGap="xs">
+            <Text variant="caption">Still needed before you submit:</Text>
+            {remainingSteps.map((step) => (
+              <Text key={step.key} variant="caption" color="muted">
+                {STEP_LABELS[step.key]}
+              </Text>
+            ))}
+          </Box>
+        </TooltipContent>
+      </Tooltip>
+    )
+
   return (
     <DashboardBody
       wrapperClassName="max-w-(--breakpoint-sm)!"
       title="Account Review"
-      header={
-        canSubmit || remainingSteps.length === 0 ? (
-          submitButton
-        ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Box display="block">{submitButton}</Box>
-            </TooltipTrigger>
-            <TooltipContent>
-              <Box flexDirection="column" rowGap="xs">
-                <Text variant="caption">Still needed before you submit:</Text>
-                {remainingSteps.map((step) => (
-                  <Text key={step.key} variant="caption" color="muted">
-                    {STEP_LABELS[step.key]}
-                  </Text>
-                ))}
-              </Box>
-            </TooltipContent>
-          </Tooltip>
-        )
-      }
     >
       <Box flexDirection="column" rowGap="xl" paddingBottom="3xl">
         <Text variant="body" color="muted">
@@ -140,6 +143,9 @@ export const AccountPageDetailsRequired = ({ organization }: Props) => {
           rowStagger={ROW_STAGGER}
           rowDuration={ROW_DURATION}
         />
+        <Box flexDirection="column" alignSelf={{ base: 'stretch', sm: 'end' }}>
+          {submitAction}
+        </Box>
       </Box>
     </DashboardBody>
   )

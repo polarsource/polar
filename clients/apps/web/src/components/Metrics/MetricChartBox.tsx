@@ -196,14 +196,14 @@ const MetricChartBox = ({
       )}
       <div
         className={twMerge(
-          'flex flex-col gap-6 md:flex-row md:items-start md:justify-between',
+          'flex flex-row items-start justify-between gap-6',
           compact ? 'p-4' : 'px-6 py-4',
           loading && 'invisible',
         )}
       >
         <div
           className={twMerge(
-            'flex w-full',
+            'flex w-full min-w-0',
             compact
               ? 'flex-row items-center justify-between gap-x-4'
               : 'flex-col gap-y-4',
@@ -320,7 +320,7 @@ const MetricChartBox = ({
           )}
         </div>
 
-        <div className="absolute top-6 right-6 z-10 flex flex-row items-center gap-x-4 md:static md:z-auto">
+        <div className="flex shrink-0 flex-row items-center gap-x-4">
           {trend !== 0 && !isNaN(trend) && trend !== Infinity && (
             <Status
               status={

@@ -23,8 +23,8 @@ interface Props {
 }
 
 export const OnboardingChecklistCard = ({ organization }: Props) => {
-  // The review state is gated on `organization:manage`, and the whole card
-  // walks through account setup only an admin can complete.
+  // Any member should see that the organization isn't ready to sell yet, but
+  // only users with permission `organization:manage` can complete setup
   const canManageOrganization = useHasPermission(
     organization.id,
     'organization:manage',
@@ -50,7 +50,7 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
 
   const accountHref = `/dashboard/${organization.slug}/finance/account`
 
-  if (isLoading || !canManageOrganization) {
+  if (isLoading) {
     return null
   }
 
@@ -58,14 +58,14 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
   const requiredSteps = steps.filter(isRequiredStep)
   const total = requiredSteps.length
 
-  if (total === 0) {
+  if (canManageOrganization && total === 0) {
     return null
   }
 
   const completed = requiredSteps.filter(
     (step) => !isIncompleteStep(step),
   ).length
-  const progress = Math.round((completed / total) * 100)
+  const progress = total > 0 ? Math.round((completed / total) * 100) : 0
   const canSubmit = reviewState?.can_submit ?? false
 
   const nextStep =
@@ -139,27 +139,29 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
               </Text>
             </Box>
 
-            <Box flexDirection="column" rowGap="s">
-              <Text color="muted">
-                {completed} of {total} required steps complete
-              </Text>
-              <Box
-                display="block"
-                width="100%"
-                height={6}
-                borderRadius="full"
-                backgroundColor="background-secondary"
-                overflow="hidden"
-              >
+            {canManageOrganization ? (
+              <Box flexDirection="column" rowGap="s">
+                <Text color="muted">
+                  {completed} of {total} required steps complete
+                </Text>
                 <Box
                   display="block"
+                  width="100%"
                   height={6}
                   borderRadius="full"
-                  backgroundColor="background-inverse"
-                  width={`${progress}%`}
-                />
+                  backgroundColor="background-secondary"
+                  overflow="hidden"
+                >
+                  <Box
+                    display="block"
+                    height={6}
+                    borderRadius="full"
+                    backgroundColor="background-inverse"
+                    width={`${progress}%`}
+                  />
+                </Box>
               </Box>
-            </Box>
+            ) : null}
           </Box>
 
           <Box
@@ -173,7 +175,15 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
             borderColor="border-primary"
           >
             <Box flexDirection="column" rowGap="xs">
-              {nextLabel ? (
+              {!canManageOrganization ? (
+                <>
+                  <Text variant="title">Not ready to sell yet</Text>
+                  <Text color="muted">
+                    An organization admin needs to finish account setup before
+                    you can start accepting payments.
+                  </Text>
+                </>
+              ) : nextLabel ? (
                 <>
                   <Text color="muted">Up next</Text>
                   <Text variant="title">{nextLabel}</Text>
@@ -190,18 +200,20 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
                 </>
               )}
             </Box>
-            <Link
-              href={accountHref}
-              onClick={() => {
-                if (nextStep) {
-                  setTargetStepKey(nextStep.key)
-                }
-              }}
-            >
-              <Button>
-                {canSubmit ? 'Review & submit' : 'Continue setup'}
-              </Button>
-            </Link>
+            {canManageOrganization ? (
+              <Link
+                href={accountHref}
+                onClick={() => {
+                  if (nextStep) {
+                    setTargetStepKey(nextStep.key)
+                  }
+                }}
+              >
+                <Button>
+                  {canSubmit ? 'Review & submit' : 'Continue setup'}
+                </Button>
+              </Link>
+            ) : null}
           </Box>
         </Box>
       </Box>

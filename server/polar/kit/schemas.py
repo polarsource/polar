@@ -1,5 +1,5 @@
 import dataclasses
-from collections.abc import Sequence
+from collections.abc import Collection, Mapping, Sequence
 from datetime import datetime
 from typing import Annotated, Any, Literal, cast, get_args, overload
 
@@ -16,6 +16,7 @@ from pydantic import (
     HttpUrl,
     PlainSerializer,
     UrlConstraints,
+    field_validator,
 )
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, core_schema
@@ -24,6 +25,35 @@ from slugify import slugify
 
 class Schema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("*", mode="after")
+    @classmethod
+    def _reject_nul_characters(cls, value: Any) -> Any:
+        pending = [value]
+        visited: set[int] = set()
+
+        while pending:
+            current = pending.pop()
+            if isinstance(current, str):
+                if "\x00" in current:
+                    raise ValueError("This value contains invalid characters")
+            elif isinstance(current, BaseModel):
+                continue
+            elif isinstance(current, Mapping):
+                if id(current) in visited:
+                    continue
+                visited.add(id(current))
+                pending.extend(current.keys())
+                pending.extend(current.values())
+            elif isinstance(current, Collection) and not isinstance(
+                current, (bytes, bytearray)
+            ):
+                if id(current) in visited:
+                    continue
+                visited.add(id(current))
+                pending.extend(current)
+
+        return value
 
 
 class IDSchema(Schema):

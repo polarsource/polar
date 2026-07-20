@@ -12221,24 +12221,6 @@ export interface components {
       product_id?: string
     }
     /**
-     * CheckoutCustomerBillingAddressFields
-     * @description Deprecated: Use CheckoutBillingAddressFields instead.
-     */
-    CheckoutCustomerBillingAddressFields: {
-      /** Country */
-      country: boolean
-      /** State */
-      state: boolean
-      /** City */
-      city: boolean
-      /** Postal Code */
-      postal_code: boolean
-      /** Line1 */
-      line1: boolean
-      /** Line2 */
-      line2: boolean
-    }
-    /**
      * CheckoutDiscountFixedOnceForeverDuration
      * @description Schema for a fixed amount discount that is applied once or forever.
      */

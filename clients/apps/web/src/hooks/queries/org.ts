@@ -337,7 +337,10 @@ export const useOrganizationAppeal = (id: string) =>
     retry: defaultRetry,
   })
 
-export const useOrganizationReviewState = (id: string) =>
+export const useOrganizationReviewState = (
+  id: string,
+  enabled: boolean = true,
+) =>
   useQuery({
     queryKey: ['organizationReviewState', id],
     queryFn: () =>
@@ -347,7 +350,7 @@ export const useOrganizationReviewState = (id: string) =>
         }),
       ),
     retry: defaultRetry,
-    enabled: !!id,
+    enabled: enabled && !!id,
     refetchOnMount: 'always',
   })
 

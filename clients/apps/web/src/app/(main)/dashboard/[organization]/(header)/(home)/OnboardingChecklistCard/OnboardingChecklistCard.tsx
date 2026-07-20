@@ -8,6 +8,7 @@ import {
 } from '@/components/Finance/Account/sections/stepLabels'
 import { AiSetupModalContent } from './AiSetupModal'
 import { useModal } from '@/components/Modal/useModal'
+import { useHasPermission } from '@/hooks/permissions'
 import { useOrganizationReviewState } from '@/hooks/queries/org'
 import { usePostHog } from '@/hooks/posthog'
 import { useAccountSetup } from '@/providers/accountSetup'
@@ -22,8 +23,15 @@ interface Props {
 }
 
 export const OnboardingChecklistCard = ({ organization }: Props) => {
+  // Any member should see that the organization isn't ready to sell yet, but
+  // only users with permission `organization:manage` can complete setup
+  const canManageOrganization = useHasPermission(
+    organization.id,
+    'organization:manage',
+  )
   const { data: reviewState, isLoading } = useOrganizationReviewState(
     organization.id,
+    canManageOrganization,
   )
   const { setTargetStepKey } = useAccountSetup()
   const posthog = usePostHog()
@@ -50,14 +58,14 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
   const requiredSteps = steps.filter(isRequiredStep)
   const total = requiredSteps.length
 
-  if (total === 0) {
+  if (canManageOrganization && total === 0) {
     return null
   }
 
   const completed = requiredSteps.filter(
     (step) => !isIncompleteStep(step),
   ).length
-  const progress = Math.round((completed / total) * 100)
+  const progress = total > 0 ? Math.round((completed / total) * 100) : 0
   const canSubmit = reviewState?.can_submit ?? false
 
   const nextStep =
@@ -122,7 +130,11 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
             <Box flexDirection="column" rowGap="m">
               <Box alignItems="center" columnGap="m">
                 <RocketIcon className="h-4 w-4 shrink-0" />
-                <Text variant="title">Finish setting up your account</Text>
+                <Text variant="title">
+                  {canManageOrganization
+                    ? 'Finish setting up your account'
+                    : 'Account setup in progress'}
+                </Text>
               </Box>
               <Text color="muted">
                 Set up your products and integrate into your app. Test the full
@@ -131,27 +143,29 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
               </Text>
             </Box>
 
-            <Box flexDirection="column" rowGap="s">
-              <Text color="muted">
-                {completed} of {total} required steps complete
-              </Text>
-              <Box
-                display="block"
-                width="100%"
-                height={6}
-                borderRadius="full"
-                backgroundColor="background-secondary"
-                overflow="hidden"
-              >
+            {canManageOrganization ? (
+              <Box flexDirection="column" rowGap="s">
+                <Text color="muted">
+                  {completed} of {total} required steps complete
+                </Text>
                 <Box
                   display="block"
+                  width="100%"
                   height={6}
                   borderRadius="full"
-                  backgroundColor="background-inverse"
-                  width={`${progress}%`}
-                />
+                  backgroundColor="background-secondary"
+                  overflow="hidden"
+                >
+                  <Box
+                    display="block"
+                    height={6}
+                    borderRadius="full"
+                    backgroundColor="background-inverse"
+                    width={`${progress}%`}
+                  />
+                </Box>
               </Box>
-            </Box>
+            ) : null}
           </Box>
 
           <Box
@@ -165,7 +179,17 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
             borderColor="border-primary"
           >
             <Box flexDirection="column" rowGap="xs">
-              {nextLabel ? (
+              {!canManageOrganization ? (
+                <>
+                  <Text variant="title">
+                    Payments aren&rsquo;t enabled for your organization yet
+                  </Text>
+                  <Text color="muted">
+                    An owner or admin needs to finish account setup before you
+                    can accept payments.
+                  </Text>
+                </>
+              ) : nextLabel ? (
                 <>
                   <Text color="muted">Up next</Text>
                   <Text variant="title">{nextLabel}</Text>
@@ -182,18 +206,20 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
                 </>
               )}
             </Box>
-            <Link
-              href={accountHref}
-              onClick={() => {
-                if (nextStep) {
-                  setTargetStepKey(nextStep.key)
-                }
-              }}
-            >
-              <Button>
-                {canSubmit ? 'Review & submit' : 'Continue setup'}
-              </Button>
-            </Link>
+            {canManageOrganization ? (
+              <Link
+                href={accountHref}
+                onClick={() => {
+                  if (nextStep) {
+                    setTargetStepKey(nextStep.key)
+                  }
+                }}
+              >
+                <Button>
+                  {canSubmit ? 'Review & submit' : 'Continue setup'}
+                </Button>
+              </Link>
+            ) : null}
           </Box>
         </Box>
       </Box>
@@ -202,7 +228,11 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
         isShown={isAiSetupShown}
         hide={hideAiSetup}
         modalContent={
-          <AiSetupModalContent organization={organization} hide={hideAiSetup} />
+          <AiSetupModalContent
+            organization={organization}
+            hide={hideAiSetup}
+            canManageOrganization={canManageOrganization}
+          />
         }
       />
     </>

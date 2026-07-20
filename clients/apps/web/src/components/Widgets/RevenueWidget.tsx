@@ -9,12 +9,25 @@ import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Spinner } from '@polar-sh/orbit'
 import { WidgetContainer } from './WidgetContainer'
+import { WidgetGuard } from './WidgetGuard'
 
 interface RevenueWidgetProps {
   className?: string
 }
 
-const RevenueWidget = ({ className }: RevenueWidgetProps) => {
+const WIDGET_TITLE = 'Revenue'
+
+const RevenueWidget = ({ className }: RevenueWidgetProps) => (
+  <WidgetGuard
+    permission="analytics:read"
+    title={WIDGET_TITLE}
+    className={className}
+  >
+    <RevenueWidgetContent className={className} />
+  </WidgetGuard>
+)
+
+const RevenueWidgetContent = ({ className }: RevenueWidgetProps) => {
   const { organization } = useContext(OrganizationContext)
 
   const revenueMetrics = useMetrics({
@@ -32,7 +45,7 @@ const RevenueWidget = ({ className }: RevenueWidgetProps) => {
 
   return (
     <WidgetContainer
-      title="Revenue"
+      title={WIDGET_TITLE}
       action={
         <span className="dark:text-polar-500 text-gray-500">Last 3 Months</span>
       }

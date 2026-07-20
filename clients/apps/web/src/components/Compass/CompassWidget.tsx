@@ -1,5 +1,6 @@
 'use client'
 
+import { useHasPermission } from '@/hooks/permissions'
 import { useCompassInsights } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Alert, Text } from '@polar-sh/orbit'
@@ -74,7 +75,9 @@ export const CompassWidget = ({
   columns = 3,
   groupBySeverity = false,
 }: CompassWidgetProps) => {
-  const compassEnabled = !!organization.feature_settings?.compass_enabled
+  const canReadAnalytics = useHasPermission(organization.id, 'analytics:read')
+  const compassEnabled =
+    !!organization.feature_settings?.compass_enabled && canReadAnalytics
   const {
     data: insights,
     isLoading,
@@ -84,8 +87,9 @@ export const CompassWidget = ({
   const shown =
     limit != null ? (insights ?? []).slice(0, limit) : (insights ?? [])
 
-  // Compass is gated by the `compass_enabled` feature flag; render nothing when
-  // it's off so neither the home preview nor the dedicated page leaks through.
+  // Compass is gated by the `compass_enabled` feature flag and by
+  // `analytics:read`; render nothing when either is missing so neither the
+  // home preview nor the dedicated page leaks through.
   if (!compassEnabled) {
     return null
   }

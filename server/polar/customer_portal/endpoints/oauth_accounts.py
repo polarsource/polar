@@ -1,12 +1,12 @@
 import uuid
-from typing import Any, cast
+from typing import Any
 
 import httpx
 import logfire
 import structlog
 from fastapi import Depends, Query, Request
 from fastapi.responses import RedirectResponse
-from httpx_oauth.clients.github import PROFILE_ENDPOINT, GitHubOAuth2
+from httpx_oauth.clients.github import GitHubOAuth2
 from httpx_oauth.exceptions import GetProfileError
 from httpx_oauth.oauth2 import BaseOAuth2, GetAccessTokenError
 
@@ -37,26 +37,8 @@ log = structlog.get_logger()
 router = APIRouter(prefix="/oauth-accounts", tags=["oauth-accounts", APITag.private])
 
 
-class GitHubOAuth2WithHTTPXClient(GitHubOAuth2):
-    async def get_profile(self, token: str) -> dict[str, Any]:
-        # GitHubOAuth2.get_profile builds its own client, bypassing
-        # get_httpx_client. Route it through get_httpx_client so transport errors
-        # surface consistently with the other OAuth requests.
-        async with self.get_httpx_client() as client:
-            response = await client.get(
-                PROFILE_ENDPOINT,
-                headers={
-                    **self.request_headers,
-                    "Authorization": f"token {token}",
-                },
-            )
-            if response.status_code >= 400:
-                raise GetProfileError(response=response)
-            return cast(dict[str, Any], response.json())
-
-
 OAUTH_CLIENTS: dict[CustomerOAuthPlatform, BaseOAuth2[Any]] = {
-    CustomerOAuthPlatform.github: GitHubOAuth2WithHTTPXClient(
+    CustomerOAuthPlatform.github: GitHubOAuth2(
         settings.GITHUB_CLIENT_ID, settings.GITHUB_CLIENT_SECRET
     ),
     CustomerOAuthPlatform.discord: discord_user_client,

@@ -159,7 +159,11 @@ export const SubscriptionProductPicker = ({
           />
           <CommandList>
             {isLoading ? (
-              <Box alignItems="center" justifyContent="center" paddingVertical="xl">
+              <Box
+                alignItems="center"
+                justifyContent="center"
+                paddingVertical="xl"
+              >
                 <Loader2 className="h-4 w-4 animate-spin opacity-50" />
               </Box>
             ) : filteredProducts.length === 0 ? (

@@ -17,7 +17,7 @@ class TestS3FileUploadCompletedPart:
     def test_checksum_etag_surrounding_whitespace_is_stripped(self) -> None:
         part = S3FileUploadCompletedPart(
             number=1,
-            checksum_etag="  \t\"abc123\"\n ",
+            checksum_etag='  \t"abc123"\n ',
             checksum_sha256_base64=None,
         )
 

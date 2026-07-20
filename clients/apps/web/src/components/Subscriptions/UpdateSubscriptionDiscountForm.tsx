@@ -47,10 +47,15 @@ export const UpdateSubscriptionDiscountForm = ({
 
   const form = useForm<schemas['SubscriptionUpdateBase']>({
     defaultValues: {
-      discount_id: subscription.discount_id || '',
+      discount_id: subscription.discount_id ?? null,
     },
   })
-  const { control, handleSubmit, setError } = form
+  const {
+    control,
+    handleSubmit,
+    setError,
+    formState: { isDirty },
+  } = form
 
   const onSubmit = useCallback(
     async (body: schemas['SubscriptionUpdateBase']) => {
@@ -107,7 +112,7 @@ export const UpdateSubscriptionDiscountForm = ({
                       items={discounts?.items || []}
                       value={field.value || null}
                       selectedItem={selectedItem || null}
-                      onChange={(value) => field.onChange(value || '')}
+                      onChange={(value) => field.onChange(value)}
                       onQueryChange={setDiscountQuery}
                       getItemValue={(discount) => discount.id}
                       getItemLabel={(discount) => discount.name}
@@ -147,7 +152,7 @@ export const UpdateSubscriptionDiscountForm = ({
             type="submit"
             size="lg"
             loading={updateSubscription.isPending}
-            disabled={updateSubscription.isPending}
+            disabled={!isDirty || updateSubscription.isPending}
           >
             Update Subscription
           </Button>

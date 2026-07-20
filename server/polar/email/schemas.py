@@ -322,7 +322,8 @@ class SubscriptionFinalInvoiceEmail(BaseModel):
 
 
 class SubscriptionPastDueProps(SubscriptionPropsBase):
-    payment_url: str | None = None
+    access_ends_at: str | None = None
+    deadline: str | None = None
 
 
 class SubscriptionPastDueEmail(BaseModel):

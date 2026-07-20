@@ -3103,11 +3103,34 @@ class SubscriptionService:
     async def send_past_due_email(
         self, session: AsyncSession, subscription: Subscription
     ) -> None:
+        assert subscription.past_due_at is not None
+
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            subscription.organization_id,
+            include_deleted=True,
+            include_blocked=True,
+        )
+        assert organization is not None
+
+        grace_period_days = organization.benefit_revocation_grace_period
+        access_ends_at = (
+            subscription.past_due_at + timedelta(days=grace_period_days)
+            if grace_period_days > 0
+            else None
+        )
+        deadline = subscription.past_due_deadline
         return await self._send_customer_email(
             session,
             subscription,
             subject_template="Your {product.name} payment failed",
             template_name="subscription_past_due",
+            extra_context={
+                "access_ends_at": (
+                    access_ends_at.isoformat() if access_ends_at else None
+                ),
+                "deadline": deadline.isoformat() if deadline else None,
+            },
         )
 
     async def send_paused_email(

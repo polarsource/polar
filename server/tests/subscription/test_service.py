@@ -5344,7 +5344,11 @@ async def test_send_past_due_email(
     customer: Customer,
 ) -> None:
     subscription = await create_subscription(
-        save_fixture, product=product, customer=customer
+        save_fixture,
+        product=product,
+        customer=customer,
+        status=SubscriptionStatus.past_due,
+        past_due_at=utc_now(),
     )
 
     await subscription_service.send_past_due_email(session, subscription)

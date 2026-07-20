@@ -2705,10 +2705,15 @@ export interface components {
       /** Url */
       url: string
       /**
-       * Payment Url
+       * Access Ends At
        * @default null
        */
-      payment_url: string | null
+      access_ends_at: string | null
+      /**
+       * Deadline
+       * @default null
+       */
+      deadline: string | null
     }
     /** SubscriptionPausedEmail */
     SubscriptionPausedEmail: {

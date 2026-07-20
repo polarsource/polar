@@ -1,4 +1,5 @@
 import json
+import uuid
 from collections.abc import AsyncGenerator, AsyncIterator
 from typing import TYPE_CHECKING, Any, Literal, Unpack, cast, overload
 from urllib.parse import urlencode
@@ -22,6 +23,7 @@ if TYPE_CHECKING:
         CustomerCreateParamsTaxIdDatum,
     )
     from stripe.params._customer_modify_params import CustomerModifyParams
+    from stripe.params._payment_intent_cancel_params import PaymentIntentCancelParams
     from stripe.params._payment_intent_create_params import PaymentIntentCreateParams
     from stripe.params._payment_intent_modify_params import PaymentIntentModifyParams
     from stripe.params._setup_intent_confirm_params import SetupIntentConfirmParams
@@ -389,6 +391,14 @@ class StripeService:
     async def get_payment_intent(self, id: str) -> stripe_lib.PaymentIntent:
         return await stripe_lib.PaymentIntent.retrieve_async(id)
 
+    async def get_payment_intents_for_order(
+        self, order_id: uuid.UUID
+    ) -> list[stripe_lib.PaymentIntent]:
+        result = await stripe_lib.PaymentIntent.search_async(
+            query=f'metadata["order_id"]:"{order_id}"', limit=100
+        )
+        return result.data
+
     async def create_setup_intent(
         self, **params: Unpack[SetupIntentCreateParams]
     ) -> stripe_lib.SetupIntent:
@@ -416,6 +426,12 @@ class StripeService:
     ) -> stripe_lib.PaymentIntent:
         log.info("stripe.payment_intent.modify", payment_intent_id=id)
         return await stripe_lib.PaymentIntent.modify_async(id, **params)
+
+    async def cancel_payment_intent(
+        self, id: str, **params: Unpack[PaymentIntentCancelParams]
+    ) -> stripe_lib.PaymentIntent:
+        log.info("stripe.payment_intent.cancel", payment_intent_id=id)
+        return await stripe_lib.PaymentIntent.cancel_async(id, **params)
 
     async def get_setup_intent(
         self, id: str, **params: Unpack[SetupIntentRetrieveParams]

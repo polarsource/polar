@@ -28512,6 +28512,7 @@ export interface components {
       currency: string
       /** Is Payout Ready */
       is_payout_ready: boolean
+      status: components['schemas']['PayoutAccountStatus']
     }
     /** PayoutAccountCreate */
     PayoutAccountCreate: {
@@ -28533,6 +28534,11 @@ export interface components {
       /** Url */
       url: string
     }
+    /**
+     * PayoutAccountStatus
+     * @enum {string}
+     */
+    PayoutAccountStatus: 'incomplete' | 'under_review' | 'paused' | 'ready'
     /**
      * PayoutAccountType
      * @enum {string}
@@ -64494,6 +64500,9 @@ export const paymentTriggerValues: ReadonlyArray<
   'retry_payment_method_update',
   'retry_admin',
 ]
+export const payoutAccountStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PayoutAccountStatus']
+> = ['incomplete', 'under_review', 'paused', 'ready']
 export const payoutAccountTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PayoutAccountType']
 > = ['stripe', 'manual']

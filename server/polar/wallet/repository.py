@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select, func, select
@@ -44,6 +45,19 @@ class WalletRepository(
             statement = statement.with_for_update()
         return await self.get_one_or_none(statement)
 
+    async def get_all_by_type_customer(
+        self, type: WalletType, customer_id: UUID
+    ) -> Sequence[Wallet]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Wallet.type == type,
+                Wallet.customer_id == customer_id,
+            )
+            .order_by(Wallet.currency)
+        )
+        return await self.get_all(statement)
+
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[Wallet]]:
@@ -80,6 +94,15 @@ class WalletTransactionRepository(
         )
         result = await self.session.execute(statement)
         return result.scalar_one()
+
+    async def get_all_by_wallet(self, wallet_id: UUID) -> Sequence[WalletTransaction]:
+        statement = (
+            self.get_base_statement()
+            .where(WalletTransaction.wallet_id == wallet_id)
+            .options(joinedload(WalletTransaction.refund))
+            .order_by(WalletTransaction.timestamp.desc())
+        )
+        return await self.get_all(statement)
 
     def get_eager_options(self) -> Options:
         return (

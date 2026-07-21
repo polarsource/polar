@@ -1,13 +1,23 @@
 import uuid
+from collections.abc import Generator, Sequence
+from decimal import Decimal
 from typing import Annotated, Any
 from urllib.parse import urlencode
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from fastapi.responses import HTMLResponse
-from pydantic import UUID4, BeforeValidator, EmailStr, Field, ValidationError
+from pydantic import (
+    UUID4,
+    BeforeValidator,
+    EmailStr,
+    Field,
+    ValidationError,
+    ValidationInfo,
+    field_validator,
+)
 from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload
-from tagflow import document, tag, text
+from tagflow import classes, document, tag, text
 
 from polar.backoffice import forms
 from polar.backoffice.orders.components import orders_datatable
@@ -18,6 +28,7 @@ from polar.customer.schemas.customer import CustomerUpdate
 from polar.customer.service import customer as customer_service
 from polar.customer_session.service import customer_session as customer_session_service
 from polar.exceptions import PolarRequestValidationError
+from polar.kit.currency import PresentmentCurrency, get_currency_decimal_factor
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
 from polar.member.repository import MemberRepository
@@ -30,11 +41,15 @@ from polar.models import (
     Organization,
     Product,
     Subscription,
+    Wallet,
+    WalletTransaction,
 )
+from polar.models.wallet import WalletType
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.sorting import SubscriptionSortProperty
+from polar.wallet.repository import WalletRepository, WalletTransactionRepository
 from polar.wallet.service import wallet as wallet_service
 from polar.worker import enqueue_job
 
@@ -52,6 +67,73 @@ class UpdateCustomerEmailForm(forms.BaseForm):
         forms.InputField(type="email", placeholder="customer@example.com"),
         Field(title="Email"),
     ]
+
+
+class CreateBalanceTransactionForm(forms.BaseForm):
+    currency: Annotated[
+        PresentmentCurrency,
+        forms.SelectField(
+            options=[
+                (currency.value, currency.value.upper())
+                for currency in PresentmentCurrency
+            ]
+        ),
+        Field(title="Currency"),
+    ]
+    amount: Annotated[
+        Decimal,
+        forms.InputField(type="number", step="any"),
+        Field(title="Amount"),
+    ]
+
+    @field_validator("amount")
+    @classmethod
+    def validate_amount_precision(
+        cls, amount: Decimal, info: ValidationInfo
+    ) -> Decimal:
+        if amount == 0:
+            raise ValueError("Amount must not be zero")
+        currency = info.data.get("currency")
+        if currency is None:
+            return amount
+        decimal_factor = get_currency_decimal_factor(currency)
+        amount_in_smallest_unit = amount * decimal_factor
+        if amount_in_smallest_unit != amount_in_smallest_unit.to_integral_value():
+            decimal_places = 0 if decimal_factor == 1 else 2
+            raise ValueError(
+                f"Amount must have at most {decimal_places} decimal places"
+            )
+        return amount
+
+    def amount_in_smallest_unit(self) -> int:
+        return int(self.amount * get_currency_decimal_factor(self.currency))
+
+
+class WalletTransactionReferenceColumn(datatable.DatatableColumn[WalletTransaction]):
+    def __init__(self) -> None:
+        super().__init__("Reference")
+
+    def render(
+        self, request: Request, item: WalletTransaction
+    ) -> Generator[None] | None:
+        href: str | None = None
+        label: str | None = None
+        if item.refund_id is not None:
+            label = f"Refund {item.refund_id}"
+            if item.refund is not None and item.refund.order_id is not None:
+                href = str(request.url_for("orders:get", id=item.refund.order_id))
+        elif item.order_id is not None:
+            label = f"Order {item.order_id}"
+            href = str(request.url_for("orders:get", id=item.order_id))
+
+        if label is None:
+            text("—")
+        elif href is None:
+            text(label)
+        else:
+            with tag.a(href=href, classes="link"):
+                text(label)
+        return None
 
 
 router = APIRouter()
@@ -165,9 +247,12 @@ async def get(
     )
     orders = await order_repository.get_all(orders_statement)
 
-    # Get credit balance
-    credit_balance = await wallet_service.get_billing_wallet_balance(
-        session, customer, "usd"
+    # Get credit balances
+    billing_wallets = await WalletRepository.from_session(
+        session
+    ).get_all_by_type_customer(
+        WalletType.billing,
+        customer.id,
     )
 
     # Get granted benefits
@@ -341,18 +426,68 @@ async def get(
                 # Credit Balance
                 with tag.div(classes="card card-border w-full shadow-sm"):
                     with tag.div(classes="card-body"):
-                        with tag.h2(classes="card-title"):
-                            text("Credit Balance")
-                        with tag.div(classes="flex items-center gap-2"):
-                            with tag.span(classes="font-semibold"):
-                                text("Available Balance:")
-                            balance_classes = (
-                                "text-lg text-success"
-                                if credit_balance > 0
-                                else "text-lg"
-                            )
-                            with tag.span(classes=balance_classes):
-                                text(currency(credit_balance, "usd"))
+                        with tag.div(classes="flex justify-between items-center"):
+                            with tag.h2(classes="card-title"):
+                                text("Credit Balance")
+                            with button(
+                                hx_get=str(
+                                    request.url_for(
+                                        "customers:create_balance_transaction",
+                                        id=customer.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                                variant="primary",
+                                size="sm",
+                            ):
+                                text("Add Transaction")
+                        with tag.dl():
+                            balances: Sequence[Wallet | None] = billing_wallets or [
+                                None
+                            ]
+                            for wallet in balances:
+                                balance_currency = (
+                                    wallet.currency if wallet is not None else "usd"
+                                )
+                                balance_amount = (
+                                    wallet.balance if wallet is not None else 0
+                                )
+                                with tag.div(
+                                    classes=("py-2 sm:grid sm:grid-cols-3 sm:gap-4")
+                                ):
+                                    with tag.dt(classes="text-sm/6 font-medium"):
+                                        if wallet is None:
+                                            text(balance_currency.upper())
+                                        else:
+                                            with tag.button(
+                                                type="button",
+                                                classes="link link-hover font-medium",
+                                                hx_get=str(
+                                                    request.url_for(
+                                                        "customers:wallet_transactions",
+                                                        id=customer.id,
+                                                        wallet_id=wallet.id,
+                                                    )
+                                                ),
+                                                hx_target="#modal",
+                                            ):
+                                                text(balance_currency.upper())
+                                    with tag.dd(
+                                        classes=(
+                                            "mt-1 text-sm/6 font-medium tabular-nums "
+                                            "sm:col-span-2 sm:mt-0 sm:text-right"
+                                        )
+                                    ):
+                                        if balance_amount > 0:
+                                            classes("text-success")
+                                        elif balance_amount < 0:
+                                            classes("text-error")
+                                        text(
+                                            currency(
+                                                balance_amount,
+                                                balance_currency,
+                                            )
+                                        )
 
             # Members Section
             with tag.div(classes="mt-8"):
@@ -504,6 +639,104 @@ async def get(
                 else:
                     with tag.div(classes="text-center py-8 text-gray-500"):
                         text("No granted benefits found")
+
+
+@router.api_route(
+    "/{id}/balance-transactions/create",
+    name="customers:create_balance_transaction",
+    methods=["GET", "POST"],
+)
+async def create_balance_transaction(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    customer = await CustomerRepository.from_session(session).get_by_id(id)
+    if customer is None:
+        raise HTTPException(status_code=404)
+
+    validation_error: ValidationError | None = None
+    form_data: dict[str, Any] = {"currency": PresentmentCurrency.usd.value}
+
+    if request.method == "POST":
+        request_form_data = await request.form()
+        form_data = dict(request_form_data)
+        try:
+            form = CreateBalanceTransactionForm.model_validate_form(request_form_data)
+            await wallet_service.create_balance_transaction(
+                session,
+                customer,
+                form.amount_in_smallest_unit(),
+                form.currency.value,
+            )
+            await add_toast(
+                request,
+                "Customer balance transaction created successfully.",
+                "success",
+            )
+            return HXRedirectResponse(
+                request,
+                str(request.url_for("customers:get", id=customer.id)),
+                303,
+            )
+        except ValidationError as e:
+            validation_error = e
+
+    with document() as doc:
+        with tag.div(id="modal"):
+            with modal("Create Balance Transaction", open=True):
+                with CreateBalanceTransactionForm.render(
+                    data=form_data,
+                    validation_error=validation_error,
+                    method="POST",
+                    hx_post=str(
+                        request.url_for(
+                            "customers:create_balance_transaction",
+                            id=customer.id,
+                        )
+                    ),
+                    hx_target="#modal",
+                ):
+                    with tag.div(classes="modal-action"):
+                        with tag.form(method="dialog"):
+                            with button(ghost=True):
+                                text("Cancel")
+                        with button(type="submit", variant="primary"):
+                            text("Create Transaction")
+
+    return HTMLResponse(str(doc))
+
+
+@router.get(
+    "/{id}/wallets/{wallet_id}/transactions",
+    name="customers:wallet_transactions",
+)
+async def wallet_transactions(
+    request: Request,
+    id: UUID4,
+    wallet_id: UUID4,
+    session: AsyncSession = Depends(get_db_read_session),
+) -> Any:
+    wallet = await WalletRepository.from_session(session).get_by_id(wallet_id)
+    if wallet is None or wallet.customer_id != id or wallet.type != WalletType.billing:
+        raise HTTPException(status_code=404)
+
+    transactions = await WalletTransactionRepository.from_session(
+        session
+    ).get_all_by_wallet(wallet.id)
+
+    with document() as doc:
+        with tag.div(id="modal"):
+            with modal(f"{wallet.currency.upper()} Balance Transactions", open=True):
+                with datatable.Datatable[WalletTransaction, Any](
+                    datatable.DatatableDateTimeColumn("timestamp", "Created"),
+                    datatable.DatatableCurrencyColumn("amount", "Amount"),
+                    WalletTransactionReferenceColumn(),
+                    empty_message="No balance transactions found",
+                ).render(request, transactions):
+                    pass
+
+    return HTMLResponse(str(doc))
 
 
 def _render_portal_link_modal(

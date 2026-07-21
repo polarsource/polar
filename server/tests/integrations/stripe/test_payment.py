@@ -13,11 +13,12 @@ from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
 from polar.models import (
     Customer,
+    Organization,
     Product,
     Subscription,
 )
 from polar.models.order import OrderStatus
-from polar.models.payment import PaymentTrigger
+from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
 from polar.payment.repository import PaymentRepository
@@ -25,6 +26,7 @@ from polar.subscription.repository import SubscriptionRepository
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_order,
+    create_payment,
 )
 from tests.fixtures.stripe import build_stripe_charge, build_stripe_payment_intent
 
@@ -138,6 +140,47 @@ class TestHandleCancellation:
         updated_subscription = await subscription_repo.get_by_id(subscription.id)
         assert updated_subscription is not None
         assert updated_subscription.status == SubscriptionStatus.past_due
+
+    async def test_marks_recorded_payment_as_failed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=utc_now() - timedelta(hours=2),
+        )
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            order=order,
+            status=PaymentStatus.pending,
+            processor_id="pi_wedged",
+            processor_metadata={"payment_intent_id": "pi_wedged"},
+        )
+
+        payment_intent = build_stripe_payment_intent(
+            id="pi_wedged",
+            status="canceled",
+            metadata={"order_id": str(order.id)},
+        )
+
+        # When
+        await handle_cancellation(session, payment_intent)
+
+        # Then
+        payment_repository = PaymentRepository.from_session(session)
+        updated_payment = await payment_repository.get_by_id(payment.id)
+        assert updated_payment is not None
+        assert updated_payment.status == PaymentStatus.failed
 
     async def test_live_payment_attempt_not_disturbed(
         self,

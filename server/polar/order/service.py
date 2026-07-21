@@ -3065,8 +3065,7 @@ class OrderService:
 
             return order
 
-        # Schedule next retry using the appropriate interval. A cancelled
-        # attempt records no Payment, so the count can still be zero here.
+        # Locks wedged before attempts were recorded have no failed Payment.
         next_interval = settings.DUNNING_RETRY_INTERVALS[max(failed_attempts - 1, 0)]
         next_retry_date = now + next_interval
 

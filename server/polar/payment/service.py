@@ -238,6 +238,20 @@ class PaymentService:
             flush=True,
         )
 
+    async def cancel_from_stripe_payment_intent(
+        self, session: AsyncSession, payment_intent: stripe_lib.PaymentIntent
+    ) -> Payment | None:
+        repository = PaymentRepository.from_session(session)
+        payment = await self._get_by_stripe_payment_intent(
+            repository, payment_intent.id
+        )
+        if payment is None:
+            return None
+
+        return await repository.update(
+            payment, update_dict={"status": PaymentStatus.failed}, flush=True
+        )
+
     async def _get_by_stripe_payment_intent(
         self,
         repository: PaymentRepository,

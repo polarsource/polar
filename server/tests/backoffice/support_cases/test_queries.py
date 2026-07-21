@@ -138,8 +138,7 @@ class TestCasesStatement:
         rows = await _rows(
             session, organization_id=organization.id, viewer_user_id=user.id
         )
-        *_, unread, _dispute_status = rows[0]
-        assert unread is True
+        assert rows[0][5] is True  # unread
 
         await save_fixture(
             SupportCaseParticipant(
@@ -152,14 +151,12 @@ class TestCasesStatement:
         rows = await _rows(
             session, organization_id=organization.id, viewer_user_id=user.id
         )
-        *_, unread, _dispute_status = rows[0]
-        assert unread is False
+        assert rows[0][5] is False
 
         rows = await _rows(
             session, organization_id=organization.id, viewer_user_id=uuid4()
         )
-        *_, unread, _dispute_status = rows[0]
-        assert unread is True
+        assert rows[0][5] is True
 
         await save_fixture(
             SupportCaseMessage(
@@ -174,8 +171,90 @@ class TestCasesStatement:
         rows = await _rows(
             session, organization_id=organization.id, viewer_user_id=user.id
         )
-        *_, unread, _dispute_status = rows[0]
-        assert unread is True
+        assert rows[0][5] is True
+
+
+@pytest.mark.asyncio
+class TestCasesStatementEvidenceDueSort:
+    async def test_orders_by_soonest_deadline_dropping_nothing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        now = datetime.now(UTC)
+        appeal = await create_appeal_case(save_fixture, organization)
+        later = await create_dispute_case(
+            save_fixture,
+            organization,
+            customer,
+            product,
+            evidence_due_by=now + timedelta(days=7),
+            payment_processor_id="STRIPE_DISPUTE_LATER",
+        )
+        soon = await create_dispute_case(
+            save_fixture,
+            organization,
+            customer,
+            product,
+            evidence_due_by=now + timedelta(days=1),
+            payment_processor_id="STRIPE_DISPUTE_SOON",
+        )
+        undated = await create_dispute_case(
+            save_fixture,
+            organization,
+            customer,
+            product,
+            payment_processor_id="STRIPE_DISPUTE_NO_DEADLINE",
+        )
+
+        rows = await _rows(
+            session, organization_id=organization.id, sort="evidence_due"
+        )
+
+        ids = [row[0].id for row in rows]
+        assert ids[:2] == [soon.id, later.id]
+        # Rows without a deadline sink to the bottom instead of disappearing.
+        assert set(ids[2:]) == {undated.id, appeal.id}
+
+    async def test_resolved_past_due_dispute_sorts_first_and_exposes_fields(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        now = datetime.now(UTC)
+        lost = await create_dispute_case(
+            save_fixture,
+            organization,
+            customer,
+            product,
+            dispute_status=DisputeStatus.lost,
+            evidence_due_by=now - timedelta(days=20),
+            past_due=True,
+            payment_processor_id="STRIPE_DISPUTE_LOST",
+        )
+        upcoming = await create_dispute_case(
+            save_fixture,
+            organization,
+            customer,
+            product,
+            evidence_due_by=now + timedelta(days=3),
+            payment_processor_id="STRIPE_DISPUTE_UPCOMING",
+        )
+
+        rows = await _rows(
+            session, organization_id=organization.id, sort="evidence_due"
+        )
+
+        assert [row[0].id for row in rows] == [lost.id, upcoming.id]
+        _case, _org, *_rest, evidence_due_by, evidence_past_due = rows[0]
+        assert evidence_due_by is not None
+        assert evidence_past_due is True
 
 
 @pytest.mark.asyncio

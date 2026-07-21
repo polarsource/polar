@@ -33,7 +33,12 @@ from polar.support_case.repository import (
 from polar.support_case.service import support_case as support_case_service
 from polar.worker import enqueue_job
 
-from ..components import datatable, dispute_status_badge, support_tier_badge
+from ..components import (
+    datatable,
+    dispute_status_badge,
+    evidence_due_label,
+    support_tier_badge,
+)
 from ..components._tab_nav import Tab, tab_nav
 from ..dependencies import get_admin
 from ..layout import layout
@@ -188,14 +193,16 @@ def _type_badge(case_type: SupportCaseType) -> None:
         text(TYPE_LABELS.get(case_type, case_type.value))
 
 
-def _tier_sort_header(request: Request, sort: str) -> None:
-    """Clickable 'Tier' header that toggles the opt-in tier sort, preserving
-    the current tab/assignment filters."""
+def _sort_header(request: Request, label: str, target_sort: str, active: bool) -> None:
+    """Clickable column header toggling a sort mode: click activates it,
+    clicking the active one returns to the default recency sort. Re-sorting
+    drops the current page — the interesting rows move to page 1."""
     params = dict(request.query_params)
-    params["sort"] = "recency" if sort == "tier" else "tier"
+    params.pop("page", None)
+    params["sort"] = "recency" if active else target_sort
     href = f"{request.url_for('support_cases:list')}?{urlencode(params)}"
     with tag.a(href=href, classes="link link-hover"):
-        text("Tier ↓" if sort == "tier" else "Tier")
+        text(f"{label} ↓" if active else label)
 
 
 def _render_table(request: Request, rows: Sequence[Row], sort: str) -> None:
@@ -206,15 +213,28 @@ def _render_table(request: Request, rows: Sequence[Row], sort: str) -> None:
                     with tag.th():
                         text("Organization")
                     with tag.th():
-                        _tier_sort_header(request, sort)
-                    for header in (
-                        "Type",
-                        "Status",
-                        "Assignee",
-                        "Opened",
-                    ):
+                        _sort_header(request, "Tier", "tier", sort == "tier")
+                    for header in ("Type", "Status"):
                         with tag.th():
                             text(header)
+                    with tag.th():
+                        _sort_header(
+                            request,
+                            "Evidence due",
+                            "evidence_due",
+                            sort == "evidence_due",
+                        )
+                    with tag.th():
+                        text("Assignee")
+                    with tag.th():
+                        # target "recency" on purpose: Opened's sort IS the
+                        # default, so both toggle directions lead there.
+                        _sort_header(
+                            request,
+                            "Opened",
+                            "recency",
+                            sort not in ("tier", "evidence_due"),
+                        )
             with tag.tbody():
                 for (
                     case,
@@ -224,6 +244,8 @@ def _render_table(request: Request, rows: Sequence[Row], sort: str) -> None:
                     _awaiting_platform,
                     unread,
                     dispute_status,
+                    evidence_due_by,
+                    evidence_past_due,
                 ) in rows:
                     case_url = str(
                         request.url_for("support_cases:detail", case_id=case.id)
@@ -253,6 +275,10 @@ def _render_table(request: Request, rows: Sequence[Row], sort: str) -> None:
                                         data_tip="Unread",
                                     ):
                                         text("●")
+                        with tag.td(classes="text-base-content/60"):
+                            evidence_due_label(
+                                evidence_due_by, evidence_past_due, dispute_status
+                            )
                         with tag.td():
                             if assignee_email:
                                 text(assignee_email)

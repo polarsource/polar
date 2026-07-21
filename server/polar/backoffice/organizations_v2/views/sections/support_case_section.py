@@ -26,7 +26,7 @@ from polar.models.support_case import (
 from polar.support_case.pdf import is_mergeable
 
 from .... import formatters
-from ....components import button, card, dispute_status_badge
+from ....components import button, card, dispute_status_badge, evidence_due_label
 from ....support_cases.urls import append_return_to
 
 _AUTHOR_LABELS: dict[SupportCaseMessageAuthorKind, str] = {
@@ -442,7 +442,9 @@ class SupportCaseSection:
                 with self._fact("Reason"):
                     text(self._dispute_reason(dispute))
                 with self._fact("Evidence due"):
-                    self._render_evidence_due(dispute)
+                    evidence_due_label(
+                        dispute.evidence_due_by, dispute.past_due, dispute.status
+                    )
                 with self._fact("Evidence"):
                     if dispute.has_evidence:
                         text(f"Submitted ({dispute.submission_count})")
@@ -576,18 +578,6 @@ class SupportCaseSection:
         else:
             with tag.span(classes="font-mono text-xs break-all"):
                 text(processor_id)
-
-    def _render_evidence_due(self, dispute: Dispute) -> None:
-        if dispute.evidence_due_by is None:
-            with tag.span(classes="text-base-content/50"):
-                text("—")
-            return
-        when = dispute.evidence_due_by.strftime("%b %-d, %Y %H:%M UTC")
-        if dispute.past_due:
-            with tag.span(classes="text-error font-medium"):
-                text(f"{when} · Past due")
-        else:
-            text(when)
 
     @staticmethod
     def _dispute_reason(dispute: Dispute) -> str:

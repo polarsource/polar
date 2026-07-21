@@ -5,6 +5,7 @@ from sqlalchemy import Select, func, select
 from sqlalchemy.orm import contains_eager, joinedload
 
 from polar.authz.types import AccessibleOrganizationID
+from polar.kit.pagination import PaginationParams
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -95,14 +96,23 @@ class WalletTransactionRepository(
         result = await self.session.execute(statement)
         return result.scalar_one()
 
-    async def get_all_by_wallet(self, wallet_id: UUID) -> Sequence[WalletTransaction]:
+    async def paginate_by_wallet(
+        self, wallet_id: UUID, *, pagination: PaginationParams
+    ) -> tuple[Sequence[WalletTransaction], int]:
         statement = (
             self.get_base_statement()
             .where(WalletTransaction.wallet_id == wallet_id)
             .options(joinedload(WalletTransaction.refund))
-            .order_by(WalletTransaction.timestamp.desc())
+            .order_by(
+                WalletTransaction.timestamp.desc(),
+                WalletTransaction.id.desc(),
+            )
         )
-        return await self.get_all(statement)
+        return await self.paginate(
+            statement,
+            limit=pagination.limit,
+            page=pagination.page,
+        )
 
     def get_eager_options(self) -> Options:
         return (

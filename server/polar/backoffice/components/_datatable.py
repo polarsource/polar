@@ -704,7 +704,11 @@ class Datatable[M, PE: StrEnum]:
 
 @contextlib.contextmanager
 def pagination(
-    request: Request, pagination: PaginationParams, count: int
+    request: Request,
+    pagination: PaginationParams,
+    count: int,
+    *,
+    hx_target: str | None = None,
 ) -> Generator[None]:
     """Render pagination controls for a datatable.
 
@@ -717,6 +721,7 @@ def pagination(
         request: The FastAPI request object for URL generation.
         pagination: Pagination parameters containing current page and limit.
         count: Total number of items across all pages.
+        hx_target: Optional HTMX target for loading pagination links.
 
     Example:
         >>> with pagination(request, PaginationParams(page=2, limit=10), 50):
@@ -755,6 +760,9 @@ def pagination(
             ):
                 if previous_url is None:
                     attr("disabled", True)
+                elif hx_target is not None:
+                    attr("hx-get", str(previous_url))
+                    attr("hx-target", hx_target)
                 text("Previous")
             with tag.a(
                 classes="join-item btn",
@@ -762,6 +770,9 @@ def pagination(
             ):
                 if next_url is None:
                     attr("disabled", True)
+                elif hx_target is not None:
+                    attr("hx-get", str(next_url))
+                    attr("hx-target", hx_target)
                 text("Next")
     yield
 

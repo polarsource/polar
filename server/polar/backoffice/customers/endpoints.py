@@ -60,6 +60,12 @@ from ..responses import HXRedirectResponse
 from ..toast import add_toast
 from .components import customers_datatable, email_verified_badge
 
+_MAX_CURRENCY_DECIMAL_FACTOR = max(
+    get_currency_decimal_factor(currency) for currency in PresentmentCurrency
+)
+_MINIMUM_BALANCE_AMOUNT = Decimal(-(2**63)) / _MAX_CURRENCY_DECIMAL_FACTOR
+_MAXIMUM_BALANCE_AMOUNT = Decimal(2**63 - 1) / _MAX_CURRENCY_DECIMAL_FACTOR
+
 
 class UpdateCustomerEmailForm(forms.BaseForm):
     email: Annotated[
@@ -83,7 +89,12 @@ class CreateBalanceTransactionForm(forms.BaseForm):
     amount: Annotated[
         Decimal,
         forms.InputField(type="number", step="any"),
-        Field(title="Amount"),
+        Field(
+            title="Amount",
+            ge=_MINIMUM_BALANCE_AMOUNT,
+            le=_MAXIMUM_BALANCE_AMOUNT,
+            allow_inf_nan=False,
+        ),
     ]
 
     @field_validator("amount")
@@ -429,18 +440,19 @@ async def get(
                         with tag.div(classes="flex justify-between items-center"):
                             with tag.h2(classes="card-title"):
                                 text("Credit Balance")
-                            with button(
-                                hx_get=str(
-                                    request.url_for(
-                                        "customers:create_balance_transaction",
-                                        id=customer.id,
-                                    )
-                                ),
-                                hx_target="#modal",
-                                variant="primary",
-                                size="sm",
-                            ):
-                                text("Add Transaction")
+                            if not customer.deleted_at:
+                                with button(
+                                    hx_get=str(
+                                        request.url_for(
+                                            "customers:create_balance_transaction",
+                                            id=customer.id,
+                                        )
+                                    ),
+                                    hx_target="#modal",
+                                    variant="primary",
+                                    size="sm",
+                                ):
+                                    text("Add Transaction")
                         with tag.dl():
                             balances: Sequence[Wallet | None] = billing_wallets or [
                                 None
@@ -715,15 +727,16 @@ async def wallet_transactions(
     request: Request,
     id: UUID4,
     wallet_id: UUID4,
+    pagination: PaginationParamsQuery,
     session: AsyncSession = Depends(get_db_read_session),
 ) -> Any:
     wallet = await WalletRepository.from_session(session).get_by_id(wallet_id)
     if wallet is None or wallet.customer_id != id or wallet.type != WalletType.billing:
         raise HTTPException(status_code=404)
 
-    transactions = await WalletTransactionRepository.from_session(
+    transactions, count = await WalletTransactionRepository.from_session(
         session
-    ).get_all_by_wallet(wallet.id)
+    ).paginate_by_wallet(wallet.id, pagination=pagination)
 
     with document() as doc:
         with tag.div(id="modal"):
@@ -734,6 +747,13 @@ async def wallet_transactions(
                     WalletTransactionReferenceColumn(),
                     empty_message="No balance transactions found",
                 ).render(request, transactions):
+                    pass
+                with datatable.pagination(
+                    request,
+                    pagination,
+                    count,
+                    hx_target="#modal",
+                ):
                     pass
 
     return HTMLResponse(str(doc))

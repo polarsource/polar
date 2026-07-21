@@ -13,6 +13,7 @@ from polar.kit.sorting import Sorting
 from polar.models import Customer, Order, Wallet, WalletTransaction
 from polar.models.payment_method import PaymentMethod
 from polar.models.wallet import WalletType
+from polar.payment.service import payment as payment_service
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.tax.calculation import TaxBreakdownItem, TaxCode
@@ -167,6 +168,11 @@ class WalletService:
                     "wallet_id": str(wallet.id),
                     "wallet_transaction_id": str(transaction.id),
                 },
+                expand=["payment_method"],
+            )
+
+            await payment_service.create_from_stripe_payment_intent(
+                session, payment_intent, organization, wallet=wallet
             )
 
             if payment_intent.status != "succeeded":

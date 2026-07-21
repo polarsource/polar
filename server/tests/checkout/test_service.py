@@ -4317,7 +4317,9 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
 
         checkout = await checkout_service.confirm(
@@ -4355,7 +4357,9 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
 
         checkout = await checkout_service.confirm(
@@ -4477,7 +4481,9 @@ class TestConfirm:
             id=existing.stripe_customer_id
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
 
         checkout = await checkout_service.confirm(
@@ -4675,7 +4681,9 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
         checkout = await checkout_service.confirm(
             session,
@@ -4742,7 +4750,9 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
         checkout = await checkout_service.confirm(
             session,
@@ -4854,7 +4864,9 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
         checkout = await checkout_service.confirm(
             session,
@@ -4958,7 +4970,9 @@ class TestConfirm:
         await save_fixture(checkout_one_time_fixed)
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
 
         checkout = await checkout_service.confirm(
@@ -5000,7 +5014,9 @@ class TestConfirm:
         await save_fixture(checkout_one_time_fixed)
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
 
         checkout = await checkout_service.confirm(
@@ -5045,7 +5061,9 @@ class TestConfirm:
         await save_fixture(checkout_one_time_fixed)
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
 
         checkout = await checkout_service.confirm(
@@ -5098,7 +5116,9 @@ class TestConfirm:
         await save_fixture(checkout_one_time_fixed)
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
 
         checkout = await checkout_service.confirm(
@@ -5136,7 +5156,9 @@ class TestConfirm:
         checkout_one_time_fixed.customer_metadata = {"key": "updated", "key2": "value2"}
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
 
         checkout = await checkout_service.confirm(
@@ -5171,7 +5193,9 @@ class TestConfirm:
         await save_fixture(checkout_one_time_fixed)
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
         stripe_service_mock.create_customer.return_value = SimpleNamespace(
             id="STRIPE_CUSTOMER_ID"
@@ -5207,7 +5231,9 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
 
         checkout = await checkout_service.confirm(
@@ -5369,7 +5395,9 @@ class TestConfirm:
         )
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
 
         checkout = await checkout_service.confirm(
@@ -5412,7 +5440,9 @@ class TestConfirm:
         )
 
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
 
         checkout = await checkout_service.confirm(
@@ -5521,6 +5551,7 @@ class TestConfirm:
         payment_intent.id = "pi_test"
         payment_intent.client_secret = "pi_test_secret"
         payment_intent.status = "requires_payment_method"
+        payment_intent.latest_charge = "STRIPE_CHARGE_ID"
         stripe_service_mock.create_payment_intent.return_value = payment_intent
 
         stripe_customer = MagicMock(spec=stripe_lib.Customer)
@@ -5644,6 +5675,7 @@ class TestConfirm:
         payment_intent.id = "pi_test"
         payment_intent.client_secret = "pi_test_secret"
         payment_intent.status = "requires_payment_method"
+        payment_intent.latest_charge = "STRIPE_CHARGE_ID"
         stripe_service_mock.create_payment_intent.return_value = payment_intent
 
         stripe_customer = MagicMock(spec=stripe_lib.Customer)
@@ -5704,6 +5736,7 @@ class TestConfirm:
         payment_intent.id = "pi_test"
         payment_intent.client_secret = "pi_test_secret"
         payment_intent.status = "requires_payment_method"
+        payment_intent.latest_charge = "STRIPE_CHARGE_ID"
         stripe_service_mock.create_payment_intent.return_value = payment_intent
 
         stripe_customer = MagicMock(spec=stripe_lib.Customer)
@@ -5926,7 +5959,9 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
 
         checkout = await checkout_service.confirm(
@@ -5972,7 +6007,9 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
 
         checkout = await checkout_service.confirm(
@@ -6020,7 +6057,9 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
 
         checkout = await checkout_service.confirm(
@@ -6067,7 +6106,9 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
 
         checkout = await checkout_service.confirm(
@@ -6105,7 +6146,9 @@ class TestConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET", status="succeeded"
+            client_secret="CLIENT_SECRET",
+            status="succeeded",
+            latest_charge="STRIPE_CHARGE_ID",
         )
 
         checkout = await checkout_service.confirm(

@@ -41,6 +41,7 @@ class StripeSimulator:
     # Payment details (set by expect_payment / expect_setup)
     customer_id: str = field(default_factory=lambda: _e2e_id("cus"))
     payment_intent_id: str = field(default_factory=lambda: _e2e_id("pi"))
+    charge_id: str = field(default_factory=lambda: _e2e_id("ch"))
     customer_name: str = "Test Buyer"
     customer_email: str = "buyer@example.com"
     billing_address: dict[str, Any] = field(
@@ -99,6 +100,7 @@ class StripeSimulator:
             client_secret=f"{self.payment_intent_id}_secret",
             status=intent_status,
             payment_method=None,
+            latest_charge=self.charge_id,
         )
 
         return self
@@ -144,6 +146,7 @@ class StripeSimulator:
         Call this AFTER checkout confirm to generate the webhook payload.
         """
         charge = build_stripe_charge(
+            id=self.charge_id,
             amount=self.amount,
             currency=self.currency,
             customer=self.customer_id,

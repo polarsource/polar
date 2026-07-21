@@ -28559,6 +28559,17 @@ export interface components {
      * @enum {string}
      */
     PayoutAccountStatus: 'incomplete' | 'under_review' | 'paused' | 'ready'
+    /** PayoutAccountSyncFailed */
+    PayoutAccountSyncFailed: {
+      /**
+       * Error
+       * @example PayoutAccountSyncFailed
+       * @constant
+       */
+      error: 'PayoutAccountSyncFailed'
+      /** Detail */
+      detail: string
+    }
     /** PayoutAccountSyncUnsupported */
     PayoutAccountSyncUnsupported: {
       /**
@@ -55231,6 +55242,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PayoutAccountSyncFailed']
         }
       }
     }

@@ -12,6 +12,7 @@ from polar.payout_account.service import (
     PayoutAccountLinkedToOrganization,
     PayoutAccountNonZeroBalance,
     PayoutAccountStripeAccountDoesNotExist,
+    PayoutAccountSyncFailed,
     PayoutAccountSyncUnsupported,
 )
 from polar.payout_account.service import (
@@ -293,3 +294,19 @@ class TestSyncFromStripe:
             await payout_account_service.sync_from_stripe(session, payout_account)
 
         stripe_service_mock.retrieve_account.assert_not_called()  # type: ignore[attr-defined]
+
+    async def test_stripe_error_raises_sync_failed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        stripe_service_mock.retrieve_account.side_effect = (  # type: ignore[attr-defined]
+            stripe_lib.PermissionError("no access")
+        )
+
+        with pytest.raises(PayoutAccountSyncFailed):
+            await payout_account_service.sync_from_stripe(session, payout_account)

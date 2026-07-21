@@ -4,6 +4,7 @@ import uuid
 from collections.abc import Sequence
 
 import stripe as stripe_lib
+import structlog
 
 from polar.auth.models import AuthSubject
 from polar.authz.service import get_accessible_org_ids
@@ -19,6 +20,8 @@ from polar.postgres import AsyncSession
 
 from .repository import PayoutAccountRepository
 from .schemas import PayoutAccountCreate, PayoutAccountLink
+
+log = structlog.get_logger()
 
 
 class PayoutAccountServiceError(PolarError):
@@ -44,6 +47,13 @@ class PayoutAccountSyncUnsupported(PayoutAccountServiceError):
         self.account_type = account_type
         message = f"Unsupported payout account type for sync: {account_type}"
         super().__init__(message, 404)
+
+
+class PayoutAccountSyncFailed(PayoutAccountServiceError):
+    def __init__(self, stripe_id: str) -> None:
+        self.stripe_id = stripe_id
+        message = "Could not reach Stripe to refresh this payout account."
+        super().__init__(message, 503)
 
 
 class PayoutAccountStripeAccountDoesNotExist(PayoutAccountServiceError):
@@ -235,7 +245,16 @@ class PayoutAccountService:
         ):
             raise PayoutAccountSyncUnsupported(payout_account.type)
 
-        stripe_account = await stripe.retrieve_account(payout_account.stripe_id)
+        try:
+            stripe_account = await stripe.retrieve_account(payout_account.stripe_id)
+        except stripe_lib.StripeError as e:
+            log.warning(
+                "payout_account.sync_failed",
+                stripe_id=payout_account.stripe_id,
+                error=str(e),
+            )
+            raise PayoutAccountSyncFailed(payout_account.stripe_id) from e
+
         return await self.update_account_from_stripe(
             session, stripe_account=stripe_account
         )

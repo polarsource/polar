@@ -71,7 +71,7 @@ curl --request POST \
   --data '{}'
 ```
 
-On success, the order transitions to `paid`, an invoice number is assigned, any [benefits](/features/benefits/introduction) attached to the product are granted, the customer is emailed their confirmation, and the [`order.paid`](/api-reference/webhooks/order.paid) webhook fires.
+On success, the order transitions to `paid`, an invoice number is assigned, any [benefits](/features/benefits/introduction) attached to the product are granted, the customer is emailed their confirmation, and the [`order.paid`](/api-reference/orderpaid) webhook fires.
 
 If the charge fails, the API returns an error and the order is reverted to `draft` so you can fix the problem and finalize the same order again — no invoice number is consumed by a failed attempt:
 
@@ -111,7 +111,7 @@ Every order carries:
 Polar generates a PDF invoice for every paid order. You can:
 
 - **Download it** from the order detail page in the dashboard.
-- **Trigger generation** programmatically via [Generate Order Invoice](/api-reference/orders/post-invoice), then fetch the URL with [Get Order Invoice](/api-reference/orders/get-invoice).
+- **Trigger generation** programmatically via [Generate Order Invoice](/api-reference/orders/generate-order-invoice), then fetch the URL with [Get Order Invoice](/api-reference/orders/get-order-invoice).
 
 Customers can download and edit their own invoices — adding a company name, VAT number, or billing address — from the [Customer Portal](/features/customer-portal/introduction), without pulling you into a support thread.
 
@@ -132,22 +132,22 @@ Each receipt includes:
 - Any **refunds** issued against the order, with dates and amounts.
 - The same line items, taxes, totals, and linked invoice number as the order's invoice.
 
-You can **download receipts** from the order detail page in the dashboard, and customers download receipts from the [Customer Portal](/features/customer-portal/introduction) — a **Download Receipt** button appears on each paid order. Programmatically, use [Get Order Receipt](/api-reference/orders/get-receipt) for the merchant API or its [customer-portal counterpart](/api-reference/customer-portal/orders/get-receipt).
+You can **download receipts** from the order detail page in the dashboard, and customers download receipts from the [Customer Portal](/features/customer-portal/introduction) — a **Download Receipt** button appears on each paid order. Programmatically, use [Get Order Receipt](/api-reference/orders/get-order-receipt) for the merchant API or its [customer-portal counterpart](/api-reference/customer_portal/get-order-receipt).
 
 The first request for a given order may return `202 Accepted` while the PDF renders. Retry shortly after for a presigned download URL. The Customer Portal handles this for you.
 
 ## Refunds
 
-Orders can be refunded in full or in part from the dashboard, or programmatically via the [Refunds API](/api-reference/refunds/create). Refunds are a separate resource linked to the order — see [Refunds](/features/refunds) for the rules around what's refundable and how it interacts with payouts.
+Orders can be refunded in full or in part from the dashboard, or programmatically via the [Refunds API](/api-reference/refunds/create-refund). Refunds are a separate resource linked to the order — see [Refunds](/features/refunds) for the rules around what's refundable and how it interacts with payouts.
 
 ## Webhooks
 
 If you're integrating orders into your own system, Polar emits an event on every state transition:
 
-- [`order.created`](/api-reference/webhooks/order.created) — a new order exists (not necessarily paid yet).
-- [`order.paid`](/api-reference/webhooks/order.paid) — the order has been collected. This is the one most integrations care about.
-- [`order.updated`](/api-reference/webhooks/order.updated) — something changed on the order.
-- [`order.refunded`](/api-reference/webhooks/order.refunded) — a refund was issued against the order.
+- [`order.created`](/api-reference/ordercreated) — a new order exists (not necessarily paid yet).
+- [`order.paid`](/api-reference/orderpaid) — the order has been collected. This is the one most integrations care about.
+- [`order.updated`](/api-reference/orderupdated) — something changed on the order.
+- [`order.refunded`](/api-reference/orderrefunded) — a refund was issued against the order.
 
 ## Next steps
 
@@ -158,7 +158,7 @@ If you're integrating orders into your own system, Polar emits an event on every
   <Card title="Refunds" icon="arrow-rotate-left" href="/features/refunds">
     How to refund an order, fully or partially.
   </Card>
-  <Card title="Orders API" icon="code" href="/api-reference/orders/list">
+  <Card title="Orders API" icon="code" href="/api-reference/orders/list-orders">
     List and fetch orders, update billing details, and generate invoices.
   </Card>
   <Card title="Customer Portal" icon="user" href="/features/customer-portal/introduction">

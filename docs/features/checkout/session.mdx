@@ -6,7 +6,7 @@ description: "Create checkout sessions programmatically for complete control"
 
 If you want to integrate more deeply the checkout process with your website or application, you can use our dedicated API.
 
-The first step is to [create a Checkout session](/api-reference/checkouts/create-session). For this you'll need at least your **Product ID**.
+The first step is to [create a Checkout session](/api-reference/checkouts/create-checkout-session). For this you'll need at least your **Product ID**.
 
 You can retrieve your Product ID from Products in your dashboard, click on "context-menu" button in front of your product and click on Copy Product ID.
 
@@ -108,11 +108,11 @@ Ad-hoc prices support all the same price types as catalog prices:
 - **Seat-based**: Pricing based on number of seats
 - **Metered**: Usage-based pricing tied to a meter
 
-For the complete schema of each price type, refer to the [Checkout API reference](/api-reference/checkouts/create-session).
+For the complete schema of each price type, refer to the [Checkout API reference](/api-reference/checkouts/create-checkout-session).
 
 ## External Customer ID
 
-Quite often, you'll have your own users management system in your application, where your customer already have an ID. To ease reconciliation between Polar and your system, you can inform us about your customer ID when creating a checkout session through the [`external_customer_id`](/api-reference/checkouts/create-session/) field.
+Quite often, you'll have your own users management system in your application, where your customer already have an ID. To ease reconciliation between Polar and your system, you can inform us about your customer ID when creating a checkout session through the [`external_customer_id`](/api-reference/checkouts/create-checkout-session) field.
 
 After a successful checkout, we'll create a Customer on Polar with the external ID you provided. It'll be provided through the `customer.external_id` property in webhooks you may have configured.
 

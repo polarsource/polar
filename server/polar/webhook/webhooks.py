@@ -1548,5 +1548,6 @@ def document_webhooks(app: FastAPI) -> None:
             methods=["POST"],
             summary=event_type,
             description=inspect.getdoc(webhook_schema),
+            openapi_extra={"x-mint": {"metadata": {"sidebarTitle": event_type.value}}},
             route_class_override=WebhookAPIRoute,
         )

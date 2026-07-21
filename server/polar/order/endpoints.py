@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator
+from textwrap import dedent
 
 from fastapi import Depends, Query, Response
 from pydantic import UUID4
@@ -52,6 +53,32 @@ from .service import (
 from .service import order as order_service
 
 router = APIRouter(prefix="/orders", tags=["orders", APITag.public])
+
+GENERATE_INVOICE_MINTLIFY_CONTENT = dedent(
+    """
+    <Warning>
+      Once the invoice is generated, it's permanent and cannot be modified.
+
+      Make sure the billing details (name and address) are correct before generating the invoice. You can update them before generating the invoice by calling the [`PATCH /v1/orders/{id}`](/api-reference/orders/update-order) endpoint.
+    </Warning>
+
+    <Note>
+      After successfully calling this endpoint, you get a `202` response, meaning the generation of the invoice has been scheduled. It usually only takes a few seconds before you can retrieve the invoice using the [`GET /v1/orders/{id}/invoice`](/api-reference/orders/get-order-invoice) endpoint.
+
+      If you want a reliable notification when the invoice is ready, you can listen to the [`order.updated`](/api-reference/orderupdated) webhook and check the [`is_invoice_generated` field](/api-reference/orderupdated#schema-data-is-invoice-generated).
+    </Note>
+    """
+).strip()
+
+GET_INVOICE_MINTLIFY_CONTENT = dedent(
+    """
+    <Note>
+      The invoice must be generated first before it can be retrieved. You should call the [`POST /v1/orders/{id}/invoice`](/api-reference/orders/generate-order-invoice) endpoint to generate the invoice.
+
+      If the invoice is not generated, you will receive a `404` error.
+    </Note>
+    """
+).strip()
 
 
 @router.get(
@@ -301,6 +328,7 @@ async def finalize(
             "model": MissingInvoiceBillingDetails.schema(),
         },
     },
+    openapi_extra={"x-mint": {"content": GENERATE_INVOICE_MINTLIFY_CONTENT}},
 )
 async def generate_invoice(
     id: OrderID,
@@ -325,6 +353,7 @@ async def generate_invoice(
     summary="Get Order Invoice",
     response_model=OrderInvoice,
     responses={404: OrderNotFound},
+    openapi_extra={"x-mint": {"content": GET_INVOICE_MINTLIFY_CONTENT}},
 )
 async def invoice(
     id: OrderID,

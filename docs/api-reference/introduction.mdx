@@ -18,7 +18,7 @@ description: "Base URLs, authentication, pagination, rate limits, and the differ
   <Card
     title="Auth (Customer Portal)"
     icon="user-lock"
-    href="/api-reference/customer-portal/sessions/create"
+    href="/api-reference/customer-sessions/create-customer-session"
   >
     Use a **Customer Access Token** created via `/v1/customer-sessions/`
   </Card>
@@ -61,7 +61,7 @@ Authorization: Bearer polar_oat_xxxxxxxxxxxxxxxxx
 
 ### Customer Access Tokens
 
-Do **not** use OATs in the browser. For customer-facing flows, [generate a **Customer Session**](/api-reference/customer-portal/sessions/create) server-side, then use the returned **customer access token** with the **Customer Portal API** to let a signed-in customer view their own orders, subscriptions, and benefits.
+Do **not** use OATs in the browser. For customer-facing flows, [generate a **Customer Session**](/api-reference/customer-sessions/create-customer-session) server-side, then use the returned **customer access token** with the **Customer Portal API** to let a signed-in customer view their own orders, subscriptions, and benefits.
 
 ## Core API vs Customer Portal API
 
@@ -220,7 +220,7 @@ Polar API has rate limits to ensure fair usage and maintain performance. Limits 
 
 - **100 requests per minute** per organization/customer or OAuth2 Client.
 
-Unauthenticated [validation](/api-reference/customer-portal/license-keys/validate), [activation](/api-reference/customer-portal/license-keys/activate), and [deactivation](/api-reference/customer-portal/license-keys/deactivate) endpoints are limited to **3 requests per second** in both environments.
+Unauthenticated [validation](/api-reference/customer_portal/validate-license-key), [activation](/api-reference/customer_portal/activate-license-key), and [deactivation](/api-reference/customer_portal/deactivate-license-key) endpoints are limited to **3 requests per second** in both environments.
 
 If you exceed the rate limit, you will receive a `429 Too Many Requests` response. The response will include a `Retry-After` header indicating how long you should wait before making another request.
 

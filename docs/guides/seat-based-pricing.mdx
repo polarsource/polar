@@ -123,7 +123,7 @@ Invitation emails are sent automatically when seats are assigned. The claim flow
 
 #### API-driven seat assignment
 
-If you want to manage seat assignment programmatically (e.g., auto-assigning seats when users sign up), use the [Customer Seats API](/api-reference/customer-seats/assign):
+If you want to manage seat assignment programmatically (e.g., auto-assigning seats when users sign up), use the [Customer Seats API](/api-reference/customer-seats/assign-seat):
 
 ```typescript
 const seat = await polar.customerSeats.assign({
@@ -254,6 +254,6 @@ On subscription cancellation, each seat is revoked individually. A subscription 
 ## Next steps
 
 - [Seat-Based Pricing Feature Documentation](/features/seat-based-pricing)
-- [Customer Seats API Reference](/api-reference/customer-seats/assign)
+- [Customer Seats API Reference](/api-reference/customer-seats/assign-seat)
 - [Webhook setup](/integrate/webhooks/endpoints)
 - [Customer Portal customization](/features/customer-portal)

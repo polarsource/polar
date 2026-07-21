@@ -46,7 +46,7 @@ The grace period is measured from `past_due_at`. While it's in effect the subscr
   retry schedule, and it does not keep the subscription `active`. If you want
   to treat past-due subscribers specially (for example, with a banner or
   a reduced feature set), listen for the
-  [`subscription.updated`](/api-reference/webhooks/subscription.updated) webhook
+  [`subscription.updated`](/api-reference/subscriptionupdated) webhook
   and branch on `status === "past_due"`.
 </Note>
 

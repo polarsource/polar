@@ -471,7 +471,7 @@ Create checkouts with dynamic pricing that override catalog prices:
 * Supports all price types (fixed, free, custom)
 * Full API and SDK support
 
-[Read more](/docs/features/checkout/session#ad-hoc-prices)
+[Read more](/features/checkout/session#ad-hoc-prices)
 
 ## Churn Rate
 
@@ -722,7 +722,7 @@ We've launched Cost Insights - a powerful way to track and analyze costs associa
 
 Perfect for understanding unit economics and profitability of your usage-based offerings.
 
-[Read more](/features/usage-billing/cost-insights)
+[Read more](/features/cost-insights/introduction)
 
 ## Webhook Management
 
@@ -833,7 +833,7 @@ Configure the interval count when creating or updating subscription products thr
 
 We've launched a new API endpoint to create subscriptions programmatically. This enables you to set up subscriptions directly without requiring customers to go through the checkout flow.
 
-[Read more](/api-reference/subscriptions/create)
+[Read more](/api-reference/subscriptions/create-subscription)
 
 ## Enhanced Email Confirmations
 
@@ -899,7 +899,7 @@ First payments after a trial period now include "TRIAL OVER" in the statement de
 <Update label="2025-10-17">
   ## Ability to update subscription to an updated price of the product
 
-  Merchants can now [update existing subscriptions](https://polar.sh/docs/api-reference/subscriptions/update#subscriptionupdateproduct) from archived pricing schemes to current ones within the same product.
+  Merchants can now [update existing subscriptions](https://polar.sh/docs/api-reference/subscriptions/update-subscription#subscriptionupdateproduct) from archived pricing schemes to current ones within the same product.
   - Enables migration from grandfathered pricing to current pricing schemes
   - Prorations calculated using active subscription prices
   - In the dashboard, a small badge **Upgrade pricing** will indicate that you can update to the same product, but with the new pricing scheme.
@@ -920,11 +920,11 @@ First payments after a trial period now include "TRIAL OVER" in the statement de
 
   ## Ability to set Return URL for Checkouts and Customer Portal
 
-  A Return URL can now be set while generating a [checkout session](https://polar.sh/docs/api-reference/checkouts/create-session#body-return-url-one-of-0) or a [customer portal session](https://polar.sh/docs/api-reference/customer-portal/sessions/create#body-one-of-0-return-url-one-of-0). This allows you to preserve the context for the end users who visit either if they wish to go back to the application.
+  A Return URL can now be set while generating a [checkout session](https://polar.sh/docs/api-reference/checkouts/create-checkout-session#body-return-url-one-of-0) or a [customer portal session](https://polar.sh/docs/api-reference/customer-sessions/create-customer-session#body-one-of-0-return-url-one-of-0). This allows you to preserve the context for the end users who visit either if they wish to go back to the application.
 
   ## Ability to search Customers via their External ID
 
-  The [List Customers API](https://polar.sh/docs/api-reference/customers/list) now accepts Customer's External ID [in the **query** parameter](https://polar.sh/docs/api-reference/customers/list#parameter-one-of-0).
+  The [List Customers API](https://polar.sh/docs/api-reference/customers/list-customers) now accepts Customer's External ID [in the **query** parameter](https://polar.sh/docs/api-reference/customers/list-customers#parameter-one-of-0).
 
   ## Ability to disable automatic customer emails
 
@@ -986,7 +986,7 @@ License key activation now correctly checks the `expires_at` date, ensuring that
 
   ## Fix customer state for trialing subscriptions
 
-The [Customer State API](/docs/api-reference/customers/state) now properly handles customers with `trialing` subscriptions, so your integrations and dashboards always show an accurate subscription status.
+The [Customer State API](/api-reference/customers/get-customer-state) now properly handles customers with `trialing` subscriptions, so your integrations and dashboards always show an accurate subscription status.
 
 </Update>
 
@@ -1038,7 +1038,7 @@ Customer emails now appear to come from your organization (e.g., "YourOrg (via P
 
 We've added the ability to update the discount on a subscription. This allows you to add, remove, or change the discount applied to a subscription at any time.
 
-This feature is both available through the [API](/api-reference/subscriptions/update) and the dashboard.
+This feature is both available through the [API](/api-reference/subscriptions/update-subscription) and the dashboard.
 
 </Update>
 
@@ -1104,7 +1104,7 @@ Need to perform actions in Polar? Tell us about your use case [here](https://git
 <Update label="2025-03-05">
   ## Customer State
 
-Maybe one of our neatest features to date! Customer State is a concept allowing you to query for the current state of a customer, including their **active subscriptions** and **granted [benefits](/features/benefits/introduction)**, in a single [API call](/api-reference/customers/state-external) or single [webhook event](/api-reference/webhooks/customer.state_changed).
+Maybe one of our neatest features to date! Customer State is a concept allowing you to query for the current state of a customer, including their **active subscriptions** and **granted [benefits](/features/benefits/introduction)**, in a single [API call](/api-reference/customers/get-customer-state-by-external-id) or single [webhook event](/api-reference/customerstate_changed).
 
 Combined with the [External ID](/features/customer-management#external-id) feature, you can get up-and-running in minutes.
 
@@ -1181,7 +1181,7 @@ This is available right now using the [Checkout Session API](/features/checkout/
 
 ### API changes
 
-- The `product_id` and `product_price_id` fields are deprecated in the [Checkout Session API](/api-reference/checkouts/create-session). You should now use the `products` field to specify the products you want to include in the checkout.
+- The `product_id` and `product_price_id` fields are deprecated in the [Checkout Session API](/api-reference/checkouts/create-checkout-session). You should now use the `products` field to specify the products you want to include in the checkout.
 - The `type` and `recurring_interval` fields on `ProductPrice` are deprecated. `recurring_interval` is now set directly on `Product`.
 
 </Update>

@@ -39,6 +39,13 @@ class PayoutAccountExternalLinkUnsupported(PayoutAccountServiceError):
         super().__init__(message, 404)
 
 
+class PayoutAccountSyncUnsupported(PayoutAccountServiceError):
+    def __init__(self, account_type: PayoutAccountType) -> None:
+        self.account_type = account_type
+        message = f"Unsupported payout account type for sync: {account_type}"
+        super().__init__(message, 404)
+
+
 class PayoutAccountStripeAccountDoesNotExist(PayoutAccountServiceError):
     def __init__(self, stripe_id: str) -> None:
         self.stripe_id = stripe_id
@@ -213,6 +220,25 @@ class PayoutAccountService:
         if not await stripe.account_exists(payout_account.stripe_id):
             return
         await stripe.reject_account(payout_account.stripe_id, reason)
+
+    async def sync_from_stripe(
+        self, session: AsyncSession, payout_account: PayoutAccount
+    ) -> PayoutAccount:
+        """Refresh a payout account from Stripe, bypassing the `account.updated` webhook.
+
+        Stripe can enable or disable payouts without firing the webhook, and a merchant
+        stuck on a stale status has no other way to recheck.
+        """
+        if (
+            payout_account.type != PayoutAccountType.stripe
+            or payout_account.stripe_id is None
+        ):
+            raise PayoutAccountSyncUnsupported(payout_account.type)
+
+        stripe_account = await stripe.retrieve_account(payout_account.stripe_id)
+        return await self.update_account_from_stripe(
+            session, stripe_account=stripe_account
+        )
 
     async def update_account_from_stripe(
         self, session: AsyncSession, *, stripe_account: stripe_lib.Account

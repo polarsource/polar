@@ -120,6 +120,9 @@ class StripeService:
         log.info("stripe.account.update_website", account_id=id, url=url)
         await stripe_lib.Account.modify_async(id, business_profile={"url": url})
 
+    async def retrieve_account(self, id: str) -> stripe_lib.Account:
+        return await stripe_lib.Account.retrieve_async(id)
+
     async def account_exists(self, id: str) -> bool:
         try:
             account = await stripe_lib.Account.retrieve_async(id)

@@ -5827,6 +5827,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/payout-accounts/{id}/sync': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Sync
+     * @description **Scopes**: `payouts:read` `payouts:write`
+     */
+    post: operations['payout_accounts:sync']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/payout-accounts/{id}/onboarding-link': {
     parameters: {
       query?: never
@@ -28539,6 +28559,17 @@ export interface components {
      * @enum {string}
      */
     PayoutAccountStatus: 'incomplete' | 'under_review' | 'paused' | 'ready'
+    /** PayoutAccountSyncUnsupported */
+    PayoutAccountSyncUnsupported: {
+      /**
+       * Error
+       * @example PayoutAccountSyncUnsupported
+       * @constant
+       */
+      error: 'PayoutAccountSyncUnsupported'
+      /** Detail */
+      detail: string
+    }
     /**
      * PayoutAccountType
      * @enum {string}
@@ -55152,6 +55183,46 @@ export interface operations {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'payout_accounts:sync': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PayoutAccount']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PayoutAccountSyncUnsupported']
+        }
       }
       /** @description Validation Error */
       422: {

@@ -136,7 +136,7 @@ class PayoutAccountService:
             case PayoutAccountType.stripe:
                 assert payout_account.stripe_id is not None
                 account_link = await stripe.create_account_link(
-                    payout_account.stripe_id, return_path
+                    payout_account.stripe_id, return_path, payout_account.id
                 )
                 return PayoutAccountLink(url=account_link.url)
             case _:

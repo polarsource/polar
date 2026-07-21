@@ -1,10 +1,25 @@
+import uuid
+
 import pytest
+import stripe as stripe_lib
 from fastapi import HTTPException
 from httpx import AsyncClient
+from pytest_mock import MockerFixture
 from starlette.requests import Request
 
 from polar.config import settings
 from polar.integrations.stripe.endpoints import WebhookEventGetter
+from polar.integrations.stripe.service import StripeService
+from polar.models import Organization, User
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_payout_account
+
+
+@pytest.fixture
+def stripe_service_mock(mocker: MockerFixture) -> StripeService:
+    mock = mocker.MagicMock(spec=StripeService)
+    mocker.patch("polar.payout_account.service.stripe", new=mock)
+    return mock
 
 
 @pytest.mark.asyncio
@@ -44,6 +59,96 @@ class TestStripeConnectRefresh:
         assert response.status_code == 307
         assert response.headers["location"] == settings.generate_frontend_url(
             settings.FRONTEND_DEFAULT_RETURN_PATH
+        )
+
+    @pytest.mark.auth
+    async def test_mints_a_new_account_link(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        stripe_service_mock.create_account_link.return_value = (  # type: ignore[attr-defined]
+            stripe_lib.AccountLink.construct_from(
+                {"url": "https://connect.stripe.com/setup/fresh"}, None
+            )
+        )
+
+        response = await client.get(
+            "/v1/integrations/stripe/refresh",
+            params={
+                "return_path": "/dashboard/acme/finance/account",
+                "id": str(payout_account.id),
+            },
+        )
+
+        assert response.status_code == 307
+        assert response.headers["location"] == "https://connect.stripe.com/setup/fresh"
+
+    async def test_anonymous_falls_back_to_dashboard(self, client: AsyncClient) -> None:
+        return_path = "/dashboard/acme/finance/account"
+
+        response = await client.get(
+            "/v1/integrations/stripe/refresh",
+            params={"return_path": return_path, "id": str(uuid.uuid4())},
+        )
+
+        assert response.status_code == 307
+        assert response.headers["location"] == settings.generate_frontend_url(
+            return_path
+        )
+
+    @pytest.mark.auth
+    async def test_other_users_account_falls_back_to_dashboard(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_second: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        return_path = "/dashboard/acme/finance/account"
+        payout_account = await create_payout_account(
+            save_fixture, organization, user_second
+        )
+
+        response = await client.get(
+            "/v1/integrations/stripe/refresh",
+            params={"return_path": return_path, "id": str(payout_account.id)},
+        )
+
+        assert response.status_code == 307
+        assert response.headers["location"] == settings.generate_frontend_url(
+            return_path
+        )
+        stripe_service_mock.create_account_link.assert_not_called()  # type: ignore[attr-defined]
+
+    @pytest.mark.auth
+    async def test_stripe_error_falls_back_to_dashboard(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        return_path = "/dashboard/acme/finance/account"
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        stripe_service_mock.create_account_link.side_effect = (  # type: ignore[attr-defined]
+            stripe_lib.APIConnectionError("boom")
+        )
+
+        response = await client.get(
+            "/v1/integrations/stripe/refresh",
+            params={"return_path": return_path, "id": str(payout_account.id)},
+        )
+
+        assert response.status_code == 307
+        assert response.headers["location"] == settings.generate_frontend_url(
+            return_path
         )
 
 

@@ -1,12 +1,18 @@
 import stripe
 import structlog
 from fastapi import Depends, HTTPException, Query, Request
+from pydantic import UUID4
 from starlette.responses import RedirectResponse
 
+from polar.auth.dependencies import WebUserOrAnonymous
+from polar.auth.models import is_user
 from polar.config import settings
 from polar.external_event.service import external_event as external_event_service
 from polar.kit.http import get_safe_return_url
 from polar.models.external_event import ExternalEventSource
+from polar.payout_account.repository import PayoutAccountRepository
+from polar.payout_account.service import PayoutAccountExternalLinkUnsupported
+from polar.payout_account.service import payout_account as payout_account_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 
@@ -61,11 +67,33 @@ async def enqueue(session: AsyncSession, event: stripe.Event) -> None:
 
 @router.get("/refresh", name="integrations.stripe.refresh")
 async def stripe_connect_refresh(
+    auth_subject: WebUserOrAnonymous,
     return_path: str | None = Query(None),
+    id: UUID4 | None = Query(None),
+    session: AsyncSession = Depends(get_db_session),
 ) -> RedirectResponse:
+    """Mint a replacement Account Link when Stripe reports the current one is stale."""
     if return_path is None:
         raise HTTPException(404)
-    return RedirectResponse(get_safe_return_url(return_path))
+
+    dashboard = RedirectResponse(get_safe_return_url(return_path))
+
+    # Links minted before this parameter existed carry no `id`.
+    if id is None or not is_user(auth_subject):
+        return dashboard
+
+    repository = PayoutAccountRepository.from_session(session)
+    payout_account = await repository.get_by_id(id)
+    if payout_account is None or payout_account.admin_id != auth_subject.subject.id:
+        return dashboard
+
+    try:
+        link = await payout_account_service.onboarding_link(payout_account, return_path)
+    except (PayoutAccountExternalLinkUnsupported, stripe.StripeError):
+        log.warning("stripe.connect.refresh_link_failed", payout_account_id=str(id))
+        return dashboard
+
+    return RedirectResponse(link.url)
 
 
 class WebhookEventGetter:

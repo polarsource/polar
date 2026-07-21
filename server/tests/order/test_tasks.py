@@ -63,6 +63,7 @@ class TestProcessDunning:
         enqueue_job_mock.assert_called_once_with(
             "order.process_dunning_order",
             order.id,
+            delay=None,
         )
 
     async def test_order_in_future_skipped(
@@ -128,8 +129,19 @@ class TestProcessDunning:
 
         # Then
         assert enqueue_job_mock.call_count == 2
-        enqueue_job_mock.assert_any_call("order.process_dunning_order", order1.id)
-        enqueue_job_mock.assert_any_call("order.process_dunning_order", order2.id)
+        # Jobs are spread out over a time window to avoid exhausting the
+        # database connection pool: the first fires immediately (no delay),
+        # subsequent ones are delayed.
+        first_delay = enqueue_job_mock.call_args_list[0].kwargs["delay"]
+        second_delay = enqueue_job_mock.call_args_list[1].kwargs["delay"]
+        assert first_delay is None
+        assert second_delay is not None
+        assert second_delay > 0
+
+        enqueued_order_ids = {call.args[1] for call in enqueue_job_mock.call_args_list}
+        assert enqueued_order_ids == {order1.id, order2.id}
+        for call in enqueue_job_mock.call_args_list:
+            assert call.args[0] == "order.process_dunning_order"
 
 
 @pytest.mark.asyncio

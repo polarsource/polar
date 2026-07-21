@@ -20,6 +20,7 @@ from polar.worker import (
     actor,
     can_retry,
     enqueue_job,
+    make_bulk_job_delay_calculator,
 )
 
 from .repository import OrderRepository
@@ -230,8 +231,14 @@ async def process_dunning() -> None:
         order_repository = OrderRepository.from_session(session)
         due_orders = await order_repository.get_due_dunning_orders()
 
-    for order in due_orders:
-        enqueue_job("order.process_dunning_order", order.id)
+    calculate_delay = make_bulk_job_delay_calculator(
+        len(due_orders), max_spread_ms=180_000, allow_spill=False
+    )
+
+    for index, order in enumerate(due_orders):
+        enqueue_job(
+            "order.process_dunning_order", order.id, delay=calculate_delay(index)
+        )
 
 
 @actor(actor_name="order.process_dunning_order", priority=TaskPriority.MEDIUM)

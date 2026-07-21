@@ -23,10 +23,12 @@ from polar.exceptions import ResourceNotFound
 from polar.models import Organization, OrganizationSSOConnection
 from polar.openapi import APITag
 from polar.organization.repository import OrganizationRepository
+from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
 from polar.sso.repository import OrganizationSSOConnectionRepository
 from polar.user.repository import UserRepository
+from polar.user.service import user as user_service
 from polar.user_organization.repository import UserOrganizationRepository
 
 from ..authentication_session import (
@@ -190,6 +192,7 @@ async def callback(
     error_description: str | None = Query(None),
     error_uri: str | None = Query(None),
     state: str | None = Query(None),
+    organization: Organization = Depends(get_login_organization),
     authentication_session: AuthenticationSession = Depends(
         get_org_authentication_session
     ),
@@ -259,17 +262,17 @@ async def callback(
     if email is None:
         raise PolarAuthRedirectionError("The identity provider did not assert an email")
 
-    user_repository = UserRepository.from_session(session)
-    user = await user_repository.get_by_email(email)
-    if user is None:
-        raise PolarAuthRedirectionError("No Polar account matches this identity")
+    user, created = await user_service.get_by_email_or_create(session, email)
+    if created:
+        user.email_verified = True
+        session.add(user)
 
     user_organization_repository = UserOrganizationRepository.from_session(session)
     membership = await user_organization_repository.get_by_user_and_organization(
         user.id, connection.organization_id
     )
     if membership is None:
-        raise PolarAuthRedirectionError("You are not a member of this organization")
+        await organization_service.add_user(session, organization, user)
 
     # Mark that SSO authenticated this session for the organization, so any
     # completion path (including the global 2FA pages) mints an org-scoped

@@ -230,6 +230,17 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
             zone="checkout-confirm",
         ),
     ],
+    # Each call is a live Stripe API read, so it's capped well below the `web` group's
+    # catch-all allowance.
+    "^/v1/payout-accounts/[^/]+/sync": [
+        Rule(minute=10, hour=60, zone="payout-account-sync"),
+        Rule(
+            group=RateLimitGroup.web,
+            minute=10,
+            hour=60,
+            zone="payout-account-sync",
+        ),
+    ],
     "^/v1/feedbacks/": [
         Rule(hour=5, block_time=3600, zone="feedback-submit"),
         Rule(

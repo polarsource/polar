@@ -767,7 +767,13 @@ interface CheckoutFormProps {
 }
 
 const StripeCheckoutForm = (props: CheckoutFormProps) => {
-  const { checkout, confirm, themePreset: themePresetProps, locale } = props
+  const {
+    checkout,
+    confirm,
+    update,
+    themePreset: themePresetProps,
+    locale,
+  } = props
   const {
     payment_processor_metadata: { publishable_key },
   } = checkout
@@ -785,6 +791,18 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const isWalletPayment = selectedPaymentMethod
     ? WALLET_PAYMENT_METHODS.includes(selectedPaymentMethod)
     : false
+
+  const onPaymentElementChange = useCallback(
+    (event: StripePaymentElementChangeEvent) => {
+      setSelectedPaymentMethod(event.value.type)
+      if (event.value.type !== checkout.payment_method) {
+        update({ payment_method: event.value.type }).catch(() => {
+          /* API errors handled by provider */
+        })
+      }
+    },
+    [checkout.payment_method, update],
+  )
 
   const elementsOptions = useMemo<StripeElementsOptions>(() => {
     if (
@@ -841,7 +859,15 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
           <BaseCheckoutForm
             {...props}
             checkout={checkout}
-            confirm={(data) => confirm(data, stripe, elements)}
+            confirm={(data) =>
+              confirm(
+                selectedPaymentMethod
+                  ? { ...data, payment_method: selectedPaymentMethod }
+                  : data,
+                stripe,
+                elements,
+              )
+            }
             isWalletPayment={isWalletPayment}
           >
             {checkout.is_payment_form_required && (
@@ -871,9 +897,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
                     usBankAccount: 'never',
                   },
                 }}
-                onChange={(event: StripePaymentElementChangeEvent) => {
-                  setSelectedPaymentMethod(event.value.type)
-                }}
+                onChange={onPaymentElementChange}
               />
             )}
           </BaseCheckoutForm>

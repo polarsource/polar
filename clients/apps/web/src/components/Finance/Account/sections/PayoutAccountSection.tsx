@@ -7,8 +7,9 @@ import { api } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
-import { ArrowRight, BanknoteIcon, CheckIcon } from 'lucide-react'
+import { ArrowRight, BanknoteIcon } from 'lucide-react'
 import { useCallback, useState } from 'react'
+import { getPayoutAccountPresentation } from '../../payoutAccountPresentation'
 import { PathCardBanner } from './PathCardBanner'
 import { StatusBlock } from './StatusBlock'
 
@@ -99,37 +100,43 @@ export const PayoutAccountSection = ({
   }
 
   if (isStripeAccount) {
-    const ready = payoutAccount.is_payout_ready
+    const presentation = getPayoutAccountPresentation(payoutAccount)
+    const { state } = presentation
+
+    const primaryAction =
+      state === 'incomplete' ? (
+        <Button onClick={resumeOnboarding} loading={resumeLoading}>
+          Finish payout setup
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      ) : state === 'paused' ? (
+        <Button onClick={() => window.open('mailto:support@polar.sh')}>
+          Contact support
+          <ArrowRight className="ml-2 h-4 w-4" />
+        </Button>
+      ) : null
+
     return (
       <>
         <StatusBlock
-          tone={ready ? 'success' : 'pending'}
-          icon={ready ? CheckIcon : BanknoteIcon}
-          title={
-            ready ? 'Payout account connected' : 'Payout account needs setup'
-          }
-          description={
-            ready
-              ? 'Your Stripe payout account is configured and ready to receive payouts.'
-              : 'Your Stripe payout account is connected but onboarding isn’t complete yet.'
-          }
+          tone={presentation.tone}
+          icon={presentation.icon}
+          title={presentation.title}
+          description={presentation.description}
           action={
-            ready ? (
-              <Button onClick={openManage}>
-                Manage payout accounts
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            ) : (
-              <Box flexDirection="column" alignItems="center" rowGap="s">
-                <Button onClick={resumeOnboarding} loading={resumeLoading}>
-                  Finish payout setup
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
+            <Box flexDirection="column" alignItems="center" rowGap="s">
+              {primaryAction}
+              {primaryAction ? (
                 <Button variant="ghost" size="sm" onClick={openManage}>
                   Manage payout accounts
                 </Button>
-              </Box>
-            )
+              ) : (
+                <Button onClick={openManage}>
+                  Manage payout accounts
+                  <ArrowRight className="ml-2 h-4 w-4" />
+                </Button>
+              )}
+            </Box>
           }
         />
         {modals}
@@ -138,13 +145,15 @@ export const PayoutAccountSection = ({
     )
   }
 
+  const presentation = getPayoutAccountPresentation(undefined)
+
   return (
     <>
       <StatusBlock
-        tone="neutral"
-        icon={BanknoteIcon}
-        title="Connect payout account"
-        description="Connect or create a Stripe account to receive payments from your customers."
+        tone={presentation.tone}
+        icon={presentation.icon}
+        title={presentation.title}
+        description={presentation.description}
         action={
           <Button onClick={openPrimary}>
             Connect payout account

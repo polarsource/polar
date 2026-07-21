@@ -1,0 +1,22 @@
+{% macro render_call() %}
+{%- if arguments -%}
+{{ call_path }}(
+{% for argument in arguments %}  {{ argument | typescript_literal | indent(2) }},
+{% endfor %})
+{%- else -%}
+{{ call_path }}()
+{%- endif -%}
+{% endmacro -%}
+import { createPolar } from "@polar-sh/sdk/{{ version }}";
+
+const polar = createPolar({
+  accessToken: "polar_oat_xxx",
+});
+
+{% if pagination %}for await (const item of {{ render_call() }}) {
+  console.log(item);
+}
+{% elif has_response %}const response = await {{ render_call() }};
+console.log(response);
+{% else %}await {{ render_call() }};
+{% endif %}

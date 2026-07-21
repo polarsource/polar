@@ -26,6 +26,9 @@ generate-all:
   uv run -m cli generate openapi.json ../python --language python --clear
   uv run -m cli generate openapi.json ../typescript --language typescript --clear
 
+code-samples version="0.0.0":
+  uv run -m cli code-samples openapi.json ../code-samples --language python --language typescript --version {{version}}
+
 release version:
   uv run -m cli release {{version}}
 

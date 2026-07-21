@@ -295,7 +295,29 @@ class TestSyncFromStripe:
 
         stripe_service_mock.retrieve_account.assert_not_called()  # type: ignore[attr-defined]
 
-    async def test_stripe_error_raises_sync_failed(
+    @pytest.mark.parametrize(
+        "error",
+        [
+            stripe_lib.PermissionError("no access"),
+            stripe_lib.InvalidRequestError("no such account", param="account"),
+        ],
+    )
+    async def test_inaccessible_account_is_not_transient(
+        self,
+        error: stripe_lib.StripeError,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        stripe_service_mock.retrieve_account.side_effect = error  # type: ignore[attr-defined]
+
+        with pytest.raises(PayoutAccountStripeAccountDoesNotExist):
+            await payout_account_service.sync_from_stripe(session, payout_account)
+
+    async def test_unreachable_stripe_raises_sync_failed(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -305,7 +327,7 @@ class TestSyncFromStripe:
     ) -> None:
         payout_account = await create_payout_account(save_fixture, organization, user)
         stripe_service_mock.retrieve_account.side_effect = (  # type: ignore[attr-defined]
-            stripe_lib.PermissionError("no access")
+            stripe_lib.APIConnectionError("boom")
         )
 
         with pytest.raises(PayoutAccountSyncFailed):

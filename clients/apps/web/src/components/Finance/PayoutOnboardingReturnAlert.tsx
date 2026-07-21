@@ -7,9 +7,12 @@ import {
 import { schemas } from '@polar-sh/client'
 import { Alert } from '@polar-sh/orbit'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { getPayoutAccountPresentation } from './payoutAccountPresentation'
-import { PAYOUT_ONBOARDING_RETURN_PARAM } from './payoutOnboardingReturn'
+import {
+  PAYOUT_ONBOARDING_ACCOUNT_PARAM,
+  PAYOUT_ONBOARDING_RETURN_PARAM,
+} from './payoutOnboardingReturn'
 
 const ALERT_VARIANTS = {
   success: 'success',
@@ -29,7 +32,11 @@ export const PayoutOnboardingReturnAlert = ({ organization }: Props) => {
   const pathname = usePathname()
 
   const isReturn = searchParams.get(PAYOUT_ONBOARDING_RETURN_PARAM) === 'return'
-  const payoutAccountId = organization.payout_account_id ?? undefined
+  // Onboarding can be resumed for an account that isn't the active one.
+  const payoutAccountId =
+    searchParams.get(PAYOUT_ONBOARDING_ACCOUNT_PARAM) ??
+    organization.payout_account_id ??
+    undefined
 
   const [visible, setVisible] = useState(isReturn)
   const syncedRef = useRef(false)
@@ -37,21 +44,25 @@ export const PayoutOnboardingReturnAlert = ({ organization }: Props) => {
   const { data: payoutAccount } = usePayoutAccount(payoutAccountId)
   const syncPayoutAccount = useSyncPayoutAccount(payoutAccountId ?? '')
 
+  // Only clear the marker once the sync succeeded — a failed sync must not leave the
+  // page claiming a status we never confirmed.
+  const sync = useCallback(() => {
+    syncPayoutAccount.mutate(undefined, {
+      onSuccess: () => router.replace(pathname),
+    })
+  }, [syncPayoutAccount, router, pathname])
+
   useEffect(() => {
     if (!isReturn || !payoutAccountId || syncedRef.current) return
     syncedRef.current = true
-    // Stripe decides on its own schedule, so read the account back rather than
-    // waiting on the `account.updated` webhook.
-    syncPayoutAccount.mutate(undefined, {
-      onSettled: () => router.replace(pathname),
-    })
-  }, [isReturn, payoutAccountId, syncPayoutAccount, router, pathname])
+    sync()
+  }, [isReturn, payoutAccountId, sync])
 
   if (!visible || !payoutAccountId) {
     return null
   }
 
-  if (syncPayoutAccount.isPending || !payoutAccount) {
+  if (syncPayoutAccount.isPending) {
     return (
       <Alert
         variant="info"
@@ -60,6 +71,22 @@ export const PayoutOnboardingReturnAlert = ({ organization }: Props) => {
         description="One moment while we confirm your payout account."
       />
     )
+  }
+
+  if (syncPayoutAccount.isError) {
+    return (
+      <Alert
+        variant="warning"
+        title="Could not confirm with Stripe"
+        description="We couldn't check your payout account just now. Your setup may still have gone through."
+        actions={[{ text: 'Try again', onClick: sync }]}
+        onDismiss={() => setVisible(false)}
+      />
+    )
+  }
+
+  if (!payoutAccount) {
+    return null
   }
 
   const { tone, title, description } =

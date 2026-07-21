@@ -247,6 +247,17 @@ class PayoutAccountService:
 
         try:
             stripe_account = await stripe.retrieve_account(payout_account.stripe_id)
+        except (stripe_lib.PermissionError, stripe_lib.InvalidRequestError) as e:
+            # Deleted, or we lost access. Retrying can't repair it, so it must not read
+            # as a transient outage.
+            log.warning(
+                "payout_account.sync_account_gone",
+                stripe_id=payout_account.stripe_id,
+                error=str(e),
+            )
+            raise PayoutAccountStripeAccountDoesNotExist(
+                payout_account.stripe_id
+            ) from e
         except stripe_lib.StripeError as e:
             log.warning(
                 "payout_account.sync_failed",

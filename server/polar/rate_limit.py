@@ -240,6 +240,12 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
             hour=60,
             zone="payout-account-sync",
         ),
+        Rule(
+            group=RateLimitGroup.pending_auth,
+            minute=10,
+            hour=60,
+            zone="payout-account-sync",
+        ),
     ],
     "^/v1/feedbacks/": [
         Rule(hour=5, block_time=3600, zone="feedback-submit"),

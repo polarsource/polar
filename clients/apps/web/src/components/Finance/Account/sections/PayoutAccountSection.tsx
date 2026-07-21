@@ -56,7 +56,12 @@ export const PayoutAccountSection = ({
       {
         params: {
           path: { id: payoutAccount.id },
-          query: { return_path: returnPath },
+          query: {
+            return_path: payoutOnboardingReturnPath(
+              organization.slug,
+              payoutAccount.id,
+            ),
+          },
         },
       },
     )
@@ -70,7 +75,7 @@ export const PayoutAccountSection = ({
       return
     }
     window.location.href = data.url
-  }, [payoutAccount, returnPath, openManage])
+  }, [payoutAccount, organization.slug, openManage])
 
   const isStripeAccount = payoutAccount?.type === 'stripe'
   const isManualAccount = payoutAccount && !isStripeAccount

@@ -49,12 +49,17 @@ export default function PayoutAccountStep({
       api.POST('/v1/payout-accounts/{id}/onboarding-link', {
         params: {
           path: { id: payoutAccount.id },
-          query: { return_path: returnPath },
+          query: {
+            return_path: payoutOnboardingReturnPath(
+              organization.slug,
+              payoutAccount.id,
+            ),
+          },
         },
       }),
     )
     window.location.href = link.url
-  }, [payoutAccount, returnPath, openPrimary])
+  }, [payoutAccount, organization.slug, openPrimary])
 
   const handleOpenStripeDashboard = useCallback(async () => {
     if (!payoutAccount) return

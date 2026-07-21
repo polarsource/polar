@@ -21,7 +21,11 @@ from polar.routing import APIRouter
 
 from .schemas import PayoutAccount as PayoutAccountSchema
 from .schemas import PayoutAccountCreate, PayoutAccountLink
-from .service import PayoutAccountSyncFailed, PayoutAccountSyncUnsupported
+from .service import (
+    PayoutAccountStripeAccountDoesNotExist,
+    PayoutAccountSyncFailed,
+    PayoutAccountSyncUnsupported,
+)
 from .service import payout_account as payout_account_service
 
 router = APIRouter(prefix="/payout-accounts", tags=["payout_accounts", APITag.private])
@@ -74,6 +78,7 @@ async def delete(
     response_model=PayoutAccountSchema,
     responses={
         404: {"model": PayoutAccountSyncUnsupported.schema()},
+        422: {"model": PayoutAccountStripeAccountDoesNotExist.schema()},
         503: {"model": PayoutAccountSyncFailed.schema()},
     },
 )

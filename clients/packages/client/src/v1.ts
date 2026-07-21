@@ -28559,6 +28559,17 @@ export interface components {
      * @enum {string}
      */
     PayoutAccountStatus: 'incomplete' | 'under_review' | 'paused' | 'ready'
+    /** PayoutAccountStripeAccountDoesNotExist */
+    PayoutAccountStripeAccountDoesNotExist: {
+      /**
+       * Error
+       * @example PayoutAccountStripeAccountDoesNotExist
+       * @constant
+       */
+      error: 'PayoutAccountStripeAccountDoesNotExist'
+      /** Detail */
+      detail: string
+    }
     /** PayoutAccountSyncFailed */
     PayoutAccountSyncFailed: {
       /**
@@ -55235,13 +55246,13 @@ export interface operations {
           'application/json': components['schemas']['PayoutAccountSyncUnsupported']
         }
       }
-      /** @description Validation Error */
+      /** @description Unprocessable Content */
       422: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['HTTPValidationError']
+          'application/json': components['schemas']['PayoutAccountStripeAccountDoesNotExist']
         }
       }
       /** @description Service Unavailable */

@@ -66,7 +66,10 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                 params: {
                   path: { id: payoutAccount.id },
                   query: {
-                    return_path: payoutOnboardingReturnPath(_organization.slug),
+                    return_path: payoutOnboardingReturnPath(
+                      _organization.slug,
+                      payoutAccount.id,
+                    ),
                   },
                 },
               }),

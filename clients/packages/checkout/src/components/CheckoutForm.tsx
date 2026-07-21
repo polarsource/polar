@@ -45,6 +45,7 @@ import PolarLogo from './PolarLogo'
 import { CheckoutBanner } from './CheckoutBanner'
 
 const WALLET_PAYMENT_METHODS = ['apple_pay', 'google_pay', 'link']
+const FULL_BILLING_ADDRESS_PAYMENT_METHODS = ['upi']
 
 const XIcon = ({ className }: { className?: string }) => {
   return (
@@ -81,6 +82,7 @@ interface BaseCheckoutFormProps {
   isUpdatePending?: boolean
   locale?: AcceptedLocale
   isWalletPayment?: boolean
+  requireFullBillingAddress?: boolean
   beforeSubmit?: React.ReactNode
   embed?: boolean
 }
@@ -97,6 +99,7 @@ const BaseCheckoutForm = ({
   children,
   locale: localeProp,
   isWalletPayment,
+  requireFullBillingAddress,
   beforeSubmit,
   embed,
 }: React.PropsWithChildren<BaseCheckoutFormProps>) => {
@@ -124,6 +127,16 @@ const BaseCheckoutForm = ({
   const locale: AcceptedLocale = localeProp || 'en'
 
   const t = useTranslations(locale)
+
+  const billingAddressFields = requireFullBillingAddress
+    ? {
+        ...checkout.billing_address_fields,
+        line1: 'required' as const,
+        line2: 'optional' as const,
+        city: 'required' as const,
+        postal_code: 'required' as const,
+      }
+    : checkout.billing_address_fields
 
   const country = watch('customer_billing_address.country')
   const watcher: WatchObserver<schemas['CheckoutUpdatePublic']> = useCallback(
@@ -350,7 +363,7 @@ const BaseCheckoutForm = ({
                       {t('checkout.form.billingAddress.label')}
                     </FormLabel>
                     {isDisplayedField(
-                      checkout.billing_address_fields.line1,
+                      billingAddressFields.line1,
                     ) && (
                       <FormControl>
                         <FormField
@@ -358,7 +371,7 @@ const BaseCheckoutForm = ({
                           name="customer_billing_address.line1"
                           rules={{
                             required: isRequiredField(
-                              checkout.billing_address_fields.line1,
+                              billingAddressFields.line1,
                             )
                               ? t('checkout.form.fieldRequired')
                               : false,
@@ -381,7 +394,7 @@ const BaseCheckoutForm = ({
                       </FormControl>
                     )}
                     {isDisplayedField(
-                      checkout.billing_address_fields.line2,
+                      billingAddressFields.line2,
                     ) && (
                       <FormControl>
                         <FormField
@@ -389,7 +402,7 @@ const BaseCheckoutForm = ({
                           name="customer_billing_address.line2"
                           rules={{
                             required: isRequiredField(
-                              checkout.billing_address_fields.line2,
+                              billingAddressFields.line2,
                             )
                               ? t('checkout.form.fieldRequired')
                               : false,
@@ -412,14 +425,14 @@ const BaseCheckoutForm = ({
                       </FormControl>
                     )}
                     {(isDisplayedField(
-                      checkout.billing_address_fields.postal_code,
+                      billingAddressFields.postal_code,
                     ) ||
                       isDisplayedField(
-                        checkout.billing_address_fields.city,
+                        billingAddressFields.city,
                       )) && (
                       <div className="grid grid-cols-2 gap-x-2">
                         {isDisplayedField(
-                          checkout.billing_address_fields.postal_code,
+                          billingAddressFields.postal_code,
                         ) && (
                           <FormControl>
                             <FormField
@@ -427,7 +440,7 @@ const BaseCheckoutForm = ({
                               name="customer_billing_address.postal_code"
                               rules={{
                                 required: isRequiredField(
-                                  checkout.billing_address_fields.postal_code,
+                                  billingAddressFields.postal_code,
                                 )
                                   ? t('checkout.form.fieldRequired')
                                   : false,
@@ -450,7 +463,7 @@ const BaseCheckoutForm = ({
                           </FormControl>
                         )}
                         {isDisplayedField(
-                          checkout.billing_address_fields.city,
+                          billingAddressFields.city,
                         ) && (
                           <FormControl>
                             <FormField
@@ -458,7 +471,7 @@ const BaseCheckoutForm = ({
                               name="customer_billing_address.city"
                               rules={{
                                 required: isRequiredField(
-                                  checkout.billing_address_fields.city,
+                                  billingAddressFields.city,
                                 )
                                   ? t('checkout.form.fieldRequired')
                                   : false,
@@ -483,7 +496,7 @@ const BaseCheckoutForm = ({
                       </div>
                     )}
                     {isDisplayedField(
-                      checkout.billing_address_fields.state,
+                      billingAddressFields.state,
                     ) && (
                       <FormControl>
                         <FormField
@@ -491,7 +504,7 @@ const BaseCheckoutForm = ({
                           name="customer_billing_address.state"
                           rules={{
                             required: isRequiredField(
-                              checkout.billing_address_fields.state,
+                              billingAddressFields.state,
                             )
                               ? t('checkout.form.fieldRequired')
                               : false,
@@ -519,7 +532,7 @@ const BaseCheckoutForm = ({
                       </FormControl>
                     )}
                     {isDisplayedField(
-                      checkout.billing_address_fields.country,
+                      billingAddressFields.country,
                     ) && (
                       <FormControl>
                         <FormField
@@ -527,7 +540,7 @@ const BaseCheckoutForm = ({
                           name="customer_billing_address.country"
                           rules={{
                             required: isRequiredField(
-                              checkout.billing_address_fields.country,
+                              billingAddressFields.country,
                             )
                               ? t('checkout.form.fieldRequired')
                               : false,
@@ -785,6 +798,9 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const isWalletPayment = selectedPaymentMethod
     ? WALLET_PAYMENT_METHODS.includes(selectedPaymentMethod)
     : false
+  const requireFullBillingAddress = selectedPaymentMethod
+    ? FULL_BILLING_ADDRESS_PAYMENT_METHODS.includes(selectedPaymentMethod)
+    : false
 
   const elementsOptions = useMemo<StripeElementsOptions>(() => {
     if (
@@ -843,6 +859,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
             checkout={checkout}
             confirm={(data) => confirm(data, stripe, elements)}
             isWalletPayment={isWalletPayment}
+            requireFullBillingAddress={requireFullBillingAddress}
           >
             {checkout.is_payment_form_required && (
               <PaymentElement

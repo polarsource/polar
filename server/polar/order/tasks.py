@@ -284,9 +284,7 @@ async def process_stale_payment_lock_order(order_id: uuid.UUID) -> None:
     """Request cancellation of the PaymentIntent behind a single stale lock."""
     async with AsyncSessionMaker() as session:
         order_repository = OrderRepository.from_session(session)
-        order = await order_repository.get_by_id(
-            order_id, options=order_repository.get_eager_options()
-        )
+        order = await order_repository.get_by_id(order_id)
         if order is None:
             raise OrderDoesNotExist(order_id)
 

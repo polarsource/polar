@@ -38,7 +38,7 @@ export function createPolar(options: PolarOptions) {
 
   return {
     {% for service in api.services %}
-    {{ service.name | camel }}: create{{ service.name }}Service(client),{% if not loop.last %}
+    {{ service.name | service_name }}: create{{ service.name }}Service(client),{% if not loop.last %}
     {% endif %}
     {% endfor %}
   };

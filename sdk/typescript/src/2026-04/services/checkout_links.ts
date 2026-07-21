@@ -62,7 +62,7 @@ export const listCheckoutLinks = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistCheckoutLinks = (client: ClientBase) => {
+export const iterListCheckoutLinks = (client: ClientBase) => {
   return async function* (query?: {
     organization_id?: string | string[] | null;
     product_id?: string | string[] | null;
@@ -224,7 +224,7 @@ export function createCheckoutLinksService(client: ClientBase) {
     get: getCheckoutLinks(client),
     delete: deleteCheckoutLinks(client),
     update: updateCheckoutLinks(client),
-    iterlist: iterlistCheckoutLinks(client),
+    iterList: iterListCheckoutLinks(client),
   };
 }
 

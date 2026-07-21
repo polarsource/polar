@@ -66,7 +66,7 @@ export const listOrganizations = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistOrganizations = (client: ClientBase) => {
+export const iterListOrganizations = (client: ClientBase) => {
   return async function* (query?: {
     slug?: string | null;
     page?: number;
@@ -199,7 +199,7 @@ export function createOrganizationsService(client: ClientBase) {
     create: createOrganizations(client),
     get: getOrganizations(client),
     update: updateOrganizations(client),
-    iterlist: iterlistOrganizations(client),
+    iterList: iterListOrganizations(client),
   };
 }
 

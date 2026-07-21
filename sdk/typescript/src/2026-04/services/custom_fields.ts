@@ -65,7 +65,7 @@ export const listCustomFields = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistCustomFields = (client: ClientBase) => {
+export const iterListCustomFields = (client: ClientBase) => {
   return async function* (query?: {
     organization_id?: string | string[] | null;
     query?: string | null;
@@ -228,7 +228,7 @@ export function createCustomFieldsService(client: ClientBase) {
     get: getCustomFields(client),
     delete: deleteCustomFields(client),
     update: updateCustomFields(client),
-    iterlist: iterlistCustomFields(client),
+    iterList: iterListCustomFields(client),
   };
 }
 

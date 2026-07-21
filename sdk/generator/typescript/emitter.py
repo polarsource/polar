@@ -10,6 +10,13 @@ from generator.ir import (
     Service,
     UnionRef,
 )
+from typescript.naming import (
+    exported_operation_name,
+    exported_paginator_name,
+    operation_name,
+    paginator_name,
+    service_name,
+)
 from typescript.types import (
     collect_enum_names,
     collect_type_imports,
@@ -139,6 +146,11 @@ class TypeScriptEmitter(EmitterBase):
             convert_type_to_typescript(type_ref, ref_suffix)
         )
         self.env.filters["camel"] = to_camel_case
+        self.env.filters["operation_name"] = operation_name
+        self.env.filters["paginator_name"] = paginator_name
+        self.env.filters["service_name"] = service_name
+        self.env.filters["exported_operation_name"] = exported_operation_name
+        self.env.filters["exported_paginator_name"] = exported_paginator_name
         self.env.filters["pascal"] = to_pascal_case
         self.env.filters["snake"] = to_snake_case
         self.env.filters["format_default"] = format_default_value_ts

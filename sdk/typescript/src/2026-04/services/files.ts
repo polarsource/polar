@@ -55,7 +55,7 @@ export const listFiles = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistFiles = (client: ClientBase) => {
+export const iterListFiles = (client: ClientBase) => {
   return async function* (query?: {
     organization_id?: string | string[] | null;
     ids?: string | string[] | null;
@@ -211,7 +211,7 @@ export function createFilesService(client: ClientBase) {
     uploaded: uploadedFiles(client),
     delete: deleteFiles(client),
     update: updateFiles(client),
-    iterlist: iterlistFiles(client),
+    iterList: iterListFiles(client),
   };
 }
 

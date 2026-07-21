@@ -48,7 +48,7 @@ export const listDownloadables = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistDownloadables = (client: ClientBase) => {
+export const iterListDownloadables = (client: ClientBase) => {
   return async function* (query?: {
     benefit_id?: string | string[] | null;
     page?: number;
@@ -75,7 +75,7 @@ export const iterlistDownloadables = (client: ClientBase) => {
 export function createDownloadablesService(client: ClientBase) {
   return {
     list: listDownloadables(client),
-    iterlist: iterlistDownloadables(client),
+    iterList: iterListDownloadables(client),
   };
 }
 

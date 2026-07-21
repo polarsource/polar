@@ -52,7 +52,7 @@ export const listWallets = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistWallets = (client: ClientBase) => {
+export const iterListWallets = (client: ClientBase) => {
   return async function* (query?: {
     page?: number;
     limit?: number;
@@ -111,7 +111,7 @@ export function createWalletsService(client: ClientBase) {
   return {
     list: listWallets(client),
     get: getWallets(client),
-    iterlist: iterlistWallets(client),
+    iterList: iterListWallets(client),
   };
 }
 

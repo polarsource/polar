@@ -65,7 +65,7 @@ export const listMeters = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistMeters = (client: ClientBase) => {
+export const iterListMeters = (client: ClientBase) => {
   return async function* (query?: {
     organization_id?: string | string[] | null;
     query?: string | null;
@@ -239,7 +239,7 @@ export function createMetersService(client: ClientBase) {
     get: getMeters(client),
     update: updateMeters(client),
     quantities: quantitiesMeters(client),
-    iterlist: iterlistMeters(client),
+    iterList: iterListMeters(client),
   };
 }
 

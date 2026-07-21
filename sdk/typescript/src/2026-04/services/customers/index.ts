@@ -74,7 +74,7 @@ export const listCustomers = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistCustomers = (client: ClientBase) => {
+export const iterListCustomers = (client: ClientBase) => {
   return async function* (query?: {
     organization_id?: string | string[] | null;
     email?: string | null;
@@ -525,7 +525,7 @@ export const listPaymentMethodsCustomers = (client: ClientBase) => {
  * @throws {ResourceNotFound} Customer not found.
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistPaymentMethodsCustomers = (client: ClientBase) => {
+export const iterListPaymentMethodsCustomers = (client: ClientBase) => {
   return async function* (
     id: string,
     query?: {
@@ -607,7 +607,7 @@ export const listPaymentMethodsExternalCustomers = (client: ClientBase) => {
  * @throws {ResourceNotFound} Customer not found.
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistPaymentMethodsExternalCustomers = (client: ClientBase) => {
+export const iterListPaymentMethodsExternalCustomers = (client: ClientBase) => {
   return async function* (
     external_id: string,
     query?: {
@@ -652,9 +652,9 @@ export function createCustomersService(client: ClientBase) {
     getStateExternal: getStateExternalCustomers(client),
     listPaymentMethods: listPaymentMethodsCustomers(client),
     listPaymentMethodsExternal: listPaymentMethodsExternalCustomers(client),
-    iterlist: iterlistCustomers(client),
-    iterlistPaymentMethods: iterlistPaymentMethodsCustomers(client),
-    iterlistPaymentMethodsExternal: iterlistPaymentMethodsExternalCustomers(client),
+    iterList: iterListCustomers(client),
+    iterListPaymentMethods: iterListPaymentMethodsCustomers(client),
+    iterListPaymentMethodsExternal: iterListPaymentMethodsExternalCustomers(client),
     members: createMembersService(client),
   };
 }

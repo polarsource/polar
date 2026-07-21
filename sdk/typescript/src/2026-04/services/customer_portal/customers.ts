@@ -118,7 +118,7 @@ export const listPaymentMethodsCustomers = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistPaymentMethodsCustomers = (client: ClientBase) => {
+export const iterListPaymentMethodsCustomers = (client: ClientBase) => {
   return async function* (query?: {
     page?: number;
     limit?: number;
@@ -336,7 +336,7 @@ export function createCustomersService(client: ClientBase) {
     requestEmailUpdate: requestEmailUpdateCustomers(client),
     checkEmailUpdate: checkEmailUpdateCustomers(client),
     verifyEmailUpdate: verifyEmailUpdateCustomers(client),
-    iterlistPaymentMethods: iterlistPaymentMethodsCustomers(client),
+    iterListPaymentMethods: iterListPaymentMethodsCustomers(client),
   };
 }
 

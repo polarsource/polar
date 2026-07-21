@@ -76,7 +76,7 @@ export const listMembersMembers = (client: ClientBase) => {
  * @throws {ListMembers403Error} Not permitted - requires owner or billing manager role
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistMembersMembers = (client: ClientBase) => {
+export const iterListMembersMembers = (client: ClientBase) => {
   return async function* (query?: {
     page?: number;
     limit?: number;
@@ -231,7 +231,7 @@ export function createMembersService(client: ClientBase) {
     addMember: addMemberMembers(client),
     removeMember: removeMemberMembers(client),
     updateMember: updateMemberMembers(client),
-    iterlistMembers: iterlistMembersMembers(client),
+    iterListMembers: iterListMembersMembers(client),
   };
 }
 

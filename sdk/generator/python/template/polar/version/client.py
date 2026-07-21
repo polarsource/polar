@@ -4,8 +4,8 @@ import typing
 from polar.base import AsyncClientBase, SyncClientBase, resolve_base_url
 
 {% for service in api.services %}
-from polar.{{ version }}.services.{{ service.name | snake }} import {{ service.name }}Async
-from polar.{{ version }}.services.{{ service.name | snake }} import {{ service.name }}Sync
+from polar.{{ version }}.services.{{ service.name | service_name }} import {{ service.name }}Async
+from polar.{{ version }}.services.{{ service.name | service_name }} import {{ service.name }}Sync
 {% endfor %}
 
 Environment = typing.Literal[{% for server in api.servers %}"{{ server.environment }}"{% if not loop.last %}, {% endif %}{% endfor %}]
@@ -29,7 +29,7 @@ class Polar:
         resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
         self._client = SyncClientBase(resolved_base_url, self.version, access_token)
 {% for service in api.services %}
-        self.{{ service.name | snake }} = {{ service.name }}Sync(self._client)
+        self.{{ service.name | service_name }} = {{ service.name }}Sync(self._client)
 {% endfor %}
 
     def __enter__(self) -> typing.Self:
@@ -58,7 +58,7 @@ class PolarAsync:
         resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
         self._client = AsyncClientBase(resolved_base_url, self.version, access_token)
 {% for service in api.services %}
-        self.{{ service.name | snake }} = {{ service.name }}Async(self._client)
+        self.{{ service.name | service_name }} = {{ service.name }}Async(self._client)
 {% endfor %}
 
     async def __aenter__(self) -> typing.Self:

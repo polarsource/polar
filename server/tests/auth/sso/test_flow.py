@@ -28,6 +28,7 @@ from polar.models.organization_sso_connection import (
     OIDCConfiguration,
     OrganizationSSOConnectionType,
 )
+from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncSession
 from tests.fixtures.base import IsolatedSessionTestClient
 from tests.fixtures.database import SaveFixture
@@ -109,7 +110,10 @@ def _id_token(
 
 
 async def create_sso_connection(
-    save_fixture: SaveFixture, organization: Organization
+    save_fixture: SaveFixture,
+    organization: Organization,
+    *,
+    authorization_parameters: dict[str, str] | None = None,
 ) -> OrganizationSSOConnection:
     configuration: OIDCConfiguration = {
         "issuer": ISSUER,
@@ -117,6 +121,8 @@ async def create_sso_connection(
         "auth_method": OIDCAuthMethod.client_secret,
         "client_secret": "secret",
     }
+    if authorization_parameters is not None:
+        configuration["authorization_parameters"] = authorization_parameters
     connection = OrganizationSSOConnection(
         organization=organization,
         type=OrganizationSSOConnectionType.oidc,
@@ -190,6 +196,52 @@ async def _user_session_count(session: AsyncSession, user: User) -> int:
         select(UserSession).where(UserSession.user_id == user.id)
     )
     return len(result.scalars().unique().all())
+
+
+async def _get_user_by_email(session: AsyncSession, email: str) -> User | None:
+    result = await session.execute(select(User).where(User.email == email))
+    return result.scalars().unique().one_or_none()
+
+
+async def _get_membership(
+    session: AsyncSession, user: User, organization: Organization
+) -> UserOrganization | None:
+    result = await session.execute(
+        select(UserOrganization).where(
+            UserOrganization.user_id == user.id,
+            UserOrganization.organization_id == organization.id,
+        )
+    )
+    return result.scalars().unique().one_or_none()
+
+
+@pytest.mark.asyncio
+class TestSSOAuthorize:
+    async def test_authorization_parameters_are_appended(
+        self,
+        sso_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+    ) -> None:
+        connection = await create_sso_connection(
+            save_fixture, organization, authorization_parameters={"hd": "polar.sh"}
+        )
+
+        with respx.mock(assert_all_mocked=False) as mock:
+            mock.get(f"{ISSUER}/.well-known/openid-configuration").mock(
+                return_value=httpx.Response(200, json=_discovery_document())
+            )
+            await sso_client.post(f"/v1/auth/{organization.slug}/start", json={})
+            authorize = await sso_client.get(
+                f"/v1/auth/{organization.slug}/sso/{connection.id}/authorize"
+            )
+
+        assert authorize.status_code == 303
+        query = parse_qs(urlsplit(authorize.headers["location"]).query)
+        assert query["hd"] == ["polar.sh"]
+        assert query["client_id"] == [CLIENT_ID]
 
 
 @pytest.mark.asyncio
@@ -295,31 +347,6 @@ class TestSSOLoginFlow:
         )
         assert [scope.organization_id for scope in scopes] == [organization.id]
 
-    async def test_rejects_non_member(
-        self,
-        sso_client: httpx.AsyncClient,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        organization: Organization,
-        user_second: User,
-        idp_key: rsa.RSAPrivateKey,
-    ) -> None:
-        connection = await create_sso_connection(save_fixture, organization)
-
-        with respx.mock(assert_all_mocked=False) as mock:
-            callback = await drive_to_callback(
-                sso_client,
-                session,
-                mock,
-                idp_key,
-                slug=organization.slug,
-                connection_id=connection.id,
-                email=user_second.email,
-            )
-
-        assert "error=" in callback.headers["location"]
-        assert await _user_session_count(session, user_second) == 0
-
     async def test_rejects_unverified_email(
         self,
         sso_client: httpx.AsyncClient,
@@ -393,3 +420,149 @@ class TestSSOLoginFlow:
         # Driving it to a different organization's endpoint is rejected.
         complete = await sso_client.get(f"/v1/auth/{organization_second.slug}/complete")
         assert "error=" in complete.headers["location"]
+
+
+NEWCOMER_EMAIL = "newcomer@example.test"
+
+
+@pytest.mark.asyncio
+class TestSSOJITProvisioning:
+    async def test_provisions_unknown_email(
+        self,
+        sso_client: httpx.AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        idp_key: rsa.RSAPrivateKey,
+    ) -> None:
+        connection = await create_sso_connection(save_fixture, organization)
+
+        with respx.mock(assert_all_mocked=False) as mock:
+            callback = await drive_to_callback(
+                sso_client,
+                session,
+                mock,
+                idp_key,
+                slug=organization.slug,
+                connection_id=connection.id,
+                email=NEWCOMER_EMAIL,
+            )
+            assert callback.status_code == 303
+
+            await sso_client.get(f"/v1/auth/{organization.slug}/complete")
+
+        user = await _get_user_by_email(session, NEWCOMER_EMAIL)
+        assert user is not None
+        assert user.email_verified is True
+
+        membership = await _get_membership(session, user, organization)
+        assert membership is not None
+        assert membership.role == OrganizationRole.member
+
+        user_session = (
+            (
+                await session.execute(
+                    select(UserSession).where(UserSession.user_id == user.id)
+                )
+            )
+            .scalars()
+            .unique()
+            .one()
+        )
+        scopes = (
+            (
+                await session.execute(
+                    select(UserSessionOrganization).where(
+                        UserSessionOrganization.user_session_id == user_session.id
+                    )
+                )
+            )
+            .scalars()
+            .all()
+        )
+        assert [scope.organization_id for scope in scopes] == [organization.id]
+
+    async def test_provisions_existing_user_without_membership(
+        self,
+        sso_client: httpx.AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_second: User,
+        idp_key: rsa.RSAPrivateKey,
+    ) -> None:
+        connection = await create_sso_connection(save_fixture, organization)
+
+        with respx.mock(assert_all_mocked=False) as mock:
+            callback = await drive_to_callback(
+                sso_client,
+                session,
+                mock,
+                idp_key,
+                slug=organization.slug,
+                connection_id=connection.id,
+                email=user_second.email,
+            )
+            assert callback.status_code == 303
+
+            await sso_client.get(f"/v1/auth/{organization.slug}/complete")
+
+        membership = await _get_membership(session, user_second, organization)
+        assert membership is not None
+        assert membership.role == OrganizationRole.member
+
+    async def test_keeps_existing_member_role(
+        self,
+        sso_client: httpx.AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        user_organization: UserOrganization,
+        idp_key: rsa.RSAPrivateKey,
+    ) -> None:
+        user_organization.role = OrganizationRole.admin
+        await save_fixture(user_organization)
+
+        connection = await create_sso_connection(save_fixture, organization)
+
+        with respx.mock(assert_all_mocked=False) as mock:
+            callback = await drive_to_callback(
+                sso_client,
+                session,
+                mock,
+                idp_key,
+                slug=organization.slug,
+                connection_id=connection.id,
+                email=user.email,
+            )
+            assert callback.status_code == 303
+
+        membership = await _get_membership(session, user, organization)
+        assert membership is not None
+        assert membership.role == OrganizationRole.admin
+
+    async def test_rejects_unverified_email_before_provisioning(
+        self,
+        sso_client: httpx.AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        idp_key: rsa.RSAPrivateKey,
+    ) -> None:
+        connection = await create_sso_connection(save_fixture, organization)
+
+        with respx.mock(assert_all_mocked=False) as mock:
+            callback = await drive_to_callback(
+                sso_client,
+                session,
+                mock,
+                idp_key,
+                slug=organization.slug,
+                connection_id=connection.id,
+                email=NEWCOMER_EMAIL,
+                email_verified=False,
+            )
+
+        assert "error=" in callback.headers["location"]
+        assert await _get_user_by_email(session, NEWCOMER_EMAIL) is None

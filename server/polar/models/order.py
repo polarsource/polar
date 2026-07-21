@@ -108,6 +108,11 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
             unique=True,
             postgresql_where=text("receipt_number IS NOT NULL"),
         ),
+        Index(
+            "ix_orders_payment_lock_acquired_at",
+            "payment_lock_acquired_at",
+            postgresql_where=text("payment_lock_acquired_at IS NOT NULL"),
+        ),
     )
 
     search_vector: Mapped[str] = mapped_column(TSVECTOR, nullable=True, deferred=True)

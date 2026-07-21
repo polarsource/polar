@@ -7,7 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
 from sqlalchemy import func, or_
 from sqlalchemy.orm import contains_eager, joinedload, selectinload
-from tagflow import attr, classes, tag, text
+from tagflow import classes, tag, text
 
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
@@ -30,7 +30,6 @@ from polar.subscription.sorting import SubscriptionSortProperty
 
 from ..components import (
     button,
-    confirmation_dialog,
     datatable,
     description_list,
     input,
@@ -410,20 +409,6 @@ async def get(
                     datatable.DatatableAttrColumn("consumed_units", "Consumed Units"),
                     datatable.DatatableAttrColumn("credited_units", "Credited Units"),
                     SubscriptionMeterAmountColumn(subscription.currency),
-                    datatable.DatatableActionsColumn[SubscriptionMeter](
-                        "",
-                        datatable.DatatableActionHTMX[SubscriptionMeter](
-                            "Reset",
-                            lambda r, i: str(
-                                r.url_for(
-                                    "subscriptions:reset_meter",
-                                    id=i.subscription_id,
-                                    subscription_meter_id=i.id,
-                                )
-                            ),
-                            target="#modal",
-                        ),
-                    ),
                 ).render(request, subscription.meters):
                     pass
 
@@ -432,60 +417,6 @@ async def get(
                     text("Orders")
                 with orders_datatable(request, orders):
                     pass
-
-
-@router.api_route(
-    "/{id}/meters/{subscription_meter_id}/reset",
-    name="subscriptions:reset_meter",
-    methods=["GET", "POST"],
-)
-async def reset_meter(
-    request: Request,
-    id: UUID4,
-    subscription_meter_id: UUID4,
-    session: AsyncSession = Depends(get_db_session),
-) -> Any:
-    subscription_repository = SubscriptionRepository.from_session(session)
-    subscription = await subscription_repository.get_by_id(
-        id, options=subscription_repository.get_eager_options()
-    )
-
-    if subscription is None:
-        raise HTTPException(status_code=404)
-
-    subscription_meter = next(
-        (
-            subscription_meter
-            for subscription_meter in subscription.meters
-            if subscription_meter.id == subscription_meter_id
-        ),
-        None,
-    )
-    if subscription_meter is None:
-        raise HTTPException(status_code=404)
-
-    if request.method == "POST":
-        await subscription_service.reset_meter(
-            session, subscription, subscription_meter
-        )
-        await add_toast(
-            request,
-            f"Meter {subscription_meter.meter.name} has been reset.",
-            "success",
-        )
-        return HXRedirectResponse(
-            request, str(request.url_for("subscriptions:get", id=id)), 303
-        )
-
-    with confirmation_dialog(
-        "Reset meter",
-        f"Reset {subscription_meter.meter.name} for this subscription? "
-        "Any rollover units will be credited to the new meter period.",
-        confirm_text="Reset",
-        open=True,
-    ):
-        attr("hx-post", str(request.url))
-        attr("hx-target", "#modal")
 
 
 @router.api_route("/{id}/cancel", name="subscriptions:cancel", methods=["GET", "POST"])

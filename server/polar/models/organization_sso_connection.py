@@ -27,6 +27,7 @@ class OIDCConfiguration(TypedDict):
     client_id: str
     auth_method: OIDCAuthMethod
     client_secret: NotRequired[str]
+    authorization_parameters: NotRequired[dict[str, str]]
 
 
 class OrganizationSSOConnection(RecordModel):

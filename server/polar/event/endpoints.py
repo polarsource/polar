@@ -153,8 +153,10 @@ async def list(
         raise RequestValidationError(
             [
                 {
-                    "type": "query",
+                    "type": "value_error",
                     "msg": "Query is only supported when organization_id is provided.",
+                    "loc": ("query", "query"),
+                    "input": query,
                 }
             ]
         )
@@ -470,8 +472,10 @@ async def list_statistics_timeseries(
         raise RequestValidationError(
             [
                 {
-                    "type": "query",
+                    "type": "value_error",
                     "msg": "Query is only supported when organization_id is provided.",
+                    "loc": ("query", "query"),
+                    "input": query,
                 }
             ]
         )

@@ -2,17 +2,21 @@
 
 import { toast } from '@/components/Toast/use-toast'
 import { useCreateSSOConnection } from '@/hooks/queries'
-import { extractApiErrorMessage } from '@/utils/api/errors'
+import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { getSSOCallbackURL } from '@/utils/auth'
 import { schemas } from '@polar-sh/client'
 import { Button, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Form } from '@polar-sh/ui/components/ui/form'
-import { useCallback } from 'react'
+import { useCallback, useState } from 'react'
 import { useForm, useWatch } from 'react-hook-form'
-import SSOConnectionFormFields, {
+import SSOConnectionFormFields from './SSOConnectionFormFields'
+import {
+  GOOGLE_ISSUER,
   SSOConnectionFormValues,
-} from './SSOConnectionFormFields'
+  SSOProviderPreset,
+  toConfiguration,
+} from './SSOConnectionForm'
 
 export default function NewSSOConnectionModal({
   organization,
@@ -23,37 +27,45 @@ export default function NewSSOConnectionModal({
 }) {
   const callbackURL = getSSOCallbackURL(organization.slug)
 
+  const [preset, setPreset] = useState<SSOProviderPreset>('custom')
+
   const form = useForm<SSOConnectionFormValues>({
-    defaultValues: { auth_method: 'client_secret' },
+    defaultValues: {
+      auth_method: 'client_secret',
+      authorization_parameters: [],
+    },
   })
-  const { control, handleSubmit } = form
+  const { control, handleSubmit, setError, setValue } = form
   const authMethod = useWatch({ control, name: 'auth_method' })
+
+  const onPresetChange = useCallback(
+    (value: SSOProviderPreset) => {
+      setPreset(value)
+      if (value === 'google') {
+        setValue('issuer', GOOGLE_ISSUER, { shouldValidate: true })
+        setValue('auth_method', 'client_secret')
+      }
+    },
+    [setValue],
+  )
 
   const createConnection = useCreateSSOConnection(organization.id)
 
   const onSubmit = useCallback(
     async (values: SSOConnectionFormValues) => {
-      const configuration: schemas['OrganizationSSOConnectionCreate']['configuration'] =
-        values.auth_method === 'private_key_jwt'
-          ? {
-              auth_method: 'private_key_jwt',
-              issuer: values.issuer,
-              client_id: values.client_id,
-            }
-          : {
-              auth_method: 'client_secret',
-              issuer: values.issuer,
-              client_id: values.client_id,
-              client_secret: values.client_secret,
-            }
-
       const { error } = await createConnection.mutateAsync({
         type: 'oidc',
         name: values.name || null,
-        configuration,
+        configuration: toConfiguration(values),
         enabled: false,
       })
       if (error) {
+        if (Array.isArray(error.detail)) {
+          setValidationErrors(error.detail, setError, 2, [
+            'client_secret',
+            'private_key_jwt',
+          ])
+        }
         toast({
           title: 'Connection creation failed',
           description: extractApiErrorMessage(error),
@@ -66,7 +78,7 @@ export default function NewSSOConnectionModal({
       })
       hide()
     },
-    [createConnection, hide],
+    [createConnection, setError, hide],
   )
 
   return (
@@ -85,6 +97,8 @@ export default function NewSSOConnectionModal({
                 authMethod={authMethod}
                 callbackURL={callbackURL}
                 secretRequired
+                preset={preset}
+                onPresetChange={onPresetChange}
               />
               <Button
                 type="submit"

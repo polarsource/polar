@@ -1,11 +1,16 @@
 import { useAuth } from '@/hooks'
 import { useCreateIdentityVerification } from '@/hooks/queries'
 import { toast } from '@/components/Toast/use-toast'
+import { schemas } from '@polar-sh/client'
 import { loadPolarStripe } from '@/utils/stripe'
 import { useCallback, useEffect, useRef } from 'react'
 
 const POLL_INTERVAL_MS = 3000
 const POLL_TIMEOUT_MS = 30_000
+
+export const isTerminalStatus = (
+  status: schemas['IdentityVerificationStatus'] | null | undefined,
+) => status === 'verified' || status === 'failed'
 
 const isProcessingError = (
   detail: string | { error?: string; detail?: string } | undefined,
@@ -27,15 +32,10 @@ export const useStartIdentityVerification = () => {
   const identityVerificationStatus = currentUser?.identity_verification_status
   const createIdentityVerification = useCreateIdentityVerification()
   const stripePromise = loadPolarStripe()
-
   const pollingRef = useRef<ReturnType<typeof setInterval> | null>(null)
-  const pollingInitialStatusRef = useRef<string | undefined | null>(null)
 
   useEffect(() => {
-    if (
-      pollingRef.current &&
-      identityVerificationStatus !== pollingInitialStatusRef.current
-    ) {
+    if (pollingRef.current && isTerminalStatus(identityVerificationStatus)) {
       clearInterval(pollingRef.current)
       pollingRef.current = null
     }
@@ -93,7 +93,6 @@ export const useStartIdentityVerification = () => {
       return
     }
 
-    pollingInitialStatusRef.current = identityVerificationStatus
     await reloadUser()
     pollingRef.current = setInterval(async () => {
       await reloadUser()
@@ -104,12 +103,7 @@ export const useStartIdentityVerification = () => {
         pollingRef.current = null
       }
     }, POLL_TIMEOUT_MS)
-  }, [
-    createIdentityVerification,
-    stripePromise,
-    reloadUser,
-    identityVerificationStatus,
-  ])
+  }, [createIdentityVerification, stripePromise, reloadUser])
 
   return {
     start,

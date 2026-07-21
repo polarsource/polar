@@ -1,6 +1,6 @@
 from polar.base import PolarClientError, PolarError, PolarNetworkError, PolarServerError
 
-__version__ = "1.0.0a11"
+__version__ = "1.0.0a12"
 __all__ = [
     "PolarError",
     "PolarNetworkError",

@@ -1,6 +1,13 @@
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import UUID4, Discriminator, Field, StringConstraints
+from pydantic import (
+    UUID4,
+    AfterValidator,
+    BeforeValidator,
+    Discriminator,
+    Field,
+    StringConstraints,
+)
 
 from polar.kit.schemas import (
     EmptyStrToNone,
@@ -14,13 +21,64 @@ from polar.models.organization_sso_connection import (
     OrganizationSSOConnectionType,
 )
 
+DISCOVERY_PATH = "/.well-known/openid-configuration"
+
 NonEmptyStr = Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
 
 
+def _strip_discovery_path(value: Any) -> Any:
+    """Accept the discovery URL where the issuer is expected: it's what providers
+    document and what people paste."""
+    if isinstance(value, str):
+        return value.strip().rstrip("/").removesuffix(DISCOVERY_PATH)
+    return value
+
+
+IssuerUrl = Annotated[HttpsUrl, BeforeValidator(_strip_discovery_path)]
+
+RESERVED_AUTHORIZATION_PARAMETERS = {
+    "response_type",
+    "client_id",
+    "redirect_uri",
+    "scope",
+    "state",
+    "nonce",
+    "code_challenge",
+    "code_challenge_method",
+}
+
+
+def _validate_authorization_parameter_key(key: str) -> str:
+    if key in RESERVED_AUTHORIZATION_PARAMETERS:
+        raise ValueError(f"`{key}` is set by Polar and can't be overridden.")
+    return key
+
+
+AuthorizationParameters = Annotated[
+    dict[
+        Annotated[
+            str,
+            StringConstraints(pattern=r"^[a-zA-Z0-9_.-]{1,64}$"),
+            AfterValidator(_validate_authorization_parameter_key),
+        ],
+        Annotated[str, StringConstraints(max_length=256)],
+    ],
+    Field(max_length=10),
+]
+
+AUTHORIZATION_PARAMETERS_DESCRIPTION = (
+    "Additional parameters appended to the authorization request, "
+    "e.g. `hd` to pin a Google Workspace domain."
+)
+
+
 class OIDCConfigurationBase(Schema):
-    issuer: HttpsUrl = Field(description="OIDC issuer URL of the identity provider.")
+    issuer: IssuerUrl = Field(description="OIDC issuer URL of the identity provider.")
     client_id: NonEmptyStr = Field(
         description="OAuth client ID registered with the identity provider."
+    )
+    authorization_parameters: AuthorizationParameters = Field(
+        default_factory=dict, description=AUTHORIZATION_PARAMETERS_DESCRIPTION
     )
 
 
@@ -52,6 +110,9 @@ class OIDCConfigurationRead(Schema):
     )
     auth_method: OIDCAuthMethod = Field(
         description="Authentication method used against the identity provider."
+    )
+    authorization_parameters: dict[str, str] = Field(
+        description=AUTHORIZATION_PARAMETERS_DESCRIPTION
     )
 
 

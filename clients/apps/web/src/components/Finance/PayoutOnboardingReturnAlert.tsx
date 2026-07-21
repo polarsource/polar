@@ -32,13 +32,15 @@ export const PayoutOnboardingReturnAlert = ({ organization }: Props) => {
   const pathname = usePathname()
 
   const isReturn = searchParams.get(PAYOUT_ONBOARDING_RETURN_PARAM) === 'return'
-  // Onboarding can be resumed for an account that isn't the active one.
-  const payoutAccountId =
-    searchParams.get(PAYOUT_ONBOARDING_ACCOUNT_PARAM) ??
-    organization.payout_account_id ??
-    undefined
 
   const [visible, setVisible] = useState(isReturn)
+  // Read once: clearing the marker drops it from the URL.
+  const [returnedAccountId] = useState(
+    () => searchParams.get(PAYOUT_ONBOARDING_ACCOUNT_PARAM) ?? undefined,
+  )
+  const payoutAccountId =
+    returnedAccountId ?? organization.payout_account_id ?? undefined
+
   const syncedRef = useRef(false)
 
   const { data: payoutAccount } = usePayoutAccount(payoutAccountId)

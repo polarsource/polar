@@ -16,6 +16,7 @@ from polar.kit.repository import (
 from polar.models import Order, Payment
 from polar.models.payment import (
     DUNNING_COUNTING_TRIGGERS,
+    STRIPE_PAYMENT_INTENT_METADATA_KEY,
     PaymentStatus,
     PaymentTrigger,
 )
@@ -112,6 +113,26 @@ class PaymentRepository(
         )
         result = await self.session.execute(statement)
         return result.scalar() or 0
+
+    async def get_unresolved_stripe_intents_for_order(
+        self, order_id: UUID
+    ) -> Sequence[Payment]:
+        """Get payments still keyed on their PaymentIntent, never re-keyed onto
+        a charge."""
+        statement = (
+            self.get_base_statement()
+            .where(
+                Payment.order_id == order_id,
+                Payment.status == PaymentStatus.pending,
+                Payment.processor == PaymentProcessor.stripe,
+                Payment.processor_id
+                == Payment.processor_metadata[
+                    STRIPE_PAYMENT_INTENT_METADATA_KEY
+                ].astext,
+            )
+            .order_by(Payment.created_at.asc())
+        )
+        return await self.get_all(statement)
 
     async def get_latest_for_order(self, order_id: UUID) -> Payment | None:
         """Get the latest payment for a specific order."""

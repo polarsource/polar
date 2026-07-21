@@ -33,7 +33,6 @@ from tests.fixtures.random_objects import (
     create_payment_method,
     create_subscription,
 )
-from tests.fixtures.stripe import build_stripe_payment_intent
 
 
 @pytest.mark.asyncio
@@ -781,11 +780,13 @@ class TestProcessStalePaymentLockOrder:
             payment_lock_acquired_at=utc_now() - timedelta(hours=2),
         )
 
-        mocker.patch(
-            "polar.order.service.stripe_service.get_payment_intents_for_order",
-            return_value=[
-                build_stripe_payment_intent(id="pi_stale", status="requires_action")
-            ],
+        await create_payment(
+            save_fixture,
+            organization,
+            order=order,
+            status=PaymentStatus.pending,
+            processor_id="pi_stale",
+            processor_metadata={"payment_intent_id": "pi_stale"},
         )
         cancel_mock = mocker.patch(
             "polar.order.service.stripe_service.cancel_payment_intent",
@@ -819,11 +820,13 @@ class TestProcessStalePaymentLockOrder:
             payment_lock_acquired_at=utc_now(),
         )
 
-        mocker.patch(
-            "polar.order.service.stripe_service.get_payment_intents_for_order",
-            return_value=[
-                build_stripe_payment_intent(id="pi_live", status="requires_action")
-            ],
+        await create_payment(
+            save_fixture,
+            organization,
+            order=order,
+            status=PaymentStatus.pending,
+            processor_id="pi_live",
+            processor_metadata={"payment_intent_id": "pi_live"},
         )
         cancel_mock = mocker.patch(
             "polar.order.service.stripe_service.cancel_payment_intent",
@@ -835,14 +838,15 @@ class TestProcessStalePaymentLockOrder:
         # Then
         cancel_mock.assert_not_called()
 
-    async def test_resolved_payment_intents_left_alone(
+    async def test_charged_payments_left_alone(
         self,
         save_fixture: SaveFixture,
         product: Product,
         organization: Organization,
         mocker: MockerFixture,
     ) -> None:
-        """Terminal intents from earlier dunning cycles must not be cancelled."""
+        """A payment re-keyed onto its charge is resolved, and a charge merely
+        settling was never an unresolved intent."""
         customer = await create_customer(save_fixture, organization=organization)
         order = await create_order(
             save_fixture,
@@ -852,12 +856,21 @@ class TestProcessStalePaymentLockOrder:
             payment_lock_acquired_at=utc_now() - timedelta(hours=2),
         )
 
-        mocker.patch(
-            "polar.order.service.stripe_service.get_payment_intents_for_order",
-            return_value=[
-                build_stripe_payment_intent(id="pi_old", status="canceled"),
-                build_stripe_payment_intent(id="pi_settling", status="processing"),
-            ],
+        await create_payment(
+            save_fixture,
+            organization,
+            order=order,
+            status=PaymentStatus.failed,
+            processor_id="ch_old",
+            processor_metadata={"payment_intent_id": "pi_old"},
+        )
+        await create_payment(
+            save_fixture,
+            organization,
+            order=order,
+            status=PaymentStatus.pending,
+            processor_id="ch_settling",
+            processor_metadata={"payment_intent_id": "pi_settling"},
         )
         cancel_mock = mocker.patch(
             "polar.order.service.stripe_service.cancel_payment_intent",
@@ -877,8 +890,8 @@ class TestProcessStalePaymentLockOrder:
         organization: Organization,
         mocker: MockerFixture,
     ) -> None:
-        """If the intent resolves between the search and the cancellation, Stripe
-        rejects the cancel; we log and leave the lock for the resolving webhook."""
+        """If the intent resolves before the cancellation, Stripe rejects the
+        cancel; we log and leave the lock for the resolving webhook."""
         customer = await create_customer(save_fixture, organization=organization)
         order = await create_order(
             save_fixture,
@@ -888,11 +901,13 @@ class TestProcessStalePaymentLockOrder:
             payment_lock_acquired_at=utc_now() - timedelta(hours=2),
         )
 
-        mocker.patch(
-            "polar.order.service.stripe_service.get_payment_intents_for_order",
-            return_value=[
-                build_stripe_payment_intent(id="pi_succeeded", status="requires_action")
-            ],
+        await create_payment(
+            save_fixture,
+            organization,
+            order=order,
+            status=PaymentStatus.pending,
+            processor_id="pi_succeeded",
+            processor_metadata={"payment_intent_id": "pi_succeeded"},
         )
         cancel_mock = mocker.patch(
             "polar.order.service.stripe_service.cancel_payment_intent",
@@ -932,11 +947,13 @@ class TestProcessStalePaymentLockOrder:
             payment_lock_acquired_at=utc_now() - timedelta(hours=2),
         )
 
-        mocker.patch(
-            "polar.order.service.stripe_service.get_payment_intents_for_order",
-            return_value=[
-                build_stripe_payment_intent(id="pi_stale", status="requires_action")
-            ],
+        await create_payment(
+            save_fixture,
+            organization,
+            order=order,
+            status=PaymentStatus.pending,
+            processor_id="pi_stale",
+            processor_metadata={"payment_intent_id": "pi_stale"},
         )
         cancel_mock = mocker.patch(
             "polar.order.service.stripe_service.cancel_payment_intent",
@@ -969,10 +986,6 @@ class TestProcessStalePaymentLockOrder:
             payment_lock_acquired_at=utc_now() - timedelta(hours=2),
         )
 
-        mocker.patch(
-            "polar.order.service.stripe_service.get_payment_intents_for_order",
-            return_value=[],
-        )
         cancel_mock = mocker.patch(
             "polar.order.service.stripe_service.cancel_payment_intent",
         )

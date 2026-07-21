@@ -1,5 +1,4 @@
 import json
-import uuid
 from collections.abc import AsyncGenerator, AsyncIterator
 from typing import TYPE_CHECKING, Any, Literal, Unpack, cast, overload
 from urllib.parse import urlencode
@@ -390,14 +389,6 @@ class StripeService:
 
     async def get_payment_intent(self, id: str) -> stripe_lib.PaymentIntent:
         return await stripe_lib.PaymentIntent.retrieve_async(id)
-
-    async def get_payment_intents_for_order(
-        self, order_id: uuid.UUID
-    ) -> list[stripe_lib.PaymentIntent]:
-        result = await stripe_lib.PaymentIntent.search_async(
-            query=f'metadata["order_id"]:"{order_id}"', limit=100
-        )
-        return result.data
 
     async def create_setup_intent(
         self, **params: Unpack[SetupIntentCreateParams]

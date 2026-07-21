@@ -358,3 +358,45 @@ class TestDetailRiskSignals:
         assert response.status_code == 200
         assert "Risk Signals" not in response.text
         assert self.TAB_DOT not in response.text
+
+
+@pytest.mark.asyncio
+class TestEditFeatures:
+    async def test_disabling_sso_lifts_enforcement(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"sso_enabled": True}
+        organization.sso_enforced = True
+        await save_fixture(organization)
+
+        # Unchecked boxes are absent from the form, so an empty body disables
+        # every flag.
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/edit-features", data={}
+        )
+
+        assert response.status_code == 303
+        assert organization.feature_settings["sso_enabled"] is False
+        assert organization.sso_enforced is False
+
+    async def test_keeps_enforcement_while_sso_enabled(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"sso_enabled": True}
+        organization.sso_enforced = True
+        await save_fixture(organization)
+
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/edit-features",
+            data={"sso_enabled": "on"},
+        )
+
+        assert response.status_code == 303
+        assert organization.feature_settings["sso_enabled"] is True
+        assert organization.sso_enforced is True

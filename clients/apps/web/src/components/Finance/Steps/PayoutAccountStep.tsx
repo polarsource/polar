@@ -5,10 +5,11 @@ import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ArrowRight, BanknoteIcon, ExternalLink } from 'lucide-react'
+import { ArrowRight, ExternalLink } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { StatusBlock } from '../Account/sections/StatusBlock'
 import { CheckPayoutStatusButton } from '../CheckPayoutStatusButton'
+import { ManualPayoutStatusBlock } from '../ManualPayoutStatusBlock'
 import { getPayoutAccountPresentation } from '../payoutAccountPresentation'
 import { payoutOnboardingReturnPath } from '../payoutOnboardingReturn'
 
@@ -79,23 +80,7 @@ export default function PayoutAccountStep({
   if (payoutAccount && payoutAccount.type !== 'stripe') {
     return (
       <Card>
-        <StatusBlock
-          tone="neutral"
-          icon={BanknoteIcon}
-          title="Manual payouts"
-          description={
-            <>
-              You are receiving manual payouts.{' '}
-              <a
-                href="mailto:support@polar.sh"
-                className="underline hover:no-underline"
-              >
-                Reach out to support
-              </a>{' '}
-              to request a payout or change this.
-            </>
-          }
-        />
+        <ManualPayoutStatusBlock />
       </Card>
     )
   }

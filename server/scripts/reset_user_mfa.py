@@ -6,11 +6,15 @@ own disable-MFA path (``DELETE /totp``): it deletes the user's TOTP enrollment a
 their backup codes. Email OTP is left untouched — that's the login factor the user
 falls back to, so they can sign in again and re-enroll TOTP if they want.
 
+Defaults to a preview; pass --execute to actually reset. Works in a
+non-interactive shell (e.g. a Render one-off job) — there is no prompt.
+
 Usage:
 
-    uv run python -m scripts.reset_user_mfa <user>
+    uv run python -m scripts.reset_user_mfa <user> --execute
 
-    <user>  target user's email or id
+    <user>      target user's email or id
+    --execute   actually reset the MFA (default: preview only)
 """
 
 import asyncio
@@ -36,6 +40,9 @@ def _maybe_uuid(value: str) -> uuid.UUID | None:
 @cli.command()
 def reset_mfa(
     user: str = typer.Argument(..., help="Target user's email or id"),
+    execute: bool = typer.Option(
+        False, "--execute", help="Actually reset the MFA (default: preview only)."
+    ),
 ) -> None:
     async def run() -> None:
         engine = create_async_engine("script")
@@ -86,8 +93,9 @@ def reset_mfa(
                 plan.append("delete backup codes")
             typer.echo("Plan: " + "; ".join(plan))
 
-            if not typer.confirm("Proceed?"):
-                raise typer.Exit(code=1)
+            if not execute:
+                typer.echo("Preview only — pass --execute to reset.")
+                raise typer.Exit(code=0)
 
             if totp_enrollment is not None:
                 await totp_factor.delete(totp_enrollment)

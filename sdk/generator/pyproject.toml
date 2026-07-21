@@ -4,7 +4,11 @@ version = "0.1.0"
 description = "Add your description here"
 readme = "README.md"
 requires-python = ">=3.14"
-dependencies = ["jinja2>=3.1.6", "openapi-pydantic>=0.5.1"]
+dependencies = [
+    "jinja2>=3.1.6",
+    "oas-patch==0.6.0",
+    "openapi-pydantic>=0.5.1",
+]
 
 [dependency-groups]
 dev = [

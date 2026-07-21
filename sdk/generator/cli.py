@@ -5,7 +5,7 @@ import sys
 
 import openapi_pydantic as op
 
-from generator.code_samples import write_code_samples_overlays
+from generator.docs_openapi import DOCS_OPENAPI_PATH, generate_docs_openapi
 from generator.emitter import Prerelease
 from generator.ir import generate_ir
 from generator.release import release_sdk
@@ -23,29 +23,20 @@ parser_generate.add_argument(
     "output", type=str, help="Directory to output the generated SDK"
 )
 
-parser_code_samples = subparsers.add_parser(
-    "code-samples", help="Generate SDK code samples as an OpenAPI overlay"
+parser_docs_openapi = subparsers.add_parser(
+    "docs-openapi", help="Generate the public OpenAPI spec for the documentation"
 )
-parser_code_samples.add_argument(
-    "spec_paths",
-    type=str,
-    nargs="+",
-    help="Paths to the OpenAPI spec files, one per API version.",
+parser_docs_openapi.add_argument(
+    "--output",
+    type=pathlib.Path,
+    default=DOCS_OPENAPI_PATH,
+    help=f"Output path (default: {DOCS_OPENAPI_PATH}).",
 )
-parser_code_samples.add_argument(
-    "output", type=str, help="Directory for the generated version overlays."
-)
-parser_code_samples.add_argument(
-    "--language",
-    action="append",
-    choices=["python", "typescript"],
-    help="Language to include. Repeat to select multiple languages (default: both).",
-)
-parser_code_samples.add_argument(
+parser_docs_openapi.add_argument(
     "--version",
     type=str,
     default="0.0.0",
-    help="SDK version represented by the overlay (default: 0.0.0).",
+    help="SDK version represented by the code samples (default: 0.0.0).",
 )
 parser_generate.add_argument(
     "--language",
@@ -145,21 +136,8 @@ if args.command == "generate":
     emitter.emit(args.output)
     emitter.run_post_actions(args.output)
 
-elif args.command == "code-samples":
-    specs = []
-    for spec_path_value in args.spec_paths:
-        spec_path = pathlib.Path(spec_path_value)
-        if not spec_path.is_file():
-            print(f"Error: Spec file {spec_path} does not exist.", file=sys.stderr)
-            sys.exit(1)
-        specs.append(op.OpenAPI.model_validate_json(spec_path.read_text()))
-    ir = generate_ir(*specs)
-    output_path = pathlib.Path(args.output)
-    if output_path.exists() and not output_path.is_dir():
-        print(f"Error: Output path {output_path} is not a directory.", file=sys.stderr)
-        sys.exit(1)
-    languages = args.language or ["python", "typescript"]
-    write_code_samples_overlays(output_path, ir, args.version, languages)
+elif args.command == "docs-openapi":
+    generate_docs_openapi(args.output, args.version)
 
 elif args.command == "release":
     prerelease = None

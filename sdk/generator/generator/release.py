@@ -1,16 +1,14 @@
 import concurrent.futures
-import pathlib
 import re
 import subprocess
 import sys
 
 from generator.emitter import Prerelease
+from generator.docs_openapi import generate_docs_openapi
+from generator.openapi import GENERATOR_DIR, ROOT, generate_openapi
 
-GENERATOR_DIR = pathlib.Path(__file__).parent.parent
-ROOT = GENERATOR_DIR.parent.parent
 LANGUAGES = ["python", "typescript"]
-GENERATED_SDK_PATHS = ["sdk/python", "sdk/typescript"]
-CODE_SAMPLES_PATH = ROOT / "sdk" / "code-samples"
+GENERATED_PATHS = ["docs/openapi.json", "sdk/python", "sdk/typescript"]
 
 
 def validate_version(version: str) -> bool:
@@ -19,17 +17,7 @@ def validate_version(version: str) -> bool:
 
 
 def regenerate_openapi() -> None:
-    cmd = "set -o pipefail && uv run -m --directory ../../server scripts.generate_openapi | jq -r"
-    result = subprocess.run(
-        cmd,
-        shell=True,
-        executable="/bin/bash",
-        cwd=GENERATOR_DIR,
-        capture_output=True,
-        text=True,
-        check=True,
-    )
-    (GENERATOR_DIR / "openapi.json").write_text(result.stdout)
+    generate_openapi(GENERATOR_DIR / "openapi.json")
 
 
 def generate_sdk(
@@ -69,31 +57,9 @@ def generate_all_sdks(version: str, prerelease: Prerelease | None = None) -> Non
                 raise
 
 
-def generate_code_samples(version: str, prerelease: Prerelease | None = None) -> None:
-    release_label = f"{version}-{prerelease}" if prerelease else version
-    subprocess.run(
-        [
-            sys.executable,
-            "-m",
-            "cli",
-            "code-samples",
-            str(GENERATOR_DIR / "openapi.json"),
-            str(CODE_SAMPLES_PATH),
-            "--language",
-            "python",
-            "--language",
-            "typescript",
-            "--version",
-            release_label,
-        ],
-        cwd=GENERATOR_DIR,
-        check=True,
-    )
-
-
 def create_git_commit(version: str, prerelease: Prerelease | None = None) -> None:
     release_label = f"{version}-{prerelease}" if prerelease else version
-    for path in GENERATED_SDK_PATHS:
+    for path in GENERATED_PATHS:
         subprocess.run(["git", "add", path], cwd=ROOT, check=True)
     subprocess.run(
         ["git", "commit", "-m", f"sdk[release]: {release_label}"],
@@ -123,7 +89,7 @@ def release_sdk(
             print("  - Regenerate OpenAPI spec")
         print("  - Regenerate Python SDK")
         print("  - Regenerate TypeScript SDK")
-        print("  - Regenerate SDK code samples overlay")
+        print("  - Regenerate docs OpenAPI schema with SDK code samples")
         if not skip_commit:
             print("  - Create git commit")
         return
@@ -134,7 +100,10 @@ def release_sdk(
             regenerate_openapi()
 
         generate_all_sdks(version, prerelease)
-        generate_code_samples(version, prerelease)
+        generate_docs_openapi(
+            sdk_version=release_label,
+            source_path=GENERATOR_DIR / "openapi.json",
+        )
 
         if not skip_commit:
             print("Creating git commit...")

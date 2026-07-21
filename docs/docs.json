@@ -226,7 +226,7 @@
         "versions": [
           {
             "version": "2026-04",
-            "openapi": "openapi.yaml",
+            "openapi": "openapi.json",
             "groups": [
               {
                 "group": "General",
@@ -385,14 +385,7 @@
                   {
                     "group": "Members",
                     "pages": [
-                      "GET /v1/members/",
-                      "POST /v1/members/",
-                      "GET /v1/members/{id}",
-                      "PATCH /v1/members/{id}",
-                      "DELETE /v1/members/{id}",
-                      "GET /v1/members/external/{external_id}",
-                      "PATCH /v1/members/external/{external_id}",
-                      "DELETE /v1/members/external/{external_id}"
+                      "GET /v1/members/"
                     ]
                   },
                   {
@@ -507,10 +500,10 @@
                   {
                     "group": "Customer Events",
                     "pages": [
-                      "openapi.yaml webhook customer.state_changed",
-                      "openapi.yaml webhook customer.created",
-                      "openapi.yaml webhook customer.updated",
-                      "openapi.yaml webhook customer.deleted"
+                      "openapi.json webhook customer.state_changed",
+                      "openapi.json webhook customer.created",
+                      "openapi.json webhook customer.updated",
+                      "openapi.json webhook customer.deleted"
                     ]
                   },
                   {
@@ -519,54 +512,54 @@
                       {
                         "group": "Checkout",
                         "pages": [
-                          "openapi.yaml webhook checkout.created",
-                          "openapi.yaml webhook checkout.updated",
-                          "openapi.yaml webhook checkout.expired"
+                          "openapi.json webhook checkout.created",
+                          "openapi.json webhook checkout.updated",
+                          "openapi.json webhook checkout.expired"
                         ]
                       },
                       {
                         "group": "Subscriptions",
                         "pages": [
-                          "openapi.yaml webhook subscription.created",
-                          "openapi.yaml webhook subscription.active",
-                          "openapi.yaml webhook subscription.updated",
-                          "openapi.yaml webhook subscription.canceled",
-                          "openapi.yaml webhook subscription.uncanceled",
-                          "openapi.yaml webhook subscription.revoked",
-                          "openapi.yaml webhook subscription.past_due"
+                          "openapi.json webhook subscription.created",
+                          "openapi.json webhook subscription.active",
+                          "openapi.json webhook subscription.updated",
+                          "openapi.json webhook subscription.canceled",
+                          "openapi.json webhook subscription.uncanceled",
+                          "openapi.json webhook subscription.revoked",
+                          "openapi.json webhook subscription.past_due"
                         ]
                       },
                       {
                         "group": "Orders",
                         "pages": [
-                          "openapi.yaml webhook order.created",
-                          "openapi.yaml webhook order.paid",
-                          "openapi.yaml webhook order.updated",
-                          "openapi.yaml webhook order.refunded"
+                          "openapi.json webhook order.created",
+                          "openapi.json webhook order.paid",
+                          "openapi.json webhook order.updated",
+                          "openapi.json webhook order.refunded"
                         ]
                       },
                       {
                         "group": "Customer Seats",
                         "pages": [
-                          "openapi.yaml webhook customer_seat.assigned",
-                          "openapi.yaml webhook customer_seat.claimed",
-                          "openapi.yaml webhook customer_seat.revoked"
+                          "openapi.json webhook customer_seat.assigned",
+                          "openapi.json webhook customer_seat.claimed",
+                          "openapi.json webhook customer_seat.revoked"
                         ]
                       },
                       {
                         "group": "Refunds",
                         "pages": [
-                          "openapi.yaml webhook refund.created",
-                          "openapi.yaml webhook refund.updated"
+                          "openapi.json webhook refund.created",
+                          "openapi.json webhook refund.updated"
                         ]
                       },
                       {
                         "group": "Benefit Grants",
                         "pages": [
-                          "openapi.yaml webhook benefit_grant.created",
-                          "openapi.yaml webhook benefit_grant.cycled",
-                          "openapi.yaml webhook benefit_grant.updated",
-                          "openapi.yaml webhook benefit_grant.revoked"
+                          "openapi.json webhook benefit_grant.created",
+                          "openapi.json webhook benefit_grant.cycled",
+                          "openapi.json webhook benefit_grant.updated",
+                          "openapi.json webhook benefit_grant.revoked"
                         ]
                       }
                     ]
@@ -577,20 +570,20 @@
                       {
                         "group": "Benefits",
                         "pages": [
-                          "openapi.yaml webhook benefit.created",
-                          "openapi.yaml webhook benefit.updated"
+                          "openapi.json webhook benefit.created",
+                          "openapi.json webhook benefit.updated"
                         ]
                       },
                       {
                         "group": "Products",
                         "pages": [
-                          "openapi.yaml webhook product.created",
-                          "openapi.yaml webhook product.updated"
+                          "openapi.json webhook product.created",
+                          "openapi.json webhook product.updated"
                         ]
                       },
                       {
                         "group": "Organization",
-                        "pages": ["openapi.yaml webhook organization.updated"]
+                        "pages": ["openapi.json webhook organization.updated"]
                       }
                     ]
                   }

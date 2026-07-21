@@ -28,7 +28,7 @@ def test_overlay_is_complete_and_excludes_non_sdk_operations(
     assert len(targets) == len(set(targets))
     assert all(
         [sample["lang"] for sample in action["update"]["x-codeSamples"]]
-        == ["Python", "TypeScript"]
+        == ["Python (New SDK)", "TypeScript (New SDK)"]
         for action in overlay["actions"]
     )
     assert all("/private" not in action["target"] for action in overlay["actions"])

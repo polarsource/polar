@@ -155,6 +155,9 @@ elif args.command == "code-samples":
         specs.append(op.OpenAPI.model_validate_json(spec_path.read_text()))
     ir = generate_ir(*specs)
     output_path = pathlib.Path(args.output)
+    if output_path.exists() and not output_path.is_dir():
+        print(f"Error: Output path {output_path} is not a directory.", file=sys.stderr)
+        sys.exit(1)
     languages = args.language or ["python", "typescript"]
     write_code_samples_overlays(output_path, ir, args.version, languages)
 

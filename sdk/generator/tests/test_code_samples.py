@@ -6,6 +6,7 @@ import pytest
 
 from generator.code_samples import (
     CodeSampleError,
+    ExampleGenerator,
     generate_code_samples_overlay,
     generate_code_samples_overlays,
     write_code_samples_overlays,
@@ -51,6 +52,58 @@ def test_writes_one_overlay_per_api_version(
         json.loads((tmp_path / "2025-01.overlay.json").read_text())["info"]["title"]
         == "Polar 2025-01 SDK code samples"
     )
+
+
+def test_discriminator_mapping_overrides_generated_property(
+    code_samples_spec: op.OpenAPI,
+) -> None:
+    spec = code_samples_spec.model_dump(by_alias=True, exclude_none=True)
+    spec["components"]["schemas"]["PhysicalWidget"]["properties"]["type"] = {
+        "type": "string"
+    }
+    api = generate_ir(op.OpenAPI.model_validate(spec)).versions[0]
+    method = next(
+        method
+        for service in api.services
+        for method in service.methods
+        if method.operation_id == "widgets:create"
+    )
+    assert method.body is not None
+
+    body = ExampleGenerator(api).generate(method.body)
+
+    assert body["details"]["type"] == "physical"
+
+
+def test_discriminator_mapping_targets_are_normalized(
+    code_samples_spec: op.OpenAPI,
+) -> None:
+    spec = code_samples_spec.model_dump(by_alias=True, exclude_none=True)
+    schemas = spec["components"]["schemas"]
+    physical_widget = schemas.pop("PhysicalWidget")
+    physical_widget["properties"].pop("type")
+    physical_widget["required"].remove("type")
+    schemas["physical_widget"] = physical_widget
+    details = schemas["WidgetDetails"]
+    details["oneOf"][0]["$ref"] = "#/components/schemas/physical_widget"
+    details["discriminator"]["mapping"]["physical"] = (
+        "#/components/schemas/physical_widget"
+    )
+    api = generate_ir(op.OpenAPI.model_validate(spec)).versions[0]
+    union = next(union for union in api.input_unions if union.name == "WidgetDetails")
+    method = next(
+        method
+        for service in api.services
+        for method in service.methods
+        if method.operation_id == "widgets:create"
+    )
+    assert union.discriminator is not None
+    assert method.body is not None
+
+    body = ExampleGenerator(api).generate(method.body)
+
+    assert union.discriminator.mapping["physical"] == "PhysicalWidget"
+    assert body["details"]["type"] == "physical"
 
 
 def test_code_samples_fail_on_cycles(code_samples_spec: op.OpenAPI) -> None:

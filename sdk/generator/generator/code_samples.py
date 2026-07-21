@@ -258,7 +258,7 @@ class ExampleGenerator:
         if discriminator is not None and isinstance(value, dict):
             discriminator_value = self._discriminator_value(discriminator, variant)
             if discriminator_value is not None:
-                value.setdefault(discriminator.property_name, discriminator_value)
+                value[discriminator.property_name] = discriminator_value
         return value
 
     def _discriminator_value(
@@ -337,12 +337,14 @@ def write_code_samples_overlays(
     languages: typing.Iterable[str],
 ) -> None:
     output_path = pathlib.Path(output)
-    output_path.mkdir(parents=True, exist_ok=True)
-    for api_version, overlay in generate_code_samples_overlays(
-        ir, sdk_version, languages
-    ).items():
+    overlays = generate_code_samples_overlays(ir, sdk_version, languages)
+    for api_version in overlays:
         if pathlib.Path(api_version).name != api_version:
             raise CodeSampleError(f"Invalid API version: {api_version}")
+    output_path.mkdir(parents=True, exist_ok=True)
+    for overlay_path in output_path.glob("*.overlay.json"):
+        overlay_path.unlink()
+    for api_version, overlay in overlays.items():
         (output_path / f"{api_version}.overlay.json").write_text(
             json.dumps(overlay, indent=2, ensure_ascii=False) + "\n",
             encoding="utf-8",

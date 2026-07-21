@@ -427,13 +427,14 @@ def _resolve_reference[T](ref: op.Reference | T, spec: op.OpenAPI) -> T:
 
 def _extract_discriminator(
     discriminator: op.Discriminator | None,
+    normalize_model_name: ModelNameNormalizer,
 ) -> UnionDiscriminator | None:
     if discriminator is None:
         return None
     mapping = {}
     if discriminator.mapping:
         for key, ref_path in discriminator.mapping.items():
-            mapping[key] = ref_path.split("/")[-1]
+            mapping[key] = normalize_model_name(ref_path.split("/")[-1])
     return UnionDiscriminator(property_name=discriminator.propertyName, mapping=mapping)
 
 
@@ -501,7 +502,9 @@ def _convert_typeref(
             )
             for v in schema.anyOf
         ]
-        discriminator = _extract_discriminator(schema.discriminator)
+        discriminator = _extract_discriminator(
+            schema.discriminator, normalize_model_name
+        )
         return UnionType(
             kind="union",
             variants=variants,
@@ -521,7 +524,9 @@ def _convert_typeref(
             )
             for v in schema.oneOf
         ]
-        discriminator = _extract_discriminator(schema.discriminator)
+        discriminator = _extract_discriminator(
+            schema.discriminator, normalize_model_name
+        )
         return UnionType(
             kind="union",
             variants=variants,
@@ -742,7 +747,9 @@ def _schema_to_named_union(
         name=name,
         description=schema.description or None,
         variants=variants,
-        discriminator=_extract_discriminator(schema.discriminator),
+        discriminator=_extract_discriminator(
+            schema.discriminator, normalize_model_name
+        ),
         composition_kind=composition_kind,
     )
 
@@ -774,10 +781,11 @@ def _extract_example(*sources: typing.Any) -> tuple[bool, typing.Any]:
         if isinstance(examples, list) and examples:
             return True, examples[0]
         if isinstance(examples, dict) and examples:
-            first_example = examples[sorted(examples)[0]]
-            value_fields_set = getattr(first_example, "model_fields_set", set())
-            if "value" in value_fields_set:
-                return True, getattr(first_example, "value", None)
+            for example_name in sorted(examples):
+                example = examples[example_name]
+                value_fields_set = getattr(example, "model_fields_set", set())
+                if "value" in value_fields_set:
+                    return True, getattr(example, "value", None)
     return False, None
 
 

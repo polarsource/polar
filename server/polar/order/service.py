@@ -145,14 +145,6 @@ AWAITING_PAYMENT_INTENT_STATUSES = {
 }
 
 
-def _payment_lock_is_stale(order: Order) -> bool:
-    if order.payment_lock_acquired_at is None:
-        return False
-    return order.payment_lock_acquired_at <= (
-        utc_now() - settings.PAYMENT_LOCK_STALE_THRESHOLD
-    )
-
-
 class OrderError(PolarError): ...
 
 
@@ -2826,7 +2818,7 @@ class OrderService:
         if order.payment_lock_acquired_at is None:
             return
 
-        if not _payment_lock_is_stale(order):
+        if not order.payment_lock_is_stale:
             log.info(
                 "Payment lock refreshed since the stale scan, skipping cancellation",
                 order_id=order.id,
@@ -2908,7 +2900,7 @@ class OrderService:
         # Only a stale lock is ours to release. A fresh one belongs to a live
         # attempt, so this cancellation is for an older intent of the same
         # order — releasing would let a second charge fire alongside it.
-        if not _payment_lock_is_stale(order):
+        if not order.payment_lock_is_stale:
             log.info(
                 "Ignoring payment cancellation for a live payment attempt",
                 order_id=order.id,

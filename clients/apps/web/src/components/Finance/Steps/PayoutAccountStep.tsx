@@ -8,6 +8,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { ArrowRight, BanknoteIcon, ExternalLink } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { StatusBlock } from '../Account/sections/StatusBlock'
+import { CheckPayoutStatusButton } from '../CheckPayoutStatusButton'
 import { getPayoutAccountPresentation } from '../payoutAccountPresentation'
 
 interface PayoutAccountStepProps {
@@ -96,7 +97,17 @@ export default function PayoutAccountStep({
   const { state, tone, icon, title, description } =
     getPayoutAccountPresentation(payoutAccount)
 
+  const startSetupAction = (
+    <Button onClick={handleStartAccountSetup}>
+      Continue with Account Setup
+      <ArrowRight className="ml-2 h-4 w-4" />
+    </Button>
+  )
+
   const action = () => {
+    if (!payoutAccount) {
+      return startSetupAction
+    }
     switch (state) {
       case 'ready':
         return (
@@ -110,20 +121,23 @@ export default function PayoutAccountStep({
         )
       case 'paused':
         return (
-          <Button onClick={() => window.open('mailto:support@polar.sh')}>
-            Contact support
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+          <Box flexDirection="column" alignItems="center" rowGap="s">
+            <Button onClick={() => window.open('mailto:support@polar.sh')}>
+              Contact support
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <CheckPayoutStatusButton payoutAccount={payoutAccount} />
+          </Box>
         )
       case 'under_review':
-        return null
-      default:
         return (
-          <Button onClick={handleStartAccountSetup}>
-            Continue with Account Setup
-            <ArrowRight className="ml-2 h-4 w-4" />
-          </Button>
+          <CheckPayoutStatusButton
+            payoutAccount={payoutAccount}
+            variant="default"
+          />
         )
+      default:
+        return startSetupAction
     }
   }
 

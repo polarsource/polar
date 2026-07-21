@@ -9,6 +9,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import { ArrowRight, BanknoteIcon } from 'lucide-react'
 import { useCallback, useState } from 'react'
+import { CheckPayoutStatusButton } from '../../CheckPayoutStatusButton'
 import { getPayoutAccountPresentation } from '../../payoutAccountPresentation'
 import { PathCardBanner } from './PathCardBanner'
 import { StatusBlock } from './StatusBlock'
@@ -116,6 +117,8 @@ export const PayoutAccountSection = ({
         </Button>
       ) : null
 
+    const canCheckStatus = state === 'under_review' || state === 'paused'
+
     return (
       <>
         <StatusBlock
@@ -126,6 +129,12 @@ export const PayoutAccountSection = ({
           action={
             <Box flexDirection="column" alignItems="center" rowGap="s">
               {primaryAction}
+              {canCheckStatus && (
+                <CheckPayoutStatusButton
+                  payoutAccount={payoutAccount}
+                  variant={primaryAction ? 'ghost' : 'default'}
+                />
+              )}
               {primaryAction ? (
                 <Button variant="ghost" size="sm" onClick={openManage}>
                   Manage payout accounts

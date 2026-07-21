@@ -106,6 +106,12 @@ BENEFITS: list[dict[str, object]] = [
             "plain_tier_external_id": "scale",
         },
     },
+    {
+        "description": "Single Sign-On",
+        "metadata": {
+            "type": "sso",
+        },
+    },
 ]
 
 PRODUCTS: list[dict[str, object]] = [
@@ -142,9 +148,13 @@ PRODUCTS: list[dict[str, object]] = [
             "custom": False,
             "order": 4,
             "description": "For fast growing businesses.",
-            "features": "All features on Growth, Slack Channel, P1 Support",
+            "features": "All features on Growth, Slack Channel, P1 Support, Single Sign-On",
         },
-        "benefits": ["Transaction Fee (Tier 4)", "Support (Tier 4)"],
+        "benefits": [
+            "Transaction Fee (Tier 4)",
+            "Support (Tier 4)",
+            "Single Sign-On",
+        ],
     },
 ]
 

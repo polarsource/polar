@@ -1,3 +1,4 @@
+from textwrap import dedent
 from typing import cast
 
 from fastapi import Depends, Query
@@ -31,6 +32,16 @@ from polar.routing import APIRouter
 from .. import auth
 
 router = APIRouter(prefix="/license-keys", tags=["license_keys", APITag.public])
+
+ACTIVATE_LICENSE_KEY_MINTLIFY_CONTENT = dedent(
+    """
+    <Tip>
+      You only need to use this endpoint if you have device **activations** enabled on the license key benefit. You then use this endpoint to reserve an allocation for a specific device. Store the unique activation ID from the response on the device and use it as extra validation in the [/validate](/api-reference/customer_portal/validate-license-key) endpoint.
+
+      Not using **activations**? Just use the [/validate](/api-reference/customer_portal/validate-license-key) endpoint directly instead.
+    </Tip>
+    """
+).strip()
 
 
 @router.get(
@@ -127,6 +138,7 @@ async def validate(
         403: ActivationNotPermitted,
         404: NotFoundResponse,
     },
+    openapi_extra={"x-mint": {"content": ACTIVATE_LICENSE_KEY_MINTLIFY_CONTENT}},
 )
 async def activate(
     activate: LicenseKeyActivate,

@@ -21,26 +21,26 @@ Everyone who has ever purchased something from you will be recorded as a Custome
 
 ## External ID
 
-Quite often, you'll have our own users management system in your application, where your customer already have an ID. To ease reconciliation between Polar and your system, we have a dedicated [`external_id`](/api-reference/customers/get-external#response-external-id) field on Customers. It's unique across your organization and can't be changed once set.
+Quite often, you'll have our own users management system in your application, where your customer already have an ID. To ease reconciliation between Polar and your system, we have a dedicated [`external_id`](/api-reference/customers/get-customer-by-external-id#response-external-id) field on Customers. It's unique across your organization and can't be changed once set.
 
 We have dedicated API endpoints that work with the `external_id` field, so you don't even have to store the internal Polar ID in your system.
 
 <Card
   title="Get Customer by External ID"
   icon="link"
-  href="/api-reference/customers/get-external"
+  href="/api-reference/customers/get-customer-by-external-id"
   horizontal
 ></Card>
 <Card
   title="Update Customer by External ID"
   icon="link"
-  href="/api-reference/customers/update-external"
+  href="/api-reference/customers/update-customer-by-external-id"
   horizontal
 ></Card>
 <Card
   title="Delete Customer by External ID"
   icon="link"
-  href="/api-reference/customers/delete-external"
+  href="/api-reference/customers/delete-customer-by-external-id"
   horizontal
 ></Card>
 
@@ -57,4 +57,4 @@ You may set additional metadata on Customers. This can be very useful to store a
   src="/assets/features/customer-management/edit.dark.png"
 />
 
-It can be set through the dashboard or through the [API](/api-reference/customers/update#body-metadata). It can also be pre-set when creating a Checkout Session by using the [`customer_metadata`](/api-reference/checkouts/create-session#body-customer-metadata) field. This way, after a successful checkout, the metadata will automatically be set on the newly created Customer.
+It can be set through the dashboard or through the [API](/api-reference/customers/update-customer#body-metadata). It can also be pre-set when creating a Checkout Session by using the [`customer_metadata`](/api-reference/checkouts/create-checkout-session#body-customer-metadata) field. This way, after a successful checkout, the metadata will automatically be set on the newly created Customer.

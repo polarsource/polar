@@ -1,3 +1,4 @@
+from textwrap import dedent
 from typing import Annotated
 
 from fastapi import Depends, Path, Query, Request
@@ -25,6 +26,18 @@ from .schemas import CheckoutLinkCreate, CheckoutLinkUpdate
 from .service import checkout_link as checkout_link_service
 
 router = APIRouter(prefix="/checkout-links", tags=["checkout-links", APITag.public])
+
+CHECKOUT_LINK_CREATE_MINTLIFY_CONTENT = dedent(
+    """
+    <Warning>
+      Looking to create a single use checkout session? Checkout Links are probably **not** what you're looking for.
+
+      Checkout Links are shareable links that generate checkout sessions when opened. They are very handy to start a purchase from your website or social media.
+
+      However, if you want to start a checkout for one of your user **inside** your product, you should use the [Checkout Sessions API](/api-reference/checkouts/create-checkout-session).
+    </Warning>
+    """
+).strip()
 
 
 CheckoutLinkID = Annotated[UUID4, Path(description="The checkout link ID.")]
@@ -95,6 +108,7 @@ async def get(
     status_code=201,
     summary="Create Checkout Link",
     responses={201: {"description": "Checkout link created."}},
+    openapi_extra={"x-mint": {"content": CHECKOUT_LINK_CREATE_MINTLIFY_CONTENT}},
 )
 async def create(
     checkout_link_create: CheckoutLinkCreate,

@@ -1,4 +1,5 @@
 import json
+from textwrap import dedent
 
 import structlog
 from fastapi import Depends, Request
@@ -41,6 +42,14 @@ from ..utils import get_audit_context, get_customer, get_customer_id
 log = structlog.get_logger()
 
 router = APIRouter(prefix="/customers", tags=["customers", APITag.public])
+
+LIST_PAYMENT_METHODS_MINTLIFY_CONTENT = dedent(
+    """
+    <Note>
+      To change the default payment method, call the [`PATCH /v1/customer-portal/customers/me`](/api-reference/customer_portal/update-customer) endpoint with the desired `default_payment_method_id`.
+    </Note>
+    """
+).strip()
 
 
 @router.get("/stream", include_in_schema=False)
@@ -111,6 +120,7 @@ async def update(
     "/me/payment-methods",
     summary="List Customer Payment Methods",
     response_model=ListResource[CustomerPaymentMethod],
+    openapi_extra={"x-mint": {"content": LIST_PAYMENT_METHODS_MINTLIFY_CONTENT}},
 )
 async def list_payment_methods(
     auth_subject: auth.CustomerPortalUnionBillingRead,

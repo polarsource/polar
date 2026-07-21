@@ -12,21 +12,21 @@ description: "Our webhook events and in which context they are useful"
   <Card
     title="checkout.created"
     icon="link"
-    href="/api-reference/webhooks/checkout.created"
+    href="/api-reference/checkoutcreated"
     horizontal
   ></Card>
 
   <Card
     title="checkout.updated"
     icon="link"
-    href="/api-reference/webhooks/checkout.updated"
+    href="/api-reference/checkoutupdated"
     horizontal
   ></Card>
 
   <Card
     title="checkout.expired"
     icon="link"
-    href="/api-reference/webhooks/checkout.expired"
+    href="/api-reference/checkoutexpired"
     horizontal
   >
     Fired when a checkout link has expired without being completed.
@@ -39,7 +39,7 @@ description: "Our webhook events and in which context they are useful"
   <Card
     title="customer.created"
     icon="link"
-    href="/api-reference/webhooks/customer.created"
+    href="/api-reference/customercreated"
     horizontal
   >
     Fired when a new customer has been created.
@@ -48,7 +48,7 @@ description: "Our webhook events and in which context they are useful"
   <Card
     title="customer.updated"
     icon="link"
-    href="/api-reference/webhooks/customer.updated"
+    href="/api-reference/customerupdated"
     horizontal
   >
     Fired when a customer has been updated.
@@ -57,7 +57,7 @@ description: "Our webhook events and in which context they are useful"
   <Card
     title="customer.deleted"
     icon="link"
-    href="/api-reference/webhooks/customer.deleted"
+    href="/api-reference/customerdeleted"
     horizontal
   >
     Fired when a customer has been deleted.
@@ -66,7 +66,7 @@ description: "Our webhook events and in which context they are useful"
   <Card
     title="customer.state_changed"
     icon="link"
-    href="/api-reference/webhooks/customer.state_changed"
+    href="/api-reference/customerstate_changed"
     horizontal
   >
     Fired when a customer's state has changed. Includes active subscriptions and
@@ -82,7 +82,7 @@ In order to properly implement logic for handling subscriptions, you should look
   <Card
     title="subscription.created"
     icon="link"
-    href="/api-reference/webhooks/subscription.created"
+    href="/api-reference/subscriptioncreated"
     horizontal
   >
     Fired when a new subscription has been created.
@@ -91,28 +91,28 @@ In order to properly implement logic for handling subscriptions, you should look
   <Card
     title="subscription.active"
     icon="link"
-    href="/api-reference/webhooks/subscription.active"
+    href="/api-reference/subscriptionactive"
     horizontal
   ></Card>
 
   <Card
     title="subscription.uncanceled"
     icon="link"
-    href="/api-reference/webhooks/subscription.uncanceled"
+    href="/api-reference/subscriptionuncanceled"
     horizontal
   ></Card>
 
   <Card
     title="subscription.canceled"
     icon="link"
-    href="/api-reference/webhooks/subscription.canceled"
+    href="/api-reference/subscriptioncanceled"
     horizontal
   ></Card>
 
   <Card
     title="subscription.past_due"
     icon="link"
-    href="/api-reference/webhooks/subscription.past_due"
+    href="/api-reference/subscriptionpast_due"
     horizontal
   >
     Fired when a subscription payment has failed. The customer can recover by updating their payment method.
@@ -121,7 +121,7 @@ In order to properly implement logic for handling subscriptions, you should look
   <Card
     title="subscription.updated"
     icon="link"
-    href="/api-reference/webhooks/subscription.updated"
+    href="/api-reference/subscriptionupdated"
     horizontal
   >
     Use this event if you want to handle cancellations, un-cancellations, etc. The
@@ -132,7 +132,7 @@ In order to properly implement logic for handling subscriptions, you should look
   <Card
     title="order.created"
     icon="link"
-    href="/api-reference/webhooks/order.created"
+    href="/api-reference/ordercreated"
     horizontal
   >
     In case you want to do logic when a subscription is renewed, you should listen
@@ -144,7 +144,7 @@ In order to properly implement logic for handling subscriptions, you should look
   <Card
     title="subscription.revoked"
     icon="link"
-    href="/api-reference/webhooks/subscription.revoked"
+    href="/api-reference/subscriptionrevoked"
     horizontal
   ></Card>
 </Columns>
@@ -209,25 +209,25 @@ Both events will contain the same order data, with the order status changed to `
   <Card
     title="order.created"
     icon="link"
-    href="/api-reference/webhooks/order.created"
+    href="/api-reference/ordercreated"
     horizontal
   ></Card>
   <Card
     title="order.paid"
     icon="link"
-    href="/api-reference/webhooks/order.paid"
+    href="/api-reference/orderpaid"
     horizontal
   ></Card>
   <Card
     title="order.updated"
     icon="link"
-    href="/api-reference/webhooks/order.updated"
+    href="/api-reference/orderupdated"
     horizontal
   ></Card>
   <Card
     title="order.refunded"
     icon="link"
-    href="/api-reference/webhooks/order.refunded"
+    href="/api-reference/orderrefunded"
     horizontal
   ></Card>
 </Columns>
@@ -238,13 +238,13 @@ Both events will contain the same order data, with the order status changed to `
   <Card
     title="refund.created"
     icon="link"
-    href="/api-reference/webhooks/refund.created"
+    href="/api-reference/refundcreated"
     horizontal
   ></Card>
   <Card
     title="refund.updated"
     icon="link"
-    href="/api-reference/webhooks/refund.updated"
+    href="/api-reference/refundupdated"
     horizontal
   ></Card>
 </Columns>
@@ -255,19 +255,19 @@ Both events will contain the same order data, with the order status changed to `
   <Card
     title="benefit_grant.created"
     icon="link"
-    href="/api-reference/webhooks/benefit_grant.created"
+    href="/api-reference/benefit_grantcreated"
     horizontal
   ></Card>
   <Card
     title="benefit_grant.updated"
     icon="link"
-    href="/api-reference/webhooks/benefit_grant.updated"
+    href="/api-reference/benefit_grantupdated"
     horizontal
   ></Card>
   <Card
     title="benefit_grant.revoked"
     icon="link"
-    href="/api-reference/webhooks/benefit_grant.revoked"
+    href="/api-reference/benefit_grantrevoked"
     horizontal
   ></Card>
 </Columns>
@@ -280,13 +280,13 @@ Both events will contain the same order data, with the order status changed to `
   <Card
     title="benefit.created"
     icon="link"
-    href="/api-reference/webhooks/benefit.created"
+    href="/api-reference/benefitcreated"
     horizontal
   ></Card>
   <Card
     title="benefit.updated"
     icon="link"
-    href="/api-reference/webhooks/benefit.updated"
+    href="/api-reference/benefitupdated"
     horizontal
   ></Card>
 </Columns>
@@ -297,13 +297,13 @@ Both events will contain the same order data, with the order status changed to `
   <Card
     title="product.created"
     icon="link"
-    href="/api-reference/webhooks/product.created"
+    href="/api-reference/productcreated"
     horizontal
   ></Card>
   <Card
     title="product.updated"
     icon="link"
-    href="/api-reference/webhooks/product.updated"
+    href="/api-reference/productupdated"
     horizontal
   ></Card>
 </Columns>
@@ -314,7 +314,7 @@ Both events will contain the same order data, with the order status changed to `
   <Card
     title="organization.updated"
     icon="link"
-    href="/api-reference/webhooks/organization.updated"
+    href="/api-reference/organizationupdated"
     horizontal
   ></Card>
 </Columns>

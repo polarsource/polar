@@ -10,6 +10,7 @@ import { useCallback, useState } from 'react'
 import { StatusBlock } from '../Account/sections/StatusBlock'
 import { CheckPayoutStatusButton } from '../CheckPayoutStatusButton'
 import { getPayoutAccountPresentation } from '../payoutAccountPresentation'
+import { payoutOnboardingReturnPath } from '../payoutOnboardingReturn'
 
 interface PayoutAccountStepProps {
   organization: schemas['Organization']
@@ -31,7 +32,7 @@ const Card = ({ children }: { children: React.ReactNode }) => (
 export default function PayoutAccountStep({
   organization,
 }: PayoutAccountStepProps) {
-  const returnPath = `/dashboard/${organization.slug}/finance/account`
+  const returnPath = payoutOnboardingReturnPath(organization.slug)
   const { payoutAccount, openPrimary, modals } = usePayoutAccountSetup(
     organization,
     returnPath,

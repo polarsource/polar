@@ -11,6 +11,7 @@ import { ArrowRight, BanknoteIcon } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { CheckPayoutStatusButton } from '../../CheckPayoutStatusButton'
 import { getPayoutAccountPresentation } from '../../payoutAccountPresentation'
+import { payoutOnboardingReturnPath } from '../../payoutOnboardingReturn'
 import { PathCardBanner } from './PathCardBanner'
 import { StatusBlock } from './StatusBlock'
 
@@ -42,7 +43,7 @@ export const PayoutAccountSection = ({
     true,
     initialOrg,
   )
-  const returnPath = `/dashboard/${organization.slug}/finance/account`
+  const returnPath = payoutOnboardingReturnPath(organization.slug)
   const { payoutAccount, openManage, openPrimary, modals } =
     usePayoutAccountSetup(organization, returnPath)
 

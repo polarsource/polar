@@ -20,7 +20,7 @@ TEMPLATE = ENVIRONMENT.get_template("code_sample.py.jinja")
 
 
 def language_label() -> str:
-    return "Python"
+    return "Python (New SDK)"
 
 
 def render_code_sample(sample: OperationSample) -> str:

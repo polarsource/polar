@@ -2574,6 +2574,8 @@ async def create_dispute(
     payment_processor_id: str | None = "STRIPE_DISPUTE_ID",
     alert_processor: DisputeAlertProcessor | None = None,
     alert_processor_id: str | None = None,
+    evidence_due_by: datetime | None = None,
+    past_due: bool = False,
 ) -> Dispute:
     dispute = Dispute(
         status=status,
@@ -2584,6 +2586,8 @@ async def create_dispute(
         payment_processor_id=payment_processor_id,
         dispute_alert_processor=alert_processor,
         dispute_alert_processor_id=alert_processor_id,
+        evidence_due_by=evidence_due_by,
+        past_due=past_due,
         order=order,
         payment=payment,
     )
@@ -2659,10 +2663,22 @@ async def create_dispute_case(
     product: Product,
     *,
     opened: bool = True,
+    dispute_status: DisputeStatus = DisputeStatus.needs_response,
+    payment_processor_id: str | None = "STRIPE_DISPUTE_ID",
+    evidence_due_by: datetime | None = None,
+    past_due: bool = False,
 ) -> DisputeSupportCase:
     order = await create_order(save_fixture, customer=customer, product=product)
     payment = await create_payment(save_fixture, organization, order=order)
-    dispute = await create_dispute(save_fixture, order, payment)
+    dispute = await create_dispute(
+        save_fixture,
+        order,
+        payment,
+        status=dispute_status,
+        payment_processor_id=payment_processor_id,
+        evidence_due_by=evidence_due_by,
+        past_due=past_due,
+    )
     case = DisputeSupportCase(dispute=dispute, organization=organization)
     await save_fixture(case)
     if opened:

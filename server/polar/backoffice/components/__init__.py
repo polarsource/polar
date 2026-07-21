@@ -8,6 +8,7 @@ from ._alert import alert
 from ._button import button
 from ._confirmation_dialog import confirmation_dialog
 from ._dispute_status_badge import dispute_status_badge
+from ._evidence_due_label import evidence_due_label
 from ._layout import layout
 from ._metric_card import metric_card
 from ._modal import modal
@@ -28,6 +29,7 @@ __all__ = [
     "description_list",
     "dispute_status_badge",
     "empty_state",
+    "evidence_due_label",
     "input",
     "layout",
     "loading_state",

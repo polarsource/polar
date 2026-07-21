@@ -57,6 +57,8 @@ class SupportCasesListSection:
                         awaiting_platform,
                         unread,
                         dispute_status,
+                        _evidence_due_by,
+                        _evidence_past_due,
                     ) in self.rows:
                         case_url = case_detail_url(
                             request, case.id, return_to=return_to

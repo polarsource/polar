@@ -52,7 +52,7 @@ export const listDisputes = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistDisputes = (client: ClientBase) => {
+export const iterListDisputes = (client: ClientBase) => {
   return async function* (query?: {
     organization_id?: string | string[] | null;
     order_id?: string | string[] | null;
@@ -155,7 +155,7 @@ export function createDisputesService(client: ClientBase) {
     list: listDisputes(client),
     get: getDisputes(client),
     accept: acceptDisputes(client),
-    iterlist: iterlistDisputes(client),
+    iterList: iterListDisputes(client),
   };
 }
 

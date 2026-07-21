@@ -219,7 +219,7 @@ export const listClaimedSubscriptionsSeats = (client: ClientBase) => {
  * @throws {ListClaimedSubscriptions401Error} Authentication required
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistClaimedSubscriptionsSeats = (client: ClientBase) => {
+export const iterListClaimedSubscriptionsSeats = (client: ClientBase) => {
   return async function* (query?: {
     page?: number;
     limit?: number;
@@ -249,7 +249,7 @@ export function createSeatsService(client: ClientBase) {
     revokeSeat: revokeSeatSeats(client),
     resendInvitation: resendInvitationSeats(client),
     listClaimedSubscriptions: listClaimedSubscriptionsSeats(client),
-    iterlistClaimedSubscriptions: iterlistClaimedSubscriptionsSeats(client),
+    iterListClaimedSubscriptions: iterListClaimedSubscriptionsSeats(client),
   };
 }
 

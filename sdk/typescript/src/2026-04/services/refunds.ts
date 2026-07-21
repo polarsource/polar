@@ -60,7 +60,7 @@ export const listRefunds = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistRefunds = (client: ClientBase) => {
+export const iterListRefunds = (client: ClientBase) => {
   return async function* (query?: {
     id?: string | string[] | null;
     organization_id?: string | string[] | null;
@@ -120,7 +120,7 @@ export function createRefundsService(client: ClientBase) {
   return {
     list: listRefunds(client),
     create: createRefunds(client),
-    iterlist: iterlistRefunds(client),
+    iterList: iterListRefunds(client),
   };
 }
 

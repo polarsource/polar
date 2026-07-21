@@ -135,7 +135,7 @@ export const listNamesEvents = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistNamesEvents = (client: ClientBase) => {
+export const iterListNamesEvents = (client: ClientBase) => {
   return async function* (query?: {
     organization_id?: string | string[] | null;
     customer_id?: string | string[] | null;
@@ -226,7 +226,7 @@ export function createEventsService(client: ClientBase) {
     listNames: listNamesEvents(client),
     get: getEvents(client),
     ingest: ingestEvents(client),
-    iterlistNames: iterlistNamesEvents(client),
+    iterListNames: iterListNamesEvents(client),
   };
 }
 

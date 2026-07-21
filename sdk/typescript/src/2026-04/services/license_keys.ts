@@ -73,7 +73,7 @@ export const listLicenseKeys = (client: ClientBase) => {
  * @throws {ResourceNotFound} License key not found.
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistLicenseKeys = (client: ClientBase) => {
+export const iterListLicenseKeys = (client: ClientBase) => {
   return async function* (query?: {
     organization_id?: string | string[] | null;
     benefit_id?: string | string[] | null;
@@ -311,7 +311,7 @@ export function createLicenseKeysService(client: ClientBase) {
     validate: validateLicenseKeys(client),
     activate: activateLicenseKeys(client),
     deactivate: deactivateLicenseKeys(client),
-    iterlist: iterlistLicenseKeys(client),
+    iterList: iterListLicenseKeys(client),
   };
 }
 

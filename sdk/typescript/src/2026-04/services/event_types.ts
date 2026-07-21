@@ -73,7 +73,7 @@ export const listEventTypes = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistEventTypes = (client: ClientBase) => {
+export const iterListEventTypes = (client: ClientBase) => {
   return async function* (query?: {
     organization_id?: string | string[] | null;
     customer_id?: string | string[] | null;
@@ -142,7 +142,7 @@ export function createEventTypesService(client: ClientBase) {
   return {
     list: listEventTypes(client),
     update: updateEventTypes(client),
-    iterlist: iterlistEventTypes(client),
+    iterList: iterListEventTypes(client),
   };
 }
 

@@ -41,20 +41,20 @@ from polar.{{ version }}.errors import (
 )
 {% endif %}
 {% for sub_service in service.services %}
-from .{{ sub_service.name | snake }} import {{ sub_service.name }}Async
-from .{{ sub_service.name | snake }} import {{ sub_service.name }}Sync
+from .{{ sub_service.name | service_name }} import {{ sub_service.name }}Async
+from .{{ sub_service.name | service_name }} import {{ sub_service.name }}Sync
 {% endfor %}
 
 
 class {{ service.name }}Sync(SyncServiceBase):
 {% for sub_service in service.services %}
-    {{ sub_service.name | snake }}: {{ sub_service.name }}Sync
+    {{ sub_service.name | service_name }}: {{ sub_service.name }}Sync
 {% endfor %}
 {% if service.services %}
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__(*args, **kwargs)
 {% for sub_service in service.services %}
-        self.{{ sub_service.name | snake }} = {{ sub_service.name}}Sync.from_service(self)
+        self.{{ sub_service.name | service_name }} = {{ sub_service.name}}Sync.from_service(self)
 {% endfor %}
 {% endif %}
 {% for method in service.methods %}
@@ -63,7 +63,7 @@ class {{ service.name }}Sync(SyncServiceBase):
 {% for variant in method.body.variants %}
 {% if variant.kind == 'model' %}
     @typing.overload
-    def {{ method.name | snake }}(
+    def {{ method.name | operation_name }}(
         self,
         {% for param in method.path_params %}
         {{ param.name }}: {{ param.type | type_annotation }},
@@ -90,7 +90,7 @@ class {{ service.name }}Sync(SyncServiceBase):
 {% for variant in union_model.variants %}
 {% if variant.kind == 'model' %}
     @typing.overload
-    def {{ method.name | snake }}(
+    def {{ method.name | operation_name }}(
         self,
         {% for param in method.path_params %}
         {{ param.name }}: {{ param.type | type_annotation }},
@@ -115,7 +115,7 @@ class {{ service.name }}Sync(SyncServiceBase):
 {% endfor %}
 {% endif %}
 {% endif %}
-    def {{ method.name | snake }}(
+    def {{ method.name | operation_name }}(
         self,
         {% for param in method.path_params %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }},
@@ -202,7 +202,7 @@ Raises:
 {% for variant in method.body.variants %}
 {% if variant.kind == 'model' %}
     @typing.overload
-    def iter_{{ method.name | snake }}(
+    def {{ method.name | paginator_name }}(
         self,
         {% for param in method.path_params %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }},
@@ -229,7 +229,7 @@ Raises:
 {% for variant in union_model.variants %}
 {% if variant.kind == 'model' %}
     @typing.overload
-    def iter_{{ method.name | snake }}(
+    def {{ method.name | paginator_name }}(
         self,
         {% for param in method.path_params %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }},
@@ -254,7 +254,7 @@ Raises:
 {% endfor %}
 {% endif %}
 {% endif %}
-    def iter_{{ method.name | snake }}(
+    def {{ method.name | paginator_name }}(
         self,
         {% for param in method.path_params %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }},
@@ -308,7 +308,7 @@ Raises:
     PolarServerError: Raised when the server returns a 5xx error response.
         """
         while True:
-            response = self.{{ method.name | snake }}(
+            response = self.{{ method.name | operation_name }}(
                 {% for param in method.path_params %}
                 {{ param.parameter_name }}={{ param.parameter_name }},
                 {% endfor %}
@@ -329,13 +329,13 @@ Raises:
 
 class {{ service.name }}Async(AsyncServiceBase):
 {% for sub_service in service.services %}
-    {{ sub_service.name | snake }}: {{ sub_service.name }}Async
+    {{ sub_service.name | service_name }}: {{ sub_service.name }}Async
 {% endfor %}
 {% if service.services %}
     def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
         super().__init__(*args, **kwargs)
 {% for sub_service in service.services %}
-        self.{{ sub_service.name | snake }} = {{ sub_service.name}}Async.from_service(self)
+        self.{{ sub_service.name | service_name }} = {{ sub_service.name}}Async.from_service(self)
 {% endfor %}
 {% endif %}
 {% for method in service.methods %}
@@ -344,7 +344,7 @@ class {{ service.name }}Async(AsyncServiceBase):
 {% for variant in method.body.variants %}
 {% if variant.kind == 'model' %}
     @typing.overload
-    async def {{ method.name | snake }}(
+    async def {{ method.name | operation_name }}(
         self,
         {% for param in method.path_params %}
         {{ param.name }}: {{ param.type | type_annotation }},
@@ -371,7 +371,7 @@ class {{ service.name }}Async(AsyncServiceBase):
 {% for variant in union_model.variants %}
 {% if variant.kind == 'model' %}
     @typing.overload
-    async def {{ method.name | snake }}(
+    async def {{ method.name | operation_name }}(
         self,
         {% for param in method.path_params %}
         {{ param.name }}: {{ param.type | type_annotation }},
@@ -396,7 +396,7 @@ class {{ service.name }}Async(AsyncServiceBase):
 {% endfor %}
 {% endif %}
 {% endif %}
-    async def {{ method.name | snake }}(
+    async def {{ method.name | operation_name }}(
         self,
         {% for param in method.path_params %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }},
@@ -483,7 +483,7 @@ Raises:
 {% for variant in method.body.variants %}
 {% if variant.kind == 'model' %}
     @typing.overload
-    async def iter_{{ method.name | snake }}(
+    async def {{ method.name | paginator_name }}(
         self,
         {% for param in method.path_params %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }},
@@ -510,7 +510,7 @@ Raises:
 {% for variant in union_model.variants %}
 {% if variant.kind == 'model' %}
     @typing.overload
-    async def iter_{{ method.name | snake }}(
+    async def {{ method.name | paginator_name }}(
         self,
         {% for param in method.path_params %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }},
@@ -535,7 +535,7 @@ Raises:
 {% endfor %}
 {% endif %}
 {% endif %}
-    async def iter_{{ method.name | snake }}(
+    async def {{ method.name | paginator_name }}(
         self,
         {% for param in method.path_params %}
         {{ param.parameter_name }}: {{ param.type | type_annotation }},
@@ -586,7 +586,7 @@ Raises:
     PolarServerError: Raised when the server returns a 5xx error response.
         """
         while True:
-            response = await self.{{ method.name | snake }}(
+            response = await self.{{ method.name | operation_name }}(
                 {% for param in method.path_params %}
                 {{ param.parameter_name }}={{ param.parameter_name }},
                 {% endfor %}

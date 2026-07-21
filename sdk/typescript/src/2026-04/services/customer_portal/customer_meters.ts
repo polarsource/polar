@@ -60,7 +60,7 @@ export const listCustomerMeters = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistCustomerMeters = (client: ClientBase) => {
+export const iterListCustomerMeters = (client: ClientBase) => {
   return async function* (query?: {
     meter_id?: string | string[] | null;
     query?: string | null;
@@ -123,7 +123,7 @@ export function createCustomerMetersService(client: ClientBase) {
   return {
     list: listCustomerMeters(client),
     get: getCustomerMeters(client),
-    iterlist: iterlistCustomerMeters(client),
+    iterList: iterListCustomerMeters(client),
   };
 }
 

@@ -75,7 +75,7 @@ export const listBenefits = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistBenefits = (client: ClientBase) => {
+export const iterListBenefits = (client: ClientBase) => {
   return async function* (query?: {
     organization_id?: string | string[] | null;
     type?: BenefitType | BenefitType[] | null;
@@ -311,7 +311,7 @@ export const grantsBenefits = (client: ClientBase) => {
  * @throws {ResourceNotFound} Benefit not found.
  * @throws {HTTPValidationError} Validation Error
  */
-export const itergrantsBenefits = (client: ClientBase) => {
+export const iterGrantsBenefits = (client: ClientBase) => {
   return async function* (
     id: string,
     query?: {
@@ -348,8 +348,8 @@ export function createBenefitsService(client: ClientBase) {
     delete: deleteBenefits(client),
     update: updateBenefits(client),
     grants: grantsBenefits(client),
-    iterlist: iterlistBenefits(client),
-    itergrants: itergrantsBenefits(client),
+    iterList: iterListBenefits(client),
+    iterGrants: iterGrantsBenefits(client),
   };
 }
 

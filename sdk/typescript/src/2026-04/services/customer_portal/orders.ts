@@ -75,7 +75,7 @@ export const listOrders = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistOrders = (client: ClientBase) => {
+export const iterListOrders = (client: ClientBase) => {
   return async function* (query?: {
     product_id?: string | string[] | null;
     product_billing_type?: ProductBillingType | ProductBillingType[] | null;
@@ -341,7 +341,7 @@ export function createOrdersService(client: ClientBase) {
     receipt: receiptOrders(client),
     getPaymentStatus: getPaymentStatusOrders(client),
     confirmRetryPayment: confirmRetryPaymentOrders(client),
-    iterlist: iterlistOrders(client),
+    iterList: iterListOrders(client),
   };
 }
 

@@ -10,7 +10,7 @@ import { create{{ sub_service.name }}Service } from "./{{ sub_service.name | sna
 {% endfor %}
 
 {% for method in service.methods %}
-export const {{ method.name | camel }}{{ service.name }} = (
+export const {{ method.name | exported_operation_name(service.name) }} = (
   client: ClientBase,
 ) => {
 /**
@@ -103,7 +103,7 @@ export const {{ method.name | camel }}{{ service.name }} = (
 * @throws {{'{'}}{{ error.name }}{{'}'}} {{ error.description or 'Error with status code ' + error.status_code }}
 {% endfor %}
 */
-export const iter{{ method.name | camel }}{{ service.name }} = (
+export const {{ method.name | exported_paginator_name(service.name) }} = (
   client: ClientBase,
 ) => {
   return async function* (
@@ -140,7 +140,7 @@ export const iter{{ method.name | camel }}{{ service.name }} = (
     {% endif %}
 
     while (true) {
-      const response = await {{ method.name | camel }}{{ service.name }}(client)(
+      const response = await {{ method.name | exported_operation_name(service.name) }}(client)(
         {% for param in method.path_params %}
         {{ param.parameter_name }},
         {% endfor %}
@@ -169,13 +169,13 @@ export const iter{{ method.name | camel }}{{ service.name }} = (
 export function create{{ service.name }}Service(client: ClientBase) {
   return {
     {% for method in service.methods %}
-    {{ method.name | camel }}: {{ method.name | camel }}{{ service.name }}(client),{% endfor %}
+    {{ method.name | operation_name }}: {{ method.name | exported_operation_name(service.name) }}(client),{% endfor %}
     {% for method in service.methods %}
     {% if method.pagination %}
-    iter{{ method.name | camel }}: iter{{ method.name | camel }}{{ service.name }}(client),{% endif %}
+    {{ method.name | paginator_name }}: {{ method.name | exported_paginator_name(service.name) }}(client),{% endif %}
     {% endfor %}
     {% for sub_service in service.services %}
-    {{ sub_service.name | camel }}: create{{ sub_service.name }}Service(client),{% endfor %}
+    {{ sub_service.name | service_name }}: create{{ sub_service.name }}Service(client),{% endfor %}
   };
 }
 

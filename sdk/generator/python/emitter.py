@@ -15,6 +15,7 @@ from generator.ir import (
     UnionRef,
     UnionType,
 )
+from python.naming import operation_name, paginator_name, service_name
 from python.types import (
     collect_enum_imports,
     convert_type_to_annotation,
@@ -183,6 +184,9 @@ class PythonEmitter(EmitterBase):
         self.env.filters["type_annotation"] = convert_type_to_annotation
         self.env.filters["wrap_nullable"] = wrap_nullable_type
         self.env.filters["snake"] = to_snake_case
+        self.env.filters["operation_name"] = operation_name
+        self.env.filters["paginator_name"] = paginator_name
+        self.env.filters["service_name"] = service_name
         self.env.filters["format_default"] = format_default_value
         self.env.filters["format_default_dataclass"] = format_default_value_dataclass
 
@@ -191,12 +195,12 @@ class PythonEmitter(EmitterBase):
     ) -> None:
         """Emit a single service file, recursively going to sub-services."""
         if service.services:
-            sub_service_path = output_path / to_snake_case(service.name)
+            sub_service_path = output_path / service_name(service.name)
             for sub_service in service.services:
                 self._emit_service(sub_service, api, sub_service_path)
             service_path = sub_service_path / "__init__.py"
         else:
-            service_path = output_path / f"{to_snake_case(service.name)}.py"
+            service_path = output_path / f"{service_name(service.name)}.py"
 
         self.render_file(
             "polar/version/services/service.py",

@@ -60,7 +60,7 @@ export const listWebhookEndpointsWebhooks = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistWebhookEndpointsWebhooks = (client: ClientBase) => {
+export const iterListWebhookEndpointsWebhooks = (client: ClientBase) => {
   return async function* (query?: {
     organization_id?: string | string[] | null;
     page?: number;
@@ -310,7 +310,7 @@ export const listWebhookDeliveriesWebhooks = (client: ClientBase) => {
  * @throws {PolarServerError} When the server returns a 5xx error
  * @throws {HTTPValidationError} Validation Error
  */
-export const iterlistWebhookDeliveriesWebhooks = (client: ClientBase) => {
+export const iterListWebhookDeliveriesWebhooks = (client: ClientBase) => {
   return async function* (query?: {
     endpoint_id?: string | string[] | null;
     start_timestamp?: string | null;
@@ -383,8 +383,8 @@ export function createWebhooksService(client: ClientBase) {
     resetWebhookEndpointSecret: resetWebhookEndpointSecretWebhooks(client),
     listWebhookDeliveries: listWebhookDeliveriesWebhooks(client),
     redeliverWebhookEvent: redeliverWebhookEventWebhooks(client),
-    iterlistWebhookEndpoints: iterlistWebhookEndpointsWebhooks(client),
-    iterlistWebhookDeliveries: iterlistWebhookDeliveriesWebhooks(client),
+    iterListWebhookEndpoints: iterListWebhookEndpointsWebhooks(client),
+    iterListWebhookDeliveries: iterListWebhookDeliveriesWebhooks(client),
   };
 }
 

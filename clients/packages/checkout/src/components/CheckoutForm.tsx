@@ -37,7 +37,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { UseFormReturn, WatchObserver } from 'react-hook-form'
 import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
-import { isDisplayedField, isRequiredField } from '../utils/address'
+import {
+  isDisplayedField,
+  isRequiredField,
+  resolveBillingAddressFields,
+} from '../utils/address'
 import { convertLocaleToStripeElementLocale } from '../utils/locale'
 import { useCheckoutForm } from '../providers/CheckoutFormProvider'
 import CustomFieldInput from './CustomFieldInput'
@@ -128,15 +132,10 @@ const BaseCheckoutForm = ({
 
   const t = useTranslations(locale)
 
-  const billingAddressFields = requireFullBillingAddress
-    ? {
-        ...checkout.billing_address_fields,
-        line1: 'required' as const,
-        line2: 'optional' as const,
-        city: 'required' as const,
-        postal_code: 'required' as const,
-      }
-    : checkout.billing_address_fields
+  const billingAddressFields = resolveBillingAddressFields(
+    checkout.billing_address_fields,
+    requireFullBillingAddress,
+  )
 
   const country = watch('customer_billing_address.country')
   const watcher: WatchObserver<schemas['CheckoutUpdatePublic']> = useCallback(
@@ -362,9 +361,7 @@ const BaseCheckoutForm = ({
                     <FormLabel>
                       {t('checkout.form.billingAddress.label')}
                     </FormLabel>
-                    {isDisplayedField(
-                      billingAddressFields.line1,
-                    ) && (
+                    {isDisplayedField(billingAddressFields.line1) && (
                       <FormControl>
                         <FormField
                           control={control}
@@ -393,9 +390,7 @@ const BaseCheckoutForm = ({
                         />
                       </FormControl>
                     )}
-                    {isDisplayedField(
-                      billingAddressFields.line2,
-                    ) && (
+                    {isDisplayedField(billingAddressFields.line2) && (
                       <FormControl>
                         <FormField
                           control={control}
@@ -424,16 +419,10 @@ const BaseCheckoutForm = ({
                         />
                       </FormControl>
                     )}
-                    {(isDisplayedField(
-                      billingAddressFields.postal_code,
-                    ) ||
-                      isDisplayedField(
-                        billingAddressFields.city,
-                      )) && (
+                    {(isDisplayedField(billingAddressFields.postal_code) ||
+                      isDisplayedField(billingAddressFields.city)) && (
                       <div className="grid grid-cols-2 gap-x-2">
-                        {isDisplayedField(
-                          billingAddressFields.postal_code,
-                        ) && (
+                        {isDisplayedField(billingAddressFields.postal_code) && (
                           <FormControl>
                             <FormField
                               control={control}
@@ -462,9 +451,7 @@ const BaseCheckoutForm = ({
                             />
                           </FormControl>
                         )}
-                        {isDisplayedField(
-                          billingAddressFields.city,
-                        ) && (
+                        {isDisplayedField(billingAddressFields.city) && (
                           <FormControl>
                             <FormField
                               control={control}
@@ -495,9 +482,7 @@ const BaseCheckoutForm = ({
                         )}
                       </div>
                     )}
-                    {isDisplayedField(
-                      billingAddressFields.state,
-                    ) && (
+                    {isDisplayedField(billingAddressFields.state) && (
                       <FormControl>
                         <FormField
                           control={control}
@@ -531,9 +516,7 @@ const BaseCheckoutForm = ({
                         />
                       </FormControl>
                     )}
-                    {isDisplayedField(
-                      billingAddressFields.country,
-                    ) && (
+                    {isDisplayedField(billingAddressFields.country) && (
                       <FormControl>
                         <FormField
                           control={control}

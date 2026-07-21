@@ -11,3 +11,19 @@ export const isRequiredField = (
 ): mode is 'required' => {
   return mode === 'required'
 }
+
+export const resolveBillingAddressFields = (
+  fields: schemas['CheckoutBillingAddressFields'],
+  requireFullBillingAddress: boolean | undefined,
+): schemas['CheckoutBillingAddressFields'] => {
+  if (!requireFullBillingAddress) {
+    return fields
+  }
+  return {
+    ...fields,
+    line1: 'required',
+    line2: 'optional',
+    city: 'required',
+    postal_code: 'required',
+  }
+}

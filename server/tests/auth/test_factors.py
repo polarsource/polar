@@ -15,6 +15,16 @@ from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 
 
+async def enable_sso(
+    save_fixture: SaveFixture, organization: Organization, *, enabled: bool = True
+) -> None:
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "sso_enabled": enabled,
+    }
+    await save_fixture(organization)
+
+
 async def create_sso_connection(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -54,6 +64,7 @@ class TestGetOrgFactors:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
+        await enable_sso(save_fixture, organization)
         enabled = await create_sso_connection(save_fixture, organization, enabled=True)
         await create_sso_connection(save_fixture, organization, enabled=False)
 
@@ -72,6 +83,7 @@ class TestGetOrgFactors:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
+        await enable_sso(save_fixture, organization)
         connection = await create_sso_connection(
             save_fixture, organization, enabled=True
         )
@@ -97,6 +109,7 @@ class TestGetOrgFactors:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
+        await enable_sso(save_fixture, organization)
         connection = await create_sso_connection(
             save_fixture, organization, enabled=True
         )
@@ -113,3 +126,21 @@ class TestGetOrgFactors:
 
         assert base_factor not in factors
         assert {factor.identifier for factor in factors} == {str(connection.id)}
+
+    async def test_no_sso_factors_when_feature_disabled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await create_sso_connection(save_fixture, organization, enabled=True)
+        base_factor = MagicMock()
+
+        factors = await get_org_factors(
+            slug=organization.slug,
+            base_factors={base_factor},
+            session=session,
+            state_service=OAuth2StateService(session),
+        )
+
+        assert factors == {base_factor}

@@ -309,7 +309,11 @@ async def get_org_factors(
         raise ResourceNotFound()
 
     sso_repository = OrganizationSSOConnectionRepository.from_session(session)
-    connections = await sso_repository.get_enabled_by_organization(organization.id)
+    connections = (
+        await sso_repository.get_enabled_by_organization(organization.id)
+        if organization.is_sso_enabled
+        else []
+    )
 
     sso_factors: set[FactorBase[typing.Any]] = {
         build_sso_factor(

@@ -28,6 +28,11 @@ async def create_sso_connection(
         "auth_method": OIDCAuthMethod.client_secret,
         "client_secret": "secret",
     }
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "sso_enabled": True,
+    }
+    await save_fixture(organization)
     connection = OrganizationSSOConnection(
         organization=organization,
         type=OrganizationSSOConnectionType.oidc,

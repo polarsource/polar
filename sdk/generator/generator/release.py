@@ -10,6 +10,7 @@ GENERATOR_DIR = pathlib.Path(__file__).parent.parent
 ROOT = GENERATOR_DIR.parent.parent
 LANGUAGES = ["python", "typescript"]
 GENERATED_SDK_PATHS = ["sdk/python", "sdk/typescript"]
+CODE_SAMPLES_PATH = ROOT / "sdk" / "code-samples"
 
 
 def validate_version(version: str) -> bool:
@@ -68,6 +69,28 @@ def generate_all_sdks(version: str, prerelease: Prerelease | None = None) -> Non
                 raise
 
 
+def generate_code_samples(version: str, prerelease: Prerelease | None = None) -> None:
+    release_label = f"{version}-{prerelease}" if prerelease else version
+    subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "cli",
+            "code-samples",
+            str(GENERATOR_DIR / "openapi.json"),
+            str(CODE_SAMPLES_PATH),
+            "--language",
+            "python",
+            "--language",
+            "typescript",
+            "--version",
+            release_label,
+        ],
+        cwd=GENERATOR_DIR,
+        check=True,
+    )
+
+
 def create_git_commit(version: str, prerelease: Prerelease | None = None) -> None:
     release_label = f"{version}-{prerelease}" if prerelease else version
     for path in GENERATED_SDK_PATHS:
@@ -100,6 +123,7 @@ def release_sdk(
             print("  - Regenerate OpenAPI spec")
         print("  - Regenerate Python SDK")
         print("  - Regenerate TypeScript SDK")
+        print("  - Regenerate SDK code samples overlay")
         if not skip_commit:
             print("  - Create git commit")
         return
@@ -110,6 +134,7 @@ def release_sdk(
             regenerate_openapi()
 
         generate_all_sdks(version, prerelease)
+        generate_code_samples(version, prerelease)
 
         if not skip_commit:
             print("Creating git commit...")

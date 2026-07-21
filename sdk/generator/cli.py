@@ -5,6 +5,7 @@ import sys
 
 import openapi_pydantic as op
 
+from generator.code_samples import write_code_samples_overlays
 from generator.emitter import Prerelease
 from generator.ir import generate_ir
 from generator.release import release_sdk
@@ -20,6 +21,31 @@ parser_generate = subparsers.add_parser(
 parser_generate.add_argument("spec_path", type=str, help="Path to OpenAPI spec file.")
 parser_generate.add_argument(
     "output", type=str, help="Directory to output the generated SDK"
+)
+
+parser_code_samples = subparsers.add_parser(
+    "code-samples", help="Generate SDK code samples as an OpenAPI overlay"
+)
+parser_code_samples.add_argument(
+    "spec_paths",
+    type=str,
+    nargs="+",
+    help="Paths to the OpenAPI spec files, one per API version.",
+)
+parser_code_samples.add_argument(
+    "output", type=str, help="Directory for the generated version overlays."
+)
+parser_code_samples.add_argument(
+    "--language",
+    action="append",
+    choices=["python", "typescript"],
+    help="Language to include. Repeat to select multiple languages (default: both).",
+)
+parser_code_samples.add_argument(
+    "--version",
+    type=str,
+    default="0.0.0",
+    help="SDK version represented by the overlay (default: 0.0.0).",
 )
 parser_generate.add_argument(
     "--language",
@@ -118,6 +144,19 @@ if args.command == "generate":
 
     emitter.emit(args.output)
     emitter.run_post_actions(args.output)
+
+elif args.command == "code-samples":
+    specs = []
+    for spec_path_value in args.spec_paths:
+        spec_path = pathlib.Path(spec_path_value)
+        if not spec_path.is_file():
+            print(f"Error: Spec file {spec_path} does not exist.", file=sys.stderr)
+            sys.exit(1)
+        specs.append(op.OpenAPI.model_validate_json(spec_path.read_text()))
+    ir = generate_ir(*specs)
+    output_path = pathlib.Path(args.output)
+    languages = args.language or ["python", "typescript"]
+    write_code_samples_overlays(output_path, ir, args.version, languages)
 
 elif args.command == "release":
     prerelease = None

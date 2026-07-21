@@ -15,6 +15,13 @@ class PrimitiveType(BaseModel):
     kind: typing.Literal["primitive"]
     type: typing.Literal["string", "integer", "number", "boolean", "unknown"]
     format: str | None = None
+    minimum: float | None = None
+    exclusive_minimum: float | None = None
+    maximum: float | None = None
+    exclusive_maximum: float | None = None
+    min_length: int | None = None
+    max_length: int | None = None
+    pattern: str | None = None
 
 
 class ArrayType(BaseModel):
@@ -22,6 +29,8 @@ class ArrayType(BaseModel):
 
     kind: typing.Literal["array"]
     items: "TypeRef"
+    min_items: int | None = None
+    max_items: int | None = None
 
 
 class ModelRef(BaseModel):
@@ -134,6 +143,9 @@ class Field(BaseModel):
     write_only: bool | None = None
     deprecated: bool | None = None
     default: typing.Any | None = None
+    has_default: bool = False
+    example: typing.Any | None = None
+    has_example: bool = False
 
 
 class Model(BaseModel):
@@ -206,6 +218,9 @@ class Parameter(BaseModel):
     description: str | None = None
     deprecated: bool | None = None
     default: typing.Any | None = None
+    has_default: bool = False
+    example: typing.Any | None = None
+    has_example: bool = False
 
 
 class HTTPMethod(enum.StrEnum):
@@ -239,6 +254,7 @@ class Method(BaseModel):
     """A single API endpoint grouped under a Service."""
 
     name: str
+    operation_id: str
     description: str | None = None
     http_method: HTTPMethod
     path: str
@@ -550,6 +566,13 @@ def _convert_typeref(
             kind="primitive",
             type=schema_type,  # type: ignore[arg-type]
             format=schema.schema_format or None,
+            minimum=schema.minimum,
+            exclusive_minimum=schema.exclusiveMinimum,
+            maximum=schema.maximum,
+            exclusive_maximum=schema.exclusiveMaximum,
+            min_length=schema.minLength,
+            max_length=schema.maxLength,
+            pattern=schema.pattern,
         )
 
     if schema_type == "null":
@@ -567,7 +590,12 @@ def _convert_typeref(
             )
         else:
             items: TypeRef = PrimitiveType(kind="primitive", type="unknown")
-        return ArrayType(kind="array", items=items)
+        return ArrayType(
+            kind="array",
+            items=items,
+            min_items=schema.minItems,
+            max_items=schema.maxItems,
+        )
 
     if schema_type == "object" or schema.properties is not None:
         if schema.properties is None and schema.additionalProperties is not None:
@@ -642,14 +670,16 @@ def _schema_to_model(
         write_only = None
         deprecated = None
         default = None
+        has_default = False
+        has_example, example = _extract_example(prop)
         if isinstance(prop, op.Schema):
             description = prop.description or None
             read_only = True if prop.readOnly else None
             write_only = True if prop.writeOnly else None
             deprecated = True if prop.deprecated else None
-            # Extract default value from schema
-            if hasattr(prop, "default") and prop.default is not None:
+            if "default" in prop.model_fields_set:
                 default = prop.default
+                has_default = True
         fields.append(
             Field(
                 name=prop_name,
@@ -660,6 +690,9 @@ def _schema_to_model(
                 write_only=write_only,
                 deprecated=deprecated,
                 default=default,
+                has_default=has_default,
+                example=example,
+                has_example=has_example,
             )
         )
     # Walk composition keywords so transitive references are discovered even
@@ -728,6 +761,24 @@ def _get_body_schema_raw(
         return None
 
     return media_type.media_type_schema
+
+
+def _extract_example(*sources: typing.Any) -> tuple[bool, typing.Any]:
+    for source in sources:
+        if source is None:
+            continue
+        fields_set = getattr(source, "model_fields_set", set())
+        if "example" in fields_set:
+            return True, getattr(source, "example", None)
+        examples = getattr(source, "examples", None)
+        if isinstance(examples, list) and examples:
+            return True, examples[0]
+        if isinstance(examples, dict) and examples:
+            first_example = examples[sorted(examples)[0]]
+            value_fields_set = getattr(first_example, "model_fields_set", set())
+            if "value" in value_fields_set:
+                return True, getattr(first_example, "value", None)
+    return False, None
 
 
 def _get_response_type_schema(
@@ -842,18 +893,16 @@ def _convert_parameter_ir(
     else:
         type_ = PrimitiveType(kind="primitive", type="unknown")
 
-    # Extract default value from parameter schema
     default = None
+    has_default = False
     if parameter.param_schema is not None and isinstance(
         parameter.param_schema, op.Schema
     ):
-        # OpenAPI default values can be in param_schema.default
-        # For OpenAPI 3.1, the default is a field on the schema
-        if (
-            hasattr(parameter.param_schema, "default")
-            and parameter.param_schema.default is not None
-        ):
+        if "default" in parameter.param_schema.model_fields_set:
             default = parameter.param_schema.default
+            has_default = True
+
+    has_example, example = _extract_example(parameter, parameter.param_schema)
 
     # Determine the parameter_name
     # If the parameter name conflicts with a field in the body, disambiguate it
@@ -877,6 +926,9 @@ def _convert_parameter_ir(
         description=parameter.description or None,
         deprecated=True if parameter.deprecated else None,
         default=default,
+        has_default=has_default,
+        example=example,
+        has_example=has_example,
     )
 
 
@@ -977,6 +1029,7 @@ def _generate_ir_version(
     input_names: set[str] = set()
     output_names: set[str] = set()
     webhook_names: set[str] = set()
+    operation_ids: set[str] = set()
     # Map from normalized names to original names for component schemas
     normalized_to_original: dict[str, str] = {}
     for original_name in component_schemas:
@@ -989,6 +1042,12 @@ def _generate_ir_version(
             for http_method, operation in _get_operations(path_item):
                 if is_private_operation(operation):
                     continue
+
+                if operation.operationId in operation_ids:
+                    raise ValueError(
+                        f"Duplicate operation ID: {operation.operationId}."
+                    )
+                operation_ids.add(typing.cast(str, operation.operationId))
 
                 service_key = get_service_key(operation)
                 method_name = get_method_name(operation)
@@ -1032,7 +1091,6 @@ def _generate_ir_version(
                 ]
 
                 raw_body = _get_body_schema_raw(operation, spec)
-
                 path_params = [
                     _convert_parameter_ir(
                         p,
@@ -1143,6 +1201,7 @@ def _generate_ir_version(
 
                 method = Method(
                     name=method_name,
+                    operation_id=typing.cast(str, operation.operationId),
                     description=operation.description or None,
                     http_method=http_method,
                     path=path,

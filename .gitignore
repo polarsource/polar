@@ -174,3 +174,5 @@ clients/apps/web/src/app/(main)/onboarding/validate-description/acceptable-use-p
 # `dev snap` run output (screenshots, diff heatmaps, report.html, job.json) — local
 # artifacts; the committed dev/snap-timings.json is the only shared bit.
 screenshots/runs/
+
+sdk/code-samples/

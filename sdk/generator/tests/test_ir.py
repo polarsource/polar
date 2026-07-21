@@ -92,6 +92,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "methods": [
                                     {
                                         "name": "list",
+                                        "operation_id": "products:list",
                                         "description": "List products",
                                         "http_method": "GET",
                                         "path": "/products",
@@ -112,6 +113,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "methods": [
                                     {
                                         "name": "list",
+                                        "operation_id": "users:list",
                                         "description": "List users",
                                         "http_method": "GET",
                                         "path": "/users",
@@ -129,18 +131,38 @@ _STRING = {"kind": "primitive", "type": "string"}
                             {
                                 "name": "Product",
                                 "fields": [
-                                    {"name": "id", "type": _STRING, "required": True},
-                                    {"name": "name", "type": _STRING, "required": True},
+                                    {
+                                        "name": "id",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    },
+                                    {
+                                        "name": "name",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    },
                                 ],
                             },
                             {
                                 "name": "User",
                                 "fields": [
-                                    {"name": "name", "type": _STRING, "required": True},
+                                    {
+                                        "name": "name",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    },
                                     {
                                         "name": "email",
                                         "type": _STRING,
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                 ],
                             },
@@ -283,13 +305,21 @@ _STRING = {"kind": "primitive", "type": "string"}
                                         "name": "company_name",
                                         "type": _STRING,
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     }
                                 ],
                             },
                             {
                                 "name": "Customer",
                                 "fields": [
-                                    {"name": "id", "type": _STRING, "required": True},
+                                    {
+                                        "name": "id",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    },
                                     {
                                         "name": "status",
                                         "type": {
@@ -297,6 +327,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                             "name": "CustomerStatus",
                                         },
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                     {
                                         "name": "subject",
@@ -305,6 +337,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                             "name": "CustomerSubject",
                                         },
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                 ],
                             },
@@ -315,6 +349,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                         "name": "name",
                                         "type": _STRING,
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     }
                                 ],
                             },
@@ -331,6 +367,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                             "value": "customer.created",
                                         },
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                     {
                                         "name": "data",
@@ -339,6 +377,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                             "name": "Customer",
                                         },
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                 ],
                             },
@@ -353,6 +393,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                             "value": "customer.updated",
                                         },
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                     {
                                         "name": "data",
@@ -361,6 +403,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                             "name": "Customer",
                                         },
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                 ],
                             },
@@ -463,6 +507,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "methods": [
                                     {
                                         "name": "create",
+                                        "operation_id": "users:create",
                                         "description": "Create a user",
                                         "http_method": "POST",
                                         "path": "/users",
@@ -487,11 +532,15 @@ _STRING = {"kind": "primitive", "type": "string"}
                                         "name": "name",
                                         "type": _STRING,
                                         "required": False,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                     {
                                         "name": "email",
                                         "type": _STRING,
                                         "required": False,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                 ],
                             },
@@ -500,16 +549,26 @@ _STRING = {"kind": "primitive", "type": "string"}
                             {
                                 "name": "UserResponse",
                                 "fields": [
-                                    {"name": "id", "type": _STRING, "required": False},
+                                    {
+                                        "name": "id",
+                                        "type": _STRING,
+                                        "required": False,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    },
                                     {
                                         "name": "name",
                                         "type": _STRING,
                                         "required": False,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                     {
                                         "name": "type",
                                         "type": {"kind": "enum", "name": "UserType"},
                                         "required": False,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                 ],
                             },
@@ -653,6 +712,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "methods": [
                                     {
                                         "name": "list",
+                                        "operation_id": "products:list",
                                         "description": "List products",
                                         "http_method": "GET",
                                         "path": "/products",
@@ -663,6 +723,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                                 "parameter_name": "category",
                                                 "type": _STRING,
                                                 "required": False,
+                                                "has_default": False,
+                                                "has_example": False,
                                                 "description": "Filter products by category",
                                             }
                                         ],
@@ -675,6 +737,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                     },
                                     {
                                         "name": "get",
+                                        "operation_id": "products:get",
                                         "description": "Get a product by ID",
                                         "http_method": "GET",
                                         "path": "/products/{id}",
@@ -684,6 +747,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                                 "parameter_name": "id",
                                                 "type": _STRING,
                                                 "required": True,
+                                                "has_default": False,
+                                                "has_example": False,
                                                 "description": "The ID of the product",
                                             }
                                         ],
@@ -703,8 +768,20 @@ _STRING = {"kind": "primitive", "type": "string"}
                             {
                                 "name": "Product",
                                 "fields": [
-                                    {"name": "id", "type": _STRING, "required": True},
-                                    {"name": "name", "type": _STRING, "required": True},
+                                    {
+                                        "name": "id",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    },
+                                    {
+                                        "name": "name",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    },
                                 ],
                             },
                         ],
@@ -791,6 +868,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "methods": [
                                     {
                                         "name": "list",
+                                        "operation_id": "orders:list",
                                         "description": "List orders",
                                         "http_method": "GET",
                                         "path": "/orders",
@@ -817,6 +895,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                                     ],
                                                 },
                                                 "required": False,
+                                                "has_default": False,
+                                                "has_example": False,
                                                 "description": "Filter by order status",
                                             }
                                         ],
@@ -832,11 +912,19 @@ _STRING = {"kind": "primitive", "type": "string"}
                             {
                                 "name": "Order",
                                 "fields": [
-                                    {"name": "id", "type": _STRING, "required": True},
+                                    {
+                                        "name": "id",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    },
                                     {
                                         "name": "status",
                                         "type": {"kind": "enum", "name": "OrderStatus"},
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                 ],
                             }
@@ -930,6 +1018,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                         "methods": [
                                             {
                                                 "name": "list",
+                                                "operation_id": "products:variants:list",
                                                 "description": "List variants of a product",
                                                 "http_method": "GET",
                                                 "path": "/products/{product_id}/variants",
@@ -939,6 +1028,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                                         "parameter_name": "product_id",
                                                         "type": _STRING,
                                                         "required": True,
+                                                        "has_default": False,
+                                                        "has_example": False,
                                                         "description": "The product ID",
                                                     }
                                                 ],
@@ -948,6 +1039,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                             },
                                             {
                                                 "name": "get",
+                                                "operation_id": "products:variants:get",
                                                 "description": "Get a variant of a product",
                                                 "http_method": "GET",
                                                 "path": "/products/{product_id}/variants/{variant_id}",
@@ -957,6 +1049,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                                         "parameter_name": "product_id",
                                                         "type": _STRING,
                                                         "required": True,
+                                                        "has_default": False,
+                                                        "has_example": False,
                                                         "description": "The product ID",
                                                     },
                                                     {
@@ -964,6 +1058,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                                         "parameter_name": "variant_id",
                                                         "type": _STRING,
                                                         "required": True,
+                                                        "has_default": False,
+                                                        "has_example": False,
                                                         "description": "The variant ID",
                                                     },
                                                 ],
@@ -977,6 +1073,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "methods": [
                                     {
                                         "name": "list",
+                                        "operation_id": "products:list",
                                         "description": "List products",
                                         "http_method": "GET",
                                         "path": "/products",
@@ -1056,6 +1153,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "methods": [
                                     {
                                         "name": "list",
+                                        "operation_id": "accounts:list",
                                         "description": "List accounts",
                                         "http_method": "GET",
                                         "path": "/accounts",
@@ -1076,7 +1174,13 @@ _STRING = {"kind": "primitive", "type": "string"}
                             {
                                 "name": "Account",
                                 "fields": [
-                                    {"name": "id", "type": _STRING, "required": True},
+                                    {
+                                        "name": "id",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    },
                                     {
                                         "name": "modified_at",
                                         "type": {
@@ -1088,6 +1192,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                             },
                                         },
                                         "required": False,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                 ],
                             }
@@ -1170,6 +1276,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "methods": [
                                     {
                                         "name": "list",
+                                        "operation_id": "events:list",
                                         "description": "List events",
                                         "http_method": "GET",
                                         "path": "/events",
@@ -1194,6 +1301,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                         "name": "source",
                                         "type": _STRING,
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     }
                                 ],
                             },
@@ -1204,6 +1313,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                         "name": "source",
                                         "type": _STRING,
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     }
                                 ],
                             },
@@ -1295,6 +1406,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "methods": [
                                     {
                                         "name": "list",
+                                        "operation_id": "payments:list",
                                         "description": "List payments",
                                         "http_method": "GET",
                                         "path": "/payments",
@@ -1315,13 +1427,25 @@ _STRING = {"kind": "primitive", "type": "string"}
                             {
                                 "name": "BankPayment",
                                 "fields": [
-                                    {"name": "iban", "type": _STRING, "required": True}
+                                    {
+                                        "name": "iban",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    }
                                 ],
                             },
                             {
                                 "name": "CardPayment",
                                 "fields": [
-                                    {"name": "last4", "type": _STRING, "required": True}
+                                    {
+                                        "name": "last4",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    }
                                 ],
                             },
                         ],
@@ -1397,6 +1521,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "methods": [
                                     {
                                         "name": "get",
+                                        "operation_id": "metadata:get",
                                         "description": "Get metadata",
                                         "http_method": "GET",
                                         "path": "/metadata",
@@ -1518,6 +1643,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "methods": [
                                     {
                                         "name": "get",
+                                        "operation_id": "products:get",
                                         "description": "Get a product",
                                         "http_method": "GET",
                                         "path": "/products/{id}",
@@ -1527,6 +1653,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                                 "parameter_name": "id",
                                                 "type": _STRING,
                                                 "required": True,
+                                                "has_default": False,
+                                                "has_example": False,
                                             }
                                         ],
                                         "query_params": [],
@@ -1576,13 +1704,21 @@ _STRING = {"kind": "primitive", "type": "string"}
                                         "name": "detail",
                                         "type": _STRING,
                                         "required": False,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                 ],
                             },
                             {
                                 "name": "Product",
                                 "fields": [
-                                    {"name": "id", "type": _STRING, "required": True},
+                                    {
+                                        "name": "id",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    },
                                 ],
                             },
                             {
@@ -1592,6 +1728,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                         "name": "detail",
                                         "type": _STRING,
                                         "required": False,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                 ],
                             },
@@ -1716,6 +1854,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "methods": [
                                     {
                                         "name": "list",
+                                        "operation_id": "items:list",
                                         "description": "List items",
                                         "http_method": "GET",
                                         "path": "/items",
@@ -1727,6 +1866,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                     },
                                     {
                                         "name": "create",
+                                        "operation_id": "items:create",
                                         "description": "Create an item",
                                         "http_method": "POST",
                                         "path": "/items",
@@ -1739,6 +1879,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                     },
                                     {
                                         "name": "update",
+                                        "operation_id": "items:update",
                                         "description": "Update an item",
                                         "http_method": "PUT",
                                         "path": "/items/{id}",
@@ -1756,8 +1897,20 @@ _STRING = {"kind": "primitive", "type": "string"}
                             {
                                 "name": "Item",
                                 "fields": [
-                                    {"name": "id", "type": _STRING, "required": True},
-                                    {"name": "name", "type": _STRING, "required": True},
+                                    {
+                                        "name": "id",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    },
+                                    {
+                                        "name": "name",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    },
                                 ],
                             },
                             {
@@ -1767,6 +1920,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                         "name": "name",
                                         "type": _STRING,
                                         "required": False,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                 ],
                             },
@@ -1775,8 +1930,20 @@ _STRING = {"kind": "primitive", "type": "string"}
                             {
                                 "name": "Item",
                                 "fields": [
-                                    {"name": "id", "type": _STRING, "required": True},
-                                    {"name": "name", "type": _STRING, "required": True},
+                                    {
+                                        "name": "id",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    },
+                                    {
+                                        "name": "name",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    },
                                 ],
                             },
                         ],
@@ -1856,6 +2023,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "methods": [
                                     {
                                         "name": "create",
+                                        "operation_id": "items:create",
                                         "description": "Create an item",
                                         "http_method": "POST",
                                         "path": "/items",
@@ -1880,6 +2048,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                         "name": "name",
                                         "type": _STRING,
                                         "required": False,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                 ],
                             },
@@ -1888,8 +2058,20 @@ _STRING = {"kind": "primitive", "type": "string"}
                             {
                                 "name": "ItemResponse",
                                 "fields": [
-                                    {"name": "id", "type": _STRING, "required": True},
-                                    {"name": "name", "type": _STRING, "required": True},
+                                    {
+                                        "name": "id",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    },
+                                    {
+                                        "name": "name",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    },
                                 ],
                             },
                         ],
@@ -1967,6 +2149,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "methods": [
                                     {
                                         "name": "create",
+                                        "operation_id": "checkout:create",
                                         "description": "Create checkout",
                                         "http_method": "POST",
                                         "path": "/checkout",
@@ -1994,6 +2177,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                         "name": "product_id",
                                         "type": _STRING,
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                     {
                                         "name": "quantity",
@@ -2002,6 +2187,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                             "type": "integer",
                                         },
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                 ],
                             },
@@ -2014,6 +2201,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                         "name": "product_id",
                                         "type": _STRING,
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                     {
                                         "name": "quantity",
@@ -2022,6 +2211,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                             "type": "integer",
                                         },
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                 ],
                             },
@@ -2110,6 +2301,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "methods": [
                                     {
                                         "name": "get",
+                                        "operation_id": "payment:get",
                                         "description": "Get payment method",
                                         "http_method": "GET",
                                         "path": "/payment",
@@ -2130,7 +2322,13 @@ _STRING = {"kind": "primitive", "type": "string"}
                             {
                                 "name": "BankPayment",
                                 "fields": [
-                                    {"name": "iban", "type": _STRING, "required": True}
+                                    {
+                                        "name": "iban",
+                                        "type": _STRING,
+                                        "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    }
                                 ],
                             },
                             {
@@ -2140,6 +2338,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                         "name": "card_type",
                                         "type": _STRING,
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     }
                                 ],
                             },
@@ -2150,6 +2350,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                         "name": "card_type",
                                         "type": _STRING,
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     }
                                 ],
                             },
@@ -2245,6 +2447,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "methods": [
                                     {
                                         "name": "upload",
+                                        "operation_id": "files:upload",
                                         "description": "Upload a file",
                                         "http_method": "POST",
                                         "path": "/files/{id}",
@@ -2254,6 +2457,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                                 "parameter_name": "id_path",
                                                 "type": _STRING,
                                                 "required": True,
+                                                "has_default": False,
+                                                "has_example": False,
                                             }
                                         ],
                                         "query_params": [
@@ -2262,6 +2467,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                                 "parameter_name": "file_name_query",
                                                 "type": _STRING,
                                                 "required": False,
+                                                "has_default": False,
+                                                "has_example": False,
                                             }
                                         ],
                                         "body": {"kind": "model", "name": "FileUpload"},
@@ -2275,11 +2482,19 @@ _STRING = {"kind": "primitive", "type": "string"}
                             {
                                 "name": "FileUpload",
                                 "fields": [
-                                    {"name": "id", "type": _STRING, "required": False},
+                                    {
+                                        "name": "id",
+                                        "type": _STRING,
+                                        "required": False,
+                                        "has_default": False,
+                                        "has_example": False,
+                                    },
                                     {
                                         "name": "file_name",
                                         "type": _STRING,
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                     {
                                         "name": "file_size",
@@ -2288,6 +2503,8 @@ _STRING = {"kind": "primitive", "type": "string"}
                                             "type": "integer",
                                         },
                                         "required": True,
+                                        "has_default": False,
+                                        "has_example": False,
                                     },
                                 ],
                             }
@@ -2379,6 +2596,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                 "methods": [
                                     {
                                         "name": "data",
+                                        "operation_id": "export:data",
                                         "description": "Export data as CSV",
                                         "http_method": "GET",
                                         "path": "/export",
@@ -2393,6 +2611,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                     },
                                     {
                                         "name": "json",
+                                        "operation_id": "export:json",
                                         "description": "Export data as JSON",
                                         "http_method": "GET",
                                         "path": "/export-json",
@@ -2407,6 +2626,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                     },
                                     {
                                         "name": "mixed",
+                                        "operation_id": "export:mixed",
                                         "description": "Export with both CSV and JSON",
                                         "http_method": "GET",
                                         "path": "/export-mixed",
@@ -2421,6 +2641,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                     },
                                     {
                                         "name": "none",
+                                        "operation_id": "export:none",
                                         "description": "Export with no content type",
                                         "http_method": "GET",
                                         "path": "/export-none",

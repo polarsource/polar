@@ -329,37 +329,54 @@ class PaymentService:
             raise UnhandledPaymentIntent(payment_intent.id)
 
         repository = PaymentRepository.from_session(session)
-
-        payment = await repository.get_by_processor_id(
-            PaymentProcessor.stripe, payment_intent.id
+        payment = await repository.get_by_stripe_payment_intent_id(
+            payment_intent.id, for_update=True
         )
-        if payment is None:
-            payment = Payment(
-                id=generate_uuid(),
-                processor=PaymentProcessor.stripe,
-                processor_id=payment_intent.id,
-            )
-
-        payment.status = PaymentStatus.failed
-        payment.amount = payment_intent.amount
-        payment.currency = payment_intent.currency
+        # The lock serializes concurrent webhooks for the same intent so a
+        # sibling delivery can't land between this read and the write below.
 
         payment_error = payment_intent.last_payment_error
         payment_method = payment_error.payment_method
         assert payment_method is not None
-        payment.method = payment_method.type
-        payment.method_metadata = dict(payment_method[payment_method.type])
-        payment.customer_email = payment_intent.receipt_email
 
-        payment.decline_reason = getattr(payment_error, "code", None)
-        payment.decline_message = payment_error.message
+        def apply(payment: Payment) -> None:
+            payment.status = PaymentStatus.failed
+            payment.amount = payment_intent.amount
+            payment.currency = payment_intent.currency
+            payment.method = payment_method.type
+            payment.method_metadata = dict(payment_method[payment_method.type])
+            payment.customer_email = payment_intent.receipt_email
+            payment.decline_reason = getattr(payment_error, "code", None)
+            payment.decline_message = payment_error.message
+            payment.trigger = trigger
+            payment.checkout = checkout
+            payment.order = order
+            payment.organization = organization
 
-        payment.trigger = trigger
-        payment.checkout = checkout
-        payment.order = order
-        payment.organization = organization
+        if payment is not None:
+            apply(payment)
+            return await repository.update(payment, flush=True)
 
-        return await repository.update(payment)
+        payment = Payment(
+            id=generate_uuid(),
+            processor=PaymentProcessor.stripe,
+            processor_id=payment_intent.id,
+        )
+        apply(payment)
+
+        # Two webhooks for the same intent can both find no row and both insert.
+        nested = await session.begin_nested()
+        try:
+            return await repository.create(payment, flush=True)
+        except IntegrityError:
+            await nested.rollback()
+
+        payment = await repository.get_by_stripe_payment_intent_id(
+            payment_intent.id, for_update=True
+        )
+        assert payment is not None
+        apply(payment)
+        return await repository.update(payment, flush=True)
 
 
 payment = PaymentService()

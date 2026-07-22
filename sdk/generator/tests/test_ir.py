@@ -1496,6 +1496,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                         "schemas": {
                             "Metadata": {
                                 "type": "object",
+                                "properties": {},
                                 "additionalProperties": {
                                     "anyOf": [
                                         {"type": "string"},
@@ -1542,6 +1543,15 @@ _STRING = {"kind": "primitive", "type": "string"}
                             {
                                 "name": "Metadata",
                                 "fields": [],
+                                "additional_properties": {
+                                    "kind": "union",
+                                    "variants": [
+                                        {"kind": "primitive", "type": "string"},
+                                        {"kind": "primitive", "type": "integer"},
+                                        {"kind": "primitive", "type": "boolean"},
+                                    ],
+                                    "composition_kind": "anyOf",
+                                },
                             }
                         ],
                         "webhooks": [],
@@ -1551,7 +1561,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                     }
                 ]
             },
-            id="additionalProperties-only objects become MapType; Metadata model fields are empty (no explicit properties).",
+            id="additionalProperties-only models preserve their value type",
         ),
         pytest.param(
             [

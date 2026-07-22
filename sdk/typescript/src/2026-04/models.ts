@@ -2853,7 +2853,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * type
    */
@@ -2968,7 +2968,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The description of the benefit. Will be displayed on products having this benefit.
    */
@@ -3123,7 +3123,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * type
    */
@@ -3258,7 +3258,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The description of the benefit. Will be displayed on products having this benefit.
    */
@@ -3346,7 +3346,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * type
    */
@@ -3469,7 +3469,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The description of the benefit. Will be displayed on products having this benefit.
    */
@@ -3560,7 +3560,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * type
    */
@@ -3660,7 +3660,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The description of the benefit. Will be displayed on products having this benefit.
    */
@@ -3754,7 +3754,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * type
    */
@@ -3889,7 +3889,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The description of the benefit. Will be displayed on products having this benefit.
    */
@@ -4937,7 +4937,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * type
    */
@@ -5088,7 +5088,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The description of the benefit. Will be displayed on products having this benefit.
    */
@@ -5182,7 +5182,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * type
    */
@@ -5321,7 +5321,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The description of the benefit. Will be displayed on products having this benefit.
    */
@@ -5515,7 +5515,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * type
    */
@@ -5665,7 +5665,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The description of the benefit. Will be displayed on products having this benefit.
    */
@@ -5891,7 +5891,7 @@ export interface Checkout {
   /**
    * Key-value object storing custom field values.
    */
-  custom_field_data?: Record<string, string | number | boolean | string | null>;
+  custom_field_data?: Record<string, string | number | boolean | null>;
   /**
    * payment_processor
    */
@@ -6160,7 +6160,7 @@ export interface CheckoutConfirmStripe {
   /**
    * Key-value object storing custom field values.
    */
-  custom_field_data?: Record<string, string | number | boolean | string | null>;
+  custom_field_data?: Record<string, string | number | boolean | null>;
   /**
    * ID of the product to checkout. Must be present in the checkout's product list.
    */
@@ -6247,11 +6247,11 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * Key-value object storing custom field values.
    */
-  custom_field_data?: Record<string, string | number | boolean | string | null>;
+  custom_field_data?: Record<string, string | number | boolean | null>;
   /**
    * ID of the discount to apply to the checkout.
    */
@@ -6333,7 +6333,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  customer_metadata?: Record<string, string | number | number | boolean>;
+  customer_metadata?: Record<string, string | number | boolean>;
   /**
    * ID of a subscription to upgrade. It must be on a free pricing. If checkout is successful, metadata set on this checkout will be copied to the subscription, and existing keys will be overwritten.
    */
@@ -6702,7 +6702,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The interval unit for the trial period.
    */
@@ -6767,7 +6767,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The interval unit for the trial period.
    */
@@ -6830,7 +6830,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The interval unit for the trial period.
    */
@@ -6982,7 +6982,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * List of products that will be available to select at checkout.
    */
@@ -7149,7 +7149,7 @@ export interface CheckoutPublic {
   /**
    * Key-value object storing custom field values.
    */
-  custom_field_data?: Record<string, string | number | boolean | string | null>;
+  custom_field_data?: Record<string, string | number | boolean | null>;
   /**
    * payment_processor
    */
@@ -7384,7 +7384,7 @@ export interface CheckoutPublicConfirmed {
   /**
    * Key-value object storing custom field values.
    */
-  custom_field_data?: Record<string, string | number | boolean | string | null>;
+  custom_field_data?: Record<string, string | number | boolean | null>;
   /**
    * payment_processor
    */
@@ -7608,7 +7608,7 @@ export interface CheckoutUpdate {
   /**
    * Key-value object storing custom field values.
    */
-  custom_field_data?: Record<string, string | number | boolean | string | null>;
+  custom_field_data?: Record<string, string | number | boolean | null>;
   /**
    * ID of the product to checkout. Must be present in the checkout's product list.
    */
@@ -7674,7 +7674,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * currency
    */
@@ -7712,7 +7712,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  customer_metadata?: Record<string, string | number | number | boolean> | null;
+  customer_metadata?: Record<string, string | number | boolean> | null;
   /**
    * URL where the customer will be redirected after a successful payment.You can add the `checkout_id={CHECKOUT_ID}` query parameter to retrieve the checkout session id.
    */
@@ -7733,7 +7733,7 @@ export interface CheckoutUpdatePublic {
   /**
    * Key-value object storing custom field values.
    */
-  custom_field_data?: Record<string, string | number | boolean | string | null>;
+  custom_field_data?: Record<string, string | number | boolean | null>;
   /**
    * ID of the product to checkout. Must be present in the checkout's product list.
    */
@@ -7910,7 +7910,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * type
    */
@@ -7949,7 +7949,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * type
    */
@@ -7988,7 +7988,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * type
    */
@@ -8027,7 +8027,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * type
    */
@@ -8066,7 +8066,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * type
    */
@@ -8382,7 +8382,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * name
    */
@@ -8417,7 +8417,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * name
    */
@@ -8452,7 +8452,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * name
    */
@@ -8487,7 +8487,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * name
    */
@@ -8522,7 +8522,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * name
    */
@@ -9559,7 +9559,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
    */
@@ -10930,7 +10930,7 @@ export interface CustomerStateSubscription {
   /**
    * Key-value object storing custom field values.
    */
-  custom_field_data?: Record<string, string | number | boolean | string | null>;
+  custom_field_data?: Record<string, string | number | boolean | null>;
   /**
    * metadata
    */
@@ -11568,7 +11568,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The ID of the customer in your system. This must be unique within the organization. Once set, it can't be updated.
    */
@@ -11623,7 +11623,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The email address of the customer. This must be unique within the organization.
    */
@@ -11670,7 +11670,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The email address of the customer. This must be unique within the organization.
    */
@@ -11855,7 +11855,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * Name of the discount. Will be displayed to the customer when the discount is applied.
    */
@@ -12224,7 +12224,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * Name of the discount. Will be displayed to the customer when the discount is applied.
    */
@@ -12625,7 +12625,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * name
    */
@@ -13742,7 +13742,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  conditions?: Record<string, string | number | number | boolean>;
+  conditions?: Record<string, string | number | boolean>;
   /**
    * Key-value object allowing you to store additional information about the activation
 
@@ -13756,7 +13756,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  meta?: Record<string, string | number | number | boolean>;
+  meta?: Record<string, string | number | boolean>;
 }
 /**
  * LicenseKeyActivationBase
@@ -13777,7 +13777,7 @@ export interface LicenseKeyActivationBase {
   /**
    * meta
    */
-  meta: Record<string, string | number | number | boolean>;
+  meta: Record<string, string | number | boolean>;
   /**
    * created_at
    */
@@ -13806,7 +13806,7 @@ export interface LicenseKeyActivationRead {
   /**
    * meta
    */
-  meta: Record<string, string | number | number | boolean>;
+  meta: Record<string, string | number | boolean>;
   /**
    * created_at
    */
@@ -14045,7 +14045,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  conditions?: Record<string, string | number | number | boolean>;
+  conditions?: Record<string, string | number | boolean>;
 }
 /**
  * LicenseKeyWithActivations
@@ -14672,7 +14672,8 @@ export interface MemberUpdate {
 /**
  * MetadataOutputType
  */
-export interface MetadataOutputType extends Record<string, never> {}
+export type MetadataOutputType = Record<string, string | number | boolean>;
+
 /**
  * Meter
  */
@@ -14743,7 +14744,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The name of the meter. Will be shown on customer's invoices and usage.
    */
@@ -14964,7 +14965,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The name of the meter. Will be shown on customer's invoices and usage.
    */
@@ -15081,223 +15082,223 @@ export interface MetricPeriod {
   /**
    * active_subscriptions
    */
-  active_subscriptions?: number | number | null;
+  active_subscriptions?: number | null;
   /**
    * committed_subscriptions
    */
-  committed_subscriptions?: number | number | null;
+  committed_subscriptions?: number | null;
   /**
    * monthly_recurring_revenue
    */
-  monthly_recurring_revenue?: number | number | null;
+  monthly_recurring_revenue?: number | null;
   /**
    * trial_monthly_recurring_revenue
    */
-  trial_monthly_recurring_revenue?: number | number | null;
+  trial_monthly_recurring_revenue?: number | null;
   /**
    * committed_monthly_recurring_revenue
    */
-  committed_monthly_recurring_revenue?: number | number | null;
+  committed_monthly_recurring_revenue?: number | null;
   /**
    * trial_committed_monthly_recurring_revenue
    */
-  trial_committed_monthly_recurring_revenue?: number | number | null;
+  trial_committed_monthly_recurring_revenue?: number | null;
   /**
    * average_revenue_per_user
    */
-  average_revenue_per_user?: number | number | null;
+  average_revenue_per_user?: number | null;
   /**
    * checkouts
    */
-  checkouts?: number | number | null;
+  checkouts?: number | null;
   /**
    * succeeded_checkouts
    */
-  succeeded_checkouts?: number | number | null;
+  succeeded_checkouts?: number | null;
   /**
    * churned_subscriptions
    */
-  churned_subscriptions?: number | number | null;
+  churned_subscriptions?: number | null;
   /**
    * churn_rate
    */
-  churn_rate?: number | number | null;
+  churn_rate?: number | null;
   /**
    * seats_total
    */
-  seats_total?: number | number | null;
+  seats_total?: number | null;
   /**
    * seats_claimed
    */
-  seats_claimed?: number | number | null;
+  seats_claimed?: number | null;
   /**
    * seats_pending
    */
-  seats_pending?: number | number | null;
+  seats_pending?: number | null;
   /**
    * seat_customers
    */
-  seat_customers?: number | number | null;
+  seat_customers?: number | null;
   /**
    * new_seat_customers
    */
-  new_seat_customers?: number | number | null;
+  new_seat_customers?: number | null;
   /**
    * churned_seat_customers
    */
-  churned_seat_customers?: number | number | null;
+  churned_seat_customers?: number | null;
   /**
    * orders
    */
-  orders?: number | number | null;
+  orders?: number | null;
   /**
    * revenue
    */
-  revenue?: number | number | null;
+  revenue?: number | null;
   /**
    * net_revenue
    */
-  net_revenue?: number | number | null;
+  net_revenue?: number | null;
   /**
    * cumulative_revenue
    */
-  cumulative_revenue?: number | number | null;
+  cumulative_revenue?: number | null;
   /**
    * net_cumulative_revenue
    */
-  net_cumulative_revenue?: number | number | null;
+  net_cumulative_revenue?: number | null;
   /**
    * costs
    */
-  costs?: number | number | null;
+  costs?: number | null;
   /**
    * cumulative_costs
    */
-  cumulative_costs?: number | number | null;
+  cumulative_costs?: number | null;
   /**
    * average_order_value
    */
-  average_order_value?: number | number | null;
+  average_order_value?: number | null;
   /**
    * net_average_order_value
    */
-  net_average_order_value?: number | number | null;
+  net_average_order_value?: number | null;
   /**
    * cost_per_user
    */
-  cost_per_user?: number | number | null;
+  cost_per_user?: number | null;
   /**
    * active_user_by_event
    */
-  active_user_by_event?: number | number | null;
+  active_user_by_event?: number | null;
   /**
    * one_time_products
    */
-  one_time_products?: number | number | null;
+  one_time_products?: number | null;
   /**
    * one_time_products_revenue
    */
-  one_time_products_revenue?: number | number | null;
+  one_time_products_revenue?: number | null;
   /**
    * one_time_products_net_revenue
    */
-  one_time_products_net_revenue?: number | number | null;
+  one_time_products_net_revenue?: number | null;
   /**
    * new_subscriptions
    */
-  new_subscriptions?: number | number | null;
+  new_subscriptions?: number | null;
   /**
    * new_subscriptions_revenue
    */
-  new_subscriptions_revenue?: number | number | null;
+  new_subscriptions_revenue?: number | null;
   /**
    * new_subscriptions_net_revenue
    */
-  new_subscriptions_net_revenue?: number | number | null;
+  new_subscriptions_net_revenue?: number | null;
   /**
    * renewed_subscriptions
    */
-  renewed_subscriptions?: number | number | null;
+  renewed_subscriptions?: number | null;
   /**
    * renewed_subscriptions_revenue
    */
-  renewed_subscriptions_revenue?: number | number | null;
+  renewed_subscriptions_revenue?: number | null;
   /**
    * renewed_subscriptions_net_revenue
    */
-  renewed_subscriptions_net_revenue?: number | number | null;
+  renewed_subscriptions_net_revenue?: number | null;
   /**
    * canceled_subscriptions
    */
-  canceled_subscriptions?: number | number | null;
+  canceled_subscriptions?: number | null;
   /**
    * canceled_subscriptions_customer_service
    */
-  canceled_subscriptions_customer_service?: number | number | null;
+  canceled_subscriptions_customer_service?: number | null;
   /**
    * canceled_subscriptions_low_quality
    */
-  canceled_subscriptions_low_quality?: number | number | null;
+  canceled_subscriptions_low_quality?: number | null;
   /**
    * canceled_subscriptions_missing_features
    */
-  canceled_subscriptions_missing_features?: number | number | null;
+  canceled_subscriptions_missing_features?: number | null;
   /**
    * canceled_subscriptions_switched_service
    */
-  canceled_subscriptions_switched_service?: number | number | null;
+  canceled_subscriptions_switched_service?: number | null;
   /**
    * canceled_subscriptions_too_complex
    */
-  canceled_subscriptions_too_complex?: number | number | null;
+  canceled_subscriptions_too_complex?: number | null;
   /**
    * canceled_subscriptions_too_expensive
    */
-  canceled_subscriptions_too_expensive?: number | number | null;
+  canceled_subscriptions_too_expensive?: number | null;
   /**
    * canceled_subscriptions_unused
    */
-  canceled_subscriptions_unused?: number | number | null;
+  canceled_subscriptions_unused?: number | null;
   /**
    * canceled_subscriptions_other
    */
-  canceled_subscriptions_other?: number | number | null;
+  canceled_subscriptions_other?: number | null;
   /**
    * annual_recurring_revenue
    */
-  annual_recurring_revenue?: number | number | null;
+  annual_recurring_revenue?: number | null;
   /**
    * committed_annual_recurring_revenue
    */
-  committed_annual_recurring_revenue?: number | number | null;
+  committed_annual_recurring_revenue?: number | null;
   /**
    * checkouts_conversion
    */
-  checkouts_conversion?: number | number | null;
+  checkouts_conversion?: number | null;
   /**
    * ltv
    */
-  ltv?: number | number | null;
+  ltv?: number | null;
   /**
    * gross_margin
    */
-  gross_margin?: number | number | null;
+  gross_margin?: number | null;
   /**
    * gross_margin_percentage
    */
-  gross_margin_percentage?: number | number | null;
+  gross_margin_percentage?: number | null;
   /**
    * cashflow
    */
-  cashflow?: number | number | null;
+  cashflow?: number | null;
   /**
    * average_seats_per_customer
    */
-  average_seats_per_customer?: number | number | null;
+  average_seats_per_customer?: number | null;
   /**
    * seat_utilization_rate
    */
-  seat_utilization_rate?: number | number | null;
+  seat_utilization_rate?: number | null;
 }
 /**
  * Metrics
@@ -15599,223 +15600,223 @@ export interface MetricsTotals {
   /**
    * active_subscriptions
    */
-  active_subscriptions?: number | number | null;
+  active_subscriptions?: number | null;
   /**
    * committed_subscriptions
    */
-  committed_subscriptions?: number | number | null;
+  committed_subscriptions?: number | null;
   /**
    * monthly_recurring_revenue
    */
-  monthly_recurring_revenue?: number | number | null;
+  monthly_recurring_revenue?: number | null;
   /**
    * trial_monthly_recurring_revenue
    */
-  trial_monthly_recurring_revenue?: number | number | null;
+  trial_monthly_recurring_revenue?: number | null;
   /**
    * committed_monthly_recurring_revenue
    */
-  committed_monthly_recurring_revenue?: number | number | null;
+  committed_monthly_recurring_revenue?: number | null;
   /**
    * trial_committed_monthly_recurring_revenue
    */
-  trial_committed_monthly_recurring_revenue?: number | number | null;
+  trial_committed_monthly_recurring_revenue?: number | null;
   /**
    * average_revenue_per_user
    */
-  average_revenue_per_user?: number | number | null;
+  average_revenue_per_user?: number | null;
   /**
    * checkouts
    */
-  checkouts?: number | number | null;
+  checkouts?: number | null;
   /**
    * succeeded_checkouts
    */
-  succeeded_checkouts?: number | number | null;
+  succeeded_checkouts?: number | null;
   /**
    * churned_subscriptions
    */
-  churned_subscriptions?: number | number | null;
+  churned_subscriptions?: number | null;
   /**
    * churn_rate
    */
-  churn_rate?: number | number | null;
+  churn_rate?: number | null;
   /**
    * seats_total
    */
-  seats_total?: number | number | null;
+  seats_total?: number | null;
   /**
    * seats_claimed
    */
-  seats_claimed?: number | number | null;
+  seats_claimed?: number | null;
   /**
    * seats_pending
    */
-  seats_pending?: number | number | null;
+  seats_pending?: number | null;
   /**
    * seat_customers
    */
-  seat_customers?: number | number | null;
+  seat_customers?: number | null;
   /**
    * new_seat_customers
    */
-  new_seat_customers?: number | number | null;
+  new_seat_customers?: number | null;
   /**
    * churned_seat_customers
    */
-  churned_seat_customers?: number | number | null;
+  churned_seat_customers?: number | null;
   /**
    * orders
    */
-  orders?: number | number | null;
+  orders?: number | null;
   /**
    * revenue
    */
-  revenue?: number | number | null;
+  revenue?: number | null;
   /**
    * net_revenue
    */
-  net_revenue?: number | number | null;
+  net_revenue?: number | null;
   /**
    * cumulative_revenue
    */
-  cumulative_revenue?: number | number | null;
+  cumulative_revenue?: number | null;
   /**
    * net_cumulative_revenue
    */
-  net_cumulative_revenue?: number | number | null;
+  net_cumulative_revenue?: number | null;
   /**
    * costs
    */
-  costs?: number | number | null;
+  costs?: number | null;
   /**
    * cumulative_costs
    */
-  cumulative_costs?: number | number | null;
+  cumulative_costs?: number | null;
   /**
    * average_order_value
    */
-  average_order_value?: number | number | null;
+  average_order_value?: number | null;
   /**
    * net_average_order_value
    */
-  net_average_order_value?: number | number | null;
+  net_average_order_value?: number | null;
   /**
    * cost_per_user
    */
-  cost_per_user?: number | number | null;
+  cost_per_user?: number | null;
   /**
    * active_user_by_event
    */
-  active_user_by_event?: number | number | null;
+  active_user_by_event?: number | null;
   /**
    * one_time_products
    */
-  one_time_products?: number | number | null;
+  one_time_products?: number | null;
   /**
    * one_time_products_revenue
    */
-  one_time_products_revenue?: number | number | null;
+  one_time_products_revenue?: number | null;
   /**
    * one_time_products_net_revenue
    */
-  one_time_products_net_revenue?: number | number | null;
+  one_time_products_net_revenue?: number | null;
   /**
    * new_subscriptions
    */
-  new_subscriptions?: number | number | null;
+  new_subscriptions?: number | null;
   /**
    * new_subscriptions_revenue
    */
-  new_subscriptions_revenue?: number | number | null;
+  new_subscriptions_revenue?: number | null;
   /**
    * new_subscriptions_net_revenue
    */
-  new_subscriptions_net_revenue?: number | number | null;
+  new_subscriptions_net_revenue?: number | null;
   /**
    * renewed_subscriptions
    */
-  renewed_subscriptions?: number | number | null;
+  renewed_subscriptions?: number | null;
   /**
    * renewed_subscriptions_revenue
    */
-  renewed_subscriptions_revenue?: number | number | null;
+  renewed_subscriptions_revenue?: number | null;
   /**
    * renewed_subscriptions_net_revenue
    */
-  renewed_subscriptions_net_revenue?: number | number | null;
+  renewed_subscriptions_net_revenue?: number | null;
   /**
    * canceled_subscriptions
    */
-  canceled_subscriptions?: number | number | null;
+  canceled_subscriptions?: number | null;
   /**
    * canceled_subscriptions_customer_service
    */
-  canceled_subscriptions_customer_service?: number | number | null;
+  canceled_subscriptions_customer_service?: number | null;
   /**
    * canceled_subscriptions_low_quality
    */
-  canceled_subscriptions_low_quality?: number | number | null;
+  canceled_subscriptions_low_quality?: number | null;
   /**
    * canceled_subscriptions_missing_features
    */
-  canceled_subscriptions_missing_features?: number | number | null;
+  canceled_subscriptions_missing_features?: number | null;
   /**
    * canceled_subscriptions_switched_service
    */
-  canceled_subscriptions_switched_service?: number | number | null;
+  canceled_subscriptions_switched_service?: number | null;
   /**
    * canceled_subscriptions_too_complex
    */
-  canceled_subscriptions_too_complex?: number | number | null;
+  canceled_subscriptions_too_complex?: number | null;
   /**
    * canceled_subscriptions_too_expensive
    */
-  canceled_subscriptions_too_expensive?: number | number | null;
+  canceled_subscriptions_too_expensive?: number | null;
   /**
    * canceled_subscriptions_unused
    */
-  canceled_subscriptions_unused?: number | number | null;
+  canceled_subscriptions_unused?: number | null;
   /**
    * canceled_subscriptions_other
    */
-  canceled_subscriptions_other?: number | number | null;
+  canceled_subscriptions_other?: number | null;
   /**
    * annual_recurring_revenue
    */
-  annual_recurring_revenue?: number | number | null;
+  annual_recurring_revenue?: number | null;
   /**
    * committed_annual_recurring_revenue
    */
-  committed_annual_recurring_revenue?: number | number | null;
+  committed_annual_recurring_revenue?: number | null;
   /**
    * checkouts_conversion
    */
-  checkouts_conversion?: number | number | null;
+  checkouts_conversion?: number | null;
   /**
    * ltv
    */
-  ltv?: number | number | null;
+  ltv?: number | null;
   /**
    * gross_margin
    */
-  gross_margin?: number | number | null;
+  gross_margin?: number | null;
   /**
    * gross_margin_percentage
    */
-  gross_margin_percentage?: number | number | null;
+  gross_margin_percentage?: number | null;
   /**
    * cashflow
    */
-  cashflow?: number | number | null;
+  cashflow?: number | null;
   /**
    * average_seats_per_customer
    */
-  average_seats_per_customer?: number | number | null;
+  average_seats_per_customer?: number | null;
   /**
    * seat_utilization_rate
    */
-  seat_utilization_rate?: number | number | null;
+  seat_utilization_rate?: number | null;
 }
 /**
  * MissingInvoiceBillingDetails
@@ -16131,7 +16132,7 @@ export interface Order {
   /**
    * Key-value object storing custom field values.
    */
-  custom_field_data?: Record<string, string | number | boolean | string | null>;
+  custom_field_data?: Record<string, string | number | boolean | null>;
   /**
    * Platform fee amount in cents.
    */
@@ -16187,7 +16188,7 @@ export interface OrderCreate {
   /**
    * Key-value object storing custom field values.
    */
-  custom_field_data?: Record<string, string | number | boolean | string | null>;
+  custom_field_data?: Record<string, string | number | boolean | null>;
   /**
    * Key-value object allowing you to store additional information.
 
@@ -16201,7 +16202,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The ID of the organization the order belongs to. **Required unless you use an organization token.** The customer and product must belong to this organization.
    */
@@ -17910,7 +17911,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The name of the product.
    */
@@ -17970,7 +17971,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The name of the product.
    */
@@ -18938,7 +18939,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The interval unit for the trial period.
    */
@@ -19089,7 +19090,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * order_id
    */
@@ -19563,7 +19564,7 @@ export interface Subscription {
   /**
    * Key-value object storing custom field values.
    */
-  custom_field_data?: Record<string, string | number | boolean | string | null>;
+  custom_field_data?: Record<string, string | number | boolean | null>;
   /**
    * customer
    */
@@ -19844,7 +19845,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.
    */
@@ -19871,7 +19872,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**.
    */
-  metadata?: Record<string, string | number | number | boolean>;
+  metadata?: Record<string, string | number | boolean>;
   /**
    * The ID of the recurring product to subscribe to. Must be a free product, otherwise the customer should go through a checkout flow.
    */

@@ -11,6 +11,13 @@ from polar.{{ version }}.literals import (
 {% endif %}
 
 {% for model in api.input_models %}
+{% if model.additional_properties %}
+{{ model.name }}: typing.TypeAlias = dict[str, {{ model.additional_properties | type_annotation }}]
+{% if model.description %}
+"""{{ model.description }}"""
+{% endif %}
+
+{% else %}
 class {{ model.name }}(typing.TypedDict):
 {% if model.description %}
     """{{ model.description }}"""
@@ -29,6 +36,7 @@ class {{ model.name }}(typing.TypedDict):
     ...
 {% endfor %}
 
+{% endif %}
 {% endfor %}
 
 {% for union in api.input_unions %}

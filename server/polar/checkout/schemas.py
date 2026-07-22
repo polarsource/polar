@@ -127,7 +127,7 @@ EmbedOrigin = Annotated[
     ),
 ]
 
-_payment_method_description = (
+_payment_method_type_description = (
     "Payment method type selected by the customer in the checkout form, "
     "e.g. `card`, `apple_pay` or `upi`. "
     "Some payment methods require a full billing address: keeping this value "
@@ -135,7 +135,7 @@ _payment_method_description = (
 )
 PaymentMethodTypeInput = Annotated[
     EmptyStrToNone,
-    Field(description=_payment_method_description),
+    Field(description=_payment_method_type_description),
 ]
 
 _external_customer_id_description = (
@@ -608,7 +608,9 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
         validation_alias=AliasChoices("customer_tax_id_number", "customer_tax_id")
     )
     locale: str | None = None
-    payment_method_type: str | None = Field(description=_payment_method_description)
+    payment_method_type: str | None = Field(
+        description=_payment_method_type_description
+    )
 
     payment_processor_metadata: dict[str, str]
 

@@ -12,8 +12,13 @@ from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.kit.utils import generate_uuid
-from polar.models import Checkout, Order, Payment, Wallet
-from polar.models.payment import PaymentStatus, PaymentTrigger
+from polar.models import Checkout, Order, Payment, PaymentMethod, Wallet
+from polar.models.payment import (
+    STRIPE_PAYMENT_INTENT_METADATA_KEY,
+    PaymentStatus,
+    PaymentTrigger,
+)
+from polar.payment_method.repository import PaymentMethodRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import PaymentRepository
@@ -41,6 +46,19 @@ class UnhandledPaymentIntent(PaymentError):
             "that we shouldn't handle."
         )
         super().__init__(message)
+
+
+# A pending intent only names the methods it allows, never the one being used.
+# The charge, or a payment method we already know, names it.
+UNKNOWN_PAYMENT_METHOD = "unknown"
+
+
+def _stripe_payment_intent_id(
+    payment_intent: str | stripe_lib.PaymentIntent | None,
+) -> str | None:
+    if payment_intent is None:
+        return None
+    return payment_intent if isinstance(payment_intent, str) else payment_intent.id
 
 
 class PaymentService:
@@ -129,15 +147,29 @@ class PaymentService:
         trigger: PaymentTrigger | None = None,
     ) -> Payment:
         repository = PaymentRepository.from_session(session)
+        payment_intent_id = _stripe_payment_intent_id(charge.payment_intent)
 
         payment = await repository.get_by_processor_id(
             PaymentProcessor.stripe, charge.id
         )
+
+        if payment is None and payment_intent_id is not None:
+            payment = await repository.get_by_stripe_payment_intent_id(
+                payment_intent_id
+            )
+            if payment is not None:
+                payment.processor_id = charge.id
+
         if payment is None:
             payment = Payment(
                 id=generate_uuid(),
                 processor=PaymentProcessor.stripe,
                 processor_id=charge.id,
+                processor_metadata=(
+                    {STRIPE_PAYMENT_INTENT_METADATA_KEY: payment_intent_id}
+                    if payment_intent_id is not None
+                    else {}
+                ),
             )
 
         payment.status = PaymentStatus.from_stripe_charge(charge.status)
@@ -170,6 +202,84 @@ class PaymentService:
         payment.organization = organization
 
         return await repository.update(payment)
+
+    async def upsert_pending_from_stripe_payment_intent(
+        self,
+        session: AsyncSession,
+        payment_intent: stripe_lib.PaymentIntent,
+        organization: Organization,
+        *,
+        checkout: Checkout | None = None,
+        order: Order | None = None,
+        wallet: Wallet | None = None,
+        trigger: PaymentTrigger | None = None,
+    ) -> Payment | None:
+        """Record an attempt that hasn't produced a charge yet, typically one
+        waiting on 3DS authentication. Once a charge exists it carries the
+        method and the outcome, so it becomes the record."""
+        if payment_intent.latest_charge is not None:
+            return None
+
+        repository = PaymentRepository.from_session(session)
+        payment = await repository.get_by_stripe_payment_intent_id(payment_intent.id)
+        if payment is None:
+            payment = Payment(
+                id=generate_uuid(),
+                processor=PaymentProcessor.stripe,
+                processor_id=payment_intent.id,
+                processor_metadata={
+                    STRIPE_PAYMENT_INTENT_METADATA_KEY: payment_intent.id
+                },
+                method=UNKNOWN_PAYMENT_METHOD,
+                method_metadata={},
+            )
+
+        payment_method = await self._get_stripe_payment_method(
+            session, payment_intent.payment_method
+        )
+
+        payment.status = PaymentStatus.pending
+        payment.amount = payment_intent.amount
+        payment.currency = payment_intent.currency
+        if payment_method is not None:
+            payment.method = payment_method.type
+            payment.method_metadata = payment_method.method_metadata
+        payment.customer_email = payment_intent.receipt_email
+        payment.trigger = trigger
+        payment.checkout = checkout
+        payment.order = order
+        payment.wallet = wallet
+        payment.organization = organization
+
+        return await repository.update(payment, flush=True)
+
+    async def cancel_from_stripe_payment_intent(
+        self, session: AsyncSession, payment_intent: stripe_lib.PaymentIntent
+    ) -> Payment | None:
+        repository = PaymentRepository.from_session(session)
+        payment = await repository.get_by_stripe_payment_intent_id(payment_intent.id)
+        if payment is None:
+            return None
+
+        return await repository.update(
+            payment, update_dict={"status": PaymentStatus.failed}, flush=True
+        )
+
+    async def _get_stripe_payment_method(
+        self,
+        session: AsyncSession,
+        payment_method: str | stripe_lib.PaymentMethod | None,
+    ) -> PaymentMethod | None:
+        if payment_method is None:
+            return None
+
+        processor_id = (
+            payment_method if isinstance(payment_method, str) else payment_method.id
+        )
+        repository = PaymentMethodRepository.from_session(session)
+        return await repository.get_by_processor_id(
+            PaymentProcessor.stripe, processor_id
+        )
 
     async def upsert_from_stripe_payment_intent(
         self,

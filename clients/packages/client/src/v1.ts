@@ -14088,11 +14088,6 @@ export interface components {
       customer_tax_id?: string | null
       /** Locale */
       locale?: string | null
-      /**
-       * Payment Method Type
-       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
-       */
-      payment_method_type?: string | null
       /** @description The interval unit for the trial period. */
       trial_interval?: components['schemas']['TrialInterval'] | null
       /**

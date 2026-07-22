@@ -385,7 +385,6 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     customer_billing_address: CustomerBillingAddressInput | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     locale: Locale | None = None
-    payment_method_type: PaymentMethodTypeInput = None
 
 
 class CheckoutUpdate(
@@ -416,6 +415,7 @@ class CheckoutUpdate(
 class CheckoutUpdatePublic(CheckoutUpdateBase):
     """Update an existing checkout session using the client secret."""
 
+    payment_method_type: PaymentMethodTypeInput = None
     discount_code: Annotated[str, StripValidator] | None = Field(
         default=None, description="Discount code to apply to the checkout."
     )

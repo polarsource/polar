@@ -1,6 +1,5 @@
 from polar.auth import tasks as auth
 from polar.benefit import tasks as benefit
-from polar.billing_entry import tasks as billing_entry
 from polar.checkout import tasks as checkout
 from polar.customer import tasks as customer
 from polar.customer_email_update import tasks as customer_email_update
@@ -44,7 +43,6 @@ from polar.webhook import tasks as webhook
 __all__ = [
     "auth",
     "benefit",
-    "billing_entry",
     "chargeback_stop",
     "checkout",
     "customer",

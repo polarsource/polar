@@ -246,29 +246,6 @@ def calculate_tax_mock(tax_service_mock: MagicMock) -> AsyncMock:
     return tax_service_mock.calculate
 
 
-def assert_set_order_item_ids(
-    enqueue_job_mock: MagicMock,
-    expected_billing_entry_ids: list[uuid.UUID],
-    expected_order_item_ids: list[uuid.UUID],
-) -> None:
-    # `enqueue_job` gets called a couple of times, only one of which
-    # we care about. We do the following to extract only that "one" and
-    # assert that it's just called once or never in the two cases.
-    calls = [
-        (args, kwargs)
-        for args, kwargs in enqueue_job_mock.call_args_list
-        if args[0] == "billing_entry.set_order_item"
-    ]
-    billing_entry_ids = set()
-    order_item_ids = set()
-    for args, kwargs in calls:
-        billing_entry_ids |= set(args[1])
-        order_item_ids.add(args[2])
-
-    assert billing_entry_ids == set(expected_billing_entry_ids)
-    assert order_item_ids == set(expected_order_item_ids)
-
-
 @pytest.mark.asyncio
 class TestList:
     @pytest.mark.auth

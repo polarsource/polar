@@ -74,8 +74,16 @@ export const useOrgAuthSessionStart = (slug: string) =>
 
 export const useEmailOTPRequest = () =>
   useMutation({
-    mutationFn: (email: string) =>
-      api.POST('/v1/auth/email-otp/request', { body: { email } }),
+    mutationFn: ({
+      email,
+      turnstileToken,
+    }: {
+      email: string
+      turnstileToken: string
+    }) =>
+      api.POST('/v1/auth/email-otp/request', {
+        body: { email, 'cf-turnstile-response': turnstileToken },
+      }),
   })
 
 export const useEmailOTPVerify = () =>

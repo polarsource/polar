@@ -20540,6 +20540,8 @@ export interface components {
        * Format: email
        */
       email: string
+      /** Cf-Turnstile-Response */
+      'cf-turnstile-response': string
     }
     /** EmailOTPVerify */
     EmailOTPVerify: {
@@ -40137,6 +40139,15 @@ export interface operations {
         }
         content: {
           'application/json': unknown
+        }
+      }
+      /** @description Turnstile verification failed */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
         }
       }
       /** @description Validation Error */

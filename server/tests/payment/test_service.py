@@ -1,9 +1,11 @@
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.enums import PaymentProcessor
-from polar.models import Customer, Organization, Product
+from polar.models import Customer, Organization, Payment, Product
 from polar.models.payment import PaymentStatus, PaymentTrigger
 from polar.models.wallet import WalletType
+from polar.payment.repository import PaymentRepository
 from polar.payment.service import payment as payment_service
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -812,3 +814,71 @@ class TestUpsertFromStripePaymentIntent:
         )
 
         assert payment.trigger is None
+
+    async def test_concurrent_calls_update_existing_row(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        """Two concurrent webhooks for the same intent race to insert.
+
+        The one that loses the race must fall back to re-fetching and updating
+        the winner's row instead of crashing on the unique constraint.
+        """
+        order = await create_order(save_fixture, product=product, customer=customer)
+        payment_intent = build_stripe_payment_intent(
+            id="pi_race",
+            amount=1000,
+            currency="usd",
+            receipt_email="test@example.com",
+            metadata={"order_id": str(order.id)},
+            latest_charge=None,
+            last_payment_error={
+                "code": "card_declined",
+                "message": "Your card was declined",
+                "payment_method": {
+                    "id": "pm_test123",
+                    "type": "card",
+                    "card": {"brand": "visa", "last4": "4242"},
+                },
+            },
+        )
+
+        # The row the concurrent delivery inserted before we do.
+        winner = await payment_service.upsert_from_stripe_payment_intent(
+            session, payment_intent, organization, None, order
+        )
+        await session.flush()
+
+        # Force the next call's initial lookup to miss the winner's row, so its
+        # insert hits the unique constraint and exercises the fallback path.
+        original = PaymentRepository.get_by_stripe_payment_intent_id
+        calls = 0
+
+        async def racing_lookup(
+            self: PaymentRepository, *args: object, **kwargs: object
+        ) -> Payment | None:
+            nonlocal calls
+            calls += 1
+            if calls == 1:
+                return None
+            return await original(self, *args, **kwargs)  # type: ignore[arg-type]
+
+        mocker.patch.object(
+            PaymentRepository,
+            "get_by_stripe_payment_intent_id",
+            racing_lookup,
+        )
+
+        loser = await payment_service.upsert_from_stripe_payment_intent(
+            session, payment_intent, organization, None, order
+        )
+        await session.flush()
+
+        assert loser.id == winner.id
+        assert loser.processor_id == "pi_race"
+        assert loser.status == PaymentStatus.failed

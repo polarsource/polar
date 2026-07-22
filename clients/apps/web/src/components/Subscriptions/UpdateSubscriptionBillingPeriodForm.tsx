@@ -27,7 +27,12 @@ export const UpdateSubscriptionBillingPeriodForm = ({
 }) => {
   const updateSubscription = useUpdateSubscription(subscription.id)
 
-  const minDate = useMemo<Date>(() => new Date(), [])
+  const minDate = useMemo<Date>(() => {
+    const tomorrow = new Date()
+    tomorrow.setHours(0, 0, 0, 0)
+    tomorrow.setDate(tomorrow.getDate() + 1)
+    return tomorrow
+  }, [])
 
   const form = useForm<schemas['SubscriptionUpdateBillingPeriod']>({
     defaultValues: {

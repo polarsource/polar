@@ -21,11 +21,11 @@ from polar.v2026_04.inputs import (
     CustomerPortalCustomerUpdate,
     EventCreateCustomer,
     EventCreateExternalCustomer,
+    EventMetadataInput,
     LLMMetadata,
 )
 from polar.v2026_04.literals import (
     DiscountDuration,
-    MemberRole,
     SubscriptionProrationBehavior,
 )
 from polar.v2026_04.literals import (
@@ -394,7 +394,7 @@ class PolarSelfClient:
                 try:
                     response = await self._sdk.members.list_members(
                         customer_id=customer_id,
-                        role=cast(MemberRole, role),
+                        role=role,
                         limit=100,
                     )
                 except (PolarClientError, PolarServerError) as e:
@@ -459,7 +459,10 @@ class PolarSelfClient:
                 _raise_network_error(span, e, "update_member")
 
     async def update_customer_metadata(
-        self, *, external_id: str, metadata: dict[str, Any]
+        self,
+        *,
+        external_id: str,
+        metadata: dict[str, str | int | float | bool],
     ) -> None:
         # The Polar API replaces metadata wholesale on update; callers must
         # merge any existing keys they want to preserve before passing them in.
@@ -469,7 +472,7 @@ class PolarSelfClient:
             try:
                 await self._sdk.customers.update_external(
                     external_id,
-                    metadata=cast(dict[str, str | int | float | bool], metadata),
+                    metadata=metadata,
                 )
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
@@ -489,7 +492,7 @@ class PolarSelfClient:
         max_redemptions: int | None,
         products: list[str] | None,
         organization_id: str | None = None,
-        metadata: dict[str, Any] | None = None,
+        metadata: dict[str, str | int | float | bool] | None = None,
     ) -> Discount:
         with logfire.span(
             "polar.create_percentage_discount",
@@ -507,7 +510,7 @@ class PolarSelfClient:
                     max_redemptions=max_redemptions,
                     products=products,
                     organization_id=organization_id,
-                    metadata=cast(dict[str, str | int | float | bool] | None, metadata),
+                    metadata=metadata or {},
                 )
             except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "create_percentage_discount")
@@ -608,7 +611,7 @@ class PolarSelfClient:
                 external_customer_id=str(org_id),
                 external_id=f"events_ingested-{org_id}-{cutoff_epoch}",
                 timestamp=cutoff.isoformat(),
-                metadata={"count": count},
+                metadata=cast(EventMetadataInput, {"count": count}),
             )
             for org_id, count in counts.items()
         ]
@@ -880,7 +883,7 @@ class PolarSelfClient:
         *,
         external_customer_id: str,
         external_member_id: str | None = None,
-        **update: Unpack[CustomerPortalCustomerUpdate],  # type: ignore[misc]
+        **update: Unpack[CustomerPortalCustomerUpdate],
     ) -> CustomerPortalCustomer:
         with logfire.span(
             "polar.portal.update_customer",

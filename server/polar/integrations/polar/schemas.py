@@ -1,6 +1,6 @@
 import dataclasses
 from datetime import datetime
-from typing import TYPE_CHECKING, Annotated, Any, Literal
+from typing import TYPE_CHECKING, Annotated, Any, Literal, overload
 
 from dateutil.relativedelta import relativedelta
 from pydantic import AfterValidator, Discriminator, EmailStr, Field, Tag
@@ -24,6 +24,18 @@ if TYPE_CHECKING:
         Product,
         Subscription,
     )
+
+
+@overload
+def _parse_sdk_datetime(value: str) -> datetime: ...
+
+
+@overload
+def _parse_sdk_datetime(value: None) -> None: ...
+
+
+def _parse_sdk_datetime(value: str | None) -> datetime | None:
+    return datetime.fromisoformat(value) if value is not None else None
 
 
 class OrganizationPlanPrice(Schema):
@@ -291,16 +303,16 @@ class OrganizationSubscription(Schema):
             currency=subscription.currency,
             recurring_interval=subscription.recurring_interval,
             recurring_interval_count=subscription.recurring_interval_count,
-            current_period_start=subscription.current_period_start,
-            current_period_end=subscription.current_period_end,
+            current_period_start=_parse_sdk_datetime(subscription.current_period_start),
+            current_period_end=_parse_sdk_datetime(subscription.current_period_end),
             cancel_at_period_end=subscription.cancel_at_period_end,
-            canceled_at=subscription.canceled_at,
-            started_at=subscription.started_at,
-            ends_at=subscription.ends_at,
+            canceled_at=_parse_sdk_datetime(subscription.canceled_at),
+            started_at=_parse_sdk_datetime(subscription.started_at),
+            ends_at=_parse_sdk_datetime(subscription.ends_at),
             pending_change=(
                 OrganizationSubscriptionPendingChange(
                     product_id=pending.product_id,
-                    applies_at=pending.applies_at,
+                    applies_at=_parse_sdk_datetime(pending.applies_at),
                 )
                 if pending is not None and pending.product_id is not None
                 else None
@@ -326,7 +338,7 @@ class OrganizationCheckoutResponse(Schema):
         return cls(
             checkout_id=checkout.id,
             url=checkout.url,
-            expires_at=checkout.expires_at,
+            expires_at=_parse_sdk_datetime(checkout.expires_at),
         )
 
 
@@ -381,7 +393,7 @@ class OrganizationOrder(Schema):
         product = order.product
         return cls(
             id=order.id,
-            created_at=order.created_at,
+            created_at=_parse_sdk_datetime(order.created_at),
             invoice_number=order.invoice_number,
             status=order.status,
             paid=order.paid,

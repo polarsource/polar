@@ -1,7 +1,6 @@
 import uuid
 from datetime import timedelta
 from decimal import Decimal
-from typing import Any
 
 from dramatiq import Retry
 
@@ -119,7 +118,7 @@ async def update_customer_slug(external_id: str, slug: str) -> None:
     customer = await client.get_customer_by_external_id_or_none(external_id)
     if customer is None:
         return
-    metadata: dict[str, Any] = dict(customer.metadata) if customer.metadata else {}
+    metadata = dict(customer.metadata) if customer.metadata else {}
     metadata["slug"] = slug
     await client.update_customer_metadata(external_id=external_id, metadata=metadata)
 

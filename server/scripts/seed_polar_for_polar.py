@@ -23,7 +23,7 @@ Polar self-billing plan catalog and are also imported by the dev seed loader
 
 import asyncio
 import os
-from typing import Annotated, cast
+from typing import Annotated
 
 import typer
 from polar.v2026_04 import PolarAsync
@@ -31,7 +31,6 @@ from polar.v2026_04.inputs import (
     ProductPriceFixedCreate,
     ProductUpdate,
 )
-from polar.v2026_04.literals import ProductVisibility
 from polar.v2026_04.outputs import Benefit, Product
 
 cli = typer.Typer(invoke_without_command=True)
@@ -266,7 +265,6 @@ async def _seed_products(
         assert isinstance(benefit_descriptions, list)
         assert price_amount is None or isinstance(price_amount, int)
         assert desired_visibility in ("draft", "private", "public")
-        desired_visibility = cast(ProductVisibility, desired_visibility)
 
         desired_benefit_ids: list[str] = []
         for description in benefit_descriptions:

@@ -33,6 +33,7 @@ from polar.v2026_04.inputs import (
     CustomerBenefitGrantUpdate,
     CustomerPortalCustomerUpdate,
 )
+from polar.v2026_04.literals import SubscriptionProrationBehavior
 from polar.v2026_04.outputs import (
     CustomerBenefitGrantSlackSharedChannel,
     LegacyRecurringProductPriceFixed,
@@ -392,7 +393,9 @@ class PolarSelfService:
             )
 
         target_amount = self._product_fixed_price_amount(target_product)
-        proration = "invoice" if target_amount > subscription.amount else "next_period"
+        proration: SubscriptionProrationBehavior = (
+            "invoice" if target_amount > subscription.amount else "next_period"
+        )
         subscription = await client.update_subscription_product(
             subscription_id=subscription.id,
             product_id=product_id,

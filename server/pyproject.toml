@@ -61,7 +61,7 @@ dependencies = [
   "clickhouse-connect[async]>=1.4.1",
   "trafilatura>=2.1.0",
   "firecrawl-py>=4.31.0",
-  "polar-sdk==1.0.0a14",
+  "polar-sdk==1.0.0a15",
   "anyio>=4.14.0",
   "markdown-it-py>=4.2.0",
   "tzdata>=2026.2",

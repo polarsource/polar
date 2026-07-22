@@ -36,7 +36,7 @@ jobs:
           package_json_file: clients/package.json
 
       - name: Setup Node.js
-        uses: actions/setup-node@v6.4.0
+        uses: actions/setup-node@v7.0.0
         with:
           node-version-file: clients/.node-version
           cache: "pnpm"
@@ -172,7 +172,7 @@ jobs:
       - name: Notify Slack on failure
         id: slack-failure
         if: steps.e2e.outcome == 'failure' # TEMP: removed schedule-only condition to test Slack
-        uses: slackapi/slack-github-action@v3.0.3
+        uses: slackapi/slack-github-action@v4.0.0
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}
@@ -210,7 +210,7 @@ jobs:
 
       - name: Notify Slack - starting investigation
         if: steps.e2e.outcome == 'failure'
-        uses: slackapi/slack-github-action@v3.0.3
+        uses: slackapi/slack-github-action@v4.0.0
         with:
           method: chat.postMessage
           token: ${{ secrets.E2E_SLACK_BOT_TOKEN }}

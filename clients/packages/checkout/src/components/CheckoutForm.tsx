@@ -861,16 +861,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
           <BaseCheckoutForm
             {...props}
             checkout={checkout}
-            confirm={(data) =>
-              confirm(
-                // Not in form state, comes from Stripe PaymentElement.
-                selectedPaymentMethod
-                  ? { ...data, payment_method_type: selectedPaymentMethod }
-                  : data,
-                stripe,
-                elements,
-              )
-            }
+            confirm={(data) => confirm(data, stripe, elements)}
             isWalletPayment={isWalletPayment}
           >
             {checkout.is_payment_form_required && (

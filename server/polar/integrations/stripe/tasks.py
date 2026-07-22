@@ -125,22 +125,12 @@ async def payment_intent_succeeded(event_id: uuid.UUID) -> None:
                 return
 
 
-@actor(actor_name="stripe.webhook.payment_intent.created", priority=TaskPriority.HIGH)
-@stripe_api_connection_error_retry
-async def payment_intent_created(event_id: uuid.UUID) -> None:
-    await _record_pending_payment_intent(event_id)
-
-
 @actor(
     actor_name="stripe.webhook.payment_intent.requires_action",
     priority=TaskPriority.HIGH,
 )
 @stripe_api_connection_error_retry
 async def payment_intent_requires_action(event_id: uuid.UUID) -> None:
-    await _record_pending_payment_intent(event_id)
-
-
-async def _record_pending_payment_intent(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             payment_intent = cast(

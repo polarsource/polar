@@ -3,6 +3,7 @@ from collections.abc import Sequence
 
 import stripe as stripe_lib
 from sqlalchemy import func, or_
+from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
@@ -221,36 +222,63 @@ class PaymentService:
             return None
 
         repository = PaymentRepository.from_session(session)
-        payment = await repository.get_by_stripe_payment_intent_id(payment_intent.id)
-        if payment is None:
-            payment = Payment(
-                id=generate_uuid(),
-                processor=PaymentProcessor.stripe,
-                processor_id=payment_intent.id,
-                processor_metadata={
-                    STRIPE_PAYMENT_INTENT_METADATA_KEY: payment_intent.id
-                },
-                method=UNKNOWN_PAYMENT_METHOD,
-                method_metadata={},
-            )
+        payment = await repository.get_by_stripe_payment_intent_id(
+            payment_intent.id, for_update=True
+        )
+        # The lock holds off a charge webhook landing between this read and the
+        # write below.
+        if payment is not None and (
+            payment.processor_id != payment_intent.id
+            or payment.status != PaymentStatus.pending
+        ):
+            return None
 
         payment_method = await self._get_stripe_payment_method(
             session, payment_intent.payment_method
         )
 
-        payment.status = PaymentStatus.pending
-        payment.amount = payment_intent.amount
-        payment.currency = payment_intent.currency
-        if payment_method is not None:
-            payment.method = payment_method.type
-            payment.method_metadata = payment_method.method_metadata
-        payment.customer_email = payment_intent.receipt_email
-        payment.trigger = trigger
-        payment.checkout = checkout
-        payment.order = order
-        payment.wallet = wallet
-        payment.organization = organization
+        def apply(payment: Payment) -> None:
+            payment.status = PaymentStatus.pending
+            payment.amount = payment_intent.amount
+            payment.currency = payment_intent.currency
+            if payment_method is not None:
+                payment.method = payment_method.type
+                payment.method_metadata = payment_method.method_metadata
+            payment.customer_email = payment_intent.receipt_email
+            payment.trigger = trigger
+            payment.checkout = checkout
+            payment.order = order
+            payment.wallet = wallet
+            payment.organization = organization
 
+        if payment is not None:
+            apply(payment)
+            return await repository.update(payment, flush=True)
+
+        payment = Payment(
+            id=generate_uuid(),
+            processor=PaymentProcessor.stripe,
+            processor_id=payment_intent.id,
+            processor_metadata={STRIPE_PAYMENT_INTENT_METADATA_KEY: payment_intent.id},
+            method=UNKNOWN_PAYMENT_METHOD,
+            method_metadata={},
+        )
+        apply(payment)
+
+        # Two webhooks for the same intent can both find no row and both insert.
+        nested = await session.begin_nested()
+        try:
+            return await repository.create(payment, flush=True)
+        except IntegrityError:
+            await nested.rollback()
+
+        payment = await repository.get_by_stripe_payment_intent_id(
+            payment_intent.id, for_update=True
+        )
+        if payment is None or payment.processor_id != payment_intent.id:
+            return None
+
+        apply(payment)
         return await repository.update(payment, flush=True)
 
     async def cancel_from_stripe_payment_intent(

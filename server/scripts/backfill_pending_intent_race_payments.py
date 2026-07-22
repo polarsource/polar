@@ -76,27 +76,30 @@ def _is_referenced() -> ColumnElement[bool]:
 
 
 def _duplicates_where(since: datetime) -> list[ColumnElement[bool]]:
-    """Intent-keyed rows whose charge-keyed sibling is still live."""
+    """Intent-keyed rows whose charge-keyed sibling is still live.
+
+    Both sides are bound to the window so the planner can drive off
+    ``ix_payments_created_at``; the intent id itself carries no index, and
+    correlating on it alone scans the table once per candidate.
+    """
     charge_row = aliased(Payment, name="charge_payment")
-    sibling = (
-        select(charge_row.id)
-        .where(
-            charge_row.processor == PaymentProcessor.stripe,
-            charge_row.deleted_at.is_(None),
-            charge_row.id != Payment.id,
-            charge_row.processor_metadata[STRIPE_PAYMENT_INTENT_METADATA_KEY].astext
-            == Payment.processor_id,
-        )
-        .exists()
+    charge_intent_id = charge_row.processor_metadata[
+        STRIPE_PAYMENT_INTENT_METADATA_KEY
+    ].astext
+    promoted_intents = select(charge_intent_id).where(
+        charge_row.processor == PaymentProcessor.stripe,
+        charge_row.deleted_at.is_(None),
+        charge_row.created_at >= since,
+        charge_intent_id.is_not(None),
+        charge_row.processor_id != charge_intent_id,
     )
     return [
         Payment.processor == PaymentProcessor.stripe,
         Payment.deleted_at.is_(None),
         Payment.status == PaymentStatus.pending,
         Payment.created_at >= since,
-        Payment.processor_id.startswith("pi_"),
         _intent_id() == Payment.processor_id,
-        sibling,
+        Payment.processor_id.in_(promoted_intents),
         ~_is_referenced(),
     ]
 
@@ -231,6 +234,10 @@ async def backfill_pending_intent_race_payments(
         ),
         batch_size=batch_size,
     )
+    # rich leaves the cursor on the progress line, swallowing what follows.
+    console.print()
+    console.print(f"Soft-deleted duplicates: [bold]{soft_deleted}[/bold]")
+    console.print(f"Restored downgrades:     [bold]{restored}[/bold]")
     log.info(
         "Repair complete",
         soft_deleted=soft_deleted,

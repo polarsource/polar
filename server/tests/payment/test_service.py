@@ -7,7 +7,12 @@ from polar.models.wallet import WalletType
 from polar.payment.service import payment as payment_service
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_checkout, create_order, create_wallet
+from tests.fixtures.random_objects import (
+    create_checkout,
+    create_order,
+    create_payment_method,
+    create_wallet,
+)
 from tests.fixtures.stripe import build_stripe_charge, build_stripe_payment_intent
 
 
@@ -360,12 +365,41 @@ class TestUpsertPendingFromStripePaymentIntent:
         assert payment.status == PaymentStatus.pending
         assert payment.amount == 1000
         assert payment.currency == "usd"
-        assert payment.method == "card"
+        assert payment.method == "unknown"
+        assert payment.method_metadata == {}
         assert payment.processor_metadata == {"payment_intent_id": payment_intent.id}
         assert payment.customer_email == "test@example.com"
         assert payment.order == order
         assert payment.organization == organization
         assert payment.trigger == PaymentTrigger.subscription_cycle
+
+    async def test_known_payment_method_names_the_method(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(save_fixture, product=product, customer=customer)
+        payment_method = await create_payment_method(
+            save_fixture,
+            customer,
+            processor_id="pm_saved_card",
+            type="card",
+            method_metadata={"brand": "visa", "last4": "4242"},
+        )
+        payment_intent = build_stripe_payment_intent(
+            status="requires_action", payment_method=payment_method.processor_id
+        )
+
+        payment = await payment_service.upsert_pending_from_stripe_payment_intent(
+            session, payment_intent, organization, order=order
+        )
+
+        assert payment is not None
+        assert payment.method == "card"
+        assert payment.method_metadata == {"brand": "visa", "last4": "4242"}
 
     async def test_charged_intent_is_not_recorded(
         self,
@@ -404,6 +438,36 @@ class TestUpsertPendingFromStripePaymentIntent:
         assert first is not None
         assert second is not None
         assert first.id == second.id
+
+    async def test_charge_recorded_before_the_intent_is_not_duplicated(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Webhook order isn't guaranteed: the charge can land first."""
+        order = await create_order(save_fixture, product=product, customer=customer)
+        payment_intent = build_stripe_payment_intent(status="requires_action")
+        charge = build_stripe_charge(
+            payment_intent=payment_intent.id,
+            payment_method_details={"card": {"brand": "visa"}, "type": "card"},
+            billing_details={"email": "test@example.com"},
+        )
+
+        from_charge = await payment_service.upsert_from_stripe_charge(
+            session, charge, organization, None, None, order
+        )
+        late = await payment_service.upsert_pending_from_stripe_payment_intent(
+            session, payment_intent, organization, order=order
+        )
+
+        assert from_charge.processor_metadata == {
+            "payment_intent_id": payment_intent.id
+        }
+        assert late is not None
+        assert late.id == from_charge.id
 
     async def test_promoted_payment_is_not_duplicated(
         self,

@@ -190,7 +190,7 @@ def build_stripe_payment_intent(
     metadata: dict[str, str] | None = None,
     latest_charge: str | None = None,
     last_payment_error: dict[str, Any] | None = None,
-    payment_method_types: list[str] | None = None,
+    payment_method: str | None = None,
 ) -> stripe_lib.PaymentIntent:
     obj: dict[str, Any] = {
         "id": id,
@@ -202,7 +202,7 @@ def build_stripe_payment_intent(
         "metadata": metadata or {},
         "latest_charge": latest_charge,
         "last_payment_error": last_payment_error,
-        "payment_method_types": payment_method_types or ["card"],
+        "payment_method": payment_method,
     }
 
     return stripe_lib.PaymentIntent.construct_from(obj, None)

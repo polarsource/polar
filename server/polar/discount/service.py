@@ -14,14 +14,19 @@ from polar.authz.service import (
     assert_organization_permission,
     assert_resource_permission,
 )
-from polar.discount.repository import DiscountRepository
+from polar.discount.repository import (
+    DiscountRedemptionRepository,
+    DiscountRepository,
+)
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.db.locking import is_lock_not_available_error
+from polar.kit.email import unalias_email
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.models import (
+    Customer,
     Discount,
     DiscountProduct,
     Organization,
@@ -423,6 +428,37 @@ class DiscountService(ResourceServiceReader[Discount]):
             return discount.redemptions_count < discount.max_redemptions
 
         return True
+
+    async def check_per_customer_limit_reached(
+        self,
+        session: AsyncSession,
+        discount: Discount,
+        *,
+        checkout: Checkout,
+        customer: Customer,
+        payment_method_fingerprint: str | None = None,
+    ) -> bool:
+        """
+        Check whether a customer has reached the discount's per-customer redemption limit.
+
+        The customer is identified using the same signals as the trial-abuse feature:
+        customer ID, unaliased email, and payment method fingerprint (OR logic), scoped
+        to this specific discount. Returns ``False`` when no per-customer limit is set.
+        """
+        if discount.max_redemptions_per_customer is None:
+            return False
+
+        repository = DiscountRedemptionRepository.from_session(session)
+        count = await repository.count_redemptions_by_customer(
+            discount.id,
+            exclude_checkout_id=checkout.id,
+            customer_id=customer.id,
+            customer_email=unalias_email(customer.email).lower()
+            if customer.email
+            else None,
+            payment_method_fingerprint=payment_method_fingerprint,
+        )
+        return count >= discount.max_redemptions_per_customer
 
     @contextlib.asynccontextmanager
     async def redeem_discount(

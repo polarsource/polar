@@ -270,26 +270,6 @@ async def handle_success(
         await order_service.handle_payment(session, order, payment)
 
 
-async def handle_pending(
-    session: AsyncSession,
-    object: stripe_lib.PaymentIntent,
-) -> None:
-    organization = await resolve_organization(session, object)
-    checkout = await resolve_checkout(session, object)
-    wallet, _ = await resolve_wallet(session, object)
-    order = await resolve_order(session, object, checkout)
-
-    await payment_service.upsert_pending_from_stripe_payment_intent(
-        session,
-        object,
-        organization,
-        checkout=checkout,
-        order=order,
-        wallet=wallet,
-        trigger=_resolve_trigger(object),
-    )
-
-
 async def handle_failure(
     session: AsyncSession,
     object: stripe_lib.Charge | stripe_lib.PaymentIntent | stripe_lib.SetupIntent,
@@ -327,22 +307,8 @@ async def handle_failure(
         )
 
 
-async def handle_cancellation(
-    session: AsyncSession,
-    object: stripe_lib.PaymentIntent,
-) -> None:
-    await payment_service.cancel_from_stripe_payment_intent(session, object)
-
-    order = await resolve_order(session, object, checkout=None)
-
-    if order is not None:
-        await order_service.handle_payment_cancellation(session, order)
-
-
 __all__ = [
-    "handle_cancellation",
     "handle_failure",
-    "handle_pending",
     "handle_success",
     "resolve_checkout",
     "resolve_order",

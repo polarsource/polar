@@ -369,26 +369,6 @@ class OrderRepository(
             order, update_dict={"payment_lock_acquired_at": None}, flush=flush
         )
 
-    async def get_stale_payment_lock_orders(
-        self, older_than: datetime, *, options: Options = ()
-    ) -> Sequence[Order]:
-        """Get orders whose payment lock was acquired before ``older_than``.
-
-        A lock this old is presumed wedged: typically an off-session SCA
-        PaymentIntent that never received a resolving webhook, which would
-        otherwise block every future dunning attempt on the order.
-        """
-        statement = (
-            self.get_base_statement()
-            .where(
-                Order.payment_lock_acquired_at.is_not(None),
-                Order.payment_lock_acquired_at < older_than,
-            )
-            .order_by(Order.payment_lock_acquired_at.asc())
-            .options(*options)
-        )
-        return await self.get_all(statement)
-
     async def start_finalization(self, order_id: UUID) -> bool:
         """
         Atomically transition a draft order to `pending` so it can be charged.

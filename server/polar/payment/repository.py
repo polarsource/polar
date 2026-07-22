@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, func, or_, select
+from sqlalchemy import Select, func, select
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.enums import PaymentProcessor
@@ -16,7 +16,6 @@ from polar.kit.repository import (
 from polar.models import Order, Payment
 from polar.models.payment import (
     DUNNING_COUNTING_TRIGGERS,
-    STRIPE_PAYMENT_INTENT_METADATA_KEY,
     PaymentStatus,
     PaymentTrigger,
 )
@@ -113,55 +112,6 @@ class PaymentRepository(
         )
         result = await self.session.execute(statement)
         return result.scalar() or 0
-
-    async def get_by_stripe_payment_intent_id(
-        self,
-        payment_intent_id: str,
-        *,
-        options: Options = (),
-        for_update: bool = False,
-        nowait: bool = False,
-    ) -> Payment | None:
-        """Get the payment for a PaymentIntent, whether or not it has since been
-        re-keyed onto its charge."""
-        statement = (
-            self.get_base_statement()
-            .where(
-                Payment.processor == PaymentProcessor.stripe,
-                or_(
-                    Payment.processor_id == payment_intent_id,
-                    Payment.processor_metadata[
-                        STRIPE_PAYMENT_INTENT_METADATA_KEY
-                    ].astext
-                    == payment_intent_id,
-                ),
-            )
-            .options(*options)
-        )
-        if for_update:
-            statement = statement.with_for_update(of=Payment, nowait=nowait)
-
-        return await self.get_one_or_none(statement)
-
-    async def get_unresolved_stripe_intents_for_order(
-        self, order_id: UUID
-    ) -> Sequence[Payment]:
-        """Get payments still keyed on their PaymentIntent, never re-keyed onto
-        a charge."""
-        statement = (
-            self.get_base_statement()
-            .where(
-                Payment.order_id == order_id,
-                Payment.status == PaymentStatus.pending,
-                Payment.processor == PaymentProcessor.stripe,
-                Payment.processor_id
-                == Payment.processor_metadata[
-                    STRIPE_PAYMENT_INTENT_METADATA_KEY
-                ].astext,
-            )
-            .order_by(Payment.created_at.asc())
-        )
-        return await self.get_all(statement)
 
     async def get_latest_for_order(self, order_id: UUID) -> Payment | None:
         """Get the latest payment for a specific order."""

@@ -72757,6 +72757,9 @@
           "is_payout_ready": {
             "type": "boolean",
             "title": "Is Payout Ready"
+          },
+          "status": {
+            "$ref": "#/components/schemas/PayoutAccountStatus"
           }
         },
         "type": "object",
@@ -72768,7 +72771,8 @@
           "processor_id",
           "country",
           "currency",
-          "is_payout_ready"
+          "is_payout_ready",
+          "status"
         ],
         "title": "PayoutAccount"
       },
@@ -72809,6 +72813,82 @@
           "url"
         ],
         "title": "PayoutAccountLink"
+      },
+      "PayoutAccountStatus": {
+        "type": "string",
+        "enum": [
+          "incomplete",
+          "under_review",
+          "paused",
+          "ready"
+        ],
+        "title": "PayoutAccountStatus"
+      },
+      "PayoutAccountStripeAccountDoesNotExist": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "PayoutAccountStripeAccountDoesNotExist",
+            "title": "Error",
+            "examples": [
+              "PayoutAccountStripeAccountDoesNotExist"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "PayoutAccountStripeAccountDoesNotExist"
+      },
+      "PayoutAccountSyncFailed": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "PayoutAccountSyncFailed",
+            "title": "Error",
+            "examples": [
+              "PayoutAccountSyncFailed"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "PayoutAccountSyncFailed"
+      },
+      "PayoutAccountSyncUnsupported": {
+        "properties": {
+          "error": {
+            "type": "string",
+            "const": "PayoutAccountSyncUnsupported",
+            "title": "Error",
+            "examples": [
+              "PayoutAccountSyncUnsupported"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "title": "Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "error",
+          "detail"
+        ],
+        "title": "PayoutAccountSyncUnsupported"
       },
       "PayoutAccountType": {
         "type": "string",

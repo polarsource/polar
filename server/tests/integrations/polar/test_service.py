@@ -1,16 +1,18 @@
+import dataclasses
 import uuid
 from decimal import Decimal
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from polar_sdk.models import (
+from polar.v2026_04.outputs import (
     BenefitGrant,
     CustomerIndividual,
     Order,
     Product,
     Subscription,
-    SubscriptionProrationBehavior,
+)
+from polar.v2026_04.webhooks import (
     WebhookBenefitGrantCreatedPayload,
     WebhookBenefitGrantRevokedPayload,
     WebhookBenefitGrantUpdatedPayload,
@@ -21,6 +23,7 @@ from polar_sdk.models import (
 )
 from pytest_mock import MockerFixture
 
+from polar import deserialize
 from polar.config import settings
 from polar.integrations.polar.exceptions import (
     PolarSelfInvoiceNotReady,
@@ -80,7 +83,7 @@ def _customer_dict(external_id: object) -> dict[str, Any]:
 
 
 def _make_customer(*, external_id: object = str(ORG_A)) -> CustomerIndividual:
-    return CustomerIndividual.model_validate(_customer_dict(external_id))
+    return deserialize(_customer_dict(external_id), CustomerIndividual)
 
 
 def _make_grant(
@@ -88,7 +91,7 @@ def _make_grant(
     benefit_id: str = _BENEFIT_ID,
     metadata: dict[str, Any] | None = None,
 ) -> BenefitGrant:
-    return BenefitGrant.model_validate(
+    return deserialize(
         {
             "created_at": "2026-01-01T00:00:00Z",
             "modified_at": None,
@@ -116,7 +119,8 @@ def _make_grant(
                 "properties": {"note": None},
             },
             "properties": {},
-        }
+        },
+        BenefitGrant,
     )
 
 
@@ -885,11 +889,12 @@ class TestHandleBenefitGrantEvent:
         list_grants_mock: AsyncMock,
     ) -> None:
         list_grants_mock.return_value = [_make_fee_grant()]
-        payload = WebhookBenefitGrantCreatedPayload.model_validate(
+        payload = deserialize(
             _make_payload(
                 "benefit_grant.created",
                 metadata={"type": "transaction_fee"},
-            )
+            ),
+            WebhookBenefitGrantCreatedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -910,11 +915,12 @@ class TestHandleBenefitGrantEvent:
         list_grants_mock: AsyncMock,
     ) -> None:
         list_grants_mock.return_value = []
-        payload = WebhookBenefitGrantRevokedPayload.model_validate(
+        payload = deserialize(
             _make_payload(
                 "benefit_grant.revoked",
                 metadata={"type": "transaction_fee"},
-            )
+            ),
+            WebhookBenefitGrantRevokedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -938,12 +944,13 @@ class TestHandleBenefitGrantEvent:
         list_grants_mock.return_value = [
             _make_fee_grant(benefit_id="tier_2", fee_percent="340", fee_fixed="30")
         ]
-        payload = WebhookBenefitGrantRevokedPayload.model_validate(
+        payload = deserialize(
             _make_payload(
                 "benefit_grant.revoked",
                 metadata={"type": "transaction_fee"},
                 benefit_id="tier_1",
-            )
+            ),
+            WebhookBenefitGrantRevokedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -963,8 +970,9 @@ class TestHandleBenefitGrantEvent:
         set_platform_fee_mock: AsyncMock,
         list_grants_mock: AsyncMock,
     ) -> None:
-        payload = WebhookBenefitGrantCreatedPayload.model_validate(
-            _make_payload("benefit_grant.created", metadata={"type": "something_else"})
+        payload = deserialize(
+            _make_payload("benefit_grant.created", metadata={"type": "something_else"}),
+            WebhookBenefitGrantCreatedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -979,8 +987,9 @@ class TestHandleBenefitGrantEvent:
         set_platform_fee_mock: AsyncMock,
         list_grants_mock: AsyncMock,
     ) -> None:
-        payload = WebhookBenefitGrantCreatedPayload.model_validate(
-            _make_payload("benefit_grant.created", metadata={})
+        payload = deserialize(
+            _make_payload("benefit_grant.created", metadata={}),
+            WebhookBenefitGrantCreatedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -995,12 +1004,13 @@ class TestHandleBenefitGrantEvent:
         set_platform_fee_mock: AsyncMock,
         list_grants_mock: AsyncMock,
     ) -> None:
-        payload = WebhookBenefitGrantCreatedPayload.model_validate(
+        payload = deserialize(
             _make_payload(
                 "benefit_grant.created",
                 metadata={"type": "transaction_fee"},
                 external_id=None,
-            )
+            ),
+            WebhookBenefitGrantCreatedPayload,
         )
 
         with pytest.raises(PolarSelfWebhookError, match="external_id"):
@@ -1016,8 +1026,9 @@ class TestHandleBenefitGrantEvent:
         list_grants_mock: AsyncMock,
     ) -> None:
         list_grants_mock.return_value = [_make_preview_grant()]
-        payload = WebhookBenefitGrantCreatedPayload.model_validate(
-            _make_payload("benefit_grant.created", metadata={"type": "preview_access"})
+        payload = deserialize(
+            _make_payload("benefit_grant.created", metadata={"type": "preview_access"}),
+            WebhookBenefitGrantCreatedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -1033,8 +1044,9 @@ class TestHandleBenefitGrantEvent:
         list_grants_mock: AsyncMock,
     ) -> None:
         list_grants_mock.return_value = [_make_preview_grant()]
-        payload = WebhookBenefitGrantUpdatedPayload.model_validate(
-            _make_payload("benefit_grant.updated", metadata={"type": "preview_access"})
+        payload = deserialize(
+            _make_payload("benefit_grant.updated", metadata={"type": "preview_access"}),
+            WebhookBenefitGrantUpdatedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -1049,8 +1061,9 @@ class TestHandleBenefitGrantEvent:
         list_grants_mock: AsyncMock,
     ) -> None:
         list_grants_mock.return_value = []
-        payload = WebhookBenefitGrantRevokedPayload.model_validate(
-            _make_payload("benefit_grant.revoked", metadata={"type": "preview_access"})
+        payload = deserialize(
+            _make_payload("benefit_grant.revoked", metadata={"type": "preview_access"}),
+            WebhookBenefitGrantRevokedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -1066,8 +1079,9 @@ class TestHandleBenefitGrantEvent:
     ) -> None:
         # Overlapping grant still active when the revoke event arrives.
         list_grants_mock.return_value = [_make_preview_grant(benefit_id="other")]
-        payload = WebhookBenefitGrantRevokedPayload.model_validate(
-            _make_payload("benefit_grant.revoked", metadata={"type": "preview_access"})
+        payload = deserialize(
+            _make_payload("benefit_grant.revoked", metadata={"type": "preview_access"}),
+            WebhookBenefitGrantRevokedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -1082,8 +1096,9 @@ class TestHandleBenefitGrantEvent:
         list_grants_mock: AsyncMock,
     ) -> None:
         list_grants_mock.return_value = [_make_sso_grant()]
-        payload = WebhookBenefitGrantCreatedPayload.model_validate(
-            _make_payload("benefit_grant.created", metadata={"type": "sso"})
+        payload = deserialize(
+            _make_payload("benefit_grant.created", metadata={"type": "sso"}),
+            WebhookBenefitGrantCreatedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -1099,8 +1114,9 @@ class TestHandleBenefitGrantEvent:
         list_grants_mock: AsyncMock,
     ) -> None:
         list_grants_mock.return_value = []
-        payload = WebhookBenefitGrantRevokedPayload.model_validate(
-            _make_payload("benefit_grant.revoked", metadata={"type": "sso"})
+        payload = deserialize(
+            _make_payload("benefit_grant.revoked", metadata={"type": "sso"}),
+            WebhookBenefitGrantRevokedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -1118,8 +1134,9 @@ class TestHandleBenefitGrantEvent:
         # A replayed or late revoke must not disable a feature the customer still
         # holds: the handler re-reads active grants instead of trusting the event.
         list_grants_mock.return_value = [_make_sso_grant(benefit_id="other")]
-        payload = WebhookBenefitGrantRevokedPayload.model_validate(
-            _make_payload("benefit_grant.revoked", metadata={"type": "sso"})
+        payload = deserialize(
+            _make_payload("benefit_grant.revoked", metadata={"type": "sso"}),
+            WebhookBenefitGrantRevokedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -1256,7 +1273,7 @@ def _make_product(
                 "tax_behavior": "inclusive",
             }
         )
-    return Product.model_validate(
+    return deserialize(
         {
             "id": id,
             "created_at": "2026-01-01T00:00:00Z",
@@ -1268,6 +1285,8 @@ def _make_product(
             "visibility": "public",
             "recurring_interval": "month",
             "recurring_interval_count": 1,
+            "meter_interval": None,
+            "meter_interval_count": None,
             "is_recurring": True,
             "is_archived": False,
             "organization_id": str(SELF_ORG_ID),
@@ -1276,7 +1295,8 @@ def _make_product(
             "benefits": [],
             "medias": [],
             "attached_custom_fields": [],
-        }
+        },
+        Product,
     )
 
 
@@ -1288,7 +1308,7 @@ def _make_subscription(
     cancel_at_period_end: bool = False,
     discount_id: str | None = None,
 ) -> Subscription:
-    return Subscription.model_validate(
+    return deserialize(
         {
             "created_at": "2026-01-01T00:00:00Z",
             "modified_at": None,
@@ -1300,6 +1320,8 @@ def _make_subscription(
             "status": "active",
             "current_period_start": "2026-01-01T00:00:00Z",
             "current_period_end": "2026-02-01T00:00:00Z",
+            "current_meter_period_start": None,
+            "current_meter_period_end": None,
             "trial_start": None,
             "trial_end": None,
             "cancel_at_period_end": cancel_at_period_end,
@@ -1307,6 +1329,9 @@ def _make_subscription(
             "started_at": "2026-01-01T00:00:00Z",
             "ends_at": None,
             "ended_at": None,
+            "pause_at_period_end": False,
+            "paused_at": None,
+            "resumes_at": None,
             "customer_id": _CUSTOMER_DICT["id"],
             "product_id": product_id,
             "discount_id": discount_id,
@@ -1315,12 +1340,13 @@ def _make_subscription(
             "customer_cancellation_comment": None,
             "metadata": {},
             "customer": _CUSTOMER_DICT,
-            "product": _make_product(id=product_id).model_dump(mode="json"),
+            "product": dataclasses.asdict(_make_product(id=product_id)),
             "discount": None,
             "prices": [],
             "meters": [],
             "pending_update": None,
-        }
+        },
+        Subscription,
     )
 
 
@@ -1666,7 +1692,7 @@ class TestChangePlan:
         client_mock.update_subscription_product.assert_awaited_once_with(
             subscription_id="sub_existing",
             product_id="prod_2",
-            proration_behavior=SubscriptionProrationBehavior.INVOICE,
+            proration_behavior="invoice",
         )
 
     async def test_downgrade_defers_to_next_period(
@@ -1690,7 +1716,7 @@ class TestChangePlan:
         client_mock.update_subscription_product.assert_awaited_once_with(
             subscription_id="sub_existing",
             product_id="prod_2",
-            proration_behavior=SubscriptionProrationBehavior.NEXT_PERIOD,
+            proration_behavior="next_period",
         )
         client_mock.uncancel_subscription.assert_not_awaited()
 
@@ -1721,7 +1747,7 @@ class TestChangePlan:
         client_mock.update_subscription_product.assert_awaited_once_with(
             subscription_id="sub_existing",
             product_id="prod_2",
-            proration_behavior=SubscriptionProrationBehavior.INVOICE,
+            proration_behavior="invoice",
         )
 
     async def test_unapproved_rejected(
@@ -1791,7 +1817,7 @@ class TestChangePlan:
         client_mock.update_subscription_product.assert_awaited_once_with(
             subscription_id="sub_existing",
             product_id="prod_growth",
-            proration_behavior=SubscriptionProrationBehavior.INVOICE,
+            proration_behavior="invoice",
         )
 
     async def test_does_not_clear_when_no_discount(
@@ -2036,7 +2062,7 @@ class TestClaimStartupProgram:
         client_mock.update_subscription_product.assert_awaited_once_with(
             subscription_id="sub_existing",
             product_id="prod_scale",
-            proration_behavior=SubscriptionProrationBehavior.INVOICE,
+            proration_behavior="invoice",
         )
         # The discount must be applied before the product update.
         method_call_order = [
@@ -2130,7 +2156,7 @@ def _order_dict(
         "platform_fee_amount": 0,
         "platform_fee_currency": None,
         "customer": _CUSTOMER_DICT,
-        "product": _make_product(id=product_id).model_dump(mode="json"),
+        "product": dataclasses.asdict(_make_product(id=product_id)),
         "discount": None,
         "subscription": None,
         "items": [],
@@ -2139,16 +2165,17 @@ def _order_dict(
 
 
 def _make_order(**kwargs: Any) -> Order:
-    return Order.model_validate(_order_dict(**kwargs))
+    return deserialize(_order_dict(**kwargs), Order)
 
 
 def _make_order_created_payload(**kwargs: Any) -> WebhookOrderCreatedPayload:
-    return WebhookOrderCreatedPayload.model_validate(
+    return deserialize(
         {
             "type": "order.created",
             "timestamp": "2026-01-01T00:00:00Z",
             "data": _order_dict(**kwargs),
-        }
+        },
+        WebhookOrderCreatedPayload,
     )
 
 
@@ -2482,38 +2509,41 @@ class TestHandleOrderCreatedEvent:
 def _make_subscription_canceled_payload(
     *, ends_at: str | None = "2026-02-01T00:00:00Z", **kwargs: Any
 ) -> WebhookSubscriptionCanceledPayload:
-    data = _make_subscription(**kwargs).model_dump(mode="json")
+    data = dataclasses.asdict(_make_subscription(**kwargs))
     data["ends_at"] = ends_at
-    return WebhookSubscriptionCanceledPayload.model_validate(
+    return deserialize(
         {
             "type": "subscription.canceled",
             "timestamp": "2026-01-01T00:00:00Z",
             "data": data,
-        }
+        },
+        WebhookSubscriptionCanceledPayload,
     )
 
 
 def _make_subscription_past_due_payload(
     **kwargs: Any,
 ) -> WebhookSubscriptionPastDuePayload:
-    return WebhookSubscriptionPastDuePayload.model_validate(
+    return deserialize(
         {
             "type": "subscription.past_due",
             "timestamp": "2026-01-01T00:00:00Z",
-            "data": _make_subscription(**kwargs).model_dump(mode="json"),
-        }
+            "data": dataclasses.asdict(_make_subscription(**kwargs)),
+        },
+        WebhookSubscriptionPastDuePayload,
     )
 
 
 def _make_subscription_revoked_payload(
     **kwargs: Any,
 ) -> WebhookSubscriptionRevokedPayload:
-    return WebhookSubscriptionRevokedPayload.model_validate(
+    return deserialize(
         {
             "type": "subscription.revoked",
             "timestamp": "2026-01-01T00:00:00Z",
-            "data": _make_subscription(**kwargs).model_dump(mode="json"),
-        }
+            "data": dataclasses.asdict(_make_subscription(**kwargs)),
+        },
+        WebhookSubscriptionRevokedPayload,
     )
 
 

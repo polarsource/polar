@@ -1,17 +1,17 @@
 import json
 
 from fastapi import Depends, HTTPException, Request
-from polar_sdk._webhooks import (
-    WebhookUnknownTypeError,
-    WebhookVerificationError,
-    validate_event,
-)
 
 from polar.config import settings
 from polar.external_event.service import external_event as external_event_service
 from polar.models.external_event import ExternalEventSource
 from polar.postgres import AsyncSession, get_db_session
 from polar.routing import APIRouter
+from polar.v2026_04.webhooks import (
+    PolarWebhookUnknownTypeError,
+    PolarWebhookVerificationError,
+    validate_event,
+)
 
 router = APIRouter(
     prefix="/integrations/polar",
@@ -48,9 +48,9 @@ async def webhook(
 
     try:
         validate_event(raw_body, headers, secret)
-    except WebhookVerificationError:
+    except PolarWebhookVerificationError:
         raise HTTPException(status_code=401)
-    except WebhookUnknownTypeError:
+    except PolarWebhookUnknownTypeError:
         # SDK doesn't recognize this event type yet — ignore for forward compat.
         return
 

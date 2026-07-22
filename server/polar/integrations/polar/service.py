@@ -1,25 +1,8 @@
 import uuid
 from decimal import Decimal
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import logfire
-from polar_sdk.models import (
-    CustomerBenefitGrantSlackSharedChannel,
-    CustomerBenefitGrantSlackSharedChannelPropertiesUpdate,
-    CustomerBenefitGrantSlackSharedChannelUpdate,
-    CustomerPortalCustomerUpdate,
-    LegacyRecurringProductPriceFixed,
-    OrderBillingReason,
-    ProductPriceFixed,
-    SubscriptionProrationBehavior,
-    WebhookBenefitGrantCreatedPayload,
-    WebhookBenefitGrantRevokedPayload,
-    WebhookBenefitGrantUpdatedPayload,
-    WebhookOrderCreatedPayload,
-    WebhookSubscriptionCanceledPayload,
-    WebhookSubscriptionPastDuePayload,
-    WebhookSubscriptionRevokedPayload,
-)
 
 from polar.account.repository import AccountRepository
 from polar.config import settings
@@ -44,6 +27,26 @@ from polar.startup_program.service import (
 from polar.startup_program.service import (
     startup_program as startup_program_service,
 )
+from polar.v2026_04.inputs import (
+    CustomerBenefitGrantSlackSharedChannelPropertiesUpdate,
+    CustomerBenefitGrantSlackSharedChannelUpdate,
+    CustomerBenefitGrantUpdate,
+    CustomerPortalCustomerUpdate,
+)
+from polar.v2026_04.outputs import (
+    CustomerBenefitGrantSlackSharedChannel,
+    LegacyRecurringProductPriceFixed,
+    ProductPriceFixed,
+)
+from polar.v2026_04.webhooks import (
+    WebhookBenefitGrantCreatedPayload,
+    WebhookBenefitGrantRevokedPayload,
+    WebhookBenefitGrantUpdatedPayload,
+    WebhookOrderCreatedPayload,
+    WebhookSubscriptionCanceledPayload,
+    WebhookSubscriptionPastDuePayload,
+    WebhookSubscriptionRevokedPayload,
+)
 from polar.worker import enqueue_job
 
 from .client import get_client
@@ -67,7 +70,7 @@ from .schemas import (
 )
 
 if TYPE_CHECKING:
-    from polar_sdk.models import (
+    from polar.v2026_04.outputs import (
         BenefitGrant,
         Checkout,
         Customer,
@@ -80,7 +83,7 @@ if TYPE_CHECKING:
     )
 
 
-BenefitGrantWebhookPayload = (
+type BenefitGrantWebhookPayload = (
     WebhookBenefitGrantCreatedPayload
     | WebhookBenefitGrantUpdatedPayload
     | WebhookBenefitGrantRevokedPayload
@@ -389,11 +392,7 @@ class PolarSelfService:
             )
 
         target_amount = self._product_fixed_price_amount(target_product)
-        proration = (
-            SubscriptionProrationBehavior.INVOICE
-            if target_amount > subscription.amount
-            else SubscriptionProrationBehavior.NEXT_PERIOD
-        )
+        proration = "invoice" if target_amount > subscription.amount else "next_period"
         subscription = await client.update_subscription_product(
             subscription_id=subscription.id,
             product_id=product_id,
@@ -495,7 +494,7 @@ class PolarSelfService:
             subscription = await client.update_subscription_product(
                 subscription_id=subscription.id,
                 product_id=settings.POLAR_SCALE_PRODUCT_ID,
-                proration_behavior=SubscriptionProrationBehavior.INVOICE,
+                proration_behavior="invoice",
             )
 
         return (subscription, None)
@@ -594,10 +593,8 @@ class PolarSelfService:
         await self._ensure_polar_customer(organization_id)
         return await get_client().portal_update_customer(
             external_customer_id=str(organization_id),
-            update=CustomerPortalCustomerUpdate(
-                default_payment_method_id=payment_method_id,
-            ),
             external_member_id=external_member_id,
+            default_payment_method_id=payment_method_id,
         )
 
     async def update_billing_details(
@@ -610,13 +607,14 @@ class PolarSelfService:
         await self._ensure_polar_customer(organization_id)
         # Only forward fields the client explicitly sent so we don't
         # null out billing_address / tax_id on a partial update.
-        sdk_update = CustomerPortalCustomerUpdate.model_validate(
-            update.model_dump(exclude_unset=True, mode="json")
+        sdk_update = cast(
+            CustomerPortalCustomerUpdate,
+            update.model_dump(exclude_unset=True, mode="json"),
         )
         return await get_client().portal_update_customer(
             external_customer_id=str(organization_id),
-            update=sdk_update,
             external_member_id=external_member_id,
+            **sdk_update,
         )
 
     async def list_benefit_grants(
@@ -648,9 +646,13 @@ class PolarSelfService:
         grant = await get_client().portal_update_benefit_grant(
             external_customer_id=str(organization_id),
             benefit_grant_id=benefit_grant_id,
-            update=CustomerBenefitGrantSlackSharedChannelUpdate(
-                properties=CustomerBenefitGrantSlackSharedChannelPropertiesUpdate(
-                    invited_email=update.invited_email,
+            update=cast(
+                CustomerBenefitGrantUpdate,
+                CustomerBenefitGrantSlackSharedChannelUpdate(
+                    benefit_type="slack_shared_channel",
+                    properties=CustomerBenefitGrantSlackSharedChannelPropertiesUpdate(
+                        invited_email=update.invited_email,
+                    ),
                 ),
             ),
             external_member_id=external_member_id,
@@ -700,7 +702,7 @@ class PolarSelfService:
 
         with logfire.span(
             "polar_self.webhook.benefit_grant",
-            event_type=payload.TYPE,
+            event_type=payload.type,
             benefit_id=grant.benefit_id,
             benefit_type=benefit_type,
             organization_id=str(organization_id),
@@ -742,9 +744,9 @@ class PolarSelfService:
             return
 
         if order.billing_reason not in (
-            OrderBillingReason.SUBSCRIPTION_CREATE,
-            OrderBillingReason.SUBSCRIPTION_UPDATE,
-            OrderBillingReason.SUBSCRIPTION_CYCLE,
+            "subscription_create",
+            "subscription_update",
+            "subscription_cycle",
         ):
             return
 
@@ -759,7 +761,7 @@ class PolarSelfService:
 
         product_name = order.product.name if order.product is not None else "Polar"
 
-        if order.billing_reason == OrderBillingReason.SUBSCRIPTION_CYCLE:
+        if order.billing_reason == "subscription_cycle":
             template_name = "polar_self_subscription_cycled"
             subject = f"Your {product_name} subscription renewed"
         else:
@@ -791,7 +793,7 @@ class PolarSelfService:
         with logfire.span(
             "polar_self.webhook.order_created",
             order_id=order.id,
-            billing_reason=order.billing_reason.value,
+            billing_reason=order.billing_reason,
         ):
             for recipient in recipients:
                 if template_name == "polar_self_subscription_confirmation":
@@ -829,7 +831,7 @@ class PolarSelfService:
         if context is None:
             return
         recipients, product_name = context
-        ends_at = subscription.ends_at.isoformat() if subscription.ends_at else None
+        ends_at = subscription.ends_at
 
         with logfire.span(
             "polar_self.webhook.subscription_canceled",

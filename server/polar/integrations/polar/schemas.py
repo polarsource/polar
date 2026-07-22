@@ -1,20 +1,21 @@
+import dataclasses
 from datetime import datetime
 from typing import TYPE_CHECKING, Annotated, Any, Literal
 
 from dateutil.relativedelta import relativedelta
-from polar_sdk.models import (
-    LegacyRecurringProductPriceFixed,
-    PaymentMethodCard,
-    ProductPriceFixed,
-)
 from pydantic import AfterValidator, Discriminator, EmailStr, Field, Tag
 
 from polar.kit.address import AddressInput
 from polar.kit.http import get_safe_return_url
 from polar.kit.schemas import Schema
+from polar.v2026_04.outputs import (
+    LegacyRecurringProductPriceFixed,
+    PaymentMethodCard,
+    ProductPriceFixed,
+)
 
 if TYPE_CHECKING:
-    from polar_sdk.models import (
+    from polar.v2026_04.outputs import (
         Checkout,
         CustomerBenefitGrantSlackSharedChannel,
         CustomerPaymentMethod,
@@ -113,7 +114,7 @@ class OrganizationPlan(Schema):
                 else product.description
             ),
             recurring_interval=(
-                product.recurring_interval.value
+                product.recurring_interval
                 if product.recurring_interval is not None
                 else None
             ),
@@ -182,25 +183,26 @@ class OrganizationSubscriptionDiscount(Schema):
         if discount is None:
             return None
 
-        # The SDK exposes a polymorphic discount union; introspect via getattr so
-        # we stay tolerant of future shape changes.
         duration_raw = getattr(discount, "duration", None)
         type_raw = getattr(discount, "type", None)
         if duration_raw is None or type_raw is None:
             return None
-        duration = (
-            duration_raw.value if hasattr(duration_raw, "value") else str(duration_raw)
-        )
-        discount_type = type_raw.value if hasattr(type_raw, "value") else str(type_raw)
+        duration = str(duration_raw)
+        discount_type = str(type_raw)
         duration_in_months = getattr(discount, "duration_in_months", None)
+        started_at = (
+            datetime.fromisoformat(subscription.started_at)
+            if subscription.started_at is not None
+            else None
+        )
 
         ends_at: datetime | None = None
         if (
             duration == "repeating"
             and duration_in_months is not None
-            and subscription.started_at is not None
+            and started_at is not None
         ):
-            ends_at = subscription.started_at + relativedelta(months=duration_in_months)
+            ends_at = started_at + relativedelta(months=duration_in_months)
 
         return cls(
             discount_id=discount.id,
@@ -282,12 +284,12 @@ class OrganizationSubscription(Schema):
         pending = subscription.pending_update
         return cls(
             subscription_id=subscription.id,
-            status=subscription.status.value,
+            status=subscription.status,
             product_id=subscription.product_id,
             plan=OrganizationPlan.from_sdk(subscription.product),
             amount=subscription.amount,
             currency=subscription.currency,
-            recurring_interval=subscription.recurring_interval.value,
+            recurring_interval=subscription.recurring_interval,
             recurring_interval_count=subscription.recurring_interval_count,
             current_period_start=subscription.current_period_start,
             current_period_end=subscription.current_period_end,
@@ -381,12 +383,12 @@ class OrganizationOrder(Schema):
             id=order.id,
             created_at=order.created_at,
             invoice_number=order.invoice_number,
-            status=order.status.value,
+            status=order.status,
             paid=order.paid,
             total_amount=order.total_amount,
             refunded_amount=order.refunded_amount,
             currency=order.currency,
-            billing_reason=order.billing_reason.value,
+            billing_reason=order.billing_reason,
             product_name=product.name if product is not None else order.description,
             is_invoice_generated=order.is_invoice_generated,
         )
@@ -420,9 +422,7 @@ class OrganizationBillingDetails(Schema):
             if isinstance(first, str):
                 tax_id_value = first
         billing_address = (
-            AddressInput.model_validate(
-                customer.billing_address.model_dump(mode="json")
-            )
+            AddressInput.model_validate(dataclasses.asdict(customer.billing_address))
             if customer.billing_address is not None
             else None
         )

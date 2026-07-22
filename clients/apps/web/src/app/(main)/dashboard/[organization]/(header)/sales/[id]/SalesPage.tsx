@@ -2,6 +2,7 @@
 
 import { CustomerContextView } from '@/components/Customer/CustomerContextView'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import { ChargebackPreventionBanner } from '@/components/Orders/ChargebackPreventionBanner'
 import { OrderSecondaryDetails } from '@/components/Orders/OrderSecondaryDetails'
 import { OrderCalloutBanner } from '@/components/Orders/OrderCalloutBanner'
 import { OrderDetails } from '@/components/Orders/OrderDetails'
@@ -18,7 +19,9 @@ import { toast } from '@/components/Toast/use-toast'
 import { useCustomFields, useProduct, useSubscription } from '@/hooks/queries'
 import { useOrder } from '@/hooks/queries/orders'
 import { usePayments } from '@/hooks/queries/payments'
+import { useRefunds } from '@/hooks/queries/refunds'
 import {
+  getChargebackPreventionRefund,
   isOrderDunningFailed,
   isOrderInDunning,
   isOrderInDunningLifecycle,
@@ -51,6 +54,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     organization.id,
     { order_id: _order.id },
   )
+  const { data: refunds } = useRefunds(_order.id)
 
   const orderPayments = payments?.items ?? []
   const inDunningLifecycle =
@@ -67,6 +71,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
     !!dunningSubscription &&
     (isOrderInDunning(order, orderPayments) ||
       isOrderDunningFailed(order, dunningSubscription, orderPayments))
+
+  const chargebackPreventionRefund = order
+    ? getChargebackPreventionRefund(order, refunds?.items ?? [])
+    : null
 
   if (!order) {
     return null
@@ -150,6 +158,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
           subscription={dunningSubscription}
           payments={orderPayments}
         />
+      ) : null}
+
+      {chargebackPreventionRefund ? (
+        <ChargebackPreventionBanner refund={chargebackPreventionRefund} />
       ) : null}
 
       <OrderDetails

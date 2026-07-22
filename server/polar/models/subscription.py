@@ -116,6 +116,11 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "subscriptions"
     __table_args__ = (
         Index("ix_subscriptions_customer_id_status", "customer_id", "status"),
+        Index(
+            "ix_subscriptions_status_current_period_end",
+            "status",
+            "current_period_end",
+        ),
     )
 
     amount: Mapped[int] = mapped_column("amount_v2", BigInteger, nullable=False)

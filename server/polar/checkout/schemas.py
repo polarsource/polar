@@ -40,6 +40,7 @@ from polar.kit.metadata import (
     MetadataOutputMixin,
 )
 from polar.kit.schemas import (
+    EmptyStrToNone,
     EmptyStrToNoneValidator,
     HttpUrlToStr,
     IDSchema,
@@ -123,6 +124,20 @@ EmbedOrigin = Annotated[
             "set this to the Origin of the embedding page. "
             "It'll allow the Polar iframe to communicate with the parent page."
         ),
+    ),
+]
+
+_payment_method_description = (
+    "Payment method type selected by the customer in the checkout form, "
+    "e.g. `card`, `apple_pay` or `upi`. "
+    "Some payment methods require a full billing address: keeping this value "
+    "in sync allows `billing_address_fields` to reflect the fields to display."
+)
+PaymentMethodInput = Annotated[
+    EmptyStrToNone,
+    Field(
+        description=_payment_method_description,
+        serialization_alias="payment_method_type",
     ),
 ]
 
@@ -375,6 +390,7 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     customer_billing_address: CustomerBillingAddressInput | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     locale: Locale | None = None
+    payment_method: PaymentMethodInput = None
 
 
 class CheckoutUpdate(
@@ -595,6 +611,10 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
         validation_alias=AliasChoices("customer_tax_id_number", "customer_tax_id")
     )
     locale: str | None = None
+    payment_method: str | None = Field(
+        validation_alias=AliasChoices("payment_method_type", "payment_method"),
+        description=_payment_method_description,
+    )
 
     payment_processor_metadata: dict[str, str]
 

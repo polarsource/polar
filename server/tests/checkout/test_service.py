@@ -66,7 +66,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.checkout import CheckoutStatus
+from polar.models.checkout import BillingAddressFieldMode, CheckoutStatus
 from polar.models.custom_field import CustomFieldType
 from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
@@ -3688,6 +3688,40 @@ class TestUpdate:
 
         assert checkout.discount == discount_fixed_once
 
+    async def test_payment_method_updates_billing_address_fields(
+        self,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_fixed,
+            CheckoutUpdatePublic(payment_method="upi"),
+        )
+
+        assert checkout.payment_method_type == "upi"
+        assert (
+            checkout.billing_address_fields["line1"] == BillingAddressFieldMode.required
+        )
+        assert (
+            checkout.billing_address_fields["city"] == BillingAddressFieldMode.required
+        )
+        assert (
+            checkout.billing_address_fields["postal_code"]
+            == BillingAddressFieldMode.required
+        )
+
+        checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdatePublic(payment_method="card"),
+        )
+
+        assert checkout.payment_method_type == "card"
+        assert (
+            checkout.billing_address_fields["line1"] == BillingAddressFieldMode.disabled
+        )
+
     async def test_full_discount_resets_is_business_customer(
         self,
         save_fixture: SaveFixture,
@@ -3712,6 +3746,30 @@ class TestUpdate:
         assert checkout.discount == discount_percentage_100
         assert checkout.is_payment_form_required is False
         assert checkout.is_business_customer is False
+
+    async def test_full_discount_resets_payment_method(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+        discount_percentage_100: Discount,
+    ) -> None:
+        checkout_one_time_fixed.payment_method_type = "upi"
+        await save_fixture(checkout_one_time_fixed)
+
+        assert checkout_one_time_fixed.is_billing_address_required is True
+
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_fixed,
+            CheckoutUpdatePublic(
+                discount_code=discount_percentage_100.code,
+            ),
+        )
+
+        assert checkout.is_payment_form_required is False
+        assert checkout.payment_method_type is None
+        assert checkout.is_billing_address_required is False
 
     async def test_multiple_subscriptions_allowed(
         self,

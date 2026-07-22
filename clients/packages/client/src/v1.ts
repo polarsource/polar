@@ -12120,6 +12120,11 @@ export interface components {
       /** Locale */
       locale?: string | null
       /**
+       * Payment Method
+       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`. Some payment methods require a full billing address: keeping this value in sync allows `billing_address_fields` to reflect the fields to display.
+       */
+      payment_method?: string | null
+      /**
        * Discount Code
        * @description Discount code to apply to the checkout.
        */
@@ -14068,6 +14073,11 @@ export interface components {
       customer_tax_id?: string | null
       /** Locale */
       locale?: string | null
+      /**
+       * Payment Method
+       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`. Some payment methods require a full billing address: keeping this value in sync allows `billing_address_fields` to reflect the fields to display.
+       */
+      payment_method?: string | null
       /** @description The interval unit for the trial period. */
       trial_interval?: components['schemas']['TrialInterval'] | null
       /**
@@ -14191,6 +14201,11 @@ export interface components {
       customer_tax_id?: string | null
       /** Locale */
       locale?: string | null
+      /**
+       * Payment Method
+       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`. Some payment methods require a full billing address: keeping this value in sync allows `billing_address_fields` to reflect the fields to display.
+       */
+      payment_method?: string | null
       /**
        * Discount Code
        * @description Discount code to apply to the checkout.

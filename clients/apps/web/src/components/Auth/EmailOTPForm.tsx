@@ -15,7 +15,7 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import Script from 'next/script'
-import { useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 
 interface EmailOTPFormProps {
@@ -26,9 +26,17 @@ interface EmailOTPFormProps {
 
 interface TurnstileWindow extends Window {
   turnstile?: {
-    reset: () => void
+    remove: (widgetId: string) => void
+    render: (
+      container: HTMLElement,
+      options: { sitekey: string; action: string },
+    ) => string
+    reset: (widgetId: string) => void
   }
 }
+
+const TURNSTILE_SITE_KEY = '0x4AAAAAAD7cBrbpX3kX8K9g'
+const TURNSTILE_ACTION = 'turnstile-spin-v2'
 
 const EmailOTPForm = ({
   authenticationSession,
@@ -42,10 +50,38 @@ const EmailOTPForm = ({
   })
   const { control, handleSubmit, setError } = form
   const [loading, setLoading] = useState(false)
+  const turnstileContainerRef = useRef<HTMLDivElement>(null)
+  const turnstileWidgetIdRef = useRef<string | null>(null)
   const authSessionStart = useAuthSessionStart()
   const emailOTPRequest = useEmailOTPRequest()
   const posthog = usePostHog()
   const router = useRouter()
+
+  const renderTurnstile = useCallback(() => {
+    const turnstile = (window as TurnstileWindow).turnstile
+    const container = turnstileContainerRef.current
+    if (!turnstile || !container || turnstileWidgetIdRef.current) {
+      return
+    }
+
+    turnstileWidgetIdRef.current = turnstile.render(container, {
+      sitekey: TURNSTILE_SITE_KEY,
+      action: TURNSTILE_ACTION,
+    })
+  }, [])
+
+  useEffect(() => {
+    renderTurnstile()
+
+    return () => {
+      const turnstile = (window as TurnstileWindow).turnstile
+      const widgetId = turnstileWidgetIdRef.current
+      if (turnstile && widgetId) {
+        turnstile.remove(widgetId)
+      }
+      turnstileWidgetIdRef.current = null
+    }
+  }, [renderTurnstile])
 
   const onSubmit: SubmitHandler<{ email: string }> = async (
     { email },
@@ -102,7 +138,10 @@ const EmailOTPForm = ({
       })
     } finally {
       const turnstileWindow = window as TurnstileWindow
-      turnstileWindow.turnstile?.reset()
+      const widgetId = turnstileWidgetIdRef.current
+      if (widgetId) {
+        turnstileWindow.turnstile?.reset(widgetId)
+      }
       setLoading(false)
     }
   }
@@ -110,8 +149,10 @@ const EmailOTPForm = ({
   return (
     <>
       <Script
-        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit"
         strategy="afterInteractive"
+        onLoad={renderTurnstile}
+        onReady={renderTurnstile}
       />
       <Form {...form}>
         <form
@@ -135,9 +176,10 @@ const EmailOTPForm = ({
                         {...field}
                       />
                       <div
+                        ref={turnstileContainerRef}
                         className="cf-turnstile"
-                        data-sitekey="0x4AAAAAAD7cBrbpX3kX8K9g"
-                        data-action="turnstile-spin-v2"
+                        data-sitekey={TURNSTILE_SITE_KEY}
+                        data-action={TURNSTILE_ACTION}
                       />
                       <Button
                         type="submit"

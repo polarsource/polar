@@ -19,6 +19,7 @@ from polar.authz.service import assert_resource_permission, get_accessible_org_i
 from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
     CheckoutConfirm,
+    CheckoutConfirmBase,
     CheckoutConfirmStripe,
     CheckoutCreate,
     CheckoutPriceCreate,
@@ -2284,6 +2285,28 @@ class CheckoutService:
         checkout = await self._update_trial_end(checkout)
 
         session.add(checkout)
+
+        # Tell the buyer as soon as they apply the code, instead of letting them fill in
+        # the payment form first. Confirmation re-checks with the card fingerprint, which
+        # isn't available yet, so it stays the authoritative gate.
+        if (
+            isinstance(checkout_update, CheckoutUpdatePublic)
+            and not isinstance(checkout_update, CheckoutConfirmBase)
+            and checkout.discount is not None
+            and await discount_service.check_per_customer_limit_reached(
+                session, checkout.discount, checkout=checkout
+            )
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "discount_code"),
+                        "msg": "You have already redeemed this discount.",
+                        "input": checkout_update.discount_code,
+                    }
+                ]
+            )
 
         await self._validate_subscription_uniqueness(session, checkout)
 

@@ -3083,6 +3083,48 @@ class TestUpdate:
                 ),
             )
 
+    async def test_discount_code_per_customer_limit_reached(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            code="LIMITEDPERCUSTOMER",
+            max_redemptions_per_customer=1,
+        )
+        prior_customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        prior_checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            customer=prior_customer,
+            discount=discount,
+        )
+        prior_checkout.customer_email = "customer@example.com"
+        await save_fixture(prior_checkout)
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=prior_checkout
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await checkout_service.update(
+                session,
+                checkout_one_time_fixed,
+                CheckoutUpdatePublic(
+                    discount_code=discount.code,
+                    customer_email="customer@example.com",
+                ),
+            )
+
     async def test_invalid_discount_id_not_applicable(
         self,
         session: AsyncSession,

@@ -435,7 +435,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         discount: Discount,
         *,
         checkout: Checkout,
-        customer: Customer,
+        customer: Customer | None = None,
         payment_method_fingerprint: str | None = None,
     ) -> bool:
         """
@@ -444,18 +444,22 @@ class DiscountService(ResourceServiceReader[Discount]):
         The customer is identified using the same signals as the trial-abuse feature:
         customer ID, unaliased email, and payment method fingerprint (OR logic), scoped
         to this specific discount. Returns ``False`` when no per-customer limit is set.
+
+        Before confirmation there is no customer yet, so the checkout's own fields are
+        used instead.
         """
         if discount.max_redemptions_per_customer is None:
             return False
+
+        customer_id = customer.id if customer is not None else checkout.customer_id
+        email = customer.email if customer is not None else checkout.customer_email
 
         repository = DiscountRedemptionRepository.from_session(session)
         count = await repository.count_redemptions_by_customer(
             discount.id,
             exclude_checkout_id=checkout.id,
-            customer_id=customer.id,
-            customer_email=unalias_email(customer.email).lower()
-            if customer.email
-            else None,
+            customer_id=customer_id,
+            customer_email=unalias_email(email).lower() if email else None,
             payment_method_fingerprint=payment_method_fingerprint,
         )
         return count >= discount.max_redemptions_per_customer

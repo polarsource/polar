@@ -6,7 +6,7 @@ from polar.base import (
     deserialize,
 )
 
-__version__ = "1.0.0a13"
+__version__ = "1.0.0a14"
 __all__ = [
     "PolarError",
     "PolarNetworkError",

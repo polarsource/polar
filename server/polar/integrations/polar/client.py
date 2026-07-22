@@ -392,16 +392,16 @@ class PolarSelfClient:
         ) as span:
             for role in ("owner", "billing_manager"):
                 try:
-                    response = await self._sdk.members.list_members(
+                    async for contact in self._sdk.members.iter_list_members(
                         customer_id=customer_id,
                         role=role,
                         limit=100,
-                    )
+                    ):
+                        contacts.append(contact)
                 except (PolarClientError, PolarServerError) as e:
                     _raise_error(span, e, "list_billing_contacts")
                 except PolarNetworkError as e:
                     _raise_network_error(span, e, "list_billing_contacts")
-                contacts.extend(response.items)
             span.set_attribute("count", len(contacts))
             return contacts
 

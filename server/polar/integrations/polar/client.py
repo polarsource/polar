@@ -1,59 +1,49 @@
 from collections.abc import Mapping
 from datetime import datetime
 from decimal import Decimal
-from typing import Any, NoReturn
+from typing import Any, NoReturn, Unpack, cast
 from uuid import UUID
 
-import httpx
 import logfire
-from polar_sdk import Polar as PolarSDK
-from polar_sdk.models import (
-    BenefitGrant,
-    Checkout,
-    CheckoutCreate,
-    CostMetadataInput,
-    Customer,
-    CustomerBenefitGrant,
-    CustomerBenefitGrantUpdate,
-    CustomerPaymentMethod,
-    CustomerPortalBenefitGrantsListSecurity,
-    CustomerPortalBenefitGrantsUpdateSecurity,
-    CustomerPortalCustomer,
-    CustomerPortalCustomersDeletePaymentMethodSecurity,
-    CustomerPortalCustomersGetSecurity,
-    CustomerPortalCustomersListPaymentMethodsSecurity,
-    CustomerPortalCustomersUpdateSecurity,
-    CustomerPortalCustomerUpdate,
-    CustomerSessionCustomerExternalIDCreate,
-    CustomerTeamCreate,
-    CustomerUpdateExternalID,
-    Discount,
-    DiscountDuration,
-    DiscountPercentageCreate,
-    EventCreateCustomer,
-    EventCreateExternalCustomer,
-    EventsIngest,
-    LLMMetadata,
-    Member,
-    MemberCreate,
-    MemberOwnerCreate,
-    MemberRole,
-    MemberUpdate,
-    Order,
-    OrderSortProperty,
-    Product,
-    ProductVisibility,
-    Subscription,
-    SubscriptionCancel,
-    SubscriptionProrationBehavior,
-    SubscriptionStatus,
-    SubscriptionUpdateBase,
-)
-from polar_sdk.models.membercreate import Role as MemberCreateRole
-from polar_sdk.models.polarerror import PolarError
 
+from polar.base import (
+    PolarClientError,
+    PolarNetworkError,
+    PolarRateLimitError,
+    PolarServerError,
+)
 from polar.config import settings
 from polar.exceptions import PolarError as InternalPolarError
+from polar.v2026_04 import PolarAsync as PolarSDK
+from polar.v2026_04.inputs import (
+    CostMetadataInput,
+    CustomerBenefitGrantUpdate,
+    CustomerPortalCustomerUpdate,
+    EventCreateCustomer,
+    EventCreateExternalCustomer,
+    EventMetadataInput,
+    LLMMetadata,
+)
+from polar.v2026_04.literals import (
+    DiscountDuration,
+    SubscriptionProrationBehavior,
+)
+from polar.v2026_04.literals import (
+    Role as MemberCreateRole,
+)
+from polar.v2026_04.outputs import (
+    BenefitGrant,
+    Checkout,
+    Customer,
+    CustomerBenefitGrant,
+    CustomerPaymentMethod,
+    CustomerPortalCustomer,
+    Discount,
+    Member,
+    Order,
+    Product,
+    Subscription,
+)
 
 from .exceptions import (
     PolarSelfBenefitGrantNotFound,
@@ -77,18 +67,18 @@ class PolarSelfClientValidationError(InternalPolarError):
         super().__init__(body, status_code=422)
 
 
-def _raise_error(span: Any, error: Any, operation: str) -> NoReturn:
+def _raise_error(
+    span: Any, error: PolarClientError | PolarServerError, operation: str
+) -> NoReturn:
     span.set_attribute("http.status_code", error.status_code)
-    span.set_attribute("error.body", str(error.body))
+    span.set_attribute("error.body", str(getattr(error, "error", error)))
     message = f"{operation} failed with status {error.status_code}"
-    if error.status_code == 429 or error.status_code >= 500:
+    if isinstance(error, (PolarRateLimitError, PolarServerError)):
         raise PolarSelfClientOperationalError(message) from error
     raise PolarSelfClientError(message) from error
 
 
-def _raise_network_error(
-    span: Any, exc: httpx.RequestError, operation: str
-) -> NoReturn:
+def _raise_network_error(span: Any, exc: PolarNetworkError, operation: str) -> NoReturn:
     span.set_attribute("error.type", type(exc).__name__)
     raise PolarSelfClientOperationalError(
         f"{operation} failed with network error: {type(exc).__name__}: {exc}"
@@ -98,9 +88,10 @@ def _raise_network_error(
 class PolarSelfClient:
     def __init__(self, *, access_token: str, api_url: str) -> None:
         self._sdk = PolarSDK(
-            access_token=access_token or "unconfigured",
-            server_url=api_url,
+            access_token or "unconfigured",
+            base_url=api_url,
         )
+        self._api_url = api_url
 
     async def create_customer(
         self,
@@ -114,33 +105,29 @@ class PolarSelfClient:
     ) -> Customer:
         with logfire.span("polar.create_customer", external_id=external_id) as span:
             try:
-                return await self._sdk.customers.create_async(
-                    request=CustomerTeamCreate(
-                        email=None,
-                        name=name,
-                        external_id=external_id,
-                        metadata={"slug": slug},
-                        owner=MemberOwnerCreate(
-                            email=owner_email,
-                            name=owner_name,
-                            external_id=owner_external_id,
-                        ),
-                    )
+                return await self._sdk.customers.create(
+                    type="team",
+                    name=name,
+                    external_id=external_id,
+                    metadata={"slug": slug},
+                    owner={
+                        "email": owner_email,
+                        "name": owner_name,
+                        "external_id": owner_external_id,
+                    },
                 )
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 if e.status_code != 409:
                     _raise_error(span, e, "create_customer")
                 span.set_attribute("conflict", True)
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "create_customer")
 
             try:
-                return await self._sdk.customers.get_external_async(
-                    external_id=external_id
-                )
-            except PolarError as e:
+                return await self._sdk.customers.get_external(external_id)
+            except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "create_customer.fetch_existing")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "create_customer.fetch_existing")
 
     async def cancel_subscription(self, *, subscription_id: str) -> Subscription:
@@ -149,15 +136,13 @@ class PolarSelfClient:
             subscription_id=subscription_id,
         ) as span:
             try:
-                return await self._sdk.subscriptions.update_async(
-                    id=subscription_id,
-                    subscription_update=SubscriptionCancel(
-                        cancel_at_period_end=True,
-                    ),
+                return await self._sdk.subscriptions.update(
+                    subscription_id,
+                    cancel_at_period_end=True,
                 )
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "cancel_subscription")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "cancel_subscription")
 
     async def uncancel_subscription(self, *, subscription_id: str) -> Subscription:
@@ -166,26 +151,24 @@ class PolarSelfClient:
             subscription_id=subscription_id,
         ) as span:
             try:
-                return await self._sdk.subscriptions.update_async(
-                    id=subscription_id,
-                    subscription_update=SubscriptionCancel(
-                        cancel_at_period_end=False,
-                    ),
+                return await self._sdk.subscriptions.update(
+                    subscription_id,
+                    cancel_at_period_end=False,
                 )
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "uncancel_subscription")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "uncancel_subscription")
 
     async def get_customer_by_external_id(self, external_id: str) -> Customer:
-        return await self._sdk.customers.get_external_async(external_id=external_id)
+        return await self._sdk.customers.get_external(external_id)
 
     async def get_customer_by_external_id_or_none(
         self, external_id: str
     ) -> Customer | None:
         try:
             return await self.get_customer_by_external_id(external_id)
-        except PolarError as e:
+        except (PolarClientError, PolarServerError) as e:
             if e.status_code == 404:
                 return None
             raise
@@ -204,21 +187,19 @@ class PolarSelfClient:
             limit=limit,
         ) as span:
             try:
-                response = await self._sdk.orders.list_async(
+                response = await self._sdk.orders.list(
                     customer_id=customer_id,
                     page=page,
                     limit=limit,
-                    sorting=[OrderSortProperty.MINUS_CREATED_AT],
+                    sorting=["-created_at"],
                 )
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "list_customer_orders")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "list_customer_orders")
 
-            if response is None:
-                return [], 0
-            items = list(response.result.items)
-            total = response.result.pagination.total_count
+            items = list(response.items)
+            total = response.pagination.total_count
             span.set_attribute("order_count", len(items))
             span.set_attribute("total_count", total)
             return items, total
@@ -226,25 +207,25 @@ class PolarSelfClient:
     async def get_order(self, *, order_id: str) -> Order | None:
         with logfire.span("polar.get_order", order_id=order_id) as span:
             try:
-                return await self._sdk.orders.get_async(id=order_id)
-            except PolarError as e:
+                return await self._sdk.orders.get(order_id)
+            except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
                     span.set_attribute("not_found", True)
                     return None
                 _raise_error(span, e, "get_order")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "get_order")
 
     async def get_order_invoice(self, *, order_id: str) -> str | None:
         with logfire.span("polar.get_order_invoice", order_id=order_id) as span:
             try:
-                invoice = await self._sdk.orders.invoice_async(id=order_id)
-            except PolarError as e:
+                invoice = await self._sdk.orders.invoice(order_id)
+            except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
                     span.set_attribute("not_found", True)
                     return None
                 _raise_error(span, e, "get_order_invoice")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "get_order_invoice")
             return invoice.url
 
@@ -258,14 +239,14 @@ class PolarSelfClient:
             "polar.trigger_order_invoice_generation", order_id=order_id
         ) as span:
             try:
-                await self._sdk.orders.generate_invoice_async(id=order_id)
-            except PolarError as e:
+                await self._sdk.orders.generate_invoice(order_id)
+            except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 422:
                     span.set_attribute("not_paid", True)
-                    span.set_attribute("error.body", str(e.body))
+                    span.set_attribute("error.body", str(getattr(e, "error", e)))
                     raise PolarSelfNotPaidOrder(order_id) from e
                 _raise_error(span, e, "trigger_order_invoice_generation")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "trigger_order_invoice_generation")
 
     async def list_recurring_products(self, *, organization_id: str) -> list[Product]:
@@ -274,20 +255,18 @@ class PolarSelfClient:
         ) as span:
             products: list[Product] = []
             try:
-                response = await self._sdk.products.list_async(
+                async for product in self._sdk.products.iter_list(
                     organization_id=organization_id,
                     is_recurring=True,
                     is_archived=False,
-                    visibility=[ProductVisibility.PUBLIC],
+                    visibility=["public"],
                     page=1,
                     limit=100,
-                )
-                while response is not None:
-                    products.extend(response.result.items)
-                    response = response.next()
-            except PolarError as e:
+                ):
+                    products.append(product)
+            except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "list_recurring_products")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "list_recurring_products")
 
             span.set_attribute("product_count", len(products))
@@ -301,22 +280,18 @@ class PolarSelfClient:
             external_customer_id=external_customer_id,
         ) as span:
             try:
-                response = await self._sdk.subscriptions.list_async(
+                response = await self._sdk.subscriptions.list(
                     external_customer_id=external_customer_id,
-                    status=[
-                        SubscriptionStatus.TRIALING,
-                        SubscriptionStatus.ACTIVE,
-                        SubscriptionStatus.PAST_DUE,
-                    ],
+                    status=["trialing", "active", "past_due"],
                     page=1,
                     limit=1,
                 )
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "get_active_subscription")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "get_active_subscription")
 
-            items = response.result.items if response is not None else []
+            items = response.items
             span.set_attribute("found", bool(items))
             return items[0] if items else None
 
@@ -340,21 +315,19 @@ class PolarSelfClient:
             discount_id=discount_id,
         ) as span:
             try:
-                return await self._sdk.checkouts.create_async(
-                    request=CheckoutCreate(
-                        products=[product_id],
-                        external_customer_id=external_customer_id,
-                        subscription_id=subscription_id,
-                        customer_ip_address=customer_ip_address,
-                        success_url=success_url,
-                        return_url=return_url,
-                        embed_origin=embed_origin,
-                        discount_id=discount_id,
-                    )
+                return await self._sdk.checkouts.create(
+                    products=[product_id],
+                    external_customer_id=external_customer_id,
+                    subscription_id=subscription_id,
+                    customer_ip_address=customer_ip_address,
+                    success_url=success_url,
+                    return_url=return_url,
+                    embed_origin=embed_origin,
+                    discount_id=discount_id,
                 )
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "create_checkout")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "create_checkout")
 
     async def update_subscription_product(
@@ -370,16 +343,14 @@ class PolarSelfClient:
             product_id=product_id,
         ) as span:
             try:
-                return await self._sdk.subscriptions.update_async(
-                    id=subscription_id,
-                    subscription_update=SubscriptionUpdateBase(
-                        product_id=product_id,
-                        proration_behavior=proration_behavior,
-                    ),
+                return await self._sdk.subscriptions.update(
+                    subscription_id,
+                    product_id=product_id,
+                    proration_behavior=proration_behavior,
                 )
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "update_subscription_product")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "update_subscription_product")
 
     async def update_subscription_discount(
@@ -397,23 +368,21 @@ class PolarSelfClient:
             discount_id=discount_id,
         ) as span:
             try:
-                return await self._sdk.subscriptions.update_async(
-                    id=subscription_id,
-                    subscription_update=SubscriptionUpdateBase(
-                        discount_id=discount_id,
-                    ),
+                return await self._sdk.subscriptions.update(
+                    subscription_id,
+                    discount_id=discount_id,
                 )
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "update_subscription_discount")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "update_subscription_discount")
 
     async def get_member_by_external_id(
         self, *, external_customer_id: str, external_id: str
     ) -> Member | None:
-        return await self._sdk.members.get_member_by_external_id_async(
-            external_id=external_id,
-            external_customer_id=external_customer_id,
+        return await self._sdk.customers.members.get_external(
+            external_customer_id,
+            external_id,
         )
 
     async def list_billing_contacts(self, *, customer_id: str) -> list[Member]:
@@ -421,19 +390,18 @@ class PolarSelfClient:
         with logfire.span(
             "polar.list_billing_contacts", customer_id=customer_id
         ) as span:
-            for role in (MemberRole.OWNER, MemberRole.BILLING_MANAGER):
+            for role in ("owner", "billing_manager"):
                 try:
-                    response = await self._sdk.members.list_members_async(
+                    async for contact in self._sdk.members.iter_list_members(
                         customer_id=customer_id,
                         role=role,
                         limit=100,
-                    )
-                except PolarError as e:
+                    ):
+                        contacts.append(contact)
+                except (PolarClientError, PolarServerError) as e:
                     _raise_error(span, e, "list_billing_contacts")
-                except httpx.RequestError as e:
+                except PolarNetworkError as e:
                     _raise_network_error(span, e, "list_billing_contacts")
-                if response is not None:
-                    contacts.extend(response.result.items)
             span.set_attribute("count", len(contacts))
             return contacts
 
@@ -444,7 +412,7 @@ class PolarSelfClient:
         email: str,
         name: str,
         external_id: str,
-        role: str = MemberCreateRole.MEMBER.value,
+        role: str = "member",
     ) -> None:
         with logfire.span(
             "polar.add_member",
@@ -453,21 +421,19 @@ class PolarSelfClient:
             role=role,
         ) as span:
             try:
-                await self._sdk.members.create_member_async(
-                    request=MemberCreate(
-                        customer_id=customer_id,
-                        email=email,
-                        name=name,
-                        external_id=external_id,
-                        role=MemberCreateRole(role),
-                    )
+                await self._sdk.customers.members.create(
+                    customer_id,
+                    email=email,
+                    name=name,
+                    external_id=external_id,
+                    role=cast(MemberCreateRole, role),
                 )
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 409:
                     span.set_attribute("conflict", True)
                     return
                 _raise_error(span, e, "add_member")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "add_member")
 
     async def update_member(
@@ -479,21 +445,24 @@ class PolarSelfClient:
             external_id=external_id,
         ) as span:
             try:
-                await self._sdk.members.update_member_by_external_id_async(
-                    external_id=external_id,
-                    external_customer_id=external_customer_id,
-                    member_update=MemberUpdate(name=name),
+                await self._sdk.customers.members.update_external(
+                    external_customer_id,
+                    external_id,
+                    name=name,
                 )
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
                     span.set_attribute("not_found", True)
                     return
                 _raise_error(span, e, "update_member")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "update_member")
 
     async def update_customer_metadata(
-        self, *, external_id: str, metadata: dict[str, Any]
+        self,
+        *,
+        external_id: str,
+        metadata: dict[str, str | int | float | bool],
     ) -> None:
         # The Polar API replaces metadata wholesale on update; callers must
         # merge any existing keys they want to preserve before passing them in.
@@ -501,18 +470,16 @@ class PolarSelfClient:
             "polar.update_customer_metadata", external_id=external_id
         ) as span:
             try:
-                await self._sdk.customers.update_external_async(
-                    external_id=external_id,
-                    customer_update_external_id=CustomerUpdateExternalID(
-                        metadata=metadata,
-                    ),
+                await self._sdk.customers.update_external(
+                    external_id,
+                    metadata=metadata,
                 )
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
                     span.set_attribute("not_found", True)
                     return
                 _raise_error(span, e, "update_customer_metadata")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "update_customer_metadata")
 
     async def create_percentage_discount(
@@ -525,7 +492,7 @@ class PolarSelfClient:
         max_redemptions: int | None,
         products: list[str] | None,
         organization_id: str | None = None,
-        metadata: dict[str, Any] | None = None,
+        metadata: dict[str, str | int | float | bool] | None = None,
     ) -> Discount:
         with logfire.span(
             "polar.create_percentage_discount",
@@ -534,46 +501,45 @@ class PolarSelfClient:
             organization_id=organization_id,
         ) as span:
             try:
-                return await self._sdk.discounts.create_async(
-                    request=DiscountPercentageCreate(
-                        name=name,
-                        basis_points=basis_points,
-                        duration=duration,
-                        duration_in_months=duration_in_months,
-                        max_redemptions=max_redemptions,
-                        products=products,
-                        organization_id=organization_id,
-                        metadata=metadata,
-                    )
+                return await self._sdk.discounts.create(
+                    type="percentage",
+                    name=name,
+                    basis_points=basis_points,
+                    duration=duration,
+                    duration_in_months=duration_in_months,
+                    max_redemptions=max_redemptions,
+                    products=products,
+                    organization_id=organization_id,
+                    metadata=metadata or {},
                 )
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "create_percentage_discount")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "create_percentage_discount")
 
     async def get_discount(self, *, discount_id: str) -> Discount | None:
         with logfire.span("polar.get_discount", discount_id=discount_id) as span:
             try:
-                return await self._sdk.discounts.get_async(id=discount_id)
-            except PolarError as e:
+                return await self._sdk.discounts.get(discount_id)
+            except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
                     span.set_attribute("not_found", True)
                     return None
                 _raise_error(span, e, "get_discount")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "get_discount")
 
     async def delete_discount(self, *, discount_id: str) -> None:
         """Soft-delete a discount. Idempotent on 404 (already deleted)."""
         with logfire.span("polar.delete_discount", discount_id=discount_id) as span:
             try:
-                await self._sdk.discounts.delete_async(id=discount_id)
-            except PolarError as e:
+                await self._sdk.discounts.delete(discount_id)
+            except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
                     span.set_attribute("not_found", True)
                     return
                 _raise_error(span, e, "delete_discount")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "delete_discount")
 
     async def remove_member(
@@ -585,16 +551,16 @@ class PolarSelfClient:
             external_id=external_id,
         ) as span:
             try:
-                await self._sdk.members.delete_member_by_external_id_async(
-                    external_id=external_id,
-                    external_customer_id=external_customer_id,
+                await self._sdk.customers.members.delete_external(
+                    external_customer_id,
+                    external_id,
                 )
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
                     span.set_attribute("not_found", True)
                     return
                 _raise_error(span, e, "remove_member")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "remove_member")
 
     async def list_customer_benefit_grants(
@@ -605,18 +571,16 @@ class PolarSelfClient:
         ) as span:
             grants: list[BenefitGrant] = []
             try:
-                response = await self._sdk.benefit_grants.list_async(
+                async for grant in self._sdk.benefit_grants.iter_list(
                     customer_id=customer_id,
                     is_granted=True,
                     page=1,
                     limit=100,
-                )
-                while response is not None:
-                    grants.extend(response.result.items)
-                    response = response.next()
-            except PolarError as e:
+                ):
+                    grants.append(grant)
+            except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "list_customer_benefit_grants")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "list_customer_benefit_grants")
 
             span.set_attribute("grant_count", len(grants))
@@ -625,16 +589,16 @@ class PolarSelfClient:
     async def delete_customer(self, *, external_id: str) -> None:
         with logfire.span("polar.delete_customer", external_id=external_id) as span:
             try:
-                await self._sdk.customers.delete_external_async(
-                    external_id=external_id,
+                await self._sdk.customers.delete_external(
+                    external_id,
                     anonymize=True,
                 )
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
                     span.set_attribute("not_found", True)
                     return
                 _raise_error(span, e, "delete_customer")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "delete_customer")
 
     async def track_event_ingestion(
@@ -646,8 +610,8 @@ class PolarSelfClient:
                 name="event_ingestion",
                 external_customer_id=str(org_id),
                 external_id=f"events_ingested-{org_id}-{cutoff_epoch}",
-                timestamp=cutoff,
-                metadata={"count": count},
+                timestamp=cutoff.isoformat(),
+                metadata=cast(EventMetadataInput, {"count": count}),
             )
             for org_id, count in counts.items()
         ]
@@ -658,13 +622,13 @@ class PolarSelfClient:
             cutoff=cutoff.isoformat(),
         ) as span:
             try:
-                await self._sdk.events.ingest_async(request=EventsIngest(events=events))
-            except PolarError as e:
+                await self._sdk.events.ingest(events=events)
+            except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 409:
                     span.set_attribute("conflict", True)
                     return
                 _raise_error(span, e, "track_event_ingestion")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "track_event_ingestion")
 
     async def _track_llm_span_usage(
@@ -703,42 +667,40 @@ class PolarSelfClient:
             cost_usd=str(cost_usd),
         ) as span:
             try:
-                await self._sdk.events.ingest_async(
-                    request=EventsIngest(
-                        events=[
-                            EventCreateExternalCustomer(
-                                name=root_name,
-                                external_customer_id=external_customer_id,
-                                external_id=root_external_id,
-                            ),
-                            EventCreateExternalCustomer(
-                                name=child_name,
-                                external_customer_id=external_customer_id,
-                                external_id=child_external_id,
-                                parent_id=root_external_id,
-                                metadata={
-                                    "_llm": LLMMetadata(
-                                        vendor=vendor,
-                                        model=model,
-                                        input_tokens=input_tokens,
-                                        output_tokens=output_tokens,
-                                        total_tokens=total_tokens,
-                                    ),
-                                    "_cost": CostMetadataInput(
-                                        amount=str(cost_cents),
-                                        currency="usd",
-                                    ),
-                                },
-                            ),
-                        ]
-                    )
+                await self._sdk.events.ingest(
+                    events=[
+                        EventCreateExternalCustomer(
+                            name=root_name,
+                            external_customer_id=external_customer_id,
+                            external_id=root_external_id,
+                        ),
+                        EventCreateExternalCustomer(
+                            name=child_name,
+                            external_customer_id=external_customer_id,
+                            external_id=child_external_id,
+                            parent_id=root_external_id,
+                            metadata={
+                                "_llm": LLMMetadata(
+                                    vendor=vendor,
+                                    model=model,
+                                    input_tokens=input_tokens,
+                                    output_tokens=output_tokens,
+                                    total_tokens=total_tokens,
+                                ),
+                                "_cost": CostMetadataInput(
+                                    amount=str(cost_cents),
+                                    currency="usd",
+                                ),
+                            },
+                        ),
+                    ]
                 )
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 409:
                     span.set_attribute("conflict", True)
                     return
                 _raise_error(span, e, operation)
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, operation)
 
     async def track_organization_review_usage(
@@ -791,6 +753,18 @@ class PolarSelfClient:
     # Customer-portal-scoped operations: create a per-call customer session
     # and act AS THE CUSTOMER. Used for fields the admin API doesn't expose.
 
+    async def _create_portal_sdk(
+        self,
+        *,
+        external_customer_id: str,
+        external_member_id: str | None,
+    ) -> PolarSDK:
+        session = await self._sdk.customer_sessions.create(
+            external_customer_id=external_customer_id,
+            external_member_id=external_member_id,
+        )
+        return PolarSDK(session.token, base_url=self._api_url)
+
     async def portal_get_customer(
         self,
         *,
@@ -803,20 +777,15 @@ class PolarSelfClient:
             external_member_id=external_member_id,
         ) as span:
             try:
-                session = await self._sdk.customer_sessions.create_async(
-                    request=CustomerSessionCustomerExternalIDCreate(
-                        external_customer_id=external_customer_id,
-                        external_member_id=external_member_id,
-                    )
+                portal_sdk = await self._create_portal_sdk(
+                    external_customer_id=external_customer_id,
+                    external_member_id=external_member_id,
                 )
-                return await self._sdk.customer_portal.customers.get_async(
-                    security=CustomerPortalCustomersGetSecurity(
-                        customer_session=session.token,
-                    ),
-                )
-            except PolarError as e:
+                async with portal_sdk:
+                    return await portal_sdk.customer_portal.customers.get()
+            except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "polar.portal.get_customer")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "polar.portal.get_customer")
 
     async def portal_list_payment_methods(
@@ -832,26 +801,20 @@ class PolarSelfClient:
         ) as span:
             methods: list[CustomerPaymentMethod] = []
             try:
-                session = await self._sdk.customer_sessions.create_async(
-                    request=CustomerSessionCustomerExternalIDCreate(
-                        external_customer_id=external_customer_id,
-                        external_member_id=external_member_id,
-                    )
+                portal_sdk = await self._create_portal_sdk(
+                    external_customer_id=external_customer_id,
+                    external_member_id=external_member_id,
                 )
-                security = CustomerPortalCustomersListPaymentMethodsSecurity(
-                    customer_session=session.token,
-                )
-                response = await self._sdk.customer_portal.customers.list_payment_methods_async(
-                    security=security,
-                    page=1,
-                    limit=100,
-                )
-                while response is not None:
-                    methods.extend(response.result.items)
-                    response = response.next()
-            except PolarError as e:
+                async with portal_sdk:
+                    customers = portal_sdk.customer_portal.customers
+                    async for method in customers.iter_list_payment_methods(
+                        page=1,
+                        limit=100,
+                    ):
+                        methods.append(method)
+            except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "polar.portal.list_payment_methods")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "polar.portal.list_payment_methods")
 
             span.set_attribute("payment_method_count", len(methods))
@@ -871,28 +834,24 @@ class PolarSelfClient:
             payment_method_id=payment_method_id,
         ) as span:
             try:
-                session = await self._sdk.customer_sessions.create_async(
-                    request=CustomerSessionCustomerExternalIDCreate(
-                        external_customer_id=external_customer_id,
-                        external_member_id=external_member_id,
+                portal_sdk = await self._create_portal_sdk(
+                    external_customer_id=external_customer_id,
+                    external_member_id=external_member_id,
+                )
+                async with portal_sdk:
+                    await portal_sdk.customer_portal.customers.delete_payment_method(
+                        payment_method_id
                     )
-                )
-                await self._sdk.customer_portal.customers.delete_payment_method_async(
-                    security=CustomerPortalCustomersDeletePaymentMethodSecurity(
-                        customer_session=session.token,
-                    ),
-                    id=payment_method_id,
-                )
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
                     span.set_attribute("not_found", True)
                     raise PolarSelfPaymentMethodNotFound(payment_method_id) from e
                 if e.status_code == 400:
                     span.set_attribute("http.status_code", 400)
-                    span.set_attribute("error.body", str(e.body))
+                    span.set_attribute("error.body", str(getattr(e, "error", e)))
                     raise PolarSelfPaymentMethodInUse(payment_method_id) from e
                 _raise_error(span, e, "polar.portal.delete_payment_method")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "polar.portal.delete_payment_method")
 
     async def portal_create_customer_session(
@@ -909,24 +868,22 @@ class PolarSelfClient:
             external_member_id=external_member_id,
         ) as span:
             try:
-                session = await self._sdk.customer_sessions.create_async(
-                    request=CustomerSessionCustomerExternalIDCreate(
-                        external_customer_id=external_customer_id,
-                        external_member_id=external_member_id,
-                    )
+                session = await self._sdk.customer_sessions.create(
+                    external_customer_id=external_customer_id,
+                    external_member_id=external_member_id,
                 )
                 return session.token
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "polar.portal.create_customer_session")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "polar.portal.create_customer_session")
 
     async def portal_update_customer(
         self,
         *,
         external_customer_id: str,
-        update: CustomerPortalCustomerUpdate,
         external_member_id: str | None = None,
+        **update: Unpack[CustomerPortalCustomerUpdate],
     ) -> CustomerPortalCustomer:
         with logfire.span(
             "polar.portal.update_customer",
@@ -934,25 +891,20 @@ class PolarSelfClient:
             external_member_id=external_member_id,
         ) as span:
             try:
-                session = await self._sdk.customer_sessions.create_async(
-                    request=CustomerSessionCustomerExternalIDCreate(
-                        external_customer_id=external_customer_id,
-                        external_member_id=external_member_id,
-                    )
+                portal_sdk = await self._create_portal_sdk(
+                    external_customer_id=external_customer_id,
+                    external_member_id=external_member_id,
                 )
-                return await self._sdk.customer_portal.customers.update_async(
-                    security=CustomerPortalCustomersUpdateSecurity(
-                        customer_session=session.token,
-                    ),
-                    request=update,
-                )
-            except PolarError as e:
+                async with portal_sdk:
+                    return await portal_sdk.customer_portal.customers.update(**update)
+            except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 422:
                     span.set_attribute("http.status_code", 422)
-                    span.set_attribute("error.body", str(e.body))
-                    raise PolarSelfClientValidationError(e.body) from e
+                    body = str(getattr(e, "error", e))
+                    span.set_attribute("error.body", body)
+                    raise PolarSelfClientValidationError(body) from e
                 _raise_error(span, e, "polar.portal.update_customer")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "polar.portal.update_customer")
 
     async def portal_list_benefit_grants(
@@ -968,26 +920,20 @@ class PolarSelfClient:
         ) as span:
             grants: list[CustomerBenefitGrant] = []
             try:
-                session = await self._sdk.customer_sessions.create_async(
-                    request=CustomerSessionCustomerExternalIDCreate(
-                        external_customer_id=external_customer_id,
-                        external_member_id=external_member_id,
-                    )
+                portal_sdk = await self._create_portal_sdk(
+                    external_customer_id=external_customer_id,
+                    external_member_id=external_member_id,
                 )
-                security = CustomerPortalBenefitGrantsListSecurity(
-                    customer_session=session.token,
-                )
-                response = await self._sdk.customer_portal.benefit_grants.list_async(
-                    security=security,
-                    page=1,
-                    limit=100,
-                )
-                while response is not None:
-                    grants.extend(response.result.items)
-                    response = response.next()
-            except PolarError as e:
+                async with portal_sdk:
+                    benefit_grants = portal_sdk.customer_portal.benefit_grants
+                    async for grant in benefit_grants.iter_list(
+                        page=1,
+                        limit=100,
+                    ):
+                        grants.append(grant)
+            except (PolarClientError, PolarServerError) as e:
                 _raise_error(span, e, "polar.portal.list_benefit_grants")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "polar.portal.list_benefit_grants")
 
             span.set_attribute("grant_count", len(grants))
@@ -1008,29 +954,26 @@ class PolarSelfClient:
             benefit_grant_id=benefit_grant_id,
         ) as span:
             try:
-                session = await self._sdk.customer_sessions.create_async(
-                    request=CustomerSessionCustomerExternalIDCreate(
-                        external_customer_id=external_customer_id,
-                        external_member_id=external_member_id,
+                portal_sdk = await self._create_portal_sdk(
+                    external_customer_id=external_customer_id,
+                    external_member_id=external_member_id,
+                )
+                async with portal_sdk:
+                    return await portal_sdk.customer_portal.benefit_grants.update(
+                        benefit_grant_id,
+                        **update,
                     )
-                )
-                return await self._sdk.customer_portal.benefit_grants.update_async(
-                    security=CustomerPortalBenefitGrantsUpdateSecurity(
-                        customer_session=session.token,
-                    ),
-                    id=benefit_grant_id,
-                    customer_benefit_grant_update=update,
-                )
-            except PolarError as e:
+            except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:
                     span.set_attribute("not_found", True)
                     raise PolarSelfBenefitGrantNotFound(benefit_grant_id) from e
                 if e.status_code == 422:
                     span.set_attribute("http.status_code", 422)
-                    span.set_attribute("error.body", str(e.body))
-                    raise PolarSelfClientValidationError(e.body) from e
+                    body = str(getattr(e, "error", e))
+                    span.set_attribute("error.body", body)
+                    raise PolarSelfClientValidationError(body) from e
                 _raise_error(span, e, "polar.portal.update_benefit_grant")
-            except httpx.RequestError as e:
+            except PolarNetworkError as e:
                 _raise_network_error(span, e, "polar.portal.update_benefit_grant")
 
 

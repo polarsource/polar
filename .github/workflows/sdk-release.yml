@@ -138,4 +138,3 @@ jobs:
         with:
           tag_name: "sdk/${{ needs.detect-release.outputs.version }}"
           name: "SDK ${{ needs.detect-release.outputs.version }}"
-          generate_release_notes: true

@@ -15,6 +15,7 @@ from polar.base import (
 from polar.config import settings
 from polar.exceptions import PolarError as InternalPolarError
 from polar.v2026_04 import PolarAsync as PolarSDK
+from polar.v2026_04.errors import ResourceNotFound
 from polar.v2026_04.inputs import (
     CostMetadataInput,
     CustomerBenefitGrantUpdate,
@@ -105,6 +106,15 @@ class PolarSelfClient:
     ) -> Customer:
         with logfire.span("polar.create_customer", external_id=external_id) as span:
             try:
+                return await self._sdk.customers.get_external(external_id)
+            except ResourceNotFound:
+                pass
+            except (PolarClientError, PolarServerError) as e:
+                _raise_error(span, e, "create_customer.fetch_existing")
+            except PolarNetworkError as e:
+                _raise_network_error(span, e, "create_customer.fetch_existing")
+
+            try:
                 return await self._sdk.customers.create(
                     type="team",
                     name=name,
@@ -117,18 +127,9 @@ class PolarSelfClient:
                     },
                 )
             except (PolarClientError, PolarServerError) as e:
-                if e.status_code != 409:
-                    _raise_error(span, e, "create_customer")
-                span.set_attribute("conflict", True)
+                _raise_error(span, e, "create_customer")
             except PolarNetworkError as e:
                 _raise_network_error(span, e, "create_customer")
-
-            try:
-                return await self._sdk.customers.get_external(external_id)
-            except (PolarClientError, PolarServerError) as e:
-                _raise_error(span, e, "create_customer.fetch_existing")
-            except PolarNetworkError as e:
-                _raise_network_error(span, e, "create_customer.fetch_existing")
 
     async def cancel_subscription(self, *, subscription_id: str) -> Subscription:
         with logfire.span(

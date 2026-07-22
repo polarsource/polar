@@ -1752,7 +1752,7 @@ class OrderService:
                         customer=stripe_customer_id,
                         confirm=True,
                         off_session=True,
-                        expand=["latest_charge", "payment_method"],
+                        expand=["latest_charge"],
                         statement_descriptor_suffix=order.statement_descriptor_suffix,
                         description=f"{order.organization.name} — {order.description}",
                         metadata=metadata,
@@ -1799,14 +1799,6 @@ class OrderService:
                             raise PaymentFailed(PaymentFailedReason.card_error) from e
 
                     raise
-
-                await payment_service.create_from_stripe_payment_intent(
-                    session,
-                    payment_intent,
-                    organization,
-                    order=order,
-                    trigger=payment_trigger,
-                )
 
                 # Off-session SCA / 3DS challenges return a non-raising intent
                 # in one of the `requires_*` statuses. Only sync callers
@@ -1950,7 +1942,6 @@ class OrderService:
                         statement_descriptor_suffix=order.statement_descriptor_suffix,
                         description=f"{order.organization.name} — {order.description}",
                         metadata=metadata,
-                        expand=["payment_method"],
                     )
                 else:
                     # Using confirmation token (new payment method)
@@ -1969,16 +1960,7 @@ class OrderService:
                         statement_descriptor_suffix=order.statement_descriptor_suffix,
                         description=f"{order.organization.name} — {order.description}",
                         metadata=metadata,
-                        expand=["payment_method"],
                     )
-
-                await payment_service.create_from_stripe_payment_intent(
-                    session,
-                    payment_intent,
-                    organization,
-                    order=order,
-                    trigger=PaymentTrigger.retry_customer,
-                )
 
                 if payment_intent.status == "succeeded":
                     log.info(

@@ -183,7 +183,7 @@ class PaymentService:
 
         return await repository.update(payment)
 
-    async def create_from_stripe_payment_intent(
+    async def upsert_pending_from_stripe_payment_intent(
         self,
         session: AsyncSession,
         payment_intent: stripe_lib.PaymentIntent,
@@ -195,48 +195,38 @@ class PaymentService:
         trigger: PaymentTrigger | None = None,
     ) -> Payment | None:
         """Record an attempt that hasn't produced a charge yet, typically one
-        waiting on 3DS authentication. Intents linked to a charge are recorded
-        from the charge instead."""
+        waiting on 3DS authentication. Once a charge exists it carries the
+        method and the outcome, so it becomes the record."""
         if payment_intent.latest_charge is not None:
             return None
 
         repository = PaymentRepository.from_session(session)
-        payment = await repository.get_by_processor_id(
-            PaymentProcessor.stripe, payment_intent.id
+        payment = await self._get_by_stripe_payment_intent(
+            repository, payment_intent.id
         )
-        if payment is not None:
-            return payment
-
-        payment_method = payment_intent.payment_method
-        if payment_method is None:
-            return None
-
-        assert isinstance(payment_method, stripe_lib.PaymentMethod), (
-            "PaymentIntent must be created with `expand=['payment_method']`"
-        )
-
-        return await repository.create(
-            Payment(
+        if payment is None:
+            payment = Payment(
                 id=generate_uuid(),
                 processor=PaymentProcessor.stripe,
                 processor_id=payment_intent.id,
-                status=PaymentStatus.pending,
-                amount=payment_intent.amount,
-                currency=payment_intent.currency,
-                method=payment_method.type,
-                method_metadata=dict(payment_method[payment_method.type]),
                 processor_metadata={
                     STRIPE_PAYMENT_INTENT_METADATA_KEY: payment_intent.id
                 },
-                customer_email=payment_intent.receipt_email,
-                trigger=trigger,
-                checkout=checkout,
-                order=order,
-                wallet=wallet,
-                organization=organization,
-            ),
-            flush=True,
-        )
+                method_metadata={},
+            )
+
+        payment.status = PaymentStatus.pending
+        payment.amount = payment_intent.amount
+        payment.currency = payment_intent.currency
+        payment.method = next(iter(payment_intent.payment_method_types), "unknown")
+        payment.customer_email = payment_intent.receipt_email
+        payment.trigger = trigger
+        payment.checkout = checkout
+        payment.order = order
+        payment.wallet = wallet
+        payment.organization = organization
+
+        return await repository.update(payment, flush=True)
 
     async def cancel_from_stripe_payment_intent(
         self, session: AsyncSession, payment_intent: stripe_lib.PaymentIntent
@@ -263,9 +253,7 @@ class PaymentService:
         payment_intent_id = (
             payment_intent if isinstance(payment_intent, str) else payment_intent.id
         )
-        return await repository.get_by_processor_id(
-            PaymentProcessor.stripe, payment_intent_id
-        )
+        return await repository.get_by_stripe_payment_intent_id(payment_intent_id)
 
     async def upsert_from_stripe_payment_intent(
         self,

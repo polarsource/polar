@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import Select, func, or_, select
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.enums import PaymentProcessor
@@ -113,6 +113,27 @@ class PaymentRepository(
         )
         result = await self.session.execute(statement)
         return result.scalar() or 0
+
+    async def get_by_stripe_payment_intent_id(
+        self, payment_intent_id: str, *, options: Options = ()
+    ) -> Payment | None:
+        """Get the payment for a PaymentIntent, whether or not it has since been
+        re-keyed onto its charge."""
+        statement = (
+            self.get_base_statement()
+            .where(
+                Payment.processor == PaymentProcessor.stripe,
+                or_(
+                    Payment.processor_id == payment_intent_id,
+                    Payment.processor_metadata[
+                        STRIPE_PAYMENT_INTENT_METADATA_KEY
+                    ].astext
+                    == payment_intent_id,
+                ),
+            )
+            .options(*options)
+        )
+        return await self.get_one_or_none(statement)
 
     async def get_unresolved_stripe_intents_for_order(
         self, order_id: UUID

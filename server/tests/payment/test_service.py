@@ -305,12 +305,11 @@ class TestUpsertFromStripeCharge:
         organization: Organization,
     ) -> None:
         order = await create_order(save_fixture, product=product, customer=customer)
-        payment_intent = build_stripe_payment_intent(
-            status="requires_action",
-            payment_method={"type": "card", "card": {"brand": "visa"}},
-        )
-        pending_payment = await payment_service.create_from_stripe_payment_intent(
-            session, payment_intent, organization, order=order
+        payment_intent = build_stripe_payment_intent(status="requires_action")
+        pending_payment = (
+            await payment_service.upsert_pending_from_stripe_payment_intent(
+                session, payment_intent, organization, order=order
+            )
         )
         assert pending_payment is not None
 
@@ -332,7 +331,7 @@ class TestUpsertFromStripeCharge:
 
 
 @pytest.mark.asyncio
-class TestCreateFromStripePaymentIntent:
+class TestUpsertPendingFromStripePaymentIntent:
     async def test_new_pending_payment_with_order(
         self,
         session: AsyncSession,
@@ -345,10 +344,9 @@ class TestCreateFromStripePaymentIntent:
         payment_intent = build_stripe_payment_intent(
             status="requires_action",
             receipt_email="test@example.com",
-            payment_method={"type": "card", "card": {"brand": "visa"}},
         )
 
-        payment = await payment_service.create_from_stripe_payment_intent(
+        payment = await payment_service.upsert_pending_from_stripe_payment_intent(
             session,
             payment_intent,
             organization,
@@ -363,7 +361,6 @@ class TestCreateFromStripePaymentIntent:
         assert payment.amount == 1000
         assert payment.currency == "usd"
         assert payment.method == "card"
-        assert payment.method_metadata == {"brand": "visa"}
         assert payment.processor_metadata == {"payment_intent_id": payment_intent.id}
         assert payment.customer_email == "test@example.com"
         assert payment.order == order
@@ -376,31 +373,16 @@ class TestCreateFromStripePaymentIntent:
         organization: Organization,
     ) -> None:
         payment_intent = build_stripe_payment_intent(
-            status="succeeded",
-            latest_charge="STRIPE_CHARGE_ID",
-            payment_method={"type": "card", "card": {"brand": "visa"}},
+            status="succeeded", latest_charge="STRIPE_CHARGE_ID"
         )
 
-        payment = await payment_service.create_from_stripe_payment_intent(
+        payment = await payment_service.upsert_pending_from_stripe_payment_intent(
             session, payment_intent, organization
         )
 
         assert payment is None
 
-    async def test_intent_without_payment_method_is_not_recorded(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> None:
-        payment_intent = build_stripe_payment_intent(status="requires_payment_method")
-
-        payment = await payment_service.create_from_stripe_payment_intent(
-            session, payment_intent, organization
-        )
-
-        assert payment is None
-
-    async def test_existing_payment_is_reused(
+    async def test_created_then_requires_action_updates_one_row(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -409,21 +391,51 @@ class TestCreateFromStripePaymentIntent:
         organization: Organization,
     ) -> None:
         order = await create_order(save_fixture, product=product, customer=customer)
-        payment_intent = build_stripe_payment_intent(
-            status="requires_action",
-            payment_method={"type": "card", "card": {"brand": "visa"}},
-        )
+        created = build_stripe_payment_intent(status="requires_confirmation")
+        requires_action = build_stripe_payment_intent(status="requires_action")
 
-        first = await payment_service.create_from_stripe_payment_intent(
-            session, payment_intent, organization, order=order
+        first = await payment_service.upsert_pending_from_stripe_payment_intent(
+            session, created, organization, order=order
         )
-        second = await payment_service.create_from_stripe_payment_intent(
-            session, payment_intent, organization, order=order
+        second = await payment_service.upsert_pending_from_stripe_payment_intent(
+            session, requires_action, organization, order=order
         )
 
         assert first is not None
         assert second is not None
         assert first.id == second.id
+
+    async def test_promoted_payment_is_not_duplicated(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """The charge webhook can land before `payment_intent.created`."""
+        order = await create_order(save_fixture, product=product, customer=customer)
+        payment_intent = build_stripe_payment_intent(status="requires_action")
+        pending = await payment_service.upsert_pending_from_stripe_payment_intent(
+            session, payment_intent, organization, order=order
+        )
+        assert pending is not None
+
+        charge = build_stripe_charge(
+            payment_intent=payment_intent.id,
+            payment_method_details={"card": {"brand": "visa"}, "type": "card"},
+            billing_details={"email": "test@example.com"},
+        )
+        promoted = await payment_service.upsert_from_stripe_charge(
+            session, charge, organization, None, None, order
+        )
+
+        late = await payment_service.upsert_pending_from_stripe_payment_intent(
+            session, payment_intent, organization, order=order
+        )
+
+        assert late is not None
+        assert late.id == promoted.id
 
 
 @pytest.mark.asyncio

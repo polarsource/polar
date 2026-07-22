@@ -8,6 +8,7 @@ from polar.integrations.stripe.payment import (
     _resolve_trigger,
     handle_cancellation,
     handle_failure,
+    handle_pending,
 )
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.utils import utc_now
@@ -287,6 +288,50 @@ class TestHandleCancellation:
         assert updated_order.next_payment_attempt_at is None
 
 
+@pytest.mark.asyncio
+class TestHandlePending:
+    async def test_records_the_attempt_against_its_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            status=OrderStatus.pending,
+        )
+        payment_intent = build_stripe_payment_intent(
+            id="pi_requires_action",
+            status="requires_action",
+            metadata={
+                "organization_id": str(organization.id),
+                "order_id": str(order.id),
+                "payment_trigger": PaymentTrigger.subscription_cycle.value,
+            },
+        )
+
+        # When
+        await handle_pending(session, payment_intent)
+
+        # Then
+        payment_repository = PaymentRepository.from_session(session)
+        payment = await payment_repository.get_by_processor_id(
+            PaymentProcessor.stripe, "pi_requires_action"
+        )
+        assert payment is not None
+        assert payment.status == PaymentStatus.pending
+        assert payment.order_id == order.id
+        assert payment.trigger == PaymentTrigger.subscription_cycle
+        assert payment.processor_metadata == {"payment_intent_id": "pi_requires_action"}
+
+
+@pytest.mark.asyncio
 class TestResolveTrigger:
     """Test the _resolve_trigger helper that extracts PaymentTrigger from Stripe metadata."""
 

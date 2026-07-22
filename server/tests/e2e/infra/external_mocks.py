@@ -64,7 +64,6 @@ def mock_stripe_service(mocker: MockerFixture) -> MagicMock:
         client_secret="pi_e2e_default_secret",
         status="succeeded",
         payment_method="pm_e2e_default",
-        latest_charge="ch_e2e_default",
     )
 
     from tests.fixtures.stripe import build_stripe_payment_method

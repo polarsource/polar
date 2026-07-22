@@ -83,7 +83,6 @@ from polar.models.checkout import CheckoutStatus
 from polar.models.checkout_product import CheckoutProduct
 from polar.models.customer import CustomerType
 from polar.models.order import OrderBillingReasonInternal
-from polar.models.payment import PaymentTrigger
 from polar.models.product_price import ProductPriceSource
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.observability.checkout_metrics import (
@@ -91,7 +90,6 @@ from polar.observability.checkout_metrics import (
     CHECKOUT_SUCCEEDED_TOTAL,
 )
 from polar.order.service import order as order_service
-from polar.payment.service import payment as payment_service
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.posthog import posthog
 from polar.product.custom_price import validate_custom_price_amount
@@ -1168,13 +1166,6 @@ class CheckoutService:
 
                             intent = await stripe_service.create_payment_intent(
                                 **payment_intent_params
-                            )
-                            await payment_service.create_from_stripe_payment_intent(
-                                session,
-                                intent,
-                                checkout.organization,
-                                checkout=checkout,
-                                trigger=PaymentTrigger.purchase,
                             )
                         else:
                             setup_intent_params: SetupIntentCreateParams = {

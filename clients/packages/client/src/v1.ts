@@ -12002,7 +12002,7 @@ export interface components {
       locale?: string | null
       /**
        * Payment Method Type
-       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`. Some payment methods require a full billing address: keeping this value in sync allows `billing_address_fields` to reflect the fields to display.
+       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
        */
       payment_method_type: string | null
       /** Payment Processor Metadata */
@@ -12126,7 +12126,7 @@ export interface components {
       locale?: string | null
       /**
        * Payment Method Type
-       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`. Some payment methods require a full billing address: keeping this value in sync allows `billing_address_fields` to reflect the fields to display.
+       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
        */
       payment_method_type?: string | null
       /**
@@ -13704,7 +13704,7 @@ export interface components {
       locale?: string | null
       /**
        * Payment Method Type
-       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`. Some payment methods require a full billing address: keeping this value in sync allows `billing_address_fields` to reflect the fields to display.
+       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
        */
       payment_method_type: string | null
       /** Payment Processor Metadata */
@@ -13975,7 +13975,7 @@ export interface components {
       locale?: string | null
       /**
        * Payment Method Type
-       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`. Some payment methods require a full billing address: keeping this value in sync allows `billing_address_fields` to reflect the fields to display.
+       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
        */
       payment_method_type: string | null
       /** Payment Processor Metadata */
@@ -14090,7 +14090,7 @@ export interface components {
       locale?: string | null
       /**
        * Payment Method Type
-       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`. Some payment methods require a full billing address: keeping this value in sync allows `billing_address_fields` to reflect the fields to display.
+       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
        */
       payment_method_type?: string | null
       /** @description The interval unit for the trial period. */
@@ -14218,7 +14218,7 @@ export interface components {
       locale?: string | null
       /**
        * Payment Method Type
-       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`. Some payment methods require a full billing address: keeping this value in sync allows `billing_address_fields` to reflect the fields to display.
+       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
        */
       payment_method_type?: string | null
       /**

@@ -129,9 +129,7 @@ EmbedOrigin = Annotated[
 
 _payment_method_type_description = (
     "Payment method type selected by the customer in the checkout form, "
-    "e.g. `card`, `apple_pay` or `upi`. "
-    "Some payment methods require a full billing address: keeping this value "
-    "in sync allows `billing_address_fields` to reflect the fields to display."
+    "e.g. `card`, `apple_pay` or `upi`."
 )
 PaymentMethodTypeInput = Annotated[
     EmptyStrToNone,

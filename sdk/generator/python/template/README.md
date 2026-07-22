@@ -6,14 +6,16 @@ The official Python client for the [Polar API](https://polar.sh/docs/api-referen
 
 The SDK requires Python 3.11 or later.
 
+The SDK is currently available as a pre-release. To install it with `uv`:
+
 ```bash
-uv add polar-sdk
+uv add polar-sdk --prerelease allow
 ```
 
 or, with `pip`:
 
 ```bash
-pip install polar-sdk
+pip install --pre polar-sdk
 ```
 
 ## Quick Start
@@ -28,6 +30,61 @@ polar = Polar("polar_oat_xxx")
 
 customer_state = polar.customers.get_state_external("customer_external_id")
 print(customer_state)
+```
+
+### Async Client
+
+Use `PolarAsync` in asynchronous applications:
+
+```python
+import asyncio
+
+from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }} import PolarAsync
+
+
+async def main() -> None:
+    polar = PolarAsync("polar_oat_xxx")
+    customer_state = await polar.customers.get_state_external(
+        "customer_external_id"
+    )
+    print(customer_state)
+
+
+asyncio.run(main())
+```
+
+## Context Managers
+
+Both clients support context managers to close their HTTP connections automatically when the
+block exits.
+
+For synchronous applications, use `Polar` with `with`:
+
+```python
+from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }} import Polar
+
+with Polar("polar_oat_xxx") as polar:
+    customer_state = polar.customers.get_state_external("customer_external_id")
+    print(customer_state)
+```
+
+For asynchronous applications, use `PolarAsync` with `async with`:
+
+```python
+import asyncio
+
+from polar.v{{ ir.versions[0].version | replace("-", "_") | replace(".", "_") }} import PolarAsync
+
+
+async def main() -> None:
+    async with PolarAsync("polar_oat_xxx") as polar:
+        customer_state = await polar.customers.get_state_external(
+            "customer_external_id"
+        )
+        print(customer_state)
+
+
+asyncio.run(main())
 ```
 
 The client uses the production environment by default. To use the sandbox, pass

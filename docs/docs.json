@@ -160,8 +160,6 @@
               {
                 "group": "SDKs",
                 "pages": [
-                  "integrate/sdk/golang",
-                  "integrate/sdk/php",
                   "integrate/sdk/python",
                   "integrate/sdk/typescript"
                 ]
@@ -903,14 +901,6 @@
     {
       "source": "/documentation/sdks/python-sdk",
       "destination": "/integrate/sdk/python"
-    },
-    {
-      "source": "/documentation/sdks/php-sdk",
-      "destination": "/integrate/sdk/php"
-    },
-    {
-      "source": "/documentation/sdks/go-sdk",
-      "destination": "/integrate/sdk/go"
     },
     {
       "source": "/documentation/adapters/polar-shnextjs",

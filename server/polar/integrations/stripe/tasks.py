@@ -126,28 +126,6 @@ async def payment_intent_succeeded(event_id: uuid.UUID) -> None:
 
 
 @actor(
-    actor_name="stripe.webhook.payment_intent.requires_action",
-    priority=TaskPriority.HIGH,
-)
-@stripe_api_connection_error_retry
-async def payment_intent_requires_action(event_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker() as session:
-        async with external_event_service.handle_stripe(session, event_id) as event:
-            payment_intent = cast(
-                stripe_lib.PaymentIntent, event.stripe_data.data.object
-            )
-            try:
-                await payment.handle_pending(session, payment_intent)
-            except payment.OrderDoesNotExist as e:
-                # Retry because we may not have been able to handle the order yet
-                if can_retry():
-                    raise Retry() from e
-                # Raise the exception to be notified about it
-                else:
-                    raise
-
-
-@actor(
     actor_name="stripe.webhook.payment_intent.payment_failed",
     priority=TaskPriority.HIGH,
 )
@@ -163,25 +141,6 @@ async def payment_intent_payment_failed(event_id: uuid.UUID) -> None:
 
             except UnhandledPaymentIntent:
                 pass
-            except payment.OrderDoesNotExist as e:
-                # Retry because we may not have been able to handle the order yet
-                if can_retry():
-                    raise Retry() from e
-                # Raise the exception to be notified about it
-                else:
-                    raise
-
-
-@actor(actor_name="stripe.webhook.payment_intent.canceled", priority=TaskPriority.HIGH)
-@stripe_api_connection_error_retry
-async def payment_intent_canceled(event_id: uuid.UUID) -> None:
-    async with AsyncSessionMaker() as session:
-        async with external_event_service.handle_stripe(session, event_id) as event:
-            payment_intent = cast(
-                stripe_lib.PaymentIntent, event.stripe_data.data.object
-            )
-            try:
-                await payment.handle_cancellation(session, payment_intent)
             except payment.OrderDoesNotExist as e:
                 # Retry because we may not have been able to handle the order yet
                 if can_retry():

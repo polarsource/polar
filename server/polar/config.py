@@ -568,10 +568,6 @@ class Settings(BaseSettings):
     ]
     CUSTOMER_RETRY_MAX_ATTEMPTS: int = 5
 
-    # A payment lock held longer than this is presumed wedged: it's cleared
-    # within seconds by the resolving Stripe webhook under normal conditions.
-    PAYMENT_LOCK_STALE_THRESHOLD: timedelta = timedelta(hours=1)
-
     TAX_PROCESSORS: list[TaxProcessor] = [TaxProcessor.stripe]
     TAX_RECORD_PROCESSOR: TaxProcessor = TaxProcessor.stripe
 

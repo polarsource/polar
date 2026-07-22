@@ -146,6 +146,7 @@ source = { editable = "." }
 dependencies = [
     { name = "adaptix" },
     { name = "httpx" },
+    { name = "typing-extensions" },
 ]
 
 [package.dev-dependencies]
@@ -160,6 +161,7 @@ dev = [
 requires-dist = [
     { name = "adaptix", specifier = "==3.0.0b12" },
     { name = "httpx", specifier = ">=0.28.1" },
+    { name = "typing-extensions", specifier = ">=4.13.0" },
 ]
 
 [package.metadata.requires-dev]

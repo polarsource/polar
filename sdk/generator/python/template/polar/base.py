@@ -5,8 +5,10 @@ import typing
 
 import adaptix
 import httpx
+import typing_extensions
 
 _EnvironmentT = typing.TypeVar("_EnvironmentT", bound=str)
+_ModelT = typing.TypeVar("_ModelT")
 
 
 class PolarError(Exception):
@@ -162,7 +164,13 @@ class AsyncServiceBase:
         return cls(service.client)
 
 
-retort = adaptix.Retort()
+_retort = adaptix.Retort()
+
+
+def deserialize(
+    data: object, model: typing_extensions.TypeForm[_ModelT]
+) -> _ModelT:
+    return typing.cast(_ModelT, _retort.load(data, model))
 
 E = typing.TypeVar("E", bound=PolarClientError)
 
@@ -191,7 +199,8 @@ def _handle_errors(
                     raise error_class(status_code, response.text)
                 case _:
                     raise error_class(
-                        status_code, retort.load(response.json(), error_class.error_type)
+                        status_code,
+                        deserialize(response.json(), error_class.error_type),
                     )
         except KeyError:
             raise PolarClientError(status_code, response.text)
@@ -205,7 +214,7 @@ def parse_response_json(
     _handle_errors(response, errors)
 
     if response_model is not None:
-        return retort.load(response.json(), response_model)
+        return deserialize(response.json(), response_model)
 
     return response.json()
 

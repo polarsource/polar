@@ -94,6 +94,17 @@ separate.
 Keep organization access tokens on the server and never expose them in browser or client-side
 code.
 
+## Deserializing Data
+
+Use `deserialize` to convert arbitrary data into a generated SDK model or union type:
+
+```python
+from polar import deserialize
+from polar.v2026_04.outputs import Customer
+
+customer = deserialize(data, Customer)
+```
+
 ## Webhooks
 
 Use `validate_event` to verify that a webhook was sent by Polar and parse it into a typed payload

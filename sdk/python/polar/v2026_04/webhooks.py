@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 import typing
 
-from polar.base import retort
+from polar.base import deserialize
 from polar.v2026_04.outputs import (
     Benefit,
     BenefitGrantWebhook,
@@ -677,4 +677,4 @@ def validate_event(
 
 
 def _load_payload(data: dict[str, typing.Any]) -> WebhookPayload:
-    return typing.cast(WebhookPayload, retort.load(data, WebhookPayload))
+    return deserialize(data, WebhookPayload)

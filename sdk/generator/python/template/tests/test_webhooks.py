@@ -7,7 +7,7 @@ import typing
 import pytest
 from standardwebhooks.webhooks import Webhook
 
-from polar.base import PolarError, retort
+from polar.base import PolarError, deserialize
 from polar.webhooks import (
     PolarWebhookError,
     PolarWebhookUnknownTypeError,
@@ -40,7 +40,7 @@ def _get_headers(
 
 
 def _load_payload(data: dict[str, typing.Any]) -> DummyPayload:
-    return retort.load(data, DummyPayload)
+    return deserialize(data, DummyPayload)
 
 
 def _validate_event(

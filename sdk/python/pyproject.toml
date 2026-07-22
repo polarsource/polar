@@ -14,7 +14,11 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
 ]
 requires-python = ">=3.11"
-dependencies = ["httpx>=0.28.1", "adaptix==3.0.0b12"]
+dependencies = [
+  "httpx>=0.28.1",
+  "adaptix==3.0.0b12",
+  "typing-extensions>=4.13.0",
+]
 
 [project.urls]
 homepage = "https://polar.sh"

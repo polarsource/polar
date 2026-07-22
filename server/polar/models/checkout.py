@@ -96,6 +96,11 @@ class CheckoutAnalyticsMetadata(TypedDict, total=False):
     distinct_id: str | None
 
 
+# Payment methods for which the processor requires a full billing address
+# to process the payment, regardless of the customer's country.
+FULL_BILLING_ADDRESS_PAYMENT_METHODS: frozenset[str] = frozenset({"upi"})
+
+
 class Checkout(
     TrialConfigurationMixin, CustomFieldDataMixin, MetadataMixin, RecordModel
 ):
@@ -115,6 +120,9 @@ class Checkout(
     )
     payment_processor_metadata: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
+    )
+    payment_method_type: Mapped[str | None] = mapped_column(
+        String, nullable=True, default=None
     )
     return_url: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
     _success_url: Mapped[str | None] = mapped_column(
@@ -383,13 +391,19 @@ class Checkout(
     ] = association_proxy("product", "attached_custom_fields")
 
     @property
+    def is_billing_address_required(self) -> bool:
+        return (
+            self.require_billing_address
+            or self.is_business_customer
+            or self.payment_method_type in FULL_BILLING_ADDRESS_PAYMENT_METHODS
+        )
+
+    @property
     def customer_billing_address_fields(self) -> CheckoutCustomerBillingAddressFields:
         address = self.customer_billing_address
         country = address.country if address else None
         is_us = country == "US"
-        require_billing_address = (
-            self.require_billing_address or self.is_business_customer or is_us
-        )
+        require_billing_address = self.is_billing_address_required or is_us
         return {
             "country": True,
             "state": country in {"US", "CA"},
@@ -404,9 +418,7 @@ class Checkout(
         address = self.customer_billing_address
         country = address.country if address else None
         is_us = country == "US"
-        require_billing_address = (
-            self.require_billing_address or self.is_business_customer or is_us
-        )
+        require_billing_address = self.is_billing_address_required or is_us
         return {
             "country": BillingAddressFieldMode.required,
             "state": BillingAddressFieldMode.required

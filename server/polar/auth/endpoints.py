@@ -31,6 +31,7 @@ from polar.auth.oauth2.google import get_google_factor
 from polar.authz.dependencies import AuthorizeWebUserRead, AuthorizeWebUserWriteFresh
 from polar.config import settings
 from polar.exceptions import NotPermitted, ResourceNotFound
+from polar.kit.http import get_ip_address
 from polar.models import UserSession as UserSession
 from polar.openapi import APITag
 from polar.postgres import AsyncSession, get_db_session
@@ -70,6 +71,7 @@ from .schemas import (
 )
 from .service import auth as auth_service
 from .sso.endpoints import router as sso_login_router
+from .turnstile import verify_turnstile
 
 TOTP_ISSUER = (
     "Polar" if settings.is_production() else f"Polar {settings.ENV.value.capitalize()}"
@@ -185,15 +187,27 @@ async def complete(
     return response
 
 
-@router.post("/email-otp/request", status_code=202)
+@router.post(
+    "/email-otp/request",
+    status_code=202,
+    responses={
+        403: {
+            "description": "Turnstile verification failed",
+            "model": NotPermitted.schema(),
+        }
+    },
+)
 async def email_otp_request(
     email_otp_request: EmailOTPRequest,
+    request: Request,
     authentication_session: AuthenticationSession = Depends(get_authentication_session),
     authentication_session_service: AuthenticationSessionService = Depends(
         get_authentication_session_service
     ),
     email_otp_factor: EmailOTPFactor = Depends(get_email_otp_factor),
 ) -> None:
+    await verify_turnstile(email_otp_request.turnstile_token, get_ip_address(request))
+
     factors = await authentication_session_service.get_available_factors(
         authentication_session
     )

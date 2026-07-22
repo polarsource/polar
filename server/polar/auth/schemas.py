@@ -68,6 +68,7 @@ class AuthenticationSession(Schema):
 
 class EmailOTPRequest(Schema):
     email: EmailStr
+    turnstile_token: str = Field(alias="cf-turnstile-response")
 
 
 class EmailOTPVerify(Schema):

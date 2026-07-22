@@ -211,6 +211,8 @@ class Settings(BaseSettings):
     EMAIL_DEFAULT_REPLY_TO_NAME: str = "Polar Support"
     EMAIL_DEFAULT_REPLY_TO_EMAIL_ADDRESS: str = "support@polar.sh"
 
+    TURNSTILE_SECRET: str = ""
+
     # Github App
     GITHUB_CLIENT_ID: str = ""
     GITHUB_CLIENT_SECRET: str = ""

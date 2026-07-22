@@ -14,6 +14,7 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
+import Script from 'next/script'
 import { useState } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
 
@@ -21,6 +22,12 @@ interface EmailOTPFormProps {
   authenticationSession: schemas['AuthenticationSession'] | null
   returnTo?: string
   signup?: boolean
+}
+
+interface TurnstileWindow extends Window {
+  turnstile?: {
+    reset: () => void
+  }
 }
 
 const EmailOTPForm = ({
@@ -40,7 +47,22 @@ const EmailOTPForm = ({
   const posthog = usePostHog()
   const router = useRouter()
 
-  const onSubmit: SubmitHandler<{ email: string }> = async ({ email }) => {
+  const onSubmit: SubmitHandler<{ email: string }> = async (
+    { email },
+    event,
+  ) => {
+    const formElement = event?.target
+    const turnstileToken =
+      formElement instanceof HTMLFormElement
+        ? new FormData(formElement).get('cf-turnstile-response')
+        : null
+    if (typeof turnstileToken !== 'string' || !turnstileToken) {
+      setError('email', {
+        message: 'Please complete the verification challenge.',
+      })
+      return
+    }
+
     setLoading(true)
     try {
       let eventName: EventName = 'global:user:login:submit'
@@ -56,7 +78,10 @@ const EmailOTPForm = ({
         await authSessionStart.mutateAsync(returnTo)
       }
 
-      const { error } = await emailOTPRequest.mutateAsync(email)
+      const { error } = await emailOTPRequest.mutateAsync({
+        email,
+        turnstileToken,
+      })
       if (error) {
         if (isValidationError(error.detail)) {
           setValidationErrors(error.detail, setError)
@@ -76,47 +101,63 @@ const EmailOTPForm = ({
         message: 'An unexpected error occurred. Please try again.',
       })
     } finally {
+      const turnstileWindow = window as TurnstileWindow
+      turnstileWindow.turnstile?.reset()
       setLoading(false)
     }
   }
 
   return (
-    <Form {...form}>
-      <form className="flex w-full flex-col" onSubmit={handleSubmit(onSubmit)}>
-        <FormField
-          control={control}
-          name="email"
-          render={({ field }) => {
-            return (
-              <FormItem>
-                <FormControl className="w-full">
-                  <div className="flex w-full flex-col gap-2">
-                    <Input
-                      type="email"
-                      required
-                      placeholder="Email"
-                      autoComplete="off"
-                      data-1p-ignore
-                      {...field}
-                    />
-                    <Button
-                      type="submit"
-                      variant="secondary"
-                      fullWidth
-                      loading={loading}
-                      disabled={loading}
-                    >
-                      {signup ? 'Sign up with email' : 'Sign in with email'}
-                    </Button>
-                  </div>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )
-          }}
-        />
-      </form>
-    </Form>
+    <>
+      <Script
+        src="https://challenges.cloudflare.com/turnstile/v0/api.js"
+        strategy="afterInteractive"
+      />
+      <Form {...form}>
+        <form
+          className="flex w-full flex-col"
+          onSubmit={handleSubmit(onSubmit)}
+        >
+          <FormField
+            control={control}
+            name="email"
+            render={({ field }) => {
+              return (
+                <FormItem>
+                  <FormControl className="w-full">
+                    <div className="flex w-full flex-col gap-2">
+                      <Input
+                        type="email"
+                        required
+                        placeholder="Email"
+                        autoComplete="off"
+                        data-1p-ignore
+                        {...field}
+                      />
+                      <div
+                        className="cf-turnstile"
+                        data-sitekey="0x4AAAAAAD7cBrbpX3kX8K9g"
+                        data-action="turnstile-spin-v2"
+                      />
+                      <Button
+                        type="submit"
+                        variant="secondary"
+                        fullWidth
+                        loading={loading}
+                        disabled={loading}
+                      >
+                        {signup ? 'Sign up with email' : 'Sign in with email'}
+                      </Button>
+                    </div>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )
+            }}
+          />
+        </form>
+      </Form>
+    </>
   )
 }
 

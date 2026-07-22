@@ -795,15 +795,15 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
   const onPaymentElementChange = useCallback(
     async (event: StripePaymentElementChangeEvent) => {
       setSelectedPaymentMethod(event.value.type)
-      if (event.value.type !== checkout.payment_method) {
+      if (event.value.type !== checkout.payment_method_type) {
         try {
-          await update({ payment_method: event.value.type })
+          await update({ payment_method_type: event.value.type })
         } catch {
           /* API errors handled by provider */
         }
       }
     },
-    [checkout.payment_method, update],
+    [checkout.payment_method_type, update],
   )
 
   const elementsOptions = useMemo<StripeElementsOptions>(() => {
@@ -865,7 +865,7 @@ const StripeCheckoutForm = (props: CheckoutFormProps) => {
               confirm(
                 // Not in form state, comes from Stripe PaymentElement.
                 selectedPaymentMethod
-                  ? { ...data, payment_method: selectedPaymentMethod }
+                  ? { ...data, payment_method_type: selectedPaymentMethod }
                   : data,
                 stripe,
                 elements,

@@ -1,15 +1,11 @@
-import argparse
-import sys
 from typing import Annotated, cast
 
-import httpx
 import ipinfo_db
 import ipinfo_db.reader
 from fastapi import Depends, Request
 
 from polar.config import settings
 
-DOWNLOAD_PATH = "https://ipinfo.io/data/free/country_asn.mmdb?token={token}"
 DATABASE_PATH = (
     settings.IP_GEOLOCATION_DATABASE_DIRECTORY_PATH
     / settings.IP_GEOLOCATION_DATABASE_NAME
@@ -24,26 +20,6 @@ async def _get_client_dependency(request: Request) -> "IPGeolocationClient | Non
 
 
 IPGeolocationClient = Annotated[ipinfo_db.Client, Depends(_get_client_dependency)]
-
-
-def _download_database(access_token: str) -> None:
-    """
-    Download the IP to Country ASN database.
-
-    This should not be called when starting the server or during a request but
-    at build time.
-
-    Args:
-        access_token: IPInfo access token.
-    """
-    with open(DATABASE_PATH, "wb") as db_file:
-        with httpx.Client() as http_client:
-            with http_client.stream(
-                "GET", DOWNLOAD_PATH.format(token=access_token), follow_redirects=True
-            ) as response:
-                response.raise_for_status()
-                for chunk in response.iter_bytes():
-                    db_file.write(chunk)
 
 
 def get_client() -> IPGeolocationClient:
@@ -81,15 +57,5 @@ def get_ip_country(client: IPGeolocationClient, ip: str) -> str | None:
         return None
     return ret
 
-
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(
-        description="Download the IP to Country ASN database."
-    )
-    parser.add_argument("access_token", type=str, help="IPInfo access token")
-    args = parser.parse_args()
-
-    _download_database(args.access_token)
-    sys.stdout.write(f"Database downloaded to {DATABASE_PATH}\n")
 
 __all__ = ["IPGeolocationClient", "get_client", "get_ip_country"]

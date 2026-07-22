@@ -27,6 +27,7 @@ from polar.checkout.service import (
     AlreadyActiveSubscriptionError,
     CheckoutCustomerDeleted,
     CheckoutCustomerExternalIdMismatch,
+    DiscountRedemptionLimitReached,
     ExpiredCheckoutError,
     NotConfirmedCheckout,
     NotOpenCheckout,
@@ -110,8 +111,10 @@ from tests.fixtures.random_objects import (
     create_customer,
     create_customer_seat,
     create_discount,
+    create_discount_redemption,
     create_member,
     create_order,
+    create_payment,
     create_product,
     create_product_fixed_and_seat,
     create_product_price_fixed,
@@ -5366,6 +5369,158 @@ class TestConfirm:
                         "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
                         "customer_name": "Customer Name",
                         "customer_email": email,
+                        "customer_billing_address": {"country": "FR"},
+                    }
+                ),
+            )
+
+    async def test_discount_per_customer_limit_reached(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            code="LIMITEDPERCUSTOMER",
+            max_redemptions_per_customer=1,
+        )
+
+        # The same customer already redeemed this discount once.
+        existing_customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        prior_checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            customer=existing_customer,
+            discount=discount,
+        )
+        prior_checkout.customer_email = "customer@example.com"
+        await save_fixture(prior_checkout)
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=prior_checkout
+        )
+
+        checkout = await create_checkout(
+            save_fixture, products=[product], discount=discount
+        )
+
+        confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)
+        confirmation_token.payment_method_preview = MagicMock()
+        confirmation_token.payment_method_preview.billing_details = MagicMock()
+        confirmation_token.payment_method_preview.billing_details.name = "Customer Name"
+        confirmation_token.payment_method_preview.card = SimpleNamespace(
+            fingerprint="FINGERPRINT"
+        )
+        stripe_service_mock.get_confirmation_token.return_value = confirmation_token
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+        stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        with pytest.raises(DiscountRedemptionLimitReached):
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                        "customer_billing_address": {"country": "FR"},
+                    }
+                ),
+            )
+
+    async def test_discount_per_customer_limit_reached_by_fingerprint(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            code="LIMITEDPERCUSTOMER",
+            max_redemptions_per_customer=1,
+        )
+
+        # Different email, but the same card fingerprint as the prior redemption.
+        prior_customer = await create_customer(
+            save_fixture, organization=organization, email="other@example.com"
+        )
+        prior_checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            customer=prior_customer,
+            discount=discount,
+        )
+        prior_checkout.customer_email = "other@example.com"
+        await save_fixture(prior_checkout)
+        await create_payment(
+            save_fixture,
+            organization,
+            checkout=prior_checkout,
+            method_metadata={"fingerprint": "FINGERPRINT"},
+        )
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=prior_checkout
+        )
+
+        checkout = await create_checkout(
+            save_fixture, products=[product], discount=discount
+        )
+
+        confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)
+        confirmation_token.payment_method_preview = MagicMock()
+        confirmation_token.payment_method_preview.billing_details = MagicMock()
+        confirmation_token.payment_method_preview.billing_details.name = "Customer Name"
+        confirmation_token.payment_method_preview.card = SimpleNamespace(
+            fingerprint="FINGERPRINT"
+        )
+        stripe_service_mock.get_confirmation_token.return_value = confirmation_token
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+        stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        # `customer_name` is set, so the token is only fetched because the discount
+        # carries a per-customer limit.
+        with pytest.raises(DiscountRedemptionLimitReached):
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "unrelated@example.com",
                         "customer_billing_address": {"country": "FR"},
                     }
                 ),

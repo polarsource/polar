@@ -1049,7 +1049,13 @@ class CheckoutService:
         if (
             checkout.payment_processor == PaymentProcessor.stripe
             and checkout_confirm.confirmation_token_id is not None
-            and checkout.customer_name is None
+            and (
+                checkout.customer_name is None
+                or (
+                    checkout.discount is not None
+                    and checkout.discount.max_redemptions_per_customer is not None
+                )
+            )
         ):
             try:
                 confirmation_token = await stripe_service.get_confirmation_token(
@@ -1127,6 +1133,34 @@ class CheckoutService:
                     **checkout.payment_processor_metadata,
                     "customer_id": stripe_customer_id,
                 }
+
+                # Enforce the per-customer discount redemption limit *before* creating
+                # any payment intent, so we never charge a customer we're about to
+                # reject. The card fingerprint is read from the confirmation token's
+                # payment method preview (no intent/charge required yet).
+                if (
+                    checkout.discount is not None
+                    and checkout.discount.max_redemptions_per_customer is not None
+                ):
+                    payment_method_fingerprint: str | None = None
+                    if (
+                        confirmation_token is not None
+                        and confirmation_token.payment_method_preview is not None
+                    ):
+                        payment_method_fingerprint = get_fingerprint(
+                            typing.cast(
+                                stripe_lib.PaymentMethod,
+                                confirmation_token.payment_method_preview,
+                            )
+                        )
+                    if await discount_service.check_per_customer_limit_reached(
+                        session,
+                        checkout.discount,
+                        checkout=checkout,
+                        customer=customer,
+                        payment_method_fingerprint=payment_method_fingerprint,
+                    ):
+                        raise DiscountRedemptionLimitReached(checkout)
 
                 intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent | None = None
                 if checkout.is_payment_form_required:

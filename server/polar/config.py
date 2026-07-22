@@ -569,6 +569,7 @@ class Settings(BaseSettings):
         timedelta(days=7),  # Fourth retry after 21 days (2 + 5 + 7 + 7)
     ]
     CUSTOMER_RETRY_MAX_ATTEMPTS: int = 5
+    PAYMENT_LOCK_STALE_THRESHOLD: timedelta = timedelta(hours=1)
 
     TAX_PROCESSORS: list[TaxProcessor] = [TaxProcessor.stripe]
     TAX_RECORD_PROCESSOR: TaxProcessor = TaxProcessor.stripe

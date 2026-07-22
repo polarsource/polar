@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import AsyncGenerator, Sequence
 from datetime import datetime
 from typing import TYPE_CHECKING, cast
 from uuid import UUID
@@ -388,6 +388,15 @@ class OrderRepository(
         )
         result = cast(CursorResult[Order], await self.session.execute(statement))
         return result.rowcount > 0
+
+    async def stream_stale_payment_lock(self) -> AsyncGenerator[Order, None]:
+        statement = (
+            self.get_base_statement()
+            .where(Order.is_payment_lock_stale.is_(True))
+            .order_by(Order.payment_lock_acquired_at.asc())
+        )
+        async for order in self.stream(statement):
+            yield order
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

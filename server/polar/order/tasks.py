@@ -249,6 +249,37 @@ async def process_dunning_order(order_id: uuid.UUID) -> None:
 
 
 @actor(
+    actor_name="order.enqueue_stale_payment_locks",
+    cron_trigger=CronTrigger.from_crontab("15 * * * *"),
+    priority=TaskPriority.MEDIUM,
+)
+async def enqueue_stale_payment_locks() -> None:
+    async with AsyncSessionMaker() as session:
+        order_repository = OrderRepository.from_session(session)
+        async for order in order_repository.stream_stale_payment_lock():
+            enqueue_job("order.process_stale_payment_lock", order.id)
+
+
+@actor(actor_name="order.process_stale_payment_lock", priority=TaskPriority.MEDIUM)
+async def process_stale_payment_lock(order_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        order_repository = OrderRepository.from_session(session)
+        order = await order_repository.get_by_id(
+            order_id, options=order_repository.get_eager_options()
+        )
+        if order is None:
+            raise OrderDoesNotExist(order_id)
+
+        if not order.is_payment_lock_stale:
+            log.info("Order payment lock is not stale, skipping", order_id=order.id)
+            return
+
+        # Treat stale payment locks as manual retry payment failures,
+        # so we the lock is released, but the dunning sequence is untouched.
+        await order_service.handle_payment_failure(session, order, skip_dunning=True)
+
+
+@actor(
     actor_name="order.void_pending_orders_for_subscription", priority=TaskPriority.LOW
 )
 async def void_pending_orders_for_subscription(subscription_id: uuid.UUID) -> None:

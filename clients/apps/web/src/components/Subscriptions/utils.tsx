@@ -3,6 +3,11 @@ import type { PillColor } from '@polar-sh/orbit'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
 
+export const subscriptionUpdateValidationDiscriminators = [
+  'SubscriptionUpdateBase',
+  'SubscriptionUpdateBillingPeriod',
+]
+
 export const subscriptionStatusDisplayNames: {
   [key in schemas['SubscriptionStatus']]: string
 } = {

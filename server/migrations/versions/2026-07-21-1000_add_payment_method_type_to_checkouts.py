@@ -1,4 +1,4 @@
-"""add payment_method to checkouts
+"""add payment_method_type to checkouts
 
 Revision ID: a1c2f95b7d31
 Revises: 55a5e94aaf9d
@@ -21,10 +21,12 @@ depends_on: tuple[str] | None = None
 def upgrade() -> None:
     # Ensures we don't break app by applying a deadlock-inducing migration
     op.execute("SET LOCAL lock_timeout = '5s'")
-    op.add_column("checkouts", sa.Column("payment_method", sa.String(), nullable=True))
+    op.add_column(
+        "checkouts", sa.Column("payment_method_type", sa.String(), nullable=True)
+    )
 
 
 def downgrade() -> None:
     # Ensures we don't break app by applying a deadlock-inducing migration
     op.execute("SET LOCAL lock_timeout = '5s'")
-    op.drop_column("checkouts", "payment_method")
+    op.drop_column("checkouts", "payment_method_type")

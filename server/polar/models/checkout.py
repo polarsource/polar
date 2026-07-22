@@ -121,7 +121,7 @@ class Checkout(
     payment_processor_metadata: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
     )
-    payment_method: Mapped[str | None] = mapped_column(
+    payment_method_type: Mapped[str | None] = mapped_column(
         String, nullable=True, default=None
     )
     return_url: Mapped[str | None] = mapped_column(String, nullable=True, default=None)
@@ -395,7 +395,7 @@ class Checkout(
         return (
             self.require_billing_address
             or self.is_business_customer
-            or self.payment_method in FULL_BILLING_ADDRESS_PAYMENT_METHODS
+            or self.payment_method_type in FULL_BILLING_ADDRESS_PAYMENT_METHODS
         )
 
     @property

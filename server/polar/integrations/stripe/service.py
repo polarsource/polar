@@ -1,4 +1,5 @@
 import json
+import uuid
 from collections.abc import AsyncGenerator, AsyncIterator
 from typing import TYPE_CHECKING, Any, Literal, Unpack, cast, overload
 from urllib.parse import urlencode
@@ -120,6 +121,9 @@ class StripeService:
         log.info("stripe.account.update_website", account_id=id, url=url)
         await stripe_lib.Account.modify_async(id, business_profile={"url": url})
 
+    async def retrieve_account(self, id: str) -> stripe_lib.Account:
+        return await stripe_lib.Account.retrieve_async(id)
+
     async def account_exists(self, id: str) -> bool:
         try:
             account = await stripe_lib.Account.retrieve_async(id)
@@ -157,10 +161,15 @@ class StripeService:
         return (cast(str, account.default_currency), 0)
 
     async def create_account_link(
-        self, stripe_id: str, return_path: str
+        self, stripe_id: str, return_path: str, payout_account_id: uuid.UUID
     ) -> stripe_lib.AccountLink:
+        # Account links are single-use and short-lived. Stripe sends the merchant to
+        # `refresh_url` once one goes stale, and we mint a replacement from `id`.
+        refresh_query = urlencode(
+            {"return_path": return_path, "id": str(payout_account_id)}
+        )
         refresh_url = settings.generate_external_url(
-            f"/v1/integrations/stripe/refresh?{urlencode({'return_path': return_path})}"
+            f"/v1/integrations/stripe/refresh?{refresh_query}"
         )
         return_url = get_safe_return_url(return_path)
         return await stripe_lib.AccountLink.create_async(

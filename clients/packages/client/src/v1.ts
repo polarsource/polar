@@ -5827,6 +5827,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/payout-accounts/{id}/sync': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Sync
+     * @description **Scopes**: `payouts:read` `payouts:write`
+     */
+    post: operations['payout_accounts:sync']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/payout-accounts/{id}/onboarding-link': {
     parameters: {
       query?: never
@@ -28512,6 +28532,7 @@ export interface components {
       currency: string
       /** Is Payout Ready */
       is_payout_ready: boolean
+      status: components['schemas']['PayoutAccountStatus']
     }
     /** PayoutAccountCreate */
     PayoutAccountCreate: {
@@ -28532,6 +28553,44 @@ export interface components {
     PayoutAccountLink: {
       /** Url */
       url: string
+    }
+    /**
+     * PayoutAccountStatus
+     * @enum {string}
+     */
+    PayoutAccountStatus: 'incomplete' | 'under_review' | 'paused' | 'ready'
+    /** PayoutAccountStripeAccountDoesNotExist */
+    PayoutAccountStripeAccountDoesNotExist: {
+      /**
+       * Error
+       * @example PayoutAccountStripeAccountDoesNotExist
+       * @constant
+       */
+      error: 'PayoutAccountStripeAccountDoesNotExist'
+      /** Detail */
+      detail: string
+    }
+    /** PayoutAccountSyncFailed */
+    PayoutAccountSyncFailed: {
+      /**
+       * Error
+       * @example PayoutAccountSyncFailed
+       * @constant
+       */
+      error: 'PayoutAccountSyncFailed'
+      /** Detail */
+      detail: string
+    }
+    /** PayoutAccountSyncUnsupported */
+    PayoutAccountSyncUnsupported: {
+      /**
+       * Error
+       * @example PayoutAccountSyncUnsupported
+       * @constant
+       */
+      error: 'PayoutAccountSyncUnsupported'
+      /** Detail */
+      detail: string
     }
     /**
      * PayoutAccountType
@@ -55158,6 +55217,55 @@ export interface operations {
       }
     }
   }
+  'payout_accounts:sync': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PayoutAccount']
+        }
+      }
+      /** @description Not Found */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PayoutAccountSyncUnsupported']
+        }
+      }
+      /** @description Unprocessable Content */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PayoutAccountStripeAccountDoesNotExist']
+        }
+      }
+      /** @description Service Unavailable */
+      503: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PayoutAccountSyncFailed']
+        }
+      }
+    }
+  }
   'payout_accounts:onboarding_link': {
     parameters: {
       query: {
@@ -64494,6 +64602,9 @@ export const paymentTriggerValues: ReadonlyArray<
   'retry_payment_method_update',
   'retry_admin',
 ]
+export const payoutAccountStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PayoutAccountStatus']
+> = ['incomplete', 'under_review', 'paused', 'ready']
 export const payoutAccountTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PayoutAccountType']
 > = ['stripe', 'manual']

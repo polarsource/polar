@@ -4,6 +4,7 @@ import uuid
 from collections.abc import Sequence
 
 import stripe as stripe_lib
+import structlog
 
 from polar.auth.models import AuthSubject
 from polar.authz.service import get_accessible_org_ids
@@ -19,6 +20,8 @@ from polar.postgres import AsyncSession
 
 from .repository import PayoutAccountRepository
 from .schemas import PayoutAccountCreate, PayoutAccountLink
+
+log = structlog.get_logger()
 
 
 class PayoutAccountServiceError(PolarError):
@@ -37,6 +40,20 @@ class PayoutAccountExternalLinkUnsupported(PayoutAccountServiceError):
         self.account_type = account_type
         message = f"Unsupported payout account type for external link: {account_type}"
         super().__init__(message, 404)
+
+
+class PayoutAccountSyncUnsupported(PayoutAccountServiceError):
+    def __init__(self, account_type: PayoutAccountType) -> None:
+        self.account_type = account_type
+        message = f"Unsupported payout account type for sync: {account_type}"
+        super().__init__(message, 404)
+
+
+class PayoutAccountSyncFailed(PayoutAccountServiceError):
+    def __init__(self, stripe_id: str) -> None:
+        self.stripe_id = stripe_id
+        message = "Could not reach Stripe to refresh this payout account."
+        super().__init__(message, 503)
 
 
 class PayoutAccountStripeAccountDoesNotExist(PayoutAccountServiceError):
@@ -129,7 +146,7 @@ class PayoutAccountService:
             case PayoutAccountType.stripe:
                 assert payout_account.stripe_id is not None
                 account_link = await stripe.create_account_link(
-                    payout_account.stripe_id, return_path
+                    payout_account.stripe_id, return_path, payout_account.id
                 )
                 return PayoutAccountLink(url=account_link.url)
             case _:
@@ -213,6 +230,45 @@ class PayoutAccountService:
         if not await stripe.account_exists(payout_account.stripe_id):
             return
         await stripe.reject_account(payout_account.stripe_id, reason)
+
+    async def sync_from_stripe(
+        self, session: AsyncSession, payout_account: PayoutAccount
+    ) -> PayoutAccount:
+        """Refresh a payout account from Stripe, bypassing the `account.updated` webhook.
+
+        Stripe can enable or disable payouts without firing the webhook, and a merchant
+        stuck on a stale status has no other way to recheck.
+        """
+        if (
+            payout_account.type != PayoutAccountType.stripe
+            or payout_account.stripe_id is None
+        ):
+            raise PayoutAccountSyncUnsupported(payout_account.type)
+
+        try:
+            stripe_account = await stripe.retrieve_account(payout_account.stripe_id)
+        except (stripe_lib.PermissionError, stripe_lib.InvalidRequestError) as e:
+            # Deleted, or we lost access. Retrying can't repair it, so it must not read
+            # as a transient outage.
+            log.warning(
+                "payout_account.sync_account_gone",
+                stripe_id=payout_account.stripe_id,
+                error=str(e),
+            )
+            raise PayoutAccountStripeAccountDoesNotExist(
+                payout_account.stripe_id
+            ) from e
+        except stripe_lib.StripeError as e:
+            log.warning(
+                "payout_account.sync_failed",
+                stripe_id=payout_account.stripe_id,
+                error=str(e),
+            )
+            raise PayoutAccountSyncFailed(payout_account.stripe_id) from e
+
+        return await self.update_account_from_stripe(
+            session, stripe_account=stripe_account
+        )
 
     async def update_account_from_stripe(
         self, session: AsyncSession, *, stripe_account: stripe_lib.Account

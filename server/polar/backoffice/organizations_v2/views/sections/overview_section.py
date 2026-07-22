@@ -8,6 +8,7 @@ from datetime import datetime
 from fastapi import Request
 from tagflow import tag, text
 
+from polar.enums import PayoutAccountStatus
 from polar.models import Organization
 from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.organization_review.report import AnyAgentReport
@@ -31,6 +32,13 @@ from ._shared import (
     render_review_context_badge,
 )
 from .risk_signals import render_risk_signals_block
+
+_PAYOUT_STATUS_DOTS = {
+    PayoutAccountStatus.ready: "bg-success",
+    PayoutAccountStatus.under_review: "bg-warning",
+    PayoutAccountStatus.incomplete: "bg-warning",
+    PayoutAccountStatus.paused: "bg-error",
+}
 
 
 class OverviewSection(ChecklistMixin):
@@ -753,6 +761,42 @@ class OverviewSection(ChecklistMixin):
                         text(
                             f"{self.unrefunded_orders_count} unrefunded order{'s' if self.unrefunded_orders_count != 1 else ''} — should be auto-refunded before approval."
                         )
+
+                self._render_payout_account_row()
+
+    def _render_payout_account_row(self) -> None:
+        """Payout status with Stripe's raw `disabled_reason`.
+
+        The merchant only ever sees a generic message for the paused reasons, so
+        this is the one place the actual reason is readable.
+        """
+        payout_account = self.org.payout_account
+
+        if payout_account is None:
+            render_checklist_row("Payout Account", False, None)
+            return
+
+        status = payout_account.status
+        dot_class = _PAYOUT_STATUS_DOTS[status]
+        requirements = payout_account.data.get("requirements") or {}
+        disabled_reason = requirements.get("disabled_reason")
+
+        value = status.value.replace("_", " ").capitalize()
+        if disabled_reason:
+            value = f"{value} — {disabled_reason}"
+
+        with tag.div(
+            classes="flex items-center justify-between py-2 border-b border-base-200"
+        ):
+            with tag.div(classes="flex items-center gap-2"):
+                with tag.span(
+                    classes=f"w-2.5 h-2.5 rounded-full {dot_class} inline-block"
+                ):
+                    pass
+                with tag.span(classes="text-sm font-medium"):
+                    text("Payout Account")
+            with tag.span(classes="text-sm"):
+                text(value)
 
     # ------------------------------------------------------------------
     # Main render: AI review first, then supporting evidence

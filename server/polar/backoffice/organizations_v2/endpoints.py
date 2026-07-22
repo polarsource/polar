@@ -4233,10 +4233,7 @@ async def resync_stripe_account(
             status_code=400, detail="Payout account is not a Stripe account"
         )
 
-    stripe_account = await stripe_lib.Account.retrieve_async(payout_account.stripe_id)
-    await payout_account_service.update_account_from_stripe(
-        session, stripe_account=stripe_account
-    )
+    await payout_account_service.sync_from_stripe(session, payout_account)
 
     logger.info(
         "Stripe account resynced from backoffice",

@@ -1,5 +1,6 @@
 'use client'
 
+import { PayoutOnboardingReturnAlert } from '@/components/Finance/PayoutOnboardingReturnAlert'
 import { useOrganizationReviewStatus } from '@/hooks/queries/org'
 import { schemas } from '@polar-sh/client'
 import { useRouter } from 'next/navigation'
@@ -62,13 +63,18 @@ export const AccountPageRouter = ({
       reviewStatus?.appeal_decision === 'approved' ||
       hasAccountAccess
 
-  if (requireDetails) {
-    return <AccountPageDetailsRequired organization={organization} />
-  }
+  const page = requireDetails ? (
+    <AccountPageDetailsRequired organization={organization} />
+  ) : isApproved ? (
+    <AccountPageApproved organization={organization} />
+  ) : (
+    <AccountPageInReview organization={organization} />
+  )
 
-  if (isApproved) {
-    return <AccountPageApproved organization={organization} />
-  }
-
-  return <AccountPageInReview organization={organization} />
+  return (
+    <>
+      <PayoutOnboardingReturnAlert organization={organization} />
+      {page}
+    </>
+  )
 }

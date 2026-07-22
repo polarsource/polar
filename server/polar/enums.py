@@ -55,6 +55,13 @@ class PayoutAccountType(StrEnum):
         }[self]
 
 
+class PayoutAccountStatus(StrEnum):
+    incomplete = "incomplete"
+    under_review = "under_review"
+    paused = "paused"
+    ready = "ready"
+
+
 class RecurringInterval(StrEnum):
     day = "day"
     week = "week"

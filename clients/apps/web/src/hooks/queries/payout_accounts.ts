@@ -23,6 +23,27 @@ export const usePayoutAccounts = () =>
     retry: defaultRetry,
   })
 
+export const useSyncPayoutAccount = (payoutAccountId: string) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: () =>
+      unwrap(
+        api.POST('/v1/payout-accounts/{id}/sync', {
+          params: { path: { id: payoutAccountId } },
+        }),
+      ),
+    onSuccess: (payoutAccount) => {
+      queryClient.setQueryData(
+        ['payoutAccount', payoutAccountId],
+        payoutAccount,
+      )
+      queryClient.invalidateQueries({ queryKey: ['organizations'] })
+      queryClient.invalidateQueries({ queryKey: ['payoutAccounts'] })
+      queryClient.invalidateQueries({ queryKey: ['organizationReviewState'] })
+    },
+  })
+}
+
 export const useDeletePayoutAccount = () => {
   const queryClient = useQueryClient()
   return useMutation({

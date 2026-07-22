@@ -3,6 +3,7 @@ import {
   usePayoutAccounts,
   useSetOrganizationPayoutAccount,
 } from '@/hooks/queries/payout_accounts'
+import { payoutOnboardingReturnPath } from '@/components/Finance/payoutOnboardingReturn'
 import { toast } from '@/components/Toast/use-toast'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
@@ -65,7 +66,10 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                 params: {
                   path: { id: payoutAccount.id },
                   query: {
-                    return_path: `/dashboard/${_organization.slug}/finance/account`,
+                    return_path: payoutOnboardingReturnPath(
+                      _organization.slug,
+                      payoutAccount.id,
+                    ),
                   },
                 },
               }),

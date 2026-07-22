@@ -620,3 +620,11 @@ resource "tfe_variable" "stripe_app_client_link_id_production" {
   sensitive       = false
   variable_set_id = tfe_variable_set.production.id
 }
+
+resource "tfe_variable" "turnstile_secret_production" {
+  key             = "turnstile_secret"
+  category        = "terraform"
+  description     = "Cloudflare Turnstile secret for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}

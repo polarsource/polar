@@ -167,6 +167,7 @@ variable "backend_secrets" {
     chargeback_stop_webhook_secret = optional(string, "")
     numeral_api_key                = optional(string, "")
     firecrawl_api_key              = optional(string, "")
+    turnstile_secret               = string
   })
   sensitive = true
 }

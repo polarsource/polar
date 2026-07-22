@@ -66,10 +66,10 @@ def convert_type_to_typescript(
     if isinstance(type_ref, UnionType):
         if len(type_ref.variants) == 0:
             return "unknown"
-        variant_strs = [
+        variant_strs = dict.fromkeys(
             convert_type_to_typescript(v, ref_suffix, in_union=True)
             for v in type_ref.variants
-        ]
+        )
         # Join with |, wrapping nullable types in parens if needed
         union = " | ".join(variant_strs)
         if in_union:

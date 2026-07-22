@@ -6638,8 +6638,7 @@ class Member:
     role: MemberRole
 
 
-@dataclasses.dataclass(kw_only=True, slots=True)
-class MetadataOutputType: ...
+MetadataOutputType: typing.TypeAlias = dict[str, str | int | float | bool]
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)

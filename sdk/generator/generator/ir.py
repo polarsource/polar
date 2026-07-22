@@ -153,13 +153,12 @@ class Model(BaseModel):
     A named object schema from components/schemas.
 
     Emitted as a struct, dataclass, or interface by language generators.
-    Models with no fields represent union or composition schemas (oneOf/anyOf
-    at the top level) whose variants are discovered transitively.
     """
 
     name: str
     description: str | None = None
     fields: list[Field]
+    additional_properties: TypeRef | None = None
 
 
 class EnumValue(BaseModel):
@@ -603,7 +602,7 @@ def _convert_typeref(
         )
 
     if schema_type == "object" or schema.properties is not None:
-        if schema.properties is None and schema.additionalProperties is not None:
+        if not schema.properties and schema.additionalProperties is not None:
             if isinstance(schema.additionalProperties, bool):
                 if not schema.additionalProperties:
                     return PrimitiveType(kind="primitive", type="unknown")
@@ -700,8 +699,8 @@ def _schema_to_model(
                 has_example=has_example,
             )
         )
-    # Walk composition keywords so transitive references are discovered even
-    # when a model has no explicit properties (e.g. a discriminated oneOf).
+    # Walk composition keywords so references from object schemas that also use
+    # composition are discovered transitively.
     for variant in (schema.anyOf or []) + (schema.oneOf or []) + (schema.allOf or []):
         _convert_typeref(
             variant,
@@ -711,7 +710,26 @@ def _schema_to_model(
             *context_sets,
             normalize_model_name=normalize_model_name,
         )
-    return Model(name=name, description=schema.description or None, fields=fields)
+    additional_properties = None
+    if not schema.properties and schema.additionalProperties is not None:
+        if isinstance(schema.additionalProperties, bool):
+            if schema.additionalProperties:
+                additional_properties = PrimitiveType(kind="primitive", type="unknown")
+        else:
+            additional_properties = _convert_typeref(
+                schema.additionalProperties,
+                component_schemas,
+                inline_schemas,
+                referenced_names,
+                *context_sets,
+                normalize_model_name=normalize_model_name,
+            )
+    return Model(
+        name=name,
+        description=schema.description or None,
+        fields=fields,
+        additional_properties=additional_properties,
+    )
 
 
 def _schema_to_named_union(

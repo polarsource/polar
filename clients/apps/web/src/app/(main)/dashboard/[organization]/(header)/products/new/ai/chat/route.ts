@@ -375,12 +375,12 @@ export async function POST(req: Request) {
     .join('\n---\n')
 
   const geminiLite = phClient
-    ? withTracing(google('gemini-3.1-flash-lite-preview'), phClient, {
+    ? withTracing(google('gemini-3.1-flash-lite'), phClient, {
         posthogDistinctId: user.id,
         posthogTraceId: conversationId,
         posthogGroups: { organization: organizationId },
       })
-    : google('gemini-3.1-flash-lite-preview')
+    : google('gemini-3.1-flash-lite')
 
   const gemini = phClient
     ? withTracing(google('gemini-3-flash-preview'), phClient, {

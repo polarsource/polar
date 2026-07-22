@@ -47,10 +47,7 @@ export const validateFeedbackQuestion = async (
   question: string,
   tracing: TracingContext,
 ): Promise<ValidationStatus> => {
-  const model = wrapWithTracing(
-    google('gemini-3.1-flash-lite-preview'),
-    tracing,
-  )
+  const model = wrapWithTracing(google('gemini-3.1-flash-lite'), tracing)
   try {
     const result = await generateObject({
       model,

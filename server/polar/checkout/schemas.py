@@ -133,12 +133,9 @@ _payment_method_description = (
     "Some payment methods require a full billing address: keeping this value "
     "in sync allows `billing_address_fields` to reflect the fields to display."
 )
-PaymentMethodInput = Annotated[
+PaymentMethodTypeInput = Annotated[
     EmptyStrToNone,
-    Field(
-        description=_payment_method_description,
-        serialization_alias="payment_method_type",
-    ),
+    Field(description=_payment_method_description),
 ]
 
 _external_customer_id_description = (
@@ -390,7 +387,7 @@ class CheckoutUpdateBase(CustomFieldDataInputMixin, Schema):
     customer_billing_address: CustomerBillingAddressInput | None = None
     customer_tax_id: Annotated[str | None, EmptyStrToNoneValidator] = None
     locale: Locale | None = None
-    payment_method: PaymentMethodInput = None
+    payment_method_type: PaymentMethodTypeInput = None
 
 
 class CheckoutUpdate(
@@ -611,10 +608,7 @@ class CheckoutBase(CustomFieldDataOutputMixin, TimestampedSchema, IDSchema):
         validation_alias=AliasChoices("customer_tax_id_number", "customer_tax_id")
     )
     locale: str | None = None
-    payment_method: str | None = Field(
-        validation_alias=AliasChoices("payment_method_type", "payment_method"),
-        description=_payment_method_description,
-    )
+    payment_method_type: str | None = Field(description=_payment_method_description)
 
     payment_processor_metadata: dict[str, str]
 

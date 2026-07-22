@@ -3696,7 +3696,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             checkout_one_time_fixed,
-            CheckoutUpdatePublic(payment_method="upi"),
+            CheckoutUpdatePublic(payment_method_type="upi"),
         )
 
         assert checkout.payment_method_type == "upi"
@@ -3714,7 +3714,7 @@ class TestUpdate:
         checkout = await checkout_service.update(
             session,
             checkout,
-            CheckoutUpdatePublic(payment_method="card"),
+            CheckoutUpdatePublic(payment_method_type="card"),
         )
 
         assert checkout.payment_method_type == "card"
@@ -4355,6 +4355,39 @@ class TestConfirm:
         error_locations = {error["loc"] for error in errors}
         for missing_field in missing_fields:
             assert ("body", *missing_field) in error_locations
+
+    async def test_full_billing_address_required_for_payment_method(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)
+        confirmation_token.payment_method_preview = MagicMock()
+        confirmation_token.payment_method_preview.billing_details = MagicMock()
+        confirmation_token.payment_method_preview.billing_details.name = None
+        stripe_service_mock.get_confirmation_token.return_value = confirmation_token
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                        "payment_method_type": "upi",
+                        "customer_billing_address": {"country": "IN"},
+                    }
+                ),
+            )
+
+        errors = e.value.errors()
+        error_locations = {error["loc"] for error in errors}
+        assert ("body", "customer_billing_address") in error_locations
 
     async def test_wallet_name_from_confirmation_token(
         self,

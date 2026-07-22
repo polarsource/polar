@@ -391,7 +391,7 @@ class Checkout(
     ] = association_proxy("product", "attached_custom_fields")
 
     @property
-    def is_full_billing_address_required(self) -> bool:
+    def is_billing_address_required(self) -> bool:
         return (
             self.require_billing_address
             or self.is_business_customer
@@ -403,7 +403,7 @@ class Checkout(
         address = self.customer_billing_address
         country = address.country if address else None
         is_us = country == "US"
-        require_billing_address = self.is_full_billing_address_required or is_us
+        require_billing_address = self.is_billing_address_required or is_us
         return {
             "country": True,
             "state": country in {"US", "CA"},
@@ -418,7 +418,7 @@ class Checkout(
         address = self.customer_billing_address
         country = address.country if address else None
         is_us = country == "US"
-        require_billing_address = self.is_full_billing_address_required or is_us
+        require_billing_address = self.is_billing_address_required or is_us
         return {
             "country": BillingAddressFieldMode.required,
             "state": BillingAddressFieldMode.required

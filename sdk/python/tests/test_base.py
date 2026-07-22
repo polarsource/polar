@@ -1,13 +1,44 @@
+import dataclasses
 import typing
 
 import pytest
 
+from polar import deserialize
 from polar.base import AsyncClientBase, SyncClientBase, resolve_base_url
 
 SERVERS = {
     "production": "https://api.polar.sh",
     "sandbox": "https://sandbox-api.polar.sh",
 }
+
+
+@dataclasses.dataclass
+class Cat:
+    type: typing.Literal["cat"]
+    lives: int
+
+
+@dataclasses.dataclass
+class Dog:
+    type: typing.Literal["dog"]
+    breed: str
+
+
+Animal: typing.TypeAlias = Cat | Dog
+
+
+def test_deserialize_model() -> None:
+    cat = deserialize({"type": "cat", "lives": 9}, Cat)
+
+    typing.assert_type(cat, Cat)
+    assert cat == Cat(type="cat", lives=9)
+
+
+def test_deserialize_union() -> None:
+    animal = deserialize({"type": "dog", "breed": "Samoyed"}, Animal)
+
+    typing.assert_type(animal, Cat | Dog)
+    assert animal == Dog(type="dog", breed="Samoyed")
 
 
 @pytest.mark.parametrize(

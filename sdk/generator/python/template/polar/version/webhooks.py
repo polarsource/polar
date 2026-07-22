@@ -3,7 +3,7 @@ from __future__ import annotations
 import dataclasses
 import typing
 
-from polar.base import retort
+from polar.base import deserialize
 from polar.webhooks import (
     PolarWebhookError as PolarWebhookError,
     PolarWebhookUnknownTypeError as PolarWebhookUnknownTypeError,
@@ -73,4 +73,4 @@ def validate_event(
 
 
 def _load_payload(data: dict[str, typing.Any]) -> WebhookPayload:
-    return typing.cast(WebhookPayload, retort.load(data, WebhookPayload))
+    return deserialize(data, WebhookPayload)

@@ -1,4 +1,10 @@
-from polar.base import PolarClientError, PolarError, PolarNetworkError, PolarServerError
+from polar.base import (
+    PolarClientError,
+    PolarError,
+    PolarNetworkError,
+    PolarServerError,
+    deserialize,
+)
 
 __version__ = "1.0.0a13"
 __all__ = [
@@ -6,4 +12,5 @@ __all__ = [
     "PolarNetworkError",
     "PolarServerError",
     "PolarClientError",
+    "deserialize",
 ]

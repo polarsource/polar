@@ -115,7 +115,12 @@ class PaymentRepository(
         return result.scalar() or 0
 
     async def get_by_stripe_payment_intent_id(
-        self, payment_intent_id: str, *, options: Options = ()
+        self,
+        payment_intent_id: str,
+        *,
+        options: Options = (),
+        for_update: bool = False,
+        nowait: bool = False,
     ) -> Payment | None:
         """Get the payment for a PaymentIntent, whether or not it has since been
         re-keyed onto its charge."""
@@ -133,6 +138,9 @@ class PaymentRepository(
             )
             .options(*options)
         )
+        if for_update:
+            statement = statement.with_for_update(of=Payment, nowait=nowait)
+
         return await self.get_one_or_none(statement)
 
     async def get_unresolved_stripe_intents_for_order(

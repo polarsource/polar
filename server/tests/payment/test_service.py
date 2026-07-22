@@ -416,7 +416,7 @@ class TestUpsertPendingFromStripePaymentIntent:
 
         assert payment is None
 
-    async def test_created_then_requires_action_updates_one_row(
+    async def test_repeated_requires_action_updates_one_row(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -425,21 +425,20 @@ class TestUpsertPendingFromStripePaymentIntent:
         organization: Organization,
     ) -> None:
         order = await create_order(save_fixture, product=product, customer=customer)
-        created = build_stripe_payment_intent(status="requires_confirmation")
-        requires_action = build_stripe_payment_intent(status="requires_action")
+        payment_intent = build_stripe_payment_intent(status="requires_action")
 
         first = await payment_service.upsert_pending_from_stripe_payment_intent(
-            session, created, organization, order=order
+            session, payment_intent, organization, order=order
         )
         second = await payment_service.upsert_pending_from_stripe_payment_intent(
-            session, requires_action, organization, order=order
+            session, payment_intent, organization, order=order
         )
 
         assert first is not None
         assert second is not None
         assert first.id == second.id
 
-    async def test_charge_recorded_before_the_intent_is_not_duplicated(
+    async def test_charge_recorded_before_the_intent_is_left_alone(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -463,13 +462,12 @@ class TestUpsertPendingFromStripePaymentIntent:
             session, payment_intent, organization, order=order
         )
 
-        assert from_charge.processor_metadata == {
-            "payment_intent_id": payment_intent.id
-        }
-        assert late is not None
-        assert late.id == from_charge.id
+        assert late is None
+        assert from_charge.processor_id == charge.id
+        assert from_charge.status == PaymentStatus.succeeded
+        assert from_charge.method == "card"
 
-    async def test_promoted_payment_is_not_duplicated(
+    async def test_promoted_payment_is_not_downgraded(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -477,7 +475,7 @@ class TestUpsertPendingFromStripePaymentIntent:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        """The charge webhook can land before `payment_intent.created`."""
+        """A stalled `requires_action` handler must not undo the charge."""
         order = await create_order(save_fixture, product=product, customer=customer)
         payment_intent = build_stripe_payment_intent(status="requires_action")
         pending = await payment_service.upsert_pending_from_stripe_payment_intent(
@@ -498,8 +496,11 @@ class TestUpsertPendingFromStripePaymentIntent:
             session, payment_intent, organization, order=order
         )
 
-        assert late is not None
-        assert late.id == promoted.id
+        assert late is None
+        assert promoted.id == pending.id
+        assert promoted.processor_id == charge.id
+        assert promoted.status == PaymentStatus.succeeded
+        assert promoted.method == "card"
 
 
 @pytest.mark.asyncio

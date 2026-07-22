@@ -12381,6 +12381,7 @@ export interface components {
       | components['schemas']['NotOpenCheckout']
       | components['schemas']['PaymentNotReady']
       | components['schemas']['TrialAlreadyRedeemed']
+      | components['schemas']['DiscountRedemptionLimitReached']
     /**
      * CheckoutLink
      * @description Checkout link data.
@@ -20137,6 +20138,17 @@ export interface components {
        * @description The ID of the organization owning the product.
        */
       organization_id: string
+    }
+    /** DiscountRedemptionLimitReached */
+    DiscountRedemptionLimitReached: {
+      /**
+       * Error
+       * @example DiscountRedemptionLimitReached
+       * @constant
+       */
+      error: 'DiscountRedemptionLimitReached'
+      /** Detail */
+      detail: string
     }
     /**
      * DiscountSortProperty

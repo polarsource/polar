@@ -214,6 +214,16 @@ class TrialAlreadyRedeemed(CheckoutError):
         super().__init__(message, 403)
 
 
+class DiscountRedemptionLimitReached(CheckoutError):
+    def __init__(self, checkout: Checkout) -> None:
+        self.checkout = checkout
+        message = (
+            "You have already redeemed this discount the maximum number of "
+            "times allowed per customer."
+        )
+        super().__init__(message, 403)
+
+
 class CheckoutLocked(CheckoutError):
     """Raised when checkout is locked by another transaction."""
 

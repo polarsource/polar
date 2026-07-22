@@ -42,6 +42,7 @@ from .schemas import (
 )
 from .service import (
     AlreadyActiveSubscriptionError,
+    DiscountRedemptionLimitReached,
     ExpiredCheckoutError,
     NotOpenCheckout,
     PaymentError,
@@ -74,7 +75,8 @@ CheckoutForbiddenError = {
         AlreadyActiveSubscriptionError.schema()
         | NotOpenCheckout.schema()
         | PaymentNotReady.schema()
-        | TrialAlreadyRedeemed.schema(),
+        | TrialAlreadyRedeemed.schema()
+        | DiscountRedemptionLimitReached.schema(),
         SetSchemaReference("CheckoutForbiddenError"),
     ],
 }

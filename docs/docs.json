@@ -120,6 +120,7 @@
               "features/analytics",
               "features/customer-management",
               "features/team-management",
+              "features/sso",
               {
                 "group": "Customer Portal",
                 "pages": [

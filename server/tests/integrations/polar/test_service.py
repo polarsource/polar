@@ -160,6 +160,10 @@ def _make_preview_grant(*, benefit_id: str = _BENEFIT_ID) -> BenefitGrant:
     return _make_grant(benefit_id=benefit_id, metadata={"type": "preview_access"})
 
 
+def _make_sso_grant(*, benefit_id: str = _BENEFIT_ID) -> BenefitGrant:
+    return _make_grant(benefit_id=benefit_id, metadata={"type": "sso"})
+
+
 def _make_payload(
     event_type: str,
     *,
@@ -243,6 +247,22 @@ def preview_access_org_repository_mock(mocker: MockerFixture) -> MagicMock:
     repository = MagicMock()
     organization = MagicMock(spec=Organization)
     organization.feature_settings = {}
+    repository.get_by_id = AsyncMock(return_value=organization)
+    mocker.patch(
+        "polar.integrations.polar.service.OrganizationRepository.from_session",
+        return_value=repository,
+    )
+    return repository
+
+
+@pytest.fixture
+def sso_org_repository_mock(mocker: MockerFixture) -> MagicMock:
+    """Repository whose organization enforces SSO and carries a real
+    feature_settings dict, so revocation can be observed on both."""
+    repository = MagicMock()
+    organization = MagicMock(spec=Organization)
+    organization.feature_settings = {"sso_enabled": True}
+    organization.sso_enforced = True
     repository.get_by_id = AsyncMock(return_value=organization)
     mocker.patch(
         "polar.integrations.polar.service.OrganizationRepository.from_session",
@@ -1055,6 +1075,59 @@ class TestHandleBenefitGrantEvent:
         organization = preview_access_org_repository_mock.get_by_id.return_value
         assert organization.feature_settings == _PREVIEW_FLAGS_ENABLED
 
+    async def test_sso_created_enables_flag(
+        self,
+        session_mock: AsyncSession,
+        sso_org_repository_mock: MagicMock,
+        list_grants_mock: AsyncMock,
+    ) -> None:
+        list_grants_mock.return_value = [_make_sso_grant()]
+        payload = WebhookBenefitGrantCreatedPayload.model_validate(
+            _make_payload("benefit_grant.created", metadata={"type": "sso"})
+        )
+
+        await polar_self.handle_benefit_grant_event(session_mock, payload)
+
+        list_grants_mock.assert_awaited_once_with(customer_id=_CUSTOMER_ID)
+        organization = sso_org_repository_mock.get_by_id.return_value
+        assert organization.feature_settings == {"sso_enabled": True}
+
+    async def test_sso_revoked_disables_flag_and_lifts_enforcement(
+        self,
+        session_mock: AsyncSession,
+        sso_org_repository_mock: MagicMock,
+        list_grants_mock: AsyncMock,
+    ) -> None:
+        list_grants_mock.return_value = []
+        payload = WebhookBenefitGrantRevokedPayload.model_validate(
+            _make_payload("benefit_grant.revoked", metadata={"type": "sso"})
+        )
+
+        await polar_self.handle_benefit_grant_event(session_mock, payload)
+
+        organization = sso_org_repository_mock.get_by_id.return_value
+        assert organization.feature_settings == {"sso_enabled": False}
+        assert organization.sso_enforced is False
+
+    async def test_sso_revoked_with_remaining_grant_keeps_flag(
+        self,
+        session_mock: AsyncSession,
+        sso_org_repository_mock: MagicMock,
+        list_grants_mock: AsyncMock,
+    ) -> None:
+        # A replayed or late revoke must not disable a feature the customer still
+        # holds: the handler re-reads active grants instead of trusting the event.
+        list_grants_mock.return_value = [_make_sso_grant(benefit_id="other")]
+        payload = WebhookBenefitGrantRevokedPayload.model_validate(
+            _make_payload("benefit_grant.revoked", metadata={"type": "sso"})
+        )
+
+        await polar_self.handle_benefit_grant_event(session_mock, payload)
+
+        organization = sso_org_repository_mock.get_by_id.return_value
+        assert organization.feature_settings == {"sso_enabled": True}
+        assert organization.sso_enforced is True
+
 
 @pytest.mark.asyncio
 class TestApplyPreviewAccess:
@@ -1100,6 +1173,62 @@ class TestApplyPreviewAccess:
         await polar_self._apply_preview_access(
             session_mock, ORG_A, _make_preview_grant()
         )
+
+
+@pytest.mark.asyncio
+class TestApplySSO:
+    async def test_active_grant_enables_and_preserves_other_flags(
+        self,
+        session_mock: AsyncSession,
+        sso_org_repository_mock: MagicMock,
+    ) -> None:
+        organization = sso_org_repository_mock.get_by_id.return_value
+        organization.feature_settings = {"member_model_enabled": True}
+        organization.sso_enforced = False
+
+        await polar_self._apply_sso(session_mock, ORG_A, _make_sso_grant())
+
+        sso_org_repository_mock.get_by_id.assert_awaited_once_with(
+            ORG_A, include_blocked=True
+        )
+        assert organization.feature_settings == {
+            "member_model_enabled": True,
+            "sso_enabled": True,
+        }
+
+    async def test_active_grant_leaves_enforcement_alone(
+        self,
+        session_mock: AsyncSession,
+        sso_org_repository_mock: MagicMock,
+    ) -> None:
+        organization = sso_org_repository_mock.get_by_id.return_value
+
+        await polar_self._apply_sso(session_mock, ORG_A, _make_sso_grant())
+
+        assert organization.sso_enforced is True
+
+    async def test_no_grant_disables_flag_and_lifts_enforcement(
+        self,
+        session_mock: AsyncSession,
+        sso_org_repository_mock: MagicMock,
+    ) -> None:
+        organization = sso_org_repository_mock.get_by_id.return_value
+
+        await polar_self._apply_sso(session_mock, ORG_A, None)
+
+        # Enforcement must go with the feature: an enforcing organization whose
+        # login page offers no SSO factor is unreachable.
+        assert organization.feature_settings == {"sso_enabled": False}
+        assert organization.sso_enforced is False
+
+    async def test_missing_organization_is_silent_noop(
+        self,
+        session_mock: AsyncSession,
+        sso_org_repository_mock: MagicMock,
+    ) -> None:
+        sso_org_repository_mock.get_by_id.return_value = None
+
+        await polar_self._apply_sso(session_mock, ORG_A, None)
 
 
 def _make_product(

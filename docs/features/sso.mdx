@@ -1,0 +1,101 @@
+---
+title: "Single Sign-On"
+sidebarTitle: "SSO"
+description: "Let your team sign in to Polar through your own identity provider, and become members automatically."
+---
+
+<Note>
+  Single Sign-On is included in the **Scale** plan. Upgrade from [**Settings →
+  Billing**](https://polar.sh/to/dashboard/settings/billing) — SSO becomes available as soon as the
+  subscription is active.
+</Note>
+
+Single Sign-On connects your organization to your own identity provider. Your team signs in with the credentials they already use, and anyone who authenticates becomes a member of your organization.
+
+Polar supports any provider that implements OpenID Connect, including Google Workspace, Okta, Microsoft Entra ID, and Keycloak.
+
+SSO lives under [**Settings → SSO**](https://polar.sh/to/dashboard/settings/sso) in your dashboard.
+
+## How people become members
+
+Anyone who signs in through your connection becomes a member of your organization. You don't invite them first — authenticating against your identity provider is what grants membership.
+
+New members join with the **Member** role. To grant more access, [change their role](/features/team-management#changing-a-members-role) after their first sign-in.
+
+Your identity provider decides who can authenticate, so it also decides who can join. Grant and revoke access to the Polar application there.
+
+<Warning>
+**Removing a member in Polar does not keep them out.** If they can still authenticate against your identity provider, they rejoin on their next sign-in. To remove someone's access, revoke it in your identity provider.
+</Warning>
+
+Polar only accepts an identity whose email address your provider marks as verified. If the email is unverified, the sign-in is refused and no account is created.
+
+## Setting up a connection
+
+<Steps>
+  <Step title="Add the connection in Polar">
+    Go to [**Settings → SSO**](https://polar.sh/to/dashboard/settings/sso) and click **Add connection**. Pick **Google Workspace** or **Custom OIDC provider**.
+  </Step>
+  <Step title="Register the callback URL">
+    Copy the **Callback URL** shown at the top of the form and register it as a redirect URI in your identity provider.
+  </Step>
+  <Step title="Fill in the provider details">
+    Enter the **Issuer URL** and **Client ID** from your provider. You can paste the discovery URL into the issuer field — Polar strips the `/.well-known/openid-configuration` suffix.
+
+    For **Client secret** authentication, paste the secret. For **Private key JWT**, copy the **JWKS URL** into your provider so it can fetch Polar's public keys.
+  </Step>
+  <Step title="Enable it">
+    Connections are created disabled. Once your provider is configured, click **Enable** on the connection row.
+  </Step>
+</Steps>
+
+Share the **Login link** from the SSO settings page with your team. It takes them straight to your organization's sign-in page.
+
+### Authorization parameters
+
+You can append extra parameters to the authorization request. The most common is `hd`, which pins a Google Workspace domain so users outside it can't sign in.
+
+Polar sets `response_type`, `client_id`, `redirect_uri`, `scope`, `state`, `nonce`, and the PKCE parameters itself. You can't override them.
+
+## Enforcing SSO
+
+By default, members can sign in either through SSO or through the standard methods — email code, Google, GitHub, or Apple. Enforcing SSO removes the alternatives: members reach your organization only through your identity provider.
+
+To enforce it, you need an enabled connection, and you must already be signed in through this organization's SSO. That proves the connection works before it becomes the only way in.
+
+<Warning>
+Enforcing SSO disconnects every member and every authorized third-party app. They must sign in again through your identity provider.
+</Warning>
+
+Enforcement makes your identity provider the only door. Anyone who can't authenticate there loses access, including members you invited by email — they keep their membership, but they can't reach the organization until you add them to your provider.
+
+You can stop enforcing at any time from the same screen.
+
+<Note>
+Enforcement applies to dashboard sessions. Personal access tokens and organization access tokens keep working, so scripts and integrations aren't interrupted.
+</Note>
+
+## Frequently asked questions
+
+<AccordionGroup>
+  <Accordion title="Do members need a Polar account before their first sign-in?">
+    No. Polar creates the account on their first sign-in through your connection, and adds them to your organization.
+  </Accordion>
+  <Accordion title="What happens to someone who already has a Polar account?">
+    They keep it. Signing in through your connection adds your organization to their existing account — it doesn't create a second one, and it doesn't give your organization access to anything else they own.
+  </Accordion>
+  <Accordion title="Can I still invite members by email?">
+    Yes, as long as you don't enforce SSO. [Invitations](/features/team-management#inviting-a-member) work alongside it, which is useful for contractors who aren't in your identity provider.
+
+    Once you enforce SSO, invitations stop being a way in. The invited person becomes a member, but reaching your organization requires signing in through your identity provider. Add them there instead.
+  </Accordion>
+  <Accordion title="Can I use more than one identity provider?">
+    Yes. Add a connection per provider. Each one appears as a separate button on your organization's sign-in page, so give them names.
+  </Accordion>
+  <Accordion title="How do I remove someone's access?">
+    Revoke their access to the Polar application in your identity provider. Removing them in Polar alone doesn't stop them from rejoining on their next sign-in.
+  </Accordion>
+  <Accordion title="What happens if I leave the Scale plan?">
+    SSO turns off, and enforcement is lifted with it, so your members sign in with the standard methods again. Your connections are kept — upgrading to Scale again restores them as they were. Everyone who joined through SSO stays a member.
+  </Accordion>
+</AccordionGroup>

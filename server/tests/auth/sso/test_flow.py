@@ -123,6 +123,11 @@ async def create_sso_connection(
     }
     if authorization_parameters is not None:
         configuration["authorization_parameters"] = authorization_parameters
+    organization.feature_settings = {
+        **organization.feature_settings,
+        "sso_enabled": True,
+    }
+    await save_fixture(organization)
     connection = OrganizationSSOConnection(
         organization=organization,
         type=OrganizationSSOConnectionType.oidc,

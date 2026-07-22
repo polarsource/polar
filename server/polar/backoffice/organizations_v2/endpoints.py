@@ -3580,10 +3580,16 @@ async def edit_features(
                 **feature_flags,
             }
 
+            update_dict: dict[str, Any] = {"feature_settings": updated_feature_settings}
+            # Enforcement outliving SSO would strand the organization: no SSO
+            # session can be minted, and enforcement hides it from every other one.
+            if not updated_feature_settings.get("sso_enabled", False):
+                update_dict["sso_enforced"] = False
+
             # Update organization
             organization = await repository.update(
                 organization,
-                update_dict={"feature_settings": updated_feature_settings},
+                update_dict=update_dict,
             )
 
             # Trigger backfill when member_model transitions False → True

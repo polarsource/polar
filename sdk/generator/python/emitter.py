@@ -87,6 +87,7 @@ class PythonEmitter(EmitterBase):
             (".zed", "settings.json"),
             ("polar", "__init__.py"),
             ("polar", "base.py"),
+            ("polar", "py.typed"),
             ("polar", "webhooks.py"),
             ("tests", "__init__.py"),
             ("tests", "test_base.py"),

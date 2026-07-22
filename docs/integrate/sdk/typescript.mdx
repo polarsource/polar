@@ -5,65 +5,64 @@ icon: js
 description: SDK for JavaScript runtimes (Node.js and Browser)
 ---
 
-## Examples
+The official TypeScript SDK provides a fully typed client for the Polar API.
 
-- [With Node.js](https://github.com/polarsource/examples/tree/main/with-nodejs)
+<Info>
+  The new SDK is currently in public preview. Install it from the `next` tag to
+  try it before the stable release.
+</Info>
 
 ## Installation
 
 <Tabs>
   <Tab title="npm">
     ```bash Terminal
-    npm install @polar-sh/sdk
+    npm install @polar-sh/sdk@next
     ```
   </Tab>
   <Tab title="yarn">
     ```bash Terminal
-    yarn add @polar-sh/sdk
+    yarn add @polar-sh/sdk@next
     ```
   </Tab>
   <Tab title="pnpm">
     ```bash Terminal
-    pnpm add @polar-sh/sdk
+    pnpm add @polar-sh/sdk@next
     ```
   </Tab>
 </Tabs>
 
 ## Quickstart
 
+Create an [organization access token](/integrate/oat) for server-side use, keep it out of browser bundles, store it in `POLAR_ACCESS_TOKEN`, and make your first request:
+
 ```typescript icon="square-js" index.js
-import { Polar } from '@polar-sh/sdk'
+import { createPolar } from "@polar-sh/sdk/2026-04";
 
-const polar = new Polar({
-  accessToken: process.env.POLAR_ACCESS_TOKEN,
-  server: process.env.POLAR_MODE || 'sandbox' // sandbox or production
-})
+const polar = createPolar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
+});
 
-async function run() {
-  const result = await polar.users.benefits.list({})
-  for await (const page of result) {
-    // Handle the page
-    console.log(page)
-  }
-}
-
-run()
+const customerState = await polar.customers.getStateExternal("customer_external_id");
+console.log(customerState);
 ```
 
-<Note>
-**camelCase vs. snake_case**
+The import path pins your client to the `2026-04` API version.
 
-Our API (and docs) is designed with `snake_case`. However, our TS SDK currently
-converts this to camelCase to follow JS/TS convention. You should automatically
-see the camelCase parameters suggested in modern IDEs due to typing, but it's
-worth keeping in mind switching between code & docs.
+## Sandbox environment
 
-We aim to introduce the ability to toggle this in the future, i.e using
-`snake_case` even in TypeScript to more easily map it to our documentation and
-design of the API itself.
-</Note>
+The client uses production by default. Pass `environment: "sandbox"` to use the isolated [sandbox environment](/integrate/sandbox):
 
-### Framework Adapters
+```typescript
+const polar = createPolar({
+  accessToken: process.env.POLAR_ACCESS_TOKEN!,
+  environment: "sandbox",
+});
+```
+
+[View the source code on GitHub](https://github.com/polarsource/polar/tree/main/sdk/typescript).
+
+## Framework adapters
 
 Implement Checkout & Webhook handlers in few lines of code.
 

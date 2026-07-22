@@ -1,7 +1,7 @@
 ---
 title: "API Overview"
 sidebarTitle: "Introduction"
-description: "Base URLs, authentication, pagination, rate limits, and the difference between the Core API and the Customer Portal API"
+description: "Official SDK quickstarts, base URLs, authentication, pagination, rate limits, and API concepts"
 ---
 
 <CardGroup cols={2}>
@@ -23,6 +23,60 @@ description: "Base URLs, authentication, pagination, rate limits, and the differ
     Use a **Customer Access Token** created via `/v1/customer-sessions/`
   </Card>
 </CardGroup>
+
+## Official SDKs
+
+Use our new, fully typed SDKs to integrate with the Polar API from TypeScript or Python.
+
+<Info>
+  The SDKs are currently in public preview. Install the pre-release explicitly
+  to try them before the stable release.
+</Info>
+
+Create an [organization access token](/integrate/oat), then install the SDK and make your first request:
+
+<Tabs>
+  <Tab title="TypeScript">
+    ```bash npm
+    npm install @polar-sh/sdk@next
+    ```
+
+    ```typescript app.ts
+    import { createPolar } from "@polar-sh/sdk/2026-04";
+
+    const polar = createPolar({
+      accessToken: process.env.POLAR_ACCESS_TOKEN!,
+    });
+
+    const customerState = await polar.customers.getStateExternal("customer_external_id");
+    console.log(customerState);
+    ```
+  </Tab>
+  <Tab title="Python">
+    <CodeGroup>
+      ```bash uv
+      uv add polar-sdk --prerelease allow
+      ```
+
+      ```bash pip
+      pip install --pre polar-sdk
+      ```
+    </CodeGroup>
+
+    ```python main.py
+    import os
+
+    from polar.v2026_04 import Polar
+
+    polar = Polar(os.environ["POLAR_ACCESS_TOKEN"])
+
+    customer_state = polar.customers.get_state_external("customer_external_id")
+    print(customer_state)
+    ```
+  </Tab>
+</Tabs>
+
+Both clients use production by default. Pass `environment="sandbox"` in Python or `environment: "sandbox"` in TypeScript to use the [sandbox environment](/integrate/sandbox).
 
 ## Base URLs
 
@@ -99,46 +153,6 @@ curl https://sandbox-api.polar.sh/v1/products/ \
 curl https://api.polar.sh/v1/customer-portal/orders/ \
   -H "Authorization: Bearer $POLAR_CUSTOMER_TOKEN" \
   -H "Accept: application/json"
-```
-
-</CodeGroup>
-
-## Using SDKs
-
-All official SDKs accept a `server` parameter for sandbox usage:
-
-<CodeGroup>
-```ts TypeScript
-import { Polar } from "@polar-sh/sdk";
-
-const polar = new Polar({
-accessToken: process.env.POLAR_ACCESS_TOKEN!,
-server: "sandbox", // omit or use 'production' for live
-});
-
-````
-
-```py Python
-from polar import Polar
-
-client = Polar(
-    access_token=os.environ["POLAR_ACCESS_TOKEN"],
-    server="sandbox",
-)
-````
-
-```go Go
-s := polargo.New(
-  polargo.WithServer("sandbox"),
-  polargo.WithSecurity(os.Getenv("POLAR_ACCESS_TOKEN")),
-)
-```
-
-```php PHP
-$sdk = Polar\Polar::builder()
-    ->setServer('sandbox')
-    ->setSecurity(getenv('POLAR_ACCESS_TOKEN'))
-    ->build();
 ```
 
 </CodeGroup>

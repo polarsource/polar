@@ -34,12 +34,7 @@ export const UpdateSubscriptionBillingPeriodForm = ({
       current_billing_period_end: subscription.current_period_end || undefined,
     },
   })
-  const {
-    control,
-    handleSubmit,
-    setError,
-    formState: { isDirty },
-  } = form
+  const { control, handleSubmit, setError } = form
 
   const onSubmit = useCallback(
     async (body: schemas['SubscriptionUpdateBillingPeriod']) => {
@@ -88,6 +83,12 @@ export const UpdateSubscriptionBillingPeriodForm = ({
           <FormField
             control={control}
             name="current_billing_period_end"
+            rules={{
+              required: 'Please select a billing period end date',
+              validate: (value) =>
+                value !== subscription.current_period_end ||
+                'Select a new end date to extend the billing period.',
+            }}
             render={({ field }) => {
               return (
                 <FormItem className="flex flex-col gap-y-2">
@@ -114,7 +115,7 @@ export const UpdateSubscriptionBillingPeriodForm = ({
           <Button
             type="submit"
             loading={updateSubscription.isPending}
-            disabled={!isDirty || updateSubscription.isPending}
+            disabled={updateSubscription.isPending}
             className="w-fit"
           >
             Update Billing Period

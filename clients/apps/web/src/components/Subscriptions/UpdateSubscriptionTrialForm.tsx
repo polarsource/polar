@@ -50,13 +50,7 @@ export const UpdateSubscriptionTrialForm = ({
       trial_end: subscription.trial_end || undefined,
     },
   })
-  const {
-    control,
-    handleSubmit,
-    setError,
-    reset,
-    formState: { isDirty },
-  } = form
+  const { control, handleSubmit, setError, reset } = form
 
   const handleEndTrialNow = useCallback(async () => {
     setIsEndingTrial(true)
@@ -187,7 +181,7 @@ export const UpdateSubscriptionTrialForm = ({
               <Button
                 type="submit"
                 loading={updateSubscription.isPending}
-                disabled={!isDirty || updateSubscription.isPending}
+                disabled={updateSubscription.isPending}
                 className="w-fit"
               >
                 Update Trial

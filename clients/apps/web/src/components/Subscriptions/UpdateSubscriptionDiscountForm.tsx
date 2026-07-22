@@ -50,12 +50,7 @@ export const UpdateSubscriptionDiscountForm = ({
       discount_id: subscription.discount_id ?? null,
     },
   })
-  const {
-    control,
-    handleSubmit,
-    setError,
-    formState: { isDirty },
-  } = form
+  const { control, handleSubmit, setError } = form
 
   const onSubmit = useCallback(
     async (body: schemas['SubscriptionUpdateBase']) => {
@@ -98,6 +93,11 @@ export const UpdateSubscriptionDiscountForm = ({
           <FormField
             control={control}
             name="discount_id"
+            rules={{
+              validate: (value) =>
+                (value ?? null) !== (subscription.discount_id ?? null) ||
+                'Select a different discount to apply a change.',
+            }}
             render={({ field }) => {
               const selectedItem =
                 selectedDiscount?.id === field.value
@@ -153,7 +153,7 @@ export const UpdateSubscriptionDiscountForm = ({
             type="submit"
             size="lg"
             loading={updateSubscription.isPending}
-            disabled={!isDirty || updateSubscription.isPending}
+            disabled={updateSubscription.isPending}
           >
             Update Subscription
           </Button>

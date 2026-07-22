@@ -70,6 +70,7 @@ resource "render_env_group" "backend" {
       POLAR_TAX_PROCESSORS                       = { value = var.backend_config.tax_processors }
       POLAR_TAX_RECORD_PROCESSOR                 = { value = var.backend_config.tax_record_processor }
       POLAR_NUMERAL_API_KEY                      = { value = var.backend_secrets.numeral_api_key }
+      POLAR_TURNSTILE_SECRET                     = { value = var.backend_secrets.turnstile_secret }
       POLAR_CUSTOMER_PORTAL_URL_OVERRIDES        = { value = var.backend_config.customer_portal_url_overrides }
     },
     var.backend_config.plain_default_tier_external_id != "" ? {

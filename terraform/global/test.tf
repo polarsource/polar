@@ -520,3 +520,11 @@ resource "tfe_variable" "stripe_app_client_link_id_test" {
   sensitive       = false
   variable_set_id = tfe_variable_set.test.id
 }
+
+resource "tfe_variable" "turnstile_secret_test" {
+  key             = "turnstile_secret"
+  category        = "terraform"
+  description     = "Cloudflare Turnstile secret for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}

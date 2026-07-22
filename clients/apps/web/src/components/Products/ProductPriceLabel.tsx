@@ -49,7 +49,7 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
       const hasMultipleTiers = tiers.length > 1
 
       return (
-        <div className="flex items-baseline gap-1.5">
+        <span className="inline-flex items-baseline gap-1.5">
           {hasMultipleTiers && (
             <span className="dark:text-polar-500 text-xs text-gray-500">
               From
@@ -63,14 +63,14 @@ const ProductPriceLabel: React.FC<ProductPriceLabelProps> = ({
           <span className="dark:text-polar-500 text-xs text-gray-500">
             / seat
           </span>
-        </div>
+        </span>
       )
     }
     return null
   } else if (staticPrice.amount_type === 'custom') {
-    return <div className="text-[min(1em,24px)]">Pay what you want</div>
+    return <span className="text-[min(1em,24px)]">Pay what you want</span>
   } else {
-    return <div className="text-[min(1em,24px)]">Free</div>
+    return <span className="text-[min(1em,24px)]">Free</span>
   }
 }
 

@@ -56,6 +56,7 @@ from polar.exceptions import (
     ResourceUnavailable,
     ValidationError,
 )
+from polar.invoice.generator import format_date
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
@@ -3210,7 +3211,7 @@ class SubscriptionService:
             return
         if subscription.current_period_end is None:
             return
-        renewal_date = subscription.current_period_end.strftime("%m/%d/%Y")
+        renewal_date = format_date(subscription.current_period_end)
         return await self._send_customer_email(
             session,
             subscription,
@@ -3229,7 +3230,7 @@ class SubscriptionService:
             return
         if subscription.trial_end is None:
             return
-        conversion_date = subscription.trial_end.strftime("%m/%d/%Y")
+        conversion_date = format_date(subscription.trial_end)
         return await self._send_customer_email(
             session,
             subscription,

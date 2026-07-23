@@ -84,6 +84,7 @@ from polar.order.service import (
     OrderNotEligibleForInvoice,
     OrderNotEligibleForRetry,
     OrderNotPending,
+    OrderNotVoid,
     OrganizationNotReadyForPayments,
     PaymentActionRequired,
     PaymentAlreadyInProgress,
@@ -5570,6 +5571,60 @@ class TestVoidOrder:
             session, customer, order.currency
         )
         assert new_balance == 200
+
+
+class TestUnvoidOrder:
+    @pytest.mark.asyncio
+    async def test_unvoid_order(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        next_attempt_at = utc_now() + timedelta(hours=24)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.void,
+            next_payment_attempt_at=next_attempt_at,
+        )
+        send_webhook_mock = mocker.patch.object(order_service, "send_webhook")
+
+        result_order = await order_service.unvoid(session, order)
+
+        assert result_order.status == OrderStatus.pending
+        assert result_order.next_payment_attempt_at is None
+        events = await get_all_by_name(session, SystemEvent.order_unvoided)
+        assert len(events) == 1
+        assert events[0].user_metadata == {
+            "order_id": str(order.id),
+            "amount": order.total_amount,
+            "currency": order.currency,
+        }
+        send_webhook_mock.assert_awaited_once_with(
+            session, order, WebhookEventType.order_updated
+        )
+
+    @pytest.mark.asyncio
+    async def test_unvoid_non_void_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        with pytest.raises(OrderNotVoid):
+            await order_service.unvoid(session, order)
 
 
 @pytest.mark.asyncio

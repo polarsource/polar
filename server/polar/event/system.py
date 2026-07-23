@@ -37,6 +37,7 @@ class SystemEvent(StrEnum):
     order_paid = "order.paid"
     order_refunded = "order.refunded"
     order_voided = "order.voided"
+    order_unvoided = "order.unvoided"
     checkout_created = "checkout.created"
     customer_created = "customer.created"
     customer_updated = "customer.updated"
@@ -69,6 +70,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "order.paid": "Order Paid",
     "order.refunded": "Order Refunded",
     "order.voided": "Order Voided",
+    "order.unvoided": "Order Unvoided",
     "checkout.created": "Checkout Created",
     "subscription.seats_updated": "Subscription Seats Updated",
     "subscription.billing_period_updated": "Subscription Billing Period Updated",
@@ -488,6 +490,19 @@ class OrderVoidedEvent(Event):
         user_metadata: Mapped[OrderVoidedMetadata]  # type: ignore[assignment]
 
 
+class OrderUnvoidedMetadata(TypedDict):
+    order_id: str
+    amount: int
+    currency: str
+
+
+class OrderUnvoidedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.order_unvoided]]
+        user_metadata: Mapped[OrderUnvoidedMetadata]  # type: ignore[assignment]
+
+
 class CheckoutCreatedMetadata(TypedDict):
     checkout_id: str
     checkout_status: str
@@ -854,6 +869,15 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: OrderVoidedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.order_unvoided],
+    customer: Customer,
+    organization: Organization,
+    metadata: OrderUnvoidedMetadata,
 ) -> Event: ...
 
 

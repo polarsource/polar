@@ -22,6 +22,7 @@ from sqlalchemy.dialects.postgresql import JSONB, TSVECTOR
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
+from polar.config import settings
 from polar.custom_field.data import CustomFieldDataMixin
 from polar.enums import TaxBehavior, TaxProcessor
 from polar.exceptions import PolarError
@@ -29,6 +30,7 @@ from polar.kit.address import Address, AddressType
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
+from polar.kit.utils import utc_now
 from polar.models.order_item import OrderItem
 from polar.tax.calculation import TaxBreakdownItem
 from polar.tax.tax_id import TaxID, TaxIDType
@@ -393,6 +395,21 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @classmethod
     def _is_void_expression(cls) -> ColumnElement[bool]:
         return cls.status == OrderStatus.void
+
+    @hybrid_property
+    def is_payment_lock_stale(self) -> bool:
+        if self.payment_lock_acquired_at is None:
+            return False
+        return self.payment_lock_acquired_at <= (
+            utc_now() - settings.PAYMENT_LOCK_STALE_THRESHOLD
+        )
+
+    @is_payment_lock_stale.inplace.expression
+    @classmethod
+    def _is_payment_lock_stale_expression(cls) -> ColumnElement[bool]:
+        return cls.payment_lock_acquired_at <= (
+            func.now() - settings.PAYMENT_LOCK_STALE_THRESHOLD
+        )
 
     @property
     def is_invoice_generated(self) -> bool:

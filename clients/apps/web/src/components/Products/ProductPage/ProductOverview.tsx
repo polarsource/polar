@@ -1,5 +1,7 @@
 import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
 import { schemas } from '@polar-sh/client'
+import { Grid } from '@polar-sh/orbit'
+import { ProductBenefits } from './ProductBenefits'
 import { ProductDiscounts } from './ProductDiscounts'
 import { ProductOrders } from './ProductOrders'
 import { ProductSubscriptions } from './ProductSubscriptions'
@@ -56,8 +58,17 @@ export const ProductOverview = ({
       )}
       <ProductOrders organization={organization} product={product} />
 
-      {!product.is_archived && (
-        <ProductDiscounts organization={organization} product={product} />
+      {product.is_archived ? (
+        <ProductBenefits organization={organization} product={product} />
+      ) : (
+        <Grid
+          templateColumns={{ base: '1fr', md: 'repeat(2, minmax(0, 1fr))' }}
+          columnGap="2xl"
+          rowGap="2xl"
+        >
+          <ProductBenefits organization={organization} product={product} />
+          <ProductDiscounts organization={organization} product={product} />
+        </Grid>
       )}
     </div>
   )

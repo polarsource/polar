@@ -6,6 +6,7 @@ import { CONFIG } from '@/utils/config'
 import { isImpersonating } from '@/utils/impersonation'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
+import LockOutlined from '@mui/icons-material/LockOutlined'
 import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
 import { Avatar, Button } from '@polar-sh/orbit'
@@ -215,8 +216,9 @@ export const DashboardSidebar = ({
                         className="h-6 w-6"
                       />
                       <span className="min-w-0 truncate">{org.name}</span>
-                      <span className="dark:bg-polar-700 ml-auto shrink-0 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400">
-                        SSO required
+                      <span className="dark:bg-polar-700 ml-auto flex shrink-0 items-center gap-x-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400">
+                        <LockOutlined fontSize="inherit" />
+                        SSO
                       </span>
                     </DropdownMenuItem>
                   ))}

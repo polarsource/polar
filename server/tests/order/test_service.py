@@ -3326,6 +3326,7 @@ class TestHandlePaymentFailure:
             customer=customer,
             subscription=subscription,
             status=OrderStatus.paid,  # Order is already paid
+            payment_lock_acquired_at=utc_now(),
         )
         await save_fixture(order)
 
@@ -3339,6 +3340,7 @@ class TestHandlePaymentFailure:
         # Then
         assert result_order.next_payment_attempt_at is None  # No retry scheduled
         assert result_order.status == OrderStatus.paid  # Status unchanged
+        assert result_order.payment_lock_acquired_at is None  # Lock is released
         mock_mark_past_due.assert_not_called()  # Subscription not marked past_due
 
     async def test_non_subscription_order(

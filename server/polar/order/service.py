@@ -2800,14 +2800,6 @@ class OrderService:
             skip_dunning: If True, skip dunning progression (e.g., for manual retries
                 where the user can try again without advancing the dunning state machine)
         """
-        # Don't process payment failure if the order is already paid
-        if order.status == OrderStatus.paid:
-            log.warning(
-                "Ignoring payment failure for already paid order",
-                order_id=order.id,
-            )
-            return order
-
         # Clear payment lock on failure
         if order.payment_lock_acquired_at is not None:
             log.info(
@@ -2816,6 +2808,14 @@ class OrderService:
             )
             repository = OrderRepository.from_session(session)
             order = await repository.release_payment_lock(order)
+
+        # Don't process payment failure if the order is already paid
+        if order.status == OrderStatus.paid:
+            log.warning(
+                "Ignoring payment failure for already paid order",
+                order_id=order.id,
+            )
+            return order
 
         # Skip dunning for manual retries - user can retry again
         if skip_dunning:

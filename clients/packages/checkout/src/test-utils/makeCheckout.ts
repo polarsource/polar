@@ -129,6 +129,7 @@ const defaults: ProductCheckoutPublic = {
   customer_billing_name: null,
   customer_billing_address: null,
   customer_tax_id: null,
+  payment_method_type: null,
   payment_processor_metadata: {},
   billing_address_fields: {
     country: 'required',

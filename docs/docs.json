@@ -525,7 +525,9 @@
                           "openapi.json webhook subscription.canceled",
                           "openapi.json webhook subscription.uncanceled",
                           "openapi.json webhook subscription.revoked",
-                          "openapi.json webhook subscription.past_due"
+                          "openapi.json webhook subscription.past_due",
+                          "openapi.json webhook subscription.paused",
+                          "openapi.json webhook subscription.resumed"
                         ]
                       },
                       {

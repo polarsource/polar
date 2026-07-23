@@ -66,3 +66,26 @@ You can pass a `discount_code` query parameter to any Checkout Link URL to prefi
 ### Apply via API
 
 When creating a Checkout Session via the API, you can specify a discount to apply programmatically. See the [Checkout API documentation](/features/checkout/session) for details.
+
+## Remove a discount
+
+### Remove a discount from a customer
+
+To unassign a discount from a single customer's subscription without deleting the discount itself, go to **Sales** → **Subscriptions**, select the subscription, click **Update Subscription**, open the **Discount** tab and clear the discount. You can also do this via the API by sending `PATCH /v1/subscriptions/{subscription_id}` with `{ "discount_id": null }`.
+
+The change is applied on the next billing cycle, not retroactively.
+
+See [Manage subscriptions](/features/subscriptions/manage#apply-or-change-a-discount) for more detail.
+
+### Delete a discount
+
+Deleting a discount does not affect subscriptions that already have it applied. It keeps being applied to those subscriptions according to its original duration.
+
+<Warning>
+Existing subscriptions keep the discount after it's deleted. This is a common point of confusion: deleting a discount only stops it from being used going forward, it does not remove it from subscriptions where it's already active.
+</Warning>
+
+- **Forever** The discount keeps applying on every renewal indefinitely, even after deletion.
+- **Several Months** The discount keeps applying until the originally configured number of months has elapsed, exactly as if it hadn't been deleted.
+
+Deleting a discount only prevents it from being used going forward: it disappears from listings and can no longer be applied to new checkouts or assigned to new subscriptions.

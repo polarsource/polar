@@ -1,15 +1,17 @@
 'use client'
 
+import { Pagination } from '@/components/Products/Benefits/components/Pagination'
 import { EmptyState } from '@/components/Shared/EmptyState'
-import { ScrollFade } from '@/components/Shared/ScrollFade'
 import { useDiscounts } from '@/hooks/queries'
 import { getDiscountDisplay } from '@/utils/discount'
 import { schemas } from '@polar-sh/client'
-import { Button, List, ListItem, Pill, Text } from '@polar-sh/orbit'
+import { List, ListItem, Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { TicketPercent } from 'lucide-react'
+import { ChevronRight, TicketPercent } from 'lucide-react'
 import Link from 'next/link'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
+
+const PAGE_SIZE = 5
 
 export interface ProductDiscountsProps {
   organization: schemas['Organization']
@@ -20,6 +22,7 @@ export const ProductDiscounts = ({
   organization,
   product,
 }: ProductDiscountsProps) => {
+  const [page, setPage] = useState(1)
   const { data: discountsData, isLoading: discountsLoading } = useDiscounts(
     organization.id,
     { limit: 100 },
@@ -36,23 +39,41 @@ export const ProductDiscounts = ({
   )
 
   const discountCount = applicableDiscounts.length
+  const totalPages = Math.max(1, Math.ceil(discountCount / PAGE_SIZE))
+
+  const pageDiscounts = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE
+    return applicableDiscounts.slice(start, start + PAGE_SIZE)
+  }, [applicableDiscounts, page])
 
   return (
     <Box flexDirection="column" gap="xl" minWidth={0}>
-      <Box alignItems="center" justifyContent="between" gap="l">
-        <Box flexDirection="column" gap="xs" minWidth={0}>
-          <Text variant="heading-xxs" as="h2">
-            Applicable Discounts
-          </Text>
+      <Box flexDirection="column" gap="xs" minWidth={0}>
+        <Text variant="heading-xxs" as="h2">
+          Applicable Discounts
+        </Text>
+        <Box alignItems="center" justifyContent="between" gap="l">
           <Text color="muted">
             {discountsLoading
               ? `Discounts valid for ${product.name}`
               : `${discountCount} ${discountCount === 1 ? 'discount' : 'discounts'} valid for ${product.name}`}
           </Text>
+          <Link href={`/dashboard/${organization.slug}/products/discounts`}>
+            <Box
+              color={{ base: 'text-secondary', hover: 'text-primary' }}
+              transitionProperty="colors"
+              transitionDuration="fast"
+              alignItems="center"
+              columnGap="xs"
+              flexShrink={0}
+            >
+              <Text variant="caption" color="inherit">
+                View all
+              </Text>
+              <ChevronRight size={14} />
+            </Box>
+          </Link>
         </Box>
-        <Link href={`/dashboard/${organization.slug}/products/discounts`}>
-          <Button size="sm">View All</Button>
-        </Link>
       </Box>
 
       {discountsLoading ? (
@@ -69,53 +90,53 @@ export const ProductDiscounts = ({
           description="No discounts currently apply to this product"
         />
       ) : (
-        <Box
-          display="block"
-          overflow="hidden"
-          borderRadius="l"
-          borderWidth={1}
-          borderStyle="solid"
-          borderColor="border-primary"
-        >
-          <ScrollFade className="max-h-80">
-            <List size="small" className="rounded-none border-0">
-              {applicableDiscounts.map((discount) => (
-                <ListItem key={discount.id} size="small">
-                  <Box
-                    minWidth={0}
-                    flexGrow={1}
-                    alignItems="center"
-                    columnGap="m"
-                  >
-                    <Box flexDirection="column" minWidth={0} rowGap="xs">
-                      <Text truncate>{discount.name}</Text>
-                      {discount.code ? (
-                        <Box alignItems="center" columnGap="s">
-                          <Text
-                            as="span"
-                            variant="caption"
-                            color="muted"
-                            style={{ lineHeight: 1 }}
-                          >
-                            Code:
-                          </Text>
-                          <Pill
-                            color="gray"
-                            className="shrink-0 px-2 py-0.5 font-mono text-xs leading-none"
-                          >
-                            {discount.code}
-                          </Pill>
-                        </Box>
-                      ) : null}
-                    </Box>
+        <Box flexDirection="column" gap="l">
+          <List size="small">
+            {pageDiscounts.map((discount) => (
+              <ListItem key={discount.id} size="small">
+                <Box
+                  minWidth={0}
+                  flexGrow={1}
+                  alignItems="center"
+                  columnGap="m"
+                >
+                  <Box flexDirection="column" minWidth={0} rowGap="xs">
+                    <Text truncate>{discount.name}</Text>
+                    {discount.code ? (
+                      <Box alignItems="center" columnGap="s">
+                        <Text
+                          as="span"
+                          variant="caption"
+                          color="muted"
+                          style={{ lineHeight: 1 }}
+                        >
+                          Code:
+                        </Text>
+                        <Pill
+                          color="gray"
+                          className="shrink-0 px-2 py-0.5 font-mono text-xs leading-none"
+                        >
+                          {discount.code}
+                        </Pill>
+                      </Box>
+                    ) : null}
                   </Box>
-                  <Box flexShrink={0} alignItems="center">
-                    <Text>{getDiscountDisplay(discount)}</Text>
-                  </Box>
-                </ListItem>
-              ))}
-            </List>
-          </ScrollFade>
+                </Box>
+                <Box flexShrink={0} alignItems="center">
+                  <Text>{getDiscountDisplay(discount)}</Text>
+                </Box>
+              </ListItem>
+            ))}
+          </List>
+          {totalPages > 1 && (
+            <Box justifyContent="end">
+              <Pagination
+                page={page}
+                totalPages={totalPages}
+                onPageChange={setPage}
+              />
+            </Box>
+          )}
         </Box>
       )}
     </Box>

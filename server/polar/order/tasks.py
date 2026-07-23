@@ -265,7 +265,7 @@ async def process_stale_payment_lock(order_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         order_repository = OrderRepository.from_session(session)
         order = await order_repository.get_by_id(
-            order_id, options=order_repository.get_eager_options()
+            order_id, options=order_repository.get_eager_options(), for_update=True
         )
         if order is None:
             raise OrderDoesNotExist(order_id)

@@ -2,6 +2,7 @@
 
 import { Pagination } from '@/components/Products/Benefits/components/Pagination'
 import { EmptyState } from '@/components/Shared/EmptyState'
+import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { useDiscounts } from '@/hooks/queries'
 import { getDiscountDisplay } from '@/utils/discount'
 import { schemas } from '@polar-sh/client'
@@ -77,12 +78,7 @@ export const ProductDiscounts = ({
       </Box>
 
       {discountsLoading ? (
-        <Box
-          height={96}
-          borderRadius="l"
-          backgroundColor="background-card"
-          className="animate-pulse"
-        />
+        <LoadingBox height={96} borderRadius="l" />
       ) : discountCount === 0 ? (
         <EmptyState
           icon={<TicketPercent />}
@@ -104,12 +100,7 @@ export const ProductDiscounts = ({
                     <Text truncate>{discount.name}</Text>
                     {discount.code ? (
                       <Box alignItems="center" columnGap="s">
-                        <Text
-                          as="span"
-                          variant="caption"
-                          color="muted"
-                          style={{ lineHeight: 1 }}
-                        >
+                        <Text as="span" variant="caption" color="muted">
                           Code:
                         </Text>
                         <Pill

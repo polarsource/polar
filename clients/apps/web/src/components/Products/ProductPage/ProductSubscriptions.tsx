@@ -80,7 +80,10 @@ export const ProductSubscriptions = ({
             accessorKey: 'started_at',
             enableSorting: true,
             header: ({ column }) => (
-              <DataTableColumnHeader column={column} title="Subscription Date" />
+              <DataTableColumnHeader
+                column={column}
+                title="Subscription Date"
+              />
             ),
             cell: (props) => (
               <FormattedDateTime datetime={props.getValue() as string} />

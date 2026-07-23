@@ -97,6 +97,49 @@ curl --request PATCH \
   --data '{ "current_billing_period_end": "2026-07-15T00:00:00Z" }'
 ```
 
+## Pause and resume
+
+Pausing stops billing without ending the subscription. Use it for seasonal plans or account "freezes", where a customer steps away for a while and comes back to the same subscription and payment method.
+
+### Pause at period end
+
+Calling pause sets `pause_at_period_end = true`. The subscription stays **active** and keeps its benefits until its `current_period_end`, then it moves to the `paused` status: benefits are revoked and no further orders are generated. Pausing never charges the customer and never takes effect mid-period.
+
+Pass an optional `resumes_at` date to schedule an automatic resume. It has to be after the current period end. Leave it out to pause indefinitely and resume by hand later.
+
+```bash cURL
+curl --request PATCH \
+  --url https://api.polar.sh/v1/subscriptions/{subscription_id} \
+  --header 'Authorization: Bearer <TOKEN>' \
+  --header 'Content-Type: application/json' \
+  --data '{
+    "pause_at_period_end": true,
+    "resumes_at": "2026-11-01T00:00:00Z"
+  }'
+```
+
+You can only pause a subscription that's active, with no pending cancellation or pause. To cancel a scheduled pause before it takes effect, set `pause_at_period_end` back to `false`.
+
+```bash cURL
+curl --request PATCH \
+  --url https://api.polar.sh/v1/subscriptions/{subscription_id} \
+  --header 'Authorization: Bearer <TOKEN>' \
+  --header 'Content-Type: application/json' \
+  --data '{ "pause_at_period_end": false }'
+```
+
+### Resume
+
+Resuming a paused subscription takes effect **right now**: status moves back to `active`, a new billing period starts from the resume date, and the customer is charged immediately. The payment method stays on file, so there's no second checkout. An automatic resume on the `resumes_at` date does exactly the same thing.
+
+```bash cURL
+curl --request PATCH \
+  --url https://api.polar.sh/v1/subscriptions/{subscription_id} \
+  --header 'Authorization: Bearer <TOKEN>' \
+  --header 'Content-Type: application/json' \
+  --data '{ "resume": true }'
+```
+
 ## Cancel or revoke
 
 Polar distinguishes between **canceling** and **revoking** a subscription. Both end the customer's access eventually — the difference is when.
@@ -170,5 +213,6 @@ The [Customer Portal](/features/customer-portal/introduction) exposes a subset o
 - **Update the default payment method** is always available — the primary way customers recover from a failed renewal.
 - **Change plan** is available when **Enable subscription plan changes** is on.
 - **Change seats** (for seat-based subscriptions) is available when **Enable subscription seat management** is on.
+- **Pause and resume** is available when **Enable subscription pause** is on.
 
 Everything else on this page is merchant-only: revoking a subscription, applying or changing a discount, extending or ending a trial, and rescheduling the renewal date are not exposed to customers.

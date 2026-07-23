@@ -236,6 +236,13 @@ class OrderNotPending(OrderError):
         super().__init__(message)
 
 
+class OrderNotVoid(OrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = f"Order {order.id} is not void"
+        super().__init__(message)
+
+
 class PaymentAlreadyInProgress(OrderError):
     def __init__(self, order: Order) -> None:
         self.order = order
@@ -2631,6 +2638,39 @@ class OrderService:
             session,
             build_system_event(
                 SystemEvent.order_voided,
+                customer=order.customer,
+                organization=order.organization,
+                metadata={
+                    "order_id": str(order.id),
+                    "amount": order.total_amount,
+                    "currency": order.currency,
+                },
+            ),
+        )
+        await self._on_order_updated(session, order, previous_status=previous_status)
+
+        return order
+
+    async def unvoid(self, session: AsyncSession, order: Order) -> Order:
+        """Return a void order to pending without scheduling a payment retry."""
+        if order.status != OrderStatus.void:
+            raise OrderNotVoid(order)
+
+        previous_status = order.status
+
+        repository = OrderRepository.from_session(session)
+        order = await repository.update(
+            order,
+            update_dict={
+                "status": OrderStatus.pending,
+                "next_payment_attempt_at": None,
+            },
+        )
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.order_unvoided,
                 customer=order.customer,
                 organization=order.organization,
                 metadata={

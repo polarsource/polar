@@ -25156,6 +25156,90 @@ export interface components {
       customer_cancellation_comment: string | null
     }
     /**
+     * OrderUnvoidedEvent
+     * @description An event created by Polar when an order is unvoided.
+     */
+    OrderUnvoidedEvent: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The timestamp of the event.
+       */
+      timestamp: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the event.
+       * @example 1dbfc517-0bbf-4301-9ba8-555ca42b9737
+       */
+      organization_id: string
+      /**
+       * Customer Id
+       * @description ID of the customer in your Polar organization associated with the event.
+       */
+      customer_id: string | null
+      /** @description The customer associated with the event. */
+      customer: components['schemas']['Customer'] | null
+      /**
+       * External Customer Id
+       * @description ID of the customer in your system associated with the event.
+       */
+      external_customer_id: string | null
+      /**
+       * Member Id
+       * @description ID of the member within the customer's organization who performed the action inside B2B.
+       */
+      member_id?: string | null
+      /**
+       * External Member Id
+       * @description ID of the member in your system within the customer's organization who performed the action inside B2B.
+       */
+      external_member_id?: string | null
+      /**
+       * Child Count
+       * @description Number of direct child events linked to this event.
+       * @default 0
+       */
+      child_count: number
+      /**
+       * Parent Id
+       * @description The ID of the parent event.
+       */
+      parent_id?: string | null
+      /**
+       * Label
+       * @description Human readable label of the event type.
+       */
+      label: string
+      /**
+       * Source
+       * @description The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+       * @constant
+       */
+      source: 'system'
+      /**
+       * @description The name of the event. (enum property replaced by openapi-typescript)
+       * @enum {string}
+       */
+      name: 'order.unvoided'
+      metadata: components['schemas']['OrderUnvoidedMetadata']
+    }
+    /** OrderUnvoidedMetadata */
+    OrderUnvoidedMetadata: {
+      /** Order Id */
+      order_id: string
+      /** Amount */
+      amount: number
+      /** Currency */
+      currency: string
+    }
+    /**
      * OrderUpdate
      * @description Schema to update an order.
      */
@@ -33846,6 +33930,7 @@ export interface components {
       | components['schemas']['OrderPaidEvent']
       | components['schemas']['OrderRefundedEvent']
       | components['schemas']['OrderVoidedEvent']
+      | components['schemas']['OrderUnvoidedEvent']
       | components['schemas']['CheckoutCreatedEvent']
       | components['schemas']['CustomerCreatedEvent']
       | components['schemas']['CustomerUpdatedEvent']
@@ -63301,6 +63386,9 @@ export const orderSortPropertyValues: ReadonlyArray<
 export const orderStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderStatus']
 > = ['draft', 'pending', 'paid', 'refunded', 'partially_refunded', 'void']
+export const orderUnvoidedEventNameValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrderUnvoidedEvent']['name']
+> = ['order.unvoided']
 export const orderVoidedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderVoidedEvent']['name']
 > = ['order.voided']

@@ -452,7 +452,11 @@ class DiscountService(ResourceServiceReader[Discount]):
             return False
 
         customer_id = customer.id if customer is not None else checkout.customer_id
-        email = customer.email if customer is not None else checkout.customer_email
+        email = (
+            customer.email
+            if customer is not None and customer.email
+            else checkout.customer_email
+        )
 
         repository = DiscountRedemptionRepository.from_session(session)
         count = await repository.count_redemptions_by_customer(

@@ -66,7 +66,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.checkout import CheckoutStatus
+from polar.models.checkout import BillingAddressFieldMode, CheckoutStatus
 from polar.models.custom_field import CustomFieldType
 from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
@@ -3688,6 +3688,40 @@ class TestUpdate:
 
         assert checkout.discount == discount_fixed_once
 
+    async def test_payment_method_updates_billing_address_fields(
+        self,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_fixed,
+            CheckoutUpdatePublic(payment_method_type="upi"),
+        )
+
+        assert checkout.payment_method_type == "upi"
+        assert (
+            checkout.billing_address_fields["line1"] == BillingAddressFieldMode.required
+        )
+        assert (
+            checkout.billing_address_fields["city"] == BillingAddressFieldMode.required
+        )
+        assert (
+            checkout.billing_address_fields["postal_code"]
+            == BillingAddressFieldMode.required
+        )
+
+        checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdatePublic(payment_method_type="card"),
+        )
+
+        assert checkout.payment_method_type == "card"
+        assert (
+            checkout.billing_address_fields["line1"] == BillingAddressFieldMode.disabled
+        )
+
     async def test_full_discount_resets_is_business_customer(
         self,
         save_fixture: SaveFixture,
@@ -3712,6 +3746,30 @@ class TestUpdate:
         assert checkout.discount == discount_percentage_100
         assert checkout.is_payment_form_required is False
         assert checkout.is_business_customer is False
+
+    async def test_full_discount_resets_payment_method(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+        discount_percentage_100: Discount,
+    ) -> None:
+        checkout_one_time_fixed.payment_method_type = "upi"
+        await save_fixture(checkout_one_time_fixed)
+
+        assert checkout_one_time_fixed.is_billing_address_required is True
+
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_fixed,
+            CheckoutUpdatePublic(
+                discount_code=discount_percentage_100.code,
+            ),
+        )
+
+        assert checkout.is_payment_form_required is False
+        assert checkout.payment_method_type is None
+        assert checkout.is_billing_address_required is False
 
     async def test_multiple_subscriptions_allowed(
         self,
@@ -4297,6 +4355,39 @@ class TestConfirm:
         error_locations = {error["loc"] for error in errors}
         for missing_field in missing_fields:
             assert ("body", *missing_field) in error_locations
+
+    async def test_full_billing_address_required_for_payment_method(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)
+        confirmation_token.payment_method_preview = MagicMock()
+        confirmation_token.payment_method_preview.billing_details = MagicMock()
+        confirmation_token.payment_method_preview.billing_details.name = None
+        stripe_service_mock.get_confirmation_token.return_value = confirmation_token
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                        "payment_method_type": "upi",
+                        "customer_billing_address": {"country": "IN"},
+                    }
+                ),
+            )
+
+        errors = e.value.errors()
+        error_locations = {error["loc"] for error in errors}
+        assert ("body", "customer_billing_address") in error_locations
 
     async def test_wallet_name_from_confirmation_token(
         self,

@@ -12020,6 +12020,11 @@ export interface components {
       customer_tax_id: string | null
       /** Locale */
       locale?: string | null
+      /**
+       * Payment Method Type
+       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
+       */
+      payment_method_type: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -12139,6 +12144,11 @@ export interface components {
       customer_tax_id?: string | null
       /** Locale */
       locale?: string | null
+      /**
+       * Payment Method Type
+       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
+       */
+      payment_method_type?: string | null
       /**
        * Discount Code
        * @description Discount code to apply to the checkout.
@@ -13712,6 +13722,11 @@ export interface components {
       customer_tax_id: string | null
       /** Locale */
       locale?: string | null
+      /**
+       * Payment Method Type
+       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
+       */
+      payment_method_type: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -13978,6 +13993,11 @@ export interface components {
       customer_tax_id: string | null
       /** Locale */
       locale?: string | null
+      /**
+       * Payment Method Type
+       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
+       */
+      payment_method_type: string | null
       /** Payment Processor Metadata */
       payment_processor_metadata: {
         [key: string]: string
@@ -14211,6 +14231,11 @@ export interface components {
       customer_tax_id?: string | null
       /** Locale */
       locale?: string | null
+      /**
+       * Payment Method Type
+       * @description Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
+       */
+      payment_method_type?: string | null
       /**
        * Discount Code
        * @description Discount code to apply to the checkout.

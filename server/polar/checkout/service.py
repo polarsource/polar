@@ -940,14 +940,13 @@ class CheckoutService:
         except TaxCalculationLogicalError:
             pass
 
-        # Reset is_business_customer if payment form is no longer required
+        # Reset payment form fields if it's no longer required
         # This handles the case where a 100% discount is applied and the
-        # billing address section disappears from the frontend
-        if (
-            not checkout.is_payment_form_required
-            and not checkout.require_billing_address
-        ):
-            checkout.is_business_customer = False
+        # payment and billing address sections disappear from the frontend
+        if not checkout.is_payment_form_required:
+            checkout.payment_method_type = None
+            if not checkout.require_billing_address:
+                checkout.is_business_customer = False
 
         await self._after_checkout_updated(session, checkout)
         return checkout
@@ -1075,7 +1074,7 @@ class CheckoutService:
                     }
                 )
 
-        if checkout.require_billing_address or checkout.is_business_customer:
+        if checkout.is_billing_address_required:
             if (
                 checkout.customer_billing_address is None
                 or not checkout.customer_billing_address.has_address()

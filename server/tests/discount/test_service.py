@@ -15,12 +15,9 @@ from polar.exceptions import PolarRequestValidationError
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.utils import utc_now
 from polar.models import (
-    Checkout,
     Discount,
-    DiscountRedemption,
     Organization,
     Product,
-    Subscription,
     UserOrganization,
 )
 from polar.models.discount import (
@@ -35,23 +32,10 @@ from tests.fixtures.random_objects import (
     create_checkout,
     create_customer,
     create_discount,
+    create_discount_redemption,
     create_payment,
     create_subscription,
 )
-
-
-async def create_discount_redemption(
-    save_fixture: SaveFixture,
-    *,
-    discount: Discount,
-    checkout: Checkout | None = None,
-    subscription: Subscription | None = None,
-) -> DiscountRedemption:
-    discount_redemption = DiscountRedemption(
-        discount=discount, checkout=checkout, subscription=subscription
-    )
-    await save_fixture(discount_redemption)
-    return discount_redemption
 
 
 @pytest.mark.asyncio

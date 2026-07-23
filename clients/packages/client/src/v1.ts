@@ -22748,6 +22748,10 @@ export interface components {
       id: string
       /** Slug */
       slug: string
+      /** Name */
+      name: string
+      /** Avatar Url */
+      avatar_url: string | null
       /**
        * Requires Sso
        * @description Whether this organization enforces SSO.

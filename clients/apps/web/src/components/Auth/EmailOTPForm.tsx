@@ -40,9 +40,9 @@ interface TurnstileWindow extends Window {
   }
 }
 
-// In development the production sitekey's domain isn't allowed, so the widget
-// errors. Cloudflare's test key renders a visible, always-passing widget with
-// no real challenge, keeping it in the design without failing network calls.
+// Cloudflare's test sitekey renders a visible, always-passing widget whose
+// dummy token verifies against the paired test secret (server .env.template),
+// so local login works without the production secret or a real challenge.
 const TURNSTILE_SITE_KEY =
   CONFIG.ENVIRONMENT === 'development'
     ? '1x00000000000000000000AA'

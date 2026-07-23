@@ -133,6 +133,15 @@ async def trigger_payment(
                 order_id=order_id,
             )
             return
+        except PaymentAlreadyInProgress:
+            # Retrying would pile up behind the lock and, once released, burst
+            # real attempts that exhaust dunning. Stale locks are recovered by
+            # the order.process_stale_payment_lock cron.
+            log.info(
+                "Payment already in progress, not retrying",
+                order_id=order_id,
+            )
+            return
         except (
             stripe_lib.APIConnectionError,
             stripe_lib.APIError,

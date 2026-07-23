@@ -20,6 +20,7 @@ from polar.worker import (
     actor,
     can_retry,
     enqueue_job,
+    get_retries,
 )
 
 from .repository import OrderRepository
@@ -98,6 +99,18 @@ async def trigger_payment(
     payment_method_id: uuid.UUID,
     payment_trigger: str | None = None,
 ) -> None:
+    if get_retries() > 0:
+        # We have a lot of piled up trigger payment jobs that we shouldn't retry
+        # Exhaust them for now so we don't trigger more dunning processes than necessary
+        log.info(
+            "Dead-lettering payment trigger",
+            order_id=order_id,
+            payment_method_id=payment_method_id,
+            payment_trigger=payment_trigger,
+            retries=get_retries(),
+        )
+        return
+
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
         order = await repository.get_by_id(

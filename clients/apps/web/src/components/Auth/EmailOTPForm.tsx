@@ -4,6 +4,7 @@ import { useAuthSessionStart, useEmailOTPRequest } from '@/hooks'
 import { usePostHog, type EventName } from '@/hooks/posthog'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
+import { CONFIG } from '@/utils/config'
 import { Button } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import {
@@ -29,13 +30,23 @@ interface TurnstileWindow extends Window {
     remove: (widgetId: string) => void
     render: (
       container: HTMLElement,
-      options: { sitekey: string; action: string },
+      options: {
+        sitekey: string
+        action: string
+        size?: 'normal' | 'flexible' | 'compact'
+      },
     ) => string
     reset: (widgetId: string) => void
   }
 }
 
-const TURNSTILE_SITE_KEY = '0x4AAAAAAD7cBrbpX3kX8K9g'
+// In development the production sitekey's domain isn't allowed, so the widget
+// errors. Cloudflare's test key renders a visible, always-passing widget with
+// no real challenge, keeping it in the design without failing network calls.
+const TURNSTILE_SITE_KEY =
+  CONFIG.ENVIRONMENT === 'development'
+    ? '1x00000000000000000000AA'
+    : '0x4AAAAAAD7cBrbpX3kX8K9g'
 const TURNSTILE_ACTION = 'turnstile-spin-v2'
 
 const EmailOTPForm = ({
@@ -67,6 +78,7 @@ const EmailOTPForm = ({
     turnstileWidgetIdRef.current = turnstile.render(container, {
       sitekey: TURNSTILE_SITE_KEY,
       action: TURNSTILE_ACTION,
+      size: 'flexible',
     })
   }, [])
 
@@ -180,6 +192,7 @@ const EmailOTPForm = ({
                         className="cf-turnstile"
                         data-sitekey={TURNSTILE_SITE_KEY}
                         data-action={TURNSTILE_ACTION}
+                        data-size="flexible"
                       />
                       <Button
                         type="submit"

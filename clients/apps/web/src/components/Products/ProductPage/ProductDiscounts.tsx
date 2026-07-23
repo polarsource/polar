@@ -41,11 +41,12 @@ export const ProductDiscounts = ({
 
   const discountCount = applicableDiscounts.length
   const totalPages = Math.max(1, Math.ceil(discountCount / PAGE_SIZE))
+  const currentPage = Math.min(page, totalPages)
 
   const pageDiscounts = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE
+    const start = (currentPage - 1) * PAGE_SIZE
     return applicableDiscounts.slice(start, start + PAGE_SIZE)
-  }, [applicableDiscounts, page])
+  }, [applicableDiscounts, currentPage])
 
   return (
     <Box flexDirection="column" gap="xl" minWidth={0}>
@@ -122,7 +123,7 @@ export const ProductDiscounts = ({
           {totalPages > 1 && (
             <Box justifyContent="end">
               <Pagination
-                page={page}
+                page={currentPage}
                 totalPages={totalPages}
                 onPageChange={setPage}
               />

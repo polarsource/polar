@@ -6,7 +6,7 @@ State, Secrets and Runs are directly managed on [HCP Terraform Cloud](https://ap
 
 ## Infrastructure overview
 
-- **Backend**: Hosted on Render (API server, workers)
+- **Backend**: Hosted on Render (API server, workers, pgBouncer)
 - **Frontend**: Hosted on Vercel (Next.js web application)
 - **AWS**: Multi-account AWS Organizations structure for storage and workloads (see `organization/`)
 

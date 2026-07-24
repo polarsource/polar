@@ -32,6 +32,7 @@ from polar.models import (
     Customer,
     Event,
     Meter,
+    MeterEvent,
 )
 from polar.models.event import EventSource
 from polar.models.product_price import ProductPriceMeteredUnit
@@ -298,6 +299,81 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             Event.organization_id == meter.organization_id,
             self.get_meter_clause(meter),
         )
+
+    async def get_meter_billing_page(
+        self,
+        meter_id: UUID,
+        *,
+        after_ingested_at: datetime | None,
+        after_event_id: UUID | None,
+        limit: int,
+    ) -> Sequence[tuple[Event, Customer | None]]:
+        page_statement = (
+            select(
+                MeterEvent.event_id,
+                MeterEvent.customer_id,
+                MeterEvent.external_customer_id,
+                MeterEvent.organization_id,
+                MeterEvent.ingested_at,
+            )
+            .where(MeterEvent.meter_id == meter_id)
+            .order_by(MeterEvent.ingested_at.asc(), MeterEvent.event_id.asc())
+            .limit(limit)
+        )
+        if after_ingested_at is not None:
+            assert after_event_id is not None
+            page_statement = page_statement.where(
+                or_(
+                    MeterEvent.ingested_at > after_ingested_at,
+                    and_(
+                        MeterEvent.ingested_at == after_ingested_at,
+                        MeterEvent.event_id > after_event_id,
+                    ),
+                )
+            )
+
+        event_page = page_statement.cte("meter_billing_event_page")
+        resolved_customers = (
+            select(
+                event_page.c.event_id,
+                event_page.c.ingested_at,
+                event_page.c.customer_id.label("resolved_customer_id"),
+            )
+            .where(event_page.c.customer_id.is_not(None))
+            .union_all(
+                select(
+                    event_page.c.event_id,
+                    event_page.c.ingested_at,
+                    Customer.id.label("resolved_customer_id"),
+                )
+                .join(
+                    Customer,
+                    and_(
+                        Customer.external_id == event_page.c.external_customer_id,
+                        Customer.organization_id == event_page.c.organization_id,
+                    ),
+                )
+                .where(event_page.c.customer_id.is_(None))
+            )
+            .cte("meter_billing_resolved_customers")
+        )
+        statement = (
+            select(Event, Customer)
+            .join(event_page, event_page.c.event_id == Event.id)
+            .outerjoin(
+                resolved_customers,
+                resolved_customers.c.event_id == event_page.c.event_id,
+            )
+            .outerjoin(
+                Customer, Customer.id == resolved_customers.c.resolved_customer_id
+            )
+            .order_by(
+                event_page.c.ingested_at.asc(),
+                event_page.c.event_id.asc(),
+            )
+        )
+        result = await self.session.execute(statement)
+        return [(event, customer) for event, customer in result.all()]
 
     def get_by_pending_entries_statement(
         self, subscription: UUID, price: UUID

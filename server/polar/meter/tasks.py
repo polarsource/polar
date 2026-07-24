@@ -43,7 +43,9 @@ async def meter_billing_entries(meter_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = MeterRepository.from_session(session)
         meter = await repository.get_by_id(
-            meter_id, options=(joinedload(Meter.last_billed_event),)
+            meter_id,
+            options=(joinedload(Meter.last_billed_event),),
+            for_update=True,
         )
         if meter is None:
             raise MeterDoesNotExist(meter_id)

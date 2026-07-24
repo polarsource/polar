@@ -16,6 +16,8 @@ import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
 import { DataTable } from '@polar-sh/orbit'
 import { InlineModal } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
@@ -23,9 +25,13 @@ import { ConfirmModal } from '../Modal/ConfirmModal'
 import { useModal } from '../Modal/useModal'
 import { DownloadInvoicePortal } from '../Orders/DownloadInvoice'
 import AmountLabel from '../Shared/AmountLabel'
-import { DetailRow } from '../Shared/DetailRow'
+import { DetailItem } from '../Shared/Section'
 import CustomerCancellationModal from './CustomerCancellationModal'
 import CustomerPauseSubscriptionModal from './CustomerPauseSubscriptionModal'
+import {
+  getPauseAction,
+  getScheduleRows,
+} from '../Subscriptions/subscriptionState'
 import { SubscriptionStatusLabel } from '../Subscriptions/utils'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
 import { SeatManagementTable } from './SeatManagementTable'
@@ -95,14 +101,7 @@ const CustomerPortalSubscription = ({
   const showSeatManagement = portalSettings.subscription.update_seats === true
   const showPauseResume = portalSettings.subscription.pause === true
 
-  const pauseAction: 'resume' | 'cancel_scheduled_pause' | 'pause' | null =
-    subscription.status === 'paused'
-      ? 'resume'
-      : subscription.pause_at_period_end && !isCancelled
-        ? 'cancel_scheduled_pause'
-        : !isCancelled && subscription.status === 'active'
-          ? 'pause'
-          : null
+  const pauseAction = getPauseAction(subscription)
 
   const showCancelAction = !isCancelled && canManageBilling
   const showPauseAction =
@@ -145,13 +144,13 @@ const CustomerPortalSubscription = ({
   }
 
   return (
-    <div className="flex flex-col gap-8">
-      <div>
-        <h3 className="text-xl">{subscription.product.name}</h3>
-      </div>
+    <Box flexDirection="column" rowGap="2xl">
+      <Text variant="heading-xs" as="h3">
+        {subscription.product.name}
+      </Text>
 
-      <div className="flex flex-col text-sm">
-        <DetailRow
+      <Box flexDirection="column">
+        <DetailItem
           label="Amount"
           value={
             subscription.amount && subscription.currency ? (
@@ -166,89 +165,51 @@ const CustomerPortalSubscription = ({
             )
           }
         />
-        <DetailRow
+        <DetailItem
           label="Status"
           value={<SubscriptionStatusLabel subscription={subscription} />}
         />
         {subscription.started_at && (
-          <DetailRow
-            label="Start Date"
+          <DetailItem
+            label="Started"
             value={
-              <FormattedDateTime
-                datetime={subscription.started_at}
-                dateStyle="long"
-                resolution="day"
-              />
-            }
-          />
-        )}
-        {!subscription.ended_at &&
-          subscription.status !== 'paused' &&
-          subscription.current_period_end && (
-            <DetailRow
-              label={
-                subscription.cancel_at_period_end
-                  ? 'Expiry Date'
-                  : subscription.pause_at_period_end
-                    ? 'Pauses on'
-                    : 'Renewal Date'
-              }
-              value={
+              <Text as="span">
                 <FormattedDateTime
-                  datetime={subscription.current_period_end}
+                  datetime={subscription.started_at}
                   dateStyle="long"
                   resolution="day"
                 />
-              }
-            />
-          )}
-        {subscription.status === 'paused' && subscription.paused_at && (
-          <DetailRow
-            label="Paused on"
-            value={
-              <FormattedDateTime
-                datetime={subscription.paused_at}
-                dateStyle="long"
-                resolution="day"
-              />
+              </Text>
             }
           />
         )}
-        {(subscription.status === 'paused' ||
-          subscription.pause_at_period_end) && (
-          <DetailRow
-            label="Resumes on"
+        {getScheduleRows(subscription).map((row) => (
+          <DetailItem
+            key={row.key}
+            label={row.label}
             value={
-              subscription.resumes_at ? (
-                <FormattedDateTime
-                  datetime={subscription.resumes_at}
-                  dateStyle="long"
-                  resolution="day"
-                />
+              row.datetime ? (
+                <Text as="span">
+                  <FormattedDateTime
+                    datetime={row.datetime}
+                    dateStyle="long"
+                    resolution="day"
+                  />
+                </Text>
               ) : (
-                'Until resumed'
+                row.fallback
               )
             }
           />
-        )}
-        {subscription.ended_at && (
-          <DetailRow
-            label="Expired"
-            value={
-              <FormattedDateTime
-                datetime={subscription.ended_at}
-                dateStyle="long"
-                resolution="day"
-              />
-            }
-          />
-        )}
-      </div>
+        ))}
+      </Box>
 
       {pendingUpdate && (
-        <div className="flex flex-col gap-y-2">
-          <div className="flex flex-row items-center justify-between">
-            <h3>Pending Update</h3>
+        <Box flexDirection="column" rowGap="s">
+          <Box alignItems="center" justifyContent="between" columnGap="m">
+            <Text variant="heading-xxs" as="h3">
+              Pending update
+            </Text>
             <Button
               variant="secondary"
               size="sm"
@@ -257,36 +218,38 @@ const CustomerPortalSubscription = ({
             >
               Cancel scheduled change
             </Button>
-          </div>
-          <div className="flex flex-col">
+          </Box>
+          <Box flexDirection="column">
             {pendingProduct && (
-              <DetailRow
-                label="New Product"
-                value={`${subscription.product.name} -> ${pendingProduct?.name}`}
+              <DetailItem
+                label="New product"
+                value={`${subscription.product.name} → ${pendingProduct.name}`}
               />
             )}
             {pendingUpdate.seats !== null && (
-              <DetailRow
+              <DetailItem
                 label="Seats"
-                value={`${subscription.seats} -> ${pendingUpdate.seats}`}
+                value={`${subscription.seats} → ${pendingUpdate.seats}`}
               />
             )}
-            <DetailRow
+            <DetailItem
               label="Update in effect from"
               value={
-                <FormattedDateTime
-                  datetime={pendingUpdate.applies_at}
-                  dateStyle="long"
-                />
+                <Text as="span">
+                  <FormattedDateTime
+                    datetime={pendingUpdate.applies_at}
+                    dateStyle="long"
+                  />
+                </Text>
               }
             />
-          </div>
-        </div>
+          </Box>
+        </Box>
       )}
 
       {/* Cancel + pause/resume actions, gated by billing permissions */}
       {(showCancelAction || showPauseAction) && (
-        <div className="flex flex-col gap-2">
+        <Box flexDirection="column" rowGap="s">
           {showCancelAction && (
             <Button
               variant="secondary"
@@ -328,7 +291,7 @@ const CustomerPortalSubscription = ({
                 Pause Subscription
               </Button>
             ))}
-        </div>
+        </Box>
       )}
 
       {/* Seat management - only shown for users with billing permissions */}
@@ -345,56 +308,56 @@ const CustomerPortalSubscription = ({
 
       <CustomerPortalGrants api={api} subscriptionId={subscription.id} />
 
-      <div className="flex w-full flex-col gap-4">
-        {hasInvoices && (
-          <div className="flex flex-col gap-y-4">
-            <h3 className="text-lg">Invoices</h3>
-            <DataTable
-              data={orders.items ?? []}
-              isLoading={false}
-              columns={[
-                {
-                  accessorKey: 'created_at',
-                  header: 'Date',
-                  cell: ({ row }) => (
-                    <FormattedDateTime
-                      datetime={row.original.created_at}
-                      dateStyle="medium"
-                      resolution="day"
+      {hasInvoices && (
+        <Box flexDirection="column" rowGap="l" width="100%">
+          <Text variant="heading-xxs" as="h3">
+            Invoices
+          </Text>
+          <DataTable
+            data={orders.items ?? []}
+            isLoading={false}
+            columns={[
+              {
+                accessorKey: 'created_at',
+                header: 'Date',
+                cell: ({ row }) => (
+                  <FormattedDateTime
+                    datetime={row.original.created_at}
+                    dateStyle="medium"
+                    resolution="day"
+                  />
+                ),
+              },
+              {
+                accessorKey: 'amount',
+                header: 'Amount',
+                cell: ({ row }) => (
+                  <Text as="span" color="muted" tabularNums>
+                    {formatCurrency('compact')(
+                      row.original.total_amount,
+                      row.original.currency,
+                    )}
+                  </Text>
+                ),
+              },
+              {
+                accessorKey: 'id',
+                header: '',
+                cell: ({ row }) => (
+                  <Box justifyContent="end">
+                    <DownloadInvoicePortal
+                      customerSessionToken={customerSessionToken}
+                      order={row.original}
+                      onInvoiceGenerated={refetchOrders}
+                      dropdown
                     />
-                  ),
-                },
-                {
-                  accessorKey: 'amount',
-                  header: 'Amount',
-                  cell: ({ row }) => (
-                    <span className="dark:text-polar-500 text-sm text-gray-500">
-                      {formatCurrency('compact')(
-                        row.original.total_amount,
-                        row.original.currency,
-                      )}
-                    </span>
-                  ),
-                },
-                {
-                  accessorKey: 'id',
-                  header: '',
-                  cell: ({ row }) => (
-                    <span className="flex justify-end">
-                      <DownloadInvoicePortal
-                        customerSessionToken={customerSessionToken}
-                        order={row.original}
-                        onInvoiceGenerated={refetchOrders}
-                        dropdown
-                      />
-                    </span>
-                  ),
-                },
-              ]}
-            />
-          </div>
-        )}
-      </div>
+                  </Box>
+                ),
+              },
+            ]}
+          />
+        </Box>
+      )}
 
       <CustomerCancellationModal
         api={api}
@@ -426,7 +389,7 @@ const CustomerPortalSubscription = ({
           refetchOrders()
         }}
       />
-    </div>
+    </Box>
   )
 }
 

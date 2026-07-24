@@ -1,5 +1,7 @@
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { OrderStatus } from '../Orders/OrderStatus'
 import { OverviewSummaryCard } from './OverviewSummaryCard'
 
@@ -10,29 +12,35 @@ interface LatestPurchaseOverviewProps {
 export const LatestPurchaseOverview = ({
   order,
 }: LatestPurchaseOverviewProps) => {
+  const purchasedOn = new Date(order.created_at).toLocaleDateString('en-US', {
+    dateStyle: 'medium',
+  })
+
   return (
     <OverviewSummaryCard
-      title="Latest Purchase"
-      meta={`Purchased — ${new Date(order.created_at).toLocaleDateString(
-        'en-US',
-        { dateStyle: 'medium' },
-      )}`}
+      title="Latest purchase"
+      meta={`Purchased · ${purchasedOn}`}
     >
-      <div className="flex items-center justify-between gap-4">
-        <span className="dark:text-polar-400 text-gray-600">
-          {order.product?.name ?? order.description}
-        </span>
+      <Box justifyContent="between" alignItems="center" columnGap="l">
+        <Text color="muted">{order.product?.name ?? order.description}</Text>
         <OrderStatus status={order.status} />
-      </div>
+      </Box>
 
-      <div className="dark:border-polar-700 mt-2 border-t border-gray-200 pt-2">
-        <div className="flex items-center justify-between">
-          <span className="font-medium">Total</span>
-          <span className="text-lg font-medium">
-            {formatCurrency('compact')(order.total_amount, order.currency)}
-          </span>
-        </div>
-      </div>
+      <Box
+        marginTop="s"
+        paddingTop="s"
+        borderTopWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+        justifyContent="between"
+        alignItems="baseline"
+        columnGap="l"
+      >
+        <Text>Total</Text>
+        <Text as="span" tabularNums>
+          {formatCurrency('compact')(order.total_amount, order.currency)}
+        </Text>
+      </Box>
     </OverviewSummaryCard>
   )
 }

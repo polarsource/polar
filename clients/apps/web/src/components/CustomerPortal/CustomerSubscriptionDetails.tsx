@@ -9,9 +9,9 @@ import {
 } from '@/hooks/queries/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -19,7 +19,8 @@ import CustomerPortalSubscription from './CustomerPortalSubscription'
 import { ConfirmModal } from '../Modal/ConfirmModal'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
-import { DetailRow } from '../Shared/DetailRow'
+import { DetailItem } from '../Shared/Section'
+import { getScheduleRows } from '../Subscriptions/subscriptionState'
 import CustomerChangePlanModal from './CustomerChangePlanModal'
 import { CustomerSubscriptionHeader } from './CustomerSubscriptionHeader'
 
@@ -75,88 +76,56 @@ const CustomerSubscriptionDetails = ({
   }
 
   return (
-    <ShadowBox className="dark:bg-polar-900 flex w-full flex-col gap-y-6 bg-gray-50 dark:border-transparent">
+    <Box
+      flexDirection="column"
+      rowGap="xl"
+      width="100%"
+      borderRadius="xl"
+      backgroundColor="background-card"
+      padding="2xl"
+    >
       <CustomerSubscriptionHeader subscription={subscription} />
-      <div className="flex flex-col text-sm">
-        <DetailRow
+      <Box flexDirection="column">
+        <DetailItem
           label="Status"
           value={<SubscriptionStatusLabel subscription={subscription} />}
         />
         {subscription.started_at && (
-          <DetailRow
-            label="Start Date"
+          <DetailItem
+            label="Started"
             value={
-              <FormattedDateTime
-                datetime={subscription.started_at}
-                dateStyle="long"
-              />
-            }
-          />
-        )}
-        {subscription.trial_end && subscription.status === 'trialing' ? (
-          <DetailRow
-            label="Trial Ends"
-            value={
-              <FormattedDateTime
-                datetime={subscription.trial_end}
-                dateStyle="long"
-              />
-            }
-          />
-        ) : (
-          !subscription.ended_at &&
-          subscription.status !== 'paused' &&
-          subscription.current_period_end && (
-            <DetailRow
-              label={
-                subscription.cancel_at_period_end
-                  ? 'Expiry Date'
-                  : subscription.pause_at_period_end
-                    ? 'Pauses on'
-                    : 'Renewal Date'
-              }
-              value={
+              <Text as="span">
                 <FormattedDateTime
-                  datetime={subscription.current_period_end}
+                  datetime={subscription.started_at}
                   dateStyle="long"
                 />
-              }
-            />
-          )
-        )}
-        {subscription.status === 'paused' && subscription.paused_at && (
-          <DetailRow
-            label="Paused on"
-            value={
-              <FormattedDateTime
-                datetime={subscription.paused_at}
-                dateStyle="long"
-              />
+              </Text>
             }
           />
         )}
-        {(subscription.status === 'paused' ||
-          subscription.pause_at_period_end) && (
-          <DetailRow
-            label="Resumes on"
+        {getScheduleRows(subscription).map((row) => (
+          <DetailItem
+            key={row.key}
+            label={row.label}
             value={
-              subscription.resumes_at ? (
-                <FormattedDateTime
-                  datetime={subscription.resumes_at}
-                  dateStyle="long"
-                />
+              row.datetime ? (
+                <Text as="span">
+                  <FormattedDateTime datetime={row.datetime} dateStyle="long" />
+                </Text>
               ) : (
-                'Until resumed'
+                row.fallback
               )
             }
           />
-        )}
+        ))}
         {subscription.meters.length > 0 && (
-          <div className="flex flex-col gap-y-4 py-2">
-            <span className="text-lg">Metered Usage</span>
-            <div className="flex flex-col gap-y-2">
+          <Box flexDirection="column" rowGap="l" paddingVertical="s">
+            <Text variant="heading-xxs" as="h3">
+              Metered usage
+            </Text>
+            <Box flexDirection="column" rowGap="s">
               {subscription.meters.map((subscriptionMeter) => (
-                <DetailRow
+                <DetailItem
                   key={subscriptionMeter.meter.id}
                   label={subscriptionMeter.meter.name}
                   value={formatCurrency('compact')(
@@ -165,25 +134,16 @@ const CustomerSubscriptionDetails = ({
                   )}
                 />
               ))}
-            </div>
-          </div>
-        )}
-        {subscription.ended_at && (
-          <DetailRow
-            label="Expired"
-            value={
-              <FormattedDateTime
-                datetime={subscription.ended_at}
-                dateStyle="long"
-              />
-            }
-          />
+            </Box>
+          </Box>
         )}
 
         {pendingUpdate && (
-          <div className="mt-4 flex flex-col gap-y-2">
-            <div className="flex flex-row items-center justify-between">
-              <h3>Pending Update</h3>
+          <Box flexDirection="column" rowGap="s" marginTop="l">
+            <Box alignItems="center" justifyContent="between" columnGap="m">
+              <Text variant="heading-xxs" as="h3">
+                Pending update
+              </Text>
               <Button
                 variant="secondary"
                 size="sm"
@@ -192,35 +152,37 @@ const CustomerSubscriptionDetails = ({
               >
                 Cancel scheduled change
               </Button>
-            </div>
-            <div className="flex flex-col">
+            </Box>
+            <Box flexDirection="column">
               {pendingProduct && (
-                <DetailRow
-                  label="New Product"
-                  value={`${subscription.product.name} -> ${pendingProduct?.name}`}
+                <DetailItem
+                  label="New product"
+                  value={`${subscription.product.name} → ${pendingProduct.name}`}
                 />
               )}
               {pendingUpdate.seats !== null && (
-                <DetailRow
+                <DetailItem
                   label="Seats"
-                  value={`${subscription.seats} -> ${pendingUpdate.seats}`}
+                  value={`${subscription.seats} → ${pendingUpdate.seats}`}
                 />
               )}
-              <DetailRow
+              <DetailItem
                 label="Update in effect from"
                 value={
-                  <FormattedDateTime
-                    datetime={pendingUpdate.applies_at}
-                    dateStyle="long"
-                  />
+                  <Text as="span">
+                    <FormattedDateTime
+                      datetime={pendingUpdate.applies_at}
+                      dateStyle="long"
+                    />
+                  </Text>
                 }
               />
-            </div>
-          </div>
+            </Box>
+          </Box>
         )}
-      </div>
+      </Box>
 
-      <div className="flex flex-row gap-4">
+      <Box flexDirection="row" columnGap="l">
         {isCanceled &&
           subscription.cancel_at_period_end &&
           subscription.current_period_end &&
@@ -237,15 +199,16 @@ const CustomerSubscriptionDetails = ({
             </Button>
           )}
 
-        <Button className="hidden md:flex" onClick={showBenefitGrantsModal}>
-          Manage subscription
-        </Button>
-        <Link
-          className="md:hidden"
-          href={`/${organization.slug}/portal/subscriptions/${subscription.id}?customer_session_token=${customerSessionToken}`}
-        >
-          <Button>Manage subscription</Button>
-        </Link>
+        <Box display={{ base: 'none', md: 'flex' }}>
+          <Button onClick={showBenefitGrantsModal}>Manage subscription</Button>
+        </Box>
+        <Box display={{ base: 'flex', md: 'none' }}>
+          <Link
+            href={`/${organization.slug}/portal/subscriptions/${subscription.id}?customer_session_token=${customerSessionToken}`}
+          >
+            <Button>Manage subscription</Button>
+          </Link>
+        </Box>
 
         {showSubscriptionUpdates && !isCanceled && (
           <Button
@@ -255,7 +218,7 @@ const CustomerSubscriptionDetails = ({
             Change plan
           </Button>
         )}
-      </div>
+      </Box>
 
       <InlineModal
         isShown={showChangePlanModal}
@@ -276,14 +239,14 @@ const CustomerSubscriptionDetails = ({
         isShown={isBenefitGrantsModalOpen}
         hide={hideBenefitGrantsModal}
         modalContent={
-          <div className="flex flex-col overflow-y-auto p-8">
+          <Box flexDirection="column" overflowY="auto" padding="2xl">
             <CustomerPortalSubscription
               api={api}
               customerSessionToken={customerSessionToken}
               subscription={subscription}
               products={products}
             />
-          </div>
+          </Box>
         }
       />
 
@@ -298,7 +261,7 @@ const CustomerSubscriptionDetails = ({
           router.refresh()
         }}
       />
-    </ShadowBox>
+    </Box>
   )
 }
 

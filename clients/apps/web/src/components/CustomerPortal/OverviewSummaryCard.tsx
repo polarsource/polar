@@ -1,3 +1,5 @@
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { ReactNode } from 'react'
 
 interface OverviewSummaryCardProps {
@@ -12,17 +14,30 @@ export const OverviewSummaryCard = ({
   children,
 }: OverviewSummaryCardProps) => {
   return (
-    <div className="dark:border-polar-700 flex flex-col gap-4 rounded-3xl border border-gray-200 p-8">
-      <div className="items-center justify-between space-y-1.5 sm:flex sm:space-y-0">
-        <h4 className="text-lg font-medium">{title}</h4>
-        {meta && (
-          <span className="dark:text-polar-500 text-sm text-gray-500">
-            {meta}
-          </span>
-        )}
-      </div>
+    <Box
+      flexDirection="column"
+      rowGap="l"
+      borderRadius="xl"
+      borderWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+      padding="2xl"
+    >
+      <Box
+        flexDirection={{ base: 'column', sm: 'row' }}
+        alignItems={{ sm: 'center' }}
+        justifyContent={{ sm: 'between' }}
+        rowGap="xs"
+      >
+        <Text variant="heading-xxs" as="h4">
+          {title}
+        </Text>
+        {meta && <Text color="muted">{meta}</Text>}
+      </Box>
 
-      <div className="flex flex-col gap-2">{children}</div>
-    </div>
+      <Box flexDirection="column" rowGap="s">
+        {children}
+      </Box>
+    </Box>
   )
 }

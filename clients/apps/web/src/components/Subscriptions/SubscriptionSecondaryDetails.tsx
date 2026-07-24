@@ -1,10 +1,7 @@
 'use client'
 
 import CustomFieldValue from '@/components/CustomFields/CustomFieldValue'
-import {
-  DetailColumn,
-  type DetailColumnRow,
-} from '@/components/Orders/OrderSection'
+import { DetailColumn, type DetailColumnRow } from '@/components/Shared/Section'
 import { formatCountry } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
 import { Grid, Text } from '@polar-sh/orbit'

@@ -3,8 +3,8 @@
 import {
   InvoicePreview,
   type InvoiceLineItem,
-} from '@/components/Orders/InvoicePreview'
-import { OrderSection } from '@/components/Orders/OrderSection'
+} from '@/components/Shared/InvoicePreview'
+import { Section } from '@/components/Shared/Section'
 import { useProduct } from '@/hooks/queries'
 import { useSubscriptionChargePreview } from '@/hooks/queries/subscriptions'
 import { isFreePrice, isSeatBasedPrice } from '@/utils/product'
@@ -129,7 +129,7 @@ const SubscriptionInvoicePreview = ({
       borderColor="border-primary"
       paddingTop="4xl"
     >
-      <OrderSection
+      <Section
         title={title}
         description={
           <Box alignItems="center" columnGap="s">
@@ -155,7 +155,7 @@ const SubscriptionInvoicePreview = ({
           totalAmount={chargePreview.total_amount}
         />
         {note && <Text color="muted">{note}</Text>}
-      </OrderSection>
+      </Section>
     </Box>
   )
 }

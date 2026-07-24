@@ -7,7 +7,7 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { ArrowUpRightIcon } from 'lucide-react'
 import Link from 'next/link'
 import { OrderStatus } from './OrderStatus'
-import { DetailCell, DetailGrid } from './OrderSection'
+import { DetailCell, DetailGrid } from '@/components/Shared/Section'
 
 const formatBillingReason = (reason: string) =>
   reason

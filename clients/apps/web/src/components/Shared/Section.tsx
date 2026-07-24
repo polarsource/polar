@@ -4,7 +4,7 @@ import { Grid, Text, Truncated } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import type { ReactNode } from 'react'
 
-export const OrderSection = ({
+export const Section = ({
   title,
   description,
   action,

@@ -1,6 +1,6 @@
 'use client'
 
-import { DetailCell, DetailGrid } from '@/components/Orders/OrderSection'
+import { DetailCell, DetailGrid } from '@/components/Shared/Section'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text, TextArea } from '@polar-sh/orbit'

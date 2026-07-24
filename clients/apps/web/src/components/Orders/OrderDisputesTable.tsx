@@ -9,7 +9,7 @@ import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { DataTable, type DataTableColumnDef, Status } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { OrderSection } from './OrderSection'
+import { Section } from '@/components/Shared/Section'
 
 export const OrderDisputesTable = ({
   organization,
@@ -27,7 +27,7 @@ export const OrderDisputesTable = ({
   }
 
   return (
-    <OrderSection title="Disputes">
+    <Section title="Disputes">
       <DataTable
         isLoading={isLoading}
         columns={
@@ -65,6 +65,6 @@ export const OrderDisputesTable = ({
         }
         data={disputes.items}
       />
-    </OrderSection>
+    </Section>
   )
 }

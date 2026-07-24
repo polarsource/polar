@@ -3,7 +3,7 @@
 import { CustomerContextView } from '@/components/Customer/CustomerContextView'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useModal } from '@/components/Modal/useModal'
-import { OrderSection } from '@/components/Orders/OrderSection'
+import { Section } from '@/components/Shared/Section'
 import { SeatViewOnlyTable } from '@/components/Seats/SeatViewOnlyTable'
 import SubscriptionActionsMenu from '@/components/Subscriptions/SubscriptionActionsMenu'
 import { SubscriptionDetailsGrid } from '@/components/Subscriptions/SubscriptionDetailsGrid'
@@ -95,7 +95,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       />
 
       {hasSeatBasedSubscription && (
-        <OrderSection
+        <Section
           title="Seats"
           description={
             <Text color="muted">
@@ -109,7 +109,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           {!isLoadingSeats && seats.length === 0 && (
             <Text color="muted">No seats have been assigned yet.</Text>
           )}
-        </OrderSection>
+        </Section>
       )}
 
       <SubscriptionOrdersSection

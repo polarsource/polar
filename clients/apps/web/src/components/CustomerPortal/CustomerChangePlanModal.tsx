@@ -8,7 +8,8 @@ import {
 import { hasLegacyRecurringPrices, isFreePrice } from '@/utils/product'
 import { formatTrialEnd, useTrialChangeOutcome } from '@/utils/trial-change'
 import { Client, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { List, ListItem } from '@polar-sh/orbit'
 import { Checkbox } from '@polar-sh/orbit'
 import { useRouter } from 'next/navigation'
@@ -35,9 +36,52 @@ const ProductPriceListItem = ({
       onSelect={onSelect}
       size="small"
     >
-      <h3 className="font-medium">{product.name}</h3>
+      <Text variant="title" as="h3">
+        {product.name}
+      </Text>
       <ProductPriceLabel product={product} currency={currency} />
     </ListItem>
+  )
+}
+
+const BenefitChangeList = ({
+  title,
+  tone,
+  benefits,
+}: {
+  title: string
+  tone: 'success' | 'danger'
+  benefits: schemas['CustomerProduct']['benefits']
+}) => {
+  if (benefits.length === 0) {
+    return null
+  }
+
+  return (
+    <Box flexDirection="column" rowGap="l">
+      <Text variant="title" as="h3" color={tone}>
+        {title}
+      </Text>
+      <Box flexDirection="column" rowGap="s">
+        {benefits.map((benefit) => (
+          <Box key={benefit.id} alignItems="center" columnGap="s">
+            <Box
+              width={24}
+              height={24}
+              flexShrink={0}
+              alignItems="center"
+              justifyContent="center"
+              borderRadius="full"
+              backgroundColor="background-accent"
+              color="text-accent"
+            >
+              {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
+            </Box>
+            <Text>{benefit.description}</Text>
+          </Box>
+        ))}
+      </Box>
+    </Box>
   )
 }
 
@@ -249,14 +293,18 @@ const CustomerChangePlanModal = ({
   )
 
   return (
-    <div className="flex flex-col overflow-y-auto">
+    <Box flexDirection="column" overflowY="auto">
       <InlineModalHeader hide={hide}>
-        <div className="flex items-center justify-between gap-2">
-          <h2 className="text-xl">Change Plan</h2>
-        </div>
+        <Box alignItems="center" justifyContent="between" columnGap="s">
+          <Text variant="heading-xs" as="h2">
+            Change plan
+          </Text>
+        </Box>
       </InlineModalHeader>
-      <div className="flex flex-col gap-y-8 p-8">
-        <h3 className="font-medium">Current Plan</h3>
+      <Box flexDirection="column" rowGap="2xl" padding="2xl">
+        <Text variant="title" as="h3">
+          Current plan
+        </Text>
         <List size="small">
           <ProductPriceListItem
             product={subscription.product}
@@ -264,11 +312,18 @@ const CustomerChangePlanModal = ({
             selected
           />
         </List>
-        <h3 className="font-medium">Available Plans</h3>
+        <Text variant="title" as="h3">
+          Available plans
+        </Text>
         {availableProducts.length === 0 ? (
-          <p className="dark:text-polar-500 dark:bg-polar-800 rounded-2xl bg-gray-50 p-3 text-center text-sm text-gray-500">
-            No other plans available
-          </p>
+          <Box
+            borderRadius="l"
+            backgroundColor="background-secondary"
+            padding="m"
+            justifyContent="center"
+          >
+            <Text color="muted">No other plans available</Text>
+          </Box>
         ) : (
           <List size="small">
             {availableProducts.map((product) => (
@@ -282,65 +337,41 @@ const CustomerChangePlanModal = ({
             ))}
           </List>
         )}
-        <div className="flex flex-col gap-y-6">
-          {addedBenefits.length > 0 && (
-            <div className="flex flex-col gap-y-4">
-              <h3 className="text-sm font-medium text-green-400">
-                You&apos;ll get access to the following benefits
-              </h3>
-              <div className="flex flex-col gap-y-2">
-                {addedBenefits.map((benefit) => (
-                  <div key={benefit.id} className="flex flex-row align-middle">
-                    <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
-                      {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
-                    </span>
-                    <span className="ml-2 text-sm">{benefit.description}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-          {removedBenefits.length > 0 && (
-            <div className="flex flex-col gap-y-4">
-              <h3 className="text-sm font-medium text-red-400">
-                You&apos;ll lose access to the following benefits
-              </h3>
-              <div className="flex flex-col gap-y-2">
-                {removedBenefits.map((benefit) => (
-                  <div key={benefit.id} className="flex flex-row align-middle">
-                    <span className="dark:bg-polar-700 flex h-6 w-6 shrink-0 flex-row items-center justify-center rounded-full bg-blue-50 text-2xl text-blue-500 dark:text-white">
-                      {resolveBenefitIcon(benefit.type, 'h-3 w-3')}
-                    </span>
-                    <span className="ml-2 text-sm">{benefit.description}</span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
+        <Box flexDirection="column" rowGap="xl">
+          <BenefitChangeList
+            title="You'll get access to the following benefits"
+            tone="success"
+            benefits={addedBenefits}
+          />
+          <BenefitChangeList
+            title="You'll lose access to the following benefits"
+            tone="danger"
+            benefits={removedBenefits}
+          />
           {invoicingMessage && (
-            <label className="flex flex-row items-start gap-x-2">
+            <Box as="label" display="flex" alignItems="start" columnGap="s">
               {willIssueInvoice && (
-                <div>
+                <Box>
                   <Checkbox
                     checked={approveImmediateInvoice}
                     onCheckedChange={(checked) =>
                       setApproveImmediateInvoice(checked === true)
                     }
                   />
-                </div>
+                </Box>
               )}
 
-              <span className="dark:text-polar-500 text-sm text-pretty text-gray-500">
+              <Text color="muted" wrap="pretty">
                 {invoicingMessage}
-              </span>
-            </label>
+              </Text>
+            </Box>
           )}
-        </div>
+        </Box>
         {needToAddPaymentMethod && (
-          <p className="dark:text-polar-500 text-sm text-gray-500">
+          <Text color="muted">
             You need to add a payment method before updating your plan. Head to
-            the Customer Portal Settings to add a payment method.
-          </p>
+            the customer portal settings to add a payment method.
+          </Text>
         )}
         <Button
           disabled={!canChangePlan}
@@ -349,11 +380,11 @@ const CustomerChangePlanModal = ({
           size="lg"
         >
           {trialOutcome?.kind === 'ends'
-            ? 'Change Plan & End Trial'
-            : 'Change Plan'}
+            ? 'Change plan & end trial'
+            : 'Change plan'}
         </Button>
-      </div>
-    </div>
+      </Box>
+    </Box>
   )
 }
 

@@ -2,9 +2,10 @@
 
 import { useCustomerBenefitGrants } from '@/hooks/queries/customerPortal'
 import { Client } from '@polar-sh/client'
-import { Input } from '@polar-sh/orbit'
+import { Input, Spinner, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { List, ListItem } from '@polar-sh/orbit'
-import { Loader2, Search } from 'lucide-react'
+import { Search } from 'lucide-react'
 import { useCallback, useState } from 'react'
 import { BenefitGrant } from '../Benefit/BenefitGrant'
 import { Pagination } from './Pagination'
@@ -54,56 +55,67 @@ export const CustomerPortalGrantsComplex = ({
   const pagination = benefitGrants?.pagination
 
   return (
-    <div className="flex w-full flex-col gap-4">
-      <h3 className="text-xl">Benefit Grants</h3>
+    <Box width="100%" flexDirection="column" rowGap="l">
+      <Text variant="heading-xs" as="h3">
+        Benefit grants
+      </Text>
 
-      {/* Search box */}
       <Input
-        preSlot={<Search className="h-4 w-4" />}
+        preSlot={<Search size={16} />}
         placeholder="Search benefit grants..."
         value={searchQuery}
         onChange={onSearchChange}
       />
 
-      {/* Grants list with loading overlay */}
-      <div className="relative">
+      <Box position="relative" flexDirection="column">
         {grants.length === 0 && !isLoading ? (
-          <div className="dark:border-polar-700 dark:text-polar-500 rounded-xl border border-gray-200 py-8 text-center text-sm text-gray-500">
-            No benefit grants found
-          </div>
+          <Box
+            borderRadius="m"
+            borderWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
+            paddingVertical="2xl"
+            justifyContent="center"
+          >
+            <Text color="muted">No benefit grants found</Text>
+          </Box>
         ) : (
-          <div className="flex flex-col gap-4">
-            <List>
-              {grants.map((benefitGrant) => (
-                <ListItem
-                  key={benefitGrant.id}
-                  className="py-6 hover:bg-transparent dark:hover:bg-transparent"
-                >
-                  <BenefitGrant api={api} benefitGrant={benefitGrant} />
-                </ListItem>
-              ))}
-            </List>
-          </div>
+          <List>
+            {grants.map((benefitGrant) => (
+              <ListItem
+                key={benefitGrant.id}
+                className="py-6 hover:bg-transparent dark:hover:bg-transparent"
+              >
+                <BenefitGrant api={api} benefitGrant={benefitGrant} />
+              </ListItem>
+            ))}
+          </List>
         )}
 
-        {/* Loading overlay */}
         {(isLoading || isFetching) && (
-          <div className="absolute inset-0 flex items-center justify-center rounded-xl bg-white/50 dark:bg-black/50">
-            <Loader2 className="dark:text-polar-500 h-5 w-5 animate-spin text-gray-500" />
-          </div>
+          <Box
+            position="absolute"
+            inset={0}
+            alignItems="center"
+            justifyContent="center"
+            borderRadius="m"
+            backgroundColor="background-primary"
+            opacity={0.5}
+          >
+            <Spinner />
+          </Box>
         )}
-      </div>
+      </Box>
 
-      {/* Pagination controls */}
       {pagination && pagination.max_page > 1 && (
-        <div className="flex justify-end">
+        <Box justifyContent="end">
           <Pagination
             page={currentPage}
             totalPages={pagination.max_page}
             onPageChange={setCurrentPage}
           />
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   )
 }

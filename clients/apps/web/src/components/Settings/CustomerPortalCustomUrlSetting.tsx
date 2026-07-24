@@ -201,6 +201,23 @@ export default function CustomerPortalCustomUrlSetting({
                     </React.Fragment>
                   ))}
                 </Grid>
+
+                <Box
+                  width="100%"
+                  borderTopWidth={1}
+                  borderStyle="solid"
+                  borderColor="border-primary"
+                />
+
+                <Box padding="m" width="100%">
+                  <Text variant="caption" color="muted">
+                    Used in all customer emails that link to the portal —
+                    purchase and subscription confirmations, renewals, plan
+                    changes, cancellations, payment failures and reminders.
+                    Sign-in code and seat invitation emails keep linking to
+                    Polar.
+                  </Text>
+                </Box>
               </Box>
             </Box>
           </div>

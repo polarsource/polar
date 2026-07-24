@@ -1,4 +1,5 @@
 import typing
+from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select, update
@@ -69,6 +70,19 @@ class CheckoutRepository(
             statement = statement.with_for_update(of=Checkout, nowait=nowait)
 
         return await self.get_one_or_none(statement)
+
+    async def list_open_by_discount(
+        self, discount_id: UUID, *, options: Options = ()
+    ) -> Sequence[Checkout]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Checkout.discount_id == discount_id,
+                Checkout.status == CheckoutStatus.open,
+            )
+            .options(*options)
+        )
+        return await self.get_all(statement)
 
     async def expire_open_checkouts(self) -> list[UUID]:
         statement = (

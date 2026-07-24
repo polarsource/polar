@@ -9,6 +9,8 @@ import pytest
 import pytest_asyncio
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
+from sqlalchemy.dialects import postgresql
+from sqlalchemy.sql import visitors
 
 from polar.auth.models import AuthSubject
 from polar.enums import SubscriptionRecurringInterval
@@ -30,6 +32,7 @@ from polar.meter.service import meter as meter_service
 from polar.meter.unit import MeterUnit
 from polar.models import (
     Account,
+    BillingEntry,
     Customer,
     Event,
     Meter,
@@ -1423,7 +1426,7 @@ class TestCreateBillingEntries:
         assert entries[0].customer == customer
         assert entries[0].subscription == subscription
 
-    async def test_multiple_batches(
+    async def test_backlog_across_reenqueued_pages(
         self,
         enqueue_job_mock: AsyncMock,
         mocker: MockerFixture,
@@ -1433,6 +1436,7 @@ class TestCreateBillingEntries:
         organization: Organization,
     ) -> None:
         mocker.patch("polar.meter.service._BILLING_ENTRY_BATCH_SIZE", 2)
+        execute_spy = mocker.spy(session, "execute")
         price_lookup_spy = mocker.spy(
             SubscriptionProductPriceRepository, "get_by_customers_and_meter"
         )
@@ -1462,10 +1466,11 @@ class TestCreateBillingEntries:
             save_fixture, organization=organization, email="batch-none@example.com"
         )
 
-        # 6 events across 3 batches of 2. The last event has no subscription and
-        # must not produce an entry, but must still advance the watermark.
+        # Five events across three task invocations. The last event has no
+        # subscription and must not produce an entry, but must still advance the
+        # watermark.
         events: list[Event] = []
-        for i in range(5):
+        for i in range(4):
             events.append(
                 await create_event(
                     save_fixture,
@@ -1484,25 +1489,54 @@ class TestCreateBillingEntries:
         )
         await event_service._create_meter_events(session, events)
 
-        entries = await meter_service.create_billing_entries(session, meter)
+        entries: list[BillingEntry] = []
+        for expected_watermark in (events[1], events[3], events[4]):
+            entries.extend(await meter_service.create_billing_entries(session, meter))
+            assert meter.last_billed_event == expected_watermark
 
         assert [
             (entry.event, entry.customer, entry.subscription) for entry in entries
-        ] == [(events[i], customers[i % 3], subscriptions[i % 3]) for i in range(5)]
+        ] == [(events[i], customers[i % 3], subscriptions[i % 3]) for i in range(4)]
 
-        # Watermark advances to the last streamed event across all batches, even
-        # though it produced no billable entry.
         assert meter.last_billed_event == events[-1]
 
-        # 6 events, batch size 2 -> ceil(6 / 2) == 3 per-batch lookups: bounded,
-        # not one per event and not one for the whole backlog.
         assert price_lookup_spy.call_count == 3
 
-        assert enqueue_job_mock.call_count == 3
-        for subscription in subscriptions:
-            enqueue_job_mock.assert_any_call(
-                "subscription.update_meters", subscription.id
+        continuation_jobs = [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args[0] == "meter.billing_entries"
+        ]
+        assert [call.args for call in continuation_jobs] == [
+            ("meter.billing_entries", meter.id),
+            ("meter.billing_entries", meter.id),
+        ]
+
+        subscription_jobs = [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args[0] == "subscription.update_meters"
+        ]
+        assert {call.args[1] for call in subscription_jobs} == {
+            subscription.id for subscription in subscriptions
+        }
+
+        event_fetch_statements = [
+            call.args[0]
+            for call in execute_spy.call_args_list
+            if any(
+                getattr(element, "name", None) == "meter_billing_event_page"
+                for element in visitors.iterate(call.args[0])
             )
+        ]
+        assert len(event_fetch_statements) == 3
+        for statement in event_fetch_statements:
+            compiled_statement = statement.compile(dialect=postgresql.dialect())
+            sql = str(compiled_statement)
+            assert " LIMIT " in sql
+            assert "UNION ALL" in sql
+            assert "events.customer_id = customers.id OR" not in sql
+            assert 2 in compiled_statement.params.values()
 
 
 @pytest.mark.asyncio
@@ -1819,7 +1853,7 @@ class TestCreateBillingEntriesWithSeats:
             "subscription.update_meters", billing_manager_subscription.id
         )
 
-    async def test_seat_holders_across_multiple_batches(
+    async def test_seat_holders_across_reenqueued_pages(
         self,
         enqueue_job_mock: AsyncMock,
         mocker: MockerFixture,
@@ -1909,7 +1943,9 @@ class TestCreateBillingEntriesWithSeats:
             )
         await event_service._create_meter_events(session, events)
 
-        entries = await meter_service.create_billing_entries(session, meter)
+        entries: list[BillingEntry] = []
+        for _ in range(3):
+            entries.extend(await meter_service.create_billing_entries(session, meter))
 
         assert len(entries) == 5
         for entry in entries:
@@ -1920,11 +1956,22 @@ class TestCreateBillingEntriesWithSeats:
 
         assert meter.last_billed_event == events[-1]
 
-        # 5 events, batch size 2 -> ceil(5 / 2) == 3 per-batch lookups.
         assert price_lookup_spy.call_count == 3
 
-        enqueue_job_mock.assert_called_once_with(
-            "subscription.update_meters", billing_manager_subscription.id
+        assert (
+            sum(
+                call.args == ("meter.billing_entries", meter.id)
+                for call in enqueue_job_mock.call_args_list
+            )
+            == 2
+        )
+        assert (
+            sum(
+                call.args
+                == ("subscription.update_meters", billing_manager_subscription.id)
+                for call in enqueue_job_mock.call_args_list
+            )
+            == 3
         )
 
     async def test_billing_manager_is_seat_holder(

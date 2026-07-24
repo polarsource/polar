@@ -42,11 +42,8 @@ export const TrialConfigurationForm = ({
     trial_interval?: schemas['TrialInterval'] | null
   }>()
   const count = watch('trial_interval_count')
-  const interval = watch('trial_interval')
 
-  const [trialEnabled, setTrialEnabled] = useState<boolean>(
-    !!count && !!interval,
-  )
+  const [trialEnabled, setTrialEnabled] = useState<boolean>(!!count)
   const onTrialToggle = useCallback(
     (enabled: boolean) => {
       if (!enabled) {

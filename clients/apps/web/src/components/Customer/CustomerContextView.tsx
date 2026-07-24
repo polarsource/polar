@@ -89,7 +89,7 @@ export const CustomerContextView = ({
         </Link>
       </ContextCard>
       <ContextCard>
-        <div className="flex flex-col">
+        <div className="flex flex-col gap-3 sm:gap-0">
           {!customer.deleted_at && (
             <DetailRow
               labelClassName="flex-none md:basis-24"

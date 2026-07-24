@@ -210,4 +210,23 @@ describe('getScheduleRows', () => {
     )
     expect(rows.map((row) => row.key)).toEqual(['trial_end', 'next_event'])
   })
+
+  it('does not repeat the trial end as a renewal date', () => {
+    // The API sets trial_end and current_period_end to the same value while
+    // trialing, so both rows would show the same date.
+    const rows = getScheduleRows(
+      subscription({
+        status: 'trialing',
+        trial_end: '2026-02-01T00:00:00Z',
+        current_period_end: '2026-02-01T00:00:00Z',
+      }),
+    )
+    expect(rows).toEqual([
+      {
+        key: 'trial_end',
+        label: 'Trial ends',
+        datetime: '2026-02-01T00:00:00Z',
+      },
+    ])
+  })
 })

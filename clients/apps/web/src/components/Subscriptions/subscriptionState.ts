@@ -114,7 +114,11 @@ export const getScheduleRows = (
         ? subscription.current_period_end
         : null))
 
-  if (nextEvent) {
+  // While trialing, `trial_end` and `current_period_end` hold the same date, so
+  // a renewal row would repeat the trial row under a different label.
+  const repeatsTrialEnd = rows.some((row) => row.datetime === nextEvent)
+
+  if (nextEvent && !repeatsTrialEnd) {
     rows.push({
       key: 'next_event',
       label: subscription.ends_at

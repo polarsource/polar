@@ -500,13 +500,17 @@ class BenefitSlackSharedChannelService(
         except httpx.HTTPError as e:
             raise BenefitRetriableError() from e
 
-        if result.get("ok") or result.get("error") == "not_archived":
+        error = result.get("error", "")
+        if result.get("ok") or error == "not_archived":
             return True
+
+        if error in _ARCHIVE_TRANSIENT_ERRORS:
+            raise BenefitRetriableError()
 
         bound_logger.info(
             "Slack channel unarchive skipped",
             channel_id=channel,
-            error=result.get("error"),
+            error=error,
         )
         return False
 

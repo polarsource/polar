@@ -8,47 +8,53 @@ type Step = schemas['MerchantMigrationStep']
 export type StepOwner = 'you' | 'polar' | 'stripe'
 
 export interface MigrationStepDef {
-  step: Step
+  key: string
   title: string
+  // Short label for the compact stepper.
+  short: string
   description: string
   owner: StepOwner
+  // Backend steps this visible step covers. Assessment merges the pre-check and
+  // the import into one step: the merchant assesses and imports in one place.
+  steps: Step[]
 }
 
 export const MIGRATION_STEPS: MigrationStepDef[] = [
   {
-    step: 'source_setup',
+    key: 'connect',
+    short: 'Connect',
     owner: 'you',
     title: 'Connect your Stripe account',
     description:
       'Paste a Stripe restricted API key so Polar can read your products, customers and subscriptions.',
+    steps: ['source_setup'],
   },
   {
-    step: 'pre_check',
+    key: 'assessment',
+    short: 'Assessment',
     owner: 'polar',
-    title: 'Pre-check your catalog',
+    title: 'Assess & import your catalog',
     description:
-      'Polar verifies your products, prices and customers can be imported.',
+      'Polar checks what can move, then imports your products, customers and subscriptions.',
+    steps: ['pre_check', 'create_catalog'],
   },
   {
-    step: 'create_catalog',
-    owner: 'polar',
-    title: 'Switch new checkouts to Polar',
-    description:
-      'We import your catalog so new customers check out on Polar, not Stripe.',
-  },
-  {
-    step: 'copy_cards',
+    key: 'cards',
+    short: 'Card movement',
     owner: 'stripe',
     title: 'Move saved cards',
     description:
       "Stripe copies your customers' saved cards onto Polar's account.",
+    steps: ['copy_cards'],
   },
   {
-    step: 'activate_subscriptions',
+    key: 'cutover',
+    short: 'Cutover',
     owner: 'polar',
-    title: 'Migrate existing subscriptions',
+    title: 'Cut over billing',
     description:
       'Polar takes over billing for active subscriptions and stops them on Stripe.',
+    steps: ['activate_subscriptions'],
   },
 ]
 
@@ -58,18 +64,22 @@ export const OWNER_LABELS: Record<StepOwner, string | null> = {
   stripe: 'Stripe',
 }
 
-// Position within the visible steps. Terminal states (`cleanup`/`completed`)
-// aren't listed as their own rows, so they resolve past the last step.
-export function stepPosition(step: Step): number {
-  const index = MIGRATION_STEPS.findIndex((s) => s.step === step)
-  return index === -1 ? MIGRATION_STEPS.length : index
+// Which visible step the merchant is on. Connecting completes Connect even
+// though the backend still reads `source_setup`, so once connected we surface
+// Assessment. Terminal states resolve to the last step.
+export function currentVisibleIndex(
+  migration: schemas['MerchantMigration'],
+): number {
+  if (!migration.source_connected) {
+    return 0
+  }
+  const step = migration.step === 'source_setup' ? 'pre_check' : migration.step
+  const index = MIGRATION_STEPS.findIndex((def) => def.steps.includes(step))
+  return index === -1 ? MIGRATION_STEPS.length - 1 : index
 }
 
-// Connecting completes `source_setup`, but the backend doesn't advance the step
-// yet, so surface the next reachable step as current once connected.
-export function currentStepKey(migration: schemas['MerchantMigration']): Step {
-  if (!migration.source_connected) {
-    return 'source_setup'
-  }
-  return migration.step === 'source_setup' ? 'pre_check' : migration.step
+export function currentStepDef(
+  migration: schemas['MerchantMigration'],
+): MigrationStepDef {
+  return MIGRATION_STEPS[currentVisibleIndex(migration)]
 }

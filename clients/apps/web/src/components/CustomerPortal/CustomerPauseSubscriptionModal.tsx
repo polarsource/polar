@@ -4,18 +4,10 @@ import { toast } from '@/components/Toast/use-toast'
 import { useCustomerPauseSubscription } from '@/hooks/queries/customerPortal'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { Client, schemas } from '@polar-sh/client'
-import { Button, Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import DatePicker from '@polar-sh/ui/components/atoms/DateTimePicker'
-import {
-  Form,
-  FormDescription,
-  FormField,
-  FormItem,
-  FormLabel,
-} from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
-import { useForm } from 'react-hook-form'
+import { PauseSubscriptionForm } from '../Subscriptions/PauseSubscriptionForm'
 
 interface CustomerPauseSubscriptionModalProps {
   api: Client
@@ -29,25 +21,18 @@ const CustomerPauseSubscriptionModal = ({
   onPause,
 }: CustomerPauseSubscriptionModalProps) => {
   const router = useRouter()
-  const form = useForm<{ resumes_at?: string }>({
-    defaultValues: { resumes_at: undefined },
-  })
   const pauseSubscription = useCustomerPauseSubscription(api)
 
-  const periodEnd = subscription.current_period_end
-    ? new Date(subscription.current_period_end)
-    : undefined
-
-  const onSubmit = async ({ resumes_at }: { resumes_at?: string }) => {
+  const onSubmit = async (resumesAt: string | null) => {
     try {
       await pauseSubscription.mutateAsync({
         id: subscription.id,
-        body: { pause_at_period_end: true, resumes_at: resumes_at || null },
+        body: { pause_at_period_end: true, resumes_at: resumesAt },
       })
       router.refresh()
       toast({
         title: 'Subscription Paused',
-        description: resumes_at
+        description: resumesAt
           ? 'Your subscription will be paused at the end of the current period and resume automatically on the selected date.'
           : 'Your subscription will be paused at the end of the current period.',
       })
@@ -76,34 +61,11 @@ const CustomerPauseSubscriptionModal = ({
         the next renewal it is paused — you are not charged and benefits are
         revoked until it resumes.
       </Text>
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(onSubmit)}
-          className="flex flex-col gap-y-6"
-        >
-          <FormField
-            control={form.control}
-            name="resumes_at"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Resume date (optional)</FormLabel>
-                <DatePicker
-                  value={field.value}
-                  onChange={field.onChange}
-                  disabled={periodEnd ? { before: periodEnd } : undefined}
-                />
-                <FormDescription>
-                  Leave empty to pause indefinitely until you resume manually.
-                  Must be after the current period ends.
-                </FormDescription>
-              </FormItem>
-            )}
-          />
-          <Button type="submit" loading={pauseSubscription.isPending}>
-            Pause Subscription
-          </Button>
-        </form>
-      </Form>
+      <PauseSubscriptionForm
+        currentPeriodEnd={subscription.current_period_end}
+        isPending={pauseSubscription.isPending}
+        onSubmit={onSubmit}
+      />
     </Box>
   )
 }

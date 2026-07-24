@@ -1,30 +1,38 @@
 import { defineConfig, devices } from '@playwright/test'
-import { readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import {
+  hasDevDockerInstance,
+  loadEnvLocal,
+  storageStatePath,
+  webURL,
+} from './e2e/support/env'
 
-const envFile = resolve(__dirname, '.env.local')
-try {
-  const content = readFileSync(envFile, 'utf-8')
-  for (const line of content.split('\n')) {
-    const match = line.match(/^\s*([\w.-]+)\s*=\s*"?(.*?)"?\s*$/)
-    if (match && !process.env[match[1]]) {
-      process.env[match[1]] = match[2]
-    }
-  }
-} catch {
-  // ignore
-}
+loadEnvLocal(__dirname)
+
+const jsonOutput = process.env.PLAYWRIGHT_JSON_OUTPUT_NAME
 
 export default defineConfig({
   testDir: './e2e',
+  testMatch: '**/*.spec.ts',
   fullyParallel: true,
   forbidOnly: !!process.env.CI,
   retries: process.env.CI ? 2 : 0,
   workers: process.env.CI ? 1 : undefined,
-  reporter: 'html',
+  globalSetup: './e2e/global-setup.ts',
+  reporter: [
+    ['list'],
+    ['html', { open: 'never' }],
+    ...(jsonOutput
+      ? [['json', { outputFile: jsonOutput }] as [string, object]]
+      : []),
+  ],
   use: {
-    baseURL: 'http://127.0.0.1:3000',
+    baseURL: webURL,
+    // Only reuse the admin session when global setup minted it (dev-docker run).
+    storageState: hasDevDockerInstance ? storageStatePath : undefined,
     trace: 'retain-on-failure',
+    // E2E_SCREENSHOTS=1 (dev e2e --screenshots) captures every test, not just failures.
+    screenshot: process.env.E2E_SCREENSHOTS ? 'on' : 'only-on-failure',
+    video: process.env.E2E_SCREENSHOTS ? 'on' : 'off',
   },
   projects: [
     {

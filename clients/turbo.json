@@ -48,7 +48,14 @@
     "MINTLIFY_ASSISTANT_API_KEY",
     "ATTIO_API_KEY",
     "ATTIO_STARTUP_LIST_ID",
-    "CI"
+    "CI",
+    "PLAYWRIGHT_JSON_OUTPUT_NAME",
+    "E2E_INSTANCE",
+    "E2E_WEB_URL",
+    "E2E_API_URL",
+    "E2E_ADMIN_EMAIL",
+    "E2E_ADMIN_ORG",
+    "E2E_SCREENSHOTS"
   ],
   "tasks": {
     "test": {

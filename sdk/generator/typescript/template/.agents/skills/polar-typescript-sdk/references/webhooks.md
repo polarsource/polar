@@ -4,17 +4,20 @@ Use these instructions whenever implementing or modifying a Polar webhook receiv
 
 ## Receiver requirements
 
-1. Read the unmodified request body as a string or `Uint8Array`.
-2. Pass the raw body, request headers, and server-side signing secret to the versioned `webhooks.validateEvent`.
-3. Reject invalid signatures before parsing or processing the payload.
-4. Use the `webhook-id` header as a durable deduplication key.
-5. Persist or enqueue the verified event and respond with a 2xx within two seconds.
-6. Make the worker idempotent because failed deliveries can be retried.
-7. Choose incremental benefit-grant tracking or complete customer-state reconciliation deliberately.
+1. Run the webhook raw-body parser before any middleware that consumes or transforms the request body.
+2. Read the unmodified request body as a string or `Uint8Array`.
+3. Pass the raw body, request headers, and server-side signing secret to the versioned `webhooks.validateEvent`.
+4. Reject invalid signatures before parsing or processing the payload.
+5. Use the `webhook-id` header as a durable deduplication key.
+6. Persist or enqueue the verified event and respond with a 2xx within two seconds.
+7. Make the worker idempotent because failed deliveries can be retried.
+8. Choose incremental benefit-grant tracking or complete customer-state reconciliation deliberately.
 
 ## Express receiver
 
-Use `express.raw` on the webhook route so no JSON middleware modifies the signed body. Replace `enqueueVerifiedWebhook` with a durable, idempotent application operation. Enforce uniqueness on `webhookId`; an in-memory set is not sufficient.
+Use `express.raw` on the webhook route and register the route before `app.use(express.json())` or any other body parser. Once an earlier parser consumes the stream, `express.raw` cannot recover the signed bytes. If route ordering cannot guarantee this, retain the original `Buffer` through the earlier parser's `verify` option and validate that buffer; never reserialize `request.body`.
+
+Replace `enqueueVerifiedWebhook` with a durable, idempotent application operation. Enforce uniqueness on `webhookId`; an in-memory set is not sufficient.
 
 ```typescript
 import express from "express";
@@ -26,10 +29,12 @@ if (!webhookSecret) {
 }
 
 const app = express();
+
+// Register this route before app.use(express.json()).
 app.post(
   "/webhooks/polar",
   express.raw({ type: "application/json" }),
-  async (request, response) => {
+  async (request, response, next) => {
     const headers = {
       "webhook-id": request.header("webhook-id") ?? "",
       "webhook-timestamp": request.header("webhook-timestamp") ?? "",
@@ -63,13 +68,17 @@ app.post(
         response.status(400).json({ error: "Invalid webhook payload" });
         return;
       }
-      throw error;
+      next(error);
     }
   },
 );
+
+app.use(express.json());
 ```
 
 Acknowledging an unknown but correctly signed event avoids repeated delivery failures when the selected SDK version does not recognize a newer event type. If the application requires strict processing of every subscribed event, alert on the unknown type and upgrade deliberately.
+
+Pass unexpected errors to `next` so Express 4 and Express 5 error middleware can produce a 5xx response. Throwing from an async handler is forwarded automatically only by Express 5.
 
 ## Track benefit grants
 

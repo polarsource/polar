@@ -147,7 +147,6 @@ class TestCreate:
         # Enable seat-based pricing but NOT member_model_enabled (not fully migrated)
         # Should still allow customer-sessions for backward compatibility
         organization.feature_settings = {
-            "seat_based_pricing_enabled": True,
             "member_model_enabled": False,
         }
         await save_fixture(organization)
@@ -179,7 +178,6 @@ class TestCreate:
     ) -> None:
         # When member_model_enabled is true, should create MemberSession for owner
         organization.feature_settings = {
-            "seat_based_pricing_enabled": True,
             "member_model_enabled": True,
         }
         await save_fixture(organization)
@@ -225,7 +223,6 @@ class TestCreate:
         # When member_model_enabled but no owner member exists,
         # the graceful fallback auto-creates one and returns a MemberSession.
         organization.feature_settings = {
-            "seat_based_pricing_enabled": True,
             "member_model_enabled": True,
         }
         await save_fixture(organization)

@@ -299,7 +299,7 @@ class MemberService:
         send_webhook: bool = True,
     ) -> Member | None:
         """
-        Create an owner member for a customer if feature flag is enabled.
+        Create an owner member for a customer.
 
         Args:
             session: Database session
@@ -310,21 +310,11 @@ class MemberService:
             owner_external_id: Optional override for member external_id (defaults to customer.external_id)
 
         Returns:
-            Created/existing Member if feature flag enabled, None if flag disabled
-        """
-        member_model = organization.feature_settings.get("member_model_enabled", False)
-        seat_based = organization.feature_settings.get(
-            "seat_based_pricing_enabled", False
-        )
-        if not member_model and not seat_based:
-            log.debug(
-                "member.create_owner_member.skipped",
-                reason="feature_flag_disabled",
-                customer_id=customer.id,
-                organization_id=organization.id,
-            )
-            return None
+            The created or existing owner Member.
 
+        Raises:
+            PolarRequestValidationError: If no email is available for the owner.
+        """
         repository = MemberRepository.from_session(session)
 
         raw_email = owner_email or customer.email
@@ -420,18 +410,11 @@ class MemberService:
         organization: OrgModel,
     ) -> Member | None:
         """
-        Get or create a member for a seat assignment if feature flag is enabled.
+        Get or create a member for a seat assignment.
 
         Returns:
-            Created/existing Member if feature flag enabled, None if flag disabled
+            Created/existing Member, or None if the customer has no email
         """
-        member_model = organization.feature_settings.get("member_model_enabled", False)
-        seat_based = organization.feature_settings.get(
-            "seat_based_pricing_enabled", False
-        )
-        if not member_model and not seat_based:
-            return None
-
         if customer.email is None:
             return None
 
@@ -595,7 +578,7 @@ class MemberService:
 
         Raises:
             ResourceNotFound: If customer not found or not accessible
-            NotPermitted: If feature flag disabled or no permission to add members
+            NotPermitted: If no permission to add members
         """
         if customer_id is not None and external_customer_id is not None:
             raise ValueError(
@@ -624,15 +607,6 @@ class MemberService:
             raise ResourceNotFound("Customer not found")
 
         customer_id = customer.id
-
-        member_model = customer.organization.feature_settings.get(
-            "member_model_enabled", False
-        )
-        seat_based = customer.organization.feature_settings.get(
-            "seat_based_pricing_enabled", False
-        )
-        if not member_model and not seat_based:
-            raise NotPermitted("Member management is not enabled for this organization")
 
         email = email.strip()
 

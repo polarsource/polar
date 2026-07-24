@@ -1,3 +1,4 @@
+import asyncio
 import uuid
 from datetime import UTC, datetime, timedelta
 from unittest.mock import patch
@@ -1945,6 +1946,22 @@ class TestRevokeSeat:
             )
             assert args[0][2] == WebhookEventType.customer_seat_revoked
             assert args[0][3].id == seat.id
+
+    @pytest.mark.asyncio
+    async def test_revoke_seat_is_idempotent(
+        self, session: AsyncSession, customer_seat_claimed: CustomerSeat
+    ) -> None:
+        with patch("polar.webhook.service.webhook.send") as mock_send:
+            mock_send.return_value = []
+            seat = await seat_service.revoke_seat(session, customer_seat_claimed)
+            first_revoked_at = seat.revoked_at
+            assert first_revoked_at is not None
+
+            await asyncio.sleep(0.001)
+            seat = await seat_service.revoke_seat(session, seat)
+
+            assert seat.revoked_at == first_revoked_at
+            mock_send.assert_called_once()
 
     @pytest.mark.asyncio
     async def test_revoke_seat_with_member_model_enabled(

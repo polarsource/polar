@@ -32,6 +32,11 @@ def _validate_email_dns(email: str) -> str:
         return email
 
 
+# NOTE: `check_deliverability=True` rejects any domain with no mail-accepting DNS
+# records (no MX, and no A/AAAA fallback). This can reject legitimate business
+# domains that serve only a website and route email elsewhere. Relaxing it is a
+# broader, cross-cutting decision — this validator is shared by checkout,
+# customers, etc. — so it should be discussed separately rather than tweaked here.
 EmailStrDNS = Annotated[EmailStr, AfterValidator(_validate_email_dns)]
 
 

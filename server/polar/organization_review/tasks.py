@@ -151,7 +151,15 @@ async def run_review_agent(
         repository = OrganizationRepository.from_session(session)
         organization = await repository.get_by_id(organization_id, include_blocked=True)
         if organization is None:
-            raise OrganizationDoesNotExist(organization_id)
+            # The organization may have been deleted between enqueue and
+            # execution (e.g. debounce delay). Nothing to review — skip
+            # gracefully instead of raising and retrying a doomed task.
+            log.info(
+                "organization_review.run_agent.organization_missing",
+                organization_id=str(organization_id),
+                context=review_context.value,
+            )
+            return
 
         # A product-change review only makes sense for active orgs: it exists
         # to pull them back into review. Status may have changed between enqueue

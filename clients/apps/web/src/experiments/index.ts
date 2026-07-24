@@ -2,17 +2,6 @@ import { experiments } from './experiments'
 
 export { experiments }
 
-export interface ExperimentDefinition<V extends readonly string[]> {
-  description: string
-  variants: V
-  defaultVariant: V[number]
-}
-
-export type ExperimentRegistry = Record<
-  string,
-  ExperimentDefinition<readonly string[]>
->
-
 export type ExperimentName = keyof typeof experiments
 
 export type ExperimentVariant<T extends ExperimentName> =

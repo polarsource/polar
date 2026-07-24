@@ -5,7 +5,8 @@ import { useCustomerPortalSession } from '@/hooks/queries/customerPortal'
 import { createClientSideAPI } from '@/utils/client'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import { schemas } from '@polar-sh/client'
-import { Avatar } from '@polar-sh/orbit'
+import { Avatar, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { TooltipProvider } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
@@ -35,25 +36,44 @@ export function CustomerPortalLayoutWrapper({
       baseUrl={process.env.NEXT_PUBLIC_API_URL}
     >
       <TooltipProvider>
-        <div className="flex flex-row items-center gap-x-3 px-4 py-4 lg:px-8 lg:py-8">
+        <Box
+          flexDirection="row"
+          alignItems="center"
+          columnGap="m"
+          paddingHorizontal={{ base: 'l', lg: '2xl' }}
+          paddingVertical={{ base: 'l', lg: '2xl' }}
+        >
           <Avatar
             className="h-8 w-8 flex-none"
             avatar_url={organization.avatar_url}
             name={organization.name}
           />
           {session?.return_url && (
-            <Link
-              href={session.return_url}
-              className="dark:text-polar-500 flex min-w-0 flex-row items-center gap-x-1 text-xs text-gray-500"
-            >
-              <ArrowBackOutlined fontSize="inherit" className="flex-none" />
-              <span className="truncate">Back to {organization.name}</span>
+            <Link href={session.return_url}>
+              <Box
+                alignItems="center"
+                columnGap="xs"
+                minWidth={0}
+                color="text-secondary"
+              >
+                <ArrowBackOutlined fontSize="inherit" className="flex-none" />
+                <Text variant="caption" color="muted" truncate>
+                  Back to {organization.name}
+                </Text>
+              </Box>
             </Link>
           )}
-        </div>
-        <div className="w-full px-4 py-8 md:mx-auto md:max-w-5xl lg:px-0">
+        </Box>
+        <Box
+          width="100%"
+          flexDirection="column"
+          paddingHorizontal={{ base: 'l', lg: 'none' }}
+          paddingVertical="2xl"
+          marginHorizontal={{ md: 'auto' }}
+          maxWidth={{ md: 1024 }}
+        >
           {children}
-        </div>
+        </Box>
       </TooltipProvider>
     </CustomerPortalProvider>
   )

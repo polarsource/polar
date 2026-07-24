@@ -6,6 +6,7 @@ import {
   DEFAULT_LOCALE,
   isAcceptedLocale,
 } from '@polar-sh/i18n'
+import { Box } from '@polar-sh/orbit/Box'
 import { headers } from 'next/headers'
 import { Navigation } from './Navigation'
 
@@ -58,13 +59,24 @@ export async function CustomerPortalPage({
   }
 
   return (
-    <div className="flex w-full flex-col items-stretch gap-6 md:flex-row md:gap-12">
+    <Box
+      width="100%"
+      flexDirection={{ base: 'column', md: 'row' }}
+      alignItems="stretch"
+      gap={{ base: 'xl', md: '3xl' }}
+    >
       <Navigation
         organization={organization}
         locale={locale}
         localizationEnabled={localizationEnabled}
       />
-      <div className="flex w-full flex-col md:py-12">{children}</div>
-    </div>
+      <Box
+        width="100%"
+        flexDirection="column"
+        paddingVertical={{ base: 'none', md: '3xl' }}
+      >
+        {children}
+      </Box>
+    </Box>
   )
 }

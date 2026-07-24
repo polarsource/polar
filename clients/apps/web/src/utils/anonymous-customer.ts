@@ -1,5 +1,3 @@
-import { useMemo } from 'react'
-
 const adjectives = [
   'Happy',
   'Witty',
@@ -88,8 +86,3 @@ export function getAnonymousCustomerName(
   return [name, color, shape]
 }
 
-export function useAnonymousCustomerName(
-  externalId: string,
-): [AnonymousCustomerName, AnonymousCustomerColor, AnonymousCustomerShape] {
-  return useMemo(() => getAnonymousCustomerName(externalId), [externalId])
-}

@@ -16,10 +16,10 @@ export const DetailRow = ({
   action,
 }: DetailRowProps) => {
   return (
-    <div className="flex flex-col gap-0.5 py-2 text-sm md:flex-row md:items-baseline md:justify-between md:gap-4 md:py-0">
+    <div className="flex flex-col text-sm md:flex-row md:items-baseline md:justify-between md:gap-4">
       <h3
         className={twMerge(
-          'dark:text-polar-500 flex-1 truncate text-gray-500',
+          'dark:text-polar-500 flex-1 text-gray-500 truncate',
           labelClassName,
         )}
       >

@@ -516,7 +516,9 @@ const DownloadInvoice = ({
                   disabled={loading}
                   className={className}
                 >
-                  Generate invoice
+                  {order.is_invoice_generated
+                    ? 'Update invoice'
+                    : 'Generate invoice'}
                 </Button>
                 {errors.root && (
                   <p className="text-destructive-foreground text-sm">

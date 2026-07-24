@@ -33,3 +33,11 @@ Gives customers the option to change the email address associated with their cus
 Lets customers switch between products on their own — upgrading, downgrading, or moving to a different plan entirely — without contacting you.
 
 Plan changes follow your [proration settings](/features/subscriptions/proration). If you'd rather handle plan changes yourself (for example, because you gate them behind custom logic in your app), disable this and drive updates through the [Update Subscription](/api-reference/subscriptions/update-subscription) endpoint instead.
+
+## Enable subscription pause
+
+Lets customers pause their own subscription from the portal and resume it later, without contacting you.
+
+A paused subscription stops billing at the end of the current period and revokes benefits until it resumes; resuming starts a new billing period and charges immediately. See [Pause and resume](/features/subscriptions/manage#pause-and-resume) for the full behavior.
+
+This toggle only gates the portal. Pausing and resuming through the [Update Subscription](/api-reference/subscriptions/update-subscription) endpoint is always available to you, so you can drive it from your own backend whether or not customers can self-serve.

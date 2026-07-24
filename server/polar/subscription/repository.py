@@ -7,6 +7,7 @@ from uuid import UUID
 import sqlalchemy as sa
 from sqlalchemy import ColumnElement, Select, and_, case, cast, func, or_, select
 from sqlalchemy.orm import contains_eager
+from sqlalchemy.orm.attributes import set_committed_value
 from sqlalchemy.orm.strategy_options import joinedload, raiseload, selectinload
 
 from polar.auth.models import (
@@ -663,6 +664,7 @@ class SubscriptionProductPriceRepository(
             if metered_price is None:
                 continue
 
+            set_committed_value(metered_price, "subscription", seat.subscription)
             customer_prices[seat.customer_id] = CustomerSubscriptionProductPrice(
                 customer_id=seat.subscription.customer_id,
                 subscription_product_price=metered_price,

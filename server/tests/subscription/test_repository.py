@@ -94,6 +94,8 @@ class TestSubscriptionProductPriceRepository:
             customer=seat_holder,
             status=SeatStatus.claimed,
         )
+        subscription_id = subscription.id
+        session.expunge_all()
 
         repository = SubscriptionProductPriceRepository.from_session(session)
         result = await repository.get_by_customers_and_meter([seat_holder.id], meter.id)
@@ -102,9 +104,11 @@ class TestSubscriptionProductPriceRepository:
         assert customer_price is not None
         assert customer_price.customer_id == billing_manager.id
         assert (
-            customer_price.subscription_product_price.subscription_id == subscription.id
+            customer_price.subscription_product_price.subscription_id == subscription_id
         )
-        assert customer_price.subscription_product_price.subscription == subscription
+        assert (
+            customer_price.subscription_product_price.subscription.id == subscription_id
+        )
 
     async def test_get_by_customers_and_meter_no_subscription(
         self,

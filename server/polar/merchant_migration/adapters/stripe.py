@@ -224,6 +224,8 @@ class StripeAdapter:
             line_item_count=len(items),
             quantity=first_item.get("quantity") or 1,
             payment_method=self._resolve_payment_method(subscription),
+            has_discount=bool(subscription.get("discounts"))
+            or subscription.get("discount") is not None,
         )
 
     def _map_customer(self, customer: stripe_lib.Customer) -> CanonicalCustomer:

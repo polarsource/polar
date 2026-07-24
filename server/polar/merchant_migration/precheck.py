@@ -8,6 +8,7 @@ report, so a record's importable/skipped status always matches the summary.
 
 from collections import Counter
 from collections.abc import AsyncIterable, Iterable, Sequence
+from dataclasses import dataclass
 
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.currency import (
@@ -49,9 +50,8 @@ NON_IMPORTABLE_STATUSES = {
     CanonicalSubscriptionStatus.paused,
 }
 
-# Warning codes that mean a record won't be imported (it stays on the source),
-# grouped by the entity they apply to. Kept in sync with the `_check_*` methods
-# so the per-record classification below matches the report's warnings.
+# Codes whose warning means a record won't import, by entity. Keep in sync with
+# the `_check_*` methods so classification matches the report.
 PRODUCT_DROP_CODES = {"one_time_product", "unsupported_recurring_interval"}
 PRICE_DROP_CODES = {
     "unsupported_pricing_scheme",
@@ -65,12 +65,16 @@ SUBSCRIPTION_DROP_CODES = {
     "send_invoice_collection",
     "subscription_not_importable",
     "subscription_paused_collection",
+    "subscription_has_discount",
 }
 _DUPLICATE_PRODUCT_NAME_REASON = (
     "Another product already uses this name; the duplicate stays on the source."
 )
 _DUPLICATE_CUSTOMER_EMAIL_REASON = (
     "Another customer already uses this email; the duplicate stays on the source."
+)
+_MISSING_EMAIL_REASON = (
+    "The source customer has no email, so it can't be imported into Polar."
 )
 _SUBSCRIPTION_PRODUCT_REASON = (
     "The product or price for this subscription won't be imported, so it stays "
@@ -79,6 +83,17 @@ _SUBSCRIPTION_PRODUCT_REASON = (
 _SUBSCRIPTION_CUSTOMER_REASON = (
     "The customer for this subscription won't be imported, so it stays on the source."
 )
+_NO_IMPORTABLE_PRICE_REASON = (
+    "None of this product's prices can be imported, so the product is skipped."
+)
+_MISSING_COUNTRY_REASON = (
+    "No billing country. Confirm it before the first renewal so tax is correct."
+)
+_TRIALING_REASON = "On trial. Billing resumes on Polar when the trial ends."
+
+
+def _humanize_subscription_status(status: CanonicalSubscriptionStatus) -> str:
+    return status.value.replace("_", " ").capitalize()
 
 
 def _is_supported_currency(currency: str) -> bool:
@@ -95,6 +110,7 @@ class PrecheckEngine:
         records: AsyncIterable[CanonicalRecord],
         organization: Organization,
         source_account: CanonicalAccount,
+        existing_product_names: set[str] | None = None,
     ) -> PrecheckReport:
         record_list = [record async for record in records]
 
@@ -120,6 +136,11 @@ class PrecheckEngine:
                 issues.extend(self._check_subscription(record))
 
         issues.extend(self._check_duplicate_names(products_by_name))
+        issues.extend(
+            self._check_existing_products(
+                products_by_name, existing_product_names or set()
+            )
+        )
         issues.extend(self._check_duplicate_emails(email_counts))
         issues.extend(self._check_missing_country(customers_without_country))
 
@@ -175,8 +196,8 @@ class PrecheckEngine:
                 level=PrecheckIssueLevel.warning,
                 code="one_time_product",
                 message=(
-                    f"Product '{product.name}' is one-time; it and its "
-                    "subscriptions won't be imported."
+                    "This one-time product can't be imported as a subscription, "
+                    "so it stays on the source."
                 ),
                 source_id=product.source_id,
             )
@@ -265,6 +286,25 @@ class PrecheckEngine:
                     source_id=None,
                 )
 
+    def _check_existing_products(
+        self,
+        products_by_name: dict[str, set[str]],
+        existing_product_names: set[str],
+    ) -> Iterable[PrecheckIssue]:
+        # Warn, don't block: the product still imports, as a new Polar product next
+        # to the existing one. Mapping onto it is a later, merchant-driven step.
+        for name in products_by_name:
+            if name.lower() in existing_product_names:
+                yield PrecheckIssue(
+                    level=PrecheckIssueLevel.warning,
+                    code="product_exists_in_polar",
+                    message=(
+                        f"A Polar product named '{name}' already exists; importing "
+                        "will create a duplicate."
+                    ),
+                    source_id=None,
+                )
+
     def _check_duplicate_emails(
         self, email_counts: Counter[str]
     ) -> Iterable[PrecheckIssue]:
@@ -317,6 +357,16 @@ class PrecheckEngine:
                 ),
                 source_id=source_id,
             )
+        if subscription.has_discount:
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="subscription_has_discount",
+                message=(
+                    "Subscription has a discount, which isn't migrated yet; it "
+                    "won't be imported so the customer isn't overcharged."
+                ),
+                source_id=source_id,
+            )
         if subscription.collection_method == CanonicalCollectionMethod.send_invoice:
             yield PrecheckIssue(
                 level=PrecheckIssueLevel.warning,
@@ -332,8 +382,9 @@ class PrecheckEngine:
                 level=PrecheckIssueLevel.warning,
                 code="subscription_not_importable",
                 message=(
-                    f"Subscription is {subscription.status.value}; it won't be "
-                    "imported and stays on the current provider."
+                    f"This {_humanize_subscription_status(subscription.status).lower()} "
+                    "subscription can't be imported yet; it stays with the "
+                    "current provider."
                 ),
                 source_id=source_id,
             )
@@ -396,12 +447,22 @@ def _item(
     *,
     reason_code: str | None,
     reason: str | None,
+    amount: int | None = None,
+    currency: str | None = None,
+    recurring_interval: str | None = None,
 ) -> MerchantMigrationRecordItem:
     return MerchantMigrationRecordItem(
+        # record_id and import_status come from the ledger via
+        # `_attach_record_ids`; the classifier itself has none.
+        record_id=None,
+        import_status=None,
         entity=entity,
         source_id=source_id,
         title=title,
         subtitle=subtitle,
+        amount=amount,
+        currency=currency,
+        recurring_interval=recurring_interval,
         status=(
             PrecheckRecordStatus.skipped
             if reason_code
@@ -410,6 +471,31 @@ def _item(
         reason=reason,
         reason_code=reason_code,
     )
+
+
+# The price shown on a priced row: (amount, currency, interval). A product is
+# represented by its first price; a subscription by the price it runs on.
+def _price_info(
+    products: Sequence[CanonicalProduct],
+) -> dict[str, tuple[int | None, str, str | None]]:
+    info: dict[str, tuple[int | None, str, str | None]] = {}
+    for product in products:
+        for price in product.prices:
+            info[price.source_id] = (
+                price.amount,
+                price.currency,
+                product.recurring_interval,
+            )
+    return info
+
+
+def _representative_price(
+    product: CanonicalProduct,
+) -> tuple[int | None, str | None, str | None]:
+    if not product.prices:
+        return None, None, None
+    price = product.prices[0]
+    return price.amount, price.currency, product.recurring_interval
 
 
 def _duplicate_product_names(
@@ -462,46 +548,26 @@ def _duplicate_customer_source_ids(
     return duplicates
 
 
-def _importable_price_source_ids(
-    products: Sequence[CanonicalProduct],
-    first_source_id_by_name: dict[str, str],
-    duplicate_names: set[str],
-) -> set[str]:
-    """Prices that will import: their product imports and the price passes its
-    own checks. A subscription whose price is *not* in this set can't import
-    either — whether the price was dropped or never extracted at all (e.g. the
-    subscription runs on an archived price the source no longer lists)."""
-    importable: set[str] = set()
-    for product in products:
-        product_code, _ = _product_drop(
-            product, first_source_id_by_name, duplicate_names
-        )
-        if product_code is not None:
-            continue
-        for price in product.prices:
-            price_code, _ = _drop_reason(
-                precheck_engine._check_price(product, price), PRICE_DROP_CODES
-            )
-            if price_code is None:
-                importable.add(price.source_id)
-    return importable
-
-
 def _product_items(
     products: Sequence[CanonicalProduct],
 ) -> list[MerchantMigrationRecordItem]:
-    first_source_id_by_name, duplicate_names = _duplicate_product_names(products)
+    # Use the importer's plan, so the report can't promise a product it will skip.
+    plans = plan_product_imports(products)
     items: list[MerchantMigrationRecordItem] = []
     for product in products:
-        code, reason = _product_drop(product, first_source_id_by_name, duplicate_names)
+        plan = plans[product.source_id]
+        amount, currency, interval = _representative_price(product)
         items.append(
             _item(
                 PrecheckEntity.products,
                 product.product_source_id,
                 product.name,
                 _interval_label(product),
-                reason_code=code,
-                reason=reason,
+                reason_code=plan.skip_code,
+                reason=plan.skip_reason,
+                amount=amount,
+                currency=currency,
+                recurring_interval=interval,
             )
         )
     return items
@@ -547,14 +613,15 @@ def _price_items(
 def _customer_items(
     customers: Sequence[CanonicalCustomer],
 ) -> list[MerchantMigrationRecordItem]:
-    duplicates = _duplicate_customer_source_ids(customers)
+    # Use the importer's plan, so the report can't promise a customer it will skip.
+    plans = plan_customer_imports(customers)
     items: list[MerchantMigrationRecordItem] = []
     for customer in customers:
-        if customer.source_id in duplicates:
-            code: str | None = "duplicate_customer_email"
-            reason: str | None = _DUPLICATE_CUSTOMER_EMAIL_REASON
-        else:
-            code, reason = None, None
+        code, reason = plans[customer.source_id]
+        if code is None and not customer.country:
+            # A warning, not a skip: it still imports, but a missing country means
+            # tax can't be computed until the merchant confirms it.
+            reason = _MISSING_COUNTRY_REASON
         items.append(
             _item(
                 PrecheckEntity.customers,
@@ -573,36 +640,24 @@ def _subscription_items(
     products: Sequence[CanonicalProduct],
     customers: Sequence[CanonicalCustomer],
 ) -> list[MerchantMigrationRecordItem]:
-    first_source_id_by_name, duplicate_names = _duplicate_product_names(products)
-    importable_prices = _importable_price_source_ids(
-        products, first_source_id_by_name, duplicate_names
-    )
-    skipped_customers = _duplicate_customer_source_ids(customers)
+    # Use the importer's plan; add the display-only trialing warning on top.
+    plans = plan_subscription_imports(subscriptions, products, customers)
     email_by_source = {c.source_id: c.email for c in customers if c.email}
+    price_info = _price_info(products)
     items: list[MerchantMigrationRecordItem] = []
     for subscription in subscriptions:
-        code, reason = _drop_reason(
-            precheck_engine._check_subscription(subscription), SUBSCRIPTION_DROP_CODES
-        )
-        # A subscription can't import if the records it depends on won't either.
-        # `not in importable_prices` also catches prices never extracted (e.g.
-        # the subscription runs on an archived price).
-        if code is None and subscription.price_source_id not in importable_prices:
-            code, reason = (
-                "subscription_product_not_importable",
-                _SUBSCRIPTION_PRODUCT_REASON,
-            )
-        elif code is None and subscription.customer_source_id in skipped_customers:
-            code, reason = (
-                "subscription_customer_not_importable",
-                _SUBSCRIPTION_CUSTOMER_REASON,
-            )
+        code, reason = plans[subscription.source_id]
+        if code is None and subscription.trialing:
+            # A warning, not a skip: the trial carries over, but it's worth the
+            # merchant's eye since billing resumes when it ends.
+            reason = _TRIALING_REASON
         title = email_by_source.get(
             subscription.customer_source_id, subscription.customer_source_id
         )
-        subtitle = subscription.status.value
-        if subscription.trialing:
-            subtitle = f"{subtitle} · trial"
+        subtitle = _humanize_subscription_status(subscription.status)
+        amount, currency, interval = price_info.get(
+            subscription.price_source_id, (None, None, None)
+        )
         items.append(
             _item(
                 PrecheckEntity.subscriptions,
@@ -611,6 +666,9 @@ def _subscription_items(
                 subtitle,
                 reason_code=code,
                 reason=reason,
+                amount=amount,
+                currency=currency,
+                recurring_interval=interval,
             )
         )
     return items
@@ -649,6 +707,115 @@ def classify_records(
     if entity == PrecheckEntity.customers:
         return _customer_items(customers)
     return _subscription_items(subscriptions, products, customers)
+
+
+@dataclass
+class ProductImportPlan:
+    """The importer's decision for one canonical product (keyed by its
+    ``source_id``, the ``(product, interval)`` composite). Either a skip with a
+    reason, or the set of price ``source_id``s to create under the Polar product.
+    """
+
+    skip_code: str | None
+    skip_reason: str | None
+    importable_price_ids: set[str]
+
+    @property
+    def importable(self) -> bool:
+        return self.skip_code is None
+
+
+def plan_product_imports(
+    products: Sequence[CanonicalProduct],
+) -> dict[str, ProductImportPlan]:
+    """What the catalog importer should do with each canonical product, using the
+    exact same predicates as the precheck report so imported == report-importable.
+
+    A product is skipped when its own checks fail (one-time, unsupported interval,
+    duplicate name) or when none of its prices can be imported (a product with no
+    price is unsellable). Otherwise it imports with the prices that pass.
+    """
+    first_source_id_by_name, duplicate_names = _duplicate_product_names(products)
+    plans: dict[str, ProductImportPlan] = {}
+    for product in products:
+        code, reason = _product_drop(product, first_source_id_by_name, duplicate_names)
+        if code is not None:
+            plans[product.source_id] = ProductImportPlan(code, reason, set())
+            continue
+        price_ids = {
+            price.source_id
+            for price in product.prices
+            if _drop_reason(
+                precheck_engine._check_price(product, price), PRICE_DROP_CODES
+            )[0]
+            is None
+        }
+        if not price_ids:
+            plans[product.source_id] = ProductImportPlan(
+                "no_importable_price", _NO_IMPORTABLE_PRICE_REASON, set()
+            )
+        else:
+            plans[product.source_id] = ProductImportPlan(None, None, price_ids)
+    return plans
+
+
+def plan_customer_imports(
+    customers: Sequence[CanonicalCustomer],
+) -> dict[str, tuple[str | None, str | None]]:
+    """Per customer ``source_id``, the skip ``(code, reason)`` or ``(None, None)``
+    when importable. Duplicate emails are reused, not re-imported (design
+    Appendix A), so only the later duplicate is skipped; a customer with no email
+    can't be imported at all."""
+    duplicates = _duplicate_customer_source_ids(customers)
+    plans: dict[str, tuple[str | None, str | None]] = {}
+    for customer in customers:
+        if customer.source_id in duplicates:
+            plans[customer.source_id] = (
+                "duplicate_customer_email",
+                _DUPLICATE_CUSTOMER_EMAIL_REASON,
+            )
+        elif not customer.email:
+            plans[customer.source_id] = (
+                "customer_missing_email",
+                _MISSING_EMAIL_REASON,
+            )
+        else:
+            plans[customer.source_id] = (None, None)
+    return plans
+
+
+def plan_subscription_imports(
+    subscriptions: Sequence[CanonicalSubscription],
+    products: Sequence[CanonicalProduct],
+    customers: Sequence[CanonicalCustomer],
+) -> dict[str, tuple[str | None, str | None]]:
+    """Per subscription ``source_id``, the skip ``(code, reason)`` or
+    ``(None, None)`` when importable. Mirrors the review drawer's per-subscription
+    classification: a subscription can't import if its own checks fail or the
+    product/price or customer it depends on won't import."""
+    importable_prices = {
+        price_id
+        for plan in plan_product_imports(products).values()
+        for price_id in plan.importable_price_ids
+    }
+    skipped_customers = _duplicate_customer_source_ids(customers)
+    plans: dict[str, tuple[str | None, str | None]] = {}
+    for subscription in subscriptions:
+        code, reason = _drop_reason(
+            precheck_engine._check_subscription(subscription), SUBSCRIPTION_DROP_CODES
+        )
+        if code is None and subscription.price_source_id not in importable_prices:
+            code, reason = (
+                "subscription_product_not_importable",
+                _SUBSCRIPTION_PRODUCT_REASON,
+            )
+        elif code is None and subscription.customer_source_id in skipped_customers:
+            code, reason = (
+                "subscription_customer_not_importable",
+                _SUBSCRIPTION_CUSTOMER_REASON,
+            )
+        plans[subscription.source_id] = (code, reason)
+    return plans
 
 
 def summarize_records(

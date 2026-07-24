@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import cast
 from unittest.mock import ANY, AsyncMock, MagicMock, call
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 import pytest_asyncio
@@ -2730,6 +2731,111 @@ class TestSendConfirmationEmail:
         assert isinstance(enqueue_email_mock.call_args[0][0], OrderConfirmationEmail)
         attachments = enqueue_email_mock.call_args[1]["attachments"]
         assert len(attachments) == 1
+
+    async def test_uses_custom_email_link_url_from_settings(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        organization.customer_email_settings = {
+            **organization.customer_email_settings,
+            "link_url": "https://acme.example.com/portal",
+        }
+        await save_fixture(organization)
+        customer.external_id = "usr_123"
+        await save_fixture(customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        email = enqueue_email_mock.call_args[0][0]
+        parsed = urlparse(email.props.url)
+        params = parse_qs(parsed.query)
+        assert email.props.url.startswith("https://acme.example.com/portal?")
+        assert params["email"] == [customer.email]
+        assert params["external_id"] == ["usr_123"]
+        assert params["customer_session_token"][0]
+
+    async def test_db_setting_takes_precedence_over_env_override(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        mocker.patch.dict(
+            settings.CUSTOMER_PORTAL_URL_OVERRIDES,
+            {str(organization.id): "https://legacy.example.com/portal"},
+        )
+        organization.customer_email_settings = {
+            **organization.customer_email_settings,
+            "link_url": "https://acme.example.com/portal",
+        }
+        await save_fixture(organization)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        email = enqueue_email_mock.call_args[0][0]
+        assert email.props.url.startswith("https://acme.example.com/portal")
+
+    async def test_falls_back_to_env_override(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        mocker.patch.dict(
+            settings.CUSTOMER_PORTAL_URL_OVERRIDES,
+            {str(organization.id): "https://legacy.example.com/portal"},
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        email = enqueue_email_mock.call_args[0][0]
+        parsed = urlparse(email.props.url)
+        params = parse_qs(parsed.query)
+        assert email.props.url.startswith("https://legacy.example.com/portal?")
+        assert params["email"] == [customer.email]
+        assert "external_id" not in params
+        assert params["customer_session_token"][0]
 
     async def test_excludes_non_public_benefits(
         self,

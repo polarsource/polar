@@ -10,7 +10,11 @@ from polar.config import settings
 from polar.integrations.polar.service import PolarSelfService
 from polar.models import OrganizationSSOConnection, Product, User
 from polar.models.account import Account
-from polar.models.organization import Organization, OrganizationStatus
+from polar.models.organization import (
+    Organization,
+    OrganizationStatus,
+    _default_customer_email_settings,
+)
 from polar.models.organization_sso_connection import (
     OIDCAuthMethod,
     OIDCConfiguration,
@@ -500,6 +504,157 @@ class TestUpdateOrganization:
         assert response.status_code == 200
         settings = response.json()["customer_portal_settings"]
         assert settings["customer"]["allow_email_change"] is True
+
+    @pytest.mark.auth
+    async def test_custom_email_link_url_ignored_without_flag(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_email_settings": {
+                    **_default_customer_email_settings(),
+                    "link_url": "https://acme.example.com/portal",
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_email_settings"]
+        assert settings.get("link_url") is None
+
+    @pytest.mark.auth
+    async def test_custom_email_link_url_saved_with_flag(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"custom_email_link_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_email_settings": {
+                    **_default_customer_email_settings(),
+                    "link_url": "https://acme.example.com/portal",
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_email_settings"]
+        assert settings["link_url"] == "https://acme.example.com/portal"
+
+    @pytest.mark.auth
+    async def test_custom_email_link_url_can_be_cleared_with_flag(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"custom_email_link_enabled": True}
+        organization.customer_email_settings = {
+            **organization.customer_email_settings,
+            "link_url": "https://acme.example.com/portal",
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_email_settings": {
+                    **_default_customer_email_settings(),
+                    "link_url": "",
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_email_settings"]
+        assert settings.get("link_url") is None
+
+    @pytest.mark.auth
+    async def test_custom_email_link_url_preserved_when_omitted(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"custom_email_link_enabled": True}
+        organization.customer_email_settings = {
+            **organization.customer_email_settings,
+            "link_url": "https://acme.example.com/portal",
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_email_settings": {
+                    **_default_customer_email_settings(),
+                    "order_confirmation": False,
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_email_settings"]
+        assert settings["order_confirmation"] is False
+        assert settings["link_url"] == "https://acme.example.com/portal"
+
+    @pytest.mark.auth
+    async def test_custom_email_link_url_rejects_non_https(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"custom_email_link_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_email_settings": {
+                    **_default_customer_email_settings(),
+                    "link_url": "http://acme.example.com/portal",
+                },
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_custom_email_link_url_rejects_query_params(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"custom_email_link_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_email_settings": {
+                    **_default_customer_email_settings(),
+                    "link_url": "https://acme.example.com/portal?ref=x",
+                },
+            },
+        )
+
+        assert response.status_code == 422
 
     @pytest.mark.auth
     async def test_submit_for_review_requires_relevant_fields(

@@ -111,6 +111,7 @@ def _default_order_settings() -> OrganizationOrderSettings:
 
 
 class OrganizationCustomerEmailSettings(TypedDict):
+    link_url: NotRequired[str | None]
     order_confirmation: bool
     subscription_cancellation: bool
     subscription_confirmation: bool
@@ -829,6 +830,14 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @property
     def customer_portal_subscription_pause(self) -> bool:
         return self.customer_portal_settings.get("subscription", {}).get("pause", False)
+
+    @property
+    def is_custom_email_link_enabled(self) -> bool:
+        return self.feature_settings.get("custom_email_link_enabled", False)
+
+    @property
+    def customer_email_link_url(self) -> str | None:
+        return self.customer_email_settings.get("link_url") or None
 
     @property
     def checkout_require_3ds(self) -> bool:

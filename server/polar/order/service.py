@@ -91,6 +91,7 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
+from polar.organization.custom_email_link import get_custom_email_link_url
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
 from polar.payment.repository import PaymentRepository
@@ -2376,11 +2377,11 @@ class OrderService:
                 )
                 for key, value in url_params.items()
             }
-            override_url = settings.CUSTOMER_PORTAL_URL_OVERRIDES.get(
-                str(organization.id)
+            custom_url = get_custom_email_link_url(
+                organization, customer, recipient_email, token
             )
-            if override_url is not None:
-                url = f"{override_url}?{urlencode({'email': recipient_email})}"
+            if custom_url is not None:
+                url = custom_url
             else:
                 query_string = urlencode(params)
                 url_path = url_path_template.format(organization=organization.slug)

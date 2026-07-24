@@ -97,7 +97,7 @@ export const CustomerPortalOverview = ({
               key={s.id}
               justifyContent="between"
               borderRadius="l"
-              backgroundColor="background-card"
+              backgroundColor="background-secondary"
               paddingHorizontal="xl"
               paddingVertical="l"
             >

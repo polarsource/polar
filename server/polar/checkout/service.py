@@ -19,6 +19,7 @@ from polar.authz.service import assert_resource_permission, get_accessible_org_i
 from polar.checkout.guard import has_product_checkout
 from polar.checkout.schemas import (
     CheckoutConfirm,
+    CheckoutConfirmBase,
     CheckoutConfirmStripe,
     CheckoutCreate,
     CheckoutPriceCreate,
@@ -210,6 +211,16 @@ class TrialAlreadyRedeemed(CheckoutError):
         message = (
             "You have already used a trial for this product. "
             "Trials can only be used once per customer."
+        )
+        super().__init__(message, 403)
+
+
+class DiscountRedemptionLimitReached(CheckoutError):
+    def __init__(self, checkout: Checkout) -> None:
+        self.checkout = checkout
+        message = (
+            "You have already redeemed this discount the maximum number of "
+            "times allowed per customer."
         )
         super().__init__(message, 403)
 
@@ -1034,30 +1045,37 @@ class CheckoutService:
             if checkout.is_payment_setup_required:
                 raise PaymentNotReady()
 
-        # For wallet payments (Apple Pay, Google Pay, Link), we hide the customer name
-        # field for better UX and instead extract the name from Stripe's confirmation token.
+        confirmation_token: stripe_lib.ConfirmationToken | None = None
         if (
             checkout.payment_processor == PaymentProcessor.stripe
             and checkout_confirm.confirmation_token_id is not None
-            and checkout.customer_name is None
+            and (
+                checkout.customer_name is None
+                or (
+                    checkout.discount is not None
+                    and checkout.discount.max_redemptions_per_customer is not None
+                )
+            )
         ):
             try:
                 confirmation_token = await stripe_service.get_confirmation_token(
                     checkout_confirm.confirmation_token_id
                 )
-                if (
-                    confirmation_token.payment_method_preview is not None
-                    and confirmation_token.payment_method_preview.billing_details
-                    is not None
-                ):
-                    wallet_name = (
-                        confirmation_token.payment_method_preview.billing_details.name
-                    )
-                    if wallet_name:
-                        checkout.customer_name = wallet_name
-                        session.add(checkout)
             except stripe_lib.StripeError:
-                pass
+                confirmation_token = None
+
+        # For wallet payments (Apple Pay, Google Pay, Link), we hide the customer name
+        # field for better UX and instead extract the name from Stripe's confirmation token.
+        if confirmation_token is not None and checkout.customer_name is None:
+            payment_method_preview = confirmation_token.payment_method_preview
+            if (
+                payment_method_preview is not None
+                and payment_method_preview.billing_details is not None
+            ):
+                wallet_name = payment_method_preview.billing_details.name
+                if wallet_name:
+                    checkout.customer_name = wallet_name
+                    session.add(checkout)
 
         required_fields = self._get_required_confirm_fields(checkout)
         for required_field in required_fields:
@@ -1115,6 +1133,34 @@ class CheckoutService:
                     **checkout.payment_processor_metadata,
                     "customer_id": stripe_customer_id,
                 }
+
+                # Enforce the per-customer discount redemption limit *before* creating
+                # any payment intent, so we never charge a customer we're about to
+                # reject. The card fingerprint is read from the confirmation token's
+                # payment method preview (no intent/charge required yet).
+                if (
+                    checkout.discount is not None
+                    and checkout.discount.max_redemptions_per_customer is not None
+                ):
+                    payment_method_fingerprint: str | None = None
+                    if (
+                        confirmation_token is not None
+                        and confirmation_token.payment_method_preview is not None
+                    ):
+                        payment_method_fingerprint = get_fingerprint(
+                            typing.cast(
+                                stripe_lib.PaymentMethod,
+                                confirmation_token.payment_method_preview,
+                            )
+                        )
+                    if await discount_service.check_per_customer_limit_reached(
+                        session,
+                        checkout.discount,
+                        checkout=checkout,
+                        customer=customer,
+                        payment_method_fingerprint=payment_method_fingerprint,
+                    ):
+                        raise DiscountRedemptionLimitReached(checkout)
 
                 intent: stripe_lib.PaymentIntent | stripe_lib.SetupIntent | None = None
                 if checkout.is_payment_form_required:
@@ -2238,6 +2284,28 @@ class CheckoutService:
         checkout = await self._update_trial_end(checkout)
 
         session.add(checkout)
+
+        # Tell the buyer as soon as they apply the code, instead of letting them fill in
+        # the payment form first. Confirmation re-checks with the card fingerprint, which
+        # isn't available yet, so it stays the authoritative gate.
+        if (
+            isinstance(checkout_update, CheckoutUpdatePublic)
+            and not isinstance(checkout_update, CheckoutConfirmBase)
+            and checkout.discount is not None
+            and await discount_service.check_per_customer_limit_reached(
+                session, checkout.discount, checkout=checkout
+            )
+        ):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "discount_code"),
+                        "msg": "You have already redeemed this discount.",
+                        "input": checkout_update.discount_code,
+                    }
+                ]
+            )
 
         await self._validate_subscription_uniqueness(session, checkout)
 

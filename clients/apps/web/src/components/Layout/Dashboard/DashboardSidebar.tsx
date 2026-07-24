@@ -6,6 +6,7 @@ import { CONFIG } from '@/utils/config'
 import { isImpersonating } from '@/utils/impersonation'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
+import LockOutlined from '@mui/icons-material/LockOutlined'
 import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
 import { Avatar, Button } from '@polar-sh/orbit'
@@ -42,10 +43,12 @@ export const DashboardSidebar = ({
   type = 'organization',
   organization,
   organizations,
+  memberOrganizations,
 }: {
   type?: 'organization' | 'account'
   organization?: schemas['Organization']
   organizations: schemas['Organization'][]
+  memberOrganizations: schemas['MemberOrganization'][]
 }) => {
   const router = useRouter()
   const { currentUser } = useAuth()
@@ -58,6 +61,11 @@ export const DashboardSidebar = ({
   const navigateToOrganization = (org: schemas['Organization']) => {
     router.push(`/dashboard/${org.slug}`)
   }
+
+  const accessibleOrganizationIds = new Set(organizations.map((org) => org.id))
+  const ssoRequiredOrganizations = memberOrganizations.filter(
+    (org) => org.requires_sso && !accessibleOrganizationIds.has(org.id),
+  )
 
   const [_isImpersonating, setIsImpersonating] = useState(false)
   useEffect(() => {
@@ -194,6 +202,24 @@ export const DashboardSidebar = ({
                         className="h-6 w-6"
                       />
                       <span className="min-w-0 truncate">{org.name}</span>
+                    </DropdownMenuItem>
+                  ))}
+                  {ssoRequiredOrganizations.map((org) => (
+                    <DropdownMenuItem
+                      key={org.id}
+                      className="flex flex-row items-center gap-x-2"
+                      onClick={() => router.push(`/auth/sso/${org.slug}`)}
+                    >
+                      <Avatar
+                        name={org.name}
+                        avatar_url={org.avatar_url}
+                        className="h-6 w-6"
+                      />
+                      <span className="min-w-0 truncate">{org.name}</span>
+                      <span className="dark:bg-polar-700 ml-auto flex shrink-0 items-center gap-x-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500 dark:text-gray-400">
+                        <LockOutlined fontSize="inherit" />
+                        SSO
+                      </span>
                     </DropdownMenuItem>
                   ))}
                   <DropdownMenuSeparator />

@@ -852,6 +852,25 @@ class TestClientUpdate:
         assert updated_checkout is not None
         assert updated_checkout.user_metadata == {}
 
+    async def test_payment_method(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        checkout_open: Checkout,
+    ) -> None:
+        response = await client.patch(
+            f"{api_prefix}/client/{checkout_open.client_secret}",
+            json={"payment_method_type": "upi"},
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["payment_method_type"] == "upi"
+        assert json["billing_address_fields"]["line1"] == "required"
+        assert json["billing_address_fields"]["city"] == "required"
+        assert json["billing_address_fields"]["postal_code"] == "required"
+
     async def test_update_with_discount_code(
         self,
         api_prefix: str,
@@ -940,9 +959,7 @@ class TestClientConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET",
-            status="succeeded",
-            latest_charge="STRIPE_CHARGE_ID",
+            client_secret="CLIENT_SECRET", status="succeeded"
         )
         response = await client.post(
             f"{api_prefix}/client/{checkout_open.client_secret}/confirm",
@@ -981,9 +998,7 @@ class TestClientConfirm:
             id="STRIPE_CUSTOMER_ID"
         )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
-            client_secret="CLIENT_SECRET",
-            status="succeeded",
-            latest_charge="STRIPE_CHARGE_ID",
+            client_secret="CLIENT_SECRET", status="succeeded"
         )
 
         response = await client.post(

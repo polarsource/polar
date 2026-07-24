@@ -90,7 +90,11 @@ async def get_authenticated(
             ],
             "member_organizations": [
                 MemberOrganization(
-                    id=org.id, slug=org.slug, requires_sso=org.sso_enforced
+                    id=org.id,
+                    slug=org.slug,
+                    name=org.name,
+                    avatar_url=org.avatar_url,
+                    requires_sso=org.sso_enforced,
                 )
                 for org, _ in org_with_roles
             ],

@@ -450,3 +450,9 @@ variable "stripe_app_client_link_id" {
   type        = string
   default     = ""
 }
+
+variable "turnstile_secret" {
+  description = "Cloudflare Turnstile secret"
+  type        = string
+  sensitive   = true
+}

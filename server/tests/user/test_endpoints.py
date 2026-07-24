@@ -112,6 +112,8 @@ async def test_get_users_me_excludes_sso_enforced_org_for_global_session(
         {
             "id": str(organization.id),
             "slug": organization.slug,
+            "name": organization.name,
+            "avatar_url": organization.avatar_url,
             "requires_sso": True,
         }
     ]
@@ -142,6 +144,8 @@ async def test_get_users_me_includes_sso_enforced_org_for_sso_session(
         {
             "id": str(organization.id),
             "slug": organization.slug,
+            "name": organization.name,
+            "avatar_url": organization.avatar_url,
             "requires_sso": True,
         }
     ]

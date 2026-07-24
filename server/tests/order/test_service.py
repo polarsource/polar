@@ -85,6 +85,7 @@ from polar.order.service import (
     OrderNotEligibleForInvoice,
     OrderNotEligibleForRetry,
     OrderNotPending,
+    OrderNotVoid,
     OrganizationNotReadyForPayments,
     PaymentActionRequired,
     PaymentAlreadyInProgress,
@@ -245,29 +246,6 @@ def calculate_tax_mock(tax_service_mock: MagicMock) -> AsyncMock:
     tax_service_mock.calculate.side_effect = mocked_calculate_tax
 
     return tax_service_mock.calculate
-
-
-def assert_set_order_item_ids(
-    enqueue_job_mock: MagicMock,
-    expected_billing_entry_ids: list[uuid.UUID],
-    expected_order_item_ids: list[uuid.UUID],
-) -> None:
-    # `enqueue_job` gets called a couple of times, only one of which
-    # we care about. We do the following to extract only that "one" and
-    # assert that it's just called once or never in the two cases.
-    calls = [
-        (args, kwargs)
-        for args, kwargs in enqueue_job_mock.call_args_list
-        if args[0] == "billing_entry.set_order_item"
-    ]
-    billing_entry_ids = set()
-    order_item_ids = set()
-    for args, kwargs in calls:
-        billing_entry_ids |= set(args[1])
-        order_item_ids.add(args[2])
-
-    assert billing_entry_ids == set(expected_billing_entry_ids)
-    assert order_item_ids == set(expected_order_item_ids)
 
 
 @pytest.mark.asyncio
@@ -3494,6 +3472,7 @@ class TestHandlePaymentFailure:
             customer=customer,
             subscription=subscription,
             status=OrderStatus.paid,  # Order is already paid
+            payment_lock_acquired_at=utc_now(),
         )
         await save_fixture(order)
 
@@ -3507,6 +3486,7 @@ class TestHandlePaymentFailure:
         # Then
         assert result_order.next_payment_attempt_at is None  # No retry scheduled
         assert result_order.status == OrderStatus.paid  # Status unchanged
+        assert result_order.payment_lock_acquired_at is None  # Lock is released
         mock_mark_past_due.assert_not_called()  # Subscription not marked past_due
 
     async def test_non_subscription_order(
@@ -5736,6 +5716,60 @@ class TestVoidOrder:
             session, customer, order.currency
         )
         assert new_balance == 200
+
+
+class TestUnvoidOrder:
+    @pytest.mark.asyncio
+    async def test_unvoid_order(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        next_attempt_at = utc_now() + timedelta(hours=24)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.void,
+            next_payment_attempt_at=next_attempt_at,
+        )
+        send_webhook_mock = mocker.patch.object(order_service, "send_webhook")
+
+        result_order = await order_service.unvoid(session, order)
+
+        assert result_order.status == OrderStatus.pending
+        assert result_order.next_payment_attempt_at is None
+        events = await get_all_by_name(session, SystemEvent.order_unvoided)
+        assert len(events) == 1
+        assert events[0].user_metadata == {
+            "order_id": str(order.id),
+            "amount": order.total_amount,
+            "currency": order.currency,
+        }
+        send_webhook_mock.assert_awaited_once_with(
+            session, order, WebhookEventType.order_updated
+        )
+
+    @pytest.mark.asyncio
+    async def test_unvoid_non_void_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        with pytest.raises(OrderNotVoid):
+            await order_service.unvoid(session, order)
 
 
 @pytest.mark.asyncio

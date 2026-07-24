@@ -80,7 +80,7 @@ from polar.models import (
     WalletTransaction,
 )
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
-from polar.models.payment import STRIPE_PAYMENT_INTENT_METADATA_KEY, PaymentTrigger
+from polar.models.payment import PaymentTrigger
 from polar.models.product import ProductBillingType
 from polar.models.subscription import SubscriptionStatus
 from polar.models.transaction import TransactionType
@@ -234,6 +234,13 @@ class OrderNotPending(OrderError):
     def __init__(self, order: Order) -> None:
         self.order = order
         message = f"Order {order.id} is not pending"
+        super().__init__(message)
+
+
+class OrderNotVoid(OrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = f"Order {order.id} is not void"
         super().__init__(message)
 
 
@@ -2655,6 +2662,39 @@ class OrderService:
 
         return order
 
+    async def unvoid(self, session: AsyncSession, order: Order) -> Order:
+        """Return a void order to pending without scheduling a payment retry."""
+        if order.status != OrderStatus.void:
+            raise OrderNotVoid(order)
+
+        previous_status = order.status
+
+        repository = OrderRepository.from_session(session)
+        order = await repository.update(
+            order,
+            update_dict={
+                "status": OrderStatus.pending,
+                "next_payment_attempt_at": None,
+            },
+        )
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.order_unvoided,
+                customer=order.customer,
+                organization=order.organization,
+                metadata={
+                    "order_id": str(order.id),
+                    "amount": order.total_amount,
+                    "currency": order.currency,
+                },
+            ),
+        )
+        await self._on_order_updated(session, order, previous_status=previous_status)
+
+        return order
+
     async def void_pending_orders_for_subscription(
         self, session: AsyncSession, subscription: Subscription
     ) -> Sequence[Order]:
@@ -2800,114 +2840,6 @@ class OrderService:
             log.error("Could not save balance.credit_order event", error=str(e))
             raise
 
-    async def cancel_stale_payment_lock(
-        self, session: AsyncSession, order: Order
-    ) -> None:
-        """Cancel the PaymentIntent behind a stale payment lock.
-
-        The lock is released by the ``payment_intent.canceled`` webhook, not
-        here: a still-resolving intent can yet settle to ``succeeded``.
-        """
-        if order.payment_lock_acquired_at is None:
-            return
-
-        if not order.payment_lock_is_stale:
-            log.info(
-                "Payment lock refreshed since the stale scan, skipping cancellation",
-                order_id=order.id,
-                payment_lock_acquired_at=order.payment_lock_acquired_at,
-            )
-            return
-
-        payment_repository = PaymentRepository.from_session(session)
-        payments = await payment_repository.get_unresolved_stripe_intents_for_order(
-            order.id
-        )
-
-        if not payments:
-            log.warning(
-                "Stale payment lock has no cancellable PaymentIntent",
-                order_id=order.id,
-                payment_lock_acquired_at=order.payment_lock_acquired_at,
-            )
-            return
-
-        for payment in payments:
-            payment_intent_id: str = payment.processor_metadata[
-                STRIPE_PAYMENT_INTENT_METADATA_KEY
-            ]
-            try:
-                await stripe_service.cancel_payment_intent(payment_intent_id)
-            except stripe_lib.InvalidRequestError as e:
-                log.info(
-                    "Stale PaymentIntent already resolved, skipping cancellation",
-                    order_id=order.id,
-                    payment_intent_id=payment_intent_id,
-                    error_message=str(e),
-                )
-            except stripe_lib.StripeError as e:
-                log.warning(
-                    "Failed to cancel stale PaymentIntent, "
-                    "will retry on next scheduled run",
-                    order_id=order.id,
-                    payment_intent_id=payment_intent_id,
-                    error_message=str(e),
-                )
-            else:
-                log.info(
-                    "Requested cancellation of stale PaymentIntent",
-                    order_id=order.id,
-                    payment_intent_id=payment_intent_id,
-                )
-
-    async def handle_payment_cancellation(
-        self, session: AsyncSession, order: Order
-    ) -> Order:
-        """Handle a canceled PaymentIntent for an order's payment lock.
-
-        Triggered by the ``payment_intent.canceled`` webhook — usually the
-        stale-lock cleanup cancelling an off-session SCA intent that never
-        resolved. Release the lock and progress dunning exactly as a payment
-        failure would, so the next scheduled retry attempts a fresh charge.
-        """
-        # A resolving intent may have succeeded before this cancellation was
-        # processed; never undo a paid order.
-        if order.status == OrderStatus.paid:
-            log.warning(
-                "Ignoring payment cancellation for already paid order",
-                order_id=order.id,
-            )
-            return order
-
-        if order.payment_lock_acquired_at is None:
-            return order
-
-        # Only a stale lock is ours to release. A fresh one belongs to a live
-        # attempt, so this cancellation is for an older intent of the same
-        # order — releasing would let a second charge fire alongside it.
-        if not order.payment_lock_is_stale:
-            log.info(
-                "Ignoring payment cancellation for a live payment attempt",
-                order_id=order.id,
-                payment_lock_acquired_at=order.payment_lock_acquired_at,
-            )
-            return order
-
-        log.info(
-            "Clearing payment lock on order due to payment cancellation",
-            order_id=order.id,
-        )
-        repository = OrderRepository.from_session(session)
-        order = await repository.release_payment_lock(order)
-
-        if order.subscription is None:
-            return order
-
-        if order.next_payment_attempt_at is None:
-            return await self._handle_first_dunning_attempt(session, order)
-
-        return await self._handle_consecutive_dunning_attempts(session, order)
-
     async def handle_payment_failure(
         self, session: AsyncSession, order: Order, *, skip_dunning: bool = False
     ) -> Order:
@@ -2919,14 +2851,6 @@ class OrderService:
             skip_dunning: If True, skip dunning progression (e.g., for manual retries
                 where the user can try again without advancing the dunning state machine)
         """
-        # Don't process payment failure if the order is already paid
-        if order.status == OrderStatus.paid:
-            log.warning(
-                "Ignoring payment failure for already paid order",
-                order_id=order.id,
-            )
-            return order
-
         # Clear payment lock on failure
         if order.payment_lock_acquired_at is not None:
             log.info(
@@ -2935,6 +2859,14 @@ class OrderService:
             )
             repository = OrderRepository.from_session(session)
             order = await repository.release_payment_lock(order)
+
+        # Don't process payment failure if the order is already paid
+        if order.status == OrderStatus.paid:
+            log.warning(
+                "Ignoring payment failure for already paid order",
+                order_id=order.id,
+            )
+            return order
 
         # Skip dunning for manual retries - user can retry again
         if skip_dunning:
@@ -3058,8 +2990,8 @@ class OrderService:
 
             return order
 
-        # Locks wedged before attempts were recorded have no failed Payment.
-        next_interval = settings.DUNNING_RETRY_INTERVALS[max(failed_attempts - 1, 0)]
+        # Schedule next retry using the appropriate interval
+        next_interval = settings.DUNNING_RETRY_INTERVALS[failed_attempts - 1]
         next_retry_date = now + next_interval
 
         order = await repository.update(

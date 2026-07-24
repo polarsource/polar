@@ -211,6 +211,8 @@ class Settings(BaseSettings):
     EMAIL_DEFAULT_REPLY_TO_NAME: str = "Polar Support"
     EMAIL_DEFAULT_REPLY_TO_EMAIL_ADDRESS: str = "support@polar.sh"
 
+    TURNSTILE_SECRET: str = ""
+
     # Github App
     GITHUB_CLIENT_ID: str = ""
     GITHUB_CLIENT_SECRET: str = ""
@@ -567,9 +569,6 @@ class Settings(BaseSettings):
         timedelta(days=7),  # Fourth retry after 21 days (2 + 5 + 7 + 7)
     ]
     CUSTOMER_RETRY_MAX_ATTEMPTS: int = 5
-
-    # A payment lock held longer than this is presumed wedged: it's cleared
-    # within seconds by the resolving Stripe webhook under normal conditions.
     PAYMENT_LOCK_STALE_THRESHOLD: timedelta = timedelta(hours=1)
 
     TAX_PROCESSORS: list[TaxProcessor] = [TaxProcessor.stripe]

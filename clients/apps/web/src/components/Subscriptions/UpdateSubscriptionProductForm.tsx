@@ -1,20 +1,12 @@
 'use client'
 
-import { useProducts } from '@/hooks/queries'
+import { useProduct } from '@/hooks/queries'
 import { useUpdateSubscription } from '@/hooks/queries/subscriptions'
 import { setValidationErrors } from '@/utils/api/errors'
-import { hasLegacyRecurringPrices } from '@/utils/product'
 import { useTrialChangeOutcome } from '@/utils/trial-change'
 import { isValidationError, schemas } from '@polar-sh/client'
-import {
-  Button,
-  Pill,
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import { Button, Text } from '@polar-sh/orbit'
 import {
   Form,
   FormControl,
@@ -25,9 +17,10 @@ import {
 } from '@polar-sh/ui/components/ui/form'
 import { useCallback, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
-import ProductPriceLabel from '../Products/ProductPriceLabel'
 import { ProrationBehavior } from '../Settings/ProrationBehavior'
+import AmountLabel from '../Shared/AmountLabel'
 import { toast } from '../Toast/use-toast'
+import { ProductCombobox } from '../Products/ProductCombobox'
 import { subscriptionUpdateValidationDiscriminators } from './utils'
 import { UpdateSubscriptionProductWarning } from './UpdateSubscriptionProductWarning'
 
@@ -51,45 +44,15 @@ export const UpdateSubscriptionProductForm = ({
     },
   })
   const { control, handleSubmit, setError, watch } = form
-  const { data: allProducts } = useProducts(
-    subscription.product.organization_id,
-    {
-      is_recurring: true,
-      limit: 100,
-      sorting: ['price_amount'],
-    },
-  )
 
-  const activePriceIds = useMemo(
+  const currentPriceIds = useMemo(
     () => subscription.prices.map(({ id }) => id),
     [subscription],
   )
-  const products = useMemo(() => {
-    if (!allProducts) return []
-
-    return allProducts.items
-      .filter((product) => !hasLegacyRecurringPrices(product))
-      .filter((product) => {
-        if (subscription.product_id !== product.id) {
-          return true
-        }
-
-        const productPriceIds = product.prices.map(({ id }) => id)
-
-        if (productPriceIds.length !== activePriceIds.length) {
-          return true
-        }
-        return !productPriceIds.every((id) => activePriceIds.includes(id))
-      })
-  }, [allProducts, activePriceIds, subscription])
 
   // eslint-disable-next-line react-hooks/incompatible-library
   const selectedProductId = watch('product_id')
-  const selectedProduct = useMemo(
-    () => products.find((product) => product.id === selectedProductId),
-    [products, selectedProductId],
-  )
-
+  const { data: selectedProduct } = useProduct(selectedProductId)
   const trialOutcome = useTrialChangeOutcome(subscription, selectedProduct)
 
   const onSubmit = useCallback(
@@ -129,45 +92,44 @@ export const UpdateSubscriptionProductForm = ({
         className="flex grow flex-col justify-between gap-y-6"
         onSubmit={handleSubmit(onSubmit)}
       >
-        <div className="flex flex-col gap-y-6">
+        <Box flexDirection="column" rowGap="xl">
           <FormField
             control={control}
             name="product_id"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>New product</FormLabel>
+                <Box flexDirection="column" rowGap="none">
+                  <FormLabel>New product</FormLabel>
+                  <Box
+                    alignItems="baseline"
+                    justifyContent="between"
+                    columnGap="s"
+                    flexWrap="wrap"
+                    color="text-secondary"
+                    paddingTop="xs"
+                  >
+                    <Text variant="caption" color="muted">
+                      Current: {subscription.product.name}
+                    </Text>
+                    <span className="text-xs leading-none [&_*]:!text-inherit">
+                      <AmountLabel
+                        amount={subscription.amount}
+                        currency={subscription.currency}
+                        interval={subscription.recurring_interval}
+                        intervalCount={subscription.recurring_interval_count}
+                      />
+                    </span>
+                  </Box>
+                </Box>
                 <FormControl>
-                  <div>
-                    <Select
-                      onValueChange={field.onChange}
-                      defaultValue={field.value || undefined}
-                    >
-                      <SelectTrigger className="h-14">
-                        <SelectValue placeholder="Select a new product" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {products.map((product) => (
-                          <SelectItem key={product.id} value={product.id}>
-                            <div className="flex flex-row items-center justify-between gap-1">
-                              {product.name}
-                              {product.id === subscription.product_id && (
-                                <Pill
-                                  color="green"
-                                  className="px-3 py-1 text-xs"
-                                >
-                                  New Pricing
-                                </Pill>
-                              )}
-                            </div>
-                            <ProductPriceLabel
-                              product={product}
-                              currency={subscription.currency}
-                            />
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+                  <ProductCombobox
+                    organizationId={subscription.product.organization_id}
+                    value={field.value ?? undefined}
+                    onChange={field.onChange}
+                    currency={subscription.currency}
+                    currentProductId={subscription.product_id}
+                    currentPriceIds={currentPriceIds}
+                  />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -194,8 +156,8 @@ export const UpdateSubscriptionProductForm = ({
               )}
             />
           )}
-        </div>
-        <div className="flex flex-col gap-4">
+        </Box>
+        <Box flexDirection="column" rowGap="l">
           <Button
             type="submit"
             size="lg"
@@ -213,7 +175,7 @@ export const UpdateSubscriptionProductForm = ({
               trialOutcome={trialOutcome}
             />
           ) : null}
-        </div>
+        </Box>
       </form>
     </Form>
   )

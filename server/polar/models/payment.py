@@ -84,12 +84,6 @@ DUNNING_NON_COUNTING_TRIGGERS: set[PaymentTrigger] = {
 }
 
 
-# `processor_metadata` key holding the Stripe PaymentIntent an attempt was
-# confirmed with. Set while the intent has no charge, and kept once the payment
-# is re-keyed onto the charge.
-STRIPE_PAYMENT_INTENT_METADATA_KEY = "payment_intent_id"
-
-
 class PaymentStatus(StrEnum):
     pending = "pending"
     succeeded = "succeeded"

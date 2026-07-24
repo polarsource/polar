@@ -17,7 +17,7 @@ from polar.file.repository import FileRepository
 from polar.file.schemas import FileDownload
 from polar.file.service import file as file_service
 from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceService
+from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
 from polar.models import Customer as CustomerModel
 from polar.models.downloadable import Downloadable, DownloadableStatus
@@ -25,9 +25,7 @@ from polar.postgres import AsyncSession, sql
 
 from ..repository.downloadable import DownloadableRepository
 from ..schemas.downloadables import (
-    DownloadableCreate,
     DownloadableRead,
-    DownloadableUpdate,
     DownloadableURL,
 )
 
@@ -39,7 +37,7 @@ token_serializer = URLSafeTimedSerializer(
 
 
 class DownloadableService(
-    ResourceService[Downloadable, DownloadableCreate, DownloadableUpdate]
+    ResourceServiceReader[Downloadable],
 ):
     async def get_list(
         self,

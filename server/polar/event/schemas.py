@@ -29,6 +29,7 @@ from polar.event.system import (
     MeterResetMetadata,
     OrderPaidMetadata,
     OrderRefundedMetadata,
+    OrderUnvoidedMetadata,
     OrderVoidedMetadata,
     SubscriptionBillingPeriodUpdatedMetadata,
     SubscriptionCanceledMetadata,
@@ -38,6 +39,7 @@ from polar.event.system import (
     SubscriptionPausedMetadata,
     SubscriptionProductUpdatedMetadata,
     SubscriptionReactivatedMetadata,
+    SubscriptionReinstatedMetadata,
     SubscriptionResumedMetadata,
     SubscriptionRevokedMetadata,
     SubscriptionSeatsUpdatedMetadata,
@@ -416,6 +418,17 @@ class SubscriptionReactivatedEvent(SystemEventBase):
     )
 
 
+class SubscriptionReinstatedEvent(SystemEventBase):
+    """An event created by Polar when a canceled subscription is reinstated."""
+
+    name: Literal[SystemEventEnum.subscription_reinstated] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: SubscriptionReinstatedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 class SubscriptionPausedEvent(SystemEventBase):
     """An event created by Polar when a subscription is paused."""
 
@@ -516,6 +529,15 @@ class OrderVoidedEvent(SystemEventBase):
 
     name: Literal[SystemEventEnum.order_voided] = Field(description=_NAME_DESCRIPTION)
     metadata: OrderVoidedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class OrderUnvoidedEvent(SystemEventBase):
+    """An event created by Polar when an order is unvoided."""
+
+    name: Literal[SystemEventEnum.order_unvoided] = Field(description=_NAME_DESCRIPTION)
+    metadata: OrderUnvoidedMetadata = Field(
         validation_alias=AliasChoices("user_metadata", "metadata")
     )
 
@@ -629,6 +651,7 @@ SystemEvent = Annotated[
     | SubscriptionRevokedEvent
     | SubscriptionPastDueEvent
     | SubscriptionReactivatedEvent
+    | SubscriptionReinstatedEvent
     | SubscriptionPausedEvent
     | SubscriptionResumedEvent
     | SubscriptionUncanceledEvent
@@ -639,6 +662,7 @@ SystemEvent = Annotated[
     | OrderPaidEvent
     | OrderRefundedEvent
     | OrderVoidedEvent
+    | OrderUnvoidedEvent
     | CheckoutCreatedEvent
     | CustomerCreatedEvent
     | CustomerUpdatedEvent

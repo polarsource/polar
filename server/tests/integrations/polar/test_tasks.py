@@ -2,10 +2,10 @@ import uuid
 from decimal import Decimal
 from unittest.mock import AsyncMock, MagicMock
 
-import httpx
 import pytest
 from dramatiq import Retry
-from polar_sdk.models.resourcenotfound import ResourceNotFound, ResourceNotFoundData
+from polar.v2026_04.errors import ResourceNotFound
+from polar.v2026_04.outputs import ResourceNotFound as ResourceNotFoundData
 from pytest_mock import MockerFixture
 
 from polar.config import settings
@@ -131,13 +131,8 @@ class TestAddMember:
     ) -> None:
         client = AsyncMock(spec=PolarSelfClient)
         client.get_customer_by_external_id.side_effect = ResourceNotFound(
-            ResourceNotFoundData(detail="Not found"),
-            httpx.Response(
-                404,
-                request=httpx.Request(
-                    "GET", "http://127.0.0.1:8000/v1/customers/external/org-123"
-                ),
-            ),
+            404,
+            ResourceNotFoundData(error="ResourceNotFound", detail="Not found"),
         )
         mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
         mocker.patch("polar.integrations.polar.tasks.can_retry", return_value=True)
@@ -157,13 +152,8 @@ class TestAddMember:
         mocker: MockerFixture,
     ) -> None:
         not_found = ResourceNotFound(
-            ResourceNotFoundData(detail="Not found"),
-            httpx.Response(
-                404,
-                request=httpx.Request(
-                    "GET", "http://127.0.0.1:8000/v1/customers/external/org-123"
-                ),
-            ),
+            404,
+            ResourceNotFoundData(error="ResourceNotFound", detail="Not found"),
         )
         client = AsyncMock(spec=PolarSelfClient)
         client.get_customer_by_external_id.side_effect = not_found
@@ -214,14 +204,8 @@ class TestRemoveMember:
     ) -> None:
         client = AsyncMock(spec=PolarSelfClient)
         client.get_member_by_external_id.side_effect = ResourceNotFound(
-            ResourceNotFoundData(detail="Not found"),
-            httpx.Response(
-                404,
-                request=httpx.Request(
-                    "GET",
-                    "http://127.0.0.1:8000/v1/members/external/user-123?external_customer_id=org-123",
-                ),
-            ),
+            404,
+            ResourceNotFoundData(error="ResourceNotFound", detail="Not found"),
         )
         mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
         mocker.patch("polar.integrations.polar.tasks.can_retry", return_value=True)
@@ -240,14 +224,8 @@ class TestRemoveMember:
     ) -> None:
         client = AsyncMock(spec=PolarSelfClient)
         client.get_member_by_external_id.side_effect = ResourceNotFound(
-            ResourceNotFoundData(detail="Not found"),
-            httpx.Response(
-                404,
-                request=httpx.Request(
-                    "GET",
-                    "http://127.0.0.1:8000/v1/members/external/user-123?external_customer_id=org-123",
-                ),
-            ),
+            404,
+            ResourceNotFoundData(error="ResourceNotFound", detail="Not found"),
         )
         mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
         mocker.patch("polar.integrations.polar.tasks.can_retry", return_value=False)

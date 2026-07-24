@@ -212,6 +212,7 @@ module "sandbox" {
     sentry_dsn               = var.backend_sentry_dsn_sandbox
     jwks                     = var.backend_jwks_sandbox
     numeral_api_key          = var.numeral_api_key_sandbox
+    turnstile_secret         = var.turnstile_secret
   }
 
   aws_s3_config = {

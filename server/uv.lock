@@ -12,6 +12,16 @@ exclude-newer-span = "P1W"
 
 [options.exclude-newer-package]
 reauth = false
+polar-sdk = false
+
+[[package]]
+name = "adaptix"
+version = "3.0.0b12"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/5d/82/aa17eb2968cf7c78caf4915ca62397214f196dc1bef07e4d81bfb4c4abc5/adaptix-3.0.0b12.tar.gz", hash = "sha256:906053a39ff509f0aa4ca9faa07dffa205bd90fa41d9774cd849d3454565b0ea", size = 128634, upload-time = "2026-04-04T17:31:01.084Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/11/66/abcca849b17e4a3adf5116e58c51471f37264a190cee2c67f1ba57782a7f/adaptix-3.0.0b12-py3-none-any.whl", hash = "sha256:8156f0549b96fcd193d13efca7bfbda39b3d6389085556d930e204c09f9ae6ed", size = 188651, upload-time = "2026-04-04T17:30:59.17Z" },
+]
 
 [[package]]
 name = "aiocsv"
@@ -857,8 +867,8 @@ wheels = [
 
 [[package]]
 name = "dramatiq"
-version = "2.2.0"
-source = { git = "https://github.com/LincolnPuzey/dramatiq?rev=fix_asyncio_exc_ref_cycle#5ed44687e6f44c402de5ca7af98203f4394604e9" }
+version = "2.0.0"
+source = { git = "https://github.com/frankie567/dramatiq?rev=memory-leak-asyncio-ter#63ea404e2204b2d2b3e644053b4b294cb1039ad4" }
 
 [package.optional-dependencies]
 redis = [
@@ -866,6 +876,7 @@ redis = [
 ]
 watch = [
     { name = "watchdog" },
+    { name = "watchdog-gevent" },
 ]
 
 [[package]]
@@ -1629,15 +1640,6 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/de/c6/de8fdbdfa75c8ca04fead38a82d573df8a82906e984c349d58665f459558/joserfc-1.6.4.tar.gz", hash = "sha256:34ce5f499bfcc5e9ad4cc75077f9278ab3227b71da9aaf28f9ab705f8a560d3c", size = 231866, upload-time = "2026-04-13T13:15:40.632Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b6/f7/210b27752e972edb36d239315b08d3eb6b14824cc4a590da2337d195260b/joserfc-1.6.4-py3-none-any.whl", hash = "sha256:3e4a22b509b41908989237a045e25c8308d5fd47ab96bdae2dd8057c6451003a", size = 70464, upload-time = "2026-04-13T13:15:39.259Z" },
-]
-
-[[package]]
-name = "jsonpath-python"
-version = "1.1.5"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/2d/db/2f4ecc24da35c6142b39c353d5b7c16eef955cc94b35a48d3fa47996d7c3/jsonpath_python-1.1.5.tar.gz", hash = "sha256:ceea2efd9e56add09330a2c9631ea3d55297b9619348c1055e5bfb9cb0b8c538", size = 87352, upload-time = "2026-03-17T06:16:40.597Z" }
-wheels = [
-    { url = "https://files.pythonhosted.org/packages/28/50/1a313fb700526b134c71eb8a225d8b83be0385dbb0204337b4379c698cef/jsonpath_python-1.1.5-py3-none-any.whl", hash = "sha256:a60315404d70a65e76c9a782c84e50600480221d94a58af47b7b4d437351cb4b", size = 14090, upload-time = "2026-03-17T06:16:39.152Z" },
 ]
 
 [[package]]
@@ -2568,7 +2570,7 @@ requires-dist = [
     { name = "boto3", specifier = ">=1.43.38" },
     { name = "clickhouse-connect", extras = ["async"], specifier = ">=1.4.1" },
     { name = "cryptography", specifier = ">=48.0.1" },
-    { name = "dramatiq", extras = ["redis", "watch"], git = "https://github.com/LincolnPuzey/dramatiq?rev=fix_asyncio_exc_ref_cycle" },
+    { name = "dramatiq", extras = ["redis", "watch"], git = "https://github.com/frankie567/dramatiq?rev=memory-leak-asyncio-ter" },
     { name = "email-validator", specifier = ">=2.1.0.post1" },
     { name = "exponent-server-sdk", specifier = ">=2.1.0" },
     { name = "fastapi", specifier = "==0.136.3" },
@@ -2587,7 +2589,7 @@ requires-dist = [
     { name = "makefun", specifier = ">=1.15.6" },
     { name = "markdown-it-py", specifier = ">=4.2.0" },
     { name = "plain-client", specifier = ">=0.0.3" },
-    { name = "polar-sdk", url = "https://files.pythonhosted.org/packages/dc/e0/a88026b9432c7e2c0c096911ddc97cb06f483036a00a8afd5254efe1c16a/polar_sdk-0.31.7-py3-none-any.whl" },
+    { name = "polar-sdk", specifier = "==1.0.0a15" },
     { name = "posthog", specifier = ">=7.21.1" },
     { name = "prometheus-client", specifier = ">=0.25.0" },
     { name = "psycopg2-binary", specifier = ">=2.9.12" },
@@ -2653,26 +2655,16 @@ dev = [
 
 [[package]]
 name = "polar-sdk"
-version = "0.31.7"
-source = { url = "https://files.pythonhosted.org/packages/dc/e0/a88026b9432c7e2c0c096911ddc97cb06f483036a00a8afd5254efe1c16a/polar_sdk-0.31.7-py3-none-any.whl" }
+version = "1.0.0a15"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "httpcore" },
+    { name = "adaptix" },
     { name = "httpx" },
-    { name = "jsonpath-python" },
-    { name = "pydantic" },
-    { name = "standardwebhooks" },
+    { name = "typing-extensions" },
 ]
+sdist = { url = "https://files.pythonhosted.org/packages/ee/59/7cf3c4099d735c452c848be4884e1f0e04c470a538815e1c2b8d5398a756/polar_sdk-1.0.0a15.tar.gz", hash = "sha256:073d84bc42babdeef00249b5f3d36d13fea2a8ac3dd199fe3ec7abaaf282376d", size = 112689, upload-time = "2026-07-22T13:26:45.917Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/dc/e0/a88026b9432c7e2c0c096911ddc97cb06f483036a00a8afd5254efe1c16a/polar_sdk-0.31.7-py3-none-any.whl", hash = "sha256:acff8f3405046d45fa31130674f269314586fee1d3d2fec221eed21cb8697340" },
-]
-
-[package.metadata]
-requires-dist = [
-    { name = "httpcore", specifier = ">=1.0.9" },
-    { name = "httpx", specifier = ">=0.28.1" },
-    { name = "jsonpath-python", specifier = ">=1.0.6" },
-    { name = "pydantic", specifier = ">=2.11.2" },
-    { name = "standardwebhooks", specifier = ">=1.0.0,<2.0.0" },
+    { url = "https://files.pythonhosted.org/packages/df/fb/17beea261aa8bf6dcf9a5fa5a77ed61d6e0e5adce8d71a68bd758aacb7d1/polar_sdk-1.0.0a15-py3-none-any.whl", hash = "sha256:294e8f5537fdb075dc9304014f841f5f3574e598bc166fdc51df0809fbe8a7ff", size = 137408, upload-time = "2026-07-22T13:26:44.715Z" },
 ]
 
 [[package]]
@@ -4076,6 +4068,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/07/f6/d0e5b343768e8bcb4cda79f0f2f55051bf26177ecd5651f84c07567461cf/watchdog-6.0.0-py3-none-win32.whl", hash = "sha256:07df1fdd701c5d4c8e55ef6cf55b8f0120fe1aef7ef39a1c6fc6bc2e606d517a", size = 79065, upload-time = "2024-11-01T14:07:09.525Z" },
     { url = "https://files.pythonhosted.org/packages/db/d9/c495884c6e548fce18a8f40568ff120bc3a4b7b99813081c8ac0c936fa64/watchdog-6.0.0-py3-none-win_amd64.whl", hash = "sha256:cbafb470cf848d93b5d013e2ecb245d4aa1c8fd0504e863ccefa32445359d680", size = 79070, upload-time = "2024-11-01T14:07:10.686Z" },
     { url = "https://files.pythonhosted.org/packages/33/e8/e40370e6d74ddba47f002a32919d91310d6074130fe4e17dabcafc15cbf1/watchdog-6.0.0-py3-none-win_ia64.whl", hash = "sha256:a1914259fa9e1454315171103c6a30961236f508b9b623eae470268bbcc6a22f", size = 79067, upload-time = "2024-11-01T14:07:11.845Z" },
+]
+
+[[package]]
+name = "watchdog-gevent"
+version = "0.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "gevent" },
+    { name = "watchdog" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/97/69/91cfca7c21c382e3a8aca4251dcd7d4315228d9346381feb2dde36d14061/watchdog_gevent-0.2.1.tar.gz", hash = "sha256:ae6b94d0f8c8ce1c5956cd865f612b61f456cf19801744bba25a349fe8e8c337", size = 4296, upload-time = "2024-10-19T05:29:12.987Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/00/a9/54b88e150b77791958957e2188312477d09fc84820fc03f8b3a7569d10b0/watchdog_gevent-0.2.1-py3-none-any.whl", hash = "sha256:e8114658104a018f626ee54052335407c1438369febc776c4b4c4308ed002350", size = 3462, upload-time = "2024-10-19T05:29:11.421Z" },
 ]
 
 [[package]]

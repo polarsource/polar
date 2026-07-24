@@ -61,7 +61,7 @@ dependencies = [
   "clickhouse-connect[async]>=1.4.1",
   "trafilatura>=2.1.0",
   "firecrawl-py>=4.31.0",
-  "polar-sdk==0.31.7",
+  "polar-sdk==1.0.0a15",
   "anyio>=4.14.0",
   "markdown-it-py>=4.2.0",
   "tzdata>=2026.2",
@@ -191,8 +191,7 @@ warn_untyped_fields = true
 
 [tool.uv]
 exclude-newer = "1 week"
-exclude-newer-package = { reauth = false } # Reauth is brand new, but remember to remove this exclusion when stabilized
+exclude-newer-package = { reauth = false, polar-sdk = false } # Reauth and the Polar SDK are brand new, but remember to remove these exclusions when stabilized
 
 [tool.uv.sources]
-dramatiq = { git = "https://github.com/LincolnPuzey/dramatiq", rev = "fix_asyncio_exc_ref_cycle" }
-polar-sdk = { url = "https://files.pythonhosted.org/packages/dc/e0/a88026b9432c7e2c0c096911ddc97cb06f483036a00a8afd5254efe1c16a/polar_sdk-0.31.7-py3-none-any.whl" }
+dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }

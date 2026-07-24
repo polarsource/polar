@@ -212,6 +212,7 @@ module "test" {
     sentry_dsn               = var.backend_sentry_dsn
     jwks                     = var.backend_jwks
     numeral_api_key          = var.numeral_api_key
+    turnstile_secret         = var.turnstile_secret
   }
 
   aws_s3_config = {

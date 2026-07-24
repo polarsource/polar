@@ -61,7 +61,7 @@ from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.product_price import ProductPriceAmountType, ProductPriceSeatUnit
-from polar.models.subscription import SubscriptionStatus
+from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.order.repository import OrderRepository
 from polar.order.service import PaymentFailed, PaymentFailedReason
@@ -88,6 +88,7 @@ from polar.subscription.service import (
     AlreadyCanceledSubscription,
     BelowMinimumSeats,
     CannotPauseSubscription,
+    CannotReinstateSubscription,
     InactiveSubscription,
     MissingCheckoutCustomer,
     NoScheduledPause,
@@ -2431,6 +2432,173 @@ class TestUncancel:
         assert updated_subscription.cancel_at_period_end is False
         assert updated_subscription.ends_at is None
         assert updated_subscription.canceled_at is None
+
+
+@pytest.mark.asyncio
+class TestReinstate:
+    @freeze_time("2024-03-15 12:00:00")
+    async def test_valid(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            current_period_start=datetime(2024, 1, 31, tzinfo=UTC),
+            current_period_end=datetime(2024, 2, 29, tzinfo=UTC),
+            revoke=True,
+        )
+        subscription.pause_at_period_end = True
+        subscription.paused_at = utc_now()
+        subscription.resumes_at = utc_now() + timedelta(days=1)
+        subscription.past_due_at = utc_now()
+        subscription.scheduler_locked_at = utc_now()
+        subscription.customer_cancellation_reason = (
+            CustomerCancellationReason.too_expensive
+        )
+        subscription.customer_cancellation_comment = "Canceled by mistake"
+
+        pending_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=product_second,
+        )
+        await save_fixture(pending_update)
+        subscription.pending_update = pending_update
+        await save_fixture(subscription)
+
+        reset_meters_mock = mocker.patch.object(subscription_service, "reset_meters")
+        new_subscription_notification_mock = mocker.patch.object(
+            subscription_service, "_send_new_subscription_notification"
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            reinstated = await subscription_service.reinstate(
+                session, ctx, subscription
+            )
+
+        assert reinstated.status == SubscriptionStatus.active
+        assert reinstated.current_period_start == datetime(2024, 2, 29, tzinfo=UTC)
+        assert reinstated.current_period_end == datetime(2024, 3, 31, tzinfo=UTC)
+        assert reinstated.cancel_at_period_end is False
+        assert reinstated.canceled_at is None
+        assert reinstated.ends_at is None
+        assert reinstated.ended_at is None
+        assert reinstated.customer_cancellation_reason is None
+        assert reinstated.customer_cancellation_comment is None
+        assert reinstated.past_due_at is None
+        assert reinstated.pause_at_period_end is False
+        assert reinstated.paused_at is None
+        assert reinstated.resumes_at is None
+        assert reinstated.scheduler_locked_at is None
+        assert reinstated.pending_update is None
+
+        reset_meters_mock.assert_awaited_once_with(session, reinstated)
+        enqueue_benefits_grants_mock.assert_awaited_once_with(session, reinstated)
+        new_subscription_notification_mock.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()
+        assert not any(
+            mock_call.args[0].startswith("order.")
+            for mock_call in enqueue_job_mock.call_args_list
+        )
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_updated,
+            product.organization,
+            reinstated,
+        )
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_active,
+            product.organization,
+            reinstated,
+        )
+
+        reinstated_events = await get_all_by_name(
+            session, SystemEvent.subscription_reinstated
+        )
+        assert len(reinstated_events) == 1
+        assert reinstated_events[0].user_metadata["subscription_id"] == str(
+            subscription.id
+        )
+        assert await get_all_by_name(session, SystemEvent.subscription_uncanceled) == []
+        assert (
+            await get_all_by_name(session, SystemEvent.subscription_reactivated) == []
+        )
+
+    @freeze_time("2024-03-15 12:00:00")
+    async def test_preserves_current_period(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_benefits_grants_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            cancel_at_period_end=False,
+            revoke=True,
+        )
+        current_period_start = subscription.current_period_start
+        current_period_end = subscription.current_period_end
+        mocker.patch.object(subscription_service, "reset_meters")
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            reinstated = await subscription_service.reinstate(
+                session, ctx, subscription
+            )
+
+        assert reinstated.current_period_start == current_period_start
+        assert reinstated.current_period_end == current_period_end
+
+    @pytest.mark.parametrize("invalid_state", ["active", "more_than_one_cycle_late"])
+    @freeze_time("2024-03-15 12:00:00")
+    async def test_invalid(
+        self,
+        invalid_state: str,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            cancel_at_period_end=False,
+            revoke=True,
+        )
+        if invalid_state == "active":
+            subscription.status = SubscriptionStatus.active
+        else:
+            subscription.current_period_start = datetime(2023, 12, 15, tzinfo=UTC)
+            subscription.current_period_end = datetime(2024, 1, 15, tzinfo=UTC)
+            subscription.anchor_day = 15
+
+        with pytest.raises(CannotReinstateSubscription):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.reinstate(session, ctx, subscription)
 
 
 @pytest.mark.asyncio

@@ -34,6 +34,7 @@ from polar.enums import MeterInterval, SubscriptionRecurringInterval, TaxBehavio
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 from polar.kit.metadata import MetadataMixin
+from polar.kit.utils import utc_now
 from polar.product.guard import is_metered_price
 
 from .subscription_meter import SubscriptionMeter
@@ -116,6 +117,11 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     __tablename__ = "subscriptions"
     __table_args__ = (
         Index("ix_subscriptions_customer_id_status", "customer_id", "status"),
+        Index(
+            "ix_subscriptions_status_current_period_end",
+            "status",
+            "current_period_end",
+        ),
     )
 
     amount: Mapped[int] = mapped_column("amount_v2", BigInteger, nullable=False)
@@ -497,6 +503,27 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
 
     def can_resume(self) -> bool:
         return self.status == SubscriptionStatus.paused
+
+    def can_reinstate(self) -> bool:
+        if (
+            self.status != SubscriptionStatus.canceled
+            or self.customer.is_deleted
+            or self.organization.is_deleted
+            or not self.organization.can_renew_subscriptions
+        ):
+            return False
+
+        now = utc_now()
+        if self.current_period_end <= now:
+            new_period_end = self.recurring_interval.get_next_period(
+                self.current_period_end,
+                self.anchor_day,
+                self.recurring_interval_count,
+            )
+            if new_period_end <= now:
+                return False
+
+        return True
 
     def update_amount_and_currency(
         self, prices: Sequence["SubscriptionProductPrice"], discount: "Discount | None"

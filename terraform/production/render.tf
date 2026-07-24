@@ -332,6 +332,7 @@ module "production" {
     app_review_otp_code            = var.backend_app_review_otp_code
     chargeback_stop_webhook_secret = var.backend_chargebackstop_webhook_secret_production
     numeral_api_key                = var.numeral_api_key_production
+    turnstile_secret               = var.turnstile_secret
   }
 
   aws_s3_config = {

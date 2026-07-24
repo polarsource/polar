@@ -534,3 +534,11 @@ resource "tfe_variable" "stripe_app_client_link_id_sandbox" {
   sensitive       = false
   variable_set_id = tfe_variable_set.sandbox.id
 }
+
+resource "tfe_variable" "turnstile_secret_sandbox" {
+  key             = "turnstile_secret"
+  category        = "terraform"
+  description     = "Cloudflare Turnstile secret for sandbox"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.sandbox.id
+}

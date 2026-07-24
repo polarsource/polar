@@ -359,14 +359,6 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         return self.refunds_blocked_at is not None
 
     @property
-    def payment_lock_is_stale(self) -> bool:
-        if self.payment_lock_acquired_at is None:
-            return False
-        return self.payment_lock_acquired_at <= (
-            utc_now() - settings.PAYMENT_LOCK_STALE_THRESHOLD
-        )
-
-    @property
     def refundable_amount(self) -> int:
         return max(
             0, self.net_amount + self.applied_balance_amount - self.refunded_amount
@@ -403,6 +395,21 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @classmethod
     def _is_void_expression(cls) -> ColumnElement[bool]:
         return cls.status == OrderStatus.void
+
+    @hybrid_property
+    def is_payment_lock_stale(self) -> bool:
+        if self.payment_lock_acquired_at is None:
+            return False
+        return self.payment_lock_acquired_at <= (
+            utc_now() - settings.PAYMENT_LOCK_STALE_THRESHOLD
+        )
+
+    @is_payment_lock_stale.inplace.expression
+    @classmethod
+    def _is_payment_lock_stale_expression(cls) -> ColumnElement[bool]:
+        return cls.payment_lock_acquired_at <= (
+            func.now() - settings.PAYMENT_LOCK_STALE_THRESHOLD
+        )
 
     @property
     def is_invoice_generated(self) -> bool:

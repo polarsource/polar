@@ -29,6 +29,7 @@ from polar.subscription.service import subscription as subscription_service
 from polar.subscription.sorting import SubscriptionSortProperty
 
 from ..components import (
+    alert,
     button,
     datatable,
     description_list,
@@ -228,6 +229,7 @@ async def get(
         id,
         options=(
             joinedload(Subscription.customer),
+            joinedload(Subscription.organization),
             joinedload(Subscription.product).joinedload(Product.organization),
             joinedload(Subscription.discount),
             selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
@@ -280,6 +282,17 @@ async def get(
                             hx_target="#modal",
                         ):
                             text("Uncancel")
+                    if subscription.can_reinstate():
+                        with button(
+                            variant="warning",
+                            hx_get=str(
+                                request.url_for(
+                                    "subscriptions:reinstate", id=subscription.id
+                                )
+                            ),
+                            hx_target="#modal",
+                        ):
+                            text("Reinstate")
                     if subscription.active:
                         with button(
                             hx_get=str(
@@ -522,6 +535,62 @@ async def uncancel(
                     hx_target="#modal",
                 ):
                     text("Submit")
+
+
+@router.api_route(
+    "/{id}/reinstate", name="subscriptions:reinstate", methods=["GET", "POST"]
+)
+async def reinstate(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    subscription_repository = SubscriptionRepository.from_session(session)
+    subscription = await subscription_repository.get_by_id(
+        id, options=subscription_repository.get_eager_options()
+    )
+
+    if subscription is None:
+        raise HTTPException(status_code=404)
+
+    if not subscription.can_reinstate():
+        await add_toast(request, "This subscription cannot be reinstated.", "error")
+        return
+
+    if request.method == "POST":
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.reinstate(session, ctx, subscription)
+        return HXRedirectResponse(
+            request, str(request.url_for("subscriptions:get", id=id)), 303
+        )
+
+    with modal("Reinstate subscription", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text("Are you sure you want to reinstate this subscription?")
+            with alert("warning", soft=True):
+                with tag.div(classes="flex flex-col gap-1"):
+                    with tag.p(classes="font-semibold"):
+                        text("Billing will resume")
+                    with tag.p():
+                        text(
+                            "No charge will be created immediately. "
+                            "The subscription cycle will resume, and the customer "
+                            "will start being billed again when the next cycle begins."
+                        )
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="button",
+                    variant="warning",
+                    hx_post=str(request.url),
+                    hx_target="#modal",
+                ):
+                    text("Reinstate")
 
 
 @router.api_route(

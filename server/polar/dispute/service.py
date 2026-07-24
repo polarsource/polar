@@ -343,6 +343,7 @@ class DisputeService:
                     payment_processor=PaymentProcessor.stripe,
                     payment_processor_id=None,  # We don't know the dispute ID yet
                     order=order,
+                    organization_id=order.organization_id,
                     payment=payment,
                     status=DisputeStatus.early_warning,
                 )

@@ -1,7 +1,8 @@
 'use client'
 
 import type { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useState } from 'react'
 import CreditCardBrandIcon from '../CreditCardBrandIcon'
 
@@ -34,78 +35,74 @@ export const SavedCardsSelector = ({
 
   if (paymentMethods.length === 0) {
     return (
-      <div className="space-y-4">
-        <p className="text-sm text-gray-500">No saved payment methods found.</p>
-        <Button
-          onClick={handleAddNewCard}
-          disabled={disabled}
-          className="w-full"
-        >
-          Add New Card
+      <Box flexDirection="column" rowGap="l">
+        <Text color="muted">No saved payment methods found.</Text>
+        <Button onClick={handleAddNewCard} disabled={disabled} fullWidth>
+          Add new card
         </Button>
-      </div>
+      </Box>
     )
   }
 
   return (
-    <div className="space-y-4">
-      <div className="space-y-2">
-        <h4 className="font-medium">Saved Payment Methods</h4>
-        <div className="space-y-2">
+    <Box flexDirection="column" rowGap="l">
+      <Box flexDirection="column" rowGap="s">
+        <Text variant="title">Saved payment methods</Text>
+        <Box flexDirection="column" rowGap="s">
           {paymentMethods.map((paymentMethod) => {
             const { brand, last4, exp_year, exp_month } =
               paymentMethod.method_metadata
             const isSelected = selectedMethodId === paymentMethod.id
 
             return (
-              <button
+              <Button
                 key={paymentMethod.id}
+                variant={isSelected ? 'default' : 'secondary'}
                 onClick={() => handleCardSelect(paymentMethod.id)}
                 disabled={disabled}
-                className={`w-full rounded-lg border p-3 text-left transition-colors ${
-                  isSelected
-                    ? 'border-blue-500 bg-blue-50 dark:bg-blue-950/20'
-                    : 'dark:border-polar-700 dark:hover:bg-polar-800 border-gray-200 hover:bg-gray-50'
-                } ${disabled ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'} `}
+                fullWidth
               >
-                <div className="flex items-center gap-3">
-                  <CreditCardBrandIcon
-                    width="2.5em"
-                    brand={brand}
-                    className="dark:border-polar-700 shrink-0 rounded-sm border border-gray-200 p-1"
-                  />
-                  <div className="grow">
-                    <div className="font-medium capitalize">
-                      {brand} •••• {last4}
-                    </div>
-                    <div className="dark:text-polar-500 text-sm text-gray-500">
+                <Box alignItems="center" columnGap="m" width="100%">
+                  <CreditCardBrandIcon width="2.5em" brand={brand} />
+                  <Box flexDirection="column" alignItems="start" flexGrow={1}>
+                    <Text
+                      as="span"
+                      variant="title"
+                      color={isSelected ? 'inverse' : 'default'}
+                    >
+                      {brand.charAt(0).toUpperCase() + brand.slice(1)} ••••{' '}
+                      {last4}
+                    </Text>
+                    <Text
+                      as="span"
+                      variant="caption"
+                      color={isSelected ? 'inverse' : 'muted'}
+                    >
                       Expires {exp_month.toString().padStart(2, '0')}/{exp_year}
-                    </div>
-                  </div>
-                  {isSelected && (
-                    <div className="shrink-0">
-                      <div className="bg-blue flex h-4 w-4 items-center justify-center rounded-full">
-                        <div className="h-2 w-2 rounded-full bg-white" />
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </button>
+                    </Text>
+                  </Box>
+                </Box>
+              </Button>
             )
           })}
-        </div>
-      </div>
+        </Box>
+      </Box>
 
-      <div className="border-t pt-4">
+      <Box
+        paddingTop="l"
+        borderTopWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+      >
         <Button
           onClick={handleAddNewCard}
           disabled={disabled}
-          variant="outline"
-          className="w-full"
+          variant="secondary"
+          fullWidth
         >
-          Use a Different Card
+          Use a different card
         </Button>
-      </div>
-    </div>
+      </Box>
+    </Box>
   )
 }

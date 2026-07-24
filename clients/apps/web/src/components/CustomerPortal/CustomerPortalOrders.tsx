@@ -1,6 +1,7 @@
 import { createClientSideAPI } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { DataTable } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
@@ -39,10 +40,12 @@ export const CustomerPortalOrders = ({
   } = useModal()
 
   return (
-    <div className="flex flex-col gap-y-4">
-      <div className="flex flex-row items-center justify-between">
-        <h3 className="text-xl">Order History</h3>
-      </div>
+    <Box flexDirection="column" rowGap="l">
+      <Box alignItems="center" justifyContent="between">
+        <Text variant="heading-xs" as="h3">
+          Order history
+        </Text>
+      </Box>
       <DataTable
         data={orders ?? []}
         isLoading={false}
@@ -55,9 +58,9 @@ export const CustomerPortalOrders = ({
             accessorKey: 'status',
             header: 'Status',
             cell: ({ row }) => (
-              <span className="flex shrink">
+              <Box flexShrink={1}>
                 <OrderStatus status={row.original.status} />
-              </span>
+              </Box>
             ),
           },
           {
@@ -78,27 +81,29 @@ export const CustomerPortalOrders = ({
               const order = row.original
 
               return (
-                <span className="flex justify-end gap-2">
-                  <Button
-                    variant="secondary"
-                    onClick={() => {
-                      setSelectedOrder(order)
-                      showOrderModal()
-                    }}
-                    className="hidden md:flex"
-                    size="sm"
-                  >
-                    View Order
-                  </Button>
-                  <Link
-                    className="md:hidden"
-                    href={`/${organization.slug}/portal/orders/${order.id}?customer_session_token=${customerSessionToken}`}
-                  >
-                    <Button variant="secondary" size="sm">
-                      View Order
+                <Box justifyContent="end" columnGap="s">
+                  <Box display={{ base: 'none', md: 'flex' }}>
+                    <Button
+                      variant="secondary"
+                      onClick={() => {
+                        setSelectedOrder(order)
+                        showOrderModal()
+                      }}
+                      size="sm"
+                    >
+                      View order
                     </Button>
-                  </Link>
-                </span>
+                  </Box>
+                  <Box display={{ base: 'flex', md: 'none' }}>
+                    <Link
+                      href={`/${organization.slug}/portal/orders/${order.id}?customer_session_token=${customerSessionToken}`}
+                    >
+                      <Button variant="secondary" size="sm">
+                        View order
+                      </Button>
+                    </Link>
+                  </Box>
+                </Box>
               )
             },
           },
@@ -109,17 +114,17 @@ export const CustomerPortalOrders = ({
         hide={hideOrderModal}
         modalContent={
           selectedOrder ? (
-            <div className="flex flex-col overflow-y-auto p-8">
+            <Box flexDirection="column" overflowY="auto" padding="2xl">
               <CustomerPortalOrder
                 api={api}
                 order={selectedOrder}
                 customerSessionToken={customerSessionToken}
                 themingPreset={themingPreset}
               />
-            </div>
+            </Box>
           ) : null
         }
       />
-    </div>
+    </Box>
   )
 }

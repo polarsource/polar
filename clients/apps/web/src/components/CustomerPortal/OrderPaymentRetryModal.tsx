@@ -3,7 +3,8 @@
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomerPaymentMethods } from '@/hooks/queries/customerPortal'
 import { type Client, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { Elements, ElementsConsumer } from '@stripe/react-stripe-js'
 import { Stripe } from '@stripe/stripe-js'
@@ -84,19 +85,26 @@ export const OrderPaymentRetryModal = ({
       isShown={isOpen}
       hide={handleClose}
       modalContent={
-        <div className="space-y-4 p-6">
+        <Box flexDirection="column" rowGap="l" padding="xl">
           {/* Error State */}
           {error && (
-            <div className="py-4 text-center">
-              <p className="mb-4 text-red-600">{error}</p>
+            <Box
+              flexDirection="column"
+              alignItems="center"
+              rowGap="l"
+              paddingVertical="l"
+            >
+              <Text color="danger" align="center">
+                {error}
+              </Text>
               <Button
                 onClick={() => {
                   setError('')
                 }}
               >
-                Try Again
+                Try again
               </Button>
-            </div>
+            </Box>
           )}
 
           {/* Payment Method Selection or Payment Form */}
@@ -154,7 +162,7 @@ export const OrderPaymentRetryModal = ({
               )}
             </>
           )}
-        </div>
+        </Box>
       }
     />
   )

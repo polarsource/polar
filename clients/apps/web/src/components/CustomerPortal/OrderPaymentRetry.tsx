@@ -5,7 +5,9 @@ import {
   useCustomerOrderPaymentStatus,
 } from '@/hooks/queries/customerPortal'
 import { type Client, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { formatCurrency } from '@polar-sh/currency'
+import { Button, Spinner, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { PaymentElement } from '@stripe/react-stripe-js'
 import {
   ConfirmationToken,
@@ -13,8 +15,8 @@ import {
   StripeElements,
   StripeError,
 } from '@stripe/stripe-js'
-import { WalletCards } from 'lucide-react'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { Check as CheckIcon, WalletCards, X as XIcon } from 'lucide-react'
+import { type ReactNode, useCallback, useEffect, useRef, useState } from 'react'
 
 interface OrderPaymentRetryProps {
   order: schemas['CustomerOrder']
@@ -27,6 +29,58 @@ interface OrderPaymentRetryProps {
   onClose: () => void
   onBack?: () => void
 }
+
+const TONE_STYLES = {
+  success: { background: 'background-success', color: 'success' },
+  danger: { background: 'background-danger', color: 'danger' },
+  accent: { background: 'background-accent', color: 'accent' },
+} as const
+
+const StatusPanel = ({
+  icon,
+  tone,
+  title,
+  description,
+  children,
+}: {
+  icon: ReactNode
+  tone: keyof typeof TONE_STYLES
+  title: string
+  description: string
+  children?: ReactNode
+}) => (
+  <Box
+    flexDirection="column"
+    alignItems="center"
+    rowGap="l"
+    paddingVertical="2xl"
+  >
+    <Box
+      width={64}
+      height={64}
+      borderRadius="full"
+      alignItems="center"
+      justifyContent="center"
+      backgroundColor={TONE_STYLES[tone].background}
+      color={`text-${TONE_STYLES[tone].color}`}
+    >
+      {icon}
+    </Box>
+    <Box flexDirection="column" alignItems="center" rowGap="xs">
+      <Text variant="title" align="center">
+        {title}
+      </Text>
+      <Text color="muted" align="center">
+        {description}
+      </Text>
+    </Box>
+    {children && (
+      <Box alignItems="center" columnGap="s">
+        {children}
+      </Box>
+    )}
+  </Box>
+)
 
 export const OrderPaymentRetry = ({
   order,
@@ -371,108 +425,93 @@ export const OrderPaymentRetry = ({
   }, [paymentMethodId, isProcessing, isPolling, handleSavedPaymentMethod])
 
   return (
-    <div className="space-y-4">
+    <Box flexDirection="column" rowGap="l">
       {/* Order Summary */}
-      <div className="dark:bg-polar-800 rounded-lg bg-gray-50 p-4">
-        <h3 className="mb-2 font-medium">Order Summary</h3>
-        <div className="space-y-1 text-sm">
-          <div className="flex justify-between">
-            <span>Description:</span>
-            <span>{order.description}</span>
-          </div>
-          <div className="flex justify-between">
-            <span>Amount:</span>
-            <span>
-              ${(order.total_amount / 100).toFixed(2)}{' '}
-              {order.currency.toUpperCase()}
-            </span>
-          </div>
-        </div>
-      </div>
+      <Box
+        flexDirection="column"
+        rowGap="s"
+        borderRadius="s"
+        backgroundColor="background-secondary"
+        padding="l"
+      >
+        <Text variant="title" as="h3">
+          Order summary
+        </Text>
+        <Box flexDirection="column" rowGap="xs">
+          <Box justifyContent="between" columnGap="l">
+            <Text color="muted">Description</Text>
+            <Text as="span">{order.description}</Text>
+          </Box>
+          <Box justifyContent="between" columnGap="l">
+            <Text color="muted">Amount</Text>
+            <Text as="span" tabularNums>
+              {formatCurrency('accounting')(order.total_amount, order.currency)}
+            </Text>
+          </Box>
+        </Box>
+      </Box>
 
       {/* Payment Form or Processing State */}
       {paymentComplete ? (
-        <div className="py-8 text-center">
-          <div className="mb-4">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-green-100">
-              <svg
-                className="h-8 w-8 text-green-600"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 13l4 4L19 7"
-                />
-              </svg>
-            </div>
-            <p className="text-lg font-medium">
-              {showRetryButton ? 'Payment Failed' : 'Payment Successful!'}
-            </p>
-            <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
-              {showRetryButton
-                ? 'You can try again or contact support if the issue persists.'
-                : 'Thank you for your payment. You can now close this window.'}
-            </p>
-          </div>
+        <StatusPanel
+          icon={showRetryButton ? <XIcon size={32} /> : <CheckIcon size={32} />}
+          tone={showRetryButton ? 'danger' : 'success'}
+          title={showRetryButton ? 'Payment failed' : 'Payment successful'}
+          description={
+            showRetryButton
+              ? 'You can try again or contact support if the issue persists.'
+              : 'Thank you for your payment. You can now close this window.'
+          }
+        >
           {showRetryButton && (
-            <Button
-              onClick={resetProcessingStates}
-              variant="default"
-              className="mr-2"
-            >
-              Try Again
+            <Button onClick={resetProcessingStates} variant="default">
+              Try again
             </Button>
           )}
-          <Button onClick={onClose} variant="outline">
+          <Button onClick={onClose} variant="secondary">
             Close
           </Button>
-        </div>
+        </StatusPanel>
       ) : isPolling ? (
-        <div className="py-8 text-center">
-          <div
-            className="mb-4 inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent align-[-0.125em] motion-reduce:animate-[spin_1.5s_linear_infinite]"
-            role="status"
-          >
-            <span className="!absolute -m-px! h-px! w-px! overflow-hidden! border-0! p-0! whitespace-nowrap! [clip:rect(0,0,0,0)]!">
-              Loading...
-            </span>
-          </div>
-          <p className="text-lg font-medium">Processing your payment...</p>
-          <p className="mt-2 text-sm text-gray-500">
-            This may take a few moments. Please don&apos;t close this window.
-          </p>
-        </div>
+        <StatusPanel
+          icon={<Spinner />}
+          tone="accent"
+          title="Processing your payment…"
+          description="This may take a few moments. Please don't close this window."
+        />
       ) : paymentMethodId ? (
-        // Using saved payment method
-        <div className="py-8 text-center">
-          <div className="mb-4">
-            <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-blue-100">
-              <WalletCards className="h-8 w-8 text-blue-600" />
-            </div>
-            <p className="text-lg font-medium">Processing payment...</p>
-            <p className="mt-2 text-sm text-gray-500">
-              Using your saved payment method
-            </p>
-          </div>
+        <StatusPanel
+          icon={<WalletCards size={32} />}
+          tone="accent"
+          title="Processing payment…"
+          description="Using your saved payment method"
+        >
           {onBack && (
-            <Button onClick={onBack} variant="outline">
+            <Button onClick={onBack} variant="secondary">
               Back
             </Button>
           )}
-        </div>
+        </StatusPanel>
       ) : (
-        // New payment method form
-        <div className="space-y-4">
-          <form onSubmit={handleSubmit} className="space-y-4">
-            <div>
-              <label className="mb-2 block text-sm font-medium">
-                Payment Method
-              </label>
-              <div className="rounded-lg border p-3">
+        <Box flexDirection="column" rowGap="l">
+          <Box
+            as="form"
+            onSubmit={handleSubmit}
+            flexDirection="column"
+            rowGap="l"
+          >
+            <Box flexDirection="column" rowGap="s">
+              <Text as="label" variant="title">
+                Payment method
+              </Text>
+              <Box
+                borderRadius="s"
+                borderWidth={1}
+                borderStyle="solid"
+                borderColor="border-primary"
+                padding="m"
+                flexDirection="column"
+              >
                 <PaymentElement
                   options={{
                     layout: 'tabs',
@@ -486,8 +525,8 @@ export const OrderPaymentRetry = ({
                     },
                   }}
                 />
-              </div>
-            </div>
+              </Box>
+            </Box>
 
             <Button
               type="submit"
@@ -499,22 +538,22 @@ export const OrderPaymentRetry = ({
                 isPolling ||
                 hasSubmitted
               }
-              className="w-full"
+              fullWidth
             >
               {isProcessing
-                ? 'Processing...'
+                ? 'Processing…'
                 : isPolling
-                  ? 'Confirming...'
-                  : 'Pay Now'}
+                  ? 'Confirming…'
+                  : 'Pay now'}
             </Button>
-          </form>
+          </Box>
           {onBack && (
-            <Button onClick={onBack} variant="outline" className="w-full">
+            <Button onClick={onBack} variant="secondary" fullWidth>
               Back
             </Button>
           )}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   )
 }

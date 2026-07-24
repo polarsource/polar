@@ -2,13 +2,14 @@
 
 import { canRetryOrderPayment } from '@/utils/order'
 import { Client, schemas } from '@polar-sh/client'
-import { formatCurrency } from '@polar-sh/currency'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { Status, type StatusColor } from '@polar-sh/orbit'
 import { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
 import { useMemo, useState } from 'react'
 import { OrderDownloadActions } from '../Orders/OrderDownloadActions'
-import { DetailRow } from '../Shared/DetailRow'
+import { InvoicePreview } from '../Shared/InvoicePreview'
+import { DetailItem } from '../Shared/Section'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
 import { OrderPaymentRetryModal } from './OrderPaymentRetryModal'
 import { SeatManagementTable } from './SeatManagementTable'
@@ -57,16 +58,17 @@ const CustomerPortalOrder = ({
   const showSeatManagement = portalSettings?.subscription.update_seats === true
 
   return (
-    <div className="flex flex-col gap-12">
-      <div className="flex w-full flex-col gap-8">
-        <div className="flex flex-row flex-wrap gap-x-4">
-          <h3 className="text-2xl">{order.description}</h3>
+    <Box flexDirection="column" rowGap="3xl">
+      <Box width="100%" flexDirection="column" rowGap="2xl">
+        <Box flexWrap="wrap" alignItems="center" columnGap="l">
+          <Text variant="heading-s" as="h3">
+            {order.description}
+          </Text>
           <Status
             status={OrderStatusDisplayTitle[order.status]}
             color={OrderStatusDisplayColor[order.status]}
           />
 
-          {/* Retry button */}
           {canRetryOrderPayment(order) && (
             <Button
               variant="default"
@@ -76,162 +78,46 @@ const CustomerPortalOrder = ({
               Retry payment
             </Button>
           )}
-        </div>
+        </Box>
 
-        <div className="flex flex-col gap-8">
-          <div className="flex flex-col">
+        <Box flexDirection="column" rowGap="2xl">
+          <Box flexDirection="column">
             {order.product && (
-              <DetailRow
-                label="Product"
-                value={<span>{order.product.name}</span>}
-              />
+              <DetailItem label="Product" value={order.product.name} />
             )}
-            <DetailRow label="Invoice number" value={order.invoice_number} />
-            <DetailRow
+            <DetailItem label="Invoice number" value={order.invoice_number} />
+            <DetailItem
               label="Date"
-              value={
-                <span>{new Date(order.created_at).toLocaleDateString()}</span>
-              }
+              value={new Date(order.created_at).toLocaleDateString()}
             />
-          </div>
+          </Box>
 
-          {order.items.length > 0 && (
-            <div className="flex flex-col gap-4">
-              <h3 className="text-lg">Order Items</h3>
-              <div className="flex flex-col gap-4">
-                {order.items.map((item) => (
-                  <DetailRow
-                    key={item.id}
-                    label={item.label}
-                    value={
-                      <span>
-                        {formatCurrency('accounting')(
-                          item.amount,
-                          order.currency,
-                        )}
-                      </span>
-                    }
-                    valueClassName="justify-end"
-                  />
-                ))}
-              </div>
-            </div>
-          )}
+          <InvoicePreview
+            currency={order.currency}
+            items={order.items.map((item) => ({
+              id: item.id,
+              label: item.label,
+              amount: item.amount,
+            }))}
+            subtotalAmount={order.subtotal_amount}
+            discountAmount={order.discount_amount}
+            netAmount={order.net_amount}
+            taxAmount={order.tax_amount}
+            totalAmount={order.total_amount}
+            appliedBalanceAmount={order.applied_balance_amount}
+            dueAmount={order.due_amount}
+            refundedAmount={
+              isPartiallyOrFullyRefunded ? order.refunded_amount : null
+            }
+          />
 
-          <div className="flex flex-col">
-            <DetailRow
-              label="Subtotal"
-              value={
-                <span>
-                  {formatCurrency('accounting')(
-                    order.subtotal_amount,
-                    order.currency,
-                  )}
-                </span>
-              }
-              valueClassName="justify-end"
-            />
-            <DetailRow
-              label="Discount"
-              value={
-                <span>
-                  {order.discount_amount
-                    ? formatCurrency('accounting')(
-                        -order.discount_amount,
-                        order.currency,
-                      )
-                    : '—'}
-                </span>
-              }
-              valueClassName="justify-end"
-            />
-            <DetailRow
-              label="Net amount"
-              value={
-                <span>
-                  {formatCurrency('accounting')(
-                    order.net_amount,
-                    order.currency,
-                  )}
-                </span>
-              }
-              valueClassName="justify-end"
-            />
-            <DetailRow
-              label="Tax"
-              value={
-                <span>
-                  {formatCurrency('accounting')(
-                    order.tax_amount,
-                    order.currency,
-                  )}
-                </span>
-              }
-              valueClassName="justify-end"
-            />
-            <DetailRow
-              label="Total"
-              value={
-                <span>
-                  {formatCurrency('accounting')(
-                    order.total_amount,
-                    order.currency,
-                  )}
-                </span>
-              }
-              valueClassName="justify-end"
-            />
-            {order.applied_balance_amount !== 0 && (
-              <>
-                <DetailRow
-                  label="Applied balance"
-                  value={
-                    <span>
-                      {formatCurrency('accounting')(
-                        order.applied_balance_amount,
-                        order.currency,
-                      )}
-                    </span>
-                  }
-                  valueClassName="justify-end"
-                />
-                <DetailRow
-                  label="To be paid"
-                  value={
-                    <span>
-                      {formatCurrency('accounting')(
-                        order.due_amount,
-                        order.currency,
-                      )}
-                    </span>
-                  }
-                  valueClassName="justify-end"
-                />
-              </>
-            )}
-
-            {isPartiallyOrFullyRefunded && (
-              <DetailRow
-                label="Refunded amount"
-                value={
-                  <span>
-                    {formatCurrency('accounting')(
-                      order.refunded_amount,
-                      order.currency,
-                    )}
-                  </span>
-                }
-                valueClassName="justify-end"
-              />
-            )}
-          </div>
           {order.paid && (
             <OrderDownloadActions
               order={order}
               customerSessionToken={customerSessionToken}
             />
           )}
-        </div>
+        </Box>
 
         {hasSeatBasedOrder && showSeatManagement && (
           <SeatManagementTable
@@ -250,7 +136,7 @@ const CustomerPortalOrder = ({
           subscriptionId={order.subscription_id ?? undefined}
           orderId={order.id}
         />
-      </div>
+      </Box>
 
       {/* Payment Retry Modal */}
       <OrderPaymentRetryModal
@@ -260,7 +146,7 @@ const CustomerPortalOrder = ({
         onClose={() => setIsPaymentModalOpen(false)}
         themingPreset={themingPreset}
       />
-    </div>
+    </Box>
   )
 }
 

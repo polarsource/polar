@@ -1,6 +1,6 @@
 'use client'
 
-import { DetailCell, DetailGrid } from '@/components/Orders/OrderSection'
+import { DetailCell, DetailGrid } from '@/components/Shared/Section'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Text, TextArea } from '@polar-sh/orbit'
@@ -10,6 +10,7 @@ import { ArrowUpRightIcon } from 'lucide-react'
 import Link from 'next/link'
 import { ScheduledUpdateSection } from './ScheduledUpdateSection'
 import { SubscriptionStatus } from './SubscriptionStatus'
+import { getScheduleRows } from './subscriptionState'
 
 const formatRecurringSchedule = (
   interval: schemas['RecurringInterval'],
@@ -56,19 +57,8 @@ export const SubscriptionDetailsGrid = ({
 }) => {
   const productName = product?.name ?? subscription.product.name
 
-  let nextEventDatetime: string | undefined
-  let cancellationDate: string | undefined
-  if (subscription.ended_at) {
-    cancellationDate = subscription.ended_at
-  } else if (subscription.ends_at) {
-    nextEventDatetime = subscription.ends_at
-    cancellationDate = subscription.ends_at
-  } else if (
-    subscription.status !== 'paused' &&
-    subscription.current_period_end
-  ) {
-    nextEventDatetime = subscription.current_period_end
-  }
+  const scheduleRows = getScheduleRows(subscription)
+  const cancellationDate = subscription.ended_at ?? subscription.ends_at
 
   const cancellationReason = subscription.customer_cancellation_reason
   const cancellationComment = subscription.customer_cancellation_comment
@@ -117,69 +107,23 @@ export const SubscriptionDetailsGrid = ({
             </Text>
           }
         />
-        {subscription.status === 'trialing' && subscription.trial_end && (
+        {scheduleRows.map((row) => (
           <DetailCell
-            label="Trial ends"
+            key={row.key}
+            label={row.label}
             value={
-              <Text variant="body" as="span">
-                <FormattedDateTime datetime={subscription.trial_end} />
-              </Text>
-            }
-          />
-        )}
-        {nextEventDatetime && (
-          <DetailCell
-            label={
-              subscription.ends_at
-                ? 'Ending date'
-                : subscription.pause_at_period_end
-                  ? 'Pauses on'
-                  : 'Renewal date'
-            }
-            value={
-              <Text variant="body" as="span">
-                <FormattedDateTime datetime={nextEventDatetime} />
-              </Text>
-            }
-          />
-        )}
-        {subscription.status === 'paused' && subscription.paused_at && (
-          <DetailCell
-            label="Paused on"
-            value={
-              <Text variant="body" as="span">
-                <FormattedDateTime datetime={subscription.paused_at} />
-              </Text>
-            }
-          />
-        )}
-        {(subscription.status === 'paused' ||
-          subscription.pause_at_period_end) && (
-          <DetailCell
-            label="Resumes on"
-            value={
-              subscription.resumes_at ? (
+              row.datetime ? (
                 <Text variant="body" as="span">
-                  <FormattedDateTime datetime={subscription.resumes_at} />
+                  <FormattedDateTime datetime={row.datetime} />
                 </Text>
               ) : (
                 <Text variant="body" as="span" color="muted">
-                  Until resumed
+                  {row.fallback}
                 </Text>
               )
             }
           />
-        )}
-        {subscription.ended_at && (
-          <DetailCell
-            label="Ended"
-            value={
-              <Text variant="body" as="span">
-                <FormattedDateTime datetime={subscription.ended_at} />
-              </Text>
-            }
-          />
-        )}
+        ))}
         <DetailCell
           label="Discount"
           value={

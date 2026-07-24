@@ -11,10 +11,11 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Text,
 } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { twMerge } from 'tailwind-merge'
 
 const links = (
   organization: schemas['CustomerOrganization'],
@@ -81,57 +82,76 @@ const NavigationContent = ({
 
   return (
     <>
-      <nav className="sticky top-0 hidden h-fit w-40 flex-none flex-col gap-y-6 py-12 md:flex lg:w-64">
-        <div className="flex flex-col">
-          {authenticatedUser?.name ? <h3>{authenticatedUser?.name}</h3> : null}
-          <span
-            className={twMerge(
-              authenticatedUser?.name
-                ? 'dark:text-polar-500 text-gray-500'
-                : null,
-            )}
-          >
-            {authenticatedUser?.email ?? '—'}
-          </span>
-        </div>
-        <div className="flex flex-col gap-y-1">
-          {filteredLinks.map((link) => (
-            <Link
-              key={link.href}
-              href={buildPath(link.href)}
-              className={twMerge(
-                'dark:text-polar-500 dark:hover:bg-polar-800 rounded-lg border border-transparent px-3 py-1.5 text-sm font-medium text-gray-500 transition-colors duration-75 hover:bg-gray-100',
-                link.isActive(currentPath) &&
-                  'dark:bg-polar-800 dark:border-polar-700 bg-gray-100 text-black dark:text-white',
-              )}
-              prefetch
-            >
-              {link.label}
-            </Link>
-          ))}
-        </div>
-      </nav>
-      <Select
-        value={filteredLinks.find(({ href }) => href === currentPath)?.label}
-        onValueChange={(value) => {
-          router.push(
-            buildPath(
-              filteredLinks.find(({ label }) => label === value)?.href ?? '',
-            ),
-          )
-        }}
+      <Box
+        as="nav"
+        position="sticky"
+        top={0}
+        display={{ base: 'none', md: 'flex' }}
+        height="fit-content"
+        width={{ md: 160, lg: 256 }}
+        flexShrink={0}
+        flexDirection="column"
+        rowGap="xl"
+        paddingVertical="3xl"
       >
-        <SelectTrigger className="md:hidden">
-          <SelectValue placeholder="Select page" />
-        </SelectTrigger>
-        <SelectContent>
-          {filteredLinks.map((link) => (
-            <SelectItem key={link.href} value={link.label}>
-              {link.label}
-            </SelectItem>
-          ))}
-        </SelectContent>
-      </Select>
+        <Box flexDirection="column">
+          {authenticatedUser?.name && (
+            <Text as="h3" variant="title">
+              {authenticatedUser.name}
+            </Text>
+          )}
+          <Text color={authenticatedUser?.name ? 'muted' : 'default'}>
+            {authenticatedUser?.email ?? '—'}
+          </Text>
+        </Box>
+        <Box flexDirection="column" rowGap="xs">
+          {filteredLinks.map((link) => {
+            const isActive = link.isActive(currentPath)
+            return (
+              <Link key={link.href} href={buildPath(link.href)} prefetch>
+                <Box
+                  borderRadius="s"
+                  paddingHorizontal="m"
+                  paddingVertical="s"
+                  backgroundColor={{
+                    base: isActive ? 'background-secondary' : undefined,
+                    hover: 'background-secondary',
+                  }}
+                  transitionProperty="colors"
+                  transitionDuration="fast"
+                >
+                  <Text variant="title" color={isActive ? 'default' : 'muted'}>
+                    {link.label}
+                  </Text>
+                </Box>
+              </Link>
+            )
+          })}
+        </Box>
+      </Box>
+      <Box display={{ base: 'block', md: 'none' }}>
+        <Select
+          value={filteredLinks.find(({ href }) => href === currentPath)?.label}
+          onValueChange={(value) => {
+            router.push(
+              buildPath(
+                filteredLinks.find(({ label }) => label === value)?.href ?? '',
+              ),
+            )
+          }}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select page" />
+          </SelectTrigger>
+          <SelectContent>
+            {filteredLinks.map((link) => (
+              <SelectItem key={link.href} value={link.label}>
+                {link.label}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+      </Box>
     </>
   )
 }

@@ -5,7 +5,7 @@ import { formatCountry } from '@/utils/formatters'
 import { schemas } from '@polar-sh/client'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { DetailColumn, type DetailColumnRow } from './OrderSection'
+import { DetailColumn, type DetailColumnRow } from '@/components/Shared/Section'
 
 type DetailRow = DetailColumnRow
 

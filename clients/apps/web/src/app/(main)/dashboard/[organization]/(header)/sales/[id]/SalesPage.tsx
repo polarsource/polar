@@ -10,11 +10,11 @@ import { OrderDisputesTable } from '@/components/Orders/OrderDisputesTable'
 import { OrderPaymentsTable } from '@/components/Orders/OrderPaymentsTable'
 import { OrderRefundsSection } from '@/components/Orders/OrderRefundsSection'
 import { OrderSeatsSection } from '@/components/Orders/OrderSeatsSection'
-import { OrderSection } from '@/components/Orders/OrderSection'
+import { Section } from '@/components/Shared/Section'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
 import { DownloadInvoiceDashboard } from '@/components/Orders/DownloadInvoice'
 import { DownloadReceiptDashboard } from '@/components/Orders/DownloadReceipt'
-import { InvoicePreview } from '@/components/Orders/InvoicePreview'
+import { InvoicePreview } from '@/components/Shared/InvoicePreview'
 import { toast } from '@/components/Toast/use-toast'
 import { useCustomFields, useProduct, useSubscription } from '@/hooks/queries'
 import { useOrder } from '@/hooks/queries/orders'
@@ -177,7 +177,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         borderColor="border-primary"
         paddingTop="4xl"
       >
-        <OrderSection title="Charge">
+        <Section title="Charge">
           <InvoicePreview
             currency={order.currency}
             items={order.items.map((item) => ({
@@ -194,7 +194,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             dueAmount={order.due_amount}
             refundedAmount={order.refunded_amount}
           />
-        </OrderSection>
+        </Section>
       </Box>
 
       <OrderSecondaryDetails order={order} customFields={customFields?.items} />

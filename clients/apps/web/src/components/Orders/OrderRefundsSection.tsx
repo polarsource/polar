@@ -18,7 +18,7 @@ import {
   Status,
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { OrderSection } from './OrderSection'
+import { Section } from '@/components/Shared/Section'
 
 export const OrderRefundsSection = ({ order }: { order: schemas['Order'] }) => {
   const { data: refunds, isLoading } = useRefunds(order.id)
@@ -35,7 +35,7 @@ export const OrderRefundsSection = ({ order }: { order: schemas['Order'] }) => {
   const canRefund = (order.refunded_amount ?? 0) < (order.net_amount ?? 0)
 
   return (
-    <OrderSection
+    <Section
       title="Refunds"
       action={
         canRefund ? (
@@ -101,6 +101,6 @@ export const OrderRefundsSection = ({ order }: { order: schemas['Order'] }) => {
         hide={hideRefundModal}
         modalContent={<RefundModal order={order} hide={hideRefundModal} />}
       />
-    </OrderSection>
+    </Section>
   )
 }

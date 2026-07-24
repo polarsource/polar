@@ -1,6 +1,6 @@
 'use client'
 
-import { DetailCell, DetailGrid } from '@/components/Orders/OrderSection'
+import { DetailCell, DetailGrid } from '@/components/Shared/Section'
 import { useProduct } from '@/hooks/queries'
 import { useClearPendingSubscriptionUpdate } from '@/hooks/queries/subscriptions'
 import { OrganizationContext } from '@/providers/maintainerOrganization'

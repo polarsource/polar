@@ -10,7 +10,7 @@ import {
   Truncated,
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { OrderSection } from './OrderSection'
+import { Section } from '@/components/Shared/Section'
 
 export const OrderPaymentsTable = ({
   payments,
@@ -24,7 +24,7 @@ export const OrderPaymentsTable = ({
   )
 
   return (
-    <OrderSection title="Payment attempts">
+    <Section title="Payment attempts">
       <DataTable
         isLoading={isLoading}
         columns={[
@@ -79,6 +79,6 @@ export const OrderPaymentsTable = ({
         ]}
         data={payments}
       />
-    </OrderSection>
+    </Section>
   )
 }

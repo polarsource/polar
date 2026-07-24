@@ -3,8 +3,9 @@
 import { useCustomerEmailUpdateRequest } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import type { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useState } from 'react'
 import { useForm } from 'react-hook-form'
 
@@ -53,38 +54,48 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
 
   if (successEmail) {
     return (
-      <div className="flex flex-col gap-y-4">
-        <div className="dark:bg-polar-700 space-y-3 rounded-xl bg-gray-200 p-4 text-sm text-balance text-gray-700 dark:text-gray-300">
-          <p>
-            We sent a verification link to{' '}
-            <strong className="font-medium">{successEmail}</strong>. Follow the
-            instructions to confirm your new email.
-          </p>
-          <p className="dark:text-polar-500 text-xs text-gray-500">
-            Changed your mind? Simply ignore the email and your current address
-            will remain active.
-          </p>
-        </div>
-      </div>
+      <Box
+        flexDirection="column"
+        rowGap="m"
+        borderRadius="m"
+        backgroundColor="background-card"
+        padding="l"
+      >
+        <Text wrap="balance">
+          We sent a verification link to{' '}
+          <Text as="strong" variant="title">
+            {successEmail}
+          </Text>
+          . Follow the instructions to confirm your new email.
+        </Text>
+        <Text variant="caption" color="muted">
+          Changed your mind? Simply ignore the email and your current address
+          will remain active.
+        </Text>
+      </Box>
     )
   }
 
+  const currentEmail = (
+    <Box flexDirection="column" rowGap="xs">
+      <Text color="muted">Current email</Text>
+      <Text>{customer.email}</Text>
+    </Box>
+  )
+
   if (isEditing) {
     return (
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-4">
-        <div className="flex flex-col gap-y-1">
-          <p className="dark:text-polar-500 text-sm text-gray-500">
-            Current email
-          </p>
-          <p className="text-sm">{customer.email}</p>
-        </div>
-        <div className="flex flex-col gap-y-2">
-          <label
-            htmlFor="new-email"
-            className="dark:text-polar-500 text-sm text-gray-500"
-          >
+      <Box
+        as="form"
+        onSubmit={handleSubmit(onSubmit)}
+        flexDirection="column"
+        rowGap="l"
+      >
+        {currentEmail}
+        <Box flexDirection="column" rowGap="s">
+          <Text as="label" htmlFor="new-email" color="muted">
             New email
-          </label>
+          </Text>
           <Input
             id="new-email"
             type="email"
@@ -93,19 +104,15 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
               required: 'Email is required',
             })}
           />
-          {errors.email && (
-            <p className="text-destructive-foreground text-sm">
-              {errors.email.message}
-            </p>
-          )}
-        </div>
-        <div className="flex gap-x-2">
+          {errors.email && <Text color="danger">{errors.email.message}</Text>}
+        </Box>
+        <Box columnGap="s">
           <Button
             type="submit"
             loading={emailUpdateRequest.isPending}
             disabled={emailUpdateRequest.isPending}
           >
-            Send Verification
+            Send verification
           </Button>
           <Button
             type="button"
@@ -117,29 +124,24 @@ const ChangeEmailForm = ({ customer }: ChangeEmailFormProps) => {
           >
             Nevermind
           </Button>
-        </div>
-      </form>
+        </Box>
+      </Box>
     )
   }
 
   return (
-    <div className="flex w-full flex-row justify-between gap-x-4">
-      <div className="flex flex-col gap-y-1">
-        <p className="dark:text-polar-500 text-sm text-gray-500">
-          Current email
-        </p>
-        <p className="text-sm">{customer.email}</p>
-      </div>
-      <div>
+    <Box width="100%" justifyContent="between" columnGap="l">
+      {currentEmail}
+      <Box>
         <Button
           type="button"
           variant="secondary"
           onClick={() => setIsEditing(true)}
         >
-          Request Email Change
+          Request email change
         </Button>
-      </div>
-    </div>
+      </Box>
+    </Box>
   )
 }
 

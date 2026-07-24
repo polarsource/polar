@@ -4,7 +4,7 @@ import { SeatViewOnlyTable } from '@/components/Seats/SeatViewOnlyTable'
 import { useOrganizationSeats } from '@/hooks/queries/seats'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
-import { OrderSection } from './OrderSection'
+import { Section } from '@/components/Shared/Section'
 
 export const OrderSeatsSection = ({ order }: { order: schemas['Order'] }) => {
   const hasSeatBasedOrder = !!order.seats && order.seats > 0
@@ -22,7 +22,7 @@ export const OrderSeatsSection = ({ order }: { order: schemas['Order'] }) => {
   const seats = seatsData?.seats || []
 
   return (
-    <OrderSection
+    <Section
       title="Seats"
       description={
         <Text color="muted">
@@ -34,6 +34,6 @@ export const OrderSeatsSection = ({ order }: { order: schemas['Order'] }) => {
       {!isLoading && seats.length === 0 && (
         <Text color="muted">No seats have been assigned yet.</Text>
       )}
-    </OrderSection>
+    </Section>
   )
 }

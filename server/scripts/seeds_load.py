@@ -33,6 +33,7 @@ from polar.customer.schemas.customer import (
     CustomerTeamCreate,
 )
 from polar.customer.service import customer as customer_service
+from polar.customer_session.service import CUSTOMER_SESSION_TOKEN_PREFIX
 from polar.discount.schemas import DiscountPercentageCreate
 from polar.discount.service import discount as discount_service
 from polar.dispute.dispute_case import dispute_case as dispute_case_service
@@ -63,10 +64,12 @@ from polar.models.checkout import Checkout, CheckoutStatus
 from polar.models.checkout_product import CheckoutProduct
 from polar.models.customer import Customer
 from polar.models.customer_seat import CustomerSeat, SeatStatus
+from polar.models.customer_session import CustomerSession
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.event import Event as EventModel
 from polar.models.file import File, FileServiceTypes
 from polar.models.member import Member, MemberRole
+from polar.models.order import Order
 from polar.models.organization import (
     Organization,
     OrganizationCustomerEmailSettings,
@@ -2843,6 +2846,98 @@ def polar_self_env() -> None:
             print(f"POLAR_POLAR_ACCESS_TOKEN={token}")
             print(f"{WEBHOOK_SECRET_ENV_KEY}={webhook_secret}")
             print("POLAR_POLAR_API_URL=http://127.0.0.1:8000")
+
+        await engine.dispose()
+
+    asyncio.run(run())
+
+
+@cli.command(name="customer-portal-session")
+def customer_portal_session(
+    org_slug: str = typer.Option(
+        "acme-corp",
+        "--org",
+        help="Organization slug to pick a customer from. The seed only gives "
+        "acme-corp real subscriptions.",
+    ),
+    ttl_hours: int = typer.Option(
+        24,
+        "--ttl-hours",
+        help="Session lifetime. The default outlives a `dev snap` run, "
+        "which captures both branches against one set of URLs.",
+    ),
+) -> None:
+    """Mint a customer session over seeded data and output it for dev tooling."""
+
+    async def run() -> None:
+        engine = create_async_engine("script")
+        sessionmaker = create_async_sessionmaker(engine)
+        async with sessionmaker() as session:
+            subscription = (
+                await session.execute(
+                    select(Subscription)
+                    .join(Organization, Subscription.organization_id == Organization.id)
+                    .where(
+                        Organization.slug == org_slug,
+                        Subscription.status == SubscriptionStatus.active,
+                    )
+                    .options(joinedload(Subscription.customer))
+                    .order_by(Subscription.created_at)
+                    .limit(1)
+                )
+            ).scalar_one_or_none()
+            if subscription is None:
+                available = (
+                    (
+                        await session.execute(
+                            select(Organization.slug)
+                            .join(
+                                Subscription,
+                                Subscription.organization_id == Organization.id,
+                            )
+                            .where(Subscription.status == SubscriptionStatus.active)
+                            .distinct()
+                            .order_by(Organization.slug)
+                        )
+                    )
+                    .scalars()
+                    .all()
+                )
+                print(f"No active subscription in '{org_slug}'.")
+                if available:
+                    print(f"Try --org {' or --org '.join(available)}.")
+                else:
+                    print("No organization has one. Run `dev seed` first.")
+                raise typer.Exit(1)
+
+            customer = subscription.customer
+
+            order_id = (
+                await session.execute(
+                    select(Order.id)
+                    .where(Order.customer_id == customer.id)
+                    .order_by(Order.created_at.desc())
+                    .limit(1)
+                )
+            ).scalar_one_or_none()
+
+            token, token_hash = generate_token_hash_pair(
+                secret=settings.SECRET, prefix=CUSTOMER_SESSION_TOKEN_PREFIX
+            )
+            session.add(
+                CustomerSession(
+                    token=token_hash,
+                    customer_id=customer.id,
+                    expires_at=utc_now() + timedelta(hours=ttl_hours),
+                )
+            )
+            await session.commit()
+
+            print(f"ORGANIZATION_SLUG={org_slug}")
+            print(f"CUSTOMER_SESSION_TOKEN={token}")
+            print(f"SUBSCRIPTION_ID={subscription.id}")
+            if order_id:
+                print(f"ORDER_ID={order_id}")
 
         await engine.dispose()
 

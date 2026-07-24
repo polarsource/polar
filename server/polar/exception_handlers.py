@@ -29,8 +29,18 @@ async def request_validation_exception_handler(
     assert isinstance(exc, (RequestValidationError, PolarRequestValidationError))
     return JSONResponse(
         status_code=422,
-        content={"error": type(exc).__name__, "detail": jsonable_encoder(exc.errors())},
+        content={
+            "error": type(exc).__name__,
+            "detail": jsonable_encoder(
+                exc.errors(),
+                custom_encoder={bytes: _encode_bytes_safely},
+            ),
+        },
     )
+
+
+def _encode_bytes_safely(value: bytes) -> str:
+    return value.decode("utf-8", errors="replace")
 
 
 async def polar_redirection_exception_handler(

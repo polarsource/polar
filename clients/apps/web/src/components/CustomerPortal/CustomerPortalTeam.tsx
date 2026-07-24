@@ -11,7 +11,8 @@ import { useCopyMemberLoginLink } from '@/hooks/useCopyMemberLoginLink'
 import { validateEmail } from '@/utils/validation'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { Client, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, DataTable, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -171,146 +172,145 @@ export const CustomerPortalTeamSection = ({
   const memberToRemoveData = membersList.find((m) => m.id === memberToRemove)
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-y-4">
-        <div className="flex items-start gap-4">
-          <div className="flex-1">
-            <Input
-              type="email"
-              placeholder="email@example.com"
-              value={newMemberEmail}
-              onChange={(e) => {
-                setNewMemberEmail(e.target.value)
-                setAddMemberError(undefined)
-              }}
-              disabled={isAddingMember}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  handleAddMember()
-                }
-              }}
-            />
-            {addMemberError && (
-              <p className="mt-1 text-xs text-red-500">{addMemberError}</p>
-            )}
-          </div>
-          <Button
-            onClick={handleAddMember}
-            disabled={!newMemberEmail.trim() || isAddingMember}
-            loading={isAddingMember}
-          >
-            Invite billing manager
-          </Button>
-        </div>
-      </div>
+    <Box flexDirection="column" rowGap="xl">
+      <Box alignItems="start" columnGap="l">
+        <Box flexDirection="column" rowGap="xs" flex={1}>
+          <Input
+            type="email"
+            placeholder="email@example.com"
+            value={newMemberEmail}
+            onChange={(e) => {
+              setNewMemberEmail(e.target.value)
+              setAddMemberError(undefined)
+            }}
+            disabled={isAddingMember}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleAddMember()
+              }
+            }}
+          />
+          {addMemberError && (
+            <Text variant="caption" color="danger">
+              {addMemberError}
+            </Text>
+          )}
+        </Box>
+        <Button
+          onClick={handleAddMember}
+          disabled={!newMemberEmail.trim() || isAddingMember}
+          loading={isAddingMember}
+        >
+          Invite billing manager
+        </Button>
+      </Box>
 
-      <div className="dark:border-polar-700 overflow-hidden rounded-2xl border border-gray-200">
-        <table className="w-full table-fixed caption-bottom text-sm">
-          <thead className="[&_tr]:border-b">
-            <tr className="dark:bg-polar-800 border-b bg-gray-50 transition-colors">
-              <th className="text-muted-foreground h-12 px-4 text-left align-middle font-medium">
-                Member
-              </th>
-              <th className="text-muted-foreground h-12 w-[180px] px-4 text-left align-middle font-medium">
-                Role
-              </th>
-              <th className="text-muted-foreground h-12 w-[60px] px-4 text-left align-middle font-medium" />
-            </tr>
-          </thead>
-          <tbody className="[&_tr:last-child]:border-0">
-            {membersList.map((member) => {
-              const isCurrentUser = member.id === currentMemberId
-              const isLoading = loadingMembers.has(member.id)
-
+      <DataTable
+        data={membersList}
+        isLoading={false}
+        columns={[
+          {
+            accessorKey: 'name',
+            header: 'Member',
+            cell: ({ row }) => {
+              const member = row.original
               return (
-                <tr key={member.id} className="border-b transition-colors">
-                  <td className="p-4 align-middle">
-                    <div className="flex flex-col">
-                      <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium">
-                          {member.name || member.email}
-                        </span>
-                        {isCurrentUser && (
-                          <span className="dark:text-polar-500 text-xs text-gray-500">
-                            (you)
-                          </span>
-                        )}
-                      </div>
-                      {member.name && (
-                        <span className="dark:text-polar-500 text-xs text-gray-500">
-                          {member.email}
-                        </span>
-                      )}
-                    </div>
-                  </td>
-                  <td className="p-4 align-middle">
-                    <Select
-                      value={member.role}
-                      onValueChange={(newRole) =>
-                        handleRoleChange(member.id, member.name, newRole)
-                      }
-                      disabled={isCurrentUser || isLoading}
-                    >
-                      <SelectTrigger className="w-[160px]">
-                        <SelectValue />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableRoles.map((role) => (
-                          <SelectItem key={role.value} value={role.value}>
-                            {role.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </td>
-                  <td className="p-4 align-middle">
-                    {!isCurrentUser && (
-                      <div className="flex justify-end">
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild disabled={isLoading}>
-                            <Button
-                              className="h-8 w-8"
-                              variant="ghost"
-                              size="icon"
-                            >
-                              <MoreVertOutlined fontSize="inherit" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end">
-                            <DropdownMenuItem
-                              onClick={() => copyMemberLoginLink(member.email)}
-                              disabled={isLoading}
-                            >
-                              Copy login link
-                            </DropdownMenuItem>
-                            <DropdownMenuItem
-                              onClick={() => setMemberToRemove(member.id)}
-                              disabled={isLoading}
-                              className="text-red-500 focus:text-red-500"
-                            >
-                              Remove from Team
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
-                      </div>
+                <Box flexDirection="column">
+                  <Box alignItems="center" columnGap="s">
+                    <Text variant="title">{member.name || member.email}</Text>
+                    {member.id === currentMemberId && (
+                      <Text as="span" variant="caption" color="muted">
+                        (you)
+                      </Text>
                     )}
-                  </td>
-                </tr>
+                  </Box>
+                  {member.name && (
+                    <Text variant="caption" color="muted">
+                      {member.email}
+                    </Text>
+                  )}
+                </Box>
               )
-            })}
-          </tbody>
-        </table>
-      </div>
+            },
+          },
+          {
+            accessorKey: 'role',
+            header: 'Role',
+            cell: ({ row }) => {
+              const member = row.original
+              return (
+                <Select
+                  value={member.role}
+                  onValueChange={(newRole) =>
+                    handleRoleChange(member.id, member.name, newRole)
+                  }
+                  disabled={
+                    member.id === currentMemberId ||
+                    loadingMembers.has(member.id)
+                  }
+                >
+                  <SelectTrigger>
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {availableRoles.map((role) => (
+                      <SelectItem key={role.value} value={role.value}>
+                        {role.label}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              )
+            },
+          },
+          {
+            accessorKey: 'id',
+            header: '',
+            cell: ({ row }) => {
+              const member = row.original
+              if (member.id === currentMemberId) {
+                return null
+              }
+              const isLoading = loadingMembers.has(member.id)
+              return (
+                <Box justifyContent="end">
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild disabled={isLoading}>
+                      <Button variant="ghost" size="icon">
+                        <MoreVertOutlined fontSize="inherit" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => copyMemberLoginLink(member.email)}
+                        disabled={isLoading}
+                      >
+                        Copy login link
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => setMemberToRemove(member.id)}
+                        disabled={isLoading}
+                      >
+                        Remove from team
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </Box>
+              )
+            },
+          },
+        ]}
+      />
 
       <ConfirmModal
         isShown={memberToRemove !== null}
         hide={() => setMemberToRemove(null)}
-        title="Remove Team Member"
+        title="Remove team member"
         description={`Are you sure you want to remove ${memberToRemoveData?.name || memberToRemoveData?.email || 'this member'} from the team? They will lose access to all team resources.`}
         onConfirm={() => memberToRemove && handleRemoveMember(memberToRemove)}
         destructive
         destructiveText="Remove"
       />
-    </div>
+    </Box>
   )
 }

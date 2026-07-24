@@ -161,7 +161,7 @@ If you want to work on or test enterprise SSO login, you can point it at a local
 
 2. **Start the SSO login** by opening [http://127.0.0.1:3000/auth/sso/admin-org](http://127.0.0.1:3000/auth/sso/admin-org). You'll be redirected to the mock IdP's login page.
 
-3. **Assert the seeded member's identity.** The callback requires a *verified* email that belongs to a member of the organization, so in the mock login form submit these claims (the seeded admin is a member of `admin-org`):
+3. **Assert an identity.** The callback requires a *verified* email and will provision the user and organization membership on the fly, so in the mock login form submit these claims (the seeded admin is a member of `admin-org`):
 
     ```json
     {"email": "admin@polar.sh", "email_verified": true}

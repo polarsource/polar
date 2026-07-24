@@ -2767,7 +2767,7 @@ class TestSendConfirmationEmail:
         assert email.props.url.startswith("https://acme.example.com/portal?")
         assert params["email"] == [customer.email]
         assert params["external_id"] == ["usr_123"]
-        assert params["customer_session_token"][0]
+        assert "customer_session_token" not in params
 
     async def test_db_setting_takes_precedence_over_env_override(
         self,
@@ -2835,6 +2835,45 @@ class TestSendConfirmationEmail:
         assert email.props.url.startswith("https://legacy.example.com/portal?")
         assert params["email"] == [customer.email]
         assert "external_id" not in params
+        assert "customer_session_token" not in params
+
+    async def test_billing_email_ignores_custom_link(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        organization.customer_email_settings = {
+            **organization.customer_email_settings,
+            "link_url": "https://acme.example.com/portal",
+        }
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        email = enqueue_email_mock.call_args[0][0]
+        parsed = urlparse(email.props.url)
+        params = parse_qs(parsed.query)
+        assert f"/{organization.slug}/portal" in parsed.path
+        assert params["email"] == [customer.email]
         assert params["customer_session_token"][0]
 
     async def test_excludes_non_public_benefits(

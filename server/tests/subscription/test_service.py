@@ -8328,7 +8328,7 @@ class TestSendCancellationEmail:
         assert params["email"] == [customer.email]
         assert params["customer_session_token"][0]
 
-    async def test_uses_custom_email_link_url_from_settings(
+    async def test_ignores_custom_email_link_url(
         self,
         session: AsyncSession,
         enqueue_email_mock: MagicMock,
@@ -8342,8 +8342,6 @@ class TestSendCancellationEmail:
             "link_url": "https://acme.example.com/billing",
         }
         await save_fixture(organization)
-        customer.external_id = "usr_123"
-        await save_fixture(customer)
         subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer
         )
@@ -8352,8 +8350,7 @@ class TestSendCancellationEmail:
 
         enqueue_email_mock.assert_called_once()
         email = enqueue_email_mock.call_args[0][0]
-        assert email.props.url.startswith("https://acme.example.com/billing?")
+        assert f"/{organization.slug}/portal" in email.props.url
         params = parse_qs(urlparse(email.props.url).query)
         assert params["email"] == [customer.email]
-        assert params["external_id"] == ["usr_123"]
         assert params["customer_session_token"][0]

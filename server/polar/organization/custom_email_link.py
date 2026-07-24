@@ -8,13 +8,12 @@ def get_custom_email_link_url(
     organization: Organization,
     customer: Customer,
     recipient_email: str,
-    token: str,
 ) -> str | None:
     """Build the organization's custom email link, if one is configured.
 
     Returns None when the organization uses the default Polar customer portal
-    links. The token is short-lived and may be either a customer or a member
-    session token depending on the recipient.
+    links. The link only identifies the customer (email, external ID) — the
+    organization is expected to handle authentication on their own site.
     """
     override_url = (
         organization.customer_email_link_url
@@ -27,5 +26,4 @@ def get_custom_email_link_url(
     params = {"email": recipient_email}
     if customer.external_id is not None:
         params["external_id"] = customer.external_id
-    params["customer_session_token"] = token
     return f"{override_url}?{urlencode(params)}"

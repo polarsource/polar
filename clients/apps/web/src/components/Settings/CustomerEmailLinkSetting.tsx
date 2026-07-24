@@ -3,15 +3,11 @@ import { Box } from '@polar-sh/orbit/Box'
 import React from 'react'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
-const URL_PLACEHOLDER = 'https://example.com/portal'
+const URL_PLACEHOLDER = 'https://example.com/purchases'
 
 const APPENDED_PARAMS = [
   { name: 'email', description: "The customer's email address" },
   { name: 'external_id', description: 'Your own ID for the customer, when set' },
-  {
-    name: 'customer_session_token',
-    description: 'Short-lived token for the Customer Portal API',
-  },
 ] as const
 
 interface CustomerEmailLinkSettingProps {
@@ -57,8 +53,8 @@ const CustomerEmailLinkSetting: React.FC<CustomerEmailLinkSettingProps> = ({
     <SettingsGroup>
       <Box flexDirection="column" width="100%">
         <SettingsGroupItem
-          title="Custom email link"
-          description="Send customers to your own site from emails instead of Polar's customer portal."
+          title="Custom purchase link"
+          description="Point the Access purchase button in order and subscription confirmation emails to your own site. Billing emails always link to Polar's customer portal."
         >
           <Switch
             checked={enabled}

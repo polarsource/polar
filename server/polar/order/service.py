@@ -2360,29 +2360,39 @@ class OrderService:
                 {"remote_url": invoice.url, "filename": order.invoice_filename}
             ]
 
-        for recipient_email in recipients:
-            token = await customer_service.create_session_token_for_recipient(
-                session, customer, recipient_email
-            )
-            if token is None:
-                continue
+        # Only purchase confirmation emails ("Access purchase") link to the
+        # organization's own site; billing emails always link to the Polar
+        # customer portal, where invoices and subscription management live.
+        custom_link_applies = template_name in (
+            "order_confirmation",
+            "subscription_confirmation",
+        )
 
-            # Build query parameters with per-recipient email
-            params = {
-                key: value.format(
-                    token=token,
-                    order=order.id,
-                    subscription=subscription.id if subscription else "",
-                    email=recipient_email,
-                )
-                for key, value in url_params.items()
-            }
-            custom_url = get_custom_email_link_url(
-                organization, customer, recipient_email, token
+        for recipient_email in recipients:
+            custom_url = (
+                get_custom_email_link_url(organization, customer, recipient_email)
+                if custom_link_applies
+                else None
             )
             if custom_url is not None:
                 url = custom_url
             else:
+                token = await customer_service.create_session_token_for_recipient(
+                    session, customer, recipient_email
+                )
+                if token is None:
+                    continue
+
+                # Build query parameters with per-recipient email
+                params = {
+                    key: value.format(
+                        token=token,
+                        order=order.id,
+                        subscription=subscription.id if subscription else "",
+                        email=recipient_email,
+                    )
+                    for key, value in url_params.items()
+                }
                 query_string = urlencode(params)
                 url_path = url_path_template.format(organization=organization.slug)
                 url = settings.generate_frontend_url(f"{url_path}?{query_string}")

@@ -154,8 +154,7 @@ def validate_customer_email_link_url(value: str | None) -> str | None:
     if url.query or url.fragment:
         raise ValueError(
             "The custom email link URL must not contain query parameters. "
-            "The `email`, `external_id` and `customer_session_token` parameters "
-            "are appended automatically."
+            "The `email` and `external_id` parameters are appended automatically."
         )
     return value
 
@@ -238,8 +237,8 @@ class OrganizationFeatureSettings(Schema):
     custom_email_link_enabled: bool = Field(
         False,
         description=(
-            "If this organization can configure a custom URL that customer "
-            "emails link to instead of the Polar customer portal."
+            "If this organization can configure a custom URL that purchase "
+            "confirmation emails link to instead of the Polar customer portal."
         ),
     )
 

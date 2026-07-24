@@ -559,7 +559,7 @@ class OrganizationService:
         if update_schema.customer_email_settings is not None:
             customer_email_settings = cast(
                 OrganizationCustomerEmailSettings,
-                dict(update_schema.customer_email_settings),
+                {**update_schema.customer_email_settings},
             )
             if not organization.is_custom_email_link_enabled:
                 # The custom email link URL can only be changed while the feature

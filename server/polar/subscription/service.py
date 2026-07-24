@@ -93,7 +93,6 @@ from polar.notifications.notification import (
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
 from polar.order.repository import OrderRepository
-from polar.organization.custom_email_link import get_custom_email_link_url
 from polar.organization.repository import (
     SUBSCRIPTION_CANCELLATION_STATUSES,
     OrganizationRepository,
@@ -3297,22 +3296,16 @@ class SubscriptionService:
                 if token is None:
                     continue
 
-                custom_url = get_custom_email_link_url(
-                    organization, customer, recipient_email, token
+                query_string = urlencode(
+                    {
+                        "customer_session_token": token,
+                        "id": str(subscription.id),
+                        "email": recipient_email,
+                    }
                 )
-                if custom_url is not None:
-                    portal_url = custom_url
-                else:
-                    query_string = urlencode(
-                        {
-                            "customer_session_token": token,
-                            "id": str(subscription.id),
-                            "email": recipient_email,
-                        }
-                    )
-                    portal_url = settings.generate_frontend_url(
-                        f"/{organization.slug}/portal?{query_string}"
-                    )
+                portal_url = settings.generate_frontend_url(
+                    f"/{organization.slug}/portal?{query_string}"
+                )
 
                 email = EmailAdapter.validate_python(
                     {

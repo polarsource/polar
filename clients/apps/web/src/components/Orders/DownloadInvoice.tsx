@@ -1,6 +1,6 @@
 'use client'
 
-import { InlineModal } from '@polar-sh/orbit'
+import { InlineModal, InlineModalHeader } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { useOrganizationSSE } from '@/hooks/sse'
 import { setValidationErrors } from '@/utils/api/errors'
@@ -341,11 +341,19 @@ const DownloadInvoice = ({
         isShown={isShown}
         hide={hide}
         modalContent={
-          <Form {...form}>
-            <form
-              onSubmit={handleSubmit(onModalSubmit)}
-              className="flex flex-col gap-y-6 px-8 py-10"
-            >
+          <div className="flex h-full flex-col overflow-y-auto">
+            <InlineModalHeader hide={hide}>
+              <h2 className="text-xl">
+                {order.is_invoice_generated
+                  ? 'Edit Invoice'
+                  : 'Generate Invoice'}
+              </h2>
+            </InlineModalHeader>
+            <Form {...form}>
+              <form
+                onSubmit={handleSubmit(onModalSubmit)}
+                className="flex flex-col gap-y-6 px-8 pb-10"
+              >
               <FormField
                 control={control}
                 name="billing_name"
@@ -515,6 +523,7 @@ const DownloadInvoice = ({
               )}
             </form>
           </Form>
+          </div>
         }
       />
     </>

@@ -58,7 +58,7 @@ export type TextColor =
   | 'inherit'
 
 export type TextAlign = 'left' | 'center' | 'right' | 'justify'
-export type TextWrap = 'wrap' | 'nowrap' | 'balance' | 'pretty'
+export type TextWrap = 'wrap' | 'nowrap' | 'balance' | 'pretty' | 'anywhere'
 
 export type TextStyleProps = {
   variant?: TextVariant

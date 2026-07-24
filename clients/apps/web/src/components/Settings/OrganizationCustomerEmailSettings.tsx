@@ -3,8 +3,10 @@ import { useOptimisticSave } from '@/hooks/useOptimisticSave'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Switch } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import React from 'react'
 import { toast } from '../Toast/use-toast'
+import CustomerEmailLinkSetting from './CustomerEmailLinkSetting'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationCustomerEmailSettingsProps {
@@ -13,7 +15,7 @@ interface OrganizationCustomerEmailSettingsProps {
 }
 
 const customerEmails: {
-  key: keyof schemas['OrganizationCustomerEmailSettings']
+  key: Exclude<keyof schemas['OrganizationCustomerEmailSettings'], 'link_url'>
   title: string
   description: string
 }[] = [
@@ -91,6 +93,8 @@ const customerEmails: {
 const OrganizationCustomerEmailSettings: React.FC<
   OrganizationCustomerEmailSettingsProps
 > = ({ organization, readOnly }) => {
+  const customLinkEnabled =
+    organization.feature_settings?.custom_email_link_enabled ?? false
   const updateOrganization = useUpdateOrganization()
 
   const { value: settings, update } = useOptimisticSave(
@@ -114,19 +118,30 @@ const OrganizationCustomerEmailSettings: React.FC<
   )
 
   return (
-    <SettingsGroup>
-      {customerEmails.map(({ key, title, description }) => (
-        <SettingsGroupItem key={key} title={title} description={description}>
-          <Switch
-            checked={settings[key]}
-            disabled={readOnly}
-            onCheckedChange={(checked) =>
-              update((previous) => ({ ...previous, [key]: checked }))
-            }
-          />
-        </SettingsGroupItem>
-      ))}
-    </SettingsGroup>
+    <Box flexDirection="column" rowGap="l" width="100%">
+      <SettingsGroup>
+        {customerEmails.map(({ key, title, description }) => (
+          <SettingsGroupItem key={key} title={title} description={description}>
+            <Switch
+              checked={settings[key]}
+              disabled={readOnly}
+              onCheckedChange={(checked) =>
+                update((previous) => ({ ...previous, [key]: checked }))
+              }
+            />
+          </SettingsGroupItem>
+        ))}
+      </SettingsGroup>
+      {customLinkEnabled && (
+        <CustomerEmailLinkSetting
+          value={settings.link_url ?? null}
+          readOnly={readOnly}
+          onChange={(link_url) =>
+            update((previous) => ({ ...previous, link_url }))
+          }
+        />
+      )}
+    </Box>
   )
 }
 

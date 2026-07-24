@@ -12,7 +12,10 @@ import { OrderRefundsSection } from '@/components/Orders/OrderRefundsSection'
 import { OrderSeatsSection } from '@/components/Orders/OrderSeatsSection'
 import { OrderSection } from '@/components/Orders/OrderSection'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
-import { DownloadInvoiceDashboard } from '@/components/Orders/DownloadInvoice'
+import {
+  DownloadInvoiceDashboard,
+  type EditInvoiceHandle,
+} from '@/components/Orders/DownloadInvoice'
 import { DownloadReceiptDashboard } from '@/components/Orders/DownloadReceipt'
 import { InvoicePreview } from '@/components/Orders/InvoicePreview'
 import { toast } from '@/components/Toast/use-toast'
@@ -36,7 +39,8 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import React from 'react'
+import { useIsMobile } from '@polar-sh/ui/hooks/use-mobile'
+import React, { useRef } from 'react'
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -55,6 +59,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
     { order_id: _order.id },
   )
   const { data: refunds } = useRefunds(_order.id)
+  const isMobile = useIsMobile()
+  const editInvoiceRef = useRef<EditInvoiceHandle | null>(null)
 
   const orderPayments = payments?.items ?? []
   const inDunningLifecycle =
@@ -98,6 +104,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 order={order}
                 organization={organization}
                 onInvoiceGenerated={refetchOrder}
+                hideEditButton={isMobile}
+                editInvoiceRef={editInvoiceRef}
               />
               {order.receipt_number != null && (
                 <DownloadReceiptDashboard
@@ -116,6 +124,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
+              {isMobile && order.paid && order.is_invoice_generated && (
+                <DropdownMenuItem
+                  onClick={() => editInvoiceRef.current?.show()}
+                >
+                  Edit Invoice
+                </DropdownMenuItem>
+              )}
               <DropdownMenuItem
                 onClick={() => {
                   navigator.clipboard

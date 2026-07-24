@@ -32,13 +32,24 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import type EventEmitter from 'eventemitter3'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useForm } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { useCustomerPortalContext } from '../CustomerPortal/CustomerPortalProvider'
 
 type Variant = NonNullable<Parameters<typeof buttonVariants>[0]>['variant']
 type Size = NonNullable<Parameters<typeof buttonVariants>[0]>['size']
+
+export type EditInvoiceHandle = {
+  show: () => void
+}
 
 const INVOICE_GENERATED_EVENT = 'order.invoice_generated'
 const INVOICE_GENERATION_TIMEOUT_MS = 30_000
@@ -83,6 +94,8 @@ const DownloadInvoice = ({
   invoiceURL,
   orderURL,
   dropdown = false,
+  hideEditButton = false,
+  editInvoiceRef,
   variant,
   size,
   className,
@@ -99,10 +112,20 @@ const DownloadInvoice = ({
   size?: Size
   className?: string
   dropdown?: boolean
+  hideEditButton?: boolean
+  editInvoiceRef?: RefObject<EditInvoiceHandle | null>
 }) => {
   const [loading, setLoading] = useState(false)
   const inFlightRef = useRef(false)
   const { isShown, hide, show } = useModal()
+
+  useEffect(() => {
+    if (!editInvoiceRef) return
+    editInvoiceRef.current = { show }
+    return () => {
+      editInvoiceRef.current = null
+    }
+  }, [editInvoiceRef, show])
   const form = useForm<schemas['OrderUpdate'] | schemas['CustomerOrderUpdate']>(
     {
       defaultValues: {
@@ -283,7 +306,7 @@ const DownloadInvoice = ({
           >
             Download Invoice
           </Button>
-          {order.is_invoice_generated && (
+          {order.is_invoice_generated && !hideEditButton && (
             <Button
               type="button"
               loading={loading}
@@ -298,7 +321,17 @@ const DownloadInvoice = ({
           )}
         </div>
       ),
-    [dropdown, order, loading, size, className, variant, onDownload, show],
+    [
+      dropdown,
+      order,
+      loading,
+      size,
+      className,
+      variant,
+      onDownload,
+      show,
+      hideEditButton,
+    ],
   )
 
   return (
@@ -496,6 +529,8 @@ export const DownloadInvoiceDashboard = ({
   size,
   className,
   dropdown = false,
+  hideEditButton = false,
+  editInvoiceRef,
 }: {
   organization: schemas['Organization']
   order: schemas['Order']
@@ -504,6 +539,8 @@ export const DownloadInvoiceDashboard = ({
   size?: Size
   className?: string
   dropdown?: boolean
+  hideEditButton?: boolean
+  editInvoiceRef?: RefObject<EditInvoiceHandle | null>
 }) => {
   const eventEmitter = useOrganizationSSE(organization.id)
   return (
@@ -518,6 +555,8 @@ export const DownloadInvoiceDashboard = ({
       size={size}
       className={className}
       dropdown={dropdown}
+      hideEditButton={hideEditButton}
+      editInvoiceRef={editInvoiceRef}
     />
   )
 }

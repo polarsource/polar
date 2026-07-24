@@ -1975,8 +1975,6 @@ export interface components {
     }
     /** OrganizationCustomerEmailSettings */
     OrganizationCustomerEmailSettings: {
-      /** Link Url */
-      link_url?: string | null
       /** Order Confirmation */
       order_confirmation: boolean
       /** Subscription Cancellation */
@@ -2009,6 +2007,8 @@ export interface components {
       usage: components['schemas']['CustomerPortalUsageSettings']
       subscription: components['schemas']['CustomerPortalSubscriptionSettings']
       customer?: components['schemas']['CustomerPortalCustomerSettings']
+      /** Custom Url */
+      custom_url?: string | null
     }
     /** OrganizationFeatureSettings */
     OrganizationFeatureSettings: {
@@ -2097,11 +2097,11 @@ export interface components {
        */
       merchant_migration_enabled: boolean
       /**
-       * Custom Email Link Enabled
-       * @description If this organization can configure a custom URL that purchase confirmation emails link to instead of the Polar customer portal.
+       * Custom Customer Portal Url Enabled
+       * @description If this organization can configure a custom URL that customer emails link to instead of the Polar customer portal.
        * @default false
        */
-      custom_email_link_enabled: boolean
+      custom_customer_portal_url_enabled: boolean
     }
     /** OrganizationInviteEmail */
     OrganizationInviteEmail: {

@@ -8474,7 +8474,7 @@ class TestFixedSeatComposition:
 
 @pytest.mark.asyncio
 class TestSendCancellationEmail:
-    async def test_ignores_custom_email_link_url(
+    async def test_uses_custom_portal_url(
         self,
         session: AsyncSession,
         enqueue_email_mock: MagicMock,
@@ -8483,12 +8483,35 @@ class TestSendCancellationEmail:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        organization.feature_settings = {"custom_email_link_enabled": True}
-        organization.customer_email_settings = {
-            **organization.customer_email_settings,
-            "link_url": "https://acme.example.com/billing",
+        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "custom_url": "https://acme.example.com/billing",
         }
         await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        await subscription_service.send_cancellation_email(session, subscription)
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert email.props.url.startswith("https://acme.example.com/billing?")
+        params = parse_qs(urlparse(email.props.url).query)
+        assert params["email"] == [customer.email]
+        assert params["subscription_id"] == [str(subscription.id)]
+        assert "customer_session_token" not in params
+
+    async def test_defaults_to_polar_portal(
+        self,
+        session: AsyncSession,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
         subscription = await create_active_subscription(
             save_fixture, product=product, customer=customer
         )

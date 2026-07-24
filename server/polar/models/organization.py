@@ -112,7 +112,6 @@ def _default_order_settings() -> OrganizationOrderSettings:
 
 
 class OrganizationCustomerEmailSettings(TypedDict):
-    link_url: NotRequired[str | None]
     order_confirmation: bool
     subscription_cancellation: bool
     subscription_confirmation: bool
@@ -164,6 +163,7 @@ class OrganizationCustomerPortalSettings(TypedDict):
     usage: CustomerPortalUsageSettings
     subscription: CustomerPortalSubscriptionSettings
     customer: NotRequired[CustomerPortalCustomerSettings]
+    custom_url: NotRequired[str | None]
 
 
 def _default_customer_portal_settings() -> OrganizationCustomerPortalSettings:
@@ -833,28 +833,35 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.customer_portal_settings.get("subscription", {}).get("pause", False)
 
     @property
-    def is_custom_email_link_enabled(self) -> bool:
-        return self.feature_settings.get("custom_email_link_enabled", False)
+    def is_custom_customer_portal_url_enabled(self) -> bool:
+        return self.feature_settings.get("custom_customer_portal_url_enabled", False)
 
     @property
-    def customer_email_link_url(self) -> str | None:
-        return self.customer_email_settings.get("link_url") or None
+    def customer_portal_custom_url(self) -> str | None:
+        return self.customer_portal_settings.get("custom_url") or None
 
-    def get_custom_email_link_url(
-        self, customer: "Customer", recipient_email: str
+    def get_custom_portal_url(
+        self,
+        customer: "Customer",
+        recipient_email: str,
+        *,
+        order_id: UUID | None = None,
+        subscription_id: UUID | None = None,
     ) -> str | None:
-        """Build the custom email link for a recipient, if one is configured.
+        """Build the custom customer portal link for a recipient, if configured.
 
         Returns None when the organization uses the default Polar customer
-        portal links. The custom link only identifies the customer (email,
-        external ID).
+        portal links. The custom link identifies the customer (email, external
+        ID) and the entity the email is about (order, subscription).
         """
-        # The DB-configured link is gated by the feature flag, so disabling the
+        # The DB-configured URL is gated by the feature flag, so disabling the
         # flag stops using it. The deprecated legacy env-var override is kept as
         # a fallback regardless, until the remaining configured organization is
         # migrated to the DB setting.
         configured_url = (
-            self.customer_email_link_url if self.is_custom_email_link_enabled else None
+            self.customer_portal_custom_url
+            if self.is_custom_customer_portal_url_enabled
+            else None
         )
         override_url = configured_url or settings.CUSTOMER_PORTAL_URL_OVERRIDES.get(
             str(self.id)
@@ -864,6 +871,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         params = {"email": recipient_email}
         if customer.external_id is not None:
             params["external_id"] = customer.external_id
+        if order_id is not None:
+            params["order_id"] = str(order_id)
+        if subscription_id is not None:
+            params["subscription_id"] = str(subscription_id)
         return f"{override_url}?{urlencode(params)}"
 
     @property

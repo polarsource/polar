@@ -2710,7 +2710,7 @@ class TestSendConfirmationEmail:
         attachments = enqueue_email_mock.call_args[1]["attachments"]
         assert len(attachments) == 1
 
-    async def test_uses_custom_email_link_url_from_settings(
+    async def test_uses_custom_portal_url_from_settings(
         self,
         mocker: MockerFixture,
         enqueue_email_mock: MagicMock,
@@ -2724,10 +2724,10 @@ class TestSendConfirmationEmail:
             "polar.order.service.invoice_service.create_order_invoice",
             new_callable=AsyncMock,
         )
-        organization.feature_settings = {"custom_email_link_enabled": True}
-        organization.customer_email_settings = {
-            **organization.customer_email_settings,
-            "link_url": "https://acme.example.com/portal",
+        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "custom_url": "https://acme.example.com/billing",
         }
         await save_fixture(organization)
         customer.external_id = "usr_123"
@@ -2743,12 +2743,14 @@ class TestSendConfirmationEmail:
         email = enqueue_email_mock.call_args[0][0]
         parsed = urlparse(email.props.url)
         params = parse_qs(parsed.query)
-        assert email.props.url.startswith("https://acme.example.com/portal?")
+        assert email.props.url.startswith("https://acme.example.com/billing?")
         assert params["email"] == [customer.email]
         assert params["external_id"] == ["usr_123"]
+        assert params["order_id"] == [str(order.id)]
+        assert "subscription_id" not in params
         assert "customer_session_token" not in params
 
-    async def test_billing_email_ignores_custom_link(
+    async def test_renewal_email_uses_custom_portal_url(
         self,
         mocker: MockerFixture,
         enqueue_email_mock: MagicMock,
@@ -2762,10 +2764,10 @@ class TestSendConfirmationEmail:
             "polar.order.service.invoice_service.create_order_invoice",
             new_callable=AsyncMock,
         )
-        organization.feature_settings = {"custom_email_link_enabled": True}
-        organization.customer_email_settings = {
-            **organization.customer_email_settings,
-            "link_url": "https://acme.example.com/portal",
+        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "custom_url": "https://acme.example.com/billing",
         }
         await save_fixture(organization)
         subscription = await create_active_subscription(
@@ -2784,9 +2786,11 @@ class TestSendConfirmationEmail:
         email = enqueue_email_mock.call_args[0][0]
         parsed = urlparse(email.props.url)
         params = parse_qs(parsed.query)
-        assert f"/{organization.slug}/portal" in parsed.path
+        assert email.props.url.startswith("https://acme.example.com/billing?")
         assert params["email"] == [customer.email]
-        assert params["customer_session_token"][0]
+        assert params["order_id"] == [str(order.id)]
+        assert params["subscription_id"] == [str(subscription.id)]
+        assert "customer_session_token" not in params
 
     async def test_excludes_non_public_benefits(
         self,

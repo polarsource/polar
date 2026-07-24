@@ -5,7 +5,7 @@ import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
 import React, { useState } from 'react'
 import { SettingsGroupItem } from './SettingsGroup'
 
-const URL_PLACEHOLDER = 'https://example.com/purchases'
+const URL_PLACEHOLDER = 'https://example.com/settings/billing'
 
 const APPENDED_PARAMS = [
   { name: 'email', description: "The customer's email address" },
@@ -13,21 +13,29 @@ const APPENDED_PARAMS = [
     name: 'external_id',
     description: 'Your own ID for the customer, when set',
   },
+  {
+    name: 'order_id',
+    description: 'The order the email concerns, when applicable',
+  },
+  {
+    name: 'subscription_id',
+    description: 'The subscription the email concerns, when applicable',
+  },
 ] as const
 
-interface CustomerEmailLinkSettingProps {
+interface CustomerPortalCustomUrlSettingProps {
   organizationId: string
   value: string | null
   readOnly: boolean
-  onChange: (linkUrl: string | null) => void
+  onChange: (customUrl: string | null) => void
 }
 
-export default function CustomerEmailLinkSetting({
+export default function CustomerPortalCustomUrlSetting({
   organizationId,
   value,
   readOnly,
   onChange,
-}: CustomerEmailLinkSettingProps) {
+}: CustomerPortalCustomUrlSettingProps) {
   const [enabled, setEnabled] = useState(() => !!value)
   const [url, setUrl] = useState(value ?? '')
   const {
@@ -41,8 +49,8 @@ export default function CustomerEmailLinkSetting({
   return (
     <Box flexDirection="column" width="100%">
       <SettingsGroupItem
-        title="Custom purchase link"
-        description="Override the Access purchase button in confirmation emails. Billing emails still use Polar."
+        title="Custom customer portal URL"
+        description="Point customer portal links in emails to your own billing page instead of the Polar customer portal."
       >
         <Switch
           checked={enabled}
@@ -92,9 +100,9 @@ export default function CustomerEmailLinkSetting({
                   }}
                   onBlur={() => {
                     const trimmed = url.trim()
-                    const linkUrl = trimmed === '' ? null : trimmed
-                    if (linkUrl !== value) {
-                      onChange(linkUrl)
+                    const customUrl = trimmed === '' ? null : trimmed
+                    if (customUrl !== value) {
+                      onChange(customUrl)
                     }
                     void validateURL(trimmed)
                   }}

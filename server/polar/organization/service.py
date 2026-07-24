@@ -56,7 +56,7 @@ from polar.models.organization import (
     STATUS_CAPABILITIES,
     CapabilityName,
     OrganizationCapabilities,
-    OrganizationCustomerEmailSettings,
+    OrganizationCustomerPortalSettings,
     OrganizationDetails,
     OrganizationStatus,
     SnoozeType,
@@ -556,29 +556,30 @@ class OrganizationService:
                 )
             organization.subscription_settings = update_schema.subscription_settings
 
-        if update_schema.customer_email_settings is not None:
-            customer_email_settings = cast(
-                OrganizationCustomerEmailSettings,
-                {**update_schema.customer_email_settings},
+        if update_schema.customer_portal_settings is not None:
+            customer_portal_settings = cast(
+                OrganizationCustomerPortalSettings,
+                {**update_schema.customer_portal_settings},
             )
-            if not organization.is_custom_email_link_enabled:
-                # The custom email link URL can only be changed while the feature
-                # flag is enabled; preserve whatever is currently stored otherwise.
-                existing_url = organization.customer_email_link_url
+            if not organization.is_custom_customer_portal_url_enabled:
+                # The custom customer portal URL can only be changed while the
+                # feature flag is enabled; preserve whatever is currently stored
+                # otherwise.
+                existing_url = organization.customer_portal_custom_url
                 if existing_url is None:
-                    customer_email_settings.pop("link_url", None)
+                    customer_portal_settings.pop("custom_url", None)
                 else:
-                    customer_email_settings["link_url"] = existing_url
+                    customer_portal_settings["custom_url"] = existing_url
             elif (
-                "link_url" not in customer_email_settings
-                and organization.customer_email_link_url is not None
+                "custom_url" not in customer_portal_settings
+                and organization.customer_portal_custom_url is not None
             ):
-                # An omitted link_url means "unchanged"; clearing requires an
+                # An omitted custom_url means "unchanged"; clearing requires an
                 # explicit empty or null value.
-                customer_email_settings["link_url"] = (
-                    organization.customer_email_link_url
+                customer_portal_settings["custom_url"] = (
+                    organization.customer_portal_custom_url
                 )
-            organization.customer_email_settings = customer_email_settings
+            organization.customer_portal_settings = customer_portal_settings
 
         if update_schema.default_presentment_currency is not None:
             await self._validate_currency_change(
@@ -596,7 +597,7 @@ class OrganizationService:
                 "profile_settings",
                 "feature_settings",
                 "subscription_settings",
-                "customer_email_settings",
+                "customer_portal_settings",
                 "details",
             },
         )

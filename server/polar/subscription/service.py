@@ -3381,22 +3381,30 @@ class SubscriptionService:
 
         async def send_to_recipients(recipients: Sequence[str]) -> None:
             for recipient_email in recipients:
-                token = await customer_service.create_session_token_for_recipient(
-                    session, customer, recipient_email
+                custom_url = organization.get_custom_portal_url(
+                    customer,
+                    recipient_email,
+                    subscription_id=subscription.id,
                 )
-                if token is None:
-                    continue
+                if custom_url is not None:
+                    portal_url = custom_url
+                else:
+                    token = await customer_service.create_session_token_for_recipient(
+                        session, customer, recipient_email
+                    )
+                    if token is None:
+                        continue
 
-                query_string = urlencode(
-                    {
-                        "customer_session_token": token,
-                        "id": str(subscription.id),
-                        "email": recipient_email,
-                    }
-                )
-                portal_url = settings.generate_frontend_url(
-                    f"/{organization.slug}/portal?{query_string}"
-                )
+                    query_string = urlencode(
+                        {
+                            "customer_session_token": token,
+                            "id": str(subscription.id),
+                            "email": recipient_email,
+                        }
+                    )
+                    portal_url = settings.generate_frontend_url(
+                        f"/{organization.slug}/portal?{query_string}"
+                    )
 
                 email = EmailAdapter.validate_python(
                     {

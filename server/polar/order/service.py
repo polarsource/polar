@@ -136,17 +136,6 @@ from .sorting import OrderSortProperty
 log: Logger = structlog.get_logger()
 
 
-# Only purchase confirmation emails ("Access purchase") link to the
-# organization's own site; billing emails always link to the Polar customer
-# portal, where invoices and subscription management live.
-CUSTOM_EMAIL_LINK_TEMPLATES = frozenset(
-    {
-        "order_confirmation",
-        "subscription_confirmation",
-    }
-)
-
-
 class OrderError(PolarError): ...
 
 
@@ -2377,13 +2366,12 @@ class OrderService:
                 {"remote_url": invoice.url, "filename": order.invoice_filename}
             ]
 
-        custom_link_applies = template_name in CUSTOM_EMAIL_LINK_TEMPLATES
-
         for recipient_email in recipients:
-            custom_url = (
-                organization.get_custom_email_link_url(customer, recipient_email)
-                if custom_link_applies
-                else None
+            custom_url = organization.get_custom_portal_url(
+                customer,
+                recipient_email,
+                order_id=order.id,
+                subscription_id=subscription.id if subscription else None,
             )
             if custom_url is not None:
                 url = custom_url

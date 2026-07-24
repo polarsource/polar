@@ -139,7 +139,7 @@ OverviewMetrics = Annotated[list[str] | None, BeforeValidator(_coerce_overview_m
 _http_url_adapter = TypeAdapter(HttpUrl)
 
 
-def validate_customer_email_link_url(value: str | None) -> str | None:
+def validate_customer_portal_custom_url(value: str | None) -> str | None:
     if value is None:
         return None
     value = value.strip()
@@ -148,28 +148,31 @@ def validate_customer_email_link_url(value: str | None) -> str | None:
     try:
         url = _http_url_adapter.validate_python(value)
     except ValidationError:
-        raise ValueError("The custom email link URL must be a valid URL.")
+        raise ValueError("The custom customer portal URL must be a valid URL.")
     if url.scheme != "https":
-        raise ValueError("The custom email link URL must use HTTPS.")
+        raise ValueError("The custom customer portal URL must use HTTPS.")
     if url.query or url.fragment:
         raise ValueError(
-            "The custom email link URL must not contain query parameters. "
-            "The `email` and `external_id` parameters are appended automatically."
+            "The custom customer portal URL must not contain query parameters. "
+            "The `email`, `external_id`, `order_id` and `subscription_id` "
+            "parameters are appended automatically."
         )
     return value
 
 
-def validate_customer_email_settings(
-    settings: OrganizationCustomerEmailSettings | None,
-) -> OrganizationCustomerEmailSettings | None:
-    if settings is not None and "link_url" in settings:
-        settings["link_url"] = validate_customer_email_link_url(settings["link_url"])
+def validate_customer_portal_settings(
+    settings: OrganizationCustomerPortalSettings | None,
+) -> OrganizationCustomerPortalSettings | None:
+    if settings is not None and "custom_url" in settings:
+        settings["custom_url"] = validate_customer_portal_custom_url(
+            settings["custom_url"]
+        )
     return settings
 
 
-CustomerEmailSettingsInput = Annotated[
-    OrganizationCustomerEmailSettings | None,
-    AfterValidator(validate_customer_email_settings),
+CustomerPortalSettingsInput = Annotated[
+    OrganizationCustomerPortalSettings | None,
+    AfterValidator(validate_customer_portal_settings),
 ]
 
 
@@ -234,11 +237,11 @@ class OrganizationFeatureSettings(Schema):
             "provider (e.g. Stripe) to Polar."
         ),
     )
-    custom_email_link_enabled: bool = Field(
+    custom_customer_portal_url_enabled: bool = Field(
         False,
         description=(
-            "If this organization can configure a custom URL that purchase "
-            "confirmation emails link to instead of the Polar customer portal."
+            "If this organization can configure a custom URL that customer "
+            "emails link to instead of the Polar customer portal."
         ),
     )
 
@@ -619,8 +622,8 @@ class OrganizationCreate(Schema):
     )
     feature_settings: OrganizationFeatureSettingsUpdate | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
-    customer_email_settings: CustomerEmailSettingsInput = None
-    customer_portal_settings: OrganizationCustomerPortalSettings | None = None
+    customer_email_settings: OrganizationCustomerEmailSettings | None = None
+    customer_portal_settings: CustomerPortalSettingsInput = None
     default_presentment_currency: PresentmentCurrency = Field(
         PresentmentCurrency.usd,
         description="Default presentment currency for the organization",
@@ -652,8 +655,8 @@ class OrganizationUpdate(Schema):
 
     feature_settings: OrganizationFeatureSettingsUpdate | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
-    customer_email_settings: CustomerEmailSettingsInput = None
-    customer_portal_settings: OrganizationCustomerPortalSettings | None = None
+    customer_email_settings: OrganizationCustomerEmailSettings | None = None
+    customer_portal_settings: CustomerPortalSettingsInput = None
     default_presentment_currency: PresentmentCurrency | None = Field(
         None, description="Default presentment currency for the organization"
     )

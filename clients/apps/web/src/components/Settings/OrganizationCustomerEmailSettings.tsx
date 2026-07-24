@@ -5,7 +5,6 @@ import { schemas } from '@polar-sh/client'
 import { Switch } from '@polar-sh/orbit'
 import React from 'react'
 import { toast } from '../Toast/use-toast'
-import CustomerEmailLinkSetting from './CustomerEmailLinkSetting'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationCustomerEmailSettingsProps {
@@ -14,7 +13,7 @@ interface OrganizationCustomerEmailSettingsProps {
 }
 
 const customerEmails: {
-  key: Exclude<keyof schemas['OrganizationCustomerEmailSettings'], 'link_url'>
+  key: keyof schemas['OrganizationCustomerEmailSettings']
   title: string
   description: string
 }[] = [
@@ -92,8 +91,6 @@ const customerEmails: {
 const OrganizationCustomerEmailSettings: React.FC<
   OrganizationCustomerEmailSettingsProps
 > = ({ organization, readOnly }) => {
-  const customLinkEnabled =
-    organization.feature_settings?.custom_email_link_enabled ?? false
   const updateOrganization = useUpdateOrganization()
 
   const { value: settings, update } = useOptimisticSave(
@@ -129,16 +126,6 @@ const OrganizationCustomerEmailSettings: React.FC<
           />
         </SettingsGroupItem>
       ))}
-      {customLinkEnabled && (
-        <CustomerEmailLinkSetting
-          organizationId={organization.id}
-          value={settings.link_url ?? null}
-          readOnly={readOnly}
-          onChange={(link_url) =>
-            update((previous) => ({ ...previous, link_url }))
-          }
-        />
-      )}
     </SettingsGroup>
   )
 }

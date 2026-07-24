@@ -1,3 +1,4 @@
+import uuid
 from urllib.parse import parse_qs, urlparse
 
 import pytest
@@ -84,31 +85,57 @@ class TestReviewRelationship:
 
 
 @pytest.mark.asyncio
-class TestGetCustomEmailLinkUrl:
+class TestGetCustomPortalUrl:
     async def test_returns_none_without_override(
         self, customer: Customer, organization: Organization
     ) -> None:
         assert customer.email is not None
-        assert organization.get_custom_email_link_url(customer, customer.email) is None
+        assert organization.get_custom_portal_url(customer, customer.email) is None
 
     async def test_uses_db_setting_and_appends_identifiers(
         self, customer: Customer, organization: Organization
     ) -> None:
-        organization.feature_settings = {"custom_email_link_enabled": True}
-        organization.customer_email_settings = {
-            **organization.customer_email_settings,
-            "link_url": "https://acme.example.com/portal",
+        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "custom_url": "https://acme.example.com/billing",
         }
         customer.external_id = "usr_123"
 
         assert customer.email is not None
-        url = organization.get_custom_email_link_url(customer, customer.email)
+        url = organization.get_custom_portal_url(customer, customer.email)
 
         assert url is not None
         params = parse_qs(urlparse(url).query)
-        assert url.startswith("https://acme.example.com/portal?")
+        assert url.startswith("https://acme.example.com/billing?")
         assert params["email"] == [customer.email]
         assert params["external_id"] == ["usr_123"]
+        assert "order_id" not in params
+        assert "subscription_id" not in params
+
+    async def test_appends_entity_ids(
+        self, customer: Customer, organization: Organization
+    ) -> None:
+        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "custom_url": "https://acme.example.com/billing",
+        }
+        order_id = uuid.uuid4()
+        subscription_id = uuid.uuid4()
+
+        assert customer.email is not None
+        url = organization.get_custom_portal_url(
+            customer,
+            customer.email,
+            order_id=order_id,
+            subscription_id=subscription_id,
+        )
+
+        assert url is not None
+        params = parse_qs(urlparse(url).query)
+        assert params["order_id"] == [str(order_id)]
+        assert params["subscription_id"] == [str(subscription_id)]
 
     async def test_db_setting_takes_precedence_over_env_override(
         self,
@@ -120,29 +147,29 @@ class TestGetCustomEmailLinkUrl:
             settings.CUSTOMER_PORTAL_URL_OVERRIDES,
             {str(organization.id): "https://legacy.example.com/portal"},
         )
-        organization.feature_settings = {"custom_email_link_enabled": True}
-        organization.customer_email_settings = {
-            **organization.customer_email_settings,
-            "link_url": "https://acme.example.com/portal",
+        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "custom_url": "https://acme.example.com/billing",
         }
 
         assert customer.email is not None
-        url = organization.get_custom_email_link_url(customer, customer.email)
+        url = organization.get_custom_portal_url(customer, customer.email)
 
         assert url is not None
-        assert url.startswith("https://acme.example.com/portal?")
+        assert url.startswith("https://acme.example.com/billing?")
 
     async def test_disabled_flag_ignores_db_setting(
         self, customer: Customer, organization: Organization
     ) -> None:
-        organization.feature_settings = {"custom_email_link_enabled": False}
-        organization.customer_email_settings = {
-            **organization.customer_email_settings,
-            "link_url": "https://acme.example.com/portal",
+        organization.feature_settings = {"custom_customer_portal_url_enabled": False}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "custom_url": "https://acme.example.com/billing",
         }
 
         assert customer.email is not None
-        assert organization.get_custom_email_link_url(customer, customer.email) is None
+        assert organization.get_custom_portal_url(customer, customer.email) is None
 
     async def test_disabled_flag_still_uses_env_override(
         self,
@@ -154,14 +181,14 @@ class TestGetCustomEmailLinkUrl:
             settings.CUSTOMER_PORTAL_URL_OVERRIDES,
             {str(organization.id): "https://legacy.example.com/portal"},
         )
-        organization.feature_settings = {"custom_email_link_enabled": False}
-        organization.customer_email_settings = {
-            **organization.customer_email_settings,
-            "link_url": "https://acme.example.com/portal",
+        organization.feature_settings = {"custom_customer_portal_url_enabled": False}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "custom_url": "https://acme.example.com/billing",
         }
 
         assert customer.email is not None
-        url = organization.get_custom_email_link_url(customer, customer.email)
+        url = organization.get_custom_portal_url(customer, customer.email)
 
         assert url is not None
         assert url.startswith("https://legacy.example.com/portal?")
@@ -178,7 +205,7 @@ class TestGetCustomEmailLinkUrl:
         )
 
         assert customer.email is not None
-        url = organization.get_custom_email_link_url(customer, customer.email)
+        url = organization.get_custom_portal_url(customer, customer.email)
 
         assert url is not None
         params = parse_qs(urlparse(url).query)

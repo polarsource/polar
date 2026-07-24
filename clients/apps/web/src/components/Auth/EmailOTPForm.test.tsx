@@ -51,6 +51,14 @@ vi.mock('@polar-sh/orbit', () => ({
   Input: (props: InputHTMLAttributes<HTMLInputElement>) => <input {...props} />,
 }))
 
+vi.mock('@/utils/config', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('@/utils/config')>()
+  return {
+    ...actual,
+    CONFIG: { ...actual.CONFIG, ENVIRONMENT: 'testing' },
+  }
+})
+
 vi.mock('@polar-sh/ui/components/ui/form', () => {
   const Passthrough = ({ children }: PropsWithChildren) => children
 

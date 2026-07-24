@@ -150,24 +150,47 @@ class TaxCalculationService:
                 record_processor=settings.TAX_RECORD_PROCESSOR,
                 calculation_id=processor_id,
             )
-            backfill_reference = await tax_processor_service.backfill(
-                amount,
-                tax_amount,
-                currency,
-                address,
-                tax_code,
-                reference,
-                transaction_date,
-            )
-            return (
-                f"{_BACKFILL_REFERENCE_PREFIX}{backfill_reference}",
-                settings.TAX_RECORD_PROCESSOR,
+            return await self.record_amounts(
+                amount=amount,
+                tax_amount=tax_amount,
+                currency=currency,
+                address=address,
+                tax_code=tax_code,
+                reference=reference,
+                transaction_date=transaction_date,
             )
 
         assert processor_id is not None
         return await tax_processor_service.record(
             processor_id, reference
         ), settings.TAX_RECORD_PROCESSOR
+
+    async def record_amounts(
+        self,
+        *,
+        amount: int,
+        tax_amount: int,
+        currency: str,
+        address: Address,
+        tax_code: TaxCode,
+        reference: str,
+        transaction_date: datetime,
+    ) -> tuple[str, TaxProcessor]:
+        """Record a tax transaction from explicit amounts, without a calculation."""
+        tax_processor_service = _get_tax_service(settings.TAX_RECORD_PROCESSOR)
+        backfill_reference = await tax_processor_service.backfill(
+            amount,
+            tax_amount,
+            currency,
+            address,
+            tax_code,
+            reference,
+            transaction_date,
+        )
+        return (
+            f"{_BACKFILL_REFERENCE_PREFIX}{backfill_reference}",
+            settings.TAX_RECORD_PROCESSOR,
+        )
 
     async def revert(
         self,

@@ -3124,7 +3124,7 @@ class TestHandlePayment:
             billing_address=Address(country=CountryAlpha2("FR")),
         )
 
-        # Set tax_amount=200 to match the recalculated amount so no TaxCalculationChangedAfterPayment is raised
+        # Set tax_amount=200 to match the recalculated amount
         order = await create_order(
             save_fixture,
             product=product,
@@ -3178,6 +3178,66 @@ class TestHandlePayment:
             )
             == 1
         )
+
+    async def test_charged_tax_recorded_when_recalculation_differs(
+        self,
+        tax_service_mock: MagicMock,
+        calculate_tax_mock: AsyncMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer_with_address = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        # The mocked calculate returns 20% of the net amount, i.e. 200 here
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer_with_address,
+            status=OrderStatus.pending,
+            subtotal_amount=1000,
+            tax_amount=150,
+            billing_address=customer_with_address.billing_address,
+        )
+
+        order.tax_processor = TaxProcessor.numeral
+        order.tax_calculation_processor_id = "tax_calc_expired_123"
+        order.tax_behavior = TaxBehavior.exclusive
+        await save_fixture(order)
+
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            processor_id="stripe_payment_789",
+        )
+
+        tax_service_mock.record.side_effect = CalculationExpiredError()
+        tax_service_mock.record_amounts.return_value = (
+            "backfill_MANUAL_LINE_ITEM_ID",
+            TaxProcessor.numeral,
+        )
+
+        updated_order = await order_service.handle_payment(session, order, payment)
+
+        assert updated_order.status == OrderStatus.paid
+
+        # The tax the customer was charged is recorded, not the new calculation
+        calculate_tax_mock.assert_called_once()
+        tax_service_mock.record_amounts.assert_called_once()
+        assert tax_service_mock.record_amounts.call_args.kwargs["tax_amount"] == 150
+        assert tax_service_mock.record_amounts.call_args.kwargs["amount"] == 1000
+
+        assert updated_order.tax_amount == 150
+        assert updated_order.tax_calculation_processor_id == "tax_calc_expired_123"
+        assert (
+            updated_order.tax_transaction_processor_id == "backfill_MANUAL_LINE_ITEM_ID"
+        )
+        assert updated_order.tax_processor == TaxProcessor.numeral
 
 
 @pytest.mark.asyncio

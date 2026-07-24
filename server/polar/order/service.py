@@ -340,17 +340,6 @@ class SubscriptionNotTrialing(OrderError):
         super().__init__(message)
 
 
-class TaxCalculationChangedAfterPayment(OrderError):
-    def __init__(self, order: Order, new_calculation_id: str | None) -> None:
-        self.order = order
-        self.new_calculation_id = new_calculation_id
-        message = (
-            "Tax calculation for order {order.id} has changed after payment was made. "
-            "New calculation ID: {new_calculation_id}."
-        )
-        super().__init__(message)
-
-
 class OrderService:
     @asynccontextmanager
     async def acquire_payment_lock(
@@ -2117,7 +2106,7 @@ class OrderService:
                     "tax_transaction_processor_id": transaction_id,
                 }
 
-            except CalculationExpiredError as e:
+            except CalculationExpiredError:
                 # Recover by recalculating tax
                 # Happens if the order was created a long time ago and the tax calculation result expired before payment was completed
                 product = order.product
@@ -2141,28 +2130,25 @@ class OrderService:
                     tax_behavior_option=order.tax_behavior.to_option(),
                     tax_exempted=tax_exempted,
                 )
-                update_dict = {
-                    **update_dict,
-                    "tax_calculation_processor_id": tax_calculation_processor_id,
-                    "tax_amount": tax_amount,
-                    "tax_behavior": tax_behavior,
-                    "tax_breakdown": tax_breakdown or None,
-                }
 
+                # The customer paid the tax we quoted them, so that's what we record
+                # and remit. A fresh calculation that disagrees can't be recorded:
+                # book the charged amounts as a manual transaction instead.
                 if tax_amount != order.tax_amount:
-                    raise TaxCalculationChangedAfterPayment(
-                        order, tax_calculation_processor_id
+                    log.warning(
+                        "Tax recalculation differs from the charged tax, "
+                        "recording the charged amount",
+                        order_id=order.id,
+                        charged_tax_amount=order.tax_amount,
+                        recalculated_tax_amount=tax_amount,
+                        recalculated_calculation_id=tax_calculation_processor_id,
                     )
-
-                if tax_processor and tax_calculation_processor_id:
                     (
                         transaction_id,
                         tax_processor,
-                    ) = await tax_calculation_service.record(
-                        tax_processor,
-                        tax_calculation_processor_id,
+                    ) = await tax_calculation_service.record_amounts(
                         amount=order.net_amount,
-                        tax_amount=tax_amount,
+                        tax_amount=order.tax_amount,
                         currency=order.currency,
                         address=order.billing_address,
                         tax_code=order.product.tax_code,
@@ -2174,6 +2160,34 @@ class OrderService:
                         "tax_processor": tax_processor,
                         "tax_transaction_processor_id": transaction_id,
                     }
+                else:
+                    update_dict = {
+                        **update_dict,
+                        "tax_calculation_processor_id": tax_calculation_processor_id,
+                        "tax_behavior": tax_behavior,
+                        "tax_breakdown": tax_breakdown or None,
+                    }
+
+                    if tax_processor and tax_calculation_processor_id:
+                        (
+                            transaction_id,
+                            tax_processor,
+                        ) = await tax_calculation_service.record(
+                            tax_processor,
+                            tax_calculation_processor_id,
+                            amount=order.net_amount,
+                            tax_amount=tax_amount,
+                            currency=order.currency,
+                            address=order.billing_address,
+                            tax_code=order.product.tax_code,
+                            reference=str(order.id),
+                            transaction_date=order.created_at,
+                        )
+                        update_dict = {
+                            **update_dict,
+                            "tax_processor": tax_processor,
+                            "tax_transaction_processor_id": transaction_id,
+                        }
 
         repository = OrderRepository.from_session(session)
         order = await repository.update(order, update_dict=update_dict)

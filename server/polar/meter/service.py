@@ -610,12 +610,12 @@ class MeterService:
         # Collect the distinct paying customers appearing in this batch (in
         # Python, from the already-fetched events) and look up their prices in a
         # single call — no extra SQL round trip for the customer-id collection.
-        batch_customer_ids = [
+        batch_customer_ids = {
             customer.id for event in batch if (customer := event.customer) is not None
-        ]
+        }
         customer_price_map = (
             await subscription_product_price_repository.get_by_customers_and_meter(
-                batch_customer_ids, meter.id
+                list(batch_customer_ids), meter.id
             )
         )
 

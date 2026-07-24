@@ -56,6 +56,7 @@ from polar.models.organization import (
     STATUS_CAPABILITIES,
     CapabilityName,
     OrganizationCapabilities,
+    OrganizationCustomerPortalSettings,
     OrganizationDetails,
     OrganizationStatus,
     SnoozeType,
@@ -555,6 +556,31 @@ class OrganizationService:
                 )
             organization.subscription_settings = update_schema.subscription_settings
 
+        if update_schema.customer_portal_settings is not None:
+            customer_portal_settings = cast(
+                OrganizationCustomerPortalSettings,
+                {**update_schema.customer_portal_settings},
+            )
+            if not organization.is_custom_customer_portal_url_enabled:
+                # The custom customer portal URL can only be changed while the
+                # feature flag is enabled; preserve whatever is currently stored
+                # otherwise.
+                existing_url = organization.customer_portal_custom_url
+                if existing_url is None:
+                    customer_portal_settings.pop("custom_url", None)
+                else:
+                    customer_portal_settings["custom_url"] = existing_url
+            elif (
+                "custom_url" not in customer_portal_settings
+                and organization.customer_portal_custom_url is not None
+            ):
+                # An omitted custom_url means "unchanged"; clearing requires an
+                # explicit empty or null value.
+                customer_portal_settings["custom_url"] = (
+                    organization.customer_portal_custom_url
+                )
+            organization.customer_portal_settings = customer_portal_settings
+
         if update_schema.default_presentment_currency is not None:
             await self._validate_currency_change(
                 session, organization, update_schema.default_presentment_currency
@@ -571,6 +597,7 @@ class OrganizationService:
                 "profile_settings",
                 "feature_settings",
                 "subscription_settings",
+                "customer_portal_settings",
                 "details",
             },
         )

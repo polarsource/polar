@@ -13,6 +13,7 @@ import {
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
+import CustomerPortalCustomUrlSetting from './CustomerPortalCustomUrlSetting'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationCustomerPortalSettingsProps {
@@ -23,6 +24,8 @@ interface OrganizationCustomerPortalSettingsProps {
 const OrganizationCustomerPortalSettings: React.FC<
   OrganizationCustomerPortalSettingsProps
 > = ({ organization, readOnly }) => {
+  const customUrlEnabled =
+    organization.feature_settings?.custom_customer_portal_url_enabled ?? false
   const form = useForm<schemas['OrganizationCustomerPortalSettings']>({
     defaultValues: {
       ...organization.customer_portal_settings,
@@ -190,6 +193,21 @@ const OrganizationCustomerPortalSettings: React.FC<
               )}
             />
           </SettingsGroupItem>
+
+          {customUrlEnabled && (
+            <FormField
+              control={control}
+              name="custom_url"
+              render={({ field }) => (
+                <CustomerPortalCustomUrlSetting
+                  organizationId={organization.id}
+                  value={field.value ?? null}
+                  readOnly={readOnly}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+          )}
         </SettingsGroup>
       </form>
     </Form>

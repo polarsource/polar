@@ -2389,28 +2389,31 @@ class OrderService:
             ]
 
         for recipient_email in recipients:
-            token = await customer_service.create_session_token_for_recipient(
-                session, customer, recipient_email
+            custom_url = organization.get_custom_portal_url(
+                customer,
+                recipient_email,
+                order_id=order.id,
+                subscription_id=subscription.id if subscription else None,
             )
-            if token is None:
-                continue
-
-            # Build query parameters with per-recipient email
-            params = {
-                key: value.format(
-                    token=token,
-                    order=order.id,
-                    subscription=subscription.id if subscription else "",
-                    email=recipient_email,
-                )
-                for key, value in url_params.items()
-            }
-            override_url = settings.CUSTOMER_PORTAL_URL_OVERRIDES.get(
-                str(organization.id)
-            )
-            if override_url is not None:
-                url = f"{override_url}?{urlencode({'email': recipient_email})}"
+            if custom_url is not None:
+                url = custom_url
             else:
+                token = await customer_service.create_session_token_for_recipient(
+                    session, customer, recipient_email
+                )
+                if token is None:
+                    continue
+
+                # Build query parameters with per-recipient email
+                params = {
+                    key: value.format(
+                        token=token,
+                        order=order.id,
+                        subscription=subscription.id if subscription else "",
+                        email=recipient_email,
+                    )
+                    for key, value in url_params.items()
+                }
                 query_string = urlencode(params)
                 url_path = url_path_template.format(organization=organization.slug)
                 url = settings.generate_frontend_url(f"{url_path}?{query_string}")

@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from enum import IntEnum, StrEnum
 from typing import TYPE_CHECKING, Annotated, Any, Literal, NotRequired, Self, TypedDict
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 from uuid import UUID
 
 from pydantic.json_schema import WithJsonSchema
@@ -40,6 +40,7 @@ from .account import Account
 if TYPE_CHECKING:
     from polar.email.sender import EmailFromReply
 
+    from .customer import Customer
     from .organization_agent_review import OrganizationAgentReview
     from .organization_review import OrganizationReview
     from .organization_review_feedback import OrganizationReviewFeedback
@@ -162,6 +163,7 @@ class OrganizationCustomerPortalSettings(TypedDict):
     usage: CustomerPortalUsageSettings
     subscription: CustomerPortalSubscriptionSettings
     customer: NotRequired[CustomerPortalCustomerSettings]
+    custom_url: NotRequired[str | None]
 
 
 def _default_customer_portal_settings() -> OrganizationCustomerPortalSettings:
@@ -829,6 +831,51 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @property
     def customer_portal_subscription_pause(self) -> bool:
         return self.customer_portal_settings.get("subscription", {}).get("pause", False)
+
+    @property
+    def is_custom_customer_portal_url_enabled(self) -> bool:
+        return self.feature_settings.get("custom_customer_portal_url_enabled", False)
+
+    @property
+    def customer_portal_custom_url(self) -> str | None:
+        return self.customer_portal_settings.get("custom_url") or None
+
+    def get_custom_portal_url(
+        self,
+        customer: "Customer",
+        recipient_email: str,
+        *,
+        order_id: UUID | None = None,
+        subscription_id: UUID | None = None,
+    ) -> str | None:
+        """Build the custom customer portal link for a recipient, if configured.
+
+        Returns None when the organization uses the default Polar customer
+        portal links. The custom link identifies the customer (email, external
+        ID) and the entity the email is about (order, subscription).
+        """
+        # The DB-configured URL is gated by the feature flag, so disabling the
+        # flag stops using it. The deprecated legacy env-var override is kept as
+        # a fallback regardless, until the remaining configured organization is
+        # migrated to the DB setting.
+        configured_url = (
+            self.customer_portal_custom_url
+            if self.is_custom_customer_portal_url_enabled
+            else None
+        )
+        override_url = configured_url or settings.CUSTOMER_PORTAL_URL_OVERRIDES.get(
+            str(self.id)
+        )
+        if not override_url:
+            return None
+        params = {"email": recipient_email}
+        if customer.external_id is not None:
+            params["external_id"] = customer.external_id
+        if order_id is not None:
+            params["order_id"] = str(order_id)
+        if subscription_id is not None:
+            params["subscription_id"] = str(subscription_id)
+        return f"{override_url}?{urlencode(params)}"
 
     @property
     def checkout_require_3ds(self) -> bool:

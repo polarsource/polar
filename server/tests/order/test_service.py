@@ -3,6 +3,7 @@ from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 from typing import cast
 from unittest.mock import ANY, AsyncMock, MagicMock, call
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 import pytest_asyncio
@@ -2708,6 +2709,88 @@ class TestSendConfirmationEmail:
         assert isinstance(enqueue_email_mock.call_args[0][0], OrderConfirmationEmail)
         attachments = enqueue_email_mock.call_args[1]["attachments"]
         assert len(attachments) == 1
+
+    async def test_uses_custom_portal_url_from_settings(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "custom_url": "https://acme.example.com/billing",
+        }
+        await save_fixture(organization)
+        customer.external_id = "usr_123"
+        await save_fixture(customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        email = enqueue_email_mock.call_args[0][0]
+        parsed = urlparse(email.props.url)
+        params = parse_qs(parsed.query)
+        assert email.props.url.startswith("https://acme.example.com/billing?")
+        assert params["email"] == [customer.email]
+        assert params["external_id"] == ["usr_123"]
+        assert params["order_id"] == [str(order.id)]
+        assert "subscription_id" not in params
+        assert "customer_session_token" not in params
+
+    async def test_renewal_email_uses_custom_portal_url(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "custom_url": "https://acme.example.com/billing",
+        }
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        email = enqueue_email_mock.call_args[0][0]
+        parsed = urlparse(email.props.url)
+        params = parse_qs(parsed.query)
+        assert email.props.url.startswith("https://acme.example.com/billing?")
+        assert params["email"] == [customer.email]
+        assert params["order_id"] == [str(order.id)]
+        assert params["subscription_id"] == [str(subscription.id)]
+        assert "customer_session_token" not in params
 
     async def test_excludes_non_public_benefits(
         self,

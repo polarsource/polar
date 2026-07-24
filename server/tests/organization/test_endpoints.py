@@ -10,7 +10,11 @@ from polar.config import settings
 from polar.integrations.polar.service import PolarSelfService
 from polar.models import OrganizationSSOConnection, Product, User
 from polar.models.account import Account
-from polar.models.organization import Organization, OrganizationStatus
+from polar.models.organization import (
+    Organization,
+    OrganizationStatus,
+    _default_customer_portal_settings,
+)
 from polar.models.organization_sso_connection import (
     OIDCAuthMethod,
     OIDCConfiguration,
@@ -500,6 +504,157 @@ class TestUpdateOrganization:
         assert response.status_code == 200
         settings = response.json()["customer_portal_settings"]
         assert settings["customer"]["allow_email_change"] is True
+
+    @pytest.mark.auth
+    async def test_custom_portal_url_ignored_without_flag(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    **_default_customer_portal_settings(),
+                    "custom_url": "https://acme.example.com/billing",
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_portal_settings"]
+        assert settings.get("custom_url") is None
+
+    @pytest.mark.auth
+    async def test_custom_portal_url_saved_with_flag(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    **_default_customer_portal_settings(),
+                    "custom_url": "https://acme.example.com/billing",
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_portal_settings"]
+        assert settings["custom_url"] == "https://acme.example.com/billing"
+
+    @pytest.mark.auth
+    async def test_custom_portal_url_can_be_cleared_with_flag(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "custom_url": "https://acme.example.com/billing",
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    **_default_customer_portal_settings(),
+                    "custom_url": "",
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_portal_settings"]
+        assert settings.get("custom_url") is None
+
+    @pytest.mark.auth
+    async def test_custom_portal_url_preserved_when_omitted(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "custom_url": "https://acme.example.com/billing",
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    **_default_customer_portal_settings(),
+                    "usage": {"show": False},
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_portal_settings"]
+        assert settings["usage"]["show"] is False
+        assert settings["custom_url"] == "https://acme.example.com/billing"
+
+    @pytest.mark.auth
+    async def test_custom_portal_url_rejects_non_https(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    **_default_customer_portal_settings(),
+                    "custom_url": "http://acme.example.com/billing",
+                },
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_custom_portal_url_rejects_query_params(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    **_default_customer_portal_settings(),
+                    "custom_url": "https://acme.example.com/billing?ref=x",
+                },
+            },
+        )
+
+        assert response.status_code == 422
 
     @pytest.mark.auth
     async def test_submit_for_review_requires_relevant_fields(

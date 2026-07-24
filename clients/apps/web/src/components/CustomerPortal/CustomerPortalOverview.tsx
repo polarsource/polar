@@ -5,6 +5,8 @@ import { createClientSideAPI } from '@/utils/client'
 import { hasBillingPermission } from '@/utils/customerPortal'
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
 import { schemas } from '@polar-sh/client'
+import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { CurrentPeriodOverview } from './CurrentPeriodOverview'
 import { CustomerPortalGrants } from './CustomerPortalGrants'
 import { CustomerPortalOrders } from './CustomerPortalOrders'
@@ -57,11 +59,11 @@ export const CustomerPortalOverview = ({
     activeOwnedSubscriptions.length > 0 || activeClaimedSubscriptions.length > 0
 
   return (
-    <div className="flex flex-col gap-y-12">
+    <Box flexDirection="column" rowGap="3xl">
       {/* Billing sections - only visible to users with billing permissions */}
       {canManageBilling && activeOwnedSubscriptions.length > 0 && (
-        <div className="flex flex-col gap-y-12">
-          <div className="flex flex-col gap-y-4">
+        <Box flexDirection="column" rowGap="3xl">
+          <Box flexDirection="column" rowGap="l">
             {activeOwnedSubscriptions.map((s) => (
               <CurrentPeriodOverview
                 key={s.id}
@@ -70,7 +72,7 @@ export const CustomerPortalOverview = ({
                 api={api}
               />
             ))}
-          </div>
+          </Box>
           <ActiveSubscriptionsOverview
             api={api}
             organization={organization}
@@ -78,32 +80,34 @@ export const CustomerPortalOverview = ({
             subscriptions={activeOwnedSubscriptions}
             customerSessionToken={customerSessionToken}
           />
-        </div>
+        </Box>
       )}
 
       {/* Team Seat Access - visible to all users */}
       {activeClaimedSubscriptions.length > 0 && (
-        <div className="flex flex-col gap-y-4">
-          <div className="flex flex-col gap-y-2">
-            <h3 className="text-xl">Team Seat Access</h3>
-            <p className="dark:text-polar-500 text-gray-500">
-              Access provided through team subscription
-            </p>
-          </div>
+        <Box flexDirection="column" rowGap="l">
+          <Box flexDirection="column" rowGap="s">
+            <Text variant="heading-xs" as="h3">
+              Team seat access
+            </Text>
+            <Text color="muted">Access provided through team subscription</Text>
+          </Box>
           {activeClaimedSubscriptions.map((s) => (
-            <div
+            <Box
               key={s.id}
-              className="dark:bg-polar-900 flex justify-between rounded-2xl bg-gray-50 px-6 py-4"
+              justifyContent="between"
+              borderRadius="l"
+              backgroundColor="background-card"
+              paddingHorizontal="xl"
+              paddingVertical="l"
             >
-              <div className="flex flex-col gap-1">
-                <span>{s.product.name}</span>
-                <span className="dark:text-polar-500 text-sm text-gray-500">
-                  {s.product.organization.name}
-                </span>
-              </div>
-            </div>
+              <Box flexDirection="column" rowGap="xs">
+                <Text>{s.product.name}</Text>
+                <Text color="muted">{s.product.organization.name}</Text>
+              </Box>
+            </Box>
           ))}
-        </div>
+        </Box>
       )}
 
       {hasAnyActiveSubscriptions && canManageBilling && orders.length > 0 && (
@@ -123,7 +127,7 @@ export const CustomerPortalOverview = ({
           <EmptyState
             icon={<AllInclusiveOutlined />}
             title={
-              canManageBilling ? 'No Active Subscriptions' : 'No Team Access'
+              canManageBilling ? 'No active subscriptions' : 'No team access'
             }
             description={
               canManageBilling
@@ -146,6 +150,6 @@ export const CustomerPortalOverview = ({
           products={products}
         />
       )}
-    </div>
+    </Box>
   )
 }

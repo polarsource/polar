@@ -13,23 +13,20 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { useMemo } from 'react'
+import { getChargePreviewMeta } from './subscriptionState'
 
 const SubscriptionInvoicePreview = ({
   subscription,
 }: {
   subscription: schemas['Subscription']
 }) => {
-  const isTrialing = subscription.status === 'trialing'
-  const isActive = subscription.status === 'active'
-  const isPaused = subscription.status === 'paused'
+  const { visible, chargeDate, title, dateLabel, isCancelingAtPeriodEnd } =
+    getChargePreviewMeta(subscription)
 
   const { data: chargePreview } = useSubscriptionChargePreview(
     subscription.id,
     {
-      enabled:
-        isActive ||
-        isTrialing ||
-        (isPaused && subscription.resumes_at !== null),
+      enabled: visible,
     },
   )
 
@@ -44,26 +41,11 @@ const SubscriptionInvoicePreview = ({
     [subscription],
   )
 
-  const isCancelingAtPeriodEnd =
-    subscription.cancel_at_period_end && !subscription.ended_at
-
   const isFreeProduct = subscription.prices.some(isFreePrice)
   const hasMeters = subscription.meters.length > 0
   const hasNextInvoice = !isFreeProduct || hasMeters
 
-  const isResumingCharge =
-    (subscription.pause_at_period_end || isPaused) &&
-    subscription.resumes_at !== null &&
-    !isCancelingAtPeriodEnd
-  const isPausingIndefinitely =
-    (subscription.pause_at_period_end || isPaused) && !subscription.resumes_at
-
-  if (
-    (!isActive && !isTrialing && !isResumingCharge) ||
-    isPausingIndefinitely ||
-    !hasNextInvoice ||
-    !chargePreview
-  ) {
+  if (!visible || !hasNextInvoice || !chargePreview) {
     return null
   }
 
@@ -91,25 +73,6 @@ const SubscriptionInvoicePreview = ({
       amount: meter.amount,
     })),
   ]
-
-  const chargeDate = isTrialing
-    ? subscription.trial_end
-    : isResumingCharge
-      ? subscription.resumes_at
-      : subscription.current_period_end
-
-  let title = 'Upcoming charge'
-  let dateLabel = 'Next invoice'
-  if (isTrialing) {
-    title = 'First charge after trial'
-    dateLabel = 'Trial ends'
-  } else if (isCancelingAtPeriodEnd) {
-    title = 'Final charge'
-    dateLabel = 'Subscription ends'
-  } else if (isResumingCharge) {
-    title = 'Charge on resume'
-    dateLabel = 'Resumes'
-  }
 
   const note = isCancelingAtPeriodEnd
     ? `This will be the final charge when the subscription ends.${

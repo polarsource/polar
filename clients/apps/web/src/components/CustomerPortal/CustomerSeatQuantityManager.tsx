@@ -3,7 +3,8 @@
 import { useCustomerUpdateSubscription } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Client, isValidationError, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { MinusIcon, PlusIcon } from 'lucide-react'
 import { useCallback, useMemo } from 'react'
 import { useForm } from 'react-hook-form'
@@ -126,58 +127,67 @@ export const CustomerSeatQuantityManager = ({
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="rounded-2xl border p-4">
-      <div className="flex flex-col gap-2 text-sm">
-        <div className="flex items-center justify-between">
-          <div>
-            <span className="font-medium">Total seats</span>
-          </div>
-          <div className="flex items-center gap-1">
-            <Button
-              type="button"
-              variant="secondary"
-              size="icon"
-              onClick={handleDecrement}
-              disabled={!canDecrease || updateSubscription.isPending}
-            >
-              <MinusIcon className="h-4 w-4" />
-            </Button>
+    <Box
+      as="form"
+      onSubmit={handleSubmit(onSubmit)}
+      flexDirection="column"
+      borderRadius="l"
+      borderWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+      padding="l"
+    >
+      <Box alignItems="center" justifyContent="between" columnGap="l">
+        <Text variant="title">Total seats</Text>
+        <Box alignItems="center" columnGap="xs">
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            onClick={handleDecrement}
+            disabled={!canDecrease || updateSubscription.isPending}
+            aria-label="Remove a seat"
+          >
+            <MinusIcon size={16} />
+          </Button>
 
-            <span className="dark:text-polar-200 flex h-8 min-w-8 items-center justify-center px-2 font-medium">
+          <Box
+            height={32}
+            minWidth={32}
+            alignItems="center"
+            justifyContent="center"
+            paddingHorizontal="s"
+          >
+            <Text variant="title" tabularNums>
               {seats}
-            </span>
+            </Text>
+          </Box>
 
-            <Button
-              type="button"
-              variant="secondary"
-              size="icon"
-              onClick={handleIncrement}
-              disabled={updateSubscription.isPending}
-            >
-              <PlusIcon className="h-4 w-4" />
-            </Button>
-          </div>
-        </div>
-      </div>
+          <Button
+            type="button"
+            variant="secondary"
+            size="icon"
+            onClick={handleIncrement}
+            disabled={updateSubscription.isPending}
+            aria-label="Add a seat"
+          >
+            <PlusIcon size={16} />
+          </Button>
+        </Box>
+      </Box>
 
       {hasChanges && (
-        <div className="mt-4 flex flex-col gap-3">
-          {invoicingMessage && (
-            <span className="dark:text-polar-500 text-sm text-gray-500">
-              {invoicingMessage}
-            </span>
-          )}
-          <div className="flex flex-row-reverse gap-3">
-            <Button
-              loading={updateSubscription.isPending}
-              onClick={handleSubmit(onSubmit)}
-              className="w-full"
-            >
-              Update seats
-            </Button>
-          </div>
-        </div>
+        <Box flexDirection="column" rowGap="m" marginTop="l">
+          {invoicingMessage && <Text color="muted">{invoicingMessage}</Text>}
+          <Button
+            loading={updateSubscription.isPending}
+            onClick={handleSubmit(onSubmit)}
+            fullWidth
+          >
+            Update seats
+          </Button>
+        </Box>
       )}
-    </form>
+    </Box>
   )
 }

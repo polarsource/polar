@@ -197,10 +197,10 @@ export const SeatManagementTable = ({
   const isSubscription = isSeatBasedSubscription(identifier)
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex flex-col gap-y-2">
-        <h3 className="text-lg">Seat Management</h3>
-      </div>
+    <Box flexDirection="column" rowGap="xl">
+      <Text variant="heading-xxs" as="h3">
+        Seat management
+      </Text>
 
       {isSubscription && !isLoadingSeats && (
         <CustomerSeatQuantityManager
@@ -274,7 +274,7 @@ export const SeatManagementTable = ({
                       </td>
                       <td className="p-4 align-middle">
                         {seat.status !== 'revoked' && (
-                          <div className="flex justify-end">
+                          <Box justifyContent="end">
                             <DropdownMenu>
                               <DropdownMenuTrigger
                                 asChild
@@ -322,7 +322,7 @@ export const SeatManagementTable = ({
                                 </DropdownMenuItem>
                               </DropdownMenuContent>
                             </DropdownMenu>
-                          </div>
+                          </Box>
                         )}
                       </td>
                     </tr>
@@ -371,6 +371,6 @@ export const SeatManagementTable = ({
           </table>
         </div>
       )}
-    </div>
+    </Box>
   )
 }

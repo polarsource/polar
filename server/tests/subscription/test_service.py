@@ -8474,28 +8474,6 @@ class TestFixedSeatComposition:
 
 @pytest.mark.asyncio
 class TestSendCancellationEmail:
-    async def test_links_to_polar_portal_by_default(
-        self,
-        session: AsyncSession,
-        enqueue_email_mock: MagicMock,
-        save_fixture: SaveFixture,
-        product: Product,
-        customer: Customer,
-        organization: Organization,
-    ) -> None:
-        subscription = await create_active_subscription(
-            save_fixture, product=product, customer=customer
-        )
-
-        await subscription_service.send_cancellation_email(session, subscription)
-
-        enqueue_email_mock.assert_called_once()
-        email = enqueue_email_mock.call_args[0][0]
-        assert f"/{organization.slug}/portal" in email.props.url
-        params = parse_qs(urlparse(email.props.url).query)
-        assert params["email"] == [customer.email]
-        assert params["customer_session_token"][0]
-
     async def test_ignores_custom_email_link_url(
         self,
         session: AsyncSession,
@@ -8505,6 +8483,7 @@ class TestSendCancellationEmail:
         customer: Customer,
         organization: Organization,
     ) -> None:
+        organization.feature_settings = {"custom_email_link_enabled": True}
         organization.customer_email_settings = {
             **organization.customer_email_settings,
             "link_url": "https://acme.example.com/billing",

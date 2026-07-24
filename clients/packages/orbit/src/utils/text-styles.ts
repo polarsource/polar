@@ -19,7 +19,6 @@ export const textWrapStyles = stylex.create({
   nowrap: { textWrap: 'nowrap' },
   balance: { textWrap: 'balance' },
   pretty: { textWrap: 'pretty' },
-  anywhere: { textWrap: 'wrap', overflowWrap: 'anywhere' },
 })
 
 export const textUtilityStyles = stylex.create({

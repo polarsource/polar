@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from enum import IntEnum, StrEnum
 from typing import TYPE_CHECKING, Annotated, Any, Literal, NotRequired, Self, TypedDict
-from urllib.parse import urlparse
+from urllib.parse import urlencode, urlparse
 from uuid import UUID
 
 from pydantic.json_schema import WithJsonSchema
@@ -40,6 +40,7 @@ from .account import Account
 if TYPE_CHECKING:
     from polar.email.sender import EmailFromReply
 
+    from .customer import Customer
     from .organization_agent_review import OrganizationAgentReview
     from .organization_review import OrganizationReview
     from .organization_review_feedback import OrganizationReviewFeedback
@@ -838,6 +839,32 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @property
     def customer_email_link_url(self) -> str | None:
         return self.customer_email_settings.get("link_url") or None
+
+    def get_custom_email_link_url(
+        self, customer: "Customer", recipient_email: str
+    ) -> str | None:
+        """Build the custom email link for a recipient, if one is configured.
+
+        Returns None when the organization uses the default Polar customer
+        portal links. The custom link only identifies the customer (email,
+        external ID).
+        """
+        # The DB-configured link is gated by the feature flag, so disabling the
+        # flag stops using it. The deprecated legacy env-var override is kept as
+        # a fallback regardless, until the remaining configured organization is
+        # migrated to the DB setting.
+        configured_url = (
+            self.customer_email_link_url if self.is_custom_email_link_enabled else None
+        )
+        override_url = configured_url or settings.CUSTOMER_PORTAL_URL_OVERRIDES.get(
+            str(self.id)
+        )
+        if not override_url:
+            return None
+        params = {"email": recipient_email}
+        if customer.external_id is not None:
+            params["external_id"] = customer.external_id
+        return f"{override_url}?{urlencode(params)}"
 
     @property
     def checkout_require_3ds(self) -> bool:

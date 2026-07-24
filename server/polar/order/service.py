@@ -91,7 +91,6 @@ from polar.notifications.notification import (
 )
 from polar.notifications.service import PartialNotification
 from polar.notifications.service import notifications as notifications_service
-from polar.organization.custom_email_link import get_custom_email_link_url
 from polar.organization.repository import OrganizationRepository
 from polar.organization.service import organization as organization_service
 from polar.payment.repository import PaymentRepository
@@ -135,6 +134,17 @@ from .schemas import OrderCreate, OrderInvoice, OrderReceipt, OrderUpdate
 from .sorting import OrderSortProperty
 
 log: Logger = structlog.get_logger()
+
+
+# Only purchase confirmation emails ("Access purchase") link to the
+# organization's own site; billing emails always link to the Polar customer
+# portal, where invoices and subscription management live.
+CUSTOM_EMAIL_LINK_TEMPLATES = frozenset(
+    {
+        "order_confirmation",
+        "subscription_confirmation",
+    }
+)
 
 
 class OrderError(PolarError): ...
@@ -2367,17 +2377,11 @@ class OrderService:
                 {"remote_url": invoice.url, "filename": order.invoice_filename}
             ]
 
-        # Only purchase confirmation emails ("Access purchase") link to the
-        # organization's own site; billing emails always link to the Polar
-        # customer portal, where invoices and subscription management live.
-        custom_link_applies = template_name in (
-            "order_confirmation",
-            "subscription_confirmation",
-        )
+        custom_link_applies = template_name in CUSTOM_EMAIL_LINK_TEMPLATES
 
         for recipient_email in recipients:
             custom_url = (
-                get_custom_email_link_url(organization, customer, recipient_email)
+                organization.get_custom_email_link_url(customer, recipient_email)
                 if custom_link_applies
                 else None
             )

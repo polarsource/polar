@@ -111,27 +111,29 @@ const CustomerEmailLinkSetting: React.FC<CustomerEmailLinkSettingProps> = ({
                     <Text variant="caption" color="muted">
                       Email links will point to
                     </Text>
-                    <Text variant="caption" monospace color="muted" wrap="anywhere">
-                      {previewBase}
-                      {APPENDED_PARAMS.map(({ name }, index) => (
-                        <React.Fragment key={name}>
-                          <wbr />
-                          <Text
-                            as="span"
-                            variant="caption"
-                            monospace
-                            wrap="nowrap"
-                            color="muted"
-                          >
-                            {index === 0 ? '?' : '&'}
-                            <Text as="span" variant="caption" monospace>
-                              {name}
+                    <div className="wrap-anywhere">
+                      <Text variant="caption" monospace color="muted">
+                        {previewBase}
+                        {APPENDED_PARAMS.map(({ name }, index) => (
+                          <React.Fragment key={name}>
+                            <wbr />
+                            <Text
+                              as="span"
+                              variant="caption"
+                              monospace
+                              wrap="nowrap"
+                              color="muted"
+                            >
+                              {index === 0 ? '?' : '&'}
+                              <Text as="span" variant="caption" monospace>
+                                {name}
+                              </Text>
+                              {`=<${name}>`}
                             </Text>
-                            {`=<${name}>`}
-                          </Text>
-                        </React.Fragment>
-                      ))}
-                    </Text>
+                          </React.Fragment>
+                        ))}
+                      </Text>
+                    </div>
                   </Box>
   
                   <Box

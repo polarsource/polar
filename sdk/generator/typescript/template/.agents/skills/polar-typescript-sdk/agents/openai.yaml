@@ -1,0 +1,4 @@
+interface:
+  display_name: "Polar TypeScript SDK"
+  short_description: "Build reliable Polar billing integrations"
+  default_prompt: "Use $polar-typescript-sdk to implement a secure Polar billing integration in my TypeScript application."

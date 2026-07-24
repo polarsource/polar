@@ -18,7 +18,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    ".agents"
   ],
   "type": "module",
   "sideEffects": false,

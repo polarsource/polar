@@ -57,6 +57,18 @@ class TypeScriptEmitter(EmitterBase):
         self.copy_file(self.templates_dir / "justfile", root_directory / "justfile")
         self.copy_file(self.templates_dir / "LICENSE", root_directory / "LICENSE")
 
+        for skill_file in (
+            ".agents/skills/polar-typescript-sdk/SKILL.md",
+            ".agents/skills/polar-typescript-sdk/agents/openai.yaml",
+            ".agents/skills/polar-typescript-sdk/references/usage-events.md",
+            ".agents/skills/polar-typescript-sdk/references/webhooks.md",
+        ):
+            self.render_file(
+                skill_file,
+                root_directory / skill_file,
+                self.get_context(),
+            )
+
         self.render_file(
             "README.md",
             root_directory / "README.md",

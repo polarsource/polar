@@ -131,7 +131,6 @@ const OrganizationCustomerEmailSettings: React.FC<
       ))}
       {customLinkEnabled && (
         <CustomerEmailLinkSetting
-          key={settings.link_url ?? 'unset'}
           organizationId={organization.id}
           value={settings.link_url ?? null}
           readOnly={readOnly}

@@ -2,7 +2,7 @@ import { useURLValidation } from '@/hooks/useURLValidation'
 import { Grid, Input, Switch, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
-import React, { useEffect, useState } from 'react'
+import React, { useState } from 'react'
 import { SettingsGroupItem } from './SettingsGroup'
 
 const URL_PLACEHOLDER = 'https://example.com/purchases'
@@ -36,28 +36,13 @@ export default function CustomerEmailLinkSetting({
     reset: resetValidation,
   } = useURLValidation({ organizationId })
 
-  useEffect(() => {
-    if (enabled && value) {
-      void validateURL(value)
-    }
-  }, [enabled, value, validateURL])
-
-  const handleOnBlur = () => {
-    const trimmed = url.trim()
-    const linkUrl = trimmed === '' ? null : trimmed
-    if (linkUrl !== value) {
-      onChange(linkUrl)
-    }
-    void validateURL(trimmed)
-  }
-
   const previewBase = url.trim() || URL_PLACEHOLDER
 
   return (
     <Box flexDirection="column" width="100%">
       <SettingsGroupItem
         title="Custom purchase link"
-        description="Point the Access purchase button in order and subscription confirmation emails to your own site. Billing emails always link to Polar's customer portal."
+        description="Override the Access purchase button in confirmation emails. Billing emails still use Polar."
       >
         <Switch
           checked={enabled}
@@ -69,6 +54,10 @@ export default function CustomerEmailLinkSetting({
               if (value) {
                 onChange(null)
               }
+              return
+            }
+            if (url.trim()) {
+              void validateURL(url.trim())
             }
           }}
           disabled={readOnly}
@@ -101,7 +90,14 @@ export default function CustomerEmailLinkSetting({
                       resetValidation()
                     }
                   }}
-                  onBlur={handleOnBlur}
+                  onBlur={() => {
+                    const trimmed = url.trim()
+                    const linkUrl = trimmed === '' ? null : trimmed
+                    if (linkUrl !== value) {
+                      onChange(linkUrl)
+                    }
+                    void validateURL(trimmed)
+                  }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
                       e.currentTarget.blur()

@@ -30,7 +30,7 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
           <Box
             width={{ base: '100%', lg: '33%' }}
             flexDirection="column"
-            alignItems="center"
+            alignItems="stretch"
           >
             <Input
               preSlot={<Search fontSize="inherit" />}
@@ -57,17 +57,15 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
                   }) => {
                     return (
                       <Box alignItems="center" columnGap="s">
-                        <Box position="relative" width={12} height={12}>
-                          <Box
-                            position="absolute"
-                            width="100%"
-                            height="100%"
-                            borderRadius="full"
-                            borderWidth={2}
-                            borderStyle="solid"
-                            borderColor="border-primary"
-                          />
-                        </Box>
+                        <Box
+                          width={12}
+                          height={12}
+                          flexShrink={0}
+                          borderRadius="full"
+                          borderWidth={2}
+                          borderStyle="solid"
+                          borderColor="border-primary"
+                        />
                         <Text as="span">{meter.name}</Text>
                       </Box>
                     )

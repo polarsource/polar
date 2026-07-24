@@ -52,10 +52,7 @@ from polar.models import (
 )
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncReadSession, AsyncSession
-from polar.subscription.repository import (
-    CustomerSubscriptionProductPrice,
-    SubscriptionProductPriceRepository,
-)
+from polar.subscription.repository import SubscriptionProductPriceRepository
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
 from .repository import MeterRepository
@@ -527,8 +524,6 @@ class MeterService:
                     ),
                 ),
             )
-            .order_by(MeterEvent.ingested_at.asc(), MeterEvent.event_id.asc())
-            .options(joinedload(Event.customer))
         )
         last_billed_event = meter.last_billed_event
         if last_billed_event is not None:
@@ -542,12 +537,19 @@ class MeterService:
                 )
             )
 
+        customer_ids = await event_repository.get_distinct_customer_ids(statement)
         subscription_product_price_repository = (
             SubscriptionProductPriceRepository.from_session(session)
         )
-        customer_price_map: dict[
-            uuid.UUID, CustomerSubscriptionProductPrice | None
-        ] = {}
+        customer_price_map = (
+            await subscription_product_price_repository.get_by_customers_and_meter(
+                customer_ids, meter.id
+            )
+        )
+
+        statement = statement.order_by(
+            MeterEvent.ingested_at.asc(), MeterEvent.event_id.asc()
+        ).options(joinedload(Event.customer))
 
         entries: list[BillingEntry] = []
         updated_subscriptions: set[uuid.UUID] = set()
@@ -561,9 +563,11 @@ class MeterService:
             try:
                 customer_price = customer_price_map[customer.id]
             except KeyError:
-                customer_price = await subscription_product_price_repository.get_by_customer_and_meter(
-                    customer.id, meter.id
+                # The customer may become visible after the prefetch under READ COMMITTED.
+                concurrent_customer_prices = await subscription_product_price_repository.get_by_customers_and_meter(
+                    [customer.id], meter.id
                 )
+                customer_price = concurrent_customer_prices[customer.id]
                 customer_price_map[customer.id] = customer_price
 
             if customer_price is None:

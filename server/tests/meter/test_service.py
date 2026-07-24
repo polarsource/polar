@@ -1258,6 +1258,74 @@ class TestCreateBillingEntries:
             "subscription.update_meters", metered_subscription.id
         )
 
+    async def test_multiple_customers(
+        self,
+        enqueue_job_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        meter: Meter,
+        organization: Organization,
+    ) -> None:
+        customer_1 = await create_customer(
+            save_fixture, organization=organization, email="customer-1@example.com"
+        )
+        customer_2 = await create_customer(
+            save_fixture, organization=organization, email="customer-2@example.com"
+        )
+        customer_without_subscription = await create_customer(
+            save_fixture, organization=organization, email="none@example.com"
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        subscription_1 = await create_active_subscription(
+            save_fixture, customer=customer_1, product=product
+        )
+        subscription_2 = await create_active_subscription(
+            save_fixture, customer=customer_2, product=product
+        )
+        events = [
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer_1,
+                metadata={"tokens": 20, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer_2,
+                metadata={"tokens": 10, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer_without_subscription,
+                metadata={"tokens": 5, "model": "lite"},
+            ),
+        ]
+        await event_service._create_meter_events(session, events)
+
+        entries = await meter_service.create_billing_entries(session, meter)
+
+        assert [
+            (entry.event, entry.customer, entry.subscription) for entry in entries
+        ] == [
+            (events[0], customer_1, subscription_1),
+            (events[1], customer_2, subscription_2),
+        ]
+        assert meter.last_billed_event == events[-1]
+        assert enqueue_job_mock.call_count == 2
+        enqueue_job_mock.assert_any_call(
+            "subscription.update_meters", subscription_1.id
+        )
+        enqueue_job_mock.assert_any_call(
+            "subscription.update_meters", subscription_2.id
+        )
+
     async def test_last_billed_event(
         self,
         enqueue_job_mock: AsyncMock,

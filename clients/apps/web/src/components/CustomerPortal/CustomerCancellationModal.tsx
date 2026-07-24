@@ -9,7 +9,8 @@ import {
 } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { Client, isValidationError, schemas } from '@polar-sh/client'
-import { Alert, Button } from '@polar-sh/orbit'
+import { Alert, Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { TextArea } from '@polar-sh/orbit'
 import {
   Form,
@@ -36,12 +37,12 @@ const CancellationReasonRadio = ({
   label: string
 }) => {
   return (
-    <div className="flex flex-row">
+    <Box alignItems="center" columnGap="l">
       <RadioGroupItem value={value} id={`reason-${value}`} />
-      <Label className="ml-4 grow" htmlFor={`reason-${value}`}>
-        {label}
-      </Label>
-    </div>
+      <Box flexGrow={1}>
+        <Label htmlFor={`reason-${value}`}>{label}</Label>
+      </Box>
+    </Box>
   )
 }
 
@@ -149,14 +150,20 @@ const CustomerCancellationModal = ({
       title="Cancel Subscription"
       className="md:min-w-[600px]"
       modalContent={
-        <div className="flex flex-col gap-y-6 p-6 sm:p-12">
-          <div className="flex flex-col gap-y-2">
-            <h3 className="text-2xl">We&apos;re sorry to see you go!</h3>
-            <p className="dark:text-polar-500 leading-relaxed text-balance text-gray-500">
-              You&apos;re always welcome back! Let us know why you&apos;re
+        <Box
+          flexDirection="column"
+          rowGap="xl"
+          padding={{ base: 'xl', sm: '3xl' }}
+        >
+          <Box flexDirection="column" rowGap="s">
+            <Text variant="heading-s" as="h3">
+              We&apos;re sorry to see you go
+            </Text>
+            <Text color="muted" wrap="balance">
+              You&apos;re always welcome back. Let us know why you&apos;re
               leaving to help us improve our product.
-            </p>
-          </div>
+            </Text>
+          </Box>
           {subscription.status === 'past_due' &&
             cancelPreview?.stops_collection && (
               <Alert
@@ -231,22 +238,26 @@ const CustomerCancellationModal = ({
                   </FormItem>
                 )}
               />
-              <div className="flex flex-col gap-4 pt-6 sm:flex-row">
+              <Box
+                flexDirection={{ base: 'column', sm: 'row' }}
+                gap="l"
+                paddingTop="xl"
+              >
                 <Button
                   type="submit"
                   variant="destructive"
                   loading={isPending}
                   disabled={isPending || previewPending}
                 >
-                  {stopsCollection ? 'Cancel now' : 'Cancel Subscription'}
+                  {stopsCollection ? 'Cancel now' : 'Cancel subscription'}
                 </Button>
                 <Button variant="ghost" onClick={handleCancel}>
                   I&apos;ve changed my mind
                 </Button>
-              </div>
+              </Box>
             </form>
           </Form>
-        </div>
+        </Box>
       }
     />
   )

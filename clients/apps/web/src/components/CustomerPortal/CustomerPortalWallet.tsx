@@ -1,4 +1,5 @@
 import { schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import WalletCard from '../Wallet/WalletCard'
 
 export interface CustomerPortalWalletProps {
@@ -11,10 +12,10 @@ export const CustomerPortalWallet = ({
   wallet,
 }: CustomerPortalWalletProps) => {
   return (
-    <div className="flex flex-col gap-y-4">
-      <div className="flex flex-row items-center justify-between">
+    <Box flexDirection="column" rowGap="l">
+      <Box alignItems="center" justifyContent="between">
         <WalletCard organization={organization} wallet={wallet} />
-      </div>
-    </div>
+      </Box>
+    </Box>
   )
 }

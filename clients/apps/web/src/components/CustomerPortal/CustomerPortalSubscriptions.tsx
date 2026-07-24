@@ -1,8 +1,10 @@
 import revalidate from '@/app/actions'
 import { useCustomerOrders } from '@/hooks/queries/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { DataTable } from '@polar-sh/orbit'
+import { subscriptionStatusDisplayNames } from '../Subscriptions/utils'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { getThemePreset } from '@polar-sh/ui/hooks/theming'
 import { useTheme } from 'next-themes'
@@ -33,9 +35,11 @@ export const ActiveSubscriptionsOverview = ({
   }, [])
 
   return (
-    <div className="flex flex-col gap-y-4">
-      <h3 className="text-xl">Subscriptions</h3>
-      <div className="flex flex-col gap-y-4">
+    <Box flexDirection="column" rowGap="l">
+      <Text variant="heading-xs" as="h3">
+        Subscriptions
+      </Text>
+      <Box flexDirection="column" rowGap="l">
         {subscriptions.length > 0 ? (
           subscriptions.map((s) => (
             <CustomerSubscriptionDetails
@@ -48,12 +52,21 @@ export const ActiveSubscriptionsOverview = ({
             />
           ))
         ) : (
-          <div className="dark:border-polar-700 flex flex-col items-center justify-center rounded-2xl border border-gray-200 p-12 text-gray-500">
-            <p>No Subscriptions Found</p>
-          </div>
+          <Box
+            flexDirection="column"
+            alignItems="center"
+            justifyContent="center"
+            borderRadius="l"
+            borderWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
+            padding="3xl"
+          >
+            <Text color="muted">No subscriptions found</Text>
+          </Box>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   )
 }
 
@@ -135,10 +148,12 @@ export const InactiveSubscriptionsOverview = ({
   }, [retryPaymentSubscription, orderItems])
 
   return (
-    <div className="flex flex-col gap-y-4">
-      <div className="flex flex-row items-center justify-between">
-        <h3 className="text-xl">Inactive Subscriptions</h3>
-      </div>
+    <Box flexDirection="column" rowGap="l">
+      <Box alignItems="center" justifyContent="between">
+        <Text variant="heading-xs" as="h3">
+          Inactive subscriptions
+        </Text>
+      </Box>
       <DataTable
         data={subscriptions ?? []}
         isLoading={false}
@@ -152,9 +167,9 @@ export const InactiveSubscriptionsOverview = ({
             accessorKey: 'status',
             header: 'Status',
             cell: ({ row }) => (
-              <span className="capitalize">
-                {row.original.status.split('_').join(' ')}
-              </span>
+              <Text as="span">
+                {subscriptionStatusDisplayNames[row.original.status]}
+              </Text>
             ),
           },
           {
@@ -175,7 +190,7 @@ export const InactiveSubscriptionsOverview = ({
             accessorKey: 'id',
             header: '',
             cell: ({ row }) => (
-              <span className="flex justify-end gap-2">
+              <Box justifyContent="end" columnGap="s">
                 {row.original.status === 'past_due' && (
                   <Button
                     variant="default"
@@ -192,7 +207,7 @@ export const InactiveSubscriptionsOverview = ({
                 >
                   Manage subscription
                 </Button>
-              </span>
+              </Box>
             ),
           },
         ]}
@@ -203,14 +218,14 @@ export const InactiveSubscriptionsOverview = ({
         hide={hideSubscriptionModal}
         modalContent={
           selectedSubscription ? (
-            <div className="flex flex-col overflow-y-auto p-8">
+            <Box flexDirection="column" overflowY="auto" padding="2xl">
               <CustomerPortalSubscription
                 api={api}
                 customerSessionToken={customerSessionToken}
                 subscription={selectedSubscription}
                 products={products}
               />
-            </div>
+            </Box>
           ) : null
         }
       />
@@ -229,6 +244,6 @@ export const InactiveSubscriptionsOverview = ({
           themingPreset={themingPreset}
         />
       )}
-    </div>
+    </Box>
   )
 }

@@ -3,7 +3,8 @@
 import { useCustomerCustomerMeters } from '@/hooks/queries/customerPortal'
 import Search from '@mui/icons-material/Search'
 import { Client } from '@polar-sh/client'
-import { DataTable } from '@polar-sh/orbit'
+import { DataTable, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { Input } from '@polar-sh/orbit'
 import { Tabs, TabsContent } from '@polar-sh/orbit'
 import { useMemo, useState } from 'react'
@@ -18,28 +19,31 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
   const customerMeters = useMemo(() => data?.items ?? [], [data])
 
   return (
-    <div className="flex flex-col">
+    <Box flexDirection="column">
       <Tabs defaultValue="meters">
-        <div className="flex flex-row items-center justify-between gap-x-12">
-          <h3 className="text-2xl">Usage</h3>
-        </div>
+        <Box alignItems="center" justifyContent="between" columnGap="3xl">
+          <Text variant="heading-s" as="h3">
+            Usage
+          </Text>
+        </Box>
         <TabsContent className="flex flex-col gap-y-12 pt-4" value="meters">
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col items-center gap-4 lg:flex-row">
-              <div className="w-full lg:w-1/3">
-                <Input
-                  className="w-full bg-white shadow-xs"
-                  preSlot={<Search fontSize="inherit" />}
-                  placeholder="Search Usage Meter"
-                  value={query || ''}
-                  onChange={(e) => setQuery(e.target.value)}
-                />
-              </div>
-            </div>
-          </div>
+          <Box
+            width={{ base: '100%', lg: '33%' }}
+            flexDirection="column"
+            alignItems="center"
+          >
+            <Input
+              preSlot={<Search fontSize="inherit" />}
+              placeholder="Search usage meter"
+              value={query || ''}
+              onChange={(e) => setQuery(e.target.value)}
+            />
+          </Box>
 
-          <div className="flex flex-col gap-6">
-            <h3 className="text-xl">Overview</h3>
+          <Box flexDirection="column" rowGap="xl">
+            <Text variant="heading-xs" as="h3">
+              Overview
+            </Text>
             <DataTable
               isLoading={isLoading}
               columns={[
@@ -52,21 +56,20 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
                     },
                   }) => {
                     return (
-                      <div className="flex items-center gap-2">
-                        <div className="relative h-3 w-3">
-                          <div className="dark:border-polar-700 absolute h-full w-full rounded-full border-2 border-gray-200" />
-                          <div
-                            className="absolute h-full w-full rounded-full border-2 border-blue-500"
-                            style={{
-                              clipPath:
-                                'polygon(0 0, 100% 0, 100% 100%, 0% 100%)',
-                              transform: 'rotate(-90deg)',
-                              transition: 'all 0.3s ease',
-                            }}
+                      <Box alignItems="center" columnGap="s">
+                        <Box position="relative" width={12} height={12}>
+                          <Box
+                            position="absolute"
+                            width="100%"
+                            height="100%"
+                            borderRadius="full"
+                            borderWidth={2}
+                            borderStyle="solid"
+                            borderColor="border-primary"
                           />
-                        </div>
-                        <span>{meter.name}</span>
-                      </div>
+                        </Box>
+                        <Text as="span">{meter.name}</Text>
+                      </Box>
                     )
                   },
                 },
@@ -106,9 +109,9 @@ export const CustomerUsage = ({ api }: CustomerUsageProps) => {
               ]}
               data={customerMeters}
             />
-          </div>
+          </Box>
         </TabsContent>
       </Tabs>
-    </div>
+    </Box>
   )
 }

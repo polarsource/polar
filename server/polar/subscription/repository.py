@@ -390,7 +390,9 @@ class SubscriptionRepository(
                 EmailLog.email_props["subscription"]["id"].as_string()
                 == cast(Subscription.id, sa.String),
                 EmailLog.email_props["renewal_date"].as_string()
-                == sa.func.to_char(Subscription.current_period_end, "MM/DD/YYYY"),
+                == sa.func.to_char(
+                    Subscription.current_period_end, "FMMonth FMDD, YYYY"
+                ),
             )
             .correlate(Subscription)
             .exists()
@@ -438,7 +440,7 @@ class SubscriptionRepository(
                 EmailLog.email_props["subscription"]["id"].as_string()
                 == cast(Subscription.id, sa.String),
                 EmailLog.email_props["conversion_date"].as_string()
-                == sa.func.to_char(Subscription.trial_end, "MM/DD/YYYY"),
+                == sa.func.to_char(Subscription.trial_end, "FMMonth FMDD, YYYY"),
             )
             .correlate(Subscription)
             .exists()

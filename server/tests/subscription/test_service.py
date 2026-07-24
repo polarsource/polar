@@ -5587,6 +5587,58 @@ async def test_send_past_due_email(
 
 
 @pytest.mark.asyncio
+async def test_send_renewal_reminder_email_formats_long_date(
+    mocker: MockerFixture,
+    save_fixture: SaveFixture,
+    session: AsyncSession,
+    product: Product,
+    customer: Customer,
+) -> None:
+    subscription = await create_active_subscription(
+        save_fixture, product=product, customer=customer
+    )
+    subscription.current_period_end = datetime(2026, 11, 7, tzinfo=UTC)
+    await save_fixture(subscription)
+    send_customer_email_mock = mocker.patch.object(
+        subscription_service, "_send_customer_email"
+    )
+
+    await subscription_service.send_renewal_reminder_email(session, subscription)
+
+    send_customer_email_mock.assert_called_once()
+    assert send_customer_email_mock.call_args.kwargs["extra_context"] == {
+        "renewal_date": "November 7, 2026"
+    }
+
+
+@pytest.mark.asyncio
+async def test_send_trial_conversion_reminder_email_formats_long_date(
+    mocker: MockerFixture,
+    save_fixture: SaveFixture,
+    session: AsyncSession,
+    product: Product,
+    customer: Customer,
+) -> None:
+    subscription = await create_trialing_subscription(
+        save_fixture, product=product, customer=customer
+    )
+    subscription.trial_end = datetime(2026, 3, 17, tzinfo=UTC)
+    await save_fixture(subscription)
+    send_customer_email_mock = mocker.patch.object(
+        subscription_service, "_send_customer_email"
+    )
+
+    await subscription_service.send_trial_conversion_reminder_email(
+        session, subscription
+    )
+
+    send_customer_email_mock.assert_called_once()
+    assert send_customer_email_mock.call_args.kwargs["extra_context"] == {
+        "conversion_date": "March 17, 2026"
+    }
+
+
+@pytest.mark.asyncio
 class TestMarkPastDue:
     """Test subscription service dunning functionality"""
 

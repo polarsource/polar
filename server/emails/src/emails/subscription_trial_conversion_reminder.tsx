@@ -49,7 +49,7 @@ SubscriptionTrialConversionReminder.PreviewProps = {
     id: '12345',
     status: 'trialing',
   },
-  conversion_date: '03/17/2026',
+  conversion_date: 'March 17, 2026',
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
 }
 

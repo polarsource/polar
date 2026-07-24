@@ -10,17 +10,17 @@ import { createClientSideAPI } from '@/utils/client'
 import { PolarEmbedPaymentMethod } from '@polar-sh/checkout/payment-method'
 import { usePaymentMethodRedirectResult } from '@polar-sh/checkout/react/payment-method'
 import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
-import { Separator } from '@polar-sh/ui/components/ui/separator'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useQueryClient } from '@tanstack/react-query'
 import { useTheme } from 'next-themes'
 import { useRouter } from 'next/navigation'
 import { useCallback, useState } from 'react'
-import { Well, WellContent, WellHeader } from '../Shared/Well'
 import ChangeEmailForm from './ChangeEmailForm'
 import { CustomerPortalTeamSection } from './CustomerPortalTeam'
 import EditBillingDetails from './EditBillingDetails'
 import PaymentMethod from './PaymentMethod'
+import { SettingsPanel } from './SettingsPanel'
 
 interface CustomerPortalSettingsProps {
   customerSessionToken?: string
@@ -102,109 +102,79 @@ export const CustomerPortalSettings = ({
   }
 
   return (
-    <div className="flex flex-col gap-y-8">
-      <h3 className="text-2xl">Billing Settings</h3>
-      <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
-        <WellHeader className="flex-row items-start justify-between">
-          <div className="flex flex-col gap-y-2">
-            <h3 className="text-xl">Payment Methods</h3>
-            <p className="dark:text-polar-500 text-gray-500">
-              Methods used for subscriptions & one-time purchases
-            </p>
-          </div>
-          <Button onClick={onAddPaymentMethod}>Add Payment Method</Button>
-        </WellHeader>
-        <WellContent className="gap-y-4">
-          {paymentMethods?.items.map((pm) => (
-            <PaymentMethod
-              key={pm.id}
-              customer={customer}
-              paymentMethod={pm}
-              api={api}
-              deletable={true}
-            />
-          ))}
-        </WellContent>
-      </Well>
-      <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
-        <WellHeader className="flex-row items-center justify-between">
-          <div className="flex flex-col gap-y-2">
-            <h3 className="text-xl">Billing Details</h3>
-            <p className="dark:text-polar-500 text-gray-500">
-              Update your billing details
-            </p>
-          </div>
-        </WellHeader>
-        <Separator className="dark:bg-polar-700" />
-        <WellContent>
-          <EditBillingDetails
-            onSuccess={() => {
-              revalidate(`customer_portal`)
-              router.refresh()
-            }}
+    <Box flexDirection="column" rowGap="2xl">
+      <Text variant="heading-s" as="h3">
+        Billing settings
+      </Text>
+
+      <SettingsPanel
+        title="Payment methods"
+        description="Methods used for subscriptions & one-time purchases"
+        action={
+          <Button onClick={onAddPaymentMethod}>Add payment method</Button>
+        }
+      >
+        {paymentMethods?.items.map((pm) => (
+          <PaymentMethod
+            key={pm.id}
+            customer={customer}
+            paymentMethod={pm}
+            api={api}
+            deletable={true}
           />
-        </WellContent>
-      </Well>
+        ))}
+      </SettingsPanel>
+
+      <SettingsPanel
+        title="Billing details"
+        description="Update your billing details"
+      >
+        <EditBillingDetails
+          onSuccess={() => {
+            revalidate(`customer_portal`)
+            router.refresh()
+          }}
+        />
+      </SettingsPanel>
 
       {customer.type !== 'team' &&
         customer.email &&
         organization.customer_portal_settings.customer?.allow_email_change ===
           true && (
-          <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
-            <WellHeader className="flex-row items-center justify-between">
-              <div className="flex flex-col gap-y-2">
-                <h3 className="text-xl">Email Address</h3>
-                <p className="dark:text-polar-500 text-gray-500">
-                  Change the email associated with your account
-                </p>
-              </div>
-            </WellHeader>
-            <Separator className="dark:bg-polar-700" />
-            <WellContent>
-              <ChangeEmailForm customer={customer} />
-            </WellContent>
-          </Well>
+          <SettingsPanel
+            title="Email address"
+            description="Change the email associated with your account"
+          >
+            <ChangeEmailForm customer={customer} />
+          </SettingsPanel>
         )}
 
       {customer.type === 'team' &&
         organization.organization_features?.member_model_enabled && (
-          <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
-            <WellHeader className="flex-row items-start justify-between">
-              <div className="flex flex-col gap-y-2">
-                <h3 className="text-xl">Billing Managers</h3>
-                <p className="dark:text-polar-500 text-gray-500">
-                  Billing Managers can manage billing details, payment methods,
-                  and subscriptions.
-                </p>
-              </div>
-            </WellHeader>
-            <Separator className="dark:bg-polar-700" />
-            <WellContent>
-              <CustomerPortalTeamSection
-                api={api}
-                organizationSlug={organization.slug}
-              />
-            </WellContent>
-          </Well>
+          <SettingsPanel
+            title="Billing managers"
+            description="Billing managers can manage billing details, payment methods, and subscriptions."
+          >
+            <CustomerPortalTeamSection
+              api={api}
+              organizationSlug={organization.slug}
+            />
+          </SettingsPanel>
         )}
 
-      <Well className="dark:bg-polar-900 flex flex-col gap-y-6 bg-gray-50">
-        <WellHeader className="flex-row items-start justify-between">
-          <div className="flex flex-col gap-y-2">
-            <h3 className="text-xl">Privacy</h3>
-            <p className="dark:text-polar-500 text-gray-500">
-              Download a copy of all your personal data
-            </p>
-          </div>
+      <SettingsPanel
+        title="Privacy"
+        description="Download a copy of all your personal data"
+        action={
           <Button
             onClick={handleExportData}
             loading={isExporting}
             variant="secondary"
           >
-            Export Data
+            Export data
           </Button>
-        </WellHeader>
-      </Well>
-    </div>
+        }
+      />
+    </Box>
   )
 }

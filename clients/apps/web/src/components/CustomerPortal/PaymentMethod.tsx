@@ -6,6 +6,7 @@ import {
 import type { Client, operations, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Status } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { X } from 'lucide-react'
 import { PaymentMethodDisplay } from '../PaymentMethodDisplay'
 
@@ -73,7 +74,7 @@ const PaymentMethod = ({
   }
 
   return (
-    <div className="flex items-center justify-between gap-2">
+    <Box alignItems="center" justifyContent="between" columnGap="s">
       <PaymentMethodDisplay
         type={paymentMethod.type}
         card={
@@ -82,9 +83,9 @@ const PaymentMethod = ({
             : null
         }
       />
-      <div className="flex flex-row items-center gap-x-4">
+      <Box alignItems="center" columnGap="l">
         {isDefault ? (
-          <Status status="Default Method" color="green" />
+          <Status status="Default method" color="green" />
         ) : (
           <Button
             variant="secondary"
@@ -99,17 +100,17 @@ const PaymentMethod = ({
         {deletable && (
           <Button
             variant="secondary"
-            size="sm"
-            className="h-8 w-8"
+            size="icon"
             onClick={onDeletePaymentMethod}
             loading={deletePaymentMethod.isPending}
             disabled={deletePaymentMethod.isPending}
+            aria-label="Delete payment method"
           >
-            <X className="size-4" />
+            <X size={16} />
           </Button>
         )}
-      </div>
-    </div>
+      </Box>
+    </Box>
   )
 }
 

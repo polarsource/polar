@@ -1,7 +1,8 @@
 import { useCustomerPortalCustomer } from '@/hooks/queries/customerPortal'
 import { setValidationErrors } from '@/utils/api/errors'
 import { enums, type schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import CountryStatePicker from '@polar-sh/ui/components/atoms/CountryStatePicker'
 import { Input } from '@polar-sh/orbit'
@@ -85,7 +86,12 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
 
   return (
     <Form {...form}>
-      <form onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-y-6">
+      <Box
+        as="form"
+        onSubmit={handleSubmit(onSubmit)}
+        flexDirection="column"
+        rowGap="xl"
+      >
         <FormItem>
           <FormLabel>Email</FormLabel>
           <FormControl>
@@ -94,7 +100,6 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
               value={customer.email ?? ''}
               disabled
               readOnly
-              className="bg-white shadow-xs"
             />
           </FormControl>
         </FormItem>
@@ -111,7 +116,6 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                   placeholder="Company or legal name for invoices (optional)"
                   {...field}
                   value={field.value || ''}
-                  className="bg-white shadow-xs"
                 />
               </FormControl>
               <FormMessage />
@@ -128,17 +132,16 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                 required: 'This field is required',
               }}
               render={({ field }) => (
-                <div className="flex flex-col gap-y-2">
+                <Box flexDirection="column" rowGap="s">
                   <Input
                     type="text"
                     autoComplete="billing address-line1"
                     placeholder="Line 1"
-                    className="bg-white shadow-xs"
                     {...field}
                     value={field.value || ''}
                   />
                   <FormMessage />
-                </div>
+                </Box>
               )}
             />
           </FormControl>
@@ -147,22 +150,25 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
               control={control}
               name="billing_address.line2"
               render={({ field }) => (
-                <div className="flex flex-col gap-y-2">
+                <Box flexDirection="column" rowGap="s">
                   <Input
                     type="text"
                     autoComplete="billing address-line2"
                     placeholder="Line 2"
-                    className="bg-white shadow-xs"
                     {...field}
                     value={field.value || ''}
                   />
                   <FormMessage />
-                </div>
+                </Box>
               )}
             />
           </FormControl>
 
-          <div className="grid grid-cols-2 gap-x-3">
+          <Box
+            display="grid"
+            gridTemplateColumns="repeat(2, minmax(0, 1fr))"
+            columnGap="m"
+          >
             <FormControl>
               <FormField
                 control={control}
@@ -171,17 +177,16 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                   required: 'This field is required',
                 }}
                 render={({ field }) => (
-                  <div className="flex flex-col gap-y-2">
+                  <Box flexDirection="column" rowGap="s">
                     <Input
                       type="text"
                       autoComplete="billing postal-code"
                       placeholder="Postal code"
-                      className="bg-white shadow-xs"
                       {...field}
                       value={field.value || ''}
                     />
                     <FormMessage />
-                  </div>
+                  </Box>
                 )}
               />
             </FormControl>
@@ -193,21 +198,20 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                   required: 'This field is required',
                 }}
                 render={({ field }) => (
-                  <div className="flex flex-col gap-y-2">
+                  <Box flexDirection="column" rowGap="s">
                     <Input
                       type="text"
                       autoComplete="billing address-level2"
                       placeholder="City"
-                      className="bg-white shadow-xs"
                       {...field}
                       value={field.value || ''}
                     />
                     <FormMessage />
-                  </div>
+                  </Box>
                 )}
               />
             </FormControl>
-          </div>
+          </Box>
           <FormControl>
             <FormField
               control={control}
@@ -216,7 +220,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                 required: 'This field is required',
               }}
               render={({ field }) => (
-                <div className="flex flex-col gap-y-2">
+                <Box flexDirection="column" rowGap="s">
                   <CountryPicker
                     autoComplete="billing country"
                     value={field.value || undefined}
@@ -224,7 +228,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                     allowedCountries={enums.addressInputCountryValues}
                   />
                   <FormMessage />
-                </div>
+                </Box>
               )}
             />
           </FormControl>
@@ -237,7 +241,7 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                   required: 'This field is required',
                 }}
                 render={({ field }) => (
-                  <div className="flex flex-col gap-y-2">
+                  <Box flexDirection="column" rowGap="s">
                     <CountryStatePicker
                       autoComplete="billing address-level1"
                       country={country}
@@ -246,16 +250,14 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                       placeholder={country === 'US' ? 'State' : 'Province'}
                     />
                     <FormMessage />
-                  </div>
+                  </Box>
                 )}
               />
             </FormControl>
           )}
 
           {errors.billing_address?.message && (
-            <p className="text-destructive-foreground text-sm">
-              {errors.billing_address.message}
-            </p>
+            <Text color="danger">{errors.billing_address.message}</Text>
           )}
         </FormItem>
         <FormField
@@ -270,22 +272,22 @@ const EditBillingDetails = ({ onSuccess }: { onSuccess: () => void }) => {
                   autoComplete="off"
                   {...field}
                   value={field.value || ''}
-                  className="bg-white shadow-xs"
                 />
               </FormControl>
               <FormMessage />
             </FormItem>
           )}
         />
-        <Button
-          type="submit"
-          loading={update.isPending}
-          disabled={update.isPending || !isDirty}
-          className="self-start"
-        >
-          Update Billing Details
-        </Button>
-      </form>
+        <Box alignSelf="start">
+          <Button
+            type="submit"
+            loading={update.isPending}
+            disabled={update.isPending || !isDirty}
+          >
+            Update billing details
+          </Button>
+        </Box>
+      </Box>
     </Form>
   )
 }

@@ -81,7 +81,7 @@ const CustomerSubscriptionDetails = ({
       rowGap="xl"
       width="100%"
       borderRadius="xl"
-      backgroundColor="background-card"
+      backgroundColor="background-secondary"
       padding="2xl"
     >
       <CustomerSubscriptionHeader subscription={subscription} />

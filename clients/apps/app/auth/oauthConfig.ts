@@ -46,6 +46,7 @@ export const scopes = [
   'discounts:read',
   'discounts:write',
   'disputes:read',
+  'disputes:write',
   'email',
   'events:read',
   'events:write',

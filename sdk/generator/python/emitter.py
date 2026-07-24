@@ -100,6 +100,14 @@ class PythonEmitter(EmitterBase):
                 "skills",
                 "polar-python-sdk",
                 "references",
+                "migration-from-v0.md",
+            ),
+            (
+                "polar",
+                ".agents",
+                "skills",
+                "polar-python-sdk",
+                "references",
                 "usage-events.md",
             ),
             (

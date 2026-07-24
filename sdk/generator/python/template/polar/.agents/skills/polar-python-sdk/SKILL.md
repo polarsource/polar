@@ -1,6 +1,6 @@
 ---
 name: polar-python-sdk
-description: Integrate Polar billing in server-side Python applications using the versioned Polar and PolarAsync clients. Use when implementing Polar customers and external IDs, checkout or customer portal sessions, customer-state entitlement checks, webhook validation and processing, API error handling, or usage-event ingestion and metered billing.
+description: Integrate Polar billing in server-side Python applications using the versioned Polar and PolarAsync clients. Use when implementing Polar customers and external IDs, checkout or customer portal sessions, customer-state entitlement checks, webhook validation and processing, API error handling, usage-event ingestion and metered billing, or migrating an application from the old Polar Python SDK.
 ---
 
 # Polar Python SDK
@@ -14,6 +14,10 @@ Use the generated, versioned Polar SDK without inventing methods or parameters.
 3. Use `Polar` in synchronous code and `PolarAsync` in asynchronous code. Do not mix blocking SDK calls into an async request path.
 4. Identify whether the access token is scoped to an organization. Pass `organization_id` when the selected token does not imply one, and confirm the required endpoint scopes.
 5. Keep client, webhook, and environment configuration on the server.
+
+## Migrate from the old SDK
+
+Read [Migration from the `<1.0.0` SDK](references/migration-from-v0.md) before changing an application that imports `polar_sdk`, calls `_async` operation variants, or paginates with `.next()`. Do not mix old and new client, model, pagination, error, or webhook conventions.
 
 ## Configure and reuse the client
 

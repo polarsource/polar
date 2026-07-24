@@ -1,6 +1,6 @@
 ---
 name: polar-typescript-sdk
-description: Integrate Polar billing in server-side TypeScript applications using the versioned createPolar and createPolarCore clients. Use when implementing Polar customers and external IDs, checkout or customer portal sessions, customer-state entitlement checks, webhook validation and processing, API error handling, tree-shakable SDK calls, or usage-event ingestion and metered billing.
+description: Integrate Polar billing in server-side TypeScript applications using the versioned createPolar and createPolarCore clients. Use when implementing Polar customers and external IDs, checkout or customer portal sessions, customer-state entitlement checks, webhook validation and processing, API error handling, tree-shakable SDK calls, usage-event ingestion and metered billing, or migrating an application from the old Polar TypeScript SDK.
 ---
 
 # Polar TypeScript SDK
@@ -14,6 +14,10 @@ Use the generated, versioned Polar SDK without inventing methods or parameters.
 3. Use `createPolar` for the full service client. Use `createPolarCore` with individual service functions when bundle size or tree-shaking matters.
 4. Identify whether the access token is scoped to an organization. Pass `organization_id` when the selected token does not imply one, and confirm the required endpoint scopes.
 5. Keep client, webhook, and environment configuration in trusted server-side code.
+
+## Migrate from the old SDK
+
+Read [Migration from the `<1.0.0` SDK](references/migration-from-v0.md) before changing an application that imports an unversioned `Polar` class or uses camelCase request and response fields. Do not mix old and new client, field-casing, pagination, error, or webhook conventions.
 
 ## Configure and reuse the client
 

@@ -97,6 +97,7 @@ jobs:
           uv build --no-sources
           unzip -Z1 dist/*.whl | grep -Fx 'polar/.agents/skills/polar-python-sdk/SKILL.md'
           unzip -Z1 dist/*.whl | grep -Fx 'polar/.agents/skills/polar-python-sdk/agents/openai.yaml'
+          unzip -Z1 dist/*.whl | grep -Fx 'polar/.agents/skills/polar-python-sdk/references/migration-from-v0.md'
           unzip -Z1 dist/*.whl | grep -Fx 'polar/.agents/skills/polar-python-sdk/references/usage-events.md'
           unzip -Z1 dist/*.whl | grep -Fx 'polar/.agents/skills/polar-python-sdk/references/webhooks.md'
 
@@ -107,5 +108,6 @@ jobs:
           pnpm pack --pack-destination packed
           tar -tzf packed/*.tgz | grep -Fx 'package/.agents/skills/polar-typescript-sdk/SKILL.md'
           tar -tzf packed/*.tgz | grep -Fx 'package/.agents/skills/polar-typescript-sdk/agents/openai.yaml'
+          tar -tzf packed/*.tgz | grep -Fx 'package/.agents/skills/polar-typescript-sdk/references/migration-from-v0.md'
           tar -tzf packed/*.tgz | grep -Fx 'package/.agents/skills/polar-typescript-sdk/references/usage-events.md'
           tar -tzf packed/*.tgz | grep -Fx 'package/.agents/skills/polar-typescript-sdk/references/webhooks.md'

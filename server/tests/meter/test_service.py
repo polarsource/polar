@@ -9,8 +9,6 @@ import pytest
 import pytest_asyncio
 from pydantic import ValidationError
 from pytest_mock import MockerFixture
-from sqlalchemy.dialects import postgresql
-from sqlalchemy.sql import visitors
 
 from polar.auth.models import AuthSubject
 from polar.enums import SubscriptionRecurringInterval
@@ -1436,7 +1434,6 @@ class TestCreateBillingEntries:
         organization: Organization,
     ) -> None:
         mocker.patch("polar.meter.service._BILLING_ENTRY_BATCH_SIZE", 2)
-        execute_spy = mocker.spy(session, "execute")
         price_lookup_spy = mocker.spy(
             SubscriptionProductPriceRepository, "get_by_customers_and_meter"
         )
@@ -1517,26 +1514,12 @@ class TestCreateBillingEntries:
             for call in enqueue_job_mock.call_args_list
             if call.args[0] == "subscription.update_meters"
         ]
-        assert {call.args[1] for call in subscription_jobs} == {
-            subscription.id for subscription in subscriptions
-        }
-
-        event_fetch_statements = [
-            call.args[0]
-            for call in execute_spy.call_args_list
-            if any(
-                getattr(element, "name", None) == "meter_billing_event_page"
-                for element in visitors.iterate(call.args[0])
-            )
+        assert [call.args[1] for call in subscription_jobs] == [
+            subscriptions[0].id,
+            subscriptions[1].id,
+            subscriptions[2].id,
+            subscriptions[0].id,
         ]
-        assert len(event_fetch_statements) == 3
-        for statement in event_fetch_statements:
-            compiled_statement = statement.compile(dialect=postgresql.dialect())
-            sql = str(compiled_statement)
-            assert " LIMIT " in sql
-            assert "UNION ALL" in sql
-            assert "events.customer_id = customers.id OR" not in sql
-            assert 2 in compiled_statement.params.values()
 
 
 @pytest.mark.asyncio

@@ -1,0 +1,288 @@
+import { OpenQuestion } from "/snippets/open-question.jsx";
+
+<Info>
+  **Status**: Draft
+
+**Created**: July 2026
+
+**Last Updated**: July 23rd, 2026
+
+</Info>
+
+## Briefing
+
+A buyer purchases with their work email. Later they ask the merchant to move the purchase to
+their personal email. That address already exists as a customer in the same organization, so
+the merchant gets `A customer with this email address already exists.` and stops there.
+
+The constraint is real and we want to keep it: the partial unique index
+`ix_customers_organization_id_email_not_null` on `(organization_id, lower(email), deleted_at)`
+means one live customer per email per organization.
+
+Today the merchant's only workaround is to issue a 100% discount code and ask the buyer to
+purchase again. That leaves a duplicate order, inflated order counts, and the original
+purchase stranded on an address the buyer no longer uses. Support can run backoffice
+`edit_email`, but it fails on exactly this case, because the address is taken.
+
+We have avoided merging customers for a long time. This document proposes merging them, and
+argues that most of the danger comes from cases we can refuse rather than solve.
+
+## Goals
+
+- Support can merge two customers in one organization and keep a single email.
+- Merging never rewrites a live billing relationship.
+- Every reason a pair cannot merge is reported at once, before anything is written.
+- No schema change. No new columns, no index changes, no Alembic migration.
+
+## Non-goals
+
+- Merging customers across organizations.
+- Merging team customers. Seats and members bring their own uniqueness rules.
+- A merchant-facing API. Support runs this first; see [Rollout](#rollout).
+
+## The survivor is derived, not chosen
+
+This is the load-bearing decision, and everything else follows from it.
+
+The merchant says which **email** to keep. They do not pick which customer row survives. We
+derive it: **whichever customer holds the billable subscription survives.**
+
+That customer's `stripe_customer_id`, its payment methods and its subscription never move.
+The other side contributes one-time orders, benefit grants, license keys and downloadables,
+none of which touch Stripe.
+
+This removes the payment-method problem instead of handling it. A Stripe payment method
+cannot be attached to a second Stripe customer, and renewals charge
+`customer.stripe_customer_id` with a payment method whose `customer_id` must match
+(`server/polar/order/service.py:1900-1960`). If the merchant chose the survivor, roughly half
+of all merges would strand a subscription on a card it can no longer charge, and the buyer
+would have to re-enter their details. Deriving the survivor means the question never comes up.
+
+| Billable subscription | Survivor | Stripe state moved |
+| --- | --- | --- |
+| Neither customer | Either — pick the older | None |
+| Exactly one | That one | None |
+| Both | **Refuse** | — |
+
+### Inverting the email
+
+When the derived direction runs against the address the merchant asked for, the surviving row
+takes over the loser's email. This is the last step, not a special case.
+
+Take the ticket that prompted this. Customer A is `work@company.com` and holds the
+subscription. Customer B is `personal@gmail.com` with older one-time purchases. The merchant
+wants everything under `personal@gmail.com`. A survives, because A holds the live billing:
+
+1. Move B's rows onto A.
+2. Soft-delete B. `deleted_at` is part of the unique index, so `personal@gmail.com` frees up.
+3. Set `A.email = personal@gmail.com`, carrying B's `email_verified`.
+
+B keeps its email on the soft-deleted row. The index tolerates both rows holding the address
+because their `deleted_at` differs, and the audit trail stays intact.
+
+The end state is one live customer: A's id, A's Stripe customer, A's subscription and payment
+methods, B's orders and license keys, and B's email. The buyer signs in with the address they
+asked for and sees everything.
+
+The cost is that **the surviving customer id is A's**. A merchant integration holding B's
+Polar customer id breaks. This is why the `external_id` rejection below matters: it is the
+merchant's own reference, and we refuse rather than guess which one to keep.
+
+### Sessions
+
+A portal session is bound to `customer_id`, not to an email
+(`server/polar/models/customer_session.py:27`). Renaming the survivor does not invalidate it.
+
+That is a problem, and it is the survivor's sessions that matter, not the loser's. In the
+example above the survivor is the *work* row. Anyone holding a live session for
+`work@company.com` keeps it, and one second after the merge that same token lists the personal
+account's orders and license keys. `CUSTOMER_SESSION_TTL` is one hour, so the window is
+bounded — but the two addresses are not always the same person. A company mailbox an employee
+has left behind, or a shared `billing@` alias, both end up reading someone's personal
+purchases.
+
+The existing email-change flow does not revoke sessions
+(`server/polar/customer_email_update/service.py`), and that is right for what it does: the
+buyer proved control of both addresses. In a merge nobody proves anything. Support acts on
+the buyer's behalf.
+
+**So we drop `customer_sessions` and `customer_session_codes` for both customers, not just the
+loser.** The buyer signs in again against the surviving email, which proves control of the
+address that now owns everything. Being logged out by a support action is expected.
+
+Drop the survivor's pending `customer_email_verifications` too. A verification record for some
+third address outlives the merge and can be redeemed afterwards, silently moving the email
+away from what the merge set.
+
+Logging in with the old address stops working on its own, which is what we want:
+`get_by_email_and_organization` builds on `get_base_statement()`, and that excludes
+soft-deleted rows by default.
+
+## Rejections
+
+Run these as a precheck and return all of them at once, each with a stable code and a
+`blocker` or `warning` level, plus a `can_start` flag. A merchant who fixes one blocker should
+not discover the next one on the retry.
+
+**Same customer, or either already soft-deleted.**
+
+**Both have a billable subscription.** Use the same predicate checkout uses in
+`_validate_subscription_uniqueness` (`server/polar/checkout/service.py:2395`):
+`Subscription.billable` across *every* product in the organization, not per-product.
+`billable_statuses` is `active_statuses() | {past_due}`. Polar already enforces one billable
+subscription per customer per organization — a merge must not become the way around it.
+
+We refuse this even for organizations with `allow_multiple_subscriptions` on. Both sides then
+hold live billing, and whichever loses has its payment method orphaned.
+
+**Both have an `external_id`.** It is unique per organization and it is how the merchant's own
+system finds the customer. We cannot know which one to keep. If only one side has it, the
+survivor takes it.
+
+**Either is a team customer, or holds a live seat.** Test `CustomerType.team` and the presence
+of a non-revoked `customer_seats` row. `members` carries a unique `(customer_id, lower(email))`
+and a one-active-owner-per-customer index (`server/polar/models/member.py:22`), and seat
+benefits are member-scoped rather than customer-scoped. Seats and members deserve their own
+design; this one is B2C.
+
+Test the type, not the presence of members. In an organization with `member_model_enabled`,
+portal login auto-creates an owner `Member` for individual customers too
+(`server/polar/customer_portal/service/customer_session.py:128`). Rejecting on "has any
+member" would make merges impossible for every organization on the member model.
+
+<OpenQuestion>
+  Refusing when both sides have a billable subscription is the strictest rejection here, and
+  it blocks a buyer who genuinely subscribed twice under two addresses. Do we want a follow-up
+  that cancels one side and credits it, or does that belong to the merchant to sort out before
+  merging?
+</OpenQuestion>
+
+## What moves
+
+21 tables carry `customer_id`. With the rejections in place, most are a plain
+`UPDATE ... SET customer_id = survivor.id`:
+
+`orders`, `subscriptions`, `refunds`, `transactions`, `events`, `meter_events`,
+`billing_entries`, `checkouts`, `customer_seats`, `support_cases`, `license_keys`,
+`trial_redemptions`, `benefit_grants`.
+
+`benefit_grants` looks like it should collide. The unique index is
+`(customer_id, benefit_id, member_id, subscription_id, order_id)` with `NULLS NOT DISTINCT`
+(`server/polar/models/benefit_grant.py:96`). It cannot collide: every grant's scope is a
+specific order or subscription, and those belong to one customer. Two grants for the same
+benefit landing on one customer is already supported — `revoke_benefit` counts `other_grants`
+before calling the strategy's revoke (`server/polar/benefit/grant/service.py:325`).
+
+Three tables need a rule:
+
+- **`wallets`** — unique `(type, currency, customer_id)`. For each loser wallet, find the
+  survivor's wallet with the same type and currency. If one exists, re-point
+  `wallet_transactions.wallet_id` and soft-delete the loser wallet. Otherwise move it.
+  `Wallet.balance` is a `column_property` summing `wallet_transactions`
+  (`server/polar/models/wallet.py:46`), so the balance recomputes on its own. We never do
+  arithmetic on a balance.
+- **`customer_meters`** — unique `(customer_id, meter_id)`. Delete the loser's rows, then call
+  `customer_meter_service.update_customer(session, survivor)` once the events have moved. It
+  rebuilds every meter from the event stream.
+- **`downloadables`** — unique `(customer_id, member_id, file_id, benefit_id)`. Move the rows
+  the survivor does not already have, soft-delete the duplicates.
+
+**Discarded:** `customer_sessions`, `customer_session_codes` and
+`customer_email_verifications` on the loser. The buyer signs in again.
+
+**Not moved:** `payment_methods`. The Stripe payment method stays attached to the loser's
+Stripe customer, so a moved row would show the survivor a card that cannot charge. Nothing
+needs them, because the loser has no billable subscription. Soft-delete them.
+
+The loser's `stripe_customer_id` stays on the soft-deleted row for payment history.
+
+## Implementation notes
+
+Four things the merge must not delegate to existing services. Each of those services is built
+for removing a customer or for a buyer changing their own address, and each enqueues cleanup
+work that a merge has to avoid.
+
+**Soft-delete the loser before writing the survivor's email**, or the unique index rejects the
+write. Use `CustomerRepository.soft_delete()` directly — not `customer_service.delete()`
+(`server/polar/customer/service.py:564`), which enqueues `subscription.cancel_customer` and
+`benefit.revoke_customer` and would cancel and revoke everything the merge just moved.
+
+**Write the email through `CustomerRepository.update()`**, not `customer_service.update()`
+(`server/polar/customer/service.py:380`). That path is wrong for a merge three times over: it
+rejects the address as already taken, it forces `email_verified = False`, and it never touches
+Stripe. Carry `email_verified` from the loser — that address was verified against the loser.
+
+**Sync Stripe explicitly.** Otherwise the Stripe customer keeps the old address and Stripe-side
+receipts go to the email the buyer asked to leave behind. The sync lives only in the verified
+email-update flow today (`server/polar/customer_email_update/service.py:163`), so mirror it:
+
+```python
+if survivor.stripe_customer_id is not None and survivor.email is not None:
+    await stripe_service.update_customer(
+        survivor.stripe_customer_id, email=survivor.email
+    )
+```
+
+**Soft-delete the loser's owner member row directly**, if the organization is on the member
+model and one exists. Not through `member_service.delete_by_customer`
+(`server/polar/member/service.py:239`) — it enqueues `enqueue_member_grant_deletions` and
+`customer_seat.revoke_seats_for_member`, and would revoke the grants the merge just moved. The
+row is recreated from the survivor's email on the next portal login.
+
+That leaves nothing for `member_service.sync_owner_email`, which the email-update flow calls
+alongside the Stripe sync. Skip it.
+
+Assert that both customers belong to the same organization rather than reporting it as a
+blocker. A merchant endpoint resolves both through an organization-scoped `AuthSubject`, so it
+cannot happen there. Backoffice can: its customer list spans every organization
+(`server/polar/backoffice/customers/endpoints.py:161`), so a mis-picked id is reachable. That
+is a staff mistake, not a reason two customers are unmergeable, and it does not belong in a
+list the merchant eventually reads.
+
+The whole merge runs in one transaction. Finish with
+`enqueue_job("customer.state_changed", survivor.id)`.
+
+## Rollout
+
+1. **Precheck.** `server/polar/customer_merge/` with the rejection rules and their schemas.
+   Pure read path, no mutation. Useful on its own: it answers "are these two mergeable?"
+2. **Merge service.** Derives the survivor, re-runs the precheck, refuses on any blocker.
+3. **Backoffice action.** "Merge with another customer", alongside the existing
+   `revoke_benefits`, `grant_benefits_*` and `edit_email` actions. The modal shows the
+   blockers, names the derived survivor, and lists what moves and what is discarded.
+
+Backoffice is the whole first release. Support runs it the day it ships and we learn the edges
+before merchants can reach it.
+
+<OpenQuestion>
+  Merchants asked for this, not support. Shipping backoffice-only means every merge stays a
+  support ticket. Is that the right trade for the first release, or should the private API
+  endpoint ship alongside it?
+</OpenQuestion>
+
+## Alternatives considered
+
+**Transfer a single purchase.** Move one order or subscription between customers and leave the
+rest. Rejected: `invoice_number` embeds the customer's `short_id` and a per-customer counter
+(`server/polar/organization/service.py:965`), so a transferred order hands the target an
+invoice numbered in someone else's sequence, and leaves a gap in the source's. Issued invoices
+are immutable and should stay that way.
+
+**Move entitlement only, leave the money.** Re-point benefit grants and license keys, keep the
+order where it is. Rejected: grants are re-derived from the order or subscription's customer
+in `enqueue_benefits_grants` (`server/polar/benefit/grant/service.py:381`), so the next renewal
+grants straight back to the original customer. It only holds for one-time purchases, and only
+until something re-runs.
+
+**A merchant-facing benefit grant API.** `/v1/benefit-grants` is read-only today. Adding a
+write would let merchants grant a product to any customer, which solves the reported ticket
+and several others. Rejected: it creates entitlements with no purchase behind them, scoped to
+neither an order nor a subscription, that no lifecycle revokes. The merge has a hard edge and
+a clean end state; this has neither.
+
+## References
+
+- Support thread that prompted this: merchant asking to move a license to a different customer.
+- `server/polar/models/customer.py` — the email uniqueness index.
+- `server/polar/checkout/service.py:2395` — the one-billable-subscription rule we reuse.
+- `server/polar/backoffice/customers/endpoints.py` — where the action lands.

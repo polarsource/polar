@@ -526,7 +526,7 @@ class MeterService:
         entries: list[BillingEntry] = []
         updated_subscriptions: set[uuid.UUID] = set()
         if page:
-            customer_ids = {customer.id for _, customer in page}
+            customer_ids = {customer.id for _, customer in page if customer is not None}
             customer_price_map = (
                 await subscription_product_price_repository.get_by_customers_and_meter(
                     list(customer_ids), meter.id
@@ -534,6 +534,9 @@ class MeterService:
             )
 
             for event, customer in page:
+                if customer is None:
+                    continue
+
                 try:
                     customer_price = customer_price_map[customer.id]
                 except KeyError:

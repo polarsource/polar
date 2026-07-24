@@ -13,7 +13,6 @@ from sqlalchemy import (
     String,
     and_,
     cast,
-    exists,
     func,
     literal,
     or_,
@@ -308,7 +307,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         after_ingested_at: datetime | None,
         after_event_id: UUID | None,
         limit: int,
-    ) -> Sequence[tuple[Event, Customer]]:
+    ) -> Sequence[tuple[Event, Customer | None]]:
         page_statement = (
             select(
                 MeterEvent.event_id,
@@ -317,21 +316,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 MeterEvent.organization_id,
                 MeterEvent.ingested_at,
             )
-            .where(
-                MeterEvent.meter_id == meter_id,
-                or_(
-                    MeterEvent.customer_id.is_not(None),
-                    and_(
-                        MeterEvent.external_customer_id.is_not(None),
-                        exists(
-                            select(1).where(
-                                Customer.external_id == MeterEvent.external_customer_id,
-                                Customer.organization_id == MeterEvent.organization_id,
-                            )
-                        ),
-                    ),
-                ),
-            )
+            .where(MeterEvent.meter_id == meter_id)
             .order_by(MeterEvent.ingested_at.asc(), MeterEvent.event_id.asc())
             .limit(limit)
         )
@@ -374,11 +359,17 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         )
         statement = (
             select(Event, Customer)
-            .join(resolved_customers, resolved_customers.c.event_id == Event.id)
-            .join(Customer, Customer.id == resolved_customers.c.resolved_customer_id)
+            .join(event_page, event_page.c.event_id == Event.id)
+            .outerjoin(
+                resolved_customers,
+                resolved_customers.c.event_id == event_page.c.event_id,
+            )
+            .outerjoin(
+                Customer, Customer.id == resolved_customers.c.resolved_customer_id
+            )
             .order_by(
-                resolved_customers.c.ingested_at.asc(),
-                resolved_customers.c.event_id.asc(),
+                event_page.c.ingested_at.asc(),
+                event_page.c.event_id.asc(),
             )
         )
         result = await self.session.execute(statement)

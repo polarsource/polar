@@ -1,4 +1,5 @@
 import uuid
+from collections import Counter
 from datetime import timedelta
 from decimal import Decimal
 from typing import Literal
@@ -1424,6 +1425,51 @@ class TestCreateBillingEntries:
         assert entries[0].customer == customer
         assert entries[0].subscription == subscription
 
+    async def test_unresolved_external_customers_do_not_expand_page(
+        self,
+        enqueue_job_mock: AsyncMock,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        metered_subscription: Subscription,
+    ) -> None:
+        mocker.patch("polar.meter.service._BILLING_ENTRY_BATCH_SIZE", 2)
+        events = [
+            await create_event(
+                save_fixture,
+                organization=customer.organization,
+                external_customer_id=f"unresolved-{index}",
+                metadata={"tokens": 10, "model": "lite"},
+            )
+            for index in range(2)
+        ]
+        events.append(
+            await create_event(
+                save_fixture,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 10, "model": "lite"},
+            )
+        )
+        await event_service._create_meter_events(session, events)
+
+        first_page_entries = await meter_service.create_billing_entries(session, meter)
+
+        assert first_page_entries == []
+        assert meter.last_billed_event == events[1]
+        enqueue_job_mock.assert_called_once_with("meter.billing_entries", meter.id)
+
+        enqueue_job_mock.reset_mock()
+        second_page_entries = await meter_service.create_billing_entries(session, meter)
+
+        assert [entry.event for entry in second_page_entries] == [events[2]]
+        assert meter.last_billed_event == events[2]
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.update_meters", metered_subscription.id
+        )
+
     async def test_backlog_across_reenqueued_pages(
         self,
         enqueue_job_mock: AsyncMock,
@@ -1514,12 +1560,14 @@ class TestCreateBillingEntries:
             for call in enqueue_job_mock.call_args_list
             if call.args[0] == "subscription.update_meters"
         ]
-        assert [call.args[1] for call in subscription_jobs] == [
-            subscriptions[0].id,
-            subscriptions[1].id,
-            subscriptions[2].id,
-            subscriptions[0].id,
-        ]
+        assert Counter(call.args[1] for call in subscription_jobs) == Counter(
+            (
+                subscriptions[0].id,
+                subscriptions[1].id,
+                subscriptions[2].id,
+                subscriptions[0].id,
+            )
+        )
 
 
 @pytest.mark.asyncio

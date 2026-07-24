@@ -44,6 +44,7 @@ from polar.models.billing_entry import BillingEntryDirection
 from polar.models.customer_seat import SeatStatus
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
+from polar.subscription.repository import SubscriptionProductPriceRepository
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -1422,6 +1423,87 @@ class TestCreateBillingEntries:
         assert entries[0].customer == customer
         assert entries[0].subscription == subscription
 
+    async def test_multiple_batches(
+        self,
+        enqueue_job_mock: AsyncMock,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        meter: Meter,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.meter.service._BILLING_ENTRY_BATCH_SIZE", 2)
+        price_lookup_spy = mocker.spy(
+            SubscriptionProductPriceRepository, "get_by_customers_and_meter"
+        )
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+
+        customers: list[Customer] = []
+        subscriptions: list[Subscription] = []
+        for i in range(3):
+            customer = await create_customer(
+                save_fixture,
+                organization=organization,
+                email=f"batch-customer-{i}@example.com",
+            )
+            subscription = await create_active_subscription(
+                save_fixture, customer=customer, product=product
+            )
+            customers.append(customer)
+            subscriptions.append(subscription)
+
+        customer_without_subscription = await create_customer(
+            save_fixture, organization=organization, email="batch-none@example.com"
+        )
+
+        # 6 events across 3 batches of 2. The last event has no subscription and
+        # must not produce an entry, but must still advance the watermark.
+        events: list[Event] = []
+        for i in range(5):
+            events.append(
+                await create_event(
+                    save_fixture,
+                    organization=organization,
+                    customer=customers[i % 3],
+                    metadata={"tokens": 10, "model": "lite"},
+                )
+            )
+        events.append(
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer_without_subscription,
+                metadata={"tokens": 10, "model": "lite"},
+            )
+        )
+        await event_service._create_meter_events(session, events)
+
+        entries = await meter_service.create_billing_entries(session, meter)
+
+        assert [
+            (entry.event, entry.customer, entry.subscription) for entry in entries
+        ] == [(events[i], customers[i % 3], subscriptions[i % 3]) for i in range(5)]
+
+        # Watermark advances to the last streamed event across all batches, even
+        # though it produced no billable entry.
+        assert meter.last_billed_event == events[-1]
+
+        # 6 events, batch size 2 -> ceil(6 / 2) == 3 per-batch lookups: bounded,
+        # not one per event and not one for the whole backlog.
+        assert price_lookup_spy.call_count == 3
+
+        assert enqueue_job_mock.call_count == 3
+        for subscription in subscriptions:
+            enqueue_job_mock.assert_any_call(
+                "subscription.update_meters", subscription.id
+            )
+
 
 @pytest.mark.asyncio
 class TestCreateBillingEntriesWithSeats:
@@ -1732,6 +1814,114 @@ class TestCreateBillingEntriesWithSeats:
             assert entry.subscription == billing_manager_subscription
             assert entry.product_price == seat_product.prices[0]
             assert entry.direction == BillingEntryDirection.debit
+
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.update_meters", billing_manager_subscription.id
+        )
+
+    async def test_seat_holders_across_multiple_batches(
+        self,
+        enqueue_job_mock: AsyncMock,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+    ) -> None:
+        mocker.patch("polar.meter.service._BILLING_ENTRY_BATCH_SIZE", 2)
+        price_lookup_spy = mocker.spy(
+            SubscriptionProductPriceRepository, "get_by_customers_and_meter"
+        )
+
+        seat_org = await create_organization(
+            save_fixture, account, feature_settings={"seat_based_pricing_enabled": True}
+        )
+
+        meter = await create_meter(
+            save_fixture,
+            name="Lite Model Usage",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+            organization=seat_org,
+        )
+
+        billing_manager = await create_customer(save_fixture, organization=seat_org)
+
+        seat_product = await create_product(
+            save_fixture,
+            organization=seat_org,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd"), ("seat", 1000, "usd")],
+        )
+
+        billing_manager_subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=seat_product,
+            customer=billing_manager,
+            seats=5,
+        )
+        await session.refresh(
+            billing_manager_subscription, ["subscription_product_prices"]
+        )
+
+        seat_holders: list[Customer] = []
+        for i in range(3):
+            seat_holder = await create_customer(
+                save_fixture,
+                organization=seat_org,
+                email=f"seat_holder_{i}@example.com",
+            )
+            seat = await create_customer_seat(
+                save_fixture,
+                subscription=billing_manager_subscription,
+                customer=seat_holder,
+                status=SeatStatus.claimed,
+                claimed_at=utc_now(),
+            )
+            await session.refresh(seat, ["subscription", "customer"])
+            assert seat.subscription is not None
+            await session.refresh(
+                seat.subscription,
+                ["product", "customer", "subscription_product_prices"],
+            )
+            await session.refresh(seat.subscription.product, ["organization"])
+            seat_holders.append(seat_holder)
+
+        timestamp = utc_now()
+        events: list[Event] = []
+        for i in range(5):
+            events.append(
+                await create_event(
+                    save_fixture,
+                    timestamp=timestamp + timedelta(seconds=i + 1),
+                    organization=seat_org,
+                    customer=seat_holders[i % 3],
+                    metadata={"tokens": 10, "model": "lite"},
+                )
+            )
+        await event_service._create_meter_events(session, events)
+
+        entries = await meter_service.create_billing_entries(session, meter)
+
+        assert len(entries) == 5
+        for entry in entries:
+            assert entry.customer == billing_manager
+            assert entry.subscription == billing_manager_subscription
+            assert entry.product_price == seat_product.prices[0]
+            assert entry.direction == BillingEntryDirection.debit
+
+        assert meter.last_billed_event == events[-1]
+
+        # 5 events, batch size 2 -> ceil(5 / 2) == 3 per-batch lookups.
+        assert price_lookup_spy.call_count == 3
 
         enqueue_job_mock.assert_called_once_with(
             "subscription.update_meters", billing_manager_subscription.id

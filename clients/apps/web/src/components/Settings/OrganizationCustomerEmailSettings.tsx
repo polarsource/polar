@@ -3,7 +3,6 @@ import { useOptimisticSave } from '@/hooks/useOptimisticSave'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Switch } from '@polar-sh/orbit'
-import { Box } from '@polar-sh/orbit/Box'
 import React from 'react'
 import { toast } from '../Toast/use-toast'
 import CustomerEmailLinkSetting from './CustomerEmailLinkSetting'
@@ -118,22 +117,22 @@ const OrganizationCustomerEmailSettings: React.FC<
   )
 
   return (
-    <Box flexDirection="column" rowGap="l" width="100%">
-      <SettingsGroup>
-        {customerEmails.map(({ key, title, description }) => (
-          <SettingsGroupItem key={key} title={title} description={description}>
-            <Switch
-              checked={settings[key]}
-              disabled={readOnly}
-              onCheckedChange={(checked) =>
-                update((previous) => ({ ...previous, [key]: checked }))
-              }
-            />
-          </SettingsGroupItem>
-        ))}
-      </SettingsGroup>
+    <SettingsGroup>
+      {customerEmails.map(({ key, title, description }) => (
+        <SettingsGroupItem key={key} title={title} description={description}>
+          <Switch
+            checked={settings[key]}
+            disabled={readOnly}
+            onCheckedChange={(checked) =>
+              update((previous) => ({ ...previous, [key]: checked }))
+            }
+          />
+        </SettingsGroupItem>
+      ))}
       {customLinkEnabled && (
         <CustomerEmailLinkSetting
+          key={settings.link_url ?? 'unset'}
+          organizationId={organization.id}
           value={settings.link_url ?? null}
           readOnly={readOnly}
           onChange={(link_url) =>
@@ -141,7 +140,7 @@ const OrganizationCustomerEmailSettings: React.FC<
           }
         />
       )}
-    </Box>
+    </SettingsGroup>
   )
 }
 

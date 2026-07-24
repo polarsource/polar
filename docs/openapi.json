@@ -35697,6 +35697,18 @@
             ],
             "title": "Locale"
           },
+          "payment_method_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method Type",
+            "description": "Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`."
+          },
           "payment_processor_metadata": {
             "additionalProperties": {
               "type": "string"
@@ -35925,6 +35937,7 @@
           "customer_billing_name",
           "customer_billing_address",
           "customer_tax_id",
+          "payment_method_type",
           "payment_processor_metadata",
           "billing_address_fields",
           "trial_interval",
@@ -36146,6 +36159,18 @@
               }
             ],
             "title": "Locale"
+          },
+          "payment_method_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method Type",
+            "description": "Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`."
           },
           "discount_code": {
             "anyOf": [
@@ -39602,6 +39627,18 @@
             ],
             "title": "Locale"
           },
+          "payment_method_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method Type",
+            "description": "Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`."
+          },
           "payment_processor_metadata": {
             "additionalProperties": {
               "type": "string"
@@ -39766,6 +39803,7 @@
           "customer_billing_name",
           "customer_billing_address",
           "customer_tax_id",
+          "payment_method_type",
           "payment_processor_metadata",
           "billing_address_fields",
           "products",
@@ -40195,6 +40233,18 @@
             ],
             "title": "Locale"
           },
+          "payment_method_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method Type",
+            "description": "Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`."
+          },
           "payment_processor_metadata": {
             "additionalProperties": {
               "type": "string"
@@ -40370,6 +40420,7 @@
           "customer_billing_name",
           "customer_billing_address",
           "customer_tax_id",
+          "payment_method_type",
           "payment_processor_metadata",
           "billing_address_fields",
           "products",
@@ -40959,6 +41010,18 @@
               }
             ],
             "title": "Locale"
+          },
+          "payment_method_type": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Payment Method Type",
+            "description": "Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`."
           },
           "discount_code": {
             "anyOf": [
@@ -54190,11 +54253,16 @@
             "type": "string",
             "format": "email",
             "title": "Email"
+          },
+          "cf-turnstile-response": {
+            "type": "string",
+            "title": "Cf-Turnstile-Response"
           }
         },
         "type": "object",
         "required": [
-          "email"
+          "email",
+          "cf-turnstile-response"
         ],
         "title": "EmailOTPRequest"
       },
@@ -59190,6 +59258,21 @@
             "type": "string",
             "title": "Slug"
           },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "avatar_url": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Avatar Url"
+          },
           "requires_sso": {
             "type": "boolean",
             "title": "Requires Sso",
@@ -59200,6 +59283,8 @@
         "required": [
           "id",
           "slug",
+          "name",
+          "avatar_url",
           "requires_sso"
         ],
         "title": "MemberOrganization"
@@ -65649,6 +65734,169 @@
           "customer_cancellation_comment"
         ],
         "title": "OrderSubscription"
+      },
+      "OrderUnvoidedEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "The timestamp of the event."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the event.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ]
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "ID of the customer in your Polar organization associated with the event."
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Customer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The customer associated with the event."
+          },
+          "external_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Customer Id",
+            "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
+          "child_count": {
+            "type": "integer",
+            "title": "Child Count",
+            "description": "Number of direct child events linked to this event.",
+            "default": 0
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id",
+            "description": "The ID of the parent event."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Human readable label of the event type."
+          },
+          "source": {
+            "type": "string",
+            "const": "system",
+            "title": "Source",
+            "description": "The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."
+          },
+          "name": {
+            "type": "string",
+            "const": "order.unvoided",
+            "title": "Name",
+            "description": "The name of the event."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/OrderUnvoidedMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "timestamp",
+          "organization_id",
+          "customer_id",
+          "customer",
+          "external_customer_id",
+          "label",
+          "source",
+          "name",
+          "metadata"
+        ],
+        "title": "OrderUnvoidedEvent",
+        "description": "An event created by Polar when an order is unvoided."
+      },
+      "OrderUnvoidedMetadata": {
+        "properties": {
+          "order_id": {
+            "type": "string",
+            "title": "Order Id"
+          },
+          "amount": {
+            "type": "integer",
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          }
+        },
+        "type": "object",
+        "required": [
+          "order_id",
+          "amount",
+          "currency"
+        ],
+        "title": "OrderUnvoidedMetadata"
       },
       "OrderUpdate": {
         "properties": {
@@ -80098,6 +80346,179 @@
         ],
         "title": "SubscriptionReactivatedMetadata"
       },
+      "SubscriptionReinstatedEvent": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Id",
+            "description": "The ID of the object."
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp",
+            "description": "The timestamp of the event."
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid4",
+            "title": "Organization Id",
+            "description": "The ID of the organization owning the event.",
+            "examples": [
+              "1dbfc517-0bbf-4301-9ba8-555ca42b9737"
+            ]
+          },
+          "customer_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Customer Id",
+            "description": "ID of the customer in your Polar organization associated with the event."
+          },
+          "customer": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/Customer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "description": "The customer associated with the event."
+          },
+          "external_customer_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Customer Id",
+            "description": "ID of the customer in your system associated with the event."
+          },
+          "member_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Member Id",
+            "description": "ID of the member within the customer's organization who performed the action inside B2B."
+          },
+          "external_member_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "External Member Id",
+            "description": "ID of the member in your system within the customer's organization who performed the action inside B2B."
+          },
+          "child_count": {
+            "type": "integer",
+            "title": "Child Count",
+            "description": "Number of direct child events linked to this event.",
+            "default": 0
+          },
+          "parent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid4"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Parent Id",
+            "description": "The ID of the parent event."
+          },
+          "label": {
+            "type": "string",
+            "title": "Label",
+            "description": "Human readable label of the event type."
+          },
+          "source": {
+            "type": "string",
+            "const": "system",
+            "title": "Source",
+            "description": "The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."
+          },
+          "name": {
+            "type": "string",
+            "const": "subscription.reinstated",
+            "title": "Name",
+            "description": "The name of the event."
+          },
+          "metadata": {
+            "$ref": "#/components/schemas/SubscriptionReinstatedMetadata"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "timestamp",
+          "organization_id",
+          "customer_id",
+          "customer",
+          "external_customer_id",
+          "label",
+          "source",
+          "name",
+          "metadata"
+        ],
+        "title": "SubscriptionReinstatedEvent",
+        "description": "An event created by Polar when a canceled subscription is reinstated."
+      },
+      "SubscriptionReinstatedMetadata": {
+        "properties": {
+          "subscription_id": {
+            "type": "string",
+            "title": "Subscription Id"
+          },
+          "product_id": {
+            "type": "string",
+            "title": "Product Id"
+          },
+          "amount": {
+            "type": "integer",
+            "title": "Amount"
+          },
+          "currency": {
+            "type": "string",
+            "title": "Currency"
+          },
+          "recurring_interval": {
+            "type": "string",
+            "title": "Recurring Interval"
+          },
+          "recurring_interval_count": {
+            "type": "integer",
+            "title": "Recurring Interval Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "subscription_id"
+        ],
+        "title": "SubscriptionReinstatedMetadata"
+      },
       "SubscriptionResume": {
         "properties": {
           "resume": {
@@ -81963,6 +82384,9 @@
             "$ref": "#/components/schemas/SubscriptionReactivatedEvent"
           },
           {
+            "$ref": "#/components/schemas/SubscriptionReinstatedEvent"
+          },
+          {
             "$ref": "#/components/schemas/SubscriptionPausedEvent"
           },
           {
@@ -81991,6 +82415,9 @@
           },
           {
             "$ref": "#/components/schemas/OrderVoidedEvent"
+          },
+          {
+            "$ref": "#/components/schemas/OrderUnvoidedEvent"
           },
           {
             "$ref": "#/components/schemas/CheckoutCreatedEvent"
@@ -82044,6 +82471,7 @@
             "meter.reset": "#/components/schemas/MeterResetEvent",
             "order.paid": "#/components/schemas/OrderPaidEvent",
             "order.refunded": "#/components/schemas/OrderRefundedEvent",
+            "order.unvoided": "#/components/schemas/OrderUnvoidedEvent",
             "order.voided": "#/components/schemas/OrderVoidedEvent",
             "subscription.billing_period_updated": "#/components/schemas/SubscriptionBillingPeriodUpdatedEvent",
             "subscription.canceled": "#/components/schemas/SubscriptionCanceledEvent",
@@ -82053,6 +82481,7 @@
             "subscription.paused": "#/components/schemas/SubscriptionPausedEvent",
             "subscription.product_updated": "#/components/schemas/SubscriptionProductUpdatedEvent",
             "subscription.reactivated": "#/components/schemas/SubscriptionReactivatedEvent",
+            "subscription.reinstated": "#/components/schemas/SubscriptionReinstatedEvent",
             "subscription.resumed": "#/components/schemas/SubscriptionResumedEvent",
             "subscription.revoked": "#/components/schemas/SubscriptionRevokedEvent",
             "subscription.seats_updated": "#/components/schemas/SubscriptionSeatsUpdatedEvent",

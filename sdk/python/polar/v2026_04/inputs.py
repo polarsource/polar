@@ -611,6 +611,9 @@ class CheckoutConfirmStripe(typing.TypedDict):
 
     locale: typing.NotRequired[str | None]
 
+    payment_method_type: typing.NotRequired[str | None]
+    """Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`."""
+
     discount_code: typing.NotRequired[str | None]
     """Discount code to apply to the checkout."""
 
@@ -1058,6 +1061,9 @@ class CheckoutUpdatePublic(typing.TypedDict):
     customer_tax_id: typing.NotRequired[str | None]
 
     locale: typing.NotRequired[str | None]
+
+    payment_method_type: typing.NotRequired[str | None]
+    """Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`."""
 
     discount_code: typing.NotRequired[str | None]
     """Discount code to apply to the checkout."""

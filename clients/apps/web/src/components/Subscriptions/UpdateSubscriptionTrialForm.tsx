@@ -36,8 +36,8 @@ export const UpdateSubscriptionTrialForm = ({
   } = useModal()
 
   const minDate = useMemo<Date | undefined>(() => {
-    if (subscription.status === 'trialing' && subscription.trial_start) {
-      return new Date(subscription.trial_start)
+    if (subscription.status === 'trialing') {
+      return new Date()
     }
     if (subscription.current_period_end) {
       return new Date(subscription.current_period_end)
@@ -150,6 +150,7 @@ export const UpdateSubscriptionTrialForm = ({
               <FormField
                 control={control}
                 name="trial_end"
+                rules={{ required: 'Please select a trial end date' }}
                 render={({ field }) => {
                   return (
                     <FormItem className="flex flex-col gap-y-2">

@@ -47,7 +47,7 @@ export const UpdateSubscriptionDiscountForm = ({
 
   const form = useForm<schemas['SubscriptionUpdateBase']>({
     defaultValues: {
-      discount_id: subscription.discount_id || '',
+      discount_id: subscription.discount_id ?? null,
     },
   })
   const { control, handleSubmit, setError } = form
@@ -93,6 +93,11 @@ export const UpdateSubscriptionDiscountForm = ({
           <FormField
             control={control}
             name="discount_id"
+            rules={{
+              validate: (value) =>
+                (value ?? null) !== (subscription.discount_id ?? null) ||
+                'Select a different discount to apply a change.',
+            }}
             render={({ field }) => {
               const selectedItem =
                 selectedDiscount?.id === field.value
@@ -107,7 +112,7 @@ export const UpdateSubscriptionDiscountForm = ({
                       items={discounts?.items || []}
                       value={field.value || null}
                       selectedItem={selectedItem || null}
-                      onChange={(value) => field.onChange(value || '')}
+                      onChange={(value) => field.onChange(value)}
                       onQueryChange={setDiscountQuery}
                       getItemValue={(discount) => discount.id}
                       getItemLabel={(discount) => discount.name}
@@ -127,6 +132,7 @@ export const UpdateSubscriptionDiscountForm = ({
                         size="icon"
                         variant="ghost"
                         type="button"
+                        aria-label="Remove discount"
                         onClick={() => field.onChange(null)}
                       >
                         <XIcon className="h-4 w-4" />

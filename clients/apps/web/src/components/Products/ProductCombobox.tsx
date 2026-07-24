@@ -38,11 +38,14 @@ const ProductComboboxOption = ({
   if (layout === 'trigger') {
     return (
       <Box
+        as="span"
+        display="inline-flex"
         alignItems="center"
         columnGap="s"
         minWidth={0}
         flexGrow={1}
         overflow="hidden"
+        width="100%"
       >
         <span className="min-w-0 flex-1 truncate">{product.name}</span>
         <span className="shrink-0 opacity-70 [&_*]:!text-current">
@@ -163,7 +166,16 @@ export const ProductCombobox = ({
             'dark:bg-polar-800 dark:hover:bg-polar-700 dark:hover:border-polar-700 dark:border-polar-700 flex h-10 w-full flex-row items-center justify-between gap-x-2 rounded-xl border border-gray-200 bg-white px-3 font-normal shadow-xs transition-colors hover:bg-gray-50 hover:text-black dark:hover:text-white',
           )}
         >
-          <span className="flex min-w-0 flex-1 items-center text-left">
+          <Box
+            as="span"
+            display="inline-flex"
+            minWidth={0}
+            flexGrow={1}
+            alignItems="center"
+            overflow="hidden"
+            textAlign="left"
+            width="100%"
+          >
             {selectedProduct ? (
               <ProductComboboxOption
                 product={selectedProduct}
@@ -175,7 +187,7 @@ export const ProductCombobox = ({
                 Select a new product
               </Text>
             )}
-          </span>
+          </Box>
           <ChevronsUpDown className="size-4 shrink-0 opacity-50" />
         </Button>
       </PopoverTrigger>
@@ -220,13 +232,11 @@ export const ProductCombobox = ({
                       }}
                       className="data-[selected=true]:text-accent-foreground items-center rounded-md text-gray-950 dark:text-white"
                     >
-                      <span className="min-w-0 flex-1">
-                        <ProductComboboxOption
-                          product={product}
-                          currency={currency}
-                          showNewPricing={product.id === currentProductId}
-                        />
-                      </span>
+                      <ProductComboboxOption
+                        product={product}
+                        currency={currency}
+                        showNewPricing={product.id === currentProductId}
+                      />
                       <Check
                         className={twMerge(
                           'ml-2 size-4 shrink-0',

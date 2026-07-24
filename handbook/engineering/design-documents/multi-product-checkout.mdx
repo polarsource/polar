@@ -1,0 +1,233 @@
+<Info>
+**Status**: Draft
+**Created**: July 2026
+**Last Updated**: July 23, 2026
+</Info>
+
+## Summary
+
+Let a buyer pick a base product and add optional **add-ons** before paying. Each add-on is a product
+with its own benefits and its own price, and carries a **quantity**. Everything lands on one checkout,
+one subscription and one invoice. After purchase the customer can add an add-on, drop one, or change a
+quantity, prorated like any other subscription change.
+
+This comes from [feedback#110](https://github.com/polarsource/feedback/issues/110), where ten comments
+split two ways: add-ons on a subscription (a $20/mo base plus advanced analytics at $10/mo), and an
+e-commerce cart with quantities. Pieter settled the split — the add-ons carry quantities.
+
+## Goals
+
+- A checkout offers a base product plus a menu of add-ons; the buyer selects any subset, each with a
+  quantity.
+- One subscription covers the base and its add-ons. One renewal, one invoice, one payment.
+- Benefits from every selected product are granted; dropping an add-on revokes only that add-on's
+  benefits.
+- Add, remove and re-quantify add-ons after purchase, through the merchant API and the customer portal,
+  with proration.
+- The merchant configures the add-on menu on a checkout link.
+
+## Non-Goals
+
+- Mixed billing intervals in one subscription. An add-on bills on the base product's interval.
+- An arbitrary cart of unrelated one-time products. A base is always required. One-time add-ons on a
+  one-time base are a plausible follow-up, not v1.
+- Reworking seats. `seats` stays a separate concept on the base product.
+- Add-on-specific trials, or an add-on on its own metered cadence.
+
+## The finding that shapes everything
+
+A checkout and a subscription each point at exactly one product today. `Checkout.product_id` is the
+selected product, and `checkout_products` is a *switcher* — a list the buyer picks one from, not a cart.
+`Subscription.product_id` is `NOT NULL`.
+
+Below that boundary, the billing engine is already price-set-driven rather than product-driven:
+
+| Component | Grain today |
+| --- | --- |
+| `Subscription.subscription_product_prices` | N prices; `amount` is already their sum (`server/polar/models/subscription.py:506`) |
+| `billing_entry` | keyed by `product_price_id`, never by product (`server/polar/models/billing_entry.py:77`) |
+| `order_items` | per price; `OrderItem.product` is an association proxy through it (`server/polar/models/order_item.py:47`) |
+| `orders` | `product_id` already nullable (`server/polar/models/order.py:229`) |
+| `compute_pending_subscription_line_items` | iterates entries, agnostic of product (`server/polar/billing_entry/service.py:83`) |
+
+Renewal, proration, metering and invoicing therefore need no structural change. Four boundaries do:
+checkout selection, the subscription's product set, benefit grants, and a new quantity concept.
+
+## Data model
+
+### Where add-ons are declared
+
+Reuse the existing join tables. A product is an add-on **in a given checkout**, not globally.
+
+```python
+class CheckoutProductRole(StrEnum):
+    option = "option"   # today's mutually-exclusive switcher
+    addon = "addon"     # independently selectable, carries a quantity
+
+
+class CheckoutProduct(RecordModel):
+    # Existing: checkout_id, product_id, order, ad_hoc_prices
+
+    role: Mapped[CheckoutProductRole | None] = mapped_column(
+        StringEnum(CheckoutProductRole), nullable=True, default=None
+    )
+    """NULL means `option` — every row written before add-ons existed."""
+
+    quantity: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+    """Buyer's selected quantity. NULL means the add-on is not selected."""
+```
+
+`CheckoutLinkProduct` gains the same `role`, so the merchant configures the menu on the link.
+`CheckoutProduct.ad_hoc_prices` needs no change — it already hangs off this row and works for add-ons.
+
+We rejected a product-level `product_addons` table. It forces merchants to model add-on relationships
+globally, and the checkout would still need per-session selection state, so it buys nothing.
+
+### What the subscription holds
+
+`Subscription.product_id` stays, and means the **base** product. That keeps every existing reference
+working unchanged — 33 across the backend, 19 to `Subscription.product_id` and 14 to
+`Subscription.product` — along with the webhook payloads and the API's `subscription.product` field.
+
+There is deliberately **no** `subscription_products` table. The product set is already derivable —
+`subscription_product_prices → product_price.product` — and a second source of truth would drift. Base
+is `subscription.product_id`; every other product in the derived set is an add-on.
+
+All 300,304 subscriptions carry exactly one product today, and nothing enforces that.
+`subscription_product_prices` has two foreign keys and no constraint touching the product, so a second
+product's price inserts fine right now. Existing rows therefore need no migration when add-ons ship:
+every one of them is already a valid add-on-era subscription with a base product and an empty add-on
+set.
+
+```python
+class SubscriptionProductPrice(RecordModel):
+    # Existing: subscription_id, product_price_id, amount
+
+    quantity: Mapped[int | None] = mapped_column(Integer, nullable=True, default=None)
+```
+
+Quantity belongs on this row: it is already one row per price, and the row already carries the extended
+amount. `amount` keeps holding that extended amount (unit × quantity), so
+`Subscription.update_amount_and_currency`'s `sum(price.amount for price in prices)` stays correct with
+no change at all. `quantity` is carried for display and proration.
+
+The table's primary key is `(subscription_id, product_price_id, id)` — `id` comes from `RecordModel` —
+so the pair is **not** unique today, and the same price can appear twice on one subscription.
+`update_amount_and_currency` sums every row, so a duplicate silently doubles the subscription's amount.
+Quantity would make it worse: two rows of quantity 2 bill as 4. No duplicates exist, so the schema PR
+adds a unique constraint on `(subscription_id, product_price_id)` and closes the hole. That fix stands
+on its own merit, whether or not add-ons ship.
+
+### Quantity
+
+Quantity is new and separate from `seats`. Seats drags in the whole `customer_seat` claiming feature;
+quantity is a multiplier and nothing more. Three columns:
+
+- `subscription_product_prices.quantity`
+- `order_items.quantity`
+- `billing_entry.quantity`
+
+**Snapshot quantity on the billing entry**, rather than reading it live off the subscription. Today
+`_get_static_price_line_item` takes `seats=subscription.seats` (`server/polar/billing_entry/service.py:92`) —
+live state. That is already slightly wrong for a mid-cycle seat change, and would be plainly wrong for
+add-on quantity.
+
+Every column this design adds to an existing table is **nullable**, `role` included. That is the honest
+model rather than a way around the migration convention: `NULL` on `quantity` means "not a
+quantity-priced line" and `NULL` on `role` means `option`, and every pre-existing row genuinely is both
+of those. There is no value we would have to invent for old rows.
+
+The payoff is one revision with no backfill. All three tables grow with traffic rather than with the
+customer base — a row per line on every order, a row per billing event, a row per product on every
+checkout — so an add-nullable → `UPDATE` backfill → `ALTER NOT NULL` rollout across them would be three
+PRs of real operational work. A `NOT NULL` column with a `server_default` is not the alternative: the
+repo has seven `server_default` uses in its whole migration history.
+
+This is the one schema call worth a second opinion.
+
+### Pending changes
+
+`SubscriptionUpdate` already carries a pending product change and its proration behavior. It gains a
+child table for the add-on set:
+
+```python
+class SubscriptionUpdateAddon(RecordModel):
+    __tablename__ = "subscription_update_addons"
+
+    subscription_update_id: Mapped[UUID]
+    product_id: Mapped[UUID]
+    quantity: Mapped[int]
+```
+
+A child table rather than JSONB, so the product reference keeps its foreign key.
+
+## Eligibility
+
+An add-on must:
+
+- belong to the same organization as the base product;
+- be recurring, with the **same** `recurring_interval` and `recurring_interval_count` as the base;
+- have a price in the checkout's currency;
+- carry no seat-based price;
+- carry no trial of its own — the trial belongs to the base product;
+- carry no metered price on a cadence other than the base product's.
+
+The last rule follows from `Subscription.meter_interval`, which is snapshotted from the base product at
+creation. An add-on metered on a different cadence has nowhere to store it, so validation rejects it
+rather than silently rebasing it.
+
+## API
+
+Checkout create and update gain an `addons` list. The read schema returns the offered add-ons with
+their selection state. These are additive fields on existing public endpoints, not new endpoints.
+
+```http
+POST /v1/checkouts
+{
+  "product_id": "...",
+  "addons": [
+    { "product_id": "...", "quantity": 2 }
+  ]
+}
+```
+
+```http
+PATCH /v1/checkouts/client/{client_secret}
+{
+  "addons": [{ "product_id": "...", "quantity": 3 }]
+}
+```
+
+The buyer-facing update replaces the whole selection, so dropping an add-on is an omission rather than a
+separate call.
+
+Post-purchase, `PATCH /v1/subscriptions/{id}` gains the same `addons` field, again as a full replacement
+set, honouring the existing `proration_behavior`. The customer portal exposes it behind a new
+organization flag `customer_portal_subscription_update_addons`, matching the existing
+`customer_portal_subscription_update_plan` and `..._seats`.
+
+## Two traps
+
+These are the parts that break quietly if nobody names them.
+
+**A free base with a paid add-on would skip payment.** `Checkout.is_free_product_price`,
+`has_metered_prices` and `is_discount_applicable` (`server/polar/models/checkout.py:323-338`) all read
+`product_prices`, which resolves to the base product alone. So does `is_payment_setup_required`. Each
+must span the base plus the selected add-ons.
+
+**Revoking an add-on could revoke the base product's benefits.**
+`list_outdated_grants(product, **scope)` (`server/polar/benefit/grant/repository.py:267`) revokes every granted
+benefit that is not on *that* product. Called once per product on a multi-product subscription, the
+base product's pass would revoke the add-on's benefits and vice versa. It must take the product **set**
+and diff against the union. That also handles a benefit shared by base and add-on correctly, because
+grants are scoped by `subscription_id`, not by product — there is one grant, and it survives as long as
+any product in the set still carries the benefit.
+
+## Open questions
+
+**Restricted discounts.** A discount limited through `discount_products` — does it apply to the whole
+cart, or only to matching line items? Recommendation: matching items only, computed on the item
+subtotal, mirroring the existing `OrderItem.discountable` split.
+
+**Quantity nullability**, per the data model section above.
+

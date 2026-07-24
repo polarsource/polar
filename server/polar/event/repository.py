@@ -20,7 +20,7 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
-from sqlalchemy.orm import aliased, joinedload
+from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import RepositoryBase, RepositoryIDMixin
@@ -256,19 +256,6 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             .limit(1)
         )
         return await self.get_one_or_none(statement)
-
-    async def get_distinct_customer_ids(
-        self, statement: Select[tuple[Event]]
-    ) -> Sequence[UUID]:
-        resolved_customer = aliased(Customer)
-        customer_ids_statement = (
-            statement.with_only_columns(resolved_customer.id)
-            .join(resolved_customer, Event.customer.of_type(resolved_customer))
-            .distinct()
-            .order_by(None)
-        )
-        result = await self.session.scalars(customer_ids_statement)
-        return result.all()
 
     def get_customer_id_filter_clause(
         self, customer_id: Sequence[UUID]

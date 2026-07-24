@@ -1,5 +1,43 @@
 import { describe, expect, it, vi } from 'vitest'
-import { findFirstErrorMessage, setProductValidationErrors } from './errors'
+import {
+  extractApiErrorMessage,
+  findFirstErrorMessage,
+  setProductValidationErrors,
+} from './errors'
+
+describe('extractApiErrorMessage', () => {
+  it('surfaces the first message from a 422 validation error array', () => {
+    // Shape returned by submit-review when the contact email fails the
+    // deliverability check (Pydantic/email-validator error).
+    const error = {
+      detail: [
+        {
+          type: 'value_error',
+          loc: ['body', 'email'],
+          msg: 'The domain name example.com does not accept email.',
+        },
+      ],
+    }
+    expect(extractApiErrorMessage(error)).toBe(
+      'The domain name example.com does not accept email.',
+    )
+  })
+
+  it('surfaces a string detail as-is', () => {
+    expect(extractApiErrorMessage({ detail: 'Not permitted' })).toBe(
+      'Not permitted',
+    )
+  })
+
+  it('falls back when detail is missing or unexpected', () => {
+    expect(extractApiErrorMessage({}, 'Please try again.')).toBe(
+      'Please try again.',
+    )
+    expect(extractApiErrorMessage({ detail: [] }, 'Please try again.')).toBe(
+      'Please try again.',
+    )
+  })
+})
 
 describe('findFirstErrorMessage', () => {
   it('finds message in flat error object', () => {

@@ -8,6 +8,7 @@ import {
 } from '@/components/Finance/Account/sections/stepLabels'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { toast } from '@/components/Toast/use-toast'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { usePostHog } from '@/hooks/posthog'
 import { useProducts } from '@/hooks/queries'
 import {
@@ -72,8 +73,10 @@ export const AccountPageDetailsRequired = ({ organization }: Props) => {
     if (error) {
       toast({
         title: 'Submission failed',
-        description:
+        description: extractApiErrorMessage(
+          error,
           'We could not submit your organization for review. Please try again.',
+        ),
       })
       setIsExiting(false)
       return

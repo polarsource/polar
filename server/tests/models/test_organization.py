@@ -88,6 +88,7 @@ class TestGetCustomEmailLinkUrl:
     async def test_returns_none_without_override(
         self, customer: Customer, organization: Organization
     ) -> None:
+        assert customer.email is not None
         assert organization.get_custom_email_link_url(customer, customer.email) is None
 
     async def test_uses_db_setting_and_appends_identifiers(
@@ -100,6 +101,7 @@ class TestGetCustomEmailLinkUrl:
         }
         customer.external_id = "usr_123"
 
+        assert customer.email is not None
         url = organization.get_custom_email_link_url(customer, customer.email)
 
         assert url is not None
@@ -124,6 +126,7 @@ class TestGetCustomEmailLinkUrl:
             "link_url": "https://acme.example.com/portal",
         }
 
+        assert customer.email is not None
         url = organization.get_custom_email_link_url(customer, customer.email)
 
         assert url is not None
@@ -138,6 +141,7 @@ class TestGetCustomEmailLinkUrl:
             "link_url": "https://acme.example.com/portal",
         }
 
+        assert customer.email is not None
         assert organization.get_custom_email_link_url(customer, customer.email) is None
 
     async def test_disabled_flag_still_uses_env_override(
@@ -156,6 +160,7 @@ class TestGetCustomEmailLinkUrl:
             "link_url": "https://acme.example.com/portal",
         }
 
+        assert customer.email is not None
         url = organization.get_custom_email_link_url(customer, customer.email)
 
         assert url is not None
@@ -172,6 +177,7 @@ class TestGetCustomEmailLinkUrl:
             {str(organization.id): "https://legacy.example.com/portal"},
         )
 
+        assert customer.email is not None
         url = organization.get_custom_email_link_url(customer, customer.email)
 
         assert url is not None

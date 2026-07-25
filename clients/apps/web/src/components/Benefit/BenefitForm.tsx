@@ -30,6 +30,7 @@ import { useFormContext } from 'react-hook-form'
 import { DownloadablesBenefitForm } from './Downloadables/BenefitForm'
 import { GitHubRepositoryBenefitForm } from './GitHubRepositoryBenefitForm'
 import { LicenseKeysBenefitForm } from './LicenseKeys/BenefitForm'
+import { LinkBenefitForm } from './Link/BenefitForm'
 import { MeterCreditBenefitForm } from './MeterCredit/BenefitForm'
 import { BenefitVisibilityField } from './BenefitVisibilityField'
 import { SlackSharedChannelBenefitForm } from './SlackSharedChannelBenefitForm'
@@ -150,6 +151,7 @@ const BenefitForm = ({
         <MeterCreditBenefitForm organization={organization} />
       )}
       {type === 'feature_flag' && <FeatureFlagBenefitForm />}
+      {type === 'link' && <LinkBenefitForm />}
       {type === 'slack_shared_channel' && (
         <SlackSharedChannelBenefitForm
           organization={organization}

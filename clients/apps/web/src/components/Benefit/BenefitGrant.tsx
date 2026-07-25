@@ -40,6 +40,7 @@ const benefitTypeTranslationKeys = {
   feature_flag: 'benefitTypes.feature_flag',
   github_repository: 'benefitTypes.github_repository',
   license_keys: 'benefitTypes.license_keys',
+  link: 'benefitTypes.link',
   meter_credit: 'benefitTypes.meter_credit',
   slack_shared_channel: 'benefitTypes.slack_shared_channel',
 } as const satisfies Record<schemas['BenefitType'], TranslationKey>
@@ -63,6 +64,32 @@ const BenefitGrantCustom = ({
         <Markdown options={markdownOptions}>{note}</Markdown>
       </div>
     </ShadowBox>
+  )
+}
+
+const BenefitGrantLink = ({
+  benefitGrant,
+  locale = DEFAULT_LOCALE,
+}: {
+  benefitGrant: schemas['CustomerBenefitGrantLink']
+  locale?: AcceptedLocale
+}) => {
+  const t = useTranslations(locale)
+  const {
+    properties: { url },
+    benefit: {
+      properties: { label },
+    },
+  } = benefitGrant
+  if (!url) {
+    return null
+  }
+  return (
+    <a href={url} target="_blank" rel="noopener noreferrer">
+      <Button asChild fullWidth variant="secondary">
+        {label ?? t('checkout.benefits.link.open')}
+      </Button>
+    </a>
   )
 }
 
@@ -565,6 +592,12 @@ export const BenefitGrant = ({
           benefitGrant={
             benefitGrant as schemas['CustomerBenefitGrantSlackSharedChannel']
           }
+          locale={locale}
+        />
+      )}
+      {benefit.type === 'link' && (
+        <BenefitGrantLink
+          benefitGrant={benefitGrant as schemas['CustomerBenefitGrantLink']}
           locale={locale}
         />
       )}

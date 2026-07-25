@@ -1,4 +1,4 @@
-import { Heading, Markdown, Section } from 'react-email'
+import { Button, Heading, Markdown, Section } from 'react-email'
 import { schemas } from '../types'
 import { Check, Discord, Download, Gauge, GitHub, Key } from './Icons'
 
@@ -42,6 +42,16 @@ const Benefit = ({ benefit }: { benefit: schemas['Benefit'] }) => {
           {type === 'custom' && properties.note && (
             <div className="mt-[8px] text-[14px] leading-[24px] text-gray-500">
               <Markdown>{properties.note}</Markdown>
+            </div>
+          )}
+          {type === 'link' && (
+            <div className="mt-[12px]">
+              <Button
+                href={properties.url}
+                className="inline-block rounded-full bg-black px-[16px] py-[8px] text-center text-[14px] font-medium text-white no-underline"
+              >
+                {properties.label ?? 'Open link'}
+              </Button>
             </div>
           )}
         </div>

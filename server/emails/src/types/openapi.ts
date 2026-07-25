@@ -301,6 +301,7 @@ export interface components {
       | components['schemas']['BenefitMeterCredit']
       | components['schemas']['BenefitFeatureFlag']
       | components['schemas']['BenefitSlackSharedChannel']
+      | components['schemas']['BenefitLink']
     /**
      * BenefitCustom
      * @description A benefit of type `custom`.
@@ -762,6 +763,78 @@ export interface components {
         | null
       /** Limit Usage */
       limit_usage: number | null
+    }
+    /**
+     * BenefitLink
+     * @description A benefit of type `link`.
+     *
+     *     Use it to direct customers to a URL, like your app's signup page.
+     */
+    BenefitLink: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'link'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is deleted.
+       */
+      is_deleted: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
+      properties: components['schemas']['BenefitLinkProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
+    }
+    /**
+     * BenefitLinkProperties
+     * @description Properties for a benefit of type `link`.
+     */
+    BenefitLinkProperties: {
+      /** Url */
+      url: string
+      /** Label */
+      label: string | null
     }
     /**
      * BenefitMeterCredit

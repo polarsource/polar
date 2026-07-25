@@ -8504,6 +8504,7 @@ export interface components {
       | components['schemas']['BenefitMeterCredit']
       | components['schemas']['BenefitFeatureFlag']
       | components['schemas']['BenefitSlackSharedChannel']
+      | components['schemas']['BenefitLink']
     BenefitCreate:
       | components['schemas']['BenefitCustomCreate']
       | components['schemas']['BenefitDiscordCreate']
@@ -8513,6 +8514,7 @@ export interface components {
       | components['schemas']['BenefitMeterCreditCreate']
       | components['schemas']['BenefitFeatureFlagCreate']
       | components['schemas']['BenefitSlackSharedChannelCreate']
+      | components['schemas']['BenefitLinkCreate']
     /**
      * BenefitCustom
      * @description A benefit of type `custom`.
@@ -9784,6 +9786,7 @@ export interface components {
         | components['schemas']['BenefitGrantCustomProperties']
         | components['schemas']['BenefitGrantFeatureFlagProperties']
         | components['schemas']['BenefitGrantSlackSharedChannelProperties']
+        | components['schemas']['BenefitGrantLinkProperties']
     }
     /** BenefitGrantCustomProperties */
     BenefitGrantCustomProperties: Record<string, never>
@@ -10295,6 +10298,87 @@ export interface components {
         | components['schemas']['BenefitGrantLicenseKeysProperties']
         | null
     }
+    /** BenefitGrantLinkProperties */
+    BenefitGrantLinkProperties: {
+      /** Url */
+      url?: string
+    }
+    /** BenefitGrantLinkWebhook */
+    BenefitGrantLinkWebhook: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the grant.
+       */
+      id: string
+      /**
+       * Granted At
+       * @description The timestamp when the benefit was granted. If `None`, the benefit is not granted.
+       */
+      granted_at?: string | null
+      /**
+       * Is Granted
+       * @description Whether the benefit is granted.
+       */
+      is_granted: boolean
+      /**
+       * Revoked At
+       * @description The timestamp when the benefit was revoked. If `None`, the benefit is not revoked.
+       */
+      revoked_at?: string | null
+      /**
+       * Is Revoked
+       * @description Whether the benefit is revoked.
+       */
+      is_revoked: boolean
+      /**
+       * Subscription Id
+       * @description The ID of the subscription that granted this benefit.
+       */
+      subscription_id: string | null
+      /**
+       * Order Id
+       * @description The ID of the order that granted this benefit.
+       */
+      order_id: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       * @description The ID of the customer concerned by this grant.
+       */
+      customer_id: string
+      /**
+       * Member Id
+       * @description The ID of the member concerned by this grant.
+       */
+      member_id?: string | null
+      /**
+       * Benefit Id
+       * Format: uuid4
+       * @description The ID of the benefit concerned by this grant.
+       */
+      benefit_id: string
+      /** @description The error information if the benefit grant failed with an unrecoverable error. */
+      error?: components['schemas']['BenefitGrantError'] | null
+      customer: components['schemas']['Customer']
+      member?: components['schemas']['Member'] | null
+      benefit: components['schemas']['BenefitLink']
+      properties: components['schemas']['BenefitGrantLinkProperties']
+      previous_properties?:
+        | components['schemas']['BenefitGrantLinkProperties']
+        | null
+    }
     /** BenefitGrantMetadata */
     BenefitGrantMetadata: {
       /** Benefit Id */
@@ -10501,6 +10585,7 @@ export interface components {
       | components['schemas']['BenefitGrantMeterCreditWebhook']
       | components['schemas']['BenefitGrantFeatureFlagWebhook']
       | components['schemas']['BenefitGrantSlackSharedChannelWebhook']
+      | components['schemas']['BenefitGrantLinkWebhook']
     /**
      * BenefitGrantedEvent
      * @description An event created by Polar when a benefit is granted to a customer.
@@ -10821,6 +10906,227 @@ export interface components {
       properties?:
         | components['schemas']['BenefitLicenseKeysCreateProperties']
         | null
+    }
+    /**
+     * BenefitLink
+     * @description A benefit of type `link`.
+     *
+     *     Use it to direct customers to a URL, like your app's signup page.
+     */
+    BenefitLink: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'link'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is deleted.
+       */
+      is_deleted: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
+      metadata: components['schemas']['MetadataOutputType']
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility: components['schemas']['BenefitVisibility']
+      properties: components['schemas']['BenefitLinkProperties']
+      /** Visibility Configurable */
+      readonly visibility_configurable: boolean
+    }
+    /**
+     * BenefitLinkCreate
+     * @description Schema to create a benefit of type `link`.
+     */
+    BenefitLinkCreate: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'link'
+      /**
+       * Description
+       * @description The description of the benefit. Will be displayed on products having this benefit.
+       */
+      description: string
+      /**
+       * Organization Id
+       * @description The ID of the organization owning the benefit. **Required unless you use an organization token.**
+       */
+      organization_id?: string | null
+      /** @description The visibility of the benefit in the customer portal. */
+      visibility?: components['schemas']['BenefitVisibility'] | null
+      properties: components['schemas']['BenefitLinkCreateProperties']
+    }
+    /**
+     * BenefitLinkCreateProperties
+     * @description Properties for creating a benefit of type `link`.
+     */
+    BenefitLinkCreateProperties: {
+      /**
+       * Url
+       * Format: uri
+       * @description The URL customers are directed to. Supports the `{CUSTOMER_EMAIL}` and `{CUSTOMER_EXTERNAL_ID}` placeholders, replaced with the customer's URL-encoded values when the benefit is granted. A missing external ID is replaced with an empty string. These values are provided as a convenience for prefilling and reconciliation — they can be tampered with by the customer and must not be treated as authentication.
+       */
+      url: string
+      /** Label */
+      label?: string | null
+    }
+    /**
+     * BenefitLinkProperties
+     * @description Properties for a benefit of type `link`.
+     */
+    BenefitLinkProperties: {
+      /** Url */
+      url: string
+      /** Label */
+      label: string | null
+    }
+    /** BenefitLinkSubscriber */
+    BenefitLinkSubscriber: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the benefit.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Type
+       * @constant
+       */
+      type: 'link'
+      /**
+       * Description
+       * @description The description of the benefit.
+       */
+      description: string
+      /**
+       * Selectable
+       * @description Whether the benefit is selectable when creating a product.
+       */
+      selectable: boolean
+      /**
+       * Deletable
+       * @description Whether the benefit is deletable.
+       */
+      deletable: boolean
+      /**
+       * Is Deleted
+       * @description Whether the benefit is deleted.
+       */
+      is_deleted: boolean
+      /**
+       * Organization Id
+       * Format: uuid4
+       * @description The ID of the organization owning the benefit.
+       */
+      organization_id: string
+      organization: components['schemas']['BenefitSubscriberOrganization']
+      properties: components['schemas']['BenefitLinkSubscriberProperties']
+    }
+    /**
+     * BenefitLinkSubscriberProperties
+     * @description Properties available to subscribers for a benefit of type `link`.
+     */
+    BenefitLinkSubscriberProperties: {
+      /** Url */
+      url: string
+      /** Label */
+      label: string | null
+    }
+    /** BenefitLinkUpdate */
+    BenefitLinkUpdate: {
+      /**
+       * Metadata
+       * @description Key-value object allowing you to store additional information.
+       *
+       *     The key must be a string with a maximum length of **40 characters**.
+       *     The value must be either:
+       *
+       *     * A string with a maximum length of **500 characters**
+       *     * An integer
+       *     * A floating-point number
+       *     * A boolean
+       *
+       *     You can store up to **50 key-value pairs**.
+       */
+      metadata?: {
+        [key: string]: string | number | boolean
+      }
+      /**
+       * Description
+       * @description The description of the benefit. Will be displayed on products having this benefit.
+       */
+      description?: string | null
+      /**
+       * Type
+       * @constant
+       */
+      type: 'link'
+      properties?: components['schemas']['BenefitLinkCreateProperties'] | null
     }
     /**
      * BenefitMeterCredit
@@ -11493,6 +11799,7 @@ export interface components {
       | 'meter_credit'
       | 'feature_flag'
       | 'slack_shared_channel'
+      | 'link'
     /**
      * BenefitUpdatedEvent
      * @description An event created by Polar when a benefit is updated.
@@ -15534,6 +15841,7 @@ export interface components {
       | components['schemas']['CustomerBenefitGrantMeterCredit']
       | components['schemas']['CustomerBenefitGrantFeatureFlag']
       | components['schemas']['CustomerBenefitGrantSlackSharedChannel']
+      | components['schemas']['CustomerBenefitGrantLink']
     /** CustomerBenefitGrantCustom */
     CustomerBenefitGrantCustom: {
       /**
@@ -15882,6 +16190,62 @@ export interface components {
        */
       benefit_type: 'license_keys'
     }
+    /** CustomerBenefitGrantLink */
+    CustomerBenefitGrantLink: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** Granted At */
+      granted_at: string | null
+      /** Revoked At */
+      revoked_at: string | null
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+      /** Member Id */
+      member_id?: string | null
+      /**
+       * Benefit Id
+       * Format: uuid4
+       */
+      benefit_id: string
+      /** Subscription Id */
+      subscription_id: string | null
+      /** Order Id */
+      order_id: string | null
+      /** Is Granted */
+      is_granted: boolean
+      /** Is Revoked */
+      is_revoked: boolean
+      error?: components['schemas']['BenefitGrantError'] | null
+      customer: components['schemas']['CustomerPortalCustomer']
+      benefit: components['schemas']['BenefitLinkSubscriber']
+      properties: components['schemas']['BenefitGrantLinkProperties']
+    }
+    /** CustomerBenefitGrantLinkUpdate */
+    CustomerBenefitGrantLinkUpdate: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      benefit_type: 'link'
+    }
     /** CustomerBenefitGrantMeterCredit */
     CustomerBenefitGrantMeterCredit: {
       /**
@@ -16025,6 +16389,7 @@ export interface components {
       | components['schemas']['CustomerBenefitGrantMeterCreditUpdate']
       | components['schemas']['CustomerBenefitGrantFeatureFlagUpdate']
       | components['schemas']['CustomerBenefitGrantSlackSharedChannelUpdate']
+      | components['schemas']['CustomerBenefitGrantLinkUpdate']
     /**
      * CustomerCancellationReason
      * @enum {string}
@@ -17944,6 +18309,7 @@ export interface components {
         | components['schemas']['BenefitGrantCustomProperties']
         | components['schemas']['BenefitGrantFeatureFlagProperties']
         | components['schemas']['BenefitGrantSlackSharedChannelProperties']
+        | components['schemas']['BenefitGrantLinkProperties']
     }
     /**
      * CustomerStateIndividual
@@ -41162,6 +41528,7 @@ export interface operations {
           | components['schemas']['BenefitMeterCreditUpdate']
           | components['schemas']['BenefitFeatureFlagUpdate']
           | components['schemas']['BenefitSlackSharedChannelUpdate']
+          | components['schemas']['BenefitLinkUpdate']
       }
     }
     responses: {
@@ -62299,6 +62666,12 @@ export const benefitLicenseKeysTypeValues: ReadonlyArray<
 export const benefitLicenseKeysCreateTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitLicenseKeysCreate']['type']
 > = ['license_keys']
+export const benefitLinkTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitLink']['type']
+> = ['link']
+export const benefitLinkCreateTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['BenefitLinkCreate']['type']
+> = ['link']
 export const benefitMeterCreditTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitMeterCredit']['type']
 > = ['meter_credit']
@@ -62337,6 +62710,7 @@ export const benefitTypeValues: ReadonlyArray<
   'meter_credit',
   'feature_flag',
   'slack_shared_channel',
+  'link',
 ]
 export const benefitUpdatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['BenefitUpdatedEvent']['name']
@@ -62963,6 +63337,9 @@ export const customerBenefitGrantGitHubRepositoryUpdateBenefit_typeValues: Reado
 export const customerBenefitGrantLicenseKeysUpdateBenefit_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantLicenseKeysUpdate']['benefit_type']
 > = ['license_keys']
+export const customerBenefitGrantLinkUpdateBenefit_typeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantLinkUpdate']['benefit_type']
+> = ['link']
 export const customerBenefitGrantMeterCreditUpdateBenefit_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerBenefitGrantMeterCreditUpdate']['benefit_type']
 > = ['meter_credit']

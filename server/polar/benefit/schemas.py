@@ -16,6 +16,7 @@ from polar.benefit.strategies.github_repository.properties import (
 from polar.benefit.strategies.license_keys.properties import (
     BenefitGrantLicenseKeysProperties,
 )
+from polar.benefit.strategies.link.properties import BenefitGrantLinkProperties
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitGrantMeterCreditProperties,
 )
@@ -63,6 +64,11 @@ from .strategies.license_keys.schemas import (
     BenefitLicenseKeysCreate,
     BenefitLicenseKeysUpdate,
 )
+from .strategies.link.schemas import (
+    BenefitLink,
+    BenefitLinkCreate,
+    BenefitLinkUpdate,
+)
 from .strategies.meter_credit.schemas import (
     BenefitMeterCredit,
     BenefitMeterCreditCreate,
@@ -88,7 +94,8 @@ BenefitCreate = Annotated[
     | BenefitLicenseKeysCreate
     | BenefitMeterCreditCreate
     | BenefitFeatureFlagCreate
-    | BenefitSlackSharedChannelCreate,
+    | BenefitSlackSharedChannelCreate
+    | BenefitLinkCreate,
     Discriminator("type"),
     SetSchemaReference("BenefitCreate"),
 ]
@@ -103,6 +110,7 @@ BenefitUpdate = (
     | BenefitMeterCreditUpdate
     | BenefitFeatureFlagUpdate
     | BenefitSlackSharedChannelUpdate
+    | BenefitLinkUpdate
 )
 
 
@@ -114,7 +122,8 @@ Benefit = Annotated[
     | BenefitLicenseKeys
     | BenefitMeterCredit
     | BenefitFeatureFlag
-    | BenefitSlackSharedChannel,
+    | BenefitSlackSharedChannel
+    | BenefitLink,
     Discriminator("type"),
     SetSchemaReference("Benefit"),
     MergeJSONSchema({"title": "Benefit"}),
@@ -130,6 +139,7 @@ benefit_schema_map: dict[BenefitType, type[Benefit]] = {
     BenefitType.meter_credit: BenefitMeterCredit,
     BenefitType.feature_flag: BenefitFeatureFlag,
     BenefitType.slack_shared_channel: BenefitSlackSharedChannel,
+    BenefitType.link: BenefitLink,
 }
 
 
@@ -193,6 +203,12 @@ class BenefitGrantSlackSharedChannelWebhook(BenefitGrantWebhookBase):
     previous_properties: BenefitGrantSlackSharedChannelProperties | None = None
 
 
+class BenefitGrantLinkWebhook(BenefitGrantWebhookBase):
+    benefit: BenefitLink
+    properties: BenefitGrantLinkProperties
+    previous_properties: BenefitGrantLinkProperties | None = None
+
+
 BenefitGrantWebhook = Annotated[
     BenefitGrantDiscordWebhook
     | BenefitGrantCustomWebhook
@@ -201,7 +217,8 @@ BenefitGrantWebhook = Annotated[
     | BenefitGrantLicenseKeysWebhook
     | BenefitGrantMeterCreditWebhook
     | BenefitGrantFeatureFlagWebhook
-    | BenefitGrantSlackSharedChannelWebhook,
+    | BenefitGrantSlackSharedChannelWebhook
+    | BenefitGrantLinkWebhook,
     SetSchemaReference("BenefitGrantWebhook"),
     MergeJSONSchema({"title": "BenefitGrantWebhook"}),
     ClassName("BenefitGrantWebhook"),

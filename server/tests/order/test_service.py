@@ -13,6 +13,7 @@ from pytest_mock import MockerFixture
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject
+from polar.benefit.strategies.link.schemas import BenefitLink
 from polar.checkout.eventstream import CheckoutEvent
 from polar.config import settings
 from polar.email.schemas import OrderConfirmationEmail
@@ -59,6 +60,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.benefit import BenefitType
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.custom_field import CustomFieldType
@@ -2758,6 +2760,61 @@ class TestSendConfirmationEmail:
         assert [benefit.description for benefit in email.props.product.benefits] == [
             "Public benefit"
         ]
+
+    async def test_resolves_link_benefit_placeholders(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="link@example.com",
+            external_id="ext-123",
+        )
+        link_benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.link,
+            description="App access",
+            properties={
+                "url": "https://example.com/welcome?email={CUSTOMER_EMAIL}&uid={CUSTOMER_EXTERNAL_ID}",
+                "label": "Open App",
+            },
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=None,
+        )
+        product = await set_product_benefits(
+            save_fixture,
+            product=product,
+            benefits=[link_benefit],
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, OrderConfirmationEmail)
+        assert email.props.product is not None
+        benefit = email.props.product.benefits[0]
+        assert isinstance(benefit, BenefitLink)
+        assert benefit.properties.url == (
+            "https://example.com/welcome?email=link%40example.com&uid=ext-123"
+        )
 
 
 @pytest.mark.asyncio

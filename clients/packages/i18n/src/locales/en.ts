@@ -209,6 +209,9 @@ export default {
         open: 'Open Discord',
         selectAccount: 'Select a Discord account',
       },
+      link: {
+        open: 'Open link',
+      },
       slackSharedChannel: {
         connected: 'Connected to your Slack workspace.',
         connectedChannel:
@@ -312,6 +315,7 @@ export default {
     meter_credit: 'Meter credits',
     feature_flag: 'Feature flag',
     slack_shared_channel: 'Shared Slack channel',
+    link: 'Link',
   },
   ordinal: {
     zero: {

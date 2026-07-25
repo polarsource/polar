@@ -1,0 +1,45 @@
+---
+title: "Link Benefit"
+sidebarTitle: "Link"
+description: "Direct customers to a URL after purchase"
+---
+
+The Link benefit directs customers to a URL of your choice — your app's signup page, a private community, gated content, or anything else living at a link. It's the fastest way to get customers into your product after they buy.
+
+Customers see the link as a button on the checkout confirmation page, in the purchase confirmation email, and in the [Customer Portal](/features/customer-portal).
+
+## Creating a Link benefit
+
+Set two properties:
+
+- **URL** — where customers are directed.
+- **Button label** *(optional)* — the text of the button customers click, e.g. *"Open App"*. Defaults to *"Open link"*.
+
+## Customer placeholders
+
+The URL supports two placeholders, replaced with the customer's values when the benefit is granted:
+
+- `{CUSTOMER_EMAIL}` — the customer's email address (for seat-based products, the seat holder's email).
+- `{CUSTOMER_EXTERNAL_ID}` — the customer's [external ID](/features/customer-management), or an empty string if not set.
+
+Both values are URL-encoded. For example:
+
+```
+https://example.com/welcome?email={CUSTOMER_EMAIL}&uid={CUSTOMER_EXTERNAL_ID}
+```
+
+resolves for a customer `jane@acme.com` with external ID `usr_123` to:
+
+```
+https://example.com/welcome?email=jane%40acme.com&uid=usr_123
+```
+
+Use this to prefill your signup form or reconcile the purchase with an account on your side.
+
+<Warning>
+  These query parameters are a convenience, not authentication. Customers can
+  edit the URL and change the values, so never treat them as proof of identity —
+  verify purchases server-side with the
+  [Customer State](/integrate/customer-state) API or
+  [webhooks](/integrate/webhooks/events).
+</Warning>

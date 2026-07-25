@@ -29,6 +29,8 @@ from polar.benefit.strategies.license_keys.properties import (
     BenefitGrantLicenseKeysProperties,
 )
 from polar.benefit.strategies.license_keys.schemas import BenefitLicenseKeysSubscriber
+from polar.benefit.strategies.link.properties import BenefitGrantLinkProperties
+from polar.benefit.strategies.link.schemas import BenefitLinkSubscriber
 from polar.benefit.strategies.meter_credit.properties import (
     BenefitGrantMeterCreditProperties,
 )
@@ -115,6 +117,12 @@ class CustomerBenefitGrantSlackSharedChannel(CustomerBenefitGrantBase):
     properties: BenefitGrantSlackSharedChannelProperties
 
 
+class CustomerBenefitGrantLink(CustomerBenefitGrantBase):
+    customer: CustomerPortalCustomer
+    benefit: BenefitLinkSubscriber
+    properties: BenefitGrantLinkProperties
+
+
 CustomerBenefitGrant = Annotated[
     CustomerBenefitGrantDiscord
     | CustomerBenefitGrantGitHubRepository
@@ -123,7 +131,8 @@ CustomerBenefitGrant = Annotated[
     | CustomerBenefitGrantCustom
     | CustomerBenefitGrantMeterCredit
     | CustomerBenefitGrantFeatureFlag
-    | CustomerBenefitGrantSlackSharedChannel,
+    | CustomerBenefitGrantSlackSharedChannel
+    | CustomerBenefitGrantLink,
     SetSchemaReference("CustomerBenefitGrant"),
     MergeJSONSchema({"title": "CustomerBenefitGrant"}),
     ClassName("CustomerBenefitGrant"),
@@ -190,6 +199,10 @@ class CustomerBenefitGrantSlackSharedChannelUpdate(CustomerBenefitGrantUpdateBas
     properties: CustomerBenefitGrantSlackSharedChannelPropertiesUpdate
 
 
+class CustomerBenefitGrantLinkUpdate(CustomerBenefitGrantUpdateBase):
+    benefit_type: Literal[BenefitType.link]
+
+
 CustomerBenefitGrantUpdate = Annotated[
     CustomerBenefitGrantDiscordUpdate
     | CustomerBenefitGrantGitHubRepositoryUpdate
@@ -198,7 +211,8 @@ CustomerBenefitGrantUpdate = Annotated[
     | CustomerBenefitGrantCustomUpdate
     | CustomerBenefitGrantMeterCreditUpdate
     | CustomerBenefitGrantFeatureFlagUpdate
-    | CustomerBenefitGrantSlackSharedChannelUpdate,
+    | CustomerBenefitGrantSlackSharedChannelUpdate
+    | CustomerBenefitGrantLinkUpdate,
     SetSchemaReference("CustomerBenefitGrantUpdate"),
     MergeJSONSchema({"title": "CustomerBenefitGrantUpdate"}),
     Discriminator("benefit_type"),

@@ -88,6 +88,7 @@
                   "features/benefits/file-downloads",
                   "features/benefits/github-access",
                   "features/benefits/license-keys",
+                  "features/benefits/link",
                   "features/benefits/slack-shared-channel"
                 ]
               },

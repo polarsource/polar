@@ -332,6 +332,53 @@ class TestCreateBenefit:
         assert "properties" in json
 
     @pytest.mark.auth
+    async def test_link_valid_preserves_placeholders(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/benefits/",
+            json={
+                "type": "link",
+                "description": "App access",
+                "properties": {
+                    "url": "https://example.com/welcome?email={CUSTOMER_EMAIL}&uid={CUSTOMER_EXTERNAL_ID}",
+                    "label": "Open App",
+                },
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 201
+
+        json = response.json()
+        assert json["properties"] == {
+            "url": "https://example.com/welcome?email={CUSTOMER_EMAIL}&uid={CUSTOMER_EXTERNAL_ID}",
+            "label": "Open App",
+        }
+
+    @pytest.mark.auth
+    async def test_link_invalid_url(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/benefits/",
+            json={
+                "type": "link",
+                "description": "App access",
+                "properties": {"url": "not-a-url", "label": None},
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
     async def test_custom_respects_private_visibility(
         self,
         client: AsyncClient,

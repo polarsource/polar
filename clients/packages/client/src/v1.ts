@@ -11018,7 +11018,7 @@ export interface components {
       /**
        * Url
        * Format: uri
-       * @description The URL customers are directed to. Supports the `{CUSTOMER_EMAIL}` and `{CUSTOMER_EXTERNAL_ID}` placeholders, replaced with the customer's URL-encoded values when the benefit is granted. A missing external ID is replaced with an empty string. These values are provided as a convenience for prefilling and reconciliation — they can be tampered with by the customer and must not be treated as authentication.
+       * @description The URL customers are directed to. Supports the `{CUSTOMER_EMAIL}` and `{CUSTOMER_EXTERNAL_ID}` placeholders, replaced with the customer's URL-encoded values when the benefit is granted. Any other placeholder is rejected. A missing external ID is replaced with an empty string. These values are provided as a convenience for prefilling and reconciliation — they can be tampered with by the customer and must not be treated as authentication.
        */
       url: string
       /** Label */

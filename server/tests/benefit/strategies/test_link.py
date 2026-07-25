@@ -1,5 +1,7 @@
 import pytest
+from pydantic import TypeAdapter, ValidationError
 
+from polar.benefit.strategies.link.schemas import LinkUrl
 from polar.benefit.strategies.link.service import BenefitLinkService, resolve_link_url
 from polar.models import Organization
 from polar.models.benefit import BenefitType
@@ -11,6 +13,39 @@ from tests.fixtures.random_objects import (
     create_customer,
     create_member,
 )
+
+
+class TestLinkUrl:
+    adapter = TypeAdapter(LinkUrl)
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            "https://example.com/welcome",
+            "https://example.com/welcome?email={CUSTOMER_EMAIL}",
+            "https://example.com/{CUSTOMER_EXTERNAL_ID}/welcome",
+            "https://example.com/w?e={CUSTOMER_EMAIL}&uid={CUSTOMER_EXTERNAL_ID}",
+        ],
+    )
+    def test_accepts_supported_placeholders(self, url: str) -> None:
+        assert self.adapter.validate_python(url) == url
+
+    @pytest.mark.parametrize(
+        ("url", "unknown"),
+        [
+            ("https://example.com/w?e={CUSTOMER_EMAL}", "{CUSTOMER_EMAL}"),
+            ("https://example.com/w?e={customer_email}", "{customer_email}"),
+            ("https://example.com/{FOO}/welcome", "{FOO}"),
+        ],
+    )
+    def test_rejects_unknown_placeholder(self, url: str, unknown: str) -> None:
+        with pytest.raises(ValidationError) as excinfo:
+            self.adapter.validate_python(url)
+        assert f"Unknown placeholder {unknown}" in excinfo.value.errors()[0]["msg"]
+
+    def test_ignores_non_placeholder_braces(self) -> None:
+        url = 'https://example.com/w?filter={"a":1}'
+        assert "{" in str(self.adapter.validate_python(url))
 
 
 class TestResolveLinkUrl:

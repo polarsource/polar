@@ -36,6 +36,10 @@ https://example.com/welcome?email=jane%40acme.com&uid=usr_123
 
 Use this to prefill your signup form or reconcile the purchase with an account on your side.
 
+Placeholder names are case-sensitive, and any other placeholder — like a misspelled
+`{CUSTOMER_EMAL}` — is rejected when you save the benefit, so it can never reach customers
+unresolved.
+
 <Warning>
   These query parameters are a convenience, not authentication. Customers can
   edit the URL and change the values, so never treat them as proof of identity —

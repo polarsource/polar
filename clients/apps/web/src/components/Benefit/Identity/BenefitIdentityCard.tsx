@@ -47,10 +47,11 @@ export const BenefitIdentityCard = ({
         overflow="hidden"
       >
         <Box
+          display={{ base: 'none', md: 'flex' }}
           alignItems="center"
           justifyContent="center"
           padding="xl"
-          width={{ base: '100%', md: '30%' }}
+          width="30%"
           flexShrink={0}
         >
           <Box width={compact ? 140 : 160} height={compact ? 140 : 160}>

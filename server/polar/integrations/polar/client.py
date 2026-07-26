@@ -162,7 +162,13 @@ class PolarSelfClient:
                 _raise_network_error(span, e, "uncancel_subscription")
 
     async def get_customer_by_external_id(self, external_id: str) -> Customer:
-        return await self._sdk.customers.get_external(external_id)
+        with logfire.span(
+            "polar.get_customer_by_external_id", external_id=external_id
+        ) as span:
+            try:
+                return await self._sdk.customers.get_external(external_id)
+            except PolarNetworkError as e:
+                _raise_network_error(span, e, "get_customer_by_external_id")
 
     async def get_customer_by_external_id_or_none(
         self, external_id: str

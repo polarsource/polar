@@ -15,6 +15,7 @@ from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission
 from polar.authz.types import AccessibleOrganizationID
+from polar.benefit.strategies.link.service import resolve_email_link_urls
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
@@ -27,7 +28,7 @@ from polar.customer_meter.service import customer_meter as customer_meter_servic
 from polar.customer_seat.service import seat_service
 from polar.discount.repository import DiscountRedemptionRepository, DiscountRepository
 from polar.discount.service import discount as discount_service
-from polar.email.schemas import EmailAdapter
+from polar.email.schemas import EmailAdapter, ProductEmail
 from polar.email.sender import enqueue_email_template
 from polar.enums import (
     PaymentMode,
@@ -3398,13 +3399,20 @@ class SubscriptionService:
                     f"/{organization.slug}/portal?{query_string}"
                 )
 
+                props_product = ProductEmail.model_validate(product)
+                resolve_email_link_urls(
+                    props_product.benefits,
+                    email=recipient_email,
+                    external_id=customer.external_id,
+                )
+
                 email = EmailAdapter.validate_python(
                     {
                         "template": template_name,
                         "props": {
                             "email": recipient_email,
                             "organization": organization,
-                            "product": product,
+                            "product": props_product,
                             "subscription": subscription,
                             "url": portal_url,
                             **(extra_context or {}),

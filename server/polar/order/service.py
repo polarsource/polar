@@ -14,8 +14,7 @@ from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
-from polar.benefit.strategies.link.schemas import BenefitLink
-from polar.benefit.strategies.link.service import resolve_link_url
+from polar.benefit.strategies.link.service import resolve_email_link_urls
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.guard import has_product_checkout
@@ -2417,19 +2416,14 @@ class OrderService:
                 url_path = url_path_template.format(organization=organization.slug)
                 url = settings.generate_frontend_url(f"{url_path}?{query_string}")
 
-            # Link benefit URLs may not be granted yet when this email is
-            # sent, so resolve their customer placeholders per recipient
-            # instead of reading the grant.
             props_product: ProductEmail | None = None
             if product is not None:
                 props_product = ProductEmail.model_validate(product)
-                for benefit in props_product.benefits:
-                    if isinstance(benefit, BenefitLink):
-                        benefit.properties.url = resolve_link_url(
-                            benefit.properties.url,
-                            email=recipient_email,
-                            external_id=customer.external_id,
-                        )
+                resolve_email_link_urls(
+                    props_product.benefits,
+                    email=recipient_email,
+                    external_id=customer.external_id,
+                )
 
             email = EmailAdapter.validate_python(
                 {

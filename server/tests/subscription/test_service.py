@@ -14,10 +14,11 @@ from pytest_mock import MockerFixture
 from sqlalchemy.util.typing import TypeAlias
 
 from polar.auth.models import AuthSubject
+from polar.benefit.strategies.link.schemas import BenefitLink
 from polar.billing_entry.repository import BillingEntryRepository
 from polar.checkout.eventstream import CheckoutEvent
 from polar.customer_seat.repository import CustomerSeatRepository
-from polar.email.schemas import SubscriptionRevokedEmail
+from polar.email.schemas import SubscriptionRevokedEmail, SubscriptionUpdatedEmail
 from polar.enums import (
     PaymentProcessor,
     SubscriptionProrationBehavior,
@@ -52,6 +53,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.models.benefit import BenefitType
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.checkout import CheckoutStatus
 from polar.models.customer import CustomerType
@@ -104,6 +106,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
+    create_benefit,
     create_canceled_subscription,
     create_checkout,
     create_customer,
@@ -8468,4 +8471,58 @@ class TestFixedSeatComposition:
         # The two static entries together reconstruct the combined amount F + S(n).
         assert subscription.amount == (
             fixed_price.price_amount + seat_price.calculate_amount(10)
+        )
+
+
+@pytest.mark.asyncio
+class TestSendSubscriptionUpdatedEmail:
+    async def test_resolves_link_benefit_placeholders(
+        self,
+        session: AsyncSession,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="link@example.com",
+            external_id="ext-123",
+        )
+        link_benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.link,
+            description="App access",
+            properties={
+                "url": "https://example.com/welcome?email={CUSTOMER_EMAIL}&uid={CUSTOMER_EXTERNAL_ID}",
+                "label": "Open App",
+            },
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=[link_benefit]
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        await subscription_service.send_subscription_updated_email(
+            session,
+            subscription,
+            product,
+            SubscriptionProrationBehavior.prorate,
+        )
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert isinstance(email, SubscriptionUpdatedEmail)
+        benefit = email.props.product.benefits[0]
+        assert isinstance(benefit, BenefitLink)
+        assert benefit.properties.url == (
+            "https://example.com/welcome?email=link%40example.com&uid=ext-123"
         )

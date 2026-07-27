@@ -447,6 +447,35 @@ class TestRunReviewAgentSubmission:
 
 
 @pytest.mark.asyncio
+class TestRunReviewAgentMissingOrganization:
+    """A deleted/missing organization must be skipped gracefully, not raise —
+    the org can disappear between enqueue and (debounced) execution."""
+
+    async def test_missing_organization_skips_without_raising(
+        self,
+        session: AsyncSession,
+    ) -> None:
+        run_review_mock = AsyncMock()
+        with (
+            patch(
+                "polar.organization_review.tasks.AsyncSessionMaker",
+                return_value=_mock_session_maker(session),
+            ),
+            patch(
+                "polar.organization_review.tasks.run_organization_review",
+                run_review_mock,
+            ),
+        ):
+            # A random id that does not correspond to any organization.
+            await _run_review_agent(
+                uuid.uuid4(),
+                context=ReviewContext.SUBMISSION,
+            )
+
+        run_review_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 class TestReviewAppeal:
     async def test_approve_activates_org(
         self,

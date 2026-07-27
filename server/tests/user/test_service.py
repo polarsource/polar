@@ -337,6 +337,35 @@ class TestCreateIdentityVerification:
         create_mock.assert_not_awaited()
         assert verification.id == "vs_existing"
 
+    async def test_reuses_session_requiring_input_when_status_is_stale(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        """A user left at `pending` by a lost `requires_input` webhook can still
+        resume: Stripe's status decides, ours doesn't.
+        """
+        user.identity_verification_id = "vs_existing"
+        user.identity_verification_status = IdentityVerificationStatus.pending
+        await save_fixture(user)
+
+        mocker.patch(
+            "polar.user.service.stripe_service.get_verification_session",
+            new_callable=mocker.AsyncMock,
+            return_value=_verification_session("vs_existing", "requires_input"),
+        )
+        create_mock = mocker.patch(
+            "polar.user.service.stripe_service.create_verification_session",
+            new_callable=mocker.AsyncMock,
+        )
+
+        verification = await user_service.create_identity_verification(session, user)
+
+        create_mock.assert_not_awaited()
+        assert verification.id == "vs_existing"
+
     async def test_refuses_while_stripe_is_processing(
         self,
         mocker: MockerFixture,

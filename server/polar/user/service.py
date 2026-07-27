@@ -140,17 +140,15 @@ class UserService:
         if user.identity_verified:
             raise IdentityAlreadyVerified(user.id)
 
-        if user.identity_verification_status == IdentityVerificationStatus.pending:
-            raise IdentityVerificationProcessing(user.id)
-
         verification_session: stripe_lib.identity.VerificationSession | None = None
         if user.identity_verification_id is not None:
             verification_session = await stripe_service.get_verification_session(
                 user.identity_verification_id
             )
 
-        # Our status lags Stripe's while a webhook is in flight, so trust Stripe here:
-        # replacing a session that's still live orphans the webhooks it has yet to send.
+        # Our status lags Stripe's while a webhook is in flight, so the session Stripe
+        # reports is the only gate: replacing one that's still live orphans the webhooks
+        # it has yet to send, and gating on a stale `pending` locks the user out.
         if verification_session is not None:
             match verification_session.status:
                 case "verified":

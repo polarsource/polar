@@ -2,9 +2,9 @@
 
 import { BenefitPage } from '@/components/Benefit/BenefitPage'
 import { BenefitProducts } from '@/components/Benefit/BenefitProducts'
-import { BenefitDetails } from '@/components/Benefit/Configuration/BenefitDetails'
-import { BenefitSecondaryDetails } from '@/components/Benefit/Configuration/BenefitSecondaryDetails'
-import { BenefitSections } from '@/components/Benefit/Configuration/BenefitSections'
+import { BenefitDetails } from '@/components/Benefit/BenefitDetails'
+import { BenefitSecondaryDetails } from '@/components/Benefit/BenefitSecondaryDetails'
+import { BenefitSections } from '@/components/Benefit/BenefitSections'
 import { LicenseKeysPage } from '@/components/Benefit/LicenseKeysPage'
 import UpdateBenefitModalContent from '@/components/Benefit/UpdateBenefitModalContent'
 import {

@@ -55,10 +55,11 @@ export const BenefitDetails = ({
   return (
     <Box
       flexDirection="column"
-      borderBottomWidth={1}
-      borderStyle="solid"
-      borderColor="border-primary"
-      paddingBottom="4xl"
+      paddingVertical="xl"
+      borderRadius="xl"
+      paddingHorizontal="2xl"
+      borderColor="border-secondary"
+      backgroundColor="background-secondary"
     >
       <DetailGrid>{cells}</DetailGrid>
     </Box>

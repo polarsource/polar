@@ -1,18 +1,14 @@
 'use client'
 
 import { DetailCell } from '@/components/Orders/OrderSection'
-import {
-  useDiscordGuild,
-  useSlackIntegration,
-  useSlackWorkspaceUsers,
-} from '@/hooks/queries'
+import { useDiscordGuild, useSlackIntegration } from '@/hooks/queries'
 import { useMeter } from '@/hooks/queries/meters'
 import OpenInNew from '@mui/icons-material/OpenInNew'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
-import { githubRepositoryPermissionDisplayNames } from '../utils'
+import { githubRepositoryPermissionDisplayNames } from './utils'
 
 export const DiscordCells = ({
   benefit,
@@ -72,17 +68,7 @@ export const SlackSharedChannelCells = ({
   const { data: integration, isLoading } =
     useSlackIntegration(slack_integration_id)
 
-  const invitees = team_invitees ?? []
-  const { data: users, isLoading: isLoadingUsers } = useSlackWorkspaceUsers(
-    slack_integration_id,
-    { enabled: invitees.length > 0 },
-  )
-
-  const usersById = new Map(users?.map((user) => [user.id, user]))
-  const inviteeNames = invitees.map((id) => {
-    const user = usersById.get(id)
-    return user?.real_name || user?.name || id
-  })
+  const inviteeCount = team_invitees?.length ?? 0
 
   return (
     <>
@@ -110,14 +96,9 @@ export const SlackSharedChannelCells = ({
       <DetailCell
         label="Team members invited"
         value={
-          <Text
-            variant="body"
-            truncate
-            loading={isLoadingUsers}
-            placeholderText="Team members"
-          >
-            {invitees.length === 0 ? 'None' : inviteeNames.join(', ')}
-          </Text>
+          inviteeCount === 0
+            ? 'None'
+            : `${inviteeCount} ${inviteeCount === 1 ? 'member' : 'members'}`
         }
       />
       <DetailCell

@@ -140,7 +140,6 @@ export default function CustomerPortalCustomUrlSetting({
                 borderWidth={1}
                 borderStyle="solid"
                 borderColor="border-primary"
-                backgroundColor="background-secondary"
               >
                 <Box
                   flexDirection="column"
@@ -211,11 +210,10 @@ export default function CustomerPortalCustomUrlSetting({
 
                 <Box padding="m" width="100%">
                   <Text variant="caption" color="muted">
-                    Used in all customer emails that link to the portal —
-                    purchase and subscription confirmations, renewals, plan
-                    changes, cancellations, payment failures and reminders.
-                    Sign-in code and seat invitation emails keep linking to
-                    Polar.
+                    Used in purchase and subscription confirmations, renewals,
+                    plan changes, cancellations, payment failures, and
+                    reminders. Sign-in code and seat invitation emails still
+                    link to Polar.
                   </Text>
                 </Box>
               </Box>

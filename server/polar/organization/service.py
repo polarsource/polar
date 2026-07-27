@@ -563,8 +563,7 @@ class OrganizationService:
             )
             if not organization.is_custom_customer_portal_url_enabled:
                 # The custom customer portal URL can only be changed while the
-                # feature flag is enabled; preserve whatever is currently stored
-                # otherwise.
+                # feature flag is enabled.
                 existing_url = organization.customer_portal_custom_url
                 if existing_url is None:
                     customer_portal_settings.pop("custom_url", None)

@@ -39,6 +39,8 @@ server/polar/order/service.py
   s_055272d137234c::t_0d39a85445ef3a 1568-1569
   s_055272d137234c::t_7f347585f8c471 1505,1560,1567,1591
   s_055272d137234c::t_7794d62ba72fa1 1392,1506,1519,1578,2454,3019,3154
+  s_055272d137234c::t_1ac0db5dff66e5 1390,1397
+  s_055272d137234c::t_c031a6ce5e0f2c 1386-1389,1404
 server/tests/order/test_schemas.py
   s_055272d137234c::t_7794d62ba72fa1 26
 server/tests/order/test_service.py
@@ -78,6 +80,7 @@ clients/packages/client/src/v1.ts
 server/polar/subscription/scheduler.py
   s_055272d137234c::t_7794d62ba72fa1 27-28,31
   s_055272d137234c::t_03714b182e5504 12,24-26,29-30,32-34,195
+  s_055272d137234c::t_7d671c2f482241 171-173
 server/polar/models/order.py
   s_055272d137234c::t_7794d62ba72fa1 62,70
 server/polar/subscription/tasks.py

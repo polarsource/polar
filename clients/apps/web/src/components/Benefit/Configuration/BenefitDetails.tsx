@@ -3,17 +3,21 @@
 import { DetailGrid } from '@/components/Orders/OrderSection'
 import { Box } from '@polar-sh/orbit/Box'
 import {
+  DiscordCells,
   GitHubRepositoryCells,
   LicenseKeysCells,
   MeterCreditCells,
+  SlackSharedChannelCells,
 } from './BenefitDetailCells'
-import type { BenefitConfigurationProps } from './BenefitConfigurationProps'
-import { DiscordCells, SlackSharedChannelCells } from './IntegrationDetailCells'
+import { schemas } from '@polar-sh/client'
 
 const getBenefitTypeCells = ({
   benefit,
   organization,
-}: BenefitConfigurationProps) => {
+}: {
+  benefit: schemas['Benefit']
+  organization: schemas['Organization']
+}) => {
   switch (benefit.type) {
     case 'discord':
       return <DiscordCells benefit={benefit} />
@@ -25,8 +29,6 @@ const getBenefitTypeCells = ({
       return <MeterCreditCells benefit={benefit} organization={organization} />
     case 'slack_shared_channel':
       return <SlackSharedChannelCells benefit={benefit} />
-    // These types carry prose, file lists or metadata rather than scalar
-    // properties, so they render as sections of their own instead.
     case 'custom':
     case 'downloadables':
     case 'feature_flag':
@@ -40,7 +42,10 @@ const getBenefitTypeCells = ({
 export const BenefitDetails = ({
   benefit,
   organization,
-}: BenefitConfigurationProps) => {
+}: {
+  benefit: schemas['Benefit']
+  organization: schemas['Organization']
+}) => {
   const cells = getBenefitTypeCells({ benefit, organization })
 
   if (!cells) {

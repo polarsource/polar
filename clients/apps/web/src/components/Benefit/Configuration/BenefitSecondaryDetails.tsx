@@ -16,7 +16,7 @@ export const BenefitSecondaryDetails = ({
     ([key, value]) => ({
       key,
       label: key,
-      value: typeof value === 'boolean' ? (value ? 'Yes' : 'No') : value,
+      value: value,
     }),
   )
 

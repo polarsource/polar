@@ -153,7 +153,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 alignItems={{ base: 'start', sm: 'center' }}
                 gap={{ base: 'xs', sm: 'l' }}
               >
-                <Text variant="heading-xs" as="h2" truncate>
+                <Text variant="heading-xxs" as="h2" truncate>
                   {(benefit.description?.length ?? 0) > 0
                     ? benefit.description
                     : '—'}

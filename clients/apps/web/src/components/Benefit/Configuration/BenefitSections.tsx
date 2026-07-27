@@ -5,7 +5,6 @@ import { useFiles } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { List, ListItem, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import type { BenefitConfigurationProps } from './BenefitConfigurationProps'
 
 const ProseSection = ({
   title,
@@ -19,8 +18,8 @@ const ProseSection = ({
   <OrderSection title={title}>
     <Box backgroundColor="background-secondary" borderRadius="l" padding="xl">
       {text ? (
-        // Notes and welcome messages are authored as multi-line text, so the
-        // author's line breaks are preserved as written.
+        // Notes and welcome messages are multi-line text, so the
+        // line breaks are preserved.
         <div className="max-w-[65ch] whitespace-pre-wrap">
           <Text>{text}</Text>
         </div>
@@ -80,7 +79,10 @@ const DownloadablesSection = ({
 export const BenefitSections = ({
   benefit,
   organization,
-}: BenefitConfigurationProps) => {
+}: {
+  benefit: schemas['Benefit']
+  organization: schemas['Organization']
+}) => {
   switch (benefit.type) {
     case 'custom':
       return (

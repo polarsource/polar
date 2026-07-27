@@ -1,5 +1,6 @@
 'use client'
 
+import { DISTINCT_ID_COOKIE } from '@/experiments/constants'
 import type { schemas } from '@polar-sh/client'
 import type { JsonType } from '@posthog/core'
 import type { CaptureOptions } from 'posthog-js'
@@ -105,6 +106,7 @@ export const usePostHog = (): PolarHog => {
 
   const reset: PolarHog['reset'] = useCallback(() => {
     posthog.reset()
+    document.cookie = `${DISTINCT_ID_COOKIE}=; max-age=0; path=/; samesite=lax`
   }, [posthog])
 
   const context = useMemo(

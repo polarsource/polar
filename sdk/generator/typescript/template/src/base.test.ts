@@ -72,3 +72,18 @@ describe("buildRequest", () => {
     expect(url).toBe("https://api.polar.sh/v1/items/test?valid_param=value");
   });
 });
+
+describe("parseResponse", () => {
+  test("202 with empty body does not throw and returns undefined", async () => {
+    const response = new Response("", { status: 202 });
+    await expect(client.parseResponse(response, "json")).resolves.toBeUndefined();
+  });
+
+  test("200 with JSON body is parsed", async () => {
+    const response = new Response(JSON.stringify({ id: "abc" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
+    await expect(client.parseResponse(response, "json")).resolves.toEqual({ id: "abc" });
+  });
+});

@@ -8474,7 +8474,7 @@ class TestFixedSeatComposition:
 
 @pytest.mark.asyncio
 class TestSendCancellationEmail:
-    async def test_uses_custom_portal_url(
+    async def test_uses_portal_url_override(
         self,
         session: AsyncSession,
         enqueue_email_mock: MagicMock,

@@ -2710,7 +2710,66 @@ class TestSendConfirmationEmail:
         attachments = enqueue_email_mock.call_args[1]["attachments"]
         assert len(attachments) == 1
 
-    async def test_uses_custom_portal_url_from_settings(
+    async def test_polar_url_links_to_order_for_purchase(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        order = await create_order(save_fixture, product=product, customer=customer)
+
+        await order_service.send_confirmation_email(session, order)
+
+        email = enqueue_email_mock.call_args[0][0]
+        assert f"/{organization.slug}/portal" in email.props.url
+        params = parse_qs(urlparse(email.props.url).query)
+        assert params["id"] == [str(order.id)]
+        assert params["email"] == [customer.email]
+        assert params["customer_session_token"][0]
+
+    async def test_polar_url_links_to_subscription_for_cycle(
+        self,
+        mocker: MockerFixture,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        mocker.patch(
+            "polar.order.service.invoice_service.create_order_invoice",
+            new_callable=AsyncMock,
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=OrderBillingReasonInternal.subscription_cycle,
+        )
+
+        await order_service.send_confirmation_email(session, order)
+
+        email = enqueue_email_mock.call_args[0][0]
+        assert f"/{organization.slug}/portal" in email.props.url
+        params = parse_qs(urlparse(email.props.url).query)
+        assert params["id"] == [str(subscription.id)]
+        assert params["email"] == [customer.email]
+        assert params["customer_session_token"][0]
+
+    async def test_uses_portal_url_override_from_settings(
         self,
         mocker: MockerFixture,
         enqueue_email_mock: MagicMock,
@@ -2750,7 +2809,7 @@ class TestSendConfirmationEmail:
         assert "subscription_id" not in params
         assert "customer_session_token" not in params
 
-    async def test_renewal_email_uses_custom_portal_url(
+    async def test_renewal_email_uses_portal_url_override(
         self,
         mocker: MockerFixture,
         enqueue_email_mock: MagicMock,

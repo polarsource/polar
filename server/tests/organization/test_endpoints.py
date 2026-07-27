@@ -506,7 +506,7 @@ class TestUpdateOrganization:
         assert settings["customer"]["allow_email_change"] is True
 
     @pytest.mark.auth
-    async def test_custom_portal_url_ignored_without_flag(
+    async def test_portal_url_override_ignored_without_flag(
         self,
         client: AsyncClient,
         organization: Organization,
@@ -527,7 +527,7 @@ class TestUpdateOrganization:
         assert settings.get("portal_url") is None
 
     @pytest.mark.auth
-    async def test_custom_portal_url_saved_with_flag(
+    async def test_portal_url_override_saved_with_flag(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -552,7 +552,7 @@ class TestUpdateOrganization:
         assert settings["portal_url"] == "https://acme.example.com/billing"
 
     @pytest.mark.auth
-    async def test_custom_portal_url_can_be_cleared_with_flag(
+    async def test_portal_url_override_can_be_cleared_with_flag(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -581,7 +581,7 @@ class TestUpdateOrganization:
         assert settings.get("portal_url") is None
 
     @pytest.mark.auth
-    async def test_custom_portal_url_preserved_when_omitted(
+    async def test_portal_url_override_preserved_when_omitted(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -611,7 +611,7 @@ class TestUpdateOrganization:
         assert settings["portal_url"] == "https://acme.example.com/billing"
 
     @pytest.mark.auth
-    async def test_custom_portal_url_rejects_non_https(
+    async def test_portal_url_override_rejects_non_https(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -634,7 +634,7 @@ class TestUpdateOrganization:
         assert response.status_code == 422
 
     @pytest.mark.auth
-    async def test_custom_portal_url_rejects_query_params(
+    async def test_portal_url_override_rejects_query_params(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,

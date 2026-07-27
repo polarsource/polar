@@ -2,6 +2,7 @@ import uuid
 from collections.abc import Sequence
 from datetime import datetime, timedelta
 from typing import Any
+from urllib.parse import urlencode
 
 import structlog
 from pydantic import TypeAdapter
@@ -731,7 +732,7 @@ class CustomerService:
 
         return filtered
 
-    async def create_session_token_for_recipient(
+    async def _create_session_token_for_recipient(
         self,
         session: AsyncSession,
         customer: Customer,
@@ -756,6 +757,54 @@ class CustomerService:
             return None
         token, _ = await member_session_service.create_member_session(session, member)
         return token
+
+    async def generate_email_portal_url(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        recipient_email: str,
+        *,
+        order_id: uuid.UUID | None = None,
+        subscription_id: uuid.UUID | None = None,
+    ) -> str | None:
+        """Build the customer portal link for an email recipient.
+
+        Returns the organization's configured URL override when set, otherwise a
+        Polar-hosted link carrying a freshly created session token.
+
+        Returns None when the recipient cannot be issued a session token, in
+        which case no email should be sent to them.
+        """
+        override_url = organization.get_customer_portal_url_override(
+            customer,
+            recipient_email,
+            order_id=order_id,
+            subscription_id=subscription_id,
+        )
+        if override_url is not None:
+            return override_url
+
+        token = await self._create_session_token_for_recipient(
+            session, customer, recipient_email
+        )
+        if token is None:
+            return None
+
+        # The Polar portal deep-links to the subscription when the email
+        # concerns one, otherwise to the order.
+        link_id = subscription_id or order_id
+        assert link_id is not None, "order_id or subscription_id is required"
+        query_string = urlencode(
+            {
+                "customer_session_token": token,
+                "id": str(link_id),
+                "email": recipient_email,
+            }
+        )
+        return settings.generate_frontend_url(
+            f"/{organization.slug}/portal?{query_string}"
+        )
 
     async def list_payment_methods(
         self,

@@ -5,7 +5,6 @@ from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from types import TracebackType
 from typing import Any, Literal, Unpack, cast, overload
-from urllib.parse import urlencode
 
 import structlog
 from sqlalchemy import select
@@ -20,7 +19,6 @@ from polar.billing_entry.service import MeteredLineItem
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.checkout.eventstream import CheckoutEvent, publish_checkout_event
 from polar.checkout.guard import has_product_checkout
-from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
 from polar.customer_meter.service import customer_meter as customer_meter_service
@@ -3381,30 +3379,15 @@ class SubscriptionService:
 
         async def send_to_recipients(recipients: Sequence[str]) -> None:
             for recipient_email in recipients:
-                portal_url_override = organization.get_customer_portal_url_override(
+                portal_url = await customer_service.generate_email_portal_url(
+                    session,
+                    organization,
                     customer,
                     recipient_email,
                     subscription_id=subscription.id,
                 )
-                if portal_url_override is not None:
-                    portal_url = portal_url_override
-                else:
-                    token = await customer_service.create_session_token_for_recipient(
-                        session, customer, recipient_email
-                    )
-                    if token is None:
-                        continue
-
-                    query_string = urlencode(
-                        {
-                            "customer_session_token": token,
-                            "id": str(subscription.id),
-                            "email": recipient_email,
-                        }
-                    )
-                    portal_url = settings.generate_frontend_url(
-                        f"/{organization.slug}/portal?{query_string}"
-                    )
+                if portal_url is None:
+                    continue
 
                 email = EmailAdapter.validate_python(
                     {

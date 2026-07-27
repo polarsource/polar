@@ -435,6 +435,64 @@ class TestCreateOwnerMember:
         members = await repository.list_by_customer(customer.id)
         assert len([m for m in members if m.role == MemberRole.owner]) == 1
 
+    async def test_concurrent_duplicate_returns_existing_without_pending_rollback(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Regression: a concurrent insert that trips a partial unique index during
+        flush must not leave the session in an aborted state. The savepoint
+        rollback lets the re-query return the existing owner instead of raising
+        PendingRollbackError."""
+        organization.feature_settings = {"member_model_enabled": True}
+        await save_fixture(organization)
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="owner@example.com",
+        )
+        # The owner a concurrent request already committed.
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            role=MemberRole.owner,
+        )
+        await save_fixture(existing)
+
+        # Force the code past the initial owner lookup (as if no owner existed yet
+        # at check time) so the real flush hits the unique index and would poison
+        # the session without the savepoint rollback.
+        original_get = MemberRepository.get_owner_by_customer_id
+        call_count = 0
+
+        async def mock_get(
+            self: Any, customer_id: Any, *, include_deleted: bool = False
+        ) -> Member | None:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return None
+            return await original_get(
+                self, customer_id, include_deleted=include_deleted
+            )
+
+        mocker.patch.object(MemberRepository, "get_owner_by_customer_id", mock_get)
+
+        member = await member_service.create_owner_member(
+            session, customer, organization
+        )
+
+        assert member is not None
+        assert member.id == existing.id
+        assert call_count == 2  # initial lookup + re-query after rollback
+
+        # The session recovered from the failed flush and is still usable.
+        await session.flush()
+
 
 @pytest.mark.asyncio
 class TestCreate:
@@ -1409,6 +1467,60 @@ class TestGetOrCreateByEmail:
 
         assert member.id == existing.id
         assert call_count == 1  # create was attempted
+
+    async def test_concurrent_duplicate_returns_existing_without_pending_rollback(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Regression: a concurrent insert that trips the partial unique index
+        during flush must not leave the session in an aborted state. The savepoint
+        rollback lets the re-query return the existing member instead of raising
+        PendingRollbackError."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        # The member a concurrent request already committed.
+        existing = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="race@example.com",
+            name="Existing",
+            role=MemberRole.member,
+        )
+        await save_fixture(existing)
+
+        # Force the code past the initial lookup (as if the row didn't exist yet at
+        # check time) so the real flush hits the unique index and would poison the
+        # session without the savepoint rollback.
+        original_get = MemberRepository.get_by_customer_id_and_email
+        call_count = 0
+
+        async def mock_get(self: Any, customer_id: Any, email: Any) -> Member | None:
+            nonlocal call_count
+            call_count += 1
+            if call_count == 1:
+                return None
+            return await original_get(self, customer_id, email)
+
+        mocker.patch.object(MemberRepository, "get_by_customer_id_and_email", mock_get)
+
+        member = await member_service.get_or_create_by_email(
+            session,
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="race@example.com",
+        )
+
+        assert member.id == existing.id
+        assert call_count == 2  # initial lookup + re-query after rollback
+
+        # The session recovered from the failed flush and is still usable.
+        await session.flush()
 
     async def test_sets_external_id_on_creation(
         self,

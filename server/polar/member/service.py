@@ -368,6 +368,7 @@ class MemberService:
             created_at=customer.created_at,
         )
 
+        nested = await session.begin_nested()
         try:
             created_member = await repository.create(member, flush=True)
             customer.owner = created_member
@@ -386,6 +387,10 @@ class MemberService:
                 )
             return created_member
         except IntegrityError as e:
+            # Roll back to the savepoint before re-querying: a failed flush leaves
+            # the session in an aborted state, so the follow-up query would raise
+            # PendingRollbackError instead of returning the concurrently-created owner.
+            await nested.rollback()
             log.info(
                 "member.create_owner_member.constraint_violation",
                 customer_id=customer.id,
@@ -479,6 +484,7 @@ class MemberService:
             role=role,
         )
 
+        nested = await session.begin_nested()
         try:
             created = await repository.create(member, flush=True)
             log.info(
@@ -490,7 +496,11 @@ class MemberService:
             )
             return created
         except IntegrityError:
-            # 4. Race condition: another transaction created the member concurrently
+            # Race condition: another transaction created the member concurrently.
+            # Roll back to the savepoint before re-querying: a failed flush leaves
+            # the session in an aborted state, so the follow-up query would raise
+            # PendingRollbackError instead of returning the existing member.
+            await nested.rollback()
             log.info(
                 "member.get_or_create_by_email.integrity_error_retry",
                 customer_id=customer_id,

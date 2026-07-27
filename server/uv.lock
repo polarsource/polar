@@ -867,8 +867,8 @@ wheels = [
 
 [[package]]
 name = "dramatiq"
-version = "2.2.0"
-source = { git = "https://github.com/LincolnPuzey/dramatiq?rev=fix_asyncio_exc_ref_cycle#5ed44687e6f44c402de5ca7af98203f4394604e9" }
+version = "2.0.0"
+source = { git = "https://github.com/frankie567/dramatiq?rev=memory-leak-asyncio-ter#63ea404e2204b2d2b3e644053b4b294cb1039ad4" }
 
 [package.optional-dependencies]
 redis = [
@@ -876,6 +876,7 @@ redis = [
 ]
 watch = [
     { name = "watchdog" },
+    { name = "watchdog-gevent" },
 ]
 
 [[package]]
@@ -2569,7 +2570,7 @@ requires-dist = [
     { name = "boto3", specifier = ">=1.43.38" },
     { name = "clickhouse-connect", extras = ["async"], specifier = ">=1.4.1" },
     { name = "cryptography", specifier = ">=48.0.1" },
-    { name = "dramatiq", extras = ["redis", "watch"], git = "https://github.com/LincolnPuzey/dramatiq?rev=fix_asyncio_exc_ref_cycle" },
+    { name = "dramatiq", extras = ["redis", "watch"], git = "https://github.com/frankie567/dramatiq?rev=memory-leak-asyncio-ter" },
     { name = "email-validator", specifier = ">=2.1.0.post1" },
     { name = "exponent-server-sdk", specifier = ">=2.1.0" },
     { name = "fastapi", specifier = "==0.136.3" },
@@ -4067,6 +4068,19 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/07/f6/d0e5b343768e8bcb4cda79f0f2f55051bf26177ecd5651f84c07567461cf/watchdog-6.0.0-py3-none-win32.whl", hash = "sha256:07df1fdd701c5d4c8e55ef6cf55b8f0120fe1aef7ef39a1c6fc6bc2e606d517a", size = 79065, upload-time = "2024-11-01T14:07:09.525Z" },
     { url = "https://files.pythonhosted.org/packages/db/d9/c495884c6e548fce18a8f40568ff120bc3a4b7b99813081c8ac0c936fa64/watchdog-6.0.0-py3-none-win_amd64.whl", hash = "sha256:cbafb470cf848d93b5d013e2ecb245d4aa1c8fd0504e863ccefa32445359d680", size = 79070, upload-time = "2024-11-01T14:07:10.686Z" },
     { url = "https://files.pythonhosted.org/packages/33/e8/e40370e6d74ddba47f002a32919d91310d6074130fe4e17dabcafc15cbf1/watchdog-6.0.0-py3-none-win_ia64.whl", hash = "sha256:a1914259fa9e1454315171103c6a30961236f508b9b623eae470268bbcc6a22f", size = 79067, upload-time = "2024-11-01T14:07:11.845Z" },
+]
+
+[[package]]
+name = "watchdog-gevent"
+version = "0.2.1"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "gevent" },
+    { name = "watchdog" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/97/69/91cfca7c21c382e3a8aca4251dcd7d4315228d9346381feb2dde36d14061/watchdog_gevent-0.2.1.tar.gz", hash = "sha256:ae6b94d0f8c8ce1c5956cd865f612b61f456cf19801744bba25a349fe8e8c337", size = 4296, upload-time = "2024-10-19T05:29:12.987Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/00/a9/54b88e150b77791958957e2188312477d09fc84820fc03f8b3a7569d10b0/watchdog_gevent-0.2.1-py3-none-any.whl", hash = "sha256:e8114658104a018f626ee54052335407c1438369febc776c4b4c4308ed002350", size = 3462, upload-time = "2024-10-19T05:29:11.421Z" },
 ]
 
 [[package]]

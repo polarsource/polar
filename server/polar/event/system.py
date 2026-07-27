@@ -26,6 +26,7 @@ class SystemEvent(StrEnum):
     subscription_revoked = "subscription.revoked"
     subscription_past_due = "subscription.past_due"
     subscription_reactivated = "subscription.reactivated"
+    subscription_reinstated = "subscription.reinstated"
     subscription_paused = "subscription.paused"
     subscription_resumed = "subscription.resumed"
     subscription_uncanceled = "subscription.uncanceled"
@@ -36,6 +37,7 @@ class SystemEvent(StrEnum):
     order_paid = "order.paid"
     order_refunded = "order.refunded"
     order_voided = "order.voided"
+    order_unvoided = "order.unvoided"
     checkout_created = "checkout.created"
     customer_created = "customer.created"
     customer_updated = "customer.updated"
@@ -60,6 +62,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "subscription.revoked": "Subscription Revoked",
     "subscription.past_due": "Subscription Past Due",
     "subscription.reactivated": "Subscription Reactivated",
+    "subscription.reinstated": "Subscription Reinstated",
     "subscription.paused": "Subscription Paused",
     "subscription.resumed": "Subscription Resumed",
     "subscription.uncanceled": "Subscription Uncanceled",
@@ -67,6 +70,7 @@ SYSTEM_EVENT_LABELS: dict[str, str] = {
     "order.paid": "Order Paid",
     "order.refunded": "Order Refunded",
     "order.voided": "Order Voided",
+    "order.unvoided": "Order Unvoided",
     "checkout.created": "Checkout Created",
     "subscription.seats_updated": "Subscription Seats Updated",
     "subscription.billing_period_updated": "Subscription Billing Period Updated",
@@ -319,6 +323,22 @@ class SubscriptionReactivatedEvent(Event):
         user_metadata: Mapped[SubscriptionReactivatedMetadata]  # type: ignore[assignment]
 
 
+class SubscriptionReinstatedMetadata(TypedDict):
+    subscription_id: str
+    product_id: NotRequired[str]
+    amount: NotRequired[int]
+    currency: NotRequired[str]
+    recurring_interval: NotRequired[str]
+    recurring_interval_count: NotRequired[int]
+
+
+class SubscriptionReinstatedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.subscription_reinstated]]
+        user_metadata: Mapped[SubscriptionReinstatedMetadata]  # type: ignore[assignment]
+
+
 class SubscriptionPausedMetadata(TypedDict):
     subscription_id: str
     product_id: NotRequired[str]
@@ -468,6 +488,19 @@ class OrderVoidedEvent(Event):
         source: Mapped[Literal[EventSource.system]]
         name: Mapped[Literal[SystemEvent.order_voided]]
         user_metadata: Mapped[OrderVoidedMetadata]  # type: ignore[assignment]
+
+
+class OrderUnvoidedMetadata(TypedDict):
+    order_id: str
+    amount: int
+    currency: str
+
+
+class OrderUnvoidedEvent(Event):
+    if TYPE_CHECKING:
+        source: Mapped[Literal[EventSource.system]]
+        name: Mapped[Literal[SystemEvent.order_unvoided]]
+        user_metadata: Mapped[OrderUnvoidedMetadata]  # type: ignore[assignment]
 
 
 class CheckoutCreatedMetadata(TypedDict):
@@ -742,6 +775,15 @@ def build_system_event(
 
 @overload
 def build_system_event(
+    name: Literal[SystemEvent.subscription_reinstated],
+    customer: Customer,
+    organization: Organization,
+    metadata: SubscriptionReinstatedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
     name: Literal[SystemEvent.subscription_paused],
     customer: Customer,
     organization: Organization,
@@ -827,6 +869,15 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: OrderVoidedMetadata,
+) -> Event: ...
+
+
+@overload
+def build_system_event(
+    name: Literal[SystemEvent.order_unvoided],
+    customer: Customer,
+    organization: Organization,
+    metadata: OrderUnvoidedMetadata,
 ) -> Event: ...
 
 

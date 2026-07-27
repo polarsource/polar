@@ -33,7 +33,7 @@ Whether the amount you enter includes tax or has tax added on top depends on you
 
 ### Multiple payment currencies
 
-Products can be priced in several currencies at once so customers pay in their local currency. Your organization has a default payment currency that acts as the fallback, and you can add more on top. The price structure (price type, metered prices, etc.) must match across every currency you enable.
+Products can be priced in several currencies at once so customers pay in their local currency. Your organization has a default payment currency that acts as the fallback, and you can add more on top. A price in the default currency is **required** — if you leave it empty, the product is treated as free. To price a product only in another currency, change your organization's default payment currency under **Settings** first. The price structure (price type, metered prices, etc.) must match across every currency you enable.
 
 Polar picks the currency based on the customer's geolocation at checkout. If their currency isn't enabled on the product, it falls back to your organization's default.
 

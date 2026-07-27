@@ -42,6 +42,7 @@ from polar.event.system import (
     SubscriptionPastDueMetadata,
     SubscriptionPausedMetadata,
     SubscriptionReactivatedMetadata,
+    SubscriptionReinstatedMetadata,
     SubscriptionResumedMetadata,
     SubscriptionRevokedMetadata,
     SubscriptionUncanceledMetadata,
@@ -200,6 +201,13 @@ class NotPausedSubscription(SubscriptionError):
         self.subscription = subscription
         message = "This subscription is not paused."
         super().__init__(message, 409)
+
+
+class CannotReinstateSubscription(SubscriptionError):
+    def __init__(self, subscription: Subscription) -> None:
+        self.subscription = subscription
+        message = "This subscription cannot be reinstated."
+        super().__init__(message, 400)
 
 
 class NotASeatBasedSubscription(SubscriptionError):
@@ -1881,6 +1889,56 @@ class SubscriptionService:
         session.add(subscription)
         return subscription
 
+    async def reinstate(
+        self,
+        session: AsyncSession,
+        ctx: SubscriptionUpdateContext,
+        subscription: Subscription,
+    ) -> Subscription:
+        if not subscription.can_reinstate():
+            raise CannotReinstateSubscription(subscription)
+
+        now = utc_now()
+
+        if subscription.current_period_end <= now:
+            new_period_end = subscription.recurring_interval.get_next_period(
+                subscription.current_period_end,
+                subscription.anchor_day,
+                subscription.recurring_interval_count,
+            )
+            subscription.current_period_start = subscription.current_period_end
+            subscription.current_period_end = new_period_end
+
+        if subscription.pending_update is not None:
+            subscription = await self.clear_pending_update(session, ctx, subscription)
+
+        subscription.status = SubscriptionStatus.active
+        subscription.cancel_at_period_end = False
+        subscription.canceled_at = None
+        subscription.ends_at = None
+        subscription.ended_at = None
+        subscription.customer_cancellation_reason = None
+        subscription.customer_cancellation_comment = None
+        subscription.past_due_at = None
+        subscription.pause_at_period_end = False
+        subscription.paused_at = None
+        subscription.resumes_at = None
+        subscription.scheduler_locked_at = None
+        subscription.initialize_meter_period(now)
+
+        await self.reset_meters(session, subscription)
+        await self.enqueue_benefits_grants(session, subscription)
+
+        repository = SubscriptionRepository.from_session(session)
+        subscription = await repository.update(subscription)
+
+        log.info(
+            "subscription.reinstated",
+            id=subscription.id,
+            current_period_end=subscription.current_period_end,
+        )
+        return subscription
+
     async def revoke(
         self,
         session: AsyncSession,
@@ -2638,6 +2696,9 @@ class SubscriptionService:
         became_reactivated = (
             became_activated and previous_status == SubscriptionStatus.past_due
         )
+        became_reinstated = (
+            became_activated and previous_status == SubscriptionStatus.canceled
+        )
         became_paused = (
             subscription.status == SubscriptionStatus.paused
             and previous_status != SubscriptionStatus.paused
@@ -2654,8 +2715,14 @@ class SubscriptionService:
 
         if became_activated:
             await self._on_subscription_activated(
-                session, subscription, became_reactivated
+                session,
+                subscription,
+                became_reactivated,
+                notify_new_subscription=not became_reinstated,
             )
+
+        if became_reinstated:
+            await self._on_subscription_reinstated(session, subscription)
 
         if became_paused:
             await self._on_subscription_paused(session, subscription)
@@ -2663,7 +2730,7 @@ class SubscriptionService:
         if became_resumed:
             await self._on_subscription_resumed(session, subscription)
 
-        if became_uncanceled:
+        if became_uncanceled and not became_reinstated:
             await self._on_subscription_uncanceled(session, subscription)
 
         if became_past_due:
@@ -2701,6 +2768,8 @@ class SubscriptionService:
         session: AsyncSession,
         subscription: Subscription,
         reactivated: bool,
+        *,
+        notify_new_subscription: bool = True,
     ) -> None:
         await self._send_webhook(
             session, subscription, WebhookEventType.subscription_active
@@ -2708,7 +2777,7 @@ class SubscriptionService:
 
         # Only send merchant notification if the subscription is a new one,
         # not a past due that has been reactivated.
-        if not reactivated:
+        if not reactivated and notify_new_subscription:
             await self._send_new_subscription_notification(session, subscription)
 
         if reactivated:
@@ -2728,6 +2797,28 @@ class SubscriptionService:
                     ),
                 ),
             )
+
+    async def _on_subscription_reinstated(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> None:
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.subscription_reinstated,
+                customer=subscription.customer,
+                organization=subscription.organization,
+                metadata=SubscriptionReinstatedMetadata(
+                    subscription_id=str(subscription.id),
+                    product_id=str(subscription.product_id),
+                    amount=subscription.amount,
+                    currency=subscription.currency,
+                    recurring_interval=subscription.recurring_interval.value,
+                    recurring_interval_count=subscription.recurring_interval_count,
+                ),
+            ),
+        )
 
     async def _on_subscription_paused(
         self, session: AsyncSession, subscription: Subscription

@@ -2461,6 +2461,9 @@ class Checkout:
 
     locale: str | None = None
 
+    payment_method_type: str | None
+    """Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`."""
+
     payment_processor_metadata: dict[str, str]
 
     billing_address_fields: CheckoutBillingAddressFields
@@ -3004,6 +3007,9 @@ class CheckoutPublic:
 
     locale: str | None = None
 
+    payment_method_type: str | None
+    """Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`."""
+
     payment_processor_metadata: dict[str, str]
 
     billing_address_fields: CheckoutBillingAddressFields
@@ -3169,6 +3175,9 @@ class CheckoutPublicConfirmed:
     customer_tax_id: str | None
 
     locale: str | None = None
+
+    payment_method_type: str | None
+    """Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`."""
 
     payment_processor_metadata: dict[str, str]
 
@@ -7776,6 +7785,61 @@ class OrderSubscription:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class OrderUnvoidedEvent:
+    """An event created by Polar when an order is unvoided."""
+
+    id: str
+    """The ID of the object."""
+
+    timestamp: str
+    """The timestamp of the event."""
+
+    organization_id: str
+    """The ID of the organization owning the event."""
+
+    customer_id: str | None
+    """ID of the customer in your Polar organization associated with the event."""
+
+    customer: Customer | None
+    """The customer associated with the event."""
+
+    external_customer_id: str | None
+    """ID of the customer in your system associated with the event."""
+
+    member_id: str | None = None
+    """ID of the member within the customer's organization who performed the action inside B2B."""
+
+    external_member_id: str | None = None
+    """ID of the member in your system within the customer's organization who performed the action inside B2B."""
+
+    child_count: int = 0
+    """Number of direct child events linked to this event."""
+
+    parent_id: str | None = None
+    """The ID of the parent event."""
+
+    label: str
+    """Human readable label of the event type."""
+
+    source: typing.Literal["system"]
+    """The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."""
+
+    name: typing.Literal["order.unvoided"]
+    """The name of the event."""
+
+    metadata: OrderUnvoidedMetadata
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class OrderUnvoidedMetadata:
+    order_id: str
+
+    amount: int
+
+    currency: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class OrderVoidedEvent:
     """An event created by Polar when an order is voided."""
 
@@ -9409,6 +9473,67 @@ class SubscriptionReactivatedMetadata:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class SubscriptionReinstatedEvent:
+    """An event created by Polar when a canceled subscription is reinstated."""
+
+    id: str
+    """The ID of the object."""
+
+    timestamp: str
+    """The timestamp of the event."""
+
+    organization_id: str
+    """The ID of the organization owning the event."""
+
+    customer_id: str | None
+    """ID of the customer in your Polar organization associated with the event."""
+
+    customer: Customer | None
+    """The customer associated with the event."""
+
+    external_customer_id: str | None
+    """ID of the customer in your system associated with the event."""
+
+    member_id: str | None = None
+    """ID of the member within the customer's organization who performed the action inside B2B."""
+
+    external_member_id: str | None = None
+    """ID of the member in your system within the customer's organization who performed the action inside B2B."""
+
+    child_count: int = 0
+    """Number of direct child events linked to this event."""
+
+    parent_id: str | None = None
+    """The ID of the parent event."""
+
+    label: str
+    """Human readable label of the event type."""
+
+    source: typing.Literal["system"]
+    """The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API."""
+
+    name: typing.Literal["subscription.reinstated"]
+    """The name of the event."""
+
+    metadata: SubscriptionReinstatedMetadata
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
+class SubscriptionReinstatedMetadata:
+    subscription_id: str
+
+    product_id: str | None = None
+
+    amount: int | None = None
+
+    currency: str | None = None
+
+    recurring_interval: str | None = None
+
+    recurring_interval_count: int | None = None
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class SubscriptionResumedEvent:
     """An event created by Polar when a paused subscription is resumed."""
 
@@ -10154,6 +10279,7 @@ SystemEvent: typing.TypeAlias = (
     | SubscriptionRevokedEvent
     | SubscriptionPastDueEvent
     | SubscriptionReactivatedEvent
+    | SubscriptionReinstatedEvent
     | SubscriptionPausedEvent
     | SubscriptionResumedEvent
     | SubscriptionUncanceledEvent
@@ -10164,6 +10290,7 @@ SystemEvent: typing.TypeAlias = (
     | OrderPaidEvent
     | OrderRefundedEvent
     | OrderVoidedEvent
+    | OrderUnvoidedEvent
     | CheckoutCreatedEvent
     | CustomerCreatedEvent
     | CustomerUpdatedEvent

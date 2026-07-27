@@ -60,6 +60,7 @@ export default async function Layout(props: {
     <OrganizationContextProvider
       organization={organization}
       organizations={organizations}
+      memberOrganizations={memberOrganizations}
     >
       <AccountSetupProvider>{children}</AccountSetupProvider>
     </OrganizationContextProvider>

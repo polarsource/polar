@@ -32,7 +32,8 @@ const DashboardLayout = (
     className?: string
   }>,
 ) => {
-  const { organization, organizations } = useContext(OrganizationContext)
+  const { organization, organizations, memberOrganizations } =
+    useContext(OrganizationContext)
 
   useEffect(() => {
     setLastVisitedEnv(CONFIG.IS_SANDBOX ? 'sandbox' : 'production')
@@ -52,6 +53,7 @@ const DashboardLayout = (
           <DashboardSidebar
             organization={organization}
             organizations={organizations ?? []}
+            memberOrganizations={memberOrganizations ?? []}
             type={props.type}
           />
         </div>

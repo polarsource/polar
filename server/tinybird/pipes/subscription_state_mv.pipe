@@ -50,9 +50,17 @@ SQL >
             )
         ) AS canceled_product_id,
         argMaxState(
-            CASE WHEN e.name = 'subscription.uncanceled' THEN e.timestamp ELSE NULL END,
+            CASE
+                WHEN e.name IN ('subscription.uncanceled', 'subscription.reinstated')
+                THEN e.timestamp
+                ELSE NULL
+            END,
             (
-                CASE WHEN e.name = 'subscription.uncanceled' THEN toUInt8(1) ELSE toUInt8(0) END,
+                CASE
+                    WHEN e.name IN ('subscription.uncanceled', 'subscription.reinstated')
+                    THEN toUInt8(1)
+                    ELSE toUInt8(0)
+                END,
                 e.timestamp,
                 e.ingested_at
             )
@@ -65,6 +73,7 @@ SQL >
             'subscription.canceled',
             'subscription.revoked',
             'subscription.uncanceled',
+            'subscription.reinstated',
             'subscription.cycled',
             'subscription.product_updated'
         )

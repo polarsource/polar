@@ -562,6 +562,34 @@ class TestTriggerPayment:
         mock_create_payment_intent.assert_called_once()
         # Task should complete without raising exception (no retry)
 
+    async def test_trigger_payment_already_in_progress_no_retry(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Given an order that already holds a payment lock
+        customer = await create_customer(save_fixture, organization=organization)
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=utc_now(),
+        )
+
+        mock_create_payment_intent = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent",
+        )
+
+        # When
+        await trigger_payment(order.id, payment_method.id)
+
+        # Then the task returns without charging or raising (no retry)
+        mock_create_payment_intent.assert_not_called()
+
     async def test_trigger_payment_api_error_with_retry(
         self,
         save_fixture: SaveFixture,

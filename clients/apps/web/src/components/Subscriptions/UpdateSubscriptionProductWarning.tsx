@@ -1,6 +1,6 @@
 import { formatTrialEnd, type TrialChangeOutcome } from '@/utils/trial-change'
 import { schemas } from '@polar-sh/client'
-import { Box } from '@polar-sh/orbit/Box'
+import { Alert } from '@polar-sh/orbit'
 
 export const UpdateSubscriptionProductWarning = ({
   subscription,
@@ -15,40 +15,38 @@ export const UpdateSubscriptionProductWarning = ({
     return null
   }
 
+  const title =
+    trialOutcome?.kind === 'ends'
+      ? 'Trial ends & customer charged immediately'
+      : trialOutcome?.kind === 'continues'
+        ? 'Trial continues'
+        : 'Product change'
+
   return (
-    <Box
-      padding="m"
-      borderRadius="m"
-      backgroundColor="background-warning"
-      flexDirection="column"
-      rowGap="s"
-    >
-      {trialOutcome?.kind === 'ends' && (
-        <p className="text-sm text-yellow-700">
-          This change will end the current trial and{' '}
-          <strong className="font-medium">
-            charge the customer immediately
-          </strong>{' '}
-          for the first billing period of{' '}
-          <strong className="font-medium">{selectedProduct.name}</strong>.
-        </p>
-      )}
-      {trialOutcome?.kind === 'continues' && (
-        <p className="text-sm text-yellow-700">
-          The trial will continue until{' '}
-          <strong className="font-medium">
-            {formatTrialEnd(trialOutcome.trialEnd)}
-          </strong>
-          . The customer won&apos;t be charged before then.
-        </p>
-      )}
-      <p className="text-sm text-yellow-700">
-        By updating this subscription, the customer will get access to{' '}
-        <strong className="font-medium">{selectedProduct.name}</strong>{' '}
-        benefits, and lose access to{' '}
-        <strong className="font-medium">{subscription.product.name}</strong>{' '}
-        benefits.
-      </p>
-    </Box>
+    <Alert
+      variant="warning"
+      title={title}
+      description={
+        <>
+          {trialOutcome?.kind === 'ends' && (
+            <>
+              This change will end the current trial and{' '}
+              <strong>charge the customer immediately</strong> for the first
+              billing period of <strong>{selectedProduct.name}</strong>.{' '}
+            </>
+          )}
+          {trialOutcome?.kind === 'continues' && (
+            <>
+              The trial will continue until{' '}
+              <strong>{formatTrialEnd(trialOutcome.trialEnd)}</strong>. The
+              customer won&apos;t be charged before then.{' '}
+            </>
+          )}
+          By updating this subscription, the customer will get access to{' '}
+          <strong>{selectedProduct.name}</strong> benefits, and lose access to{' '}
+          <strong>{subscription.product.name}</strong> benefits.
+        </>
+      }
+    />
   )
 }

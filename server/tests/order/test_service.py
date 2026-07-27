@@ -84,10 +84,12 @@ from polar.order.service import (
     OrderNotEligibleForInvoice,
     OrderNotEligibleForRetry,
     OrderNotPending,
+    OrderNotVoid,
     OrganizationNotReadyForPayments,
     PaymentActionRequired,
     PaymentAlreadyInProgress,
     PaymentFailed,
+    PaymentFailedReason,
     RecurringProduct,
     SubscriptionNotTrialing,
 )
@@ -2221,6 +2223,61 @@ class TestCreateSubscriptionOrder:
         call_args = trigger_payment_mock.call_args
         assert call_args.args[2].id == default_pm.id
 
+    async def test_sync_mode_soft_deleted_payment_method_raises_payment_failed(
+        self,
+        mocker: MockerFixture,
+        calculate_tax_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        """When the referenced payment method has been soft-deleted, sync mode
+        should raise PaymentFailed(missing_payment_method) instead of crashing
+        with an AssertionError."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+        )
+
+        payment_method.deleted_at = utc_now()
+        await save_fixture(payment_method)
+
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        trigger_payment_mock = mocker.patch.object(
+            order_service, "trigger_payment", new_callable=AsyncMock
+        )
+
+        with pytest.raises(PaymentFailed) as exc_info:
+            await order_service.create_subscription_order(
+                session,
+                subscription,
+                OrderBillingReasonInternal.subscription_update,
+                payment_mode=PaymentMode.sync,
+            )
+
+        assert exc_info.value.reason == PaymentFailedReason.missing_payment_method
+        trigger_payment_mock.assert_not_called()
+
     async def test_sync_under_minimum_emits_paid_transition_once(
         self,
         mocker: MockerFixture,
@@ -3123,7 +3180,7 @@ class TestHandlePayment:
             billing_address=Address(country=CountryAlpha2("FR")),
         )
 
-        # Set tax_amount=200 to match the recalculated amount so no TaxCalculationChangedAfterPayment is raised
+        # Set tax_amount=200 to match the recalculated amount
         order = await create_order(
             save_fixture,
             product=product,
@@ -3177,6 +3234,66 @@ class TestHandlePayment:
             )
             == 1
         )
+
+    async def test_charged_tax_recorded_when_recalculation_differs(
+        self,
+        tax_service_mock: MagicMock,
+        calculate_tax_mock: AsyncMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer_with_address = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+
+        # The mocked calculate returns 20% of the net amount, i.e. 200 here
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer_with_address,
+            status=OrderStatus.pending,
+            subtotal_amount=1000,
+            tax_amount=150,
+            billing_address=customer_with_address.billing_address,
+        )
+
+        order.tax_processor = TaxProcessor.numeral
+        order.tax_calculation_processor_id = "tax_calc_expired_123"
+        order.tax_behavior = TaxBehavior.exclusive
+        await save_fixture(order)
+
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            processor_id="stripe_payment_789",
+        )
+
+        tax_service_mock.record.side_effect = CalculationExpiredError()
+        tax_service_mock.record_amounts.return_value = (
+            "backfill_MANUAL_LINE_ITEM_ID",
+            TaxProcessor.numeral,
+        )
+
+        updated_order = await order_service.handle_payment(session, order, payment)
+
+        assert updated_order.status == OrderStatus.paid
+
+        # The tax the customer was charged is recorded, not the new calculation
+        calculate_tax_mock.assert_called_once()
+        tax_service_mock.record_amounts.assert_called_once()
+        assert tax_service_mock.record_amounts.call_args.kwargs["tax_amount"] == 150
+        assert tax_service_mock.record_amounts.call_args.kwargs["amount"] == 1000
+
+        assert updated_order.tax_amount == 150
+        assert updated_order.tax_calculation_processor_id == "tax_calc_expired_123"
+        assert (
+            updated_order.tax_transaction_processor_id == "backfill_MANUAL_LINE_ITEM_ID"
+        )
+        assert updated_order.tax_processor == TaxProcessor.numeral
 
 
 @pytest.mark.asyncio
@@ -5570,6 +5687,60 @@ class TestVoidOrder:
             session, customer, order.currency
         )
         assert new_balance == 200
+
+
+class TestUnvoidOrder:
+    @pytest.mark.asyncio
+    async def test_unvoid_order(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        next_attempt_at = utc_now() + timedelta(hours=24)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.void,
+            next_payment_attempt_at=next_attempt_at,
+        )
+        send_webhook_mock = mocker.patch.object(order_service, "send_webhook")
+
+        result_order = await order_service.unvoid(session, order)
+
+        assert result_order.status == OrderStatus.pending
+        assert result_order.next_payment_attempt_at is None
+        events = await get_all_by_name(session, SystemEvent.order_unvoided)
+        assert len(events) == 1
+        assert events[0].user_metadata == {
+            "order_id": str(order.id),
+            "amount": order.total_amount,
+            "currency": order.currency,
+        }
+        send_webhook_mock.assert_awaited_once_with(
+            session, order, WebhookEventType.order_updated
+        )
+
+    @pytest.mark.asyncio
+    async def test_unvoid_non_void_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+        )
+
+        with pytest.raises(OrderNotVoid):
+            await order_service.unvoid(session, order)
 
 
 @pytest.mark.asyncio

@@ -167,7 +167,7 @@ COPY --from=docker.io/tailscale/tailscale:v1.98.4 /usr/local/bin/tailscale /var/
 
 ENV LAMBDA_TASK_ROOT=/app/server
 ENV PATH="/app/server/.venv/bin:$PATH"
-ENV PYTHONPATH="/app/server/.venv/lib/python3.14/site-packages:/app/server"
+ENV PYTHONPATH="/app/server:/app/server/.venv/lib/python3.14/site-packages"
 ENV POLAR_EMAIL_RENDERER_BINARY_PATH=/app/server/react-email-pkg
 ENV POLAR_IP_GEOLOCATION_DATABASE_DIRECTORY_PATH=/data
 ENV POLAR_IP_GEOLOCATION_DATABASE_NAME=country_asn.mmdb

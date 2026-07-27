@@ -32,6 +32,8 @@ class OAuthAccountRead(TimestampedSchema):
 class MemberOrganization(Schema):
     id: UUID4
     slug: str
+    name: str
+    avatar_url: str | None
     requires_sso: bool = Field(
         description="Whether this organization enforces SSO.",
     )

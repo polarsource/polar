@@ -1,9 +1,12 @@
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
+import LegacyRecurringProductPrices from '@/components/Products/LegacyRecurringProductPrices'
+import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
 import { toast } from '@/components/Toast/use-toast'
 import { useMetrics, useUpdateProduct } from '@/hooks/queries'
 import { apiErrorToast } from '@/utils/api/errors'
 import { getChartRangeParams } from '@/utils/metrics'
+import { hasLegacyRecurringPrices } from '@/utils/product'
 import MoreVert from '@mui/icons-material/MoreVert'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
@@ -134,24 +137,35 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
     <Tabs defaultValue="overview" className="h-full">
       <DashboardBody
         title={
-          <div className="flex min-w-0 flex-row items-center gap-4">
+          <div className="flex min-w-0 flex-col gap-1">
             <div className="flex min-w-0 flex-row items-center gap-4">
               <h1 className="truncate text-2xl">{product.name}</h1>
+              <div className="flex shrink-0 flex-row items-center gap-4">
+                <Status
+                  status={
+                    product.is_recurring ? 'Subscription' : 'One-time Product'
+                  }
+                  color={
+                    ProductTypeDisplayColor[
+                      product.is_recurring ? 'subscription' : 'one_time'
+                    ]
+                  }
+                />
+                {product.is_archived && (
+                  <Status status="Archived" color="red" />
+                )}
+              </div>
             </div>
-
-            <div className="flex flex-row items-center gap-4">
-              <Status
-                status={
-                  product.is_recurring ? 'Subscription' : 'One-time Product'
-                }
-                color={
-                  ProductTypeDisplayColor[
-                    product.is_recurring ? 'subscription' : 'one_time'
-                  ]
-                }
-              />
-              {product.is_archived && <Status status="Archived" color="red" />}
-            </div>
+            <span className="dark:text-polar-500 text-xl text-gray-400 [&_*]:!text-current">
+              {hasLegacyRecurringPrices(product) ? (
+                <LegacyRecurringProductPrices product={product} />
+              ) : (
+                <ProductPriceLabel
+                  product={product}
+                  currency={organization.default_presentment_currency}
+                />
+              )}
+            </span>
           </div>
         }
         header={
@@ -236,7 +250,7 @@ export const ProductPage = ({ organization, product }: ProductPageProps) => {
           </div>
         }
       >
-        <TabsList className="pb-8">
+        <TabsList className="pb-4">
           <TabsTrigger value="overview">Overview</TabsTrigger>
           <TabsTrigger value="metrics">Metrics</TabsTrigger>
         </TabsList>

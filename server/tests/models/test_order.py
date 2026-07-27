@@ -147,6 +147,24 @@ async def test_calculate_refunded_tax_from_total(
             id="exclusive sub amount with applied balance",
         ),
         pytest.param(
+            TaxBehavior.exclusive,
+            1000,
+            250,
+            1000,
+            1500,
+            250,
+            id="exclusive sub amount exceeding net with applied balance is capped",
+        ),
+        pytest.param(
+            TaxBehavior.exclusive,
+            1000,
+            0,
+            1000,
+            1500,
+            0,
+            id="exclusive untaxed with applied balance",
+        ),
+        pytest.param(
             TaxBehavior.inclusive, 1000, 200, 0, 800, 200, id="inclusive full amount"
         ),
         pytest.param(

@@ -103,15 +103,6 @@ In order to properly implement logic for handling subscriptions, you should look
   ></Card>
 
   <Card
-    title="subscription.cycled"
-    icon="link"
-    href="/api-reference/subscriptioncycled"
-    horizontal
-  >
-    Fired when a subscription enters a new billing period, before the renewal order exists.
-  </Card>
-
-  <Card
     title="subscription.canceled"
     icon="link"
     href="/api-reference/subscriptioncanceled"
@@ -145,10 +136,10 @@ In order to properly implement logic for handling subscriptions, you should look
     href="/api-reference/ordercreated"
     horizontal
   >
-    Carries a `billing_reason` field, which can be `purchase`,
+    In case you want to do logic when a subscription is renewed, you should listen
+    to `order.created` and the `billing_reason` field. It can be `purchase`,
     `subscription_create`, `subscription_cycle` and `subscription_update`.
-    To act on a renewal, listen to `subscription.cycled` instead — it fires
-    whether or not the renewal payment succeeds.
+    `subscription_cycle` is used when subscriptions renew.
   </Card>
 
   <Card
@@ -359,29 +350,6 @@ The subscription data reflects the new period through `current_period_start` and
     title="product.updated"
     icon="link"
     href="/api-reference/productupdated"
-    horizontal
-  ></Card>
-</Columns>
-
-### Discounts
-
-<Columns cols={2}>
-  <Card
-    title="discount.created"
-    icon="link"
-    href="/api-reference/discountcreated"
-    horizontal
-  ></Card>
-  <Card
-    title="discount.updated"
-    icon="link"
-    href="/api-reference/discountupdated"
-    horizontal
-  ></Card>
-  <Card
-    title="discount.deleted"
-    icon="link"
-    href="/api-reference/discountdeleted"
     horizontal
   ></Card>
 </Columns>

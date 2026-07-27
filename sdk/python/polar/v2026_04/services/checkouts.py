@@ -5,13 +5,13 @@ import typing
 
 from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.v2026_04.errors import (
-    ClientConfirm403Error,
-    ClientUpdate403Error,
+    CheckoutsClientConfirm403Error,
+    CheckoutsClientUpdate403Error,
+    CheckoutsUpdate403Error,
     ExpiredCheckoutError,
     HTTPValidationError,
     PaymentError,
     ResourceNotFound,
-    Update403Error,
 )
 from polar.v2026_04.inputs import (
     CheckoutConfirmStripe,
@@ -224,7 +224,7 @@ class CheckoutsSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            Update403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
+            CheckoutsUpdate403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
             ResourceNotFound: Checkout session not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -242,7 +242,7 @@ class CheckoutsSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            403: Update403Error,
+            403: CheckoutsUpdate403Error,
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
@@ -295,7 +295,7 @@ class CheckoutsSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            ClientUpdate403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
+            CheckoutsClientUpdate403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
             ResourceNotFound: Checkout session not found.
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
@@ -314,7 +314,7 @@ class CheckoutsSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            403: ClientUpdate403Error,
+            403: CheckoutsClientUpdate403Error,
             404: ResourceNotFound,
             410: ExpiredCheckoutError,
             422: HTTPValidationError,
@@ -337,7 +337,7 @@ class CheckoutsSync(SyncServiceBase):
 
         Raises:
             PaymentError: The payment failed.
-            ClientConfirm403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
+            CheckoutsClientConfirm403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
             ResourceNotFound: Checkout session not found.
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
@@ -357,7 +357,7 @@ class CheckoutsSync(SyncServiceBase):
         response = self.client.send_request(request)
         method_errors = {
             400: PaymentError,
-            403: ClientConfirm403Error,
+            403: CheckoutsClientConfirm403Error,
             404: ResourceNotFound,
             410: ExpiredCheckoutError,
             422: HTTPValidationError,
@@ -559,7 +559,7 @@ class CheckoutsAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            Update403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
+            CheckoutsUpdate403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
             ResourceNotFound: Checkout session not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -577,7 +577,7 @@ class CheckoutsAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            403: Update403Error,
+            403: CheckoutsUpdate403Error,
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
@@ -630,7 +630,7 @@ class CheckoutsAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            ClientUpdate403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
+            CheckoutsClientUpdate403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
             ResourceNotFound: Checkout session not found.
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
@@ -649,7 +649,7 @@ class CheckoutsAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            403: ClientUpdate403Error,
+            403: CheckoutsClientUpdate403Error,
             404: ResourceNotFound,
             410: ExpiredCheckoutError,
             422: HTTPValidationError,
@@ -672,7 +672,7 @@ class CheckoutsAsync(AsyncServiceBase):
 
         Raises:
             PaymentError: The payment failed.
-            ClientConfirm403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
+            CheckoutsClientConfirm403Error: The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
             ResourceNotFound: Checkout session not found.
             ExpiredCheckoutError: The checkout session is expired.
             HTTPValidationError: Validation Error
@@ -692,7 +692,7 @@ class CheckoutsAsync(AsyncServiceBase):
         response = await self.client.send_request(request)
         method_errors = {
             400: PaymentError,
-            403: ClientConfirm403Error,
+            403: CheckoutsClientConfirm403Error,
             404: ResourceNotFound,
             410: ExpiredCheckoutError,
             422: HTTPValidationError,

@@ -1,0 +1,19 @@
+clients/packages/client/src/v1.ts
+  s_7debf674f53741::t_d0ab01602bac58 22281
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "d236431150c6faaa300ec7af783b68d207ef38a8",
+  "prompts": {},
+  "sessions": {
+    "s_7debf674f53741": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "362e7a6e-f287-4300-b636-9e222c4dbce3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

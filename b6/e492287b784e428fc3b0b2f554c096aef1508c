@@ -1,0 +1,22 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/CreateMigrationModal.tsx
+  s_7debf674f53741::t_2def9276e64e24 1
+  s_7debf674f53741::t_5cc6372002539f 27-31
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_7debf674f53741::t_5bf490f6b1c577 5,16,29
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b6e492287b784e428fc3b0b2f554c096aef1508c",
+  "prompts": {},
+  "sessions": {
+    "s_7debf674f53741": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "362e7a6e-f287-4300-b636-9e222c4dbce3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

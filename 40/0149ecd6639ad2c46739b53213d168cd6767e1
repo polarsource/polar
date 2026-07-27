@@ -1,0 +1,33 @@
+server/polar/config.py
+  s_c297d764f40f7b::t_dc89df1e43f661 237-246
+server/tests/organization_review/test_analyzer.py
+  s_c297d764f40f7b::t_47812f6e281cb5 148
+server/pyproject.toml
+  s_c297d764f40f7b::t_99ec26b59b6578 71
+server/polar/organization_review/analyzer.py
+  s_c297d764f40f7b::t_13c4dcef8eabe9 677
+server/polar/organization_review/policy.py
+  s_c297d764f40f7b::t_bf26c92b603018 55-57,89
+  s_c297d764f40f7b::t_6f75a8d95be8c6 1-4,6-7,9,11,13-14,16-18,20,22-42,44-47,49-54,58-76,78-88,90-135
+  s_c297d764f40f7b::t_af56cbc00ff460 19,21
+server/scripts/eval_organization_reviews.py
+  s_c297d764f40f7b::t_6c2d81c773a3ad 215-216
+server/uv.lock
+  s_c297d764f40f7b::t_81e6b9d1fd802e 10,1237-1249,2477,2575,2799-2819
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "400149ecd6639ad2c46739b53213d168cd6767e1",
+  "prompts": {},
+  "sessions": {
+    "s_c297d764f40f7b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f650e816-8a0f-4090-9247-5e53bd1b64c9",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

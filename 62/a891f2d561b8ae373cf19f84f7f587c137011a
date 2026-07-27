@@ -1,0 +1,22 @@
+server/polar/user/service.py
+  s_a84351dea10a06::t_59e91916f6146f 246-251
+  s_a84351dea10a06::t_cfdc78da931043 218,221-223
+server/tests/user/test_service.py
+  s_a84351dea10a06::t_0826905c469234 399,405-409,414,421-446,451-476
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "62a891f2d561b8ae373cf19f84f7f587c137011a",
+  "prompts": {},
+  "sessions": {
+    "s_a84351dea10a06": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3f79c5c4-c159-4fba-9c1a-e6169d11b218",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

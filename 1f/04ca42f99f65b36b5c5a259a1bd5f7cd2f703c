@@ -1,0 +1,19 @@
+server/migrations/versions/2026-07-16-1238_add_organization_risk_signals.py
+  s_a708218e2a68df::t_9cc2c23baad283 28-31
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "1f04ca42f99f65b36b5c5a259a1bd5f7cd2f703c",
+  "prompts": {},
+  "sessions": {
+    "s_a708218e2a68df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6e245698-ccbc-4607-a33c-cd991533bd54",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

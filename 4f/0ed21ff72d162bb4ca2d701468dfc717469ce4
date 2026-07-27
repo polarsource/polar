@@ -1,0 +1,19 @@
+server/polar/organization/service.py
+  s_a708218e2a68df::t_945393a6ac532b 1574-1577
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "4f0ed21ff72d162bb4ca2d701468dfc717469ce4",
+  "prompts": {},
+  "sessions": {
+    "s_a708218e2a68df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6e245698-ccbc-4607-a33c-cd991533bd54",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

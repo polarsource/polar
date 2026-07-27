@@ -1,0 +1,19 @@
+server/polar/merchant_migration/precheck.py
+  s_7debf674f53741::t_0ce8f87144533a 529-533,539
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "b93e3aca26735bc4946a6188a87143ba1fcb32c2",
+  "prompts": {},
+  "sessions": {
+    "s_7debf674f53741": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "362e7a6e-f287-4300-b636-9e222c4dbce3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

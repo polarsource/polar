@@ -1,0 +1,28 @@
+server/polar/notification_recipient/service.py
+  s_74ce7dc5b9cb52::t_a0ddd3ca353de9 36-37,39-42,44,47,49,51-52
+  s_74ce7dc5b9cb52::t_f6a9c9cbd59ffd 45
+server/tests/notification_recipient/test_service.py
+  s_74ce7dc5b9cb52::t_9fc2c92623c6ad 1-3,5-76
+  s_74ce7dc5b9cb52::t_3a013ef11635d2 4
+server/polar/notification_recipient/repository.py
+  s_74ce7dc5b9cb52::t_758c104f913df7 63-64,67-68,71-89,95-111
+  s_74ce7dc5b9cb52::t_72b2e69ffbe3cc 90-94
+  s_74ce7dc5b9cb52::t_d76b8008a805da 4
+  s_74ce7dc5b9cb52::t_0ae32c1e2261ec 5
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "9ae5c221266b73f33e2575d4a053a0ecb70524a4",
+  "prompts": {},
+  "sessions": {
+    "s_74ce7dc5b9cb52": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "978044e1-94d0-4508-b48a-d1d98033f885",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

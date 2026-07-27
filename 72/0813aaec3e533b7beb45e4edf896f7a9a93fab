@@ -1,0 +1,39 @@
+server/polar/backoffice/organizations_v2/views/sections/risk_signals.py
+  s_ea66c55a12e201::t_029a4e5a0f6fa1 8,18-21
+  s_ea66c55a12e201::t_c6636cf00da737 61-62,67,80
+server/polar/backoffice/organizations_v2/views/sections/reviews_section.py
+  s_ea66c55a12e201::t_16d2790be8e24b 40
+server/tests/backoffice/organizations_v2/test_endpoints.py
+  s_ea66c55a12e201::t_dbed6f633de1ec 311-313,331-347,360
+server/polar/organization_review/repository.py
+  s_ea66c55a12e201::t_1a2db77fdda411 497,505-506,509-519
+server/polar/organization_review/agent.py
+  s_ea66c55a12e201::t_c3ea1090663a35 353
+server/polar/organization_review/schemas.py
+  s_ea66c55a12e201::t_9a596e40f80663 488
+server/polar/backoffice/organizations_v2/endpoints.py
+  s_ea66c55a12e201::t_5a6fbdb2ed2677 903-904,906-913
+  s_ea66c55a12e201::t_b018b27475c274 63
+  s_ea66c55a12e201::t_fadefcf9a51af8 933
+server/polar/organization_review/analyzer.py
+  s_ea66c55a12e201::t_306acf045c1978 1027-1034,1040-1043
+  s_ea66c55a12e201::t_de72266e794340 590-595
+server/tests/organization_review/test_analyzer.py
+  s_ea66c55a12e201::t_a55508d474d24c 180,195,197-231
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "720813aaec3e533b7beb45e4edf896f7a9a93fab",
+  "prompts": {},
+  "sessions": {
+    "s_ea66c55a12e201": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d89a5cd7-a9a5-4811-a3ec-5bfdce2de0b6",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

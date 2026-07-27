@@ -1,0 +1,24 @@
+server/tests/merchant_migration/test_stripe_adapter.py
+  s_28ea492cb26938::t_9a575785b5628b 3,5-9,11,15-21,24-26,28-35,38-40,42-50,53-54,56-62
+  s_28ea492cb26938::t_6dbbd65f8eb739 1-2,10,12-14,22-23,27,36-37,41,51-52,55
+  s_28ea492cb26938::t_83cf2fd759f6cb 4
+server/polar/merchant_migration/adapters/stripe.py
+  s_28ea492cb26938::t_b40b9350d6c715 66-68
+  s_28ea492cb26938::t_8de4e50ec663cf 58-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "318338d8c50cd0505100c257c911eb7bf999e70a",
+  "prompts": {},
+  "sessions": {
+    "s_28ea492cb26938": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "d3cdc938-a7ce-4baa-bd20-7ff6afb5d3d6",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": null
+    }
+  }
+}

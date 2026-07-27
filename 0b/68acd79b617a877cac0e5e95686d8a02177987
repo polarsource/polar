@@ -1,0 +1,68 @@
+server/tests/merchant_migration/test_service.py
+  s_99ecc0a8ca0004::t_25718c3887110f 18-21
+  s_99ecc0a8ca0004::t_9ecee83f8255ae 268-277
+  s_99ecc0a8ca0004::t_5e48cd0d5faa1d 407
+  s_99ecc0a8ca0004::t_c894d7ba35fb55 374
+server/polar/merchant_migration/service.py
+  s_99ecc0a8ca0004::t_d087f9f8ff2c93 28-31
+  s_99ecc0a8ca0004::t_ce197dbf96d1b7 204,209-210,255-258,260-261,264,266
+  s_99ecc0a8ca0004::t_88ceafd8e4b2b5 206-208
+  s_99ecc0a8ca0004::t_ccd19f58a3ea6a 267
+  s_99ecc0a8ca0004::t_cd9197a7b2381b 259,265
+  s_99ecc0a8ca0004::t_73bfeb1b9c2d7d 228-230,245-247
+  s_99ecc0a8ca0004::t_84e03420bd9d8d 1
+  s_99ecc0a8ca0004::t_7dfad26bcbfb69 26
+  s_99ecc0a8ca0004::t_efce4c6163c313 262-263
+server/polar/merchant_migration/repository.py
+  s_99ecc0a8ca0004::t_9ab231b90b1189 81-83
+  s_99ecc0a8ca0004::t_0f6ae4bc83d366 44-66,75,80,84,86-92,99-103,105-110
+  s_99ecc0a8ca0004::t_5eecee1122d3b2 76-79,85,93-98,104
+  s_99ecc0a8ca0004::t_bc7072f71e21c1 1
+  s_99ecc0a8ca0004::t_8f60dd0785d58b 13-19
+  s_99ecc0a8ca0004::t_18687cd785d41f 67-74
+server/polar/merchant_migration/canonical.py
+  s_99ecc0a8ca0004::t_7b4225391fd028 122-124
+  s_99ecc0a8ca0004::t_1a440b03f70dc1 7
+  s_99ecc0a8ca0004::t_7a3728c8fde297 125-126
+  s_99ecc0a8ca0004::t_143f8e3de4bf79 127
+  s_99ecc0a8ca0004::t_04ac4aaa8174eb 128-185
+  s_99ecc0a8ca0004::t_1e8916521df86d 8-9
+server/tests/merchant_migration/test_repository.py
+  s_99ecc0a8ca0004::t_62f55013473603 147,155
+  s_99ecc0a8ca0004::t_862386470f5e1b 164-185
+  s_99ecc0a8ca0004::t_94de6a1601e594 120
+  s_99ecc0a8ca0004::t_49ab3555b5603b 1-2,5-12
+  s_99ecc0a8ca0004::t_2fdc6552750bdd 123
+  s_99ecc0a8ca0004::t_4b2b22fb698473 66-76,78-103,105-107
+  s_99ecc0a8ca0004::t_0ce5bbf09dd871 3-4,13-51,53-65,108-119,121-122,124-146,148-154,156-163
+  s_99ecc0a8ca0004::t_fceba481c227ad 52,77
+  s_99ecc0a8ca0004::t_6c5a6d8e621d10 104
+server/tests/merchant_migration/test_canonical.py
+  s_99ecc0a8ca0004::t_a2b9e7fc13420f 1-94
+server/tests/merchant_migration/test_endpoints.py
+  s_e224eab4b857af::t_3eb2424f4383fe 478-482
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "0b68acd79b617a877cac0e5e95686d8a02177987",
+  "prompts": {},
+  "sessions": {
+    "s_99ecc0a8ca0004": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "89dd1fec-b689-4953-b1e1-328d7c5b0281",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_e224eab4b857af": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c7099240-33e8-45fd-8d1e-026defb048d0",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

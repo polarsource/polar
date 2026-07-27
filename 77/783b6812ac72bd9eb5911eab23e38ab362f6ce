@@ -1,0 +1,27 @@
+server/polar/organization_review/acceptable-use-policy.fallback.mdx
+  s_c297d764f40f7b::t_3ea7c1132f2ab1 1-122
+server/tests/organization_review/test_policy.py
+  s_c297d764f40f7b::t_afc53f35e41120 1-14,16-47
+  s_c297d764f40f7b::t_a370e3673bd7c3 15
+server/polar/organization_review/policy.py
+  s_c297d764f40f7b::t_126abd91b7ea4f 2,5,19-24
+  s_c297d764f40f7b::t_55b64a2adf9887 40-44
+  s_c297d764f40f7b::t_e1ce89bf8e05a8 96-99,118-130
+  s_c297d764f40f7b::t_17d61908a99892 25
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "77783b6812ac72bd9eb5911eab23e38ab362f6ce",
+  "prompts": {},
+  "sessions": {
+    "s_c297d764f40f7b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f650e816-8a0f-4090-9247-5e53bd1b64c9",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

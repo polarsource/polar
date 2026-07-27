@@ -1,0 +1,32 @@
+server/tests/organization/test_tasks.py
+  s_aea30a40d2486f::t_5404bbf5aeac1d 259-288
+  s_aea30a40d2486f::t_2974256aa42317 158-168
+server/polar/organization/tasks.py
+  s_aea30a40d2486f::t_b0e2b5da4e0bf6 1222-1225,1233-1234,1259-1261
+  s_aea30a40d2486f::t_69797733b6842d 1254-1257,1262-1271,1279
+  s_c00f467b00a561::t_cb57c60889d2f2 1258
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "849d09f5e816616bb2162f1aa89958ad4974c6b7",
+  "prompts": {},
+  "sessions": {
+    "s_aea30a40d2486f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "23b9ab61-144c-48af-91d9-9af4dd8f537d",
+        "model": "claude-fable-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_c00f467b00a561": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3e7399e8-ac18-4c91-84bf-4239732f8db3",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

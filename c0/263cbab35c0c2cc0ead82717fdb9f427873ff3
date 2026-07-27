@@ -1,0 +1,21 @@
+server/pyproject.toml
+  s_c297d764f40f7b::t_12ab76e947272c 71
+server/uv.lock
+  s_c297d764f40f7b::t_e0631c5a630601 10,1250-1254,2482,2580
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "c0263cbab35c0c2cc0ead82717fdb9f427873ff3",
+  "prompts": {},
+  "sessions": {
+    "s_c297d764f40f7b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "f650e816-8a0f-4090-9247-5e53bd1b64c9",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

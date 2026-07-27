@@ -1,0 +1,22 @@
+server/polar/integrations/stripe/endpoints.py
+  s_a708218e2a68df::t_15ed46ec225526 55-56
+server/polar/integrations/stripe/account_risk.py
+  s_a708218e2a68df::t_c3ad6a0182dc98 10
+  s_a708218e2a68df::t_7cabb9c8d859c6 110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "1deda5b2836b97ce4c4523a755e241db066b9cf7",
+  "prompts": {},
+  "sessions": {
+    "s_a708218e2a68df": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6e245698-ccbc-4607-a33c-cd991533bd54",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+server/polar/locker.py
+  s_53caf58ee6b74b::t_58fbd67a028df9 20
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "7fcd75e10f9340e32d936c5d7235b5be5c483196",
+  "prompts": {},
+  "sessions": {
+    "s_53caf58ee6b74b": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b1a2d58c-8aba-43e0-a5c6-caa5e2431c94",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+server/tests/dispute/__init__.py
+  s_e0e45486eada72::t_5eae81f87c2f3c 1
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "2d5271fea6083a4317c4ecfcc05768020cce62b3",
+  "prompts": {},
+  "sessions": {
+    "s_e0e45486eada72": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "106d6170-35e0-4b99-9890-35890e5f1c4b",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

@@ -1,0 +1,19 @@
+AGENTS.md
+  s_e04eaffa8fdea7::t_a79a8f4d3c3c54 136
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.10",
+  "base_commit_sha": "ba54c9a5b9f8cbe6389961cdd7887044c1a7f63d",
+  "prompts": {},
+  "sessions": {
+    "s_e04eaffa8fdea7": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "8e4d72fb-d17f-4c53-a11b-a03389530056",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

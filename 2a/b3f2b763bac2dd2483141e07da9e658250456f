@@ -1,0 +1,45 @@
+server/polar/member/service.py
+  s_42238cfe0d80f3::t_1a7a21b3bc4c0f 413,416
+  s_42238cfe0d80f3::t_2fab70e146d656 302
+  s_42238cfe0d80f3::t_8ba58612628726 313,315-316
+  s_42238cfe0d80f3::t_f016424b649196 581
+  s_42238cfe0d80f3::t_7cfc8c58503249 317
+server/tests/customer_seat/test_service.py
+  s_42238cfe0d80f3::t_52ac78e4f26405 1967
+server/tests/product/test_service.py
+  s_42238cfe0d80f3::t_e6371ab0bc4fc1 1011
+clients/apps/web/src/components/Products/ProductForm/ProductPricingSection.tsx
+  s_42238cfe0d80f3::t_0493b305e5ef7b 392
+clients/apps/web/src/components/Benefit/BenefitPage.tsx
+  s_42238cfe0d80f3::t_8010df234d85e6 64
+clients/apps/web/src/components/Settings/FeatureSettings.tsx
+  s_42238cfe0d80f3::t_34b7a57147e5e0 3
+server/tests/meter/test_service.py
+  s_42238cfe0d80f3::t_568551a322c0bf 1367,1466,1546,1673
+clients/apps/web/src/components/Products/ProductForm/Pricing/ProductPriceItem.tsx
+  s_42238cfe0d80f3::t_57565cc6434b39 117-119
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/products/new/ai/chat/route.ts
+  s_42238cfe0d80f3::t_59bec18f7c716f 180,184
+  s_42238cfe0d80f3::t_200c5c774c133f 162-163
+  s_42238cfe0d80f3::t_8fb846dfab0130 413
+  s_42238cfe0d80f3::t_1242350a16cee4 43
+  s_42238cfe0d80f3::t_da1234961f009f 144,157
+  s_42238cfe0d80f3::t_92328d53ec8713 136
+  s_42238cfe0d80f3::t_b8a60c1160fc08 471-472
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.13",
+  "base_commit_sha": "2ab3f2b763bac2dd2483141e07da9e658250456f",
+  "prompts": {},
+  "sessions": {
+    "s_42238cfe0d80f3": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "a4105da2-2139-4f24-acf4-7ccb153260a1",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

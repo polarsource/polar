@@ -1,0 +1,23 @@
+server/scripts/reject_denied_orgs_stripe_accounts.py
+  s_e3c1b1e677ea52::t_c6d0a8f3dec599 151-156,160,166-168,171
+  s_e3c1b1e677ea52::t_47535a245ce3c0 79-103
+  s_e3c1b1e677ea52::t_8b126fa0be41e4 169
+  s_e3c1b1e677ea52::t_51166f4f4a32a8 29,42
+  s_e3c1b1e677ea52::t_681c8edb50cbb3 193,195-202,225-228
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.14",
+  "base_commit_sha": "2fe46b6ce8f279480c6e9d776b9a307b22d84ac1",
+  "prompts": {},
+  "sessions": {
+    "s_e3c1b1e677ea52": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c841662b-c40b-441b-a9e9-b7483c8f1f30",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

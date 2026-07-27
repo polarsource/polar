@@ -2007,8 +2007,8 @@ export interface components {
       usage: components['schemas']['CustomerPortalUsageSettings']
       subscription: components['schemas']['CustomerPortalSubscriptionSettings']
       customer?: components['schemas']['CustomerPortalCustomerSettings']
-      /** Custom Url */
-      custom_url?: string | null
+      /** Portal Url */
+      portal_url?: string | null
     }
     /** OrganizationFeatureSettings */
     OrganizationFeatureSettings: {
@@ -2097,11 +2097,11 @@ export interface components {
        */
       merchant_migration_enabled: boolean
       /**
-       * Custom Customer Portal Url Enabled
-       * @description If this organization can configure a custom URL that customer emails link to instead of the Polar customer portal.
+       * Portal Url Override Enabled
+       * @description If this organization can configure a URL that customer emails link to instead of the Polar customer portal.
        * @default false
        */
-      custom_customer_portal_url_enabled: boolean
+      portal_url_override_enabled: boolean
     }
     /** OrganizationInviteEmail */
     OrganizationInviteEmail: {

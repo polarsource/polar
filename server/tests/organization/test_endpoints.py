@@ -517,14 +517,14 @@ class TestUpdateOrganization:
             json={
                 "customer_portal_settings": {
                     **_default_customer_portal_settings(),
-                    "custom_url": "https://acme.example.com/billing",
+                    "portal_url": "https://acme.example.com/billing",
                 },
             },
         )
 
         assert response.status_code == 200
         settings = response.json()["customer_portal_settings"]
-        assert settings.get("custom_url") is None
+        assert settings.get("portal_url") is None
 
     @pytest.mark.auth
     async def test_custom_portal_url_saved_with_flag(
@@ -534,7 +534,7 @@ class TestUpdateOrganization:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.feature_settings = {"portal_url_override_enabled": True}
         await save_fixture(organization)
 
         response = await client.patch(
@@ -542,14 +542,14 @@ class TestUpdateOrganization:
             json={
                 "customer_portal_settings": {
                     **_default_customer_portal_settings(),
-                    "custom_url": "https://acme.example.com/billing",
+                    "portal_url": "https://acme.example.com/billing",
                 },
             },
         )
 
         assert response.status_code == 200
         settings = response.json()["customer_portal_settings"]
-        assert settings["custom_url"] == "https://acme.example.com/billing"
+        assert settings["portal_url"] == "https://acme.example.com/billing"
 
     @pytest.mark.auth
     async def test_custom_portal_url_can_be_cleared_with_flag(
@@ -559,10 +559,10 @@ class TestUpdateOrganization:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.feature_settings = {"portal_url_override_enabled": True}
         organization.customer_portal_settings = {
             **organization.customer_portal_settings,
-            "custom_url": "https://acme.example.com/billing",
+            "portal_url": "https://acme.example.com/billing",
         }
         await save_fixture(organization)
 
@@ -571,14 +571,14 @@ class TestUpdateOrganization:
             json={
                 "customer_portal_settings": {
                     **_default_customer_portal_settings(),
-                    "custom_url": "",
+                    "portal_url": "",
                 },
             },
         )
 
         assert response.status_code == 200
         settings = response.json()["customer_portal_settings"]
-        assert settings.get("custom_url") is None
+        assert settings.get("portal_url") is None
 
     @pytest.mark.auth
     async def test_custom_portal_url_preserved_when_omitted(
@@ -588,10 +588,10 @@ class TestUpdateOrganization:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.feature_settings = {"portal_url_override_enabled": True}
         organization.customer_portal_settings = {
             **organization.customer_portal_settings,
-            "custom_url": "https://acme.example.com/billing",
+            "portal_url": "https://acme.example.com/billing",
         }
         await save_fixture(organization)
 
@@ -608,7 +608,7 @@ class TestUpdateOrganization:
         assert response.status_code == 200
         settings = response.json()["customer_portal_settings"]
         assert settings["usage"]["show"] is False
-        assert settings["custom_url"] == "https://acme.example.com/billing"
+        assert settings["portal_url"] == "https://acme.example.com/billing"
 
     @pytest.mark.auth
     async def test_custom_portal_url_rejects_non_https(
@@ -618,7 +618,7 @@ class TestUpdateOrganization:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.feature_settings = {"portal_url_override_enabled": True}
         await save_fixture(organization)
 
         response = await client.patch(
@@ -626,7 +626,7 @@ class TestUpdateOrganization:
             json={
                 "customer_portal_settings": {
                     **_default_customer_portal_settings(),
-                    "custom_url": "http://acme.example.com/billing",
+                    "portal_url": "http://acme.example.com/billing",
                 },
             },
         )
@@ -641,7 +641,7 @@ class TestUpdateOrganization:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.feature_settings = {"portal_url_override_enabled": True}
         await save_fixture(organization)
 
         response = await client.patch(
@@ -649,7 +649,7 @@ class TestUpdateOrganization:
             json={
                 "customer_portal_settings": {
                     **_default_customer_portal_settings(),
-                    "custom_url": "https://acme.example.com/billing?ref=x",
+                    "portal_url": "https://acme.example.com/billing?ref=x",
                 },
             },
         )

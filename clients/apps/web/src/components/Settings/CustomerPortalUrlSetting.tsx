@@ -23,19 +23,19 @@ const APPENDED_PARAMS = [
   },
 ] as const
 
-interface CustomerPortalCustomUrlSettingProps {
+interface CustomerPortalUrlSettingProps {
   organizationId: string
   value: string | null
   readOnly: boolean
-  onChange: (customUrl: string | null) => void
+  onChange: (portalUrl: string | null) => void
 }
 
-export default function CustomerPortalCustomUrlSetting({
+export default function CustomerPortalUrlSetting({
   organizationId,
   value,
   readOnly,
   onChange,
-}: CustomerPortalCustomUrlSettingProps) {
+}: CustomerPortalUrlSettingProps) {
   const [enabled, setEnabled] = useState(() => !!value)
   const [url, setUrl] = useState(value ?? '')
   const {
@@ -100,9 +100,9 @@ export default function CustomerPortalCustomUrlSetting({
                   }}
                   onBlur={() => {
                     const trimmed = url.trim()
-                    const customUrl = trimmed === '' ? null : trimmed
-                    if (customUrl !== value) {
-                      onChange(customUrl)
+                    const portalUrl = trimmed === '' ? null : trimmed
+                    if (portalUrl !== value) {
+                      onChange(portalUrl)
                     }
                     void validateURL(trimmed)
                   }}

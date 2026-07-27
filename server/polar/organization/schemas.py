@@ -139,7 +139,7 @@ OverviewMetrics = Annotated[list[str] | None, BeforeValidator(_coerce_overview_m
 _http_url_adapter = TypeAdapter(HttpUrl)
 
 
-def validate_customer_portal_custom_url(value: str | None) -> str | None:
+def validate_customer_portal_url(value: str | None) -> str | None:
     if value is None:
         return None
     value = value.strip()
@@ -148,12 +148,12 @@ def validate_customer_portal_custom_url(value: str | None) -> str | None:
     try:
         url = _http_url_adapter.validate_python(value)
     except ValidationError:
-        raise ValueError("The custom customer portal URL must be a valid URL.")
+        raise ValueError("The customer portal URL must be a valid URL.")
     if url.scheme != "https":
-        raise ValueError("The custom customer portal URL must use HTTPS.")
+        raise ValueError("The customer portal URL must use HTTPS.")
     if url.query or url.fragment:
         raise ValueError(
-            "The custom customer portal URL must not contain query parameters. "
+            "The customer portal URL must not contain query parameters. "
             "The `email`, `external_id`, `order_id` and `subscription_id` "
             "parameters are appended automatically."
         )
@@ -163,10 +163,8 @@ def validate_customer_portal_custom_url(value: str | None) -> str | None:
 def validate_customer_portal_settings(
     settings: OrganizationCustomerPortalSettings | None,
 ) -> OrganizationCustomerPortalSettings | None:
-    if settings is not None and "custom_url" in settings:
-        settings["custom_url"] = validate_customer_portal_custom_url(
-            settings["custom_url"]
-        )
+    if settings is not None and "portal_url" in settings:
+        settings["portal_url"] = validate_customer_portal_url(settings["portal_url"])
     return settings
 
 
@@ -237,11 +235,11 @@ class OrganizationFeatureSettings(Schema):
             "provider (e.g. Stripe) to Polar."
         ),
     )
-    custom_customer_portal_url_enabled: bool = Field(
+    portal_url_override_enabled: bool = Field(
         False,
         description=(
-            "If this organization can configure a custom URL that customer "
-            "emails link to instead of the Polar customer portal."
+            "If this organization can configure a URL that customer emails "
+            "link to instead of the Polar customer portal."
         ),
     )
 

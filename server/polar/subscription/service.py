@@ -3381,13 +3381,13 @@ class SubscriptionService:
 
         async def send_to_recipients(recipients: Sequence[str]) -> None:
             for recipient_email in recipients:
-                custom_url = organization.get_custom_portal_url(
+                portal_url_override = organization.get_customer_portal_url_override(
                     customer,
                     recipient_email,
                     subscription_id=subscription.id,
                 )
-                if custom_url is not None:
-                    portal_url = custom_url
+                if portal_url_override is not None:
+                    portal_url = portal_url_override
                 else:
                     token = await customer_service.create_session_token_for_recipient(
                         session, customer, recipient_email

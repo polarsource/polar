@@ -90,20 +90,23 @@ class TestGetCustomPortalUrl:
         self, customer: Customer, organization: Organization
     ) -> None:
         assert customer.email is not None
-        assert organization.get_custom_portal_url(customer, customer.email) is None
+        assert (
+            organization.get_customer_portal_url_override(customer, customer.email)
+            is None
+        )
 
     async def test_uses_db_setting_and_appends_identifiers(
         self, customer: Customer, organization: Organization
     ) -> None:
-        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.feature_settings = {"portal_url_override_enabled": True}
         organization.customer_portal_settings = {
             **organization.customer_portal_settings,
-            "custom_url": "https://acme.example.com/billing",
+            "portal_url": "https://acme.example.com/billing",
         }
         customer.external_id = "usr_123"
 
         assert customer.email is not None
-        url = organization.get_custom_portal_url(customer, customer.email)
+        url = organization.get_customer_portal_url_override(customer, customer.email)
 
         assert url is not None
         params = parse_qs(urlparse(url).query)
@@ -116,16 +119,16 @@ class TestGetCustomPortalUrl:
     async def test_appends_entity_ids(
         self, customer: Customer, organization: Organization
     ) -> None:
-        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.feature_settings = {"portal_url_override_enabled": True}
         organization.customer_portal_settings = {
             **organization.customer_portal_settings,
-            "custom_url": "https://acme.example.com/billing",
+            "portal_url": "https://acme.example.com/billing",
         }
         order_id = uuid.uuid4()
         subscription_id = uuid.uuid4()
 
         assert customer.email is not None
-        url = organization.get_custom_portal_url(
+        url = organization.get_customer_portal_url_override(
             customer,
             customer.email,
             order_id=order_id,
@@ -147,14 +150,14 @@ class TestGetCustomPortalUrl:
             settings.CUSTOMER_PORTAL_URL_OVERRIDES,
             {str(organization.id): "https://legacy.example.com/portal"},
         )
-        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.feature_settings = {"portal_url_override_enabled": True}
         organization.customer_portal_settings = {
             **organization.customer_portal_settings,
-            "custom_url": "https://acme.example.com/billing",
+            "portal_url": "https://acme.example.com/billing",
         }
 
         assert customer.email is not None
-        url = organization.get_custom_portal_url(customer, customer.email)
+        url = organization.get_customer_portal_url_override(customer, customer.email)
 
         assert url is not None
         assert url.startswith("https://acme.example.com/billing?")
@@ -162,14 +165,17 @@ class TestGetCustomPortalUrl:
     async def test_disabled_flag_ignores_db_setting(
         self, customer: Customer, organization: Organization
     ) -> None:
-        organization.feature_settings = {"custom_customer_portal_url_enabled": False}
+        organization.feature_settings = {"portal_url_override_enabled": False}
         organization.customer_portal_settings = {
             **organization.customer_portal_settings,
-            "custom_url": "https://acme.example.com/billing",
+            "portal_url": "https://acme.example.com/billing",
         }
 
         assert customer.email is not None
-        assert organization.get_custom_portal_url(customer, customer.email) is None
+        assert (
+            organization.get_customer_portal_url_override(customer, customer.email)
+            is None
+        )
 
     async def test_disabled_flag_still_uses_env_override(
         self,
@@ -181,14 +187,14 @@ class TestGetCustomPortalUrl:
             settings.CUSTOMER_PORTAL_URL_OVERRIDES,
             {str(organization.id): "https://legacy.example.com/portal"},
         )
-        organization.feature_settings = {"custom_customer_portal_url_enabled": False}
+        organization.feature_settings = {"portal_url_override_enabled": False}
         organization.customer_portal_settings = {
             **organization.customer_portal_settings,
-            "custom_url": "https://acme.example.com/billing",
+            "portal_url": "https://acme.example.com/billing",
         }
 
         assert customer.email is not None
-        url = organization.get_custom_portal_url(customer, customer.email)
+        url = organization.get_customer_portal_url_override(customer, customer.email)
 
         assert url is not None
         assert url.startswith("https://legacy.example.com/portal?")
@@ -205,7 +211,7 @@ class TestGetCustomPortalUrl:
         )
 
         assert customer.email is not None
-        url = organization.get_custom_portal_url(customer, customer.email)
+        url = organization.get_customer_portal_url_override(customer, customer.email)
 
         assert url is not None
         params = parse_qs(urlparse(url).query)

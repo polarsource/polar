@@ -2724,10 +2724,10 @@ class TestSendConfirmationEmail:
             "polar.order.service.invoice_service.create_order_invoice",
             new_callable=AsyncMock,
         )
-        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.feature_settings = {"portal_url_override_enabled": True}
         organization.customer_portal_settings = {
             **organization.customer_portal_settings,
-            "custom_url": "https://acme.example.com/billing",
+            "portal_url": "https://acme.example.com/billing",
         }
         await save_fixture(organization)
         customer.external_id = "usr_123"
@@ -2764,10 +2764,10 @@ class TestSendConfirmationEmail:
             "polar.order.service.invoice_service.create_order_invoice",
             new_callable=AsyncMock,
         )
-        organization.feature_settings = {"custom_customer_portal_url_enabled": True}
+        organization.feature_settings = {"portal_url_override_enabled": True}
         organization.customer_portal_settings = {
             **organization.customer_portal_settings,
-            "custom_url": "https://acme.example.com/billing",
+            "portal_url": "https://acme.example.com/billing",
         }
         await save_fixture(organization)
         subscription = await create_active_subscription(

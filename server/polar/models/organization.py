@@ -163,7 +163,7 @@ class OrganizationCustomerPortalSettings(TypedDict):
     usage: CustomerPortalUsageSettings
     subscription: CustomerPortalSubscriptionSettings
     customer: NotRequired[CustomerPortalCustomerSettings]
-    custom_url: NotRequired[str | None]
+    portal_url: NotRequired[str | None]
 
 
 def _default_customer_portal_settings() -> OrganizationCustomerPortalSettings:
@@ -833,14 +833,14 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.customer_portal_settings.get("subscription", {}).get("pause", False)
 
     @property
-    def is_custom_customer_portal_url_enabled(self) -> bool:
-        return self.feature_settings.get("custom_customer_portal_url_enabled", False)
+    def is_portal_url_override_enabled(self) -> bool:
+        return self.feature_settings.get("portal_url_override_enabled", False)
 
     @property
-    def customer_portal_custom_url(self) -> str | None:
-        return self.customer_portal_settings.get("custom_url") or None
+    def customer_portal_url_override(self) -> str | None:
+        return self.customer_portal_settings.get("portal_url") or None
 
-    def get_custom_portal_url(
+    def get_customer_portal_url_override(
         self,
         customer: "Customer",
         recipient_email: str,
@@ -848,10 +848,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         order_id: UUID | None = None,
         subscription_id: UUID | None = None,
     ) -> str | None:
-        """Build the custom customer portal link for a recipient, if configured.
+        """Build the customer portal link override for a recipient, if configured.
 
         Returns None when the organization uses the default Polar customer
-        portal links. The custom link identifies the customer (email, external
+        portal links. The override link identifies the customer (email, external
         ID) and the entity the email is about (order, subscription).
         """
         # The DB-configured URL is gated by the feature flag, so disabling the
@@ -859,8 +859,8 @@ class Organization(RateLimitGroupMixin, RecordModel):
         # a fallback regardless, until the remaining configured organization is
         # migrated to the DB setting.
         configured_url = (
-            self.customer_portal_custom_url
-            if self.is_custom_customer_portal_url_enabled
+            self.customer_portal_url_override
+            if self.is_portal_url_override_enabled
             else None
         )
         override_url = configured_url or settings.CUSTOMER_PORTAL_URL_OVERRIDES.get(

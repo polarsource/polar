@@ -561,22 +561,22 @@ class OrganizationService:
                 OrganizationCustomerPortalSettings,
                 {**update_schema.customer_portal_settings},
             )
-            if not organization.is_custom_customer_portal_url_enabled:
-                # The custom customer portal URL can only be changed while the
+            if not organization.is_portal_url_override_enabled:
+                # The customer portal URL override can only be changed while the
                 # feature flag is enabled.
-                existing_url = organization.customer_portal_custom_url
+                existing_url = organization.customer_portal_url_override
                 if existing_url is None:
-                    customer_portal_settings.pop("custom_url", None)
+                    customer_portal_settings.pop("portal_url", None)
                 else:
-                    customer_portal_settings["custom_url"] = existing_url
+                    customer_portal_settings["portal_url"] = existing_url
             elif (
-                "custom_url" not in customer_portal_settings
-                and organization.customer_portal_custom_url is not None
+                "portal_url" not in customer_portal_settings
+                and organization.customer_portal_url_override is not None
             ):
-                # An omitted custom_url means "unchanged"; clearing requires an
+                # An omitted portal_url means "unchanged"; clearing requires an
                 # explicit empty or null value.
-                customer_portal_settings["custom_url"] = (
-                    organization.customer_portal_custom_url
+                customer_portal_settings["portal_url"] = (
+                    organization.customer_portal_url_override
                 )
             organization.customer_portal_settings = customer_portal_settings
 

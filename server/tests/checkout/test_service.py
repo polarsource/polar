@@ -4510,15 +4510,21 @@ class TestConfirm:
                 ),
             )
 
-    async def test_external_id_mismatch(
+    async def test_external_id_match_different_email(
         self,
         save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
         session: AsyncSession,
         auth_subject: AuthSubject[Anonymous],
         checkout_one_time_fixed: Checkout,
         organization: Organization,
     ) -> None:
-        await create_customer(
+        """When external_customer_id is set, match by external ID only.
+
+        Even if the checkout email differs from the customer's email, the external
+        ID is authoritative and the checkout should link to the existing customer.
+        """
+        existing = await create_customer(
             save_fixture,
             organization=organization,
             external_id="EXTERNAL_ID",
@@ -4528,20 +4534,30 @@ class TestConfirm:
         checkout_one_time_fixed.external_customer_id = "EXTERNAL_ID"
         await save_fixture(checkout_one_time_fixed)
 
-        with pytest.raises(CheckoutCustomerExternalIdMismatch):
-            await checkout_service.confirm(
-                session,
-                auth_subject,
-                checkout_one_time_fixed,
-                CheckoutConfirmStripe.model_validate(
-                    {
-                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
-                        "customer_name": "Customer Name",
-                        "customer_email": "different@example.com",
-                        "customer_billing_address": {"country": "FR"},
-                    }
-                ),
-            )
+        stripe_service_mock.update_customer.return_value = SimpleNamespace(
+            id=existing.stripe_customer_id
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "different@example.com",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.customer is not None
+        assert checkout.customer.id == existing.id
 
     async def test_external_id_no_mismatch_same_email(
         self,
@@ -4552,8 +4568,7 @@ class TestConfirm:
         checkout_one_time_fixed: Checkout,
         organization: Organization,
     ) -> None:
-        """When the email matches an existing customer with the same external_id,
-        the checkout should proceed normally (matched by email lookup)."""
+        """When external_customer_id is set, match by external ID only (email is coincidentally the same)."""
         existing = await create_customer(
             save_fixture,
             organization=organization,
@@ -4588,6 +4603,41 @@ class TestConfirm:
         assert checkout.status == CheckoutStatus.confirmed
         assert checkout.customer is not None
         assert checkout.customer.id == existing.id
+
+    async def test_external_id_conflict_email_different_external_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+        organization: Organization,
+    ) -> None:
+        """When external_customer_id is set but not found, and the email maps to a
+        customer that already has a different external_id, raise a conflict error."""
+        await create_customer(
+            save_fixture,
+            organization=organization,
+            external_id="OTHER_EXTERNAL_ID",
+            email="conflict@example.com",
+        )
+
+        checkout_one_time_fixed.external_customer_id = "NEW_EXTERNAL_ID"
+        await save_fixture(checkout_one_time_fixed)
+
+        with pytest.raises(CheckoutCustomerExternalIdMismatch):
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "conflict@example.com",
+                        "customer_billing_address": {"country": "FR"},
+                    }
+                ),
+            )
 
     async def test_archived_price(
         self,
@@ -5446,11 +5496,11 @@ class TestConfirm:
         product: Product,
     ) -> None:
         """
-        Customer exists, no external ID set.
-
-        Checkout should link to the existing customer by email, but not set the external ID.
+        When external_customer_id is provided and a customer exists with the same email
+        but no external ID, the external ID is assigned to the existing customer rather
+        than creating a duplicate that would violate the email uniqueness constraint.
         """
-        customer = await create_customer(
+        existing_customer = await create_customer(
             save_fixture,
             organization=organization,
             email="customer1@example.com",
@@ -5459,6 +5509,9 @@ class TestConfirm:
             save_fixture, products=[product], external_customer_id="external_id_1"
         )
 
+        stripe_service_mock.update_customer.return_value = SimpleNamespace(
+            id=existing_customer.stripe_customer_id
+        )
         stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
             client_secret="CLIENT_SECRET", status="succeeded"
         )
@@ -5481,9 +5534,9 @@ class TestConfirm:
 
         assert checkout.status == CheckoutStatus.confirmed
         assert checkout.customer is not None
-        assert checkout.customer == customer
-        assert checkout.customer.email == customer.email
-        assert checkout.customer.external_id is None
+        assert checkout.customer.id == existing_customer.id
+        assert checkout.customer.email == "customer1@example.com"
+        assert checkout.customer.external_id == "external_id_1"
 
     async def test_existing_customer_email_changed(
         self,

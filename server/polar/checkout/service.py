@@ -245,8 +245,8 @@ class CheckoutCustomerDeleted(CheckoutError):
 class CheckoutCustomerExternalIdMismatch(CheckoutError):
     def __init__(self) -> None:
         message = (
-            "A customer with this external ID already exists "
-            "but with a different email address."
+            "A customer with this email already exists "
+            "but is associated with a different external ID."
         )
         super().__init__(message, 422)
 
@@ -2591,16 +2591,35 @@ class CheckoutService:
 
         if customer is None:
             assert checkout.customer_email is not None
-            customer = await repository.get_by_email_and_organization(
-                checkout.customer_email, checkout.organization.id
-            )
-            if customer is None and checkout.external_customer_id is not None:
-                existing = await repository.get_by_external_id_and_organization(
+            if checkout.external_customer_id is not None:
+                # When external_customer_id is provided, use it as the primary matching key.
+                customer = await repository.get_by_external_id_and_organization(
                     checkout.external_customer_id,
                     checkout.organization.id,
                 )
-                if existing is not None:
-                    raise CheckoutCustomerExternalIdMismatch()
+                if customer is None:
+                    # No customer with this external_id; check for an email match to avoid
+                    # creating a duplicate that would violate the email uniqueness constraint.
+                    email_customer = await repository.get_by_email_and_organization(
+                        checkout.customer_email, checkout.organization.id
+                    )
+                    if email_customer is not None:
+                        if email_customer.external_id is None:
+                            # Assign the external_id to the existing email-matched customer
+                            # rather than creating a conflicting duplicate.
+                            customer = email_customer
+                            customer.external_id = checkout.external_customer_id
+                        else:
+                            # Two different external IDs map to the same email — unresolvable conflict.
+                            raise CheckoutCustomerExternalIdMismatch()
+            else:
+                customer = await repository.get_by_email_and_organization(
+                    checkout.customer_email, checkout.organization.id
+                )
+                if customer is not None:
+                    # Don't automatically create a session for customer associated by email.
+                    # Could be a malicious user trying to take over an existing customer's account by using their email
+                    generate_customer_session = False
             if customer is None:
                 customer = Customer(
                     external_id=checkout.external_customer_id,
@@ -2611,10 +2630,6 @@ class CheckoutService:
                     user_metadata={},
                 )
                 created = True
-            else:
-                # Don't automatically create a session for customer associated by email.
-                # Could be a malicious user trying to take over an existing customer's account by using their email
-                generate_customer_session = False
 
         stripe_customer_id = customer.stripe_customer_id
         customer_name = checkout.customer_billing_name or checkout.customer_name

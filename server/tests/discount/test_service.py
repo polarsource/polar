@@ -30,6 +30,7 @@ from polar.models.discount import (
     DiscountPercentage,
     DiscountType,
 )
+from polar.models.payment import PaymentStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -907,6 +908,65 @@ class TestCheckPerCustomerLimitReached:
                 payment_method_fingerprint="FINGERPRINT",
             )
             is True
+        )
+
+    async def test_declined_card_fingerprint_does_not_count(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            max_redemptions_per_customer=1,
+        )
+        prior_customer = await create_customer(
+            save_fixture, organization=organization, email="other@example.com"
+        )
+        prior_checkout = await create_checkout(
+            save_fixture, products=[product], customer=prior_customer
+        )
+        prior_checkout.customer_email = "other@example.com"
+        await save_fixture(prior_checkout)
+        # Declined once, then retried with another card.
+        await create_payment(
+            save_fixture,
+            organization,
+            status=PaymentStatus.failed,
+            checkout=prior_checkout,
+            method_metadata={"fingerprint": "DECLINED_CARD"},
+        )
+        await create_payment(
+            save_fixture,
+            organization,
+            checkout=prior_checkout,
+            method_metadata={"fingerprint": "SETTLED_CARD"},
+        )
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=prior_checkout
+        )
+
+        current_customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        current_checkout = await create_checkout(
+            save_fixture, products=[product], customer=current_customer
+        )
+
+        assert (
+            await discount_service.check_per_customer_limit_reached(
+                session,
+                discount,
+                checkout=current_checkout,
+                customer=current_customer,
+                payment_method_fingerprint="DECLINED_CARD",
+            )
+            is False
         )
 
     async def test_limit_reached_by_subscription_redemption(

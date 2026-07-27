@@ -20,6 +20,7 @@ from polar.models import (
     Payment,
     Subscription,
 )
+from polar.models.payment import PaymentStatus
 
 
 class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, UUID]):
@@ -129,7 +130,9 @@ class DiscountRedemptionRepository(
         if payment_method_fingerprint is not None:
             statement = statement.join(
                 Payment,
-                Payment.checkout_id == DiscountRedemption.checkout_id,
+                (Payment.checkout_id == DiscountRedemption.checkout_id)
+                # A retried checkout keeps its declined attempts.
+                & (Payment.status == PaymentStatus.succeeded),
                 isouter=True,
             )
 

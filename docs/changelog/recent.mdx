@@ -4,32 +4,6 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
-<Update label="2026-07-27">
-## Benefits and discounts on the product overview
-
-The product Overview tab now lists the benefits a product grants, so you can see what customers receive without opening the edit form. Discounts moved from a table into a paginated list, and the product's price now sits in the page header next to its status.
-
-## Webhooks for discounts
-
-Three new events fire when you create, update, or delete a discount: `discount.created`, `discount.updated`, and `discount.deleted`. Subscribe to them to keep your own pricing pages and caches in sync with the coupons you run, instead of polling the API.
-
-## New `subscription.cycled` webhook
-
-A new event fires the moment a subscription enters a new billing period, before the renewal order exists. It fires whether or not the renewal payment succeeds, so you no longer have to infer renewals from `order.created` and its `billing_reason`.
-
-## Checkout adapts to the chosen payment method
-
-Checkout now tracks which payment method the customer picks and adjusts the form to match. Methods that need a full billing address, such as UPI, reveal the complete address fields, and switching back to card hides them again. A missing address is caught at confirmation instead of failing later.
-
-## Chargeback prevention explained on the order page
-
-When Polar refunds an order on your behalf to head off a chargeback, the order page now shows a banner explaining why, alongside a "Chargeback Prevented" status. You no longer have to ask support why a refund you did not issue appeared.
-
-## SSO creates accounts on first login
-
-Signing in through your identity provider now creates the Polar account and the organization membership if they do not exist yet, with the member role. There are no invitations to send before someone's first login. Remove access in your identity provider and it is gone in Polar.
-</Update>
-
 <Update label="2026-07-23">
 ## Pause and resume subscriptions
 

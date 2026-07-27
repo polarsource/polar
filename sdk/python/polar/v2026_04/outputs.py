@@ -6064,6 +6064,13 @@ class HTTPValidationError:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
+class InactiveSubscription:
+    error: typing.Literal["InactiveSubscription"]
+
+    detail: str
+
+
+@dataclasses.dataclass(kw_only=True, slots=True)
 class IntrospectTokenResponse:
     active: bool
 

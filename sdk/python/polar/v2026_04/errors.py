@@ -26,6 +26,9 @@ from polar.v2026_04.outputs import (
     HTTPValidationError as HTTPValidationErrorModel,
 )
 from polar.v2026_04.outputs import (
+    InactiveSubscription as InactiveSubscriptionModel,
+)
+from polar.v2026_04.outputs import (
     ManualRetryLimitExceeded as ManualRetryLimitExceededModel,
 )
 from polar.v2026_04.outputs import (
@@ -161,6 +164,19 @@ class PaymentFailed(PolarClientError):
     error: PaymentFailedModel
 
     def __init__(self, status_code: int, error: PaymentFailedModel) -> None:
+        self.error = error
+        super().__init__(status_code, error)
+
+
+class SubscriptionsUpdate403Error(PolarClientError):
+    error_type = AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel
+    error: AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel
+
+    def __init__(
+        self,
+        status_code: int,
+        error: AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel,
+    ) -> None:
         self.error = error
         super().__init__(status_code, error)
 

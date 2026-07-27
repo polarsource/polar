@@ -13502,6 +13502,19 @@ export interface HTTPValidationError {
   detail?: ValidationError[];
 }
 /**
+ * InactiveSubscription
+ */
+export interface InactiveSubscription {
+  /**
+   * error
+   */
+  error: "InactiveSubscription";
+  /**
+   * detail
+   */
+  detail: string;
+}
+/**
  * IntrospectTokenResponse
  */
 export interface IntrospectTokenResponse {

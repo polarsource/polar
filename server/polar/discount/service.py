@@ -486,7 +486,7 @@ class DiscountService(ResourceServiceReader[Discount]):
         """
         Redeem a discount, locking its row when globally capped so the count can't be
         read stale. Without that cap the lock would make concurrent buyers of the same
-        code fail each other.
+        code fail each other; the per-customer limit serializes on the customer instead.
         """
         repository = DiscountRepository.from_session(session)
 

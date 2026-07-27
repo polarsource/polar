@@ -1334,12 +1334,20 @@ class TestRedeemDiscount:
             ),
         )
 
+    @pytest.mark.parametrize(
+        "max_redemptions_per_customer",
+        [
+            pytest.param(None, id="uncapped"),
+            pytest.param(1, id="per_customer"),
+        ],
+    )
     async def test_discount_without_global_cap_ignores_contention(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
         contended_lock: None,
+        max_redemptions_per_customer: int | None,
     ) -> None:
         discount = await create_discount(
             save_fixture,
@@ -1347,6 +1355,7 @@ class TestRedeemDiscount:
             basis_points=1000,
             duration=DiscountDuration.once,
             organization=organization,
+            max_redemptions_per_customer=max_redemptions_per_customer,
         )
 
         async with discount_service.redeem_discount(session, discount) as redemption:

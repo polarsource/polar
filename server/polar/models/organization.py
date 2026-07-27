@@ -410,6 +410,7 @@ ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatu
     ),
     OrganizationStatus.REVIEW: frozenset(
         {
+            OrganizationStatus.CREATED,
             OrganizationStatus.ACTIVE,
             OrganizationStatus.SNOOZED,
             OrganizationStatus.DENIED,
@@ -419,6 +420,7 @@ ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatu
     ),
     OrganizationStatus.SNOOZED: frozenset(
         {
+            OrganizationStatus.CREATED,
             OrganizationStatus.REVIEW,
             OrganizationStatus.ACTIVE,
             OrganizationStatus.DENIED,
@@ -427,6 +429,7 @@ ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatu
     ),
     OrganizationStatus.ACTIVE: frozenset(
         {
+            OrganizationStatus.CREATED,
             OrganizationStatus.REVIEW,
             OrganizationStatus.DENIED,
             OrganizationStatus.BLOCKED,
@@ -515,6 +518,9 @@ class Organization(RateLimitGroupMixin, RecordModel):
         JSONB, nullable=False, default=dict
     )
     details_submitted_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True)
+    )
+    onboarding_resubmission_requested_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True)
     )
 

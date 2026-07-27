@@ -330,6 +330,7 @@ class TestIdentityVerificationVerified:
             session, verification_session
         )
 
+        assert updated_user is not None
         assert (
             updated_user.identity_verification_status
             == IdentityVerificationStatus.verified
@@ -340,6 +341,61 @@ class TestIdentityVerificationVerified:
         }
         assert organization.id in activated_org_ids
         assert organization_second.id not in activated_org_ids
+
+    async def test_resolves_user_from_metadata_when_superseded(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        """A user who started a second session is no longer reachable by the first
+        session's id. The `user_id` metadata still resolves them, so a pass from the
+        earlier attempt is applied instead of stranding the webhook unhandled.
+        """
+        user.identity_verification_id = "vs_second"
+        user.identity_verification_status = IdentityVerificationStatus.unverified
+        await save_fixture(user)
+
+        mocker.patch(
+            "polar.user.service.organization_service.maybe_activate",
+            new_callable=mocker.AsyncMock,
+        )
+
+        verification_session = stripe_lib.identity.VerificationSession.construct_from(
+            {
+                "id": "vs_first",
+                "status": "verified",
+                "metadata": {"user_id": str(user.id)},
+            },
+            None,
+        )
+
+        updated_user = await user_service.identity_verification_verified(
+            session, verification_session
+        )
+
+        assert updated_user is not None
+        assert (
+            updated_user.identity_verification_status
+            == IdentityVerificationStatus.verified
+        )
+        assert updated_user.identity_verification_id == "vs_first"
+
+    async def test_ignores_session_of_unknown_user(
+        self,
+        session: AsyncSession,
+    ) -> None:
+        verification_session = stripe_lib.identity.VerificationSession.construct_from(
+            {"id": "vs_unknown", "status": "verified"}, None
+        )
+
+        assert (
+            await user_service.identity_verification_verified(
+                session, verification_session
+            )
+            is None
+        )
 
 
 @pytest.mark.asyncio
@@ -362,6 +418,7 @@ class TestIdentityVerificationPending:
             session, verification_session
         )
 
+        assert updated_user is not None
         assert (
             updated_user.identity_verification_status
             == IdentityVerificationStatus.pending
@@ -391,6 +448,7 @@ class TestIdentityVerificationPending:
             session, verification_session
         )
 
+        assert updated_user is not None
         assert (
             updated_user.identity_verification_status
             == IdentityVerificationStatus.verified
@@ -418,10 +476,41 @@ class TestIdentityVerificationPending:
             session, verification_session
         )
 
+        assert updated_user is not None
         assert (
             updated_user.identity_verification_status
             == IdentityVerificationStatus.pending
         )
+
+    async def test_ignores_superseded_session(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        """The user has started another attempt, so a `processing` webhook from the
+        abandoned one says nothing about where they are now.
+        """
+        user.identity_verification_id = "vs_second"
+        user.identity_verification_status = IdentityVerificationStatus.failed
+        await save_fixture(user)
+
+        verification_session = stripe_lib.identity.VerificationSession.construct_from(
+            {
+                "id": "vs_first",
+                "status": "processing",
+                "metadata": {"user_id": str(user.id)},
+            },
+            None,
+        )
+
+        assert (
+            await user_service.identity_verification_pending(
+                session, verification_session
+            )
+            is None
+        )
+        assert user.identity_verification_status == IdentityVerificationStatus.failed
 
 
 @pytest.mark.asyncio
@@ -444,6 +533,7 @@ class TestIdentityVerificationFailed:
             session, verification_session
         )
 
+        assert updated_user is not None
         assert (
             updated_user.identity_verification_status
             == IdentityVerificationStatus.failed
@@ -470,7 +560,38 @@ class TestIdentityVerificationFailed:
             session, verification_session
         )
 
+        assert updated_user is not None
         assert (
             updated_user.identity_verification_status
             == IdentityVerificationStatus.verified
         )
+
+    async def test_ignores_superseded_session(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        """A `canceled` webhook from an abandoned attempt must not fail the user's
+        current one.
+        """
+        user.identity_verification_id = "vs_second"
+        user.identity_verification_status = IdentityVerificationStatus.pending
+        await save_fixture(user)
+
+        verification_session = stripe_lib.identity.VerificationSession.construct_from(
+            {
+                "id": "vs_first",
+                "status": "canceled",
+                "metadata": {"user_id": str(user.id)},
+            },
+            None,
+        )
+
+        assert (
+            await user_service.identity_verification_failed(
+                session, verification_session
+            )
+            is None
+        )
+        assert user.identity_verification_status == IdentityVerificationStatus.pending

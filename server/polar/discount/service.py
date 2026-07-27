@@ -473,20 +473,23 @@ class DiscountService(ResourceServiceReader[Discount]):
         self, session: AsyncSession, discount: Discount
     ) -> AsyncIterator[DiscountRedemption]:
         """
-        Redeem a discount with FOR UPDATE lock to prevent concurrent redemptions.
+        Redeem a discount, locking its row when capped so the count can't be read stale.
 
-        Uses PostgreSQL row-level locking instead of Redis distributed locks.
-        The lock is held until the parent transaction commits.
+        Uncapped discounts skip the lock, which would make concurrent buyers of the
+        same code fail each other.
         """
         repository = DiscountRepository.from_session(session)
 
-        # Acquire FOR UPDATE lock (we're already inside checkout's transaction)
-        try:
-            await repository.get_by_id(discount.id, for_update=True, nowait=True)
-        except DBAPIError as e:
-            if is_lock_not_available_error(e):
-                raise DiscountNotRedeemableError(discount) from e
-            raise
+        if (
+            discount.max_redemptions is not None
+            or discount.max_redemptions_per_customer is not None
+        ):
+            try:
+                await repository.get_by_id(discount.id, for_update=True, nowait=True)
+            except DBAPIError as e:
+                if is_lock_not_available_error(e):
+                    raise DiscountNotRedeemableError(discount) from e
+                raise
 
         if not await self.is_redeemable_discount(session, discount):
             raise DiscountNotRedeemableError(discount)

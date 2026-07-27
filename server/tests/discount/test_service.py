@@ -2,14 +2,18 @@ from datetime import timedelta
 from typing import Any, Literal
 
 import pytest
+from pytest_mock import MockerFixture
+from sqlalchemy.exc import DBAPIError
 
 from polar.auth.models import AuthSubject, User
 from polar.checkout.schemas import CheckoutUpdatePublic
 from polar.checkout.service import checkout as checkout_service
+from polar.discount.repository import DiscountRepository
 from polar.discount.schemas import (
     DiscountFixedCreate,
     DiscountUpdate,
 )
+from polar.discount.service import DiscountNotRedeemableError
 from polar.discount.service import discount as discount_service
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.currency import PresentmentCurrency
@@ -973,3 +977,64 @@ class TestCheckPerCustomerLimitReached:
             )
             is False
         )
+
+
+@pytest.mark.asyncio
+class TestRedeemDiscount:
+    @pytest.fixture
+    def contended_lock(self, mocker: MockerFixture) -> None:
+        mocker.patch.object(
+            DiscountRepository,
+            "get_by_id",
+            side_effect=DBAPIError(
+                "SELECT", {}, Exception("could not obtain lock on row")
+            ),
+        )
+
+    async def test_uncapped_discount_ignores_contention(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        contended_lock: None,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+
+        async with discount_service.redeem_discount(session, discount) as redemption:
+            assert redemption.discount == discount
+
+    @pytest.mark.parametrize(
+        ("max_redemptions", "max_redemptions_per_customer"),
+        [
+            pytest.param(10, None, id="global"),
+            pytest.param(None, 1, id="per_customer"),
+        ],
+    )
+    async def test_capped_discount_rejects_contention(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        contended_lock: None,
+        max_redemptions: int | None,
+        max_redemptions_per_customer: int | None,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+            max_redemptions=max_redemptions,
+            max_redemptions_per_customer=max_redemptions_per_customer,
+        )
+
+        with pytest.raises(DiscountNotRedeemableError):
+            async with discount_service.redeem_discount(session, discount):
+                pass

@@ -167,9 +167,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                   <Status
                     color="gray"
                     status={
-                      benefit.visibility === 'public'
-                        ? 'Visible to customers'
-                        : 'Hidden from customers'
+                      benefit.visibility === 'public' ? 'Visible' : 'Hidden'
                     }
                   />
                 </Box>

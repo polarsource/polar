@@ -2,8 +2,10 @@
 
 import { DetailCell } from '@/components/Orders/OrderSection'
 import { useMeter } from '@/hooks/queries/meters'
+import OpenInNew from '@mui/icons-material/OpenInNew'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 
 const GITHUB_PERMISSION_LABELS: Record<
@@ -35,9 +37,14 @@ export const GitHubRepositoryCells = ({
             target="_blank"
             rel="noopener noreferrer"
           >
-            <Text variant="body" monospace truncate>
-              {repository}
-            </Text>
+            <Box alignItems="center" columnGap="xs" minWidth={0}>
+              <Text variant="body" monospace truncate >
+                {repository}
+              </Text>
+              <Box as="span" flexShrink={0} color="text-secondary">
+                <OpenInNew sx={{ fontSize: 14 }} />
+              </Box>
+            </Box>
           </a>
         }
       />

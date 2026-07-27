@@ -172,7 +172,7 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     )
 
     def get_amount_display(self) -> str:
-        if self.amount is None or self.currency is None:
+        if self.amount == 0:
             return "Free"
         return (
             f"{format_currency(self.amount, self.currency)}/{self.recurring_interval}"

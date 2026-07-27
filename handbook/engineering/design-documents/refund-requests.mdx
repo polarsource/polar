@@ -5,7 +5,7 @@ import { OpenQuestion } from "/snippets/open-question.jsx";
 
 **Created**: June 2026
 
-**Last Updated**: June 22nd, 2026
+**Last Updated**: July 27th, 2026
 
 **Author**: Maxime
 
@@ -15,36 +15,44 @@ import { OpenQuestion } from "/snippets/open-question.jsx";
 
 EU consumer law (Consumer Rights Directive 2011/83/EU) gives B2C buyers a 14-day
 **right of withdrawal** on distance contracts. For digital goods this right can be
-waived — but only under strict conditions. To comply, merchants need a way for
-customers to *request a refund*, and Polar needs to expose a **refund button** to
-EU B2C customers where it's legally mandatory.
+waived — but only under strict conditions. Today a customer who wants their money
+back has to email the merchant; Polar gives them no path at all.
 
-The fear is the opposite failure mode: a naive
-"customer clicks → auto-refund" flow lets anyone download the product and then
-claim their money back, getting the digital good for free. So the design has to
-do two things at once: **comply with the law** without **opening a free-product
-loophole**.
+So customers need a way to **request a refund** from the portal. The fear is the
+opposite failure mode: a naive "customer clicks → auto-refund" flow lets anyone
+download the product and then claim their money back, getting the digital good
+for free. So the design has to do two things at once: **comply with the law**
+without **opening a free-product loophole**.
 
-This document maps what exists today, the legal principle that resolves the
-tension, and a phased plan.
+The resolution is to separate the two halves. **Every customer can always
+request** — asking is never gated. Polar routes the request to the merchant with
+the legal position attached: *"this customer is in Spain, they accepted the
+waiver, but they have not downloaded the files — you have to refund."* The
+merchant decides. Polar advises.
+
+This document maps what exists today, the legal principle behind that advice,
+and a phased plan.
 
 ## Goals
 
-- A customer-initiated **refund request** is recorded as a support case (audit
-  trail), even on the happy path.
-- EU B2C customers see a **refund button** wherever the law makes it mandatory.
+- Any customer can open a **refund request** from the portal, recorded as a
+  support case (audit trail), on every path.
+- The merchant sees, on the case, **what the law requires** for that specific
+  order — jurisdiction, waiver state, access state, days elapsed.
 - Merchants are protected from abuse via a **waiver opt-in** captured at checkout
   ("immediate access ⇒ you waive your 14-day withdrawal right").
-- Refunding pulls back the **specific benefit** that was purchased.
+- Refunding pulls back **every benefit granted through the order**.
 - Merchants get **signals** (refund history per customer, notes, optional
   blocklist) to manage repeat abusers.
 
 ## Non-goals (for v1)
 
 - Automatic, no-merchant-in-the-loop refunds for arbitrary products.
-- Bespoke withdrawal-right handling for **custom** benefits, where fulfillment
-  is merchant-defined (Polar records the grant lifecycle + fires webhooks, but
-  cannot know the merchant's own access semantics).
+- **Polar enforcing the refund on the merchant's behalf.** As merchant of record
+  Polar arguably could, but v1 informs and lets the merchant act.
+- Gating *who may ask*. Eligibility shapes the advice, never the button.
+- Access semantics for **custom** and **feature flag** benefits, where Polar has
+  no signal it can assert (see below). They stay out of the eligibility read.
 - A full customer reputation/risk-scoring engine.
 
 ---
@@ -62,16 +70,17 @@ refund** only if **all three** hold:
 That is exactly the "waiver opt-in upon purchase." It produces **two compliant
 regimes**, and the loophole only appears if you mix them:
 
-| Regime | Condition | Refund button | Loophole? |
+| Regime | Condition | What Polar tells the merchant | Loophole? |
 | --- | --- | --- | --- |
-| **Waiver path** | Waiver given → immediate access granted | Discretionary once **accessed** | No — they waived |
-| **No-waiver path** | No waiver | **Mandatory** within 14 days, *regardless of access* | Only if you granted access anyway |
+| **Waiver path** | Waiver given → immediate access granted | Once **accessed**: your call | No — they waived |
+| **No-waiver path** | No waiver | Within 14 days: **you must refund**, *regardless of access* | Only if you granted access anyway |
 
 > **The one rule that closes the loophole:**
 > **Never grant access without either a recorded waiver or accepting the 14-day refund liability.**
 > i.e. "Have it now if you waive, or wait 14 days."
 
-Everything below exists to make that rule enforceable.
+Everything below exists to make that rule enforceable — and to put the right
+sentence in front of the merchant when a request lands.
 
 ---
 
@@ -91,27 +100,30 @@ Everything below exists to make that rule enforceable.
 | Consumption signal — downloadables (`downloaded`, `last_downloaded_at`) | ✅ | `customer_portal/service/downloadables.py:147` |
 | Consumption signal — license keys (activations) | ✅ | `models/license_key.py` |
 | Provisioned-access identity + revoke — Discord / GitHub / Slack (`granted_account_id`, channel/invite ids; `revoke` hits the external API) | ✅ | `benefit/strategies/{discord,github_repository,slack_shared_channel}/service.py` |
+| Consumption signal — meter credits (`consumed_units` / `balance`) | ✅ Revoke posts a negative credit event | `models/customer_meter.py:42`, `benefit/strategies/meter_credit/service.py:111` |
 | Custom benefit grant/revoke | 🟡 Strategy is a no-op, but lifecycle is stamped + webhooks fire (fulfillment is merchant-side) | `benefit/strategies/custom/service.py` |
+| Feature flag benefit grant/revoke | 🟡 Same shape as custom — strategy is a no-op, lifecycle is stamped | `benefit/strategies/feature_flag/service.py` |
 | Checkout consent/waiver capture | ❌ Consent is implicit via payment | `MandateText.tsx` |
 | B2C vs B2B signal | ✅ `is_business_customer` | `models/checkout.py:223` |
-| Selective per-benefit revoke (merchant) | ❌ All-or-nothing per customer | `backoffice/customers/endpoints.py` |
+| Order-scoped revoke (merchant) | ❌ All-or-nothing per customer | `backoffice/customers/endpoints.py` |
 | Customer notes / tags / flags | ❌ | — |
 | Email / card blocklist | ❌ (only Stripe decline codes + `fraudulent` reason) | `models/refund.py` |
 
 **Takeaway:** the refund engine, the case primitive, **and the grant/revoke
 lifecycle** are already done — every benefit type records `granted_at` /
 `revoked_at` and is revocable. The genuinely missing pieces are narrower:
-**consent capture** at checkout and **selective per-benefit revocation** (today
-it's all-or-nothing per customer). Those are the upstream blockers for the button.
+**consent capture** at checkout, **order-scoped revocation** (today it's
+all-or-nothing per customer), and the **customer-facing case UI**.
 
 ---
 
 ## Plan
 
-### Phase 0 — Foundations
+Because the request is never gated, the button is **not** blocked on the legal
+read. Phase 1 ships a working request flow on its own; Phase 2 makes the merchant's
+decision an informed one.
 
-The button is the *last* thing built. These three remove the loophole and the
-risk before any customer can self-serve a refund.
+### Phase 0 — Foundations
 
 1. **Consent / waiver capture at checkout.**
    - Detect EU B2C (`is_business_customer` + billing country).
@@ -123,71 +135,102 @@ risk before any customer can self-serve a refund.
 2. **Unify an `accessed` predicate per benefit grant.** The grant already carries
    `granted_at` + external identity in `properties`; this just normalizes *what
    counts as access* per type:
-   - **Consumption-style** (downloadables, license keys): access = the discrete
-     event (download / activation), already tracked separately from the grant.
+   - **Consumption-style** (downloadables, license keys, meter credits): access =
+     the discrete event (download / activation / units consumed), tracked
+     separately from the grant.
    - **Provisioned-access** (Discord, GitHub, Slack): the grant *is* the
      supply-begun event — `granted_at` is the access signal, and revoke is real.
-   - **Custom**: fulfillment is merchant-defined, so `granted_at` is the only
-     signal Polar can assert; the policy engine treats it conservatively.
+   - **Custom and feature flag**: fulfillment is merchant-defined and both
+     strategies are grant/revoke no-ops, so `granted_at` is the only thing Polar
+     can assert — and it asserts almost nothing. A custom benefit may be a
+     thank-you note the customer sees the moment checkout completes; calling that
+     "accessed" and dropping the refund obligation would be wrong. **These two
+     types are excluded from the access read in v1.** Polar tells the merchant it
+     cannot see whether the customer used their purchase.
 
-3. **Selective benefit revocation** (merchant endpoint, per order/product) so a
-   refund pulls back exactly what was purchased, not everything the customer owns.
+3. **Order-scoped benefit revocation** (merchant endpoint) so a refund pulls back
+   everything granted through that order, and nothing the customer owns from
+   another one.
 
-### Phase 1 — The refund-request case
+### Phase 1 — The refund request
 
 4. Implement the `refund_request` case type, mirroring `dispute_case.py`: a
    `RefundRequestSupportCase` subclass with a FK to `order`, plus a handler service.
 5. Build the **customer-facing case UI** (net-new portal surface). This also
    unblocks customer-visible disputes later — the `customer` audience already
    exists in the model.
+6. Put the **request button** on the order in the portal, available to every
+   customer. It opens a `refund_request` case; it does not move money. The
+   merchant resolves the case, and approving runs the existing refund plus the
+   Phase 0.3 order-scoped revoke — still subject to `organization.can_refund` and
+   `order.refunds_blocked`, which already guard `refund/service.py:219`.
+   - For a subscription order, the request carries an explicit customer choice:
+     **"Cancel my subscription so I am not charged again."** A refund does not
+     imply cancellation by default, but someone invoking withdrawal usually wants
+     both — so ask rather than infer.
 
-### Phase 2 — The button + policy engine
+### Phase 2 — The advisory layer
 
-6. **Eligibility engine** computing `mandatory` vs `discretionary`:
-   `mandatory = EU_B2C AND within_14_days AND NOT (waived AND accessed)`.
-7. Surface the refund button to the customer **only when eligible**. On click it
-   opens a `refund_request` case, executes the refund, and revokes the
-   specific benefit. Gated behind `org.can_refund()` + Phase 0 in place.
+7. **Legal read** on the case, computed from jurisdiction, waiver state, access
+   state and days elapsed: `must_refund = EU_B2C AND within_14_days AND NOT
+   (waived AND accessed)`. Custom and feature flag benefits report *unknown*
+   access rather than a value.
+8. Surface it to the merchant **as a sentence on the case**, not as a gate:
+   *"Spain, B2C. Waiver accepted at checkout. No files downloaded. Within 14
+   days — you are required to refund."* The merchant still clicks the button.
+   Whether Polar should ever enforce this itself, as merchant of record, is left
+   open below.
 
 ### Phase 3 — Abuse controls
 
-8. **Per-customer refund metrics** — derivable today by filtering the refund
+9. **Per-customer refund metrics** — derivable today by filtering the refund
    table on `customer_id`; surface "N refund requests across your products."
-9. **Customer notes** (net-new field).
-10. **Email / card blocklist** — net-new, or lean on Stripe Radar + the existing
+10. **Customer notes** (net-new field).
+11. **Email / card blocklist** — net-new, or lean on Stripe Radar + the existing
     `fraudulent` refund reason (which already warns it blocks customers).
 
 ---
 
-## Happy-path decision
+## Always a case
 
-Record **every** customer-initiated refund as a `refund_request` case, even when/if
-it auto-resolves. It's cheap (the primitive exists) and the case history *is* the
-per-customer abuse signal Phase 3 needs. Auto-close on the happy path; keep the
-trail.
+Every customer-initiated refund goes through a `refund_request` case, including
+the ones a merchant approves in one click. It's cheap — the primitive exists —
+and the case history *is* the per-customer abuse signal Phase 3 needs. If a later
+version does add auto-approval for some merchants, it still writes the case and
+closes it; the trail survives the shortcut.
+
+## Settled
+
+- **Asking is never gated.** Every customer can open a request. Eligibility
+  shapes what Polar tells the merchant, not who gets a button.
+- **The 14-day clock starts at order paid** — conclusion of the contract.
+- **Revocation is order-scoped**, not per-benefit.
+- **Custom and feature flag benefits sit out the access read** in v1. Polar tells
+  the merchant it has no signal.
+- **The button is not merchant-toggleable.** A merchant cannot opt out of the law,
+  and cannot opt out of being asked.
+- **Refund does not imply cancellation.** The customer says so explicitly.
 
 ## Open questions
 
 <OpenQuestion>
-  **Custom** benefits only: Polar records the grant lifecycle and fires webhooks,
-  but cannot observe the merchant's actual access semantics. Do we require the
-  waiver **up front** before granting, or accept the refund liability? (Discord /
-  GitHub / Slack are fine — `granted_at` is the access signal and revoke hits the
-  external API.)
+  Should Polar ever **enforce** the refund rather than advise it? As merchant of
+  record Polar is the legal seller, so a strict reading says it can. v1 advises.
+  What would make us change that — repeat non-compliance by a merchant, a
+  regulator complaint, something else?
 </OpenQuestion>
 
 <OpenQuestion>
-  Subscriptions vs one-time: withdrawal applies to both, but the digital-goods
-  nuance is mostly one-time. Subscriptions already revoke on cancellation — does
-  the refund button only target one-time orders in v1?
+  **Does the waiver belong on subscriptions at all?** The withdrawal-right waiver
+  is written for digital *content* supplied in one go. A subscription is an
+  ongoing *service*, which is never "fully delivered on access" and carries its
+  own partial-refund rules for the part already consumed. Collecting the same
+  waiver on both may be wrong. Needs a legal answer before Phase 0 ships the
+  checkbox.
 </OpenQuestion>
 
 <OpenQuestion>
-  Where does the 14-day clock start — order paid date, or first access? (Legally:
-  conclusion of contract, i.e. order paid.)
-</OpenQuestion>
-
-<OpenQuestion>
-  Is the refund button merchant-toggleable, or always-on for EU B2C where
-  mandatory? (Leaning always-on where mandatory; merchant cannot opt out of the law.)
+  Related: should a withdrawal on a subscription produce a **prorated** refund for
+  the unused part of the period rather than a full one? Out of scope for v1, but
+  it changes what the request UI asks for.
 </OpenQuestion>

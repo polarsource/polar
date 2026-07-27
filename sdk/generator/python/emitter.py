@@ -85,6 +85,11 @@ class PythonEmitter(EmitterBase):
 
         for file in {
             (".zed", "settings.json"),
+            ("polar", "events", "__init__.py"),
+            ("polar", "events", "destination.py"),
+            ("polar", "events", "polar.py"),
+            ("polar", "events", "posthog.py"),
+            ("polar", "events", "types.py"),
             ("polar", "__init__.py"),
             (
                 "polar",
@@ -129,6 +134,9 @@ class PythonEmitter(EmitterBase):
             ("polar", "py.typed"),
             ("polar", "webhooks.py"),
             ("tests", "__init__.py"),
+            ("tests", "events", "test_polar.py"),
+            ("tests", "events", "test_posthog.py"),
+            ("tests", "events", "test_tracker.py"),
             ("tests", "test_base.py"),
             ("tests", "test_webhooks.py"),
             (".python-version",),

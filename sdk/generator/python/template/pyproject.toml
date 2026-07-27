@@ -20,6 +20,9 @@ dependencies = [
   "typing-extensions>=4.13.0",
 ]
 
+[project.optional-dependencies]
+posthog = ["posthog>=7.0.0"]
+
 [project.urls]
 homepage = "https://polar.sh"
 repository = "https://github.com/polarsource/polar/tree/main/sdk/python"

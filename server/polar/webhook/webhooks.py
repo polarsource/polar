@@ -85,6 +85,7 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.subscription_canceled], Subscription]
     | tuple[Literal[WebhookEventType.subscription_revoked], Subscription]
     | tuple[Literal[WebhookEventType.subscription_uncanceled], Subscription]
+    | tuple[Literal[WebhookEventType.subscription_cycled], Subscription]
     | tuple[Literal[WebhookEventType.subscription_past_due], Subscription]
     | tuple[Literal[WebhookEventType.refund_created], Refund]
     | tuple[Literal[WebhookEventType.refund_updated], Refund]
@@ -1011,7 +1012,7 @@ class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
 
     If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.
 
-    To listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.
+    To listen specifically for renewals, listen to `subscription.cycled`.
 
     **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.
     """
@@ -1127,6 +1128,25 @@ class WebhookSubscriptionUncanceledPayload(WebhookSubscriptionUpdatedPayloadBase
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
 
         return self._get_uncanceled_slack_payload(target)
+
+
+class WebhookSubscriptionCycledPayload(BaseWebhookPayload):
+    """
+    Sent when a subscription enters a new billing period.
+
+    The payload carries the new `current_period_start` and `current_period_end`.
+    It fires when the period rolls over, before the renewal order exists and
+    regardless of whether the renewal payment succeeds — listen to `order.paid`
+    if you need the payment.
+
+    A trial converting to a paid subscription starts a new period, so it fires
+    there too. Read `status` to tell the two apart.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.subscription_cycled]
+    data: SubscriptionSchema
 
 
 class WebhookSubscriptionRevokedPayload(WebhookSubscriptionUpdatedPayloadBase):
@@ -1520,6 +1540,7 @@ WebhookPayload = Annotated[
     | WebhookSubscriptionActivePayload
     | WebhookSubscriptionCanceledPayload
     | WebhookSubscriptionUncanceledPayload
+    | WebhookSubscriptionCycledPayload
     | WebhookSubscriptionRevokedPayload
     | WebhookSubscriptionPastDuePayload
     | WebhookSubscriptionPausedPayload

@@ -667,6 +667,15 @@ class WebhookService:
         self,
         session: AsyncSession,
         target: Organization,
+        event: Literal[WebhookEventType.subscription_cycled],
+        data: Subscription,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
         event: Literal[WebhookEventType.subscription_revoked],
         data: Subscription,
     ) -> list[WebhookEvent]: ...

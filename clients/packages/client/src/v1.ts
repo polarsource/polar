@@ -6366,7 +6366,7 @@ export interface webhooks {
      *
      *     If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.
      *
-     *     To listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.
+     *     To listen specifically for renewals, listen to `subscription.cycled`.
      *
      *     **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.
      */
@@ -6443,6 +6443,36 @@ export interface webhooks {
      *     **Discord & Slack support:** Full
      */
     post: operations['_endpointsubscription_uncanceled_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'subscription.cycled': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * subscription.cycled
+     * @description Sent when a subscription enters a new billing period.
+     *
+     *     The payload carries the new `current_period_start` and `current_period_end`.
+     *     It fires when the period rolls over, before the renewal order exists and
+     *     regardless of whether the renewal payment succeeds — listen to `order.paid`
+     *     if you need the payment.
+     *
+     *     A trial converting to a paid subscription starts a new period, so it fires
+     *     there too. Read `status` to tell the two apart.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointsubscription_cycled_post']
     delete?: never
     options?: never
     head?: never
@@ -35962,6 +35992,7 @@ export interface components {
       | 'subscription.active'
       | 'subscription.canceled'
       | 'subscription.uncanceled'
+      | 'subscription.cycled'
       | 'subscription.revoked'
       | 'subscription.past_due'
       | 'subscription.paused'
@@ -36318,6 +36349,34 @@ export interface components {
       data: components['schemas']['Subscription']
     }
     /**
+     * WebhookSubscriptionCycledPayload
+     * @description Sent when a subscription enters a new billing period.
+     *
+     *     The payload carries the new `current_period_start` and `current_period_end`.
+     *     It fires when the period rolls over, before the renewal order exists and
+     *     regardless of whether the renewal payment succeeds — listen to `order.paid`
+     *     if you need the payment.
+     *
+     *     A trial converting to a paid subscription starts a new period, so it fires
+     *     there too. Read `status` to tell the two apart.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookSubscriptionCycledPayload: {
+      /**
+       * Type
+       * @example subscription.cycled
+       * @constant
+       */
+      type: 'subscription.cycled'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Subscription']
+    }
+    /**
      * WebhookSubscriptionPastDuePayload
      * @description Sent when a subscription payment fails and the subscription enters `past_due` status.
      *
@@ -36440,7 +36499,7 @@ export interface components {
      *
      *     If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.
      *
-     *     To listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.
+     *     To listen specifically for renewals, listen to `subscription.cycled`.
      *
      *     **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.
      */
@@ -56437,6 +56496,39 @@ export interface operations {
       }
     }
   }
+  _endpointsubscription_cycled_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookSubscriptionCycledPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   _endpointsubscription_revoked_post: {
     parameters: {
       query?: never
@@ -66081,6 +66173,7 @@ export const webhookEventTypeValues: ReadonlyArray<
   'subscription.active',
   'subscription.canceled',
   'subscription.uncanceled',
+  'subscription.cycled',
   'subscription.revoked',
   'subscription.past_due',
   'subscription.paused',

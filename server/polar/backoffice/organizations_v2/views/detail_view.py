@@ -46,12 +46,14 @@ class OrganizationDetailView:
         impersonate_user: User | None = None,
         startup_program_status: str | None = None,
         has_open_case: bool = False,
+        has_risk_signals: bool = False,
     ):
         self.org = organization
         self.ai_verdict = ai_verdict
         self.owner_email = owner_email
         self.impersonate_user = impersonate_user
         self.has_open_case = has_open_case
+        self.has_risk_signals = has_risk_signals
         # Startup Program status string is derived via the Polar API and
         # populated by the endpoint; ``None`` means "feature disabled" OR
         # "not invited". The card collapses both into the same rendering.
@@ -102,6 +104,8 @@ class OrganizationDetailView:
                 )
                 + "?section=reviews",
                 active=current_section == "reviews",
+                dot=self.has_risk_signals,
+                badge_variant="error",
             ),
             Tab(
                 "Support Cases",
@@ -426,7 +430,9 @@ class OrganizationDetailView:
                                 text("Unblock & Approve")
 
                     elif self.org.status == OrganizationStatus.DENIED:
-                        # Denied organizations can be approved
+                        # Denied organizations can be approved or, for merchants
+                        # winding down after the fact, sent straight to
+                        # offboarding to release their remaining balance.
                         with tag.div(classes="w-full"):
                             with button(
                                 variant="secondary",
@@ -441,6 +447,21 @@ class OrganizationDetailView:
                                 hx_target="#modal",
                             ):
                                 text("Approve")
+
+                        with tag.div(classes="w-full"):
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:offboard_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Set Offboarding")
 
                         # Show "Deny Appeal" when there's a pending appeal
                         if (
@@ -670,7 +691,8 @@ class OrganizationDetailView:
                                 text("Deny")
 
                     elif self.org.status == OrganizationStatus.OFFBOARDING:
-                        # Offboarding can be reverted to review or denied
+                        # Offboarding can be reverted to review, denied, or
+                        # completed (moved to the terminal offboarded state).
                         with tag.div(classes="w-full"):
                             with button(
                                 variant="secondary",
@@ -685,6 +707,21 @@ class OrganizationDetailView:
                                 hx_target="#modal",
                             ):
                                 text("Set Under Review")
+
+                        with tag.div(classes="w-full"):
+                            with button(
+                                variant="secondary",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:offboarded_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Complete Offboarding")
 
                         with tag.div(classes="w-full"):
                             with button(
@@ -716,6 +753,17 @@ class OrganizationDetailView:
                                 hx_target="#modal",
                             ):
                                 text("Deny")
+
+                    elif self.org.status == OrganizationStatus.OFFBOARDED:
+                        with tag.div(
+                            classes="bg-base-200 border border-base-300 p-3 rounded-lg text-xs"
+                        ):
+                            with tag.p(classes="text-base-content/70"):
+                                text(
+                                    "Terminal state. New payments are blocked and "
+                                    "payouts are released so the merchant can "
+                                    "withdraw their remaining balance."
+                                )
 
                     # Always available actions
                     with tag.div(classes="divider my-2"):

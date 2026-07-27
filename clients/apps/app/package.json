@@ -97,6 +97,7 @@
     "@types/jest": "^29.5.14",
     "@types/react": "19.2.3",
     "@types/react-test-renderer": "^18.3.1",
+    "eas-cli": "^20.3.0",
     "eslint-config-expo": "~10.0.0",
     "jest": "^29.7.0",
     "jest-expo": "~54.0.16",

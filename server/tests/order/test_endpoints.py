@@ -7,8 +7,9 @@ import pytest_asyncio
 from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
+from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
-from polar.models import Customer, Order, Organization, Product, UserOrganization
+from polar.models import Customer, Order, Organization, Product, User, UserOrganization
 from polar.models.order import OrderStatus
 from polar.order.service import PaymentFailed, PaymentFailedReason
 from tests.fixtures.auth import AuthSubjectFixture
@@ -106,6 +107,37 @@ class TestListOrders:
         json = response.json()
         assert json["pagination"]["total_count"] == 2
 
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_read}))
+    async def test_organization_scoped_session(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        auth_subject: AuthSubject[User],
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+        orders: list[Order],
+        order_organization_second: Order,
+    ) -> None:
+        # Member of both organizations.
+        await save_fixture(
+            UserOrganization(user=user, organization=organization_second)
+        )
+
+        # Unscoped session sees orders from both organizations.
+        response = await client.get("/v1/orders/")
+        assert response.status_code == 200
+        assert response.json()["pagination"]["total_count"] == len(orders) + 1
+
+        # Down-scoping the session to one org hides the other org's orders.
+        auth_subject.organization_ids = frozenset({organization.id})
+        response = await client.get("/v1/orders/")
+        assert response.status_code == 200
+        returned_ids = {item["id"] for item in response.json()["items"]}
+        assert returned_ids == {str(order.id) for order in orders}
+        assert str(order_organization_second.id) not in returned_ids
+
 
 @pytest.mark.asyncio
 class TestGetOrder:
@@ -180,6 +212,33 @@ class TestGetOrder:
         json = response.json()
         assert json["custom_field_data"] == {"test": None}
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.orders_read}),
+    )
+    async def test_next_payment_attempt_at(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        next_attempt = datetime(2025, 6, 24, 14, 32, tzinfo=UTC)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=next_attempt,
+        )
+
+        response = await client.get(f"/v1/orders/{order.id}")
+
+        assert response.status_code == 200
+        assert response.json()[
+            "next_payment_attempt_at"
+        ] == next_attempt.isoformat().replace("+00:00", "Z")
+
 
 @pytest.mark.asyncio
 class TestExportOrders:
@@ -198,7 +257,7 @@ class TestExportOrders:
         assert response.headers["content-type"] == "text/csv; charset=utf-8"
         assert (
             response.headers["content-disposition"]
-            == "attachment; filename=polar-orders.csv"
+            == 'attachment; filename="polar-orders.csv"'
         )
 
         # Should only have header row since user is not a member
@@ -224,7 +283,7 @@ class TestExportOrders:
         assert response.headers["content-type"] == "text/csv; charset=utf-8"
         assert (
             response.headers["content-disposition"]
-            == "attachment; filename=polar-orders.csv"
+            == 'attachment; filename="polar-orders.csv"'
         )
 
         csv_lines = response.text.strip().split("\r\n")

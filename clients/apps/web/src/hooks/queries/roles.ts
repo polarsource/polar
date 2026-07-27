@@ -18,4 +18,3 @@ export const useOrganizationRoles = (organizationId: string | undefined) =>
   })
 
 export type OrganizationPermission = schemas['OrganizationPermission']
-export type OrganizationRoleDefinition = schemas['OrganizationRoleDefinition']

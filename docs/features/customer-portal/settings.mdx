@@ -10,13 +10,13 @@ All Customer Portal settings live under [**Settings → Customer portal**](https
 
 Adds a **Usage** tab to the Customer Portal where customers can see their current consumption for each meter on their subscription.
 
-This is only relevant if you've configured [meters](/features/usage-based-billing/meters) on your products. Disabling this toggle hides usage from the portal UI but has no effect on the Customer Portal API — if you're building a custom usage surface in your own app, the [customer meters endpoints](/api-reference/customer-meters/list) continue to work regardless.
+This is only relevant if you've configured [meters](/features/usage-based-billing/meters) on your products. Disabling this toggle hides usage from the portal UI but has no effect on the Customer Portal API — if you're building a custom usage surface in your own app, the [customer meters endpoints](/api-reference/customer_meters/list-customer-meters) continue to work regardless.
 
 ## Enable subscription seat management
 
 Allows customers to change the number of seats on their active subscription, and to assign or revoke seats for their teammates, directly from the portal.
 
-This setting is only relevant when you offer [seat-based prices](/features/seat-based-pricing). If you disable it, customers can't change seat counts or manage assignments from the portal — you'll need to build that flow yourself against the [Customer Seats API](/api-reference/customer-seats/assign).
+This setting is only relevant when you offer [seat-based prices](/features/seat-based-pricing). If you disable it, customers can't change seat counts or manage assignments from the portal — you'll need to build that flow yourself against the [Customer Seats API](/api-reference/customer-seats/assign-seat).
 
 ## Allow email address changes
 
@@ -24,7 +24,7 @@ Gives customers the option to change the email address associated with their cus
 
 <Note>
   When this is enabled, you'll probably want to listen for the
-  [`customer.updated`](/api-reference/webhooks/customer.updated) webhook and
+  [`customer.updated`](/api-reference/customerupdated) webhook and
   sync the new email back into your own user system, so the two stay in sync.
 </Note>
 
@@ -32,4 +32,4 @@ Gives customers the option to change the email address associated with their cus
 
 Lets customers switch between products on their own — upgrading, downgrading, or moving to a different plan entirely — without contacting you.
 
-Plan changes follow your [proration settings](/features/subscriptions/proration). If you'd rather handle plan changes yourself (for example, because you gate them behind custom logic in your app), disable this and drive updates through the [Update Subscription](/api-reference/subscriptions/update) endpoint instead.
+Plan changes follow your [proration settings](/features/subscriptions/proration). If you'd rather handle plan changes yourself (for example, because you gate them behind custom logic in your app), disable this and drive updates through the [Update Subscription](/api-reference/subscriptions/update-subscription) endpoint instead.

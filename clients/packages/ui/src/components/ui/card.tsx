@@ -35,39 +35,6 @@ const CardHeader = ({
 )
 CardHeader.displayName = 'CardHeader'
 
-const CardTitle = ({
-  ref,
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement> & {
-  ref?: React.RefObject<HTMLDivElement>
-}) => (
-  <div
-    ref={ref}
-    className={cn(
-      'text-2xl leading-none font-semibold tracking-tight',
-      className,
-    )}
-    {...props}
-  />
-)
-CardTitle.displayName = 'CardTitle'
-
-const CardDescription = ({
-  ref,
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement> & {
-  ref?: React.RefObject<HTMLDivElement>
-}) => (
-  <div
-    ref={ref}
-    className={cn('text-muted-foreground text-sm', className)}
-    {...props}
-  />
-)
-CardDescription.displayName = 'CardDescription'
-
 const CardContent = ({
   ref,
   className,
@@ -77,19 +44,4 @@ const CardContent = ({
 }) => <div ref={ref} className={cn('p-6 pt-0', className)} {...props} />
 CardContent.displayName = 'CardContent'
 
-const CardFooter = ({
-  ref,
-  className,
-  ...props
-}: React.HTMLAttributes<HTMLDivElement> & {
-  ref?: React.RefObject<HTMLDivElement>
-}) => (
-  <div
-    ref={ref}
-    className={cn('flex items-center p-6 pt-0', className)}
-    {...props}
-  />
-)
-CardFooter.displayName = 'CardFooter'
-
-export { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
+export { Card, CardContent, CardHeader }

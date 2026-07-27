@@ -20,7 +20,7 @@ const makeApi = (
   }) as unknown as Client
 
 const makeAuthenticationSession = (
-  available_factors: schemas['Factor'][],
+  available_factors: schemas['AuthenticationSession']['available_factors'],
 ): schemas['AuthenticationSession'] =>
   ({
     available_factors,
@@ -57,14 +57,16 @@ describe('getAuthenticationSessionRedirectPath', () => {
 
   it('redirects to TOTP when available', () => {
     expect(
-      getAuthenticationSessionRedirectPath(makeAuthenticationSession(['totp'])),
+      getAuthenticationSessionRedirectPath(
+        makeAuthenticationSession([{ type: 'totp' }]),
+      ),
     ).toBe('/auth/totp')
   })
 
   it('redirects to backup codes when that is the only available step-1 factor', () => {
     expect(
       getAuthenticationSessionRedirectPath(
-        makeAuthenticationSession(['backup_codes']),
+        makeAuthenticationSession([{ type: 'backup_codes' }]),
       ),
     ).toBe('/auth/backup-codes')
   })
@@ -72,7 +74,7 @@ describe('getAuthenticationSessionRedirectPath', () => {
   it('prioritizes TOTP when both TOTP and backup codes are available', () => {
     expect(
       getAuthenticationSessionRedirectPath(
-        makeAuthenticationSession(['backup_codes', 'totp']),
+        makeAuthenticationSession([{ type: 'backup_codes' }, { type: 'totp' }]),
       ),
     ).toBe('/auth/totp')
   })

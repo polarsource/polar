@@ -67,8 +67,6 @@ export const scopes = [
   'openid',
   'orders:read',
   'orders:write',
-  'organization_access_tokens:read',
-  'organization_access_tokens:write',
   'organizations:read',
   'organizations:write',
   'payments:read',

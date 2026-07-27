@@ -2,8 +2,7 @@ import pytest
 from sqlalchemy import select
 from sqlalchemy.exc import IntegrityError
 
-from polar.models import OrganizationReview
-from polar.models.file import File, FileServiceTypes
+from polar.models.file import FileServiceTypes
 from polar.models.organization import Organization
 from polar.models.support_case import (
     ReviewAppealSupportCase,
@@ -20,36 +19,10 @@ from polar.postgres import AsyncSession
 from polar.support_case.repository import SupportCaseMessageRepository
 from polar.support_case.service import support_case as support_case_service
 from tests.fixtures.database import SaveFixture
-
-
-async def _attachment_file(
-    save_fixture: SaveFixture, organization: Organization
-) -> File:
-    file = File(
-        organization_id=organization.id,
-        name="evidence.pdf",
-        path="evidence.pdf",
-        mime_type="application/pdf",
-        size=1,
-        service=FileServiceTypes.support_case_attachment,
-    )
-    await save_fixture(file)
-    return file
-
-
-async def _review(
-    save_fixture: SaveFixture, organization: Organization
-) -> OrganizationReview:
-    review = OrganizationReview(
-        organization_id=organization.id,
-        verdict=OrganizationReview.Verdict.FAIL,
-        risk_score=90.0,
-        violated_sections=[],
-        reason="denied",
-        model_used="test",
-    )
-    await save_fixture(review)
-    return review
+from tests.fixtures.random_objects import (
+    create_organization_review,
+    create_support_case_attachment_file,
+)
 
 
 @pytest.mark.asyncio
@@ -72,7 +45,7 @@ class TestParticipantUniqueness:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        review = await _review(save_fixture, organization)
+        review = await create_organization_review(save_fixture, organization)
         case = ReviewAppealSupportCase(
             organization_review=review, organization=organization
         )
@@ -105,7 +78,9 @@ class TestAddAttachment:
         organization: Organization,
     ) -> None:
         case = ReviewAppealSupportCase(
-            organization_review=await _review(save_fixture, organization),
+            organization_review=await create_organization_review(
+                save_fixture, organization
+            ),
             organization=organization,
         )
         await save_fixture(case)
@@ -115,7 +90,7 @@ class TestAddAttachment:
             author_kind=SupportCaseMessageAuthorKind.merchant,
             audience=[SupportCaseAudience.merchant],
         )
-        file = await _attachment_file(save_fixture, organization)
+        file = await create_support_case_attachment_file(save_fixture, organization)
 
         attachment = await support_case_service.add_attachment(
             session,
@@ -135,11 +110,13 @@ class TestAddAttachment:
         organization: Organization,
     ) -> None:
         case = ReviewAppealSupportCase(
-            organization_review=await _review(save_fixture, organization),
+            organization_review=await create_organization_review(
+                save_fixture, organization
+            ),
             organization=organization,
         )
         await save_fixture(case)
-        file = await _attachment_file(save_fixture, organization)
+        file = await create_support_case_attachment_file(save_fixture, organization)
 
         attachment = await support_case_service.add_attachment(session, case, file=file)
         assert attachment.message_id is None
@@ -156,12 +133,16 @@ class TestAttachmentCaseConsistency:
         organization_second: Organization,
     ) -> None:
         case_a = ReviewAppealSupportCase(
-            organization_review=await _review(save_fixture, organization),
+            organization_review=await create_organization_review(
+                save_fixture, organization
+            ),
             organization=organization,
         )
         await save_fixture(case_a)
         case_b = ReviewAppealSupportCase(
-            organization_review=await _review(save_fixture, organization_second),
+            organization_review=await create_organization_review(
+                save_fixture, organization_second
+            ),
             organization=organization_second,
         )
         await save_fixture(case_b)
@@ -174,15 +155,9 @@ class TestAttachmentCaseConsistency:
         )
         await save_fixture(message_a)
 
-        file = File(
-            organization_id=organization.id,
-            name="evidence.pdf",
-            path="evidence.pdf",
-            mime_type="application/pdf",
-            size=1,
-            service=FileServiceTypes.downloadable,
+        file = await create_support_case_attachment_file(
+            save_fixture, organization, service=FileServiceTypes.downloadable
         )
-        await save_fixture(file)
 
         # An attachment on case_b pointing at a message that lives in case_a.
         # message_id stays scalar: the composite (case_id, message_id) FK is the
@@ -215,7 +190,9 @@ class TestAwaitingPlatformExpression:
         organization: Organization,
     ) -> None:
         case = ReviewAppealSupportCase(
-            organization_review=await _review(save_fixture, organization),
+            organization_review=await create_organization_review(
+                save_fixture, organization
+            ),
             organization=organization,
         )
         await save_fixture(case)

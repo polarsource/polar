@@ -3,16 +3,21 @@ import { Pill } from '@polar-sh/orbit'
 import { CircleX, Clock } from 'lucide-react'
 import { useMemo } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { subscriptionStatusDisplayNames } from './utils'
+import {
+  getSubscriptionStatusBorderColor,
+  subscriptionStatusDisplayNames,
+} from './utils'
 
 const StatusLabel = ({
   color,
   dt,
+  eventLabel,
   icon,
   children,
 }: {
   color: string
   dt?: string | null
+  eventLabel?: string
   icon?: React.ReactNode
   children: React.ReactNode
 }) => {
@@ -41,7 +46,11 @@ const StatusLabel = ({
       {prettyEventDate && (
         <Pill color="gray">
           {icon}
-          <span>{prettyEventDate}</span>
+          <span>
+            {eventLabel
+              ? `${eventLabel} on ${prettyEventDate}`
+              : prettyEventDate}
+          </span>
         </Pill>
       )}
     </div>
@@ -53,31 +62,63 @@ export const SubscriptionStatus = ({
 }: {
   subscription: schemas['Subscription']
 }) => {
-  const { status, ends_at } = subscription
+  const {
+    status,
+    ends_at,
+    pause_at_period_end,
+    resumes_at,
+    current_period_end,
+  } = subscription
   const isEnding = useMemo(() => ends_at !== null, [ends_at])
 
-  const color = useMemo(() => {
-    if (status === 'active') {
-      return isEnding ? 'border-yellow-500' : 'border-emerald-500'
+  const color = useMemo(
+    () =>
+      getSubscriptionStatusBorderColor(status, isEnding || pause_at_period_end),
+    [status, isEnding, pause_at_period_end],
+  )
+
+  // A scheduled cancellation takes precedence; otherwise surface the pause
+  // schedule — when a paused sub resumes, or when an active sub will pause.
+  const { eventDate, eventLabel } = useMemo<{
+    eventDate: string | null
+    eventLabel?: string
+  }>(() => {
+    if (isEnding) {
+      return { eventDate: ends_at }
     }
-    if (status === 'trialing') {
-      return 'border-cyan-500'
+    if (status === 'paused') {
+      return { eventDate: resumes_at, eventLabel: 'Resumes' }
     }
-    return 'border-red-500'
-  }, [status, isEnding])
+    if (pause_at_period_end) {
+      return { eventDate: current_period_end, eventLabel: 'Pauses' }
+    }
+    return { eventDate: null }
+  }, [
+    isEnding,
+    ends_at,
+    status,
+    resumes_at,
+    pause_at_period_end,
+    current_period_end,
+  ])
 
   const icon = useMemo(() => {
-    if (!isEnding) {
-      return null
-    }
     if (status === 'canceled') {
       return <CircleX className="size-3" />
     }
-    return <Clock className="size-3" />
-  }, [isEnding, status])
+    if (eventDate) {
+      return <Clock className="size-3" />
+    }
+    return null
+  }, [status, eventDate])
 
   return (
-    <StatusLabel color={color} dt={ends_at} icon={icon}>
+    <StatusLabel
+      color={color}
+      dt={eventDate}
+      eventLabel={eventLabel}
+      icon={icon}
+    >
       {subscriptionStatusDisplayNames[subscription.status]}
     </StatusLabel>
   )

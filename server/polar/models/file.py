@@ -1,6 +1,6 @@
 from datetime import datetime
 from enum import StrEnum
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 from uuid import UUID
 
 from sqlalchemy import (
@@ -11,6 +11,7 @@ from sqlalchemy import (
     String,
     Uuid,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
     Mapped,
     declared_attr,
@@ -49,7 +50,7 @@ class File(RecordModel):
 
     name: Mapped[str] = mapped_column(String, nullable=False)
     version: Mapped[str | None] = mapped_column(String, nullable=True)
-    path: Mapped[str] = mapped_column(String, nullable=False)
+    path: Mapped[str] = mapped_column(String, nullable=False, index=True)
     mime_type: Mapped[str] = mapped_column(String, nullable=False)
     size: Mapped[int] = mapped_column(BigInteger, nullable=False)
 
@@ -69,6 +70,13 @@ class File(RecordModel):
 
     # Flag for Polar to disable consumption of file
     is_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
+    flagged_malicious_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    flagged_malicious_details: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB, nullable=True, default=None
+    )
 
     __mapper_args__ = {
         "polymorphic_on": "service",

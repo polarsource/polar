@@ -80,6 +80,18 @@ class TestReceiptGenerator:
         assert len(output) > 100
         assert bytes(output).startswith(b"%PDF-")
 
+    def test_renders_with_markdown_markers_in_customer_info(self) -> None:
+        receipt = _build_receipt().model_copy(
+            update={"customer_additional_info": "john__doe__1@example.com"}
+        )
+        generator = ReceiptGenerator(
+            receipt, heading_title="Receipt", add_sandbox_warning=False
+        )
+        generator.generate()
+        output = generator.output()
+
+        assert bytes(output).startswith(b"%PDF-")
+
     def test_renders_with_refunds(self) -> None:
         now = utc_now()
         receipt = _build_receipt(

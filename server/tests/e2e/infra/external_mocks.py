@@ -93,6 +93,7 @@ def mock_tax_calculation(mocker: MockerFixture) -> MagicMock:
     mock = MagicMock(spec=TaxCalculationService)
     mocker.patch("polar.checkout.service.tax_calculation_service", new=mock)
     mocker.patch("polar.order.service.tax_calculation_service", new=mock)
+    mocker.patch("polar.order.amounts.tax_calculation_service", new=mock)
     mock.calculate.return_value = (
         {
             "processor_id": "TAX_E2E_TEST",

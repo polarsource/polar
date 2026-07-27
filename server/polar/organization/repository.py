@@ -1,3 +1,4 @@
+import typing
 from collections.abc import Sequence
 from datetime import datetime
 from uuid import UUID
@@ -29,6 +30,7 @@ from polar.models.discount import (
     DiscountPercentage,
     DiscountType,
 )
+from polar.models.order import OrderStatus
 from polar.models.organization import (
     OrganizationCapabilities,
     OrganizationStatus,
@@ -44,6 +46,20 @@ from .sorting import OrganizationSortProperty
 # transaction size when many time-based snoozes expire in the same window.
 UNSNOOZE_EXPIRED_BATCH_SIZE = 500
 
+# Maximum orgs the auto-offboard cron processes per run.
+OFFBOARD_EXPIRED_BATCH_SIZE = 500
+
+# Maximum orgs the subscription-cancellation cron processes per run.
+CANCEL_SUBSCRIPTIONS_BATCH_SIZE = 500
+
+# ``offboarded``, not ``offboarding``: offboarding intentionally keeps renewals
+# on during the wind-down, so subscriptions are only cancelled once it completes.
+SUBSCRIPTION_CANCELLATION_STATUSES = (
+    OrganizationStatus.DENIED,
+    OrganizationStatus.BLOCKED,
+    OrganizationStatus.OFFBOARDED,
+)
+
 
 class OrganizationRepository(
     RepositorySortingMixin[Organization, OrganizationSortProperty],
@@ -53,6 +69,7 @@ class OrganizationRepository(
 ):
     model = Organization
 
+    @typing.overload
     async def get_by_id(
         self,
         id: UUID,
@@ -60,6 +77,30 @@ class OrganizationRepository(
         options: Options = (),
         include_deleted: bool = False,
         include_blocked: bool = False,
+        for_update: typing.Literal[False] = False,
+    ) -> Organization | None: ...
+
+    @typing.overload
+    async def get_by_id(
+        self,
+        id: UUID,
+        *,
+        options: Options = (),
+        include_deleted: bool = False,
+        include_blocked: bool = False,
+        for_update: typing.Literal[True],
+        nowait: bool = False,
+    ) -> Organization | None: ...
+
+    async def get_by_id(
+        self,
+        id: UUID,
+        *,
+        options: Options = (),
+        include_deleted: bool = False,
+        include_blocked: bool = False,
+        for_update: bool = False,
+        nowait: bool = False,
     ) -> Organization | None:
         statement = (
             self.get_base_statement(include_deleted=include_deleted)
@@ -69,6 +110,9 @@ class OrganizationRepository(
 
         if not include_blocked:
             statement = statement.where(self.model.status != OrganizationStatus.BLOCKED)
+
+        if for_update:
+            statement = statement.with_for_update(of=self.model, nowait=nowait)
 
         return await self.get_one_or_none(statement)
 
@@ -181,6 +225,99 @@ class OrganizationRepository(
             .limit(limit)
         )
         return await self.get_all(statement)
+
+    async def get_offboarding_past_period(
+        self, cutoff: datetime, *, limit: int = OFFBOARD_EXPIRED_BATCH_SIZE
+    ) -> Sequence[Organization]:
+        """Offboarding orgs whose offboarding period has elapsed.
+
+        Anchor = the later of (a) the most recent paid order that hasn't been
+        fully refunded — the post-chargeback-risk window, and (b) when the org
+        entered offboarding (``status_updated_at``) — the merchant wind-down
+        floor. Both gates must clear, so a merchant freshly put into
+        offboarding always gets the full wind-down period even if their last
+        payment is already past the chargeback window. Orgs with no paid
+        orders use ``status_updated_at`` alone (PostgreSQL ``GREATEST`` skips
+        NULLs).
+
+        ``FOR UPDATE`` on the org row: a concurrent admin status change either
+        commits before our SELECT (and the row falls out of the WHERE clause)
+        or waits behind our lock — eliminating the read/transition race.
+        """
+        last_paid_order_at = (
+            select(func.max(Order.created_at))
+            .where(
+                Order.organization_id == Organization.id,
+                Order.status.in_(OrderStatus.paid_statuses()),
+                Order.deleted_at.is_(None),
+            )
+            .correlate(Organization)
+            .scalar_subquery()
+        )
+        anchor = func.greatest(last_paid_order_at, Organization.status_updated_at)
+        statement = (
+            self.get_base_statement()
+            .where(
+                Organization.status == OrganizationStatus.OFFBOARDING,
+                anchor <= cutoff,
+            )
+            .order_by(anchor.asc())
+            .limit(limit)
+            .with_for_update(of=Organization)
+        )
+        return await self.get_all(statement)
+
+    async def get_status_cancellation_expired(
+        self, cutoff: datetime, *, limit: int = CANCEL_SUBSCRIPTIONS_BATCH_SIZE
+    ) -> Sequence[Organization]:
+        """Orgs denied, blocked, or offboarded past the cutoff that still have a
+        billable subscription to cancel.
+
+        The ``EXISTS`` gate makes the scan idempotent: once an org's
+        subscriptions are all cancelled it drops out and is not re-enqueued.
+        Falls back to ``created_at`` when ``status_updated_at`` is unset, so a
+        terminal org with a legacy null timestamp is still wound down.
+        """
+        has_billable_subscription = (
+            select(Subscription.id)
+            .where(
+                Subscription.organization_id == Organization.id,
+                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                Subscription.ended_at.is_(None),
+                Subscription.deleted_at.is_(None),
+            )
+            .correlate(Organization)
+            .exists()
+        )
+        status_entered_at = func.coalesce(
+            Organization.status_updated_at, Organization.created_at
+        )
+        statement = (
+            self.get_base_statement()
+            .where(
+                Organization.status.in_(SUBSCRIPTION_CANCELLATION_STATUSES),
+                status_entered_at <= cutoff,
+                has_billable_subscription,
+            )
+            .order_by(status_entered_at.asc())
+            .limit(limit)
+        )
+        return await self.get_all(statement)
+
+    async def get_last_paid_order_at(self, organization_id: UUID) -> datetime | None:
+        """Most recent paid (not fully refunded) order date for an org.
+
+        Same chargeback-risk anchor as ``get_offboarding_past_period``, but for
+        a single organization — lets the backoffice surface how much of the
+        offboarding wind-down period remains before an auto-offboard.
+        """
+        statement = select(func.max(Order.created_at)).where(
+            Order.organization_id == organization_id,
+            Order.status.in_(OrderStatus.paid_statuses()),
+            Order.deleted_at.is_(None),
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none()
 
     def get_sorting_clause(self, property: OrganizationSortProperty) -> SortingClause:
         match property:

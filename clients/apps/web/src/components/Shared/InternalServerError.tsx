@@ -32,6 +32,7 @@ export default function InternalServerError({ digest }: { digest?: string }) {
           <a
             href="https://polar.sh/docs"
             className="dark:hover:text-polar-300 block p-1 hover:text-gray-700 hover:underline"
+            rel="noopener noreferrer"
           >
             Documentation
           </a>

@@ -45,7 +45,7 @@ export const DecisionMessage = ({ message, organization }: Props) => {
                 ) : (
                   <X className="h-4 w-4 shrink-0 text-red-500" />
                 )}
-                <Text as="strong">
+                <Text variant="title">
                   Appeal {approved ? 'approved' : 'denied'}
                 </Text>
               </Box>

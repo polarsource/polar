@@ -24,6 +24,61 @@ VERDICT_BADGE: dict[str, str] = {
     "NEEDS_HUMAN_REVIEW": "badge-warning",
 }
 
+# Short label for each ReviewContext value (the review trigger)
+REVIEW_CONTEXT_LABELS: dict[str, str] = {
+    "submission": "Submission",
+    "threshold": "Threshold",
+    "manual": "Manual",
+    "appeal": "Appeal",
+    "product_changed": "Product Changed",
+}
+
+# Human-readable explanation of why each review trigger fires
+REVIEW_CONTEXT_REASONS: dict[str, str] = {
+    "submission": "First automated review, run when the organization submitted its details.",
+    "threshold": "Run after the organization crossed a payment volume threshold.",
+    "manual": "Triggered manually by a reviewer from the backoffice.",
+    "appeal": "Re-review requested through an appeal of a previous denial.",
+    "product_changed": (
+        "An active organization created or updated a product, "
+        "which can change its risk profile."
+    ),
+}
+
+
+def review_context_label(review_type: str | None) -> str | None:
+    """Short display label for a review trigger context."""
+    if not review_type:
+        return None
+    return REVIEW_CONTEXT_LABELS.get(review_type, review_type.replace("_", " ").title())
+
+
+def review_context_reason(review_type: str | None) -> str | None:
+    """Human-readable explanation of why the review was triggered."""
+    if not review_type:
+        return None
+    return REVIEW_CONTEXT_REASONS.get(review_type)
+
+
+def render_review_context_badge(review_type: str | None) -> None:
+    """Render the review trigger badge with the reason as a hover tooltip."""
+    label = review_context_label(review_type)
+    if label is None:
+        return
+    reason = review_context_reason(review_type)
+    if reason:
+        with tag.div(
+            classes="tooltip before:whitespace-pre-line before:text-left before:max-w-xs",
+            data_tip=reason,
+        ):
+            with tag.span(
+                classes="badge badge-ghost badge-sm badge-outline gap-1 cursor-help"
+            ):
+                text(label)
+    else:
+        with tag.div(classes="badge badge-ghost badge-sm badge-outline gap-1"):
+            text(label)
+
 
 def render_checklist_row(label: str, is_set: bool, value: str | None) -> None:
     """Render a single checklist row with a green/red status dot."""

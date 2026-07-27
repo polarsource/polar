@@ -4,7 +4,6 @@ import { toast } from '@/components/Toast/use-toast'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganization, useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { getQueryClient } from '@/utils/api/query'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
@@ -72,16 +71,13 @@ export const ProductUrlSection = ({
     }
 
     reset({ website: data.website ?? '' })
-    getQueryClient().invalidateQueries({
-      queryKey: ['organizationReviewState', organization.id],
-    })
   }
 
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit(onSubmit)}>
         <SectionLayout
-          description="What's the landing page for this product?"
+          description="Where can customers learn about your product or business?"
           footerEnd={
             <Button
               type="submit"

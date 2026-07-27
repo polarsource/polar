@@ -86,6 +86,18 @@ class RefundReason(StrEnum):
         return "requested_by_customer"
 
 
+# Reasons a human may pick when creating a refund. `dispute_prevention` is
+# excluded: it's reserved for system-generated refunds.
+ManualRefundReason = Literal[
+    RefundReason.duplicate,
+    RefundReason.fraudulent,
+    RefundReason.customer_request,
+    RefundReason.service_disruption,
+    RefundReason.satisfaction_guarantee,
+    RefundReason.other,
+]
+
+
 class RefundFailureReason(StrEnum):
     unknown = "unknown"
     declined = "declined"

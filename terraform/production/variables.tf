@@ -27,6 +27,12 @@ variable "google_client_secret_production" {
   sensitive   = true
 }
 
+variable "google_service_account_json" {
+  description = "Google service account JSON key for fetching the organization review AUP"
+  type        = string
+  sensitive   = true
+}
+
 # OpenAI
 variable "openai_api_key_production" {
   description = "OpenAI API Key for production"
@@ -232,6 +238,13 @@ variable "stripe_webhook_secret_production" {
   sensitive   = true
 }
 
+variable "stripe_account_risk_webhook_secret_production" {
+  description = "Stripe Account Risk Webhook Secret for production"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 # Logfire
 variable "logfire_token" {
   description = "Logfire Token"
@@ -404,6 +417,12 @@ variable "tailscale_advertise_routes" {
   type        = string
 }
 
+variable "lambda_worker_tailscale_token" {
+  description = "Tailscale auth token for production Lambda workers"
+  type        = string
+  sensitive   = true
+}
+
 variable "plain_default_tier_external_id" {
   description = "Default Plain tier external ID used as a fallback for the polar-self support benefit"
   type        = string
@@ -499,6 +518,30 @@ variable "next_public_apple_domain_association" {
 
 variable "next_public_stripe_payment_method_configuration" {
   description = "Stripe payment method configuration ID for the Vercel frontend"
+  type        = string
+  sensitive   = true
+}
+
+variable "worker_sqs_actors" {
+  description = "JSON array of Dramatiq actor names routed to the SQS execution engine"
+  type        = string
+  default     = "[\"dummy\"]"
+}
+
+variable "stripe_app_client_id" {
+  description = "Stripe App OAuth client ID"
+  type        = string
+  default     = ""
+}
+
+variable "stripe_app_client_link_id" {
+  description = "Stripe App OAuth client link ID"
+  type        = string
+  default     = ""
+}
+
+variable "turnstile_secret" {
+  description = "Cloudflare Turnstile secret"
   type        = string
   sensitive   = true
 }

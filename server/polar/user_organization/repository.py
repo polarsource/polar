@@ -24,6 +24,17 @@ class UserOrganizationRepository:
     def from_session(cls, session: AsyncSession | AsyncReadSession) -> Self:
         return cls(session)
 
+    async def get_by_user_and_organization(
+        self, user_id: UUID, organization_id: UUID
+    ) -> UserOrganization | None:
+        statement = select(UserOrganization).where(
+            UserOrganization.user_id == user_id,
+            UserOrganization.organization_id == organization_id,
+            UserOrganization.is_deleted.is_(False),
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none()
+
     async def get_organizations_with_role(
         self, user_id: UUID
     ) -> Sequence[tuple[Organization, OrganizationRole]]:

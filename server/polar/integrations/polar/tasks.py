@@ -1,16 +1,11 @@
 import uuid
 from datetime import timedelta
 from decimal import Decimal
-from typing import Any
 
 from dramatiq import Retry
-from polar_sdk.models import (
-    WebhookBenefitGrantCreatedPayload,
-    WebhookBenefitGrantRevokedPayload,
-    WebhookBenefitGrantUpdatedPayload,
-    WebhookOrderCreatedPayload,
-)
 
+from polar import deserialize
+from polar.base import PolarClientError
 from polar.config import settings
 from polar.event.repository import EventRepository
 from polar.external_event.service import external_event as external_event_service
@@ -18,6 +13,17 @@ from polar.integrations.plain.service import plain as plain_service
 from polar.integrations.tinybird.service import count_user_events_by_organization
 from polar.kit.utils import utc_now
 from polar.models.external_event import ExternalEventSource
+from polar.models.member import MemberRole
+from polar.v2026_04.errors import ResourceNotFound
+from polar.v2026_04.webhooks import (
+    WebhookBenefitGrantCreatedPayload,
+    WebhookBenefitGrantRevokedPayload,
+    WebhookBenefitGrantUpdatedPayload,
+    WebhookOrderCreatedPayload,
+    WebhookSubscriptionCanceledPayload,
+    WebhookSubscriptionPastDuePayload,
+    WebhookSubscriptionRevokedPayload,
+)
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
@@ -66,15 +72,17 @@ async def create_customer(
 
 @actor(actor_name="polar_self.add_member", priority=TaskPriority.LOW)
 async def add_member(
-    external_customer_id: str, email: str, name: str, external_id: str
+    external_customer_id: str,
+    email: str,
+    name: str,
+    external_id: str,
+    role: str = MemberRole.member.value,
 ) -> None:
-    from polar_sdk.models.polarerror import PolarError
-
     client = get_client()
     try:
         customer = await client.get_customer_by_external_id(external_customer_id)
-    except PolarError as e:
-        if e.status_code == 404 and can_retry():
+    except ResourceNotFound as e:
+        if can_retry():
             raise Retry(delay=1000) from e
         raise
 
@@ -83,6 +91,7 @@ async def add_member(
         email=email,
         name=name,
         external_id=external_id,
+        role=role,
     )
     await plain_service.upsert_customer(
         external_id=external_id,
@@ -109,22 +118,20 @@ async def update_customer_slug(external_id: str, slug: str) -> None:
     customer = await client.get_customer_by_external_id_or_none(external_id)
     if customer is None:
         return
-    metadata: dict[str, Any] = dict(customer.metadata) if customer.metadata else {}
+    metadata = dict(customer.metadata) if customer.metadata else {}
     metadata["slug"] = slug
     await client.update_customer_metadata(external_id=external_id, metadata=metadata)
 
 
 @actor(actor_name="polar_self.remove_member", priority=TaskPriority.LOW)
 async def remove_member(external_customer_id: str, external_id: str) -> None:
-    from polar_sdk.models.polarerror import PolarError
-
     client = get_client()
     try:
         await client.get_member_by_external_id(
             external_customer_id=external_customer_id,
             external_id=external_id,
         )
-    except PolarError as e:
+    except PolarClientError as e:
         if e.status_code == 404 and can_retry():
             raise Retry(delay=1000) from e
         if e.status_code == 404:
@@ -195,13 +202,37 @@ async def track_organization_review_usage(
     )
 
 
+@actor(
+    actor_name="polar_self.track_compass_assistant_usage",
+    priority=TaskPriority.LOW,
+)
+async def track_compass_assistant_usage(
+    external_customer_id: str,
+    vendor: str,
+    model: str,
+    input_tokens: int,
+    output_tokens: int,
+    cost_usd: str,
+    usage_id: str,
+) -> None:
+    await get_client().track_compass_assistant_usage(
+        external_customer_id=external_customer_id,
+        vendor=vendor,
+        model=model,
+        input_tokens=input_tokens,
+        output_tokens=output_tokens,
+        cost_usd=Decimal(cost_usd),
+        usage_id=usage_id,
+    )
+
+
 @actor(actor_name="polar_self.webhook.benefit_grant.created", priority=TaskPriority.LOW)
 async def webhook_benefit_grant_created(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle(
             session, ExternalEventSource.polar, event_id
         ) as event:
-            payload = WebhookBenefitGrantCreatedPayload.model_validate(event.data)
+            payload = deserialize(event.data, WebhookBenefitGrantCreatedPayload)
             await polar_self.handle_benefit_grant_event(session, payload)
 
 
@@ -211,7 +242,7 @@ async def webhook_benefit_grant_updated(event_id: uuid.UUID) -> None:
         async with external_event_service.handle(
             session, ExternalEventSource.polar, event_id
         ) as event:
-            payload = WebhookBenefitGrantUpdatedPayload.model_validate(event.data)
+            payload = deserialize(event.data, WebhookBenefitGrantUpdatedPayload)
             await polar_self.handle_benefit_grant_event(session, payload)
 
 
@@ -221,7 +252,7 @@ async def webhook_benefit_grant_revoked(event_id: uuid.UUID) -> None:
         async with external_event_service.handle(
             session, ExternalEventSource.polar, event_id
         ) as event:
-            payload = WebhookBenefitGrantRevokedPayload.model_validate(event.data)
+            payload = deserialize(event.data, WebhookBenefitGrantRevokedPayload)
             await polar_self.handle_benefit_grant_event(session, payload)
 
 
@@ -231,10 +262,40 @@ async def webhook_order_created(event_id: uuid.UUID) -> None:
         async with external_event_service.handle(
             session, ExternalEventSource.polar, event_id
         ) as event:
-            payload = WebhookOrderCreatedPayload.model_validate(event.data)
+            payload = deserialize(event.data, WebhookOrderCreatedPayload)
             try:
                 await polar_self.handle_order_created_event(payload)
             except PolarSelfInvoiceNotReady as e:
                 if can_retry():
                     raise Retry() from e
                 raise
+
+
+@actor(actor_name="polar_self.webhook.subscription.canceled", priority=TaskPriority.LOW)
+async def webhook_subscription_canceled(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle(
+            session, ExternalEventSource.polar, event_id
+        ) as event:
+            payload = deserialize(event.data, WebhookSubscriptionCanceledPayload)
+            await polar_self.handle_subscription_canceled_event(payload)
+
+
+@actor(actor_name="polar_self.webhook.subscription.past_due", priority=TaskPriority.LOW)
+async def webhook_subscription_past_due(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle(
+            session, ExternalEventSource.polar, event_id
+        ) as event:
+            payload = deserialize(event.data, WebhookSubscriptionPastDuePayload)
+            await polar_self.handle_subscription_past_due_event(payload)
+
+
+@actor(actor_name="polar_self.webhook.subscription.revoked", priority=TaskPriority.LOW)
+async def webhook_subscription_revoked(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle(
+            session, ExternalEventSource.polar, event_id
+        ) as event:
+            payload = deserialize(event.data, WebhookSubscriptionRevokedPayload)
+            await polar_self.handle_subscription_revoked_event(payload)

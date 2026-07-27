@@ -23,6 +23,12 @@ variable "google_client_secret" {
   sensitive   = true
 }
 
+variable "google_service_account_json" {
+  description = "Google service account JSON key for fetching the organization review AUP"
+  type        = string
+  sensitive   = true
+}
+
 # OpenAI
 variable "openai_api_key" {
   description = "OpenAI API Key for production"
@@ -96,6 +102,12 @@ variable "backend_sentry_dsn" {
 
 variable "backend_jwks" {
   description = "Backend JWKS content for production"
+  type        = string
+  sensitive   = true
+}
+
+variable "lambda_worker_tailscale_token" {
+  description = "Tailscale auth token for test Lambda workers"
   type        = string
   sensitive   = true
 }
@@ -191,6 +203,13 @@ variable "stripe_webhook_secret" {
   description = "Stripe Webhook Secret for production"
   type        = string
   sensitive   = true
+}
+
+variable "stripe_account_risk_webhook_secret" {
+  description = "Stripe Account Risk Webhook Secret for test"
+  type        = string
+  sensitive   = true
+  default     = ""
 }
 
 # Logfire
@@ -394,6 +413,30 @@ variable "next_public_apple_domain_association" {
 
 variable "next_public_stripe_payment_method_configuration" {
   description = "Stripe payment method configuration ID for the Vercel frontend"
+  type        = string
+  sensitive   = true
+}
+
+variable "worker_sqs_actors" {
+  description = "JSON array of Dramatiq actor names routed to the SQS execution engine"
+  type        = string
+  default     = "[\"dummy\"]"
+}
+
+variable "stripe_app_client_id" {
+  description = "Stripe App OAuth client ID"
+  type        = string
+  default     = ""
+}
+
+variable "stripe_app_client_link_id" {
+  description = "Stripe App OAuth client link ID"
+  type        = string
+  default     = ""
+}
+
+variable "turnstile_secret" {
+  description = "Cloudflare Turnstile secret"
   type        = string
   sensitive   = true
 }

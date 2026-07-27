@@ -4,7 +4,6 @@ import { toast } from '@/components/Toast/use-toast'
 import { usePostHog } from '@/hooks/posthog'
 import { useOrganization, useUpdateOrganization } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
-import { getQueryClient } from '@/utils/api/query'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
@@ -70,9 +69,6 @@ export const EmailSection = ({
     }
 
     reset({ email: data.email ?? '' })
-    getQueryClient().invalidateQueries({
-      queryKey: ['organizationReviewState', organization.id],
-    })
   }
 
   return (

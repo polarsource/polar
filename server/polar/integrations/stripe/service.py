@@ -1,11 +1,15 @@
+import json
+import uuid
 from collections.abc import AsyncGenerator, AsyncIterator
-from typing import TYPE_CHECKING, Literal, Unpack, cast, overload
+from typing import TYPE_CHECKING, Any, Literal, Unpack, cast, overload
+from urllib.parse import urlencode
 
 import stripe as stripe_lib
 import structlog
 
 from polar.config import settings
 from polar.exceptions import PolarError
+from polar.kit.http import get_safe_return_url
 from polar.logfire import instrument_httpx
 from polar.logging import Logger
 
@@ -51,6 +55,12 @@ stripe_http_client = stripe_lib.HTTPXClient(allow_sync_methods=True)
 instrument_httpx(stripe_http_client._client_async)
 stripe_lib.default_http_client = stripe_http_client
 
+# Radar for Platforms account risk signals live behind this preview version.
+STRIPE_ACCOUNT_RISK_API_VERSION = "2026-03-25.preview"
+stripe_risk_client = stripe_lib.StripeClient(
+    settings.STRIPE_SECRET_KEY, http_client=stripe_http_client
+)
+
 log: Logger = structlog.get_logger()
 
 
@@ -64,6 +74,8 @@ StripeCancellationReasons = Literal[
     "too_expensive",
     "unused",
 ]
+
+StripeAccountRejectReason = Literal["fraud", "terms_of_service", "other"]
 
 
 class StripeError(PolarError): ...
@@ -105,11 +117,19 @@ class StripeService:
             obj["business_profile"] = {"name": name}
         await stripe_lib.Account.modify_async(id, **obj)
 
+    async def update_account_website(self, id: str, url: str) -> None:
+        log.info("stripe.account.update_website", account_id=id, url=url)
+        await stripe_lib.Account.modify_async(id, business_profile={"url": url})
+
+    async def retrieve_account(self, id: str) -> stripe_lib.Account:
+        return await stripe_lib.Account.retrieve_async(id)
+
     async def account_exists(self, id: str) -> bool:
         try:
             account = await stripe_lib.Account.retrieve_async(id)
             return bool(account)
-        except stripe_lib.PermissionError:
+        except (stripe_lib.PermissionError, stripe_lib.InvalidRequestError):
+            # No access, or the account was deleted / never existed.
             return False
 
     async def delete_account(self, id: str) -> stripe_lib.Account:
@@ -119,6 +139,16 @@ class StripeService:
             account_id=id,
         )
         return await stripe_lib.Account.delete_async(id)
+
+    async def reject_account(
+        self, id: str, reason: StripeAccountRejectReason
+    ) -> stripe_lib.Account:
+        log.info(
+            "stripe.account.reject",
+            account_id=id,
+            reason=reason,
+        )
+        return await stripe_lib.Account.reject_async(id, reason=reason)
 
     async def retrieve_balance(self, id: str) -> tuple[str, int]:
         # Return available balance in the account's default currency (we assume that
@@ -131,12 +161,17 @@ class StripeService:
         return (cast(str, account.default_currency), 0)
 
     async def create_account_link(
-        self, stripe_id: str, return_path: str
+        self, stripe_id: str, return_path: str, payout_account_id: uuid.UUID
     ) -> stripe_lib.AccountLink:
-        refresh_url = settings.generate_external_url(
-            f"/v1/integrations/stripe/refresh?return_path={return_path}"
+        # Account links are single-use and short-lived. Stripe sends the merchant to
+        # `refresh_url` once one goes stale, and we mint a replacement from `id`.
+        refresh_query = urlencode(
+            {"return_path": return_path, "id": str(payout_account_id)}
         )
-        return_url = settings.generate_frontend_url(return_path)
+        refresh_url = settings.generate_external_url(
+            f"/v1/integrations/stripe/refresh?{refresh_query}"
+        )
+        return_url = get_safe_return_url(return_path)
         return await stripe_lib.AccountLink.create_async(
             account=stripe_id,
             refresh_url=refresh_url,
@@ -297,6 +332,15 @@ class StripeService:
         return await stripe_lib.Dispute.retrieve_async(
             id, stripe_account=stripe_account, expand=expand or []
         )
+
+    async def close_dispute(
+        self,
+        id: str,
+        *,
+        stripe_account: str | None = None,
+    ) -> stripe_lib.Dispute:
+        """Close the dispute, conceding the chargeback. Settles it as ``lost``."""
+        return await stripe_lib.Dispute.close_async(id, stripe_account=stripe_account)
 
     async def get_confirmation_token(
         self,
@@ -572,6 +616,30 @@ class StripeService:
 
     async def get_tax_rate(self, id: str) -> stripe_lib.TaxRate:
         return await stripe_lib.TaxRate.retrieve_async(id)
+
+    async def create_website_risk_evaluation(self, account_id: str) -> dict[str, Any]:
+        """Ask Stripe to evaluate a connected account's website for fraud.
+
+        Result arrives asynchronously as a fraudulent_website_ready event.
+        Uses raw_request because the endpoint is preview-only (no typed SDK).
+        """
+        response = await stripe_risk_client.raw_request_async(
+            "post",
+            "/v2/core/account_evaluations",
+            account=account_id,
+            signals=["fraudulent_website"],
+            stripe_version=STRIPE_ACCOUNT_RISK_API_VERSION,
+        )
+        return cast(dict[str, Any], json.loads(response.body))
+
+    async def get_account_risk_event(self, event_id: str) -> dict[str, Any]:
+        """Fetch the full risk-signal event by id (thin events carry no data)."""
+        response = await stripe_risk_client.raw_request_async(
+            "get",
+            f"/v2/core/events/{event_id}",
+            stripe_version=STRIPE_ACCOUNT_RISK_API_VERSION,
+        )
+        return cast(dict[str, Any], json.loads(response.body))
 
 
 stripe = StripeService()

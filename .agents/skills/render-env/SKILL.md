@@ -84,7 +84,7 @@ Report to the user:
   1. **Add a field to the relevant config/secrets object in `terraform/modules/render_service/variables.tf`.** Pick by purpose:
      - `backend_config` — non-sensitive backend env vars (URLs, flags, log level, tax processor list).
      - `backend_secrets` — sensitive backend env vars (API keys, tokens, signing secrets).
-     - Themed `render_env_group` blocks (`stripe`, `github`, `logfire`, `tinybird`, `aws_s3`, `apple`, `prometheus`, `slo_report`, `google`, `openai`, etc.) each have their own object — use the matching one when the var belongs to a clear bucket.
+     - Themed `render_env_group` blocks (`stripe`, `github`, `logfire`, `tinybird`, `aws_s3`, `worker_sqs`, `apple`, `prometheus`, `slo_report`, `google`, `openai`, etc.) each have their own object — use the matching one when the var belongs to a clear bucket.
      - Use `optional(string, "<default>")` if you want a module-level default; otherwise plain `string`.
   2. **Wire the field into the matching `render_env_group` block in `terraform/modules/render_service/main.tf`** as `POLAR_${NAME_UPPER} = { value = var.<object>.<field> }`. Two backend groups exist:
      - `render_env_group "backend"` — applied to **every** environment.

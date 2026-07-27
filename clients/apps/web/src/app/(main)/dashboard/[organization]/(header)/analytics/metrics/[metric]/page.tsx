@@ -139,5 +139,5 @@ export default async function Page(props: {
     redirect(`${redirectPath}?${urlSearchParams}`, RedirectType.replace)
   }
 
-  return <ClientPage metric={metric} organizationId={organization.id} />
+  return <ClientPage metric={metric} organization={organization} />
 }

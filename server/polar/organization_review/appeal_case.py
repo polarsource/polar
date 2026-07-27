@@ -1,12 +1,12 @@
 from collections.abc import Sequence
 from uuid import UUID
 
+from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.models import File, Organization, User
 from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import (
     ReviewAppealSupportCase,
-    SupportCaseAttachment,
     SupportCaseAudience,
     SupportCaseMessage,
     SupportCaseMessageAuthorKind,
@@ -16,11 +16,27 @@ from polar.models.support_case import (
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.support_case.repository import (
     ReviewAppealSupportCaseRepository,
-    SupportCaseAttachmentRepository,
     SupportCaseMessageRepository,
 )
+from polar.support_case.schemas import ReviewAppealSupportCaseMessageCreate
 from polar.support_case.service import support_case as support_case_service
 from polar.worker import enqueue_job
+
+HUMAN_REVIEW_GREETING = (
+    "Thanks for reaching out! Our team will review your appeal and get back to "
+    "you within 1–2 business days."
+)
+
+# Add a small delay to the automated greeting message
+# so it doesn't appear instantly (which looks a bit wonky)
+HUMAN_REVIEW_GREETING_DELAY_MS = 1500
+APPEAL_CASE_UPDATED_EVENT = "appeal_case.updated"
+
+
+async def publish_appeal_update(organization_id: UUID) -> None:
+    await eventstream_publish(
+        APPEAL_CASE_UPDATED_EVENT, {}, organization_id=organization_id
+    )
 
 
 class AppealCaseError(PolarError): ...
@@ -89,16 +105,22 @@ class AppealCaseService:
             body=reason,
             audience=[SupportCaseAudience.merchant],
         )
+        await publish_appeal_update(organization.id)
+        enqueue_job(
+            "organization_review.post_appeal_greeting",
+            case_id=case.id,
+            delay=HUMAN_REVIEW_GREETING_DELAY_MS,
+        )
         return case
 
     async def add_reply(
         self,
         session: AsyncSession,
         case: ReviewAppealSupportCase,
+        reply: ReviewAppealSupportCaseMessageCreate,
         *,
         author_kind: SupportCaseMessageAuthorKind,
         author_user: User | None = None,
-        body: str | None = None,
         files: Sequence[File] = (),
         internal: bool = False,
     ) -> SupportCaseMessage:
@@ -110,7 +132,7 @@ class AppealCaseService:
             case,
             author_kind=author_kind,
             author_user=author_user,
-            body=body,
+            body=reply.body,
             audience=audience,
         )
         for file in files:
@@ -124,6 +146,7 @@ class AppealCaseService:
                 "support_case.notify_organization_of_new_message",
                 message_id=message.id,
             )
+            await publish_appeal_update(case.organization_id)
         return message
 
     async def record_decision(
@@ -160,6 +183,7 @@ class AppealCaseService:
         enqueue_job(
             "support_case.notify_organization_of_new_message", message_id=message.id
         )
+        await publish_appeal_update(case.organization_id)
         # This records the decision on the case only. The caller drives org
         # state: approve goes through organization.backoffice_approve, which
         # closes the case via approve_open_case; deny needs no org change, as
@@ -244,47 +268,6 @@ class AppealCaseService:
     ) -> ReviewAppealSupportCase | None:
         repository = ReviewAppealSupportCaseRepository.from_session(session)
         return await repository.get_by_organization_review(review.id)
-
-    async def get_thread(
-        self,
-        session: AsyncSession | AsyncReadSession,
-        review: OrganizationReview,
-        *,
-        visible_to: SupportCaseAudience | None,
-    ) -> tuple[ReviewAppealSupportCase, bool, Sequence[SupportCaseMessage]] | None:
-        case = await self.get_case(session, review)
-        if case is None:
-            return None
-        message_repository = SupportCaseMessageRepository.from_session(session)
-        is_open = await message_repository.is_open(case.id)
-        messages = await message_repository.list_by_case(case.id, visible_to=visible_to)
-        return case, is_open, messages
-
-    async def list_attachments(
-        self,
-        session: AsyncSession | AsyncReadSession,
-        case: ReviewAppealSupportCase,
-        *,
-        visible_to: SupportCaseAudience | None,
-    ) -> Sequence[SupportCaseAttachment]:
-        repository = SupportCaseAttachmentRepository.from_session(session)
-        return await repository.list_by_case(case.id, visible_to=visible_to)
-
-    async def get_attachment(
-        self,
-        session: AsyncSession | AsyncReadSession,
-        case: ReviewAppealSupportCase,
-        attachment_id: UUID,
-        *,
-        visible_to: SupportCaseAudience | None,
-    ) -> SupportCaseAttachment | None:
-        repository = SupportCaseAttachmentRepository.from_session(session)
-        attachment = await repository.get_by_id_for_case(attachment_id, case.id)
-        if attachment is None:
-            return None
-        if visible_to is not None and visible_to not in attachment.audience:
-            return None
-        return attachment
 
     async def _assert_open(
         self, session: AsyncSession, case: ReviewAppealSupportCase

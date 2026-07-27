@@ -32,7 +32,9 @@ export const ProductCustomFieldSection = ({
   organization,
 }: ProductCustomFieldSectionProps) => {
   const { control } = useFormContext<ProductFormType>()
-  const { data: customFields } = useCustomFields(organization.id)
+  const { data: customFields } = useCustomFields(organization.id, {
+    limit: 100,
+  })
 
   const {
     fields: attachedCustomFields,

@@ -5,6 +5,7 @@ from .metrics import collect_metrics_data
 from .organization import collect_organization_data
 from .payout_account import collect_payout_account_data
 from .products import collect_products_data
+from .risk_signals import collect_risk_signal_data
 from .setup import collect_setup_data
 from .website import collect_website_data
 
@@ -16,6 +17,7 @@ __all__ = [
     "collect_organization_data",
     "collect_payout_account_data",
     "collect_products_data",
+    "collect_risk_signal_data",
     "collect_setup_data",
     "collect_website_data",
 ]

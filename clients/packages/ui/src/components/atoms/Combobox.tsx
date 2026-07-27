@@ -102,7 +102,7 @@ export function Combobox<T>({
             aria-expanded={open}
             disabled={disabled}
             className={cn(
-              'dark:bg-polar-800 dark:hover:bg-polar-700 dark:hover:border-polar-700 dark:border-polar-700 flex w-full flex-row justify-between gap-x-2 rounded-lg border border-gray-200 bg-white px-3 font-normal shadow-xs transition-colors hover:bg-gray-50 hover:text-black dark:hover:text-white',
+              'dark:bg-polar-800 dark:hover:bg-polar-700 dark:hover:border-polar-700 dark:border-polar-700 flex w-full flex-row justify-between gap-x-2 rounded-lg border border-gray-200 bg-white px-3 shadow-xs transition-colors hover:bg-gray-50 hover:text-black dark:hover:text-white',
               className,
             )}
           >

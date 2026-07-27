@@ -1,6 +1,6 @@
 import datetime
 import uuid
-from collections.abc import AsyncIterable, Sequence
+from collections.abc import AsyncGenerator, Sequence
 from typing import Any, cast
 
 import sentry_sdk
@@ -221,6 +221,16 @@ class PayoutCanceled(PayoutError):
     def __init__(self, payout: Payout) -> None:
         self.payout = payout
         message = f"Payout {payout.id} has been canceled and cannot be retried."
+        super().__init__(message, 400)
+
+
+class PayoutHeld(PayoutError):
+    def __init__(self, payout: Payout) -> None:
+        self.payout = payout
+        message = (
+            f"Payout {payout.id} is held and cannot be triggered while the "
+            "organization is under review."
+        )
         super().__init__(message, 400)
 
 
@@ -664,6 +674,9 @@ class PayoutService:
         if payout.status == PayoutStatus.canceled:
             raise PayoutCanceled(payout)
 
+        if payout.status == PayoutStatus.held:
+            raise PayoutHeld(payout)
+
         payout_account = payout.payout_account
         assert payout_account.stripe_id is not None
 
@@ -893,7 +906,7 @@ class PayoutService:
 
     async def get_csv(
         self, session: AsyncSession, sessionmaker: AsyncSessionMaker, payout: Payout
-    ) -> AsyncIterable[str]:
+    ) -> AsyncGenerator[str]:
         payout_transaction_repository = PayoutTransactionRepository.from_session(
             session
         )

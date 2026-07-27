@@ -210,6 +210,7 @@ class BenefitGrant(RecordModel):
     def set_revoked(self) -> None:
         self.granted_at = None
         self.revoked_at = datetime.now(UTC)
+        self.error = None
 
     def set_grant_failed(self, error: Exception) -> None:
         self.granted_at = None

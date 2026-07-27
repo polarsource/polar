@@ -18,8 +18,10 @@ from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.order.tasks import (
     OrderDoesNotExist,
+    enqueue_stale_payment_locks,
     process_dunning,
     process_dunning_order,
+    process_stale_payment_lock,
     trigger_payment,
 )
 from polar.subscription.repository import SubscriptionRepository
@@ -435,6 +437,66 @@ class TestProcessDunningOrder:
 
 
 @pytest.mark.asyncio
+class TestEnqueueStalePaymentLocks:
+    async def test_enqueues_stale_payment_lock(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        stale_order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_lock_acquired_at=utc_now()
+            - settings.PAYMENT_LOCK_STALE_THRESHOLD
+            - timedelta(minutes=1),
+        )
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+        enqueue_job_mock = mocker.patch("polar.order.tasks.enqueue_job")
+
+        await enqueue_stale_payment_locks()
+
+        enqueue_job_mock.assert_called_once_with(
+            "order.process_stale_payment_lock", stale_order.id
+        )
+
+
+@pytest.mark.asyncio
+class TestProcessStalePaymentLock:
+    async def test_releases_payment_lock(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=utc_now()
+            - settings.PAYMENT_LOCK_STALE_THRESHOLD
+            - timedelta(minutes=1),
+        )
+
+        await process_stale_payment_lock(order.id)
+
+        repository = OrderRepository.from_session(session)
+        updated_order = await repository.get_by_id(order.id)
+        assert updated_order is not None
+        assert updated_order.payment_lock_acquired_at is None
+
+
+@pytest.mark.asyncio
 class TestTriggerPayment:
     async def test_trigger_payment_success(
         self,
@@ -499,6 +561,34 @@ class TestTriggerPayment:
         # Then
         mock_create_payment_intent.assert_called_once()
         # Task should complete without raising exception (no retry)
+
+    async def test_trigger_payment_already_in_progress_no_retry(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        # Given an order that already holds a payment lock
+        customer = await create_customer(save_fixture, organization=organization)
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            payment_lock_acquired_at=utc_now(),
+        )
+
+        mock_create_payment_intent = mocker.patch(
+            "polar.order.service.stripe_service.create_payment_intent",
+        )
+
+        # When
+        await trigger_payment(order.id, payment_method.id)
+
+        # Then the task returns without charging or raising (no retry)
+        mock_create_payment_intent.assert_not_called()
 
     async def test_trigger_payment_api_error_with_retry(
         self,

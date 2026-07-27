@@ -15,7 +15,7 @@ from polar.integrations.polar.client import get_client
 from polar.models import Organization
 
 if TYPE_CHECKING:
-    from polar_sdk.models import Discount
+    from polar.v2026_04.outputs import Discount
 
 log = structlog.get_logger()
 
@@ -84,8 +84,6 @@ class StartupProgramService:
             ) from e
 
     async def _mark_invited_inner(self, organization: Organization) -> "Discount":
-        from polar_sdk.models import DiscountDuration
-
         client = get_client()
         customer = await client.get_customer_by_external_id_or_none(
             str(organization.id)
@@ -115,7 +113,7 @@ class StartupProgramService:
         discount = await client.create_percentage_discount(
             name=self._discount_name(organization),
             basis_points=DISCOUNT_BASIS_POINTS,
-            duration=DiscountDuration.REPEATING,
+            duration="repeating",
             duration_in_months=DISCOUNT_DURATION_IN_MONTHS,
             max_redemptions=DISCOUNT_MAX_REDEMPTIONS,
             products=None,

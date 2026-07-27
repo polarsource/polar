@@ -5,7 +5,7 @@ from uuid import UUID
 from polar.exceptions import PolarError
 from polar.kit.services import ResourceServiceReader
 from polar.kit.utils import utc_now
-from polar.models import Account, AccountCredit, Campaign, Organization
+from polar.models import Account, AccountCredit, Organization
 from polar.notifications.notification import (
     MaintainerAccountCreditsGrantedNotificationPayload,
     NotificationType,
@@ -20,14 +20,6 @@ from .repository import AccountCreditRepository
 class AccountCreditError(PolarError): ...
 
 
-class InsufficientCreditsError(AccountCreditError):
-    def __init__(self, available: int, requested: int) -> None:
-        self.available = available
-        self.requested = requested
-        message = f"Insufficient credits: {available} available, {requested} requested"
-        super().__init__(message)
-
-
 class CreditAlreadyRevokedError(AccountCreditError):
     def __init__(self, credit_id: UUID) -> None:
         self.credit_id = credit_id
@@ -35,30 +27,6 @@ class CreditAlreadyRevokedError(AccountCreditError):
 
 
 class AccountCreditService(ResourceServiceReader[AccountCredit]):
-    async def grant_from_campaign(
-        self,
-        session: AsyncSession,
-        *,
-        account: Account,
-        campaign: Campaign,
-    ) -> AccountCredit | None:
-        if campaign.fee_credit is None:
-            return None
-
-        title = campaign.fee_credit_title
-        if not title:
-            title = "Signup Bonus"
-
-        return await self.grant(
-            session,
-            account=account,
-            amount=campaign.fee_credit,
-            title=title,
-            expires_at=campaign.ends_at,
-            notes=f"Created from campaign: {campaign.id}",
-            user_metadata={"campaign_id": str(campaign.id)},
-        )
-
     async def grant(
         self,
         session: AsyncSession,

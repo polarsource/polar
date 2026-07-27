@@ -1,490 +1,185 @@
-# =============================================================================
-# IAM Identity Center (SSO) Configuration
-# =============================================================================
-
-# Variable for user-to-permission-set assignments
-# Configure this in Terraform Cloud as a list of objects:
-# [
-#   { email = "admin@polar.sh", permission_set = "admin" },
-#   { email = "dev@polar.sh", permission_set = "s3_full_access" }
-# ]
-variable "aws_sso_user_assignments" {
-  description = "List of user assignments with email and permission set name"
-  type = list(object({
-    email          = string
-    permission_set = string # One of: admin, s3_full_access, cloudfront_admin
-  }))
-  default = []
+data "aws_iam_policy" "permission_boundary" {
+  name = "PolarPermissionBoundary"
 }
 
-# Get the IAM Identity Center instance
-data "aws_ssoadmin_instances" "main" {
-  provider = aws.sso
+module "secrets_kms" {
+  source = "../modules/render_secrets_kms"
+
+  environment              = "production"
+  render_owner_id          = "tea-ch0f74hjvhtkjjvvhnr0"
+  render_environment_id    = render_project.polar.environments["Production"].id
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+}
+
+module "lambda_worker_ecr" {
+  source = "../modules/ecr_repository"
+
+  name = "polar-production-lambda-worker"
+}
+
+module "redis" {
+  source = "../modules/aws_redis"
+
+  name       = "polar-production-worker"
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnet_ids
+}
+
+resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
+  security_group_id            = module.redis.security_group_id
+  referenced_security_group_id = aws_security_group.lambda.id
+  from_port                    = module.redis.port
+  to_port                      = module.redis.port
+  ip_protocol                  = "tcp"
 }
 
 locals {
-  identity_store_id = tolist(data.aws_ssoadmin_instances.main.identity_store_ids)[0]
-  sso_instance_arn  = tolist(data.aws_ssoadmin_instances.main.arns)[0]
+  files_bucket_name        = "polar-production-files"
+  files_public_bucket_name = "polar-public-files"
 
-  # Map permission set names to their ARNs
-  permission_set_arns = {
-    admin            = aws_ssoadmin_permission_set.admin.arn
-    s3_full_access   = aws_ssoadmin_permission_set.s3_full_access.arn
-    cloudfront_admin = aws_ssoadmin_permission_set.cloudfront_admin.arn
+  lambda_worker_environment = {
+    POLAR_ENV                         = "production"
+    POLAR_BASE_URL                    = "https://api.polar.sh"
+    POLAR_FRONTEND_BASE_URL           = "https://polar.sh"
+    POLAR_CHECKOUT_BASE_URL           = "https://buy.polar.sh/{client_secret}"
+    POLAR_JWKS                        = "/tmp/jwks.json"
+    POLAR_LOG_LEVEL                   = "INFO"
+    POLAR_TESTING                     = "0"
+    POLAR_POSTGRES_DATABASE           = "polar_cpit_p9lf"
+    POLAR_POSTGRES_HOST               = local.db_external_host
+    POLAR_POSTGRES_PORT               = local.db_port
+    POLAR_POSTGRES_USER               = local.db_user
+    POLAR_POSTGRES_SSL                = "true"
+    POLAR_REDIS_HOST                  = module.redis.host
+    POLAR_REDIS_PORT                  = tostring(module.redis.port)
+    POLAR_REDIS_DB                    = "1"
+    POLAR_AWS_REGION                  = "us-east-2"
+    POLAR_S3_FILES_BUCKET_NAME        = local.files_bucket_name
+    POLAR_S3_FILES_PUBLIC_BUCKET_NAME = local.files_public_bucket_name
+    POLAR_EMAIL_SENDER                = "resend"
+    POLAR_EMAIL_FROM_NAME             = "Polar"
+    POLAR_EMAIL_FROM_DOMAIN           = "notifications.polar.sh"
+    POLAR_WORKER_SQS_ENABLED          = "true"
+    POLAR_WORKER_SQS_QUEUE_PREFIX     = "polar-production-tasks"
   }
 
-  # Create a map keyed by email for the user assignments
-  user_assignments_map = {
-    for assignment in var.aws_sso_user_assignments :
-    "${assignment.email}-${assignment.permission_set}" => assignment
+  lambda_worker_secrets = {
+    POLAR_CURRENT_JWK_KID = var.backend_current_jwk_kid_production
+    POLAR_JWKS_CONTENT    = var.backend_jwks_production
+    POLAR_LOGFIRE_TOKEN   = var.logfire_token
+    POLAR_POSTGRES_PWD    = local.db_password
+    POLAR_RESEND_API_KEY  = var.backend_resend_api_key_production
+    POLAR_SECRET          = var.backend_secret_production
+    POLAR_SENTRY_DSN      = var.backend_sentry_dsn_production
+    TAILSCALE_AUTHKEY     = var.lambda_worker_tailscale_token
   }
+
+  lambda_worker_name                 = "default"
+  lambda_worker_reserved_concurrency = null
 }
 
-# -----------------------------------------------------------------------------
-# Permission Sets
-# -----------------------------------------------------------------------------
+module "lambda_worker" {
+  source = "../modules/aws_task_worker"
 
-# S3 Full Access Permission Set
-resource "aws_ssoadmin_permission_set" "s3_full_access" {
-  provider         = aws.sso
-  name             = "S3FullAccess"
-  description      = "Full access to S3 buckets"
-  instance_arn     = local.sso_instance_arn
-  session_duration = "PT8H"
+  environment              = "production"
+  name                     = local.lambda_worker_name
+  queue_name               = "polar-production-tasks-${local.lambda_worker_name}"
+  image_uri                = "${module.lambda_worker_ecr.repository_url}:latest"
+  enabled                  = true
+  reserved_concurrency     = local.lambda_worker_reserved_concurrency
+  subnet_ids               = local.lambda_subnet_ids
+  security_group_ids       = local.lambda_security_group_ids
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
+
+  environment_variables        = local.lambda_worker_environment
+  secret_environment_variables = local.lambda_worker_secrets
 }
 
-resource "aws_ssoadmin_managed_policy_attachment" "s3_full_access" {
-  provider           = aws.sso
-  instance_arn       = local.sso_instance_arn
-  managed_policy_arn = "arn:aws:iam::aws:policy/AmazonS3FullAccess"
-  permission_set_arn = aws_ssoadmin_permission_set.s3_full_access.arn
-}
+# =============================================================================
+# Task producer policy (SQS send-only, attached to the Render backend OIDC role)
+# =============================================================================
 
-data "aws_iam_policy_document" "athena_query_access" {
+data "aws_iam_policy_document" "tasks_producer" {
   statement {
-    sid = "AthenaQueryAccess"
+    sid = "SendTasks"
     actions = [
-      "athena:BatchGetQueryExecution",
-      "athena:GetDataCatalog",
-      "athena:GetQueryExecution",
-      "athena:GetQueryResults",
-      "athena:GetTableMetadata",
-      "athena:GetWorkGroup",
-      "athena:ListDataCatalogs",
-      "athena:ListDatabases",
-      "athena:ListQueryExecutions",
-      "athena:ListTableMetadata",
-      "athena:ListWorkGroups",
-      "athena:StartQueryExecution",
-      "athena:StopQueryExecution",
+      "sqs:SendMessage",
+      "sqs:GetQueueUrl",
     ]
+    resources = [module.lambda_worker.queue_arn]
+  }
+}
+
+resource "aws_iam_role_policy" "tasks_producer" {
+  name   = "polar-production-tasks-producer"
+  role   = module.secrets_kms.role_name
+  policy = data.aws_iam_policy_document.tasks_producer.json
+}
+
+# =============================================================================
+# GitHub Actions OIDC role (builds the task-worker image and deploys it)
+# =============================================================================
+
+data "aws_caller_identity" "current" {}
+
+data "aws_iam_policy_document" "lambda_worker_deploy" {
+  statement {
+    sid       = "EcrAuthorization"
+    actions   = ["ecr:GetAuthorizationToken"]
     resources = ["*"]
   }
 
   statement {
-    sid = "GlueReadAccess"
-    actions = [
-      "glue:BatchGetPartition",
-      "glue:GetDatabase",
-      "glue:GetDatabases",
-      "glue:GetPartition",
-      "glue:GetPartitions",
-      "glue:GetTable",
-      "glue:GetTables",
-    ]
-    resources = ["*"]
-  }
-}
-
-resource "aws_ssoadmin_permission_set_inline_policy" "athena_query_access" {
-  provider           = aws.sso
-  instance_arn       = local.sso_instance_arn
-  permission_set_arn = aws_ssoadmin_permission_set.s3_full_access.arn
-  inline_policy      = data.aws_iam_policy_document.athena_query_access.json
-}
-
-# Administrator Access Permission Set (for admin users)
-resource "aws_ssoadmin_permission_set" "admin" {
-  provider         = aws.sso
-  name             = "AdministratorAccess"
-  description      = "Full administrator access"
-  instance_arn     = local.sso_instance_arn
-  session_duration = "PT8H"
-}
-
-resource "aws_ssoadmin_managed_policy_attachment" "admin" {
-  provider           = aws.sso
-  instance_arn       = local.sso_instance_arn
-  managed_policy_arn = "arn:aws:iam::aws:policy/AdministratorAccess"
-  permission_set_arn = aws_ssoadmin_permission_set.admin.arn
-}
-
-# CloudFront Admin Permission Set
-resource "aws_ssoadmin_permission_set" "cloudfront_admin" {
-  provider         = aws.sso
-  name             = "CloudFrontAdmin"
-  description      = "Manage CloudFront distributions, Lambda@Edge functions, and Lambda artifact S3 bucket"
-  instance_arn     = local.sso_instance_arn
-  session_duration = "PT8H"
-}
-
-resource "aws_ssoadmin_permission_set_inline_policy" "cloudfront_admin" {
-  provider           = aws.sso
-  instance_arn       = local.sso_instance_arn
-  permission_set_arn = aws_ssoadmin_permission_set.cloudfront_admin.arn
-  inline_policy      = data.aws_iam_policy_document.cloudfront_admin_sso.json
-}
-
-data "aws_iam_policy_document" "cloudfront_admin_sso" {
-  statement {
-    actions = [
-      "cloudfront:ListDistributions",
-      "cloudfront:GetDistribution",
-      "cloudfront:UpdateDistribution",
-      "cloudfront:CreateInvalidation",
-    ]
-    resources = ["*"]
-  }
-
-  statement {
-    actions = [
-      "lambda:GetFunction",
-      "lambda:UpdateFunctionCode",
-      "lambda:PublishVersion",
-    ]
-    resources = [module.image_resizer.function_arn]
-  }
-
-  statement {
-    actions = [
-      "s3:GetObject",
-      "s3:PutObject",
-      "s3:ListBucket",
-    ]
-    resources = [
-      aws_s3_bucket.lambda_artifacts.arn,
-      "${aws_s3_bucket.lambda_artifacts.arn}/*",
-    ]
-  }
-}
-
-data "aws_iam_policy_document" "lambda_worker_ecr_push" {
-  statement {
-    sid = "GetAuthorizationToken"
-    actions = [
-      "ecr:GetAuthorizationToken",
-    ]
-    resources = ["*"]
-  }
-
-  statement {
-    sid = "PushLambdaWorkerImage"
+    sid = "EcrPush"
     actions = [
       "ecr:BatchCheckLayerAvailability",
+      "ecr:BatchGetImage",
       "ecr:CompleteLayerUpload",
-      "ecr:DescribeImages",
-      "ecr:DescribeRepositories",
+      "ecr:GetDownloadUrlForLayer",
       "ecr:InitiateLayerUpload",
       "ecr:PutImage",
       "ecr:UploadLayerPart",
     ]
-    resources = [
-      "arn:aws:ecr:us-east-2:${data.aws_caller_identity.current.account_id}:repository/polar-test-lambda-worker",
-    ]
+    resources = [module.lambda_worker_ecr.repository_arn]
   }
-}
 
-resource "aws_iam_policy" "lambda_worker_ecr_push" {
-  name   = "lambda-worker-ecr-push"
-  policy = data.aws_iam_policy_document.lambda_worker_ecr_push.json
-}
-
-data "aws_iam_policy_document" "lambda_worker_deploy" {
   statement {
-    sid = "DeployLambdaWorker"
-    actions = [
-      "lambda:GetFunction",
-      "lambda:PublishVersion",
-      "lambda:UpdateFunctionCode",
-    ]
-    resources = [
-      "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:polar-test-lambda-worker*",
-      "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:polar-sandbox-lambda-worker*",
-      "arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:polar-production-lambda-worker*",
-    ]
+    sid       = "UpdateFunctionCode"
+    actions   = ["lambda:UpdateFunctionCode"]
+    resources = ["arn:aws:lambda:us-east-2:${data.aws_caller_identity.current.account_id}:function:${module.lambda_worker.function_name}"]
   }
 }
 
 resource "aws_iam_policy" "lambda_worker_deploy" {
-  name   = "lambda-worker-deploy"
+  name   = "github-actions-lambda-worker-deploy-production"
   policy = data.aws_iam_policy_document.lambda_worker_deploy.json
 }
 
-# -----------------------------------------------------------------------------
-# Account Assignments (Dynamic)
-# -----------------------------------------------------------------------------
-
-# Look up users from Identity Store based on the variable
-data "aws_identitystore_user" "users" {
-  provider          = aws.sso
-  for_each          = local.user_assignments_map
-  identity_store_id = local.identity_store_id
-
-  alternate_identifier {
-    unique_attribute {
-      attribute_path  = "UserName"
-      attribute_value = each.value.email
-    }
-  }
-}
-
-# Create account assignments for each user-permission_set pair
-resource "aws_ssoadmin_account_assignment" "user_assignments" {
-  provider           = aws.sso
-  for_each           = local.user_assignments_map
-  instance_arn       = local.sso_instance_arn
-  permission_set_arn = local.permission_set_arns[each.value.permission_set]
-  principal_id       = data.aws_identitystore_user.users[each.key].user_id
-  principal_type     = "USER"
-  target_id          = data.aws_caller_identity.current.account_id
-  target_type        = "AWS_ACCOUNT"
-}
-
-data "aws_caller_identity" "current" {}
-
-# =============================================================================
-# S3 Buckets
-# =============================================================================
-
-module "s3_buckets" {
-  source          = "../modules/s3_buckets"
-  environment     = "production"
-  allowed_origins = ["https://polar.sh"]
-}
-
-# =============================================================================
-# Lambda Artifacts S3 Bucket
-# =============================================================================
-
-resource "aws_s3_bucket" "lambda_artifacts" {
-  provider = aws.us_east_1
-  bucket   = "polar-lambda-artifacts"
-}
-
-resource "aws_s3_bucket_versioning" "lambda_artifacts" {
-  provider = aws.us_east_1
-  bucket   = aws_s3_bucket.lambda_artifacts.id
-  versioning_configuration {
-    status = "Enabled"
-  }
-}
-
-# =============================================================================
-# Image Resizer Lambda@Edge
-# =============================================================================
-
-data "aws_s3_object" "image_resizer_package" {
-  provider = aws.us_east_1
-  bucket   = aws_s3_bucket.lambda_artifacts.id
-  key      = "image-resizer/package.zip"
-}
-
-module "image_resizer" {
-  source = "../modules/lambda_edge_resizer"
-  providers = {
-    aws = aws.us_east_1
-  }
-
-  function_name     = "polar-image-resizer"
-  s3_bucket         = aws_s3_bucket.lambda_artifacts.id
-  s3_key            = data.aws_s3_object.image_resizer_package.key
-  s3_object_version = data.aws_s3_object.image_resizer_package.version_id
-  source_bucket_arn = module.s3_buckets.public_files_bucket_arn
-}
-
-
-# =============================================================================
-# CloudFront Distribution (Public Assets)
-# =============================================================================
-
-module "cloudfront_public_assets" {
-  source = "../modules/cloudfront_distribution"
-  providers = {
-    aws           = aws
-    aws.us_east_1 = aws.us_east_1
-  }
-
-  name                           = "polar-public-files"
-  domain                         = "uploads.polar.sh"
-  cloudflare_zone_id             = "22bcd1b07ec25452aab472486bc8df94"
-  s3_bucket_id                   = module.s3_buckets.public_files_bucket_id
-  s3_bucket_regional_domain_name = module.s3_buckets.public_files_bucket_regional_domain_name
-  s3_bucket_arn                  = module.s3_buckets.public_files_bucket_arn
-  cors_allowed_origins           = ["https://polar.sh", "https://trace.playwright.dev"]
-
-  lambda_function_associations = [
-    {
-      event_type = "origin-request"
-      lambda_arn = module.image_resizer.qualified_arn
-    },
-  ]
-}
-
-# =============================================================================
-# CloudFront Distribution (CDN)
-# =============================================================================
-
-module "cloudfront_cdn" {
-  source = "../modules/cloudfront_distribution"
-  providers = {
-    aws           = aws
-    aws.us_east_1 = aws.us_east_1
-  }
-
-  name                           = "polar-cdn"
-  domain                         = "cdn.polar.sh"
-  cloudflare_zone_id             = "22bcd1b07ec25452aab472486bc8df94"
-  s3_bucket_id                   = module.s3_buckets.public_assets_bucket_id
-  s3_bucket_regional_domain_name = module.s3_buckets.public_assets_bucket_regional_domain_name
-  s3_bucket_arn                  = module.s3_buckets.public_assets_bucket_arn
-  cors_allowed_origins           = ["https://polar.sh"]
-}
-
-# =============================================================================
-# GitHub Actions OIDC
-# =============================================================================
-
-resource "aws_iam_policy" "lambda_artifacts_upload" {
-  name = "lambda-artifacts-upload"
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:GetObjectVersion",
-          "s3:PutObject"
-        ]
-        Resource = "${aws_s3_bucket.lambda_artifacts.arn}/*"
-      }
-    ]
-  })
-}
-
-resource "aws_iam_policy" "e2e_reports_upload" {
-  name = "e2e-reports-upload"
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Effect = "Allow"
-        Action = [
-          "s3:GetObject",
-          "s3:GetObjectVersion",
-          "s3:PutObject"
-        ]
-        Resource = [
-          "${module.s3_buckets.public_files_bucket_arn}/e2e-artifacts",
-          "${module.s3_buckets.public_files_bucket_arn}/e2e-artifacts/*"
-        ]
-      }
-    ]
-  })
-}
-
-module "github_oidc_backup" {
+module "github_oidc_lambda_worker" {
   source = "../modules/github_oidc"
 
-  role_name   = "github-actions-backup"
-  github_org  = "polarsource"
-  github_repo = "polar"
-  github_subjects = [
-    "ref:refs/heads/main",
-    "pull_request",
-  ]
+  role_name       = "github-actions-lambda-worker-production"
+  github_org      = "polarsource"
+  github_repo     = "polar"
+  github_subjects = ["ref:refs/heads/main"]
   policy_arns = {
-    backups          = aws_iam_policy.polar_sh_backups.arn
-    lambda_deploy    = aws_iam_policy.lambda_worker_deploy.arn
-    lambda_ecr       = aws_iam_policy.lambda_worker_ecr_push.arn
-    lambda_artifacts = aws_iam_policy.lambda_artifacts_upload.arn
-    e2e_reports      = aws_iam_policy.e2e_reports_upload.arn
+    deploy = aws_iam_policy.lambda_worker_deploy.arn
   }
-}
-
-resource "aws_iam_policy" "polar_sh_backups" {
-  name = "polar-sh-backups"
-  policy = jsonencode({
-    Version = "2012-10-17"
-    Statement = [
-      {
-        Sid    = "VisualEditor0"
-        Effect = "Allow"
-        Action = [
-          "s3:PutObject",
-          "s3:GetObjectAttributes",
-          "s3:GetObject",
-          "s3:GetObjectVersion",
-          "s3:GetObjectVersionAttributes",
-          "s3:DeleteObject",
-          "s3:DeleteObjectVersion"
-        ]
-        Resource = "${aws_s3_bucket.backups.arn}/*"
-      }
-    ]
-  })
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 }
 
 # =============================================================================
-# Application Access (IAM user policies)
+# GuardDuty malware scan results → tasks queue
 # =============================================================================
 
-module "application_access_production" {
-  source   = "../modules/application_access"
-  username = "polar-production-files"
-  buckets = {
-    customer_invoices = { name = "polar-customer-invoices" }
-    customer_receipts = { name = "polar-customer-receipts" }
-    payout_invoices   = { name = "polar-payout-invoices" }
-    files             = { name = "polar-production-files", description = "Policy used by our app for downloadable benefits. Keep permissions to a bare minimum." }
-    public_files      = { name = "polar-public-files", description = "Policy used by our app for public uploads -products medias and such-. Keep permissions to a bare minimum." }
-    logs              = { name = "polar-production-logs", description = "Policy used by our app to write OpenTelemetry spans to S3 for long-term backup." }
-  }
-}
+module "guardduty_scan_events" {
+  source = "../modules/guardduty_scan_events"
 
-# Adopt the IAM user that already exists in AWS (console-created).
-import {
-  to = module.application_access_production.aws_iam_user.this
-  id = "polar-production-files"
-}
-
-# =============================================================================
-# Athena for Span Logs
-# =============================================================================
-
-module "athena_spans" {
-  source           = "../modules/athena_spans"
-  environment      = "production"
-  logs_bucket_name = "polar-production-logs"
-}
-
-# =============================================================================
-# Backups S3 Bucket
-# =============================================================================
-
-resource "aws_s3_bucket" "backups" {
-  bucket = "polar-sh-backups"
-}
-
-resource "aws_s3_bucket_lifecycle_configuration" "backups_lifecycle" {
-  bucket = aws_s3_bucket.backups.id
-
-  rule {
-    id     = "14-days-expiration-rule"
-    status = "Enabled"
-    filter {}
-    expiration {
-      days = 14
-    }
-  }
+  environment       = "production"
+  bucket_names      = [local.files_bucket_name, local.files_public_bucket_name]
+  source_account_id = "975049931254"
+  queue_arn         = module.lambda_worker.queue_arn
+  queue_url         = module.lambda_worker.queue_url
+  dlq_arn           = module.lambda_worker.dlq_arn
+  dlq_url           = module.lambda_worker.dlq_url
 }

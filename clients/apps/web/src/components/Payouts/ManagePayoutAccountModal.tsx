@@ -3,10 +3,25 @@ import {
   usePayoutAccounts,
   useSetOrganizationPayoutAccount,
 } from '@/hooks/queries/payout_accounts'
+import { payoutOnboardingReturnPath } from '@/components/Finance/payoutOnboardingReturn'
 import { toast } from '@/components/Toast/use-toast'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import {
+  Button,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/orbit'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from '@polar-sh/ui/components/ui/dropdown-menu'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { ExternalLink, Plus, Trash2 } from 'lucide-react'
 import React, { useCallback, useState } from 'react'
 import { useOrganization } from '@/hooks/queries'
@@ -51,7 +66,10 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                 params: {
                   path: { id: payoutAccount.id },
                   query: {
-                    return_path: `/dashboard/${_organization.slug}/finance/account`,
+                    return_path: payoutOnboardingReturnPath(
+                      _organization.slug,
+                      payoutAccount.id,
+                    ),
                   },
                 },
               }),
@@ -126,7 +144,7 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
   })
 
   return (
-    <div className="flex flex-col gap-y-6 p-8">
+    <div className="flex flex-col gap-y-6 p-6 sm:p-8">
       <h3 className="text-xl font-medium">Manage Payout Accounts</h3>
       {isLoading ? (
         <div className="flex flex-col gap-y-3">
@@ -153,16 +171,31 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
               >
                 <div className="flex flex-row items-center justify-between gap-x-4">
                   <div className="flex flex-row items-center gap-x-3">
-                    <span className="font-medium capitalize">
-                      {account.type}
-                    </span>
+                    {account.processor_id ? (
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <span className="font-medium capitalize">
+                            {account.type}
+                          </span>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <span className="font-mono text-xs">
+                            {account.processor_id}
+                          </span>
+                        </TooltipContent>
+                      </Tooltip>
+                    ) : (
+                      <span className="font-medium capitalize">
+                        {account.type}
+                      </span>
+                    )}
                     {isActive && (
                       <span className="dark:bg-polar-700 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-600 dark:text-blue-300">
                         Active
                       </span>
                     )}
                   </div>
-                  <div className="flex flex-row flex-wrap justify-end gap-2">
+                  <div className="hidden flex-row flex-wrap justify-end gap-2 sm:flex">
                     {account.type === 'stripe' && (
                       <Button
                         variant="secondary"
@@ -198,11 +231,59 @@ const ManagePayoutAccountModal: React.FC<ManagePayoutAccountModalProps> = ({
                       </Button>
                     )}
                   </div>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger
+                      className="focus:outline-none sm:hidden"
+                      asChild
+                    >
+                      <Button
+                        size="icon"
+                        variant="secondary"
+                        aria-label="Account actions"
+                      >
+                        <MoreVertOutlined fontSize="inherit" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent
+                      align="end"
+                      className="dark:bg-polar-800 bg-gray-50 shadow-lg"
+                    >
+                      {account.type === 'stripe' && (
+                        <DropdownMenuItem
+                          onClick={() => handleOpenStripeLink(account)}
+                        >
+                          {account.is_payout_ready
+                            ? 'Open in Stripe'
+                            : 'Complete Setup'}
+                        </DropdownMenuItem>
+                      )}
+                      {!isActive && (
+                        <DropdownMenuItem
+                          onClick={() => handleSwitch(account.id)}
+                        >
+                          Make Active
+                        </DropdownMenuItem>
+                      )}
+                      {!isActive && (
+                        <>
+                          <DropdownMenuSeparator />
+                          <DropdownMenuItem
+                            destructive
+                            disabled={deletePayoutAccount.isPending}
+                            onClick={() => handleDelete(account.id)}
+                          >
+                            Delete
+                          </DropdownMenuItem>
+                        </>
+                      )}
+                    </DropdownMenuContent>
+                  </DropdownMenu>
                 </div>
                 <div className="dark:border-polar-700 flex flex-row items-center gap-x-4 border-t border-gray-100 pt-3">
                   <span className="dark:text-polar-400 text-xs text-gray-500">
                     {account.country.toUpperCase()} ·{' '}
-                    {account.currency.toUpperCase()}
+                    {account.currency.toUpperCase()} · Added{' '}
+                    <FormattedDateTime datetime={account.created_at} />
                   </span>
                   <span
                     className={`inline-flex items-center gap-x-1.5 text-xs ${

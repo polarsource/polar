@@ -1,7 +1,8 @@
 from fastapi import Depends, Form
 from fastapi.responses import RedirectResponse
 
-from polar.authz.dependencies import AuthorizeWebUserWrite
+from polar.auth.exceptions import SessionNotFreshError
+from polar.authz.dependencies import AuthorizeWebUserWrite, AuthorizeWebUserWriteFresh
 from polar.config import settings
 from polar.exceptions import PolarRedirectionError
 from polar.kit.db.postgres import AsyncSession
@@ -17,10 +18,13 @@ from .service import email_update as email_update_service
 router = APIRouter(prefix="/email-update", tags=["email-update", APITag.private])
 
 
-@router.post("/request")
+@router.post(
+    "/request",
+    responses={403: {"model": SessionNotFreshError.schema()}},
+)
 async def request_email_update(
     email_update_request: EmailUpdateRequest,
-    auth_subject: AuthorizeWebUserWrite,
+    auth_subject: AuthorizeWebUserWriteFresh,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     email_update_record, token = await email_update_service.request_email_update(

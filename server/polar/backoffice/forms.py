@@ -3,7 +3,7 @@ import re
 from collections.abc import Generator
 from enum import StrEnum
 from inspect import isclass
-from typing import Any, Self
+from typing import Any, Literal, Self, get_args, get_origin
 
 from fastapi.datastructures import FormData
 from pydantic import AfterValidator, BaseModel, StringConstraints, ValidationError
@@ -521,6 +521,12 @@ def _get_input_field(field: FieldInfo) -> FormField:
             if issubclass(field.annotation, StrEnum):
                 return SelectField(
                     options=[(item.value, item.name) for item in field.annotation]
+                )
+        if get_origin(field.annotation) is Literal:
+            members = get_args(field.annotation)
+            if all(isinstance(member, StrEnum) for member in members):
+                return SelectField(
+                    options=[(member.value, member.name) for member in members]
                 )
 
     return InputField(**_string_constraint_attrs(field))

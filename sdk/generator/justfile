@@ -1,0 +1,42 @@
+# https://just.systems
+
+install:
+    uv sync --all-extras
+
+lint:
+    uv run ruff format .
+    uv run ruff check --fix .
+    uv run ty check .
+
+lint-check:
+    uv run ruff format --check .
+    uv run ruff check .
+    uv run ty check .
+
+test:
+    uv run pytest tests/
+
+openapi:
+  uv run -m --directory ../../server scripts.generate_openapi | jq -r > openapi.json
+
+generate language:
+  uv run -m cli generate openapi.json ../{{language}} --language {{language}} --clear
+
+generate-all:
+  uv run -m cli generate openapi.json ../python --language python --clear
+  uv run -m cli generate openapi.json ../typescript --language typescript --clear
+
+docs-openapi version="0.0.0":
+  uv run -m cli docs-openapi --version {{version}}
+
+release version:
+  uv run -m cli release {{version}}
+
+release-pre version prerelease:
+  uv run -m cli release {{version}} --prerelease {{prerelease}}
+
+release-dry version:
+  uv run -m cli release --dry-run {{version}}
+
+release-pre-dry version prerelease:
+  uv run -m cli release --dry-run {{version}} --prerelease {{prerelease}}

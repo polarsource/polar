@@ -17,10 +17,24 @@ from polar.enums import (
     SubscriptionRecurringInterval,
 )
 from polar.exceptions import PolarRequestValidationError
+from polar.integrations.stripe.account_risk import (
+    AccountRiskSignal,
+    StripeAccountRiskLevel,
+)
 from polar.kit.http import UrlReachability
-from polar.models import Customer, Organization, Product, User, UserOrganization
+from polar.models import (
+    Customer,
+    Organization,
+    OrganizationRiskSignal,
+    PayoutAccount,
+    Product,
+    User,
+    UserOrganization,
+)
 from polar.models.account import Account
 from polar.models.benefit import BenefitType
+from polar.models.member import MemberRole
+from polar.models.order import OrderStatus
 from polar.models.organization import (
     STATUS_CAPABILITIES,
     InvalidStatusTransitionError,
@@ -35,8 +49,10 @@ from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_review import OrganizationReview
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
+from polar.oauth2.service.oauth2_token import oauth2_token as oauth2_token_service
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import (
+    LegacyOrganizationStatus,
     OrganizationCreate,
     OrganizationDetails,
     OrganizationFeatureSettingsUpdate,
@@ -51,17 +67,26 @@ from polar.organization.schemas import (
     OrganizationSocialPlatforms,
     OrganizationUpdate,
 )
-from polar.organization.service import OrganizationError
+from polar.organization.service import (
+    CannotCreateOrganizationError,
+    OrganizationError,
+)
 from polar.organization.service import organization as organization_service
 from polar.organization_review.appeal_case import appeal_case as appeal_case_service
-from polar.organization_review.schemas import ReviewContext, ReviewVerdict
+from polar.organization_review.repository import (
+    OrganizationReviewRepository,
+    OrganizationRiskSignalRepository,
+)
+from polar.organization_review.schemas import DecisionType, ReviewContext, ReviewVerdict
 from polar.postgres import AsyncSession
 from polar.support_case.repository import SupportCaseMessageRepository
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_active_subscription,
     create_benefit,
     create_checkout_link,
     create_dispute,
@@ -95,6 +120,23 @@ class TestCreate:
             await organization_service.create(
                 session,
                 OrganizationCreate(name="My New Organization", slug=slug),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_organization_scoped_session_forbidden(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        auth_subject.organization_ids = frozenset({organization.id})
+        with pytest.raises(CannotCreateOrganizationError):
+            await organization_service.create(
+                session,
+                OrganizationCreate(
+                    name="My New Organization", slug="scoped-session-org"
+                ),
                 auth_subject,
             )
 
@@ -399,7 +441,7 @@ class TestUpdateReviewSubmission:
         error_locations = {tuple(error["loc"]) for error in exc_info.value.errors()}
         assert ("body", "website") in error_locations
         assert ("body", "email") in error_locations
-        assert ("body", "socials") in error_locations
+        assert ("body", "socials") not in error_locations
         assert ("body", "details", "product_description") in error_locations
 
     @pytest.mark.auth
@@ -1205,6 +1247,43 @@ class TestDenyOrganization:
             account_id=organization.account_id,
         )
 
+    async def test_enqueues_stripe_reject_when_reason_given(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        stripe_payout_account: PayoutAccount,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.deny_organization(
+            session, organization, stripe_reject_reason="terms_of_service"
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "payout_account.reject_stripe_account",
+            payout_account_id=stripe_payout_account.id,
+            reason="terms_of_service",
+        )
+
+    async def test_does_not_enqueue_stripe_reject_by_default(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        stripe_payout_account: PayoutAccount,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.deny_organization(session, organization)
+
+        assert not any(
+            call.args and call.args[0] == "payout_account.reject_stripe_account"
+            for call in enqueue_job_mock.call_args_list
+        )
+
 
 @pytest.mark.asyncio
 class TestBlockOrganization:
@@ -1233,6 +1312,26 @@ class TestBlockOrganization:
         enqueue_job_mock.assert_any_call(
             "payout.cancel_account_payouts",
             account_id=organization.account_id,
+        )
+
+    async def test_enqueues_stripe_reject_when_reason_given(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        stripe_payout_account: PayoutAccount,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.block_organization(
+            session, organization, stripe_reject_reason="fraud"
+        )
+
+        enqueue_job_mock.assert_any_call(
+            "payout_account.reject_stripe_account",
+            payout_account_id=stripe_payout_account.id,
+            reason="fraud",
         )
 
 
@@ -1552,6 +1651,159 @@ class TestSetOrganizationUnderReview:
         assert result.status == OrganizationStatus.REVIEW
 
 
+@pytest.mark.asyncio
+class TestHandleAccountRiskSignal:
+    def _signal(
+        self,
+        account_id: str,
+        level: StripeAccountRiskLevel,
+        *,
+        type: OrganizationRiskSignal.Type = (
+            OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
+        ),
+        description: str | None = "Deceptive website",
+    ) -> AccountRiskSignal:
+        return AccountRiskSignal(
+            type=type,
+            account_id=account_id,
+            risk_level=level,
+            description=description,
+            payload={"account": account_id},
+        )
+
+    async def _signals(
+        self, session: AsyncSession, organization: Organization
+    ) -> list[OrganizationRiskSignal]:
+        repository = OrganizationRiskSignalRepository.from_session(session)
+        return await repository.list_by_organization(organization.id)
+
+    async def test_actionable_website_on_active_org(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.status = OrganizationStatus.ACTIVE
+        await save_fixture(organization)
+        await create_payout_account(
+            save_fixture, organization, user, stripe_id="acct_risk"
+        )
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.handle_account_risk_signal(
+            session, self._signal("acct_risk", StripeAccountRiskLevel.HIGHEST)
+        )
+
+        assert organization.status == OrganizationStatus.REVIEW
+        assert organization.internal_notes is None
+        # Never runs the AI agent for an external risk signal.
+        enqueue_job_mock.assert_not_called()
+
+        signals = await self._signals(session, organization)
+        assert len(signals) == 1
+        assert signals[0].type == OrganizationRiskSignal.Type.FRAUDULENT_WEBSITE
+        assert signals[0].risk_level == "highest"
+
+        decision = await OrganizationReviewRepository.from_session(
+            session
+        ).get_current_decision(organization.id)
+        assert decision is not None
+        assert decision.decision == DecisionType.ESCALATE
+
+    async def test_actionable_merchant_on_active_org(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.status = OrganizationStatus.ACTIVE
+        await save_fixture(organization)
+        await create_payout_account(
+            save_fixture, organization, user, stripe_id="acct_risk"
+        )
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.handle_account_risk_signal(
+            session,
+            self._signal(
+                "acct_risk",
+                StripeAccountRiskLevel.ELEVATED,
+                type=OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT,
+                description="Indicators: disputes",
+            ),
+        )
+
+        assert organization.status == OrganizationStatus.REVIEW
+        signals = await self._signals(session, organization)
+        assert len(signals) == 1
+        assert signals[0].type == OrganizationRiskSignal.Type.FRAUDULENT_MERCHANT
+
+    async def test_non_actionable_signal_does_nothing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.status = OrganizationStatus.ACTIVE
+        await save_fixture(organization)
+        await create_payout_account(
+            save_fixture, organization, user, stripe_id="acct_risk"
+        )
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.handle_account_risk_signal(
+            session, self._signal("acct_risk", StripeAccountRiskLevel.LOW)
+        )
+
+        assert organization.status == OrganizationStatus.ACTIVE
+        assert organization.internal_notes is None
+        assert await self._signals(session, organization) == []
+
+    async def test_actionable_on_reviewed_org_records_without_transition(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.status = OrganizationStatus.REVIEW
+        await save_fixture(organization)
+        await create_payout_account(
+            save_fixture, organization, user, stripe_id="acct_risk"
+        )
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.handle_account_risk_signal(
+            session, self._signal("acct_risk", StripeAccountRiskLevel.HIGHEST)
+        )
+
+        assert organization.status == OrganizationStatus.REVIEW
+        assert len(await self._signals(session, organization)) == 1
+
+    async def test_unknown_account_does_nothing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.ACTIVE
+        mocker.patch("polar.organization.service.enqueue_job")
+
+        await organization_service.handle_account_risk_signal(
+            session, self._signal("acct_missing", StripeAccountRiskLevel.HIGHEST)
+        )
+
+        assert organization.status == OrganizationStatus.ACTIVE
+        assert await self._signals(session, organization) == []
+
+
 class TestGetPaymentStatus:
     def test_active_org_is_payment_ready(
         self,
@@ -1621,7 +1873,7 @@ async def _setup_passing_org(
     save_fixture: SaveFixture,
     organization: Organization,
     user: User,
-) -> None:
+) -> Product:
     organization.email = "support@example.com"
     organization.website = "https://example.com"
     organization.socials = [{"platform": "x", "url": "https://x.com/polar"}]
@@ -1654,6 +1906,8 @@ async def _setup_passing_org(
     )
     await set_product_benefits(save_fixture, product=product, benefits=[benefit])
     await create_checkout_link(save_fixture, products=[product])
+
+    return product
 
 
 def _step(
@@ -1713,6 +1967,36 @@ class TestGetReviewState:
                 OrganizationReviewCheckReason.NOT_STARTED in reasons
                 for reasons in reason_lists
             )
+
+    @pytest.mark.auth
+    async def test_identity_owner_viewer_sees_not_started(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        state = await organization_service.get_review_state(
+            session, organization, auth_subject
+        )
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION)
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert OrganizationReviewCheckReason.NOT_STARTED in step.reasons
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user_second"))
+    async def test_identity_non_owner_viewer_sees_not_authorized(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        state = await organization_service.get_review_state(
+            session, organization, auth_subject
+        )
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION)
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert step.reasons == [OrganizationReviewCheckReason.NOT_AUTHORIZED]
 
     async def test_email_set_passes(
         self,
@@ -1791,6 +2075,54 @@ class TestGetReviewState:
 
         assert step.status == OrganizationReviewCheckStatus.PASSED
         assert step.reasons == []
+
+    @pytest.mark.parametrize(
+        "website",
+        [
+            "https://bolt.example.com",
+            "https://www.bolt.example.com",
+        ],
+    )
+    async def test_email_matching_website_subdomain_passes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        website: str,
+    ) -> None:
+        # The merchant's support email lives on the apex domain while the
+        # product is hosted on a subdomain — they still belong to the same
+        # organization, so this must not be flagged as a mismatch.
+        organization.email = "support@example.com"
+        organization.website = website
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+        assert (
+            OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH not in step.reasons
+        )
+
+    async def test_email_subdomain_matching_website_apex_passes(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        # Reverse relationship: support email on a subdomain, website on the apex.
+        organization.email = "support@mail.example.com"
+        organization.website = "https://example.com"
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.IDENTITY_EMAIL)
+
+        assert step.status == OrganizationReviewCheckStatus.PASSED
+        assert (
+            OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH not in step.reasons
+        )
 
     @pytest.mark.parametrize(
         "website",
@@ -2112,11 +2444,25 @@ class TestGetReviewState:
             assert sub.status == OrganizationReviewCheckStatus.PENDING
             assert OrganizationReviewCheckReason.NOT_STARTED in sub.reasons
 
+    @pytest.mark.parametrize(
+        "benefit_type",
+        [
+            BenefitType.downloadables,
+            BenefitType.license_keys,
+            BenefitType.github_repository,
+            BenefitType.discord,
+            BenefitType.slack_shared_channel,
+            # `custom` is a free-form note, but the customer still sees it in
+            # their portal post-purchase — no API integration required.
+            BenefitType.custom,
+        ],
+    )
     async def test_setup_readiness_checkout_link_with_eligible_benefit_passes(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
+        benefit_type: BenefitType,
     ) -> None:
         product = await create_product(
             save_fixture, organization=organization, recurring_interval=None
@@ -2124,7 +2470,7 @@ class TestGetReviewState:
         benefit = await create_benefit(
             save_fixture,
             organization=organization,
-            type=BenefitType.license_keys,
+            type=benefit_type,
         )
         await set_product_benefits(save_fixture, product=product, benefits=[benefit])
         await create_checkout_link(save_fixture, products=[product])
@@ -2149,10 +2495,12 @@ class TestGetReviewState:
     @pytest.mark.parametrize(
         "benefit_type",
         [
+            # Benefits a checkout link can't fulfill on its own — they only mean
+            # something once the merchant integrates the API. `feature_flag`:
+            # the merchant's app reads the flag. `meter_credit`: the credit is
+            # consumed via usage events the merchant ingests.
             BenefitType.feature_flag,
             BenefitType.meter_credit,
-            # `custom` is a free-form note with no automated fulfillment.
-            BenefitType.custom,
         ],
     )
     async def test_setup_readiness_ineligible_benefit_does_not_count(
@@ -2174,7 +2522,7 @@ class TestGetReviewState:
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
 
-        assert step.status == OrganizationReviewCheckStatus.FAILED
+        assert step.status == OrganizationReviewCheckStatus.PENDING
         checkout_link_sub = _sub(
             step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
         )
@@ -2183,6 +2531,102 @@ class TestGetReviewState:
             OrganizationReviewCheckReason.SETUP_READINESS_CHECKOUT_LINK_NOT_FULFILLABLE
             in checkout_link_sub.reasons
         )
+
+    async def test_setup_readiness_benefit_missing_on_one_product_is_incomplete(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        product_with_benefit = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.downloadables,
+        )
+        await set_product_benefits(
+            save_fixture, product=product_with_benefit, benefits=[benefit]
+        )
+        product_without_benefit = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        await create_checkout_link(
+            save_fixture, products=[product_with_benefit, product_without_benefit]
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        checkout_link_sub = _sub(
+            step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
+        )
+        assert checkout_link_sub.status == OrganizationReviewCheckStatus.FAILED
+        assert (
+            OrganizationReviewCheckReason.SETUP_READINESS_CHECKOUT_LINK_NOT_FULFILLABLE
+            in checkout_link_sub.reasons
+        )
+
+    async def test_setup_readiness_unfulfillable_second_link_is_incomplete(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        product_with_benefit = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.downloadables,
+        )
+        await set_product_benefits(
+            save_fixture, product=product_with_benefit, benefits=[benefit]
+        )
+        product_without_benefit = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        await create_checkout_link(save_fixture, products=[product_with_benefit])
+        await create_checkout_link(
+            save_fixture, products=[product_with_benefit, product_without_benefit]
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        checkout_link_sub = _sub(
+            step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
+        )
+        assert checkout_link_sub.status == OrganizationReviewCheckStatus.FAILED
+
+    async def test_setup_readiness_success_url_covers_only_its_own_link(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        await create_checkout_link(
+            save_fixture,
+            products=[product],
+            success_url="https://example.com/thank-you",
+        )
+        await create_checkout_link(save_fixture, products=[product])
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        checkout_link_sub = _sub(
+            step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
+        )
+        assert checkout_link_sub.status == OrganizationReviewCheckStatus.FAILED
 
     async def test_setup_readiness_checkout_link_with_success_url_passes(
         self,
@@ -2210,7 +2654,7 @@ class TestGetReviewState:
             == OrganizationReviewCheckStatus.PASSED
         )
 
-    async def test_setup_readiness_checkout_link_without_benefits_or_success_url_fails(
+    async def test_setup_readiness_checkout_link_without_benefits_or_success_url_is_incomplete(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
@@ -2224,11 +2668,11 @@ class TestGetReviewState:
         state = await organization_service.get_review_state(session, organization)
         step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
 
-        assert step.status == OrganizationReviewCheckStatus.FAILED
-        assert (
-            OrganizationReviewCheckReason.SETUP_READINESS_CHECKOUT_LINK_NOT_FULFILLABLE
-            in step.reasons
-        )
+        # An unfulfillable link is in-progress (still blocks submit), not an
+        # error — no "invalid" reason is surfaced on the parent step.
+        assert step.status == OrganizationReviewCheckStatus.PENDING
+        assert step.reasons == []
+        # The sub-check still records that the link can't fulfill.
         checkout_link_sub = _sub(
             step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
         )
@@ -2336,6 +2780,39 @@ class TestGetReviewState:
             step.status == OrganizationReviewCheckStatus.PASSED
             for step in state.preliminary_steps
         )
+
+    async def test_missing_socials_does_not_block_submission(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        await _setup_passing_org(save_fixture, organization, user)
+        organization.socials = []
+        await save_fixture(organization)
+
+        state = await organization_service.get_review_state(session, organization)
+
+        socials_step = _step(state, OrganizationReviewCheckKey.IDENTITY_SOCIAL_LINKS)
+        assert socials_step.status == OrganizationReviewCheckStatus.PENDING
+        assert state.can_submit is True
+
+    async def test_unfulfillable_checkout_link_blocks_submission(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        product = await _setup_passing_org(save_fixture, organization, user)
+        await set_product_benefits(save_fixture, product=product, benefits=[])
+
+        state = await organization_service.get_review_state(session, organization)
+
+        setup_step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+        assert setup_step.status == OrganizationReviewCheckStatus.PENDING
+        assert state.can_submit is False
 
     async def test_submitted_blocks_resubmission(
         self,
@@ -3196,7 +3673,7 @@ class TestSoftDeleteOrganization:
         await save_fixture(organization)
 
         result = await organization_service.soft_delete_organization(
-            session, organization
+            session, organization, release_slug=True
         )
 
         # The live slug should no longer be the original, freeing it for reuse.
@@ -3228,7 +3705,9 @@ class TestSoftDeleteOrganization:
         organization: Organization,
     ) -> None:
         original_slug = organization.slug
-        await organization_service.soft_delete_organization(session, organization)
+        await organization_service.soft_delete_organization(
+            session, organization, release_slug=True
+        )
         await session.flush()
 
         repository = OrganizationRepository.from_session(session)
@@ -3250,7 +3729,7 @@ class TestSoftDeleteOrganization:
         await save_fixture(organization)
 
         result = await organization_service.soft_delete_organization(
-            session, organization
+            session, organization, release_slug=True
         )
 
         assert len(result.slug_history) == 2
@@ -3277,24 +3756,24 @@ class TestSoftDeleteOrganization:
         assert result.details == {}
         assert result.socials == []
 
-
-@pytest.mark.asyncio
-class TestDelete:
-    async def test_enqueues_polar_self_customer_deletion(
+    async def test_scrubs_slug_without_releasing(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
-        enqueue_delete_customer_mock = mocker.patch(
-            "polar.organization.service.polar_self_service.enqueue_delete_customer"
+        # Backoffice/erasure deletions scrub the slug as PII rather than
+        # archiving it for reuse, leaving no recoverable trace of the original.
+        mocker.patch("polar.organization.service.polar_self_service")
+        original_slug = organization.slug
+
+        result = await organization_service.soft_delete_organization(
+            session, organization
         )
 
-        await organization_service.delete(session, organization)
-
-        enqueue_delete_customer_mock.assert_called_once_with(
-            organization_id=organization.id
-        )
+        assert result.slug != original_slug
+        assert original_slug not in result.slug
+        assert result.slug_history == []
 
 
 @pytest.mark.asyncio
@@ -3615,16 +4094,29 @@ class TestSetOrganizationOffboarding:
         assert result.status == OrganizationStatus.OFFBOARDING
         assert result.status_updated_at is not None
 
+    async def test_from_denied(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+
+        result = await organization_service.set_organization_offboarding(
+            session, organization
+        )
+
+        assert result.status == OrganizationStatus.OFFBOARDING
+        assert result.status_updated_at is not None
+
     @pytest.mark.parametrize(
         "status",
         [
             OrganizationStatus.SNOOZED,
             OrganizationStatus.ACTIVE,
-            OrganizationStatus.DENIED,
             OrganizationStatus.CREATED,
         ],
     )
-    async def test_from_non_review_raises(
+    async def test_from_invalid_status_raises(
         self,
         status: OrganizationStatus,
         session: AsyncSession,
@@ -3668,6 +4160,54 @@ class TestSetOrganizationOffboarding:
             "payout.cancel_account_payouts",
             account_id=organization.account_id,
         )
+
+
+@pytest.mark.asyncio
+class TestSetOrganizationOffboarded:
+    async def test_from_offboarding(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.OFFBOARDING
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.set_organization_offboarded(
+            session, organization
+        )
+
+        assert result.status == OrganizationStatus.OFFBOARDED
+        assert result.status_updated_at is not None
+        assert result.internal_notes is not None
+        assert "Manually offboarded" in result.internal_notes
+        enqueue_job_mock.assert_called_once_with(
+            "organization.offboarded", organization_id=organization.id
+        )
+
+    @pytest.mark.parametrize(
+        "status",
+        [
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.SNOOZED,
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.CREATED,
+            OrganizationStatus.OFFBOARDED,
+        ],
+    )
+    async def test_from_non_offboarding_raises(
+        self,
+        status: OrganizationStatus,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = status
+
+        with pytest.raises(Exception, match="Only organizations that are offboarding"):
+            await organization_service.set_organization_offboarded(
+                session, organization
+            )
 
 
 @pytest.mark.asyncio
@@ -3904,6 +4444,212 @@ class TestUnsnoozeExpiredOrganizations:
 
 
 @pytest.mark.asyncio
+class TestOffboardExpiredOrganizations:
+    async def _make_offboarding(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        *,
+        status_updated_days_ago: int,
+    ) -> None:
+        organization.status = OrganizationStatus.OFFBOARDING
+        organization.status_updated_at = datetime.now(UTC) - timedelta(
+            days=status_updated_days_ago
+        )
+        await save_fixture(organization)
+
+    async def test_both_anchors_old_transitions(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # Both gates clear: chargeback window expired and merchant has had
+        # their wind-down period in offboarding.
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=121
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.paid,
+            created_at=datetime.now(UTC) - timedelta(days=121),
+        )
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert len(result) == 1
+        assert result[0].id == organization.id
+        assert result[0].status == OrganizationStatus.OFFBOARDED
+        enqueue_job_mock.assert_called_once_with(
+            "organization.offboarded", organization_id=organization.id
+        )
+
+    async def test_old_paid_order_but_recent_offboarding_skipped(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # Regression: an org freshly put into offboarding must still get its
+        # full wind-down period even if its last payment is already past the
+        # chargeback window. Anchor = MAX(last_paid, status_updated_at).
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=4
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.paid,
+            created_at=datetime.now(UTC) - timedelta(days=149),
+        )
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert result == []
+        assert organization.status == OrganizationStatus.OFFBOARDING
+
+    async def test_recent_paid_order_skipped(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # Old offboarding date, but a recent paid order anchors the window.
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=200
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.paid,
+            created_at=datetime.now(UTC) - timedelta(days=10),
+        )
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert result == []
+        assert organization.status == OrganizationStatus.OFFBOARDING
+
+    async def test_partially_refunded_recent_order_skipped(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # Partially refunded orders still count as paid-and-not-fully-refunded.
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=200
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.partially_refunded,
+            created_at=datetime.now(UTC) - timedelta(days=10),
+        )
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert result == []
+        assert organization.status == OrganizationStatus.OFFBOARDING
+
+    async def test_fully_refunded_order_falls_back_to_status_updated_at(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # A fully refunded order is ignored, so the window falls back to the
+        # offboarding-entry date, which is old enough here.
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=121
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.refunded,
+            created_at=datetime.now(UTC) - timedelta(days=1),
+        )
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert len(result) == 1
+        assert result[0].status == OrganizationStatus.OFFBOARDED
+        enqueue_job_mock.assert_called_once_with(
+            "organization.offboarded", organization_id=organization.id
+        )
+
+    async def test_no_orders_uses_status_updated_at(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=121
+        )
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert len(result) == 1
+        assert result[0].status == OrganizationStatus.OFFBOARDED
+        enqueue_job_mock.assert_called_once_with(
+            "organization.offboarded", organization_id=organization.id
+        )
+
+    async def test_recent_offboarding_no_orders_skipped(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=10
+        )
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert result == []
+        assert organization.status == OrganizationStatus.OFFBOARDING
+
+    async def test_old_offboarding_recent_paid_order_skipped(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        # Mirror of the resumeset case: chargeback gate clears (offboarding is
+        # ancient) but the merchant just took a payment, so we must wait
+        # another 120 days from that payment before the terminal transition.
+        await self._make_offboarding(
+            save_fixture, organization, status_updated_days_ago=200
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            status=OrderStatus.paid,
+            created_at=datetime.now(UTC) - timedelta(days=4),
+        )
+
+        result = await organization_service.offboard_expired_organizations(session)
+
+        assert result == []
+        assert organization.status == OrganizationStatus.OFFBOARDING
+
+
+@pytest.mark.asyncio
 class TestSetPayoutAccount:
     @pytest.mark.auth
     async def test_set_payout_account_on_organization(
@@ -4034,6 +4780,22 @@ class TestSetPayoutAccount:
         assert cancel_calls == []
 
 
+class TestLegacyOrganizationStatus:
+    @pytest.mark.parametrize("status", list(OrganizationStatus))
+    def test_from_status_covers_every_status(self, status: OrganizationStatus) -> None:
+        # Every status must map to a legacy value — a missing entry would 500
+        # when serializing the org through the public schema.
+        assert isinstance(
+            LegacyOrganizationStatus.from_status(status), LegacyOrganizationStatus
+        )
+
+    def test_offboarded_maps_to_denied(self) -> None:
+        assert (
+            LegacyOrganizationStatus.from_status(OrganizationStatus.OFFBOARDED)
+            == LegacyOrganizationStatus.DENIED
+        )
+
+
 @pytest.mark.asyncio
 class TestStatusTransitions:
     """Tests for the organization status transition rules enforced in
@@ -4048,6 +4810,7 @@ class TestStatusTransitions:
             OrganizationStatus.ACTIVE,
             OrganizationStatus.DENIED,
             OrganizationStatus.OFFBOARDING,
+            OrganizationStatus.OFFBOARDED,
         ],
     )
     async def test_every_status_can_go_to_blocked(
@@ -4058,6 +4821,47 @@ class TestStatusTransitions:
         organization.status = current
         organization.set_status(OrganizationStatus.BLOCKED)
         assert organization.status == OrganizationStatus.BLOCKED
+
+    async def test_offboarding_can_go_to_offboarded(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.OFFBOARDING
+        organization.set_status(OrganizationStatus.OFFBOARDED)
+        assert organization.status == OrganizationStatus.OFFBOARDED
+        assert (
+            organization.capabilities
+            == STATUS_CAPABILITIES[OrganizationStatus.OFFBOARDED]
+        )
+
+    async def test_offboarded_enables_payout_blocks_payments(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.OFFBOARDING
+        organization.set_status(OrganizationStatus.OFFBOARDED)
+        assert organization.can_payout is True
+        assert organization.can_accept_payments is False
+        assert organization.can_renew_subscriptions is False
+        assert organization.can_refund is False
+
+    @pytest.mark.parametrize(
+        "target",
+        [
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.OFFBOARDING,
+        ],
+    )
+    async def test_offboarded_is_terminal_except_blocked(
+        self,
+        target: OrganizationStatus,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.OFFBOARDED
+        with pytest.raises(InvalidStatusTransitionError):
+            organization.set_status(target)
 
     async def test_review_can_go_to_offboarding(
         self,
@@ -4083,17 +4887,24 @@ class TestStatusTransitions:
         organization.set_status(OrganizationStatus.REVIEW)
         assert organization.status == OrganizationStatus.REVIEW
 
+    async def test_denied_can_go_to_offboarding(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.DENIED
+        organization.set_status(OrganizationStatus.OFFBOARDING)
+        assert organization.status == OrganizationStatus.OFFBOARDING
+
     @pytest.mark.parametrize(
         "current",
         [
             OrganizationStatus.CREATED,
             OrganizationStatus.SNOOZED,
             OrganizationStatus.ACTIVE,
-            OrganizationStatus.DENIED,
             OrganizationStatus.BLOCKED,
         ],
     )
-    async def test_only_review_can_go_to_offboarding(
+    async def test_only_review_or_denied_can_go_to_offboarding(
         self,
         current: OrganizationStatus,
         organization: Organization,
@@ -4503,3 +5314,137 @@ class TestChangeOwnerRoleSwap:
         assert new is not None
         assert previous.role == OrganizationRole.member
         assert new.role == OrganizationRole.owner
+
+
+@pytest.mark.asyncio
+class TestAddUser:
+    @pytest.mark.parametrize(
+        ("organization_role", "expected_member_role"),
+        [
+            (OrganizationRole.owner, MemberRole.billing_manager),
+            (OrganizationRole.admin, MemberRole.billing_manager),
+            (OrganizationRole.member, MemberRole.member),
+        ],
+    )
+    async def test_mirrors_org_role_to_polar_self_member_role(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+        organization_role: OrganizationRole,
+        expected_member_role: MemberRole,
+    ) -> None:
+        add_member_mock = mocker.patch(
+            "polar.organization.service.polar_self_service.enqueue_add_member"
+        )
+
+        await organization_service.add_user(
+            session, organization, user, role=organization_role
+        )
+
+        add_member_mock.assert_called_once_with(
+            external_customer_id=str(organization.id),
+            email=user.email,
+            name=user.full_name or user.email.split("@", 1)[0],
+            external_id=str(user.id),
+            role=expected_member_role,
+            delay=None,
+        )
+
+
+@pytest.mark.asyncio
+class TestCancelExpiredOrganizationsSubscriptions:
+    async def test_enqueues_for_expired_org(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = OrganizationStatus.DENIED
+        organization.status_updated_at = datetime.now(UTC) - timedelta(days=8)
+        await save_fixture(organization)
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        result = await organization_service.cancel_expired_organizations_subscriptions(
+            session
+        )
+
+        assert organization.id in {org.id for org in result}
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.cancel_for_organization",
+            organization_id=organization.id,
+        )
+
+    async def test_skips_recent_org(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = OrganizationStatus.DENIED
+        organization.status_updated_at = datetime.now(UTC) - timedelta(days=1)
+        await save_fixture(organization)
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        result = await organization_service.cancel_expired_organizations_subscriptions(
+            session
+        )
+
+        assert organization.id not in {org.id for org in result}
+        enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestUpdateSSOEnforcement:
+    @pytest.mark.auth
+    async def test_enabling_revokes_tokens(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        revoke_mock = mocker.patch.object(
+            oauth2_token_service, "revoke_for_sso_enforcement"
+        )
+        organization.sso_enforced = False
+        session.add(organization)
+        await session.flush()
+
+        await organization_service.update(
+            session, organization, OrganizationUpdate(sso_enforced=True)
+        )
+
+        revoke_mock.assert_awaited_once_with(session, organization.id)
+
+    @pytest.mark.auth
+    async def test_already_enforced_does_not_revoke(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        revoke_mock = mocker.patch.object(
+            oauth2_token_service, "revoke_for_sso_enforcement"
+        )
+        organization.sso_enforced = True
+        session.add(organization)
+        await session.flush()
+
+        await organization_service.update(
+            session, organization, OrganizationUpdate(sso_enforced=True)
+        )
+
+        revoke_mock.assert_not_awaited()

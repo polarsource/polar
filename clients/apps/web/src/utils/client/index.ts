@@ -1,4 +1,6 @@
+import { promptSessionRefresh } from '@/components/SessionRefresh/store'
 import { toast } from '@/components/Toast/use-toast'
+import { isSessionNotFreshError } from '@/utils/api/errors'
 import {
   createClient as baseCreateClient,
   Client,
@@ -16,6 +18,19 @@ const errorMiddleware: Middleware = {
   },
 }
 
+const sessionFreshnessMiddleware: Middleware = {
+  onResponse: async ({ response }) => {
+    if (response.status !== 403 || typeof window === 'undefined') return
+    const body = await response
+      .clone()
+      .json()
+      .catch(() => null)
+    if (isSessionNotFreshError(body)) {
+      promptSessionRefresh()
+    }
+  },
+}
+
 const CLIENT_VERSION_HEADERS = {
   'X-Polar-Client-Version': `web/${
     process.env.NEXT_PUBLIC_VERCEL_GIT_COMMIT_SHA?.slice(0, 8) ?? 'dev'
@@ -29,6 +44,7 @@ export const createClientSideAPI = (token?: string): Client => {
     CLIENT_VERSION_HEADERS,
   )
   api.use(errorMiddleware)
+  api.use(sessionFreshnessMiddleware)
   return api
 }
 

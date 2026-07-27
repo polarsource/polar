@@ -75,7 +75,13 @@ export function createMeteredPrice(
     unit_amount: '0.05',
     cap_amount: null,
     meter_id: 'meter_1',
-    meter: { id: 'meter_1', name: 'API Calls', unit: 'scalar' },
+    meter: {
+      id: 'meter_1',
+      name: 'API Calls',
+      unit: 'scalar',
+      custom_label: null,
+      custom_multiplier: null,
+    },
     ...overrides,
   }
 }
@@ -123,6 +129,7 @@ const defaults: ProductCheckoutPublic = {
   customer_billing_name: null,
   customer_billing_address: null,
   customer_tax_id: null,
+  payment_method_type: null,
   payment_processor_metadata: {},
   billing_address_fields: {
     country: 'required',
@@ -153,6 +160,8 @@ const defaults: ProductCheckoutPublic = {
     recurring_interval: null,
     recurring_interval_count: null,
     is_recurring: false,
+    meter_interval: null,
+    meter_interval_count: null,
     trial_interval: null,
     trial_interval_count: null,
     visibility: 'public',

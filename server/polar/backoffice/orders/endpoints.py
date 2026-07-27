@@ -49,24 +49,6 @@ class StatusDescriptionListItem(description_list.DescriptionListItem[Order]):
         return None
 
 
-class TaxRateItem(description_list.DescriptionListItem[Order]):
-    def __init__(self, rate: float):
-        super().__init__("Tax Rate")
-        self.rate = rate
-
-    def render(self, request: Request, item: Order) -> Generator[None] | None:
-        text(f"{self.rate:.2f}%")
-        return None
-
-
-class TaxIDItem(description_list.DescriptionListAttrItem[Order]):
-    def get_value(self, item: Order) -> Any:
-        value = self.get_raw_value(item)
-        if value is None:
-            return None
-        return formatters.tax_id(value)
-
-
 class InvoicePDFItem(description_list.DescriptionListItem[Order]):
     def __init__(self, url: str | None):
         super().__init__("Invoice PDF")
@@ -115,8 +97,10 @@ async def list(
     request: Request,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    query: str | None = Query(None),
-    organization: str | None = Query(None),
+    query: Annotated[str | None, BeforeValidator(empty_str_to_none), Query()] = None,
+    organization: Annotated[
+        str | None, BeforeValidator(empty_str_to_none), Query()
+    ] = None,
     status: Annotated[
         OrderStatus | None, BeforeValidator(empty_str_to_none), Query()
     ] = None,
@@ -356,6 +340,12 @@ async def get(
                             hx_target="#modal",
                         ):
                             text("Void")
+                    elif order.status == OrderStatus.void:
+                        with button(
+                            hx_get=str(request.url_for("orders:unvoid", id=order.id)),
+                            hx_target="#modal",
+                        ):
+                            text("Unvoid")
 
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 # Order Details
@@ -982,7 +972,8 @@ async def void(
         with tag.div(classes="flex flex-col gap-4"):
             with tag.p():
                 text(
-                    "Are you sure you want to void this order? This action cannot be undone."
+                    "Are you sure you want to void this order? "
+                    "Only Polar support can undo this action."
                 )
             with tag.div(classes="modal-action"):
                 with tag.form(method="dialog"):
@@ -994,3 +985,65 @@ async def void(
                     variant="error",
                 ):
                     text("Void Order")
+
+
+@router.api_route("/{id}/unvoid", name="orders:unvoid", methods=["GET", "POST"])
+async def unvoid(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    order_repository = OrderRepository.from_session(session)
+    if request.method == "POST":
+        order = await order_repository.get_by_id(
+            id,
+            options=order_repository.get_eager_options(),
+            for_update=True,
+        )
+    else:
+        order = await order_repository.get_by_id(
+            id,
+            options=order_repository.get_eager_options(),
+        )
+
+    if order is None:
+        raise HTTPException(status_code=404)
+
+    if order.status != OrderStatus.void:
+        await add_toast(request, "Only void orders can be unvoided.", "error")
+        return HXRedirectResponse(
+            request, str(request.url_for("orders:get", id=id)), 303
+        )
+
+    if request.method == "POST":
+        try:
+            await order_service.unvoid(session, order)
+            await add_toast(request, "Order unvoided successfully.", "success")
+            return HXRedirectResponse(
+                request, str(request.url_for("orders:get", id=id)), 303
+            )
+        except Exception as e:
+            await add_toast(request, f"Failed to unvoid order: {e}", "error")
+
+    with modal("Unvoid order", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text(
+                    "This will return the order to pending. It will not retry payment, "
+                    "resume dunning, or change the linked subscription."
+                )
+            if order.subscription is not None:
+                with tag.p(classes="text-warning"):
+                    text(
+                        f"Linked subscription status: {order.subscription.status.value}."
+                    )
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    hx_post=str(request.url_for("orders:unvoid", id=id)),
+                    hx_target="#modal",
+                    variant="primary",
+                ):
+                    text("Unvoid Order")

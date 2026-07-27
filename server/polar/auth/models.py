@@ -1,5 +1,6 @@
 from functools import cached_property
 from typing import Any, Generic, TypeGuard, TypeVar
+from uuid import UUID
 
 from polar.enums import RateLimitGroup
 from polar.models import (
@@ -42,11 +43,23 @@ class AuthSubject(Generic[S]):  # noqa: UP046 # Don't use the new syntax as it a
     subject: S
     scopes: set[Scope]
     session: Session | None
+    # Organizations this credential is down-scoped to. ``None`` means
+    # unrestricted (all the subject's organizations, resolved live); a set
+    # restricts access to those organizations, always intersected with the
+    # subject's current membership.
+    organization_ids: frozenset[UUID] | None
 
-    def __init__(self, subject: S, scopes: set[Scope], session: Session | None) -> None:
+    def __init__(
+        self,
+        subject: S,
+        scopes: set[Scope],
+        session: Session | None,
+        organization_ids: frozenset[UUID] | None = None,
+    ) -> None:
         self.subject = subject
         self.scopes = scopes
         self.session = session
+        self.organization_ids = organization_ids
 
     @cached_property
     def rate_limit_key(self) -> tuple[str, RateLimitGroup]:

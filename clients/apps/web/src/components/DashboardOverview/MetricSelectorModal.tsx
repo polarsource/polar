@@ -197,9 +197,9 @@ export const MetricDashboardEditorContent = ({
           </div>
         )}
 
-        <div className="dark:divide-polar-700 grid grid-cols-2 divide-x divide-gray-100 p-6">
+        <div className="dark:divide-polar-700 grid grid-cols-1 gap-y-6 divide-gray-100 p-6 md:grid-cols-2 md:gap-y-0 md:divide-x">
           {/* Left panel — selected metrics */}
-          <div className="flex flex-col gap-y-4 pr-6">
+          <div className="flex flex-col gap-y-4 md:pr-6">
             <div className="flex items-center justify-between">
               <h3 className="text-sm font-medium text-gray-900 dark:text-white">
                 Selected
@@ -227,7 +227,7 @@ export const MetricDashboardEditorContent = ({
                 items={selected.map((m) => m.id)}
                 strategy={verticalListSortingStrategy}
               >
-                <div className="flex max-h-96 flex-col gap-y-2 overflow-y-auto">
+                <div className="flex max-h-64 flex-col gap-y-2 overflow-y-auto md:max-h-96">
                   {selected.map((item) => (
                     <SortableMetricRow
                       key={item.id}
@@ -261,11 +261,11 @@ export const MetricDashboardEditorContent = ({
           </div>
 
           {/* Right panel — available metrics */}
-          <div className="flex flex-col gap-y-4 pl-6">
+          <div className="flex flex-col gap-y-4 md:pl-6">
             <h3 className="text-sm font-medium text-gray-900 dark:text-white">
               Metrics
             </h3>
-            <div className="flex h-96 flex-col gap-y-2 overflow-y-auto">
+            <div className="flex max-h-64 flex-col gap-y-2 overflow-y-auto md:h-96 md:max-h-none">
               {groupedAvailable.map(({ category, metrics }) => (
                 <details key={category} className="group">
                   <summary className="dark:bg-polar-800 flex cursor-pointer list-none items-center justify-between rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium select-none">

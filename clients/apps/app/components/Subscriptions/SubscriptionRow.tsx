@@ -20,6 +20,7 @@ const subscriptionStatusColors: Record<
   incomplete: 'yellow',
   incomplete_expired: 'red',
   unpaid: 'yellow',
+  paused: 'yellow',
 }
 
 export interface SubscriptionRowProps {

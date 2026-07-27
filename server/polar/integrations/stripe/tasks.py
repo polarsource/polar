@@ -9,10 +9,15 @@ from dramatiq import Retry
 
 from polar.checkout.service import NotConfirmedCheckout
 from polar.dispute.service import dispute as dispute_service
+from polar.enums import PaymentProcessor
 from polar.external_event.service import external_event as external_event_service
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.logging import Logger
+from polar.models.dispute import DisputeStatus
+from polar.organization.service import organization as organization_service
 from polar.payment.service import UnhandledPaymentIntent
 from polar.payment.service import payment as payment_service
+from polar.payment_method.repository import PaymentMethodRepository
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.payout.service import payout as payout_service
 from polar.payout_account.service import payout_account as payout_account_service
@@ -27,6 +32,7 @@ from polar.user.service import user as user_service
 from polar.worker import AsyncSessionMaker, TaskPriority, actor, can_retry, get_retries
 
 from . import payment
+from .account_risk import parse_account_risk_event
 
 log: Logger = structlog.get_logger()
 
@@ -62,6 +68,29 @@ async def account_updated(event_id: uuid.UUID) -> None:
             await payout_account_service.update_account_from_stripe(
                 session, stripe_account=stripe_account
             )
+
+
+@actor(actor_name="stripe.account_risk_signal", priority=TaskPriority.MEDIUM)
+@stripe_api_connection_error_retry
+async def account_risk_signal(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            stripe_event_id = event.data.get("id")
+            if not stripe_event_id:
+                log.warning("Stripe risk event without id")
+                return
+
+            # These are thin events with no inline data; fetch the full event.
+            full_event = await stripe_service.get_account_risk_event(stripe_event_id)
+            signal = parse_account_risk_event(full_event)
+            if signal is None:
+                log.warning(
+                    "Unparseable Stripe risk event",
+                    stripe_event_id=stripe_event_id,
+                )
+                return
+
+            await organization_service.handle_account_risk_signal(session, signal)
 
 
 @actor(actor_name="stripe.webhook.payment_intent.succeeded", priority=TaskPriority.HIGH)
@@ -309,6 +338,12 @@ async def charge_dispute_created(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             dispute = cast(stripe_lib.Dispute, event.stripe_data.data.object)
+            # Discard a stale event already superseded by a newer status (e.g. RDR close).
+            current = await stripe_service.get_dispute(dispute.id)
+            if DisputeStatus.from_stripe(dispute.status) != DisputeStatus.from_stripe(
+                current.status
+            ):
+                return
             await dispute_service.upsert_from_stripe(session, dispute)
 
 
@@ -318,6 +353,12 @@ async def charge_dispute_updated(event_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         async with external_event_service.handle_stripe(session, event_id) as event:
             dispute = cast(stripe_lib.Dispute, event.stripe_data.data.object)
+            # Discard a stale event already superseded by a newer status (e.g. RDR close).
+            current = await stripe_service.get_dispute(dispute.id)
+            if DisputeStatus.from_stripe(dispute.status) != DisputeStatus.from_stripe(
+                current.status
+            ):
+                return
             await dispute_service.upsert_from_stripe(session, dispute)
 
 
@@ -355,6 +396,49 @@ async def payout_failed(event_id: uuid.UUID) -> None:
         async with external_event_service.handle_stripe(session, event_id) as event:
             payout = cast(stripe_lib.Payout, event.stripe_data.data.object)
             await payout_service.update_from_stripe(session, payout)
+
+
+@actor(actor_name="stripe.webhook.payment_method.detached", priority=TaskPriority.HIGH)
+@stripe_api_connection_error_retry
+async def payment_method_detached(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            stripe_payment_method = cast(
+                stripe_lib.PaymentMethod, event.stripe_data.data.object
+            )
+            repository = PaymentMethodRepository.from_session(session)
+            payment_method = await repository.get_by_processor_id(
+                PaymentProcessor.stripe,
+                stripe_payment_method.id,
+                options=repository.get_eager_options(),
+            )
+            if payment_method is None:
+                return
+            await payment_method_service.delete(session, payment_method, force=True)
+
+
+@actor(
+    actor_name="stripe.webhook.payment_method.automatically_updated",
+    priority=TaskPriority.HIGH,
+)
+@stripe_api_connection_error_retry
+async def payment_method_automatically_updated(event_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        async with external_event_service.handle_stripe(session, event_id) as event:
+            stripe_payment_method = cast(
+                stripe_lib.PaymentMethod, event.stripe_data.data.object
+            )
+            repository = PaymentMethodRepository.from_session(session)
+            payment_method = await repository.get_by_processor_id(
+                PaymentProcessor.stripe,
+                stripe_payment_method.id,
+                options=repository.get_eager_options(),
+            )
+            if payment_method is None:
+                return
+            await payment_method_service.upsert_from_stripe(
+                session, payment_method.customer, stripe_payment_method
+            )
 
 
 @actor(

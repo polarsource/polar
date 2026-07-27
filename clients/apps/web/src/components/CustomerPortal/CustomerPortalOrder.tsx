@@ -241,6 +241,7 @@ const CustomerPortalOrder = ({
                 ? { subscriptionId: order.subscription_id }
                 : { orderId: order.id }
             }
+            organizationSlug={order.product?.organization.slug ?? ''}
           />
         )}
 

@@ -226,6 +226,7 @@ export const CheckoutLinkListSidebar = ({
             organization={organization}
             productIds={productIds ?? []}
             onClose={handleCreateCheckoutLinkClose}
+            hide={hideCreateCheckoutLinkModal}
           />
         }
       />

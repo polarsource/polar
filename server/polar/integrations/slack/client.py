@@ -1,11 +1,27 @@
+import typing
 from typing import Any
 
 import httpx
 import structlog
 
+from polar.exceptions import PolarError
+
+from .payload import SlackPayload
+
 log = structlog.get_logger()
 
 BASE_URL = "https://slack.com/api"
+
+
+class SlackClientError(PolarError):
+    pass
+
+
+class SlackClientResponseError(SlackClientError):
+    def __init__(self, payload: dict[str, Any]) -> None:
+        self.payload = payload
+        message = f"Slack API request failed: {payload}"
+        super().__init__(message)
 
 
 class SlackClient:
@@ -160,13 +176,16 @@ class SlackClient:
         *,
         bot_token: str,
         channel: str,
-        text: str,
+        **payload: typing.Unpack[SlackPayload],
     ) -> dict[str, Any]:
-        return await self._post_authed(
+        response = await self._post_authed(
             "/chat.postMessage",
             bot_token=bot_token,
-            json={"channel": channel, "text": text},
+            json={"channel": channel, **payload},
         )
+        if not response.get("ok"):
+            raise SlackClientResponseError(response)
+        return response
 
     async def _post_authed(
         self,

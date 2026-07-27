@@ -43,6 +43,8 @@ export default [
       'polar/no-style-box': 'error',
       'polar/no-style-text': 'error',
       'polar/no-next-image': 'error',
+      'polar/no-external-link-component': 'error',
+      'polar/require-external-link-rel': 'error',
     },
   },
   {
@@ -90,6 +92,7 @@ export default [
       'e2e/**',
       'playwright-report/**',
       'babel.config.js',
+      'scripts/**',
     ],
   },
 ]

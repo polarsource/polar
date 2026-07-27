@@ -1,9 +1,6 @@
 import { schemas } from '@polar-sh/client'
 import { describe, expect, it } from 'vitest'
-import {
-  getCustomerSubscriptionBasePrice,
-  getPendingTotalAmount,
-} from './pricing'
+import { getCustomerSubscriptionBasePrice } from './pricing'
 
 const createFixedPrice = (
   currency: string,
@@ -134,99 +131,5 @@ describe('getCustomerSubscriptionBasePrice', () => {
     const subscription = createSubscription('dkk', [createCustomPrice('dkk')])
 
     expect(getCustomerSubscriptionBasePrice(subscription)).toBeNull()
-  })
-})
-
-const createProduct = (prices: schemas['ProductPrice'][]): schemas['Product'] =>
-  ({
-    id: 'product-2',
-    created_at: '2026-04-10T00:00:00Z',
-    modified_at: null,
-    name: 'Pro',
-    description: null,
-    recurring_interval: 'month',
-    recurring_interval_count: 1,
-    is_recurring: true,
-    is_archived: false,
-    organization_id: 'org-1',
-    prices,
-    benefits: [],
-    medias: [],
-  }) as unknown as schemas['Product']
-
-const createSeatBasedPrice = (
-  currency: string,
-  tiers: {
-    min_seats: number
-    max_seats?: number | null
-    price_per_seat: number
-  }[],
-): schemas['ProductPriceSeatBased'] =>
-  ({
-    id: `price-seat-${currency}`,
-    created_at: '2026-04-10T00:00:00Z',
-    modified_at: null,
-    source: 'catalog',
-    amount_type: 'seat_based',
-    price_currency: currency,
-    tax_behavior: null,
-    is_archived: false,
-    product_id: 'product-2',
-    seat_tiers: { tiers },
-  }) as schemas['ProductPriceSeatBased']
-
-describe('getPendingTotalAmount', () => {
-  it('returns the fixed price amount for a fixed-price product', () => {
-    const product = createProduct([createFixedPrice('usd', 9900)])
-    expect(getPendingTotalAmount(product, 'usd', 1)).toBe(9900)
-  })
-
-  it('returns null when no price matches the currency', () => {
-    const product = createProduct([createFixedPrice('usd', 9900)])
-    expect(getPendingTotalAmount(product, 'eur', 1)).toBeNull()
-  })
-
-  it('returns null for custom price products', () => {
-    const product = createProduct([createCustomPrice('usd')])
-    expect(getPendingTotalAmount(product, 'usd', 1)).toBeNull()
-  })
-
-  it('calculates total for single-tier seat-based pricing', () => {
-    const product = createProduct([
-      createSeatBasedPrice('usd', [
-        { min_seats: 1, max_seats: null, price_per_seat: 1000 },
-      ]),
-    ])
-    expect(getPendingTotalAmount(product, 'usd', 5)).toBe(5000)
-  })
-
-  it('calculates total for multi-tier seat-based pricing', () => {
-    const product = createProduct([
-      createSeatBasedPrice('usd', [
-        { min_seats: 1, max_seats: 5, price_per_seat: 1000 },
-        { min_seats: 6, max_seats: 10, price_per_seat: 800 },
-        { min_seats: 11, max_seats: null, price_per_seat: 600 },
-      ]),
-    ])
-
-    // 3 seats: all in first tier
-    expect(getPendingTotalAmount(product, 'usd', 3)).toBe(3000)
-
-    // 5 seats: exactly fills first tier
-    expect(getPendingTotalAmount(product, 'usd', 5)).toBe(5000)
-
-    // 7 seats: 5 × 1000 + 2 × 800
-    expect(getPendingTotalAmount(product, 'usd', 7)).toBe(6600)
-
-    // 10 seats: 5 × 1000 + 5 × 800
-    expect(getPendingTotalAmount(product, 'usd', 10)).toBe(9000)
-
-    // 15 seats: 5 × 1000 + 5 × 800 + 5 × 600
-    expect(getPendingTotalAmount(product, 'usd', 15)).toBe(12000)
-  })
-
-  it('returns null for a product with no prices', () => {
-    const product = createProduct([])
-    expect(getPendingTotalAmount(product, 'usd', 1)).toBeNull()
   })
 })

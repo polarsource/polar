@@ -2,6 +2,7 @@ import json
 import secrets
 import time
 import typing
+import uuid
 
 import structlog
 from authlib.oauth2 import AuthorizationServer as _AuthorizationServer
@@ -28,6 +29,7 @@ from polar.config import settings
 from polar.kit.crypto import generate_token, get_token_hash
 from polar.logging import Logger
 from polar.models import OAuth2Client, OAuth2Token, User
+from polar.models.oauth2_token_organization import OAuth2TokenOrganization
 from polar.oauth2.sub_type import SubTypeValue
 
 from .constants import (
@@ -112,8 +114,11 @@ class ClientRegistrationEndpoint(_ClientRegistrationEndpoint):
 
         if request.user is not None:
             oauth2_client.user_id = request.user.id
-        oauth2_client.registration_access_token = generate_token(
-            prefix=CLIENT_REGISTRATION_TOKEN_PREFIX
+
+        # Sync: must run while we hold the plaintext, and authlib can't await.
+        oauth2_client.set_client_secret_sync(oauth2_client.client_secret)
+        oauth2_client.set_registration_access_token_sync(
+            generate_token(prefix=CLIENT_REGISTRATION_TOKEN_PREFIX)
         )
 
         self.server.session.add(oauth2_client)
@@ -353,6 +358,15 @@ class AuthorizationServer(_AuthorizationServer):
             **token_data, client_id=client.client_id, sub_type=sub_type
         )
         oauth2_token.sub = sub
+
+        organization_ids: list[uuid.UUID] = (
+            getattr(request, "organization_ids", None) or []
+        )
+        oauth2_token.organization_scopes = [
+            OAuth2TokenOrganization(organization_id=organization_id)
+            for organization_id in organization_ids
+        ]
+
         self.session.add(oauth2_token)
         self.session.flush()
 

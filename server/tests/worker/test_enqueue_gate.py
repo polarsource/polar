@@ -9,6 +9,14 @@ from polar.config import settings
 from polar.logging import CorrelationID
 from polar.redis import Redis
 from polar.worker import JobQueueManager
+from polar.worker._sqs import actor_to_queue_name
+
+
+def test_actor_to_queue_name_uses_single_worker_queue(mocker: MockerFixture) -> None:
+    mocker.patch.object(settings, "WORKER_SQS_QUEUE_PREFIX", "polar-test-tasks")
+
+    assert actor_to_queue_name("customer.state_changed") == "polar-test-tasks-default"
+    assert actor_to_queue_name("dummy") == "polar-test-tasks-default"
 
 
 @pytest.mark.asyncio

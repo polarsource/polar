@@ -7,6 +7,8 @@ import { Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
+import { extractApiErrorMessage } from '@/utils/api/errors'
+import { toast } from '../Toast/use-toast'
 import {
   AccessTokenForm,
   type AccessTokenCreate,
@@ -37,7 +39,7 @@ export const CreateAccessTokenModal = ({
 
   const onCreate = useCallback(
     async (data: AccessTokenCreate) => {
-      const { data: created } = await createToken.mutateAsync({
+      const { data: created, error } = await createToken.mutateAsync({
         comment: data.comment ? data.comment : '',
         expires_in:
           data.expires_in === 'no-expiration' ? null : data.expires_in,
@@ -47,6 +49,11 @@ export const CreateAccessTokenModal = ({
         onSuccess(created)
         reset({ scopes: [] })
         createToken.reset()
+      } else if (error) {
+        toast({
+          title: 'Could not create access token',
+          description: extractApiErrorMessage(error),
+        })
       }
     },
     [createToken, onSuccess, reset],

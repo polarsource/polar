@@ -8,22 +8,6 @@ from polar.auth.scope import Scope
 from polar.exceptions import NotPermitted
 from polar.models.member import MemberRole
 
-# Customer-only authenticators (legacy, for non-migrated orgs)
-_CustomerPortalRead = Authenticator(
-    required_scopes={
-        Scope.customer_portal_read,
-        Scope.customer_portal_write,
-    },
-    allowed_subjects={Customer},
-)
-CustomerPortalRead = Annotated[AuthSubject[Customer], Depends(_CustomerPortalRead)]
-
-_CustomerPortalWrite = Authenticator(
-    required_scopes={Scope.customer_portal_write},
-    allowed_subjects={Customer},
-)
-CustomerPortalWrite = Annotated[AuthSubject[Customer], Depends(_CustomerPortalWrite)]
-
 _CustomerPortalOAuthAccount = Authenticator(
     required_scopes={Scope.customer_portal_write},
     allowed_subjects={Customer, Member, Anonymous},
@@ -33,25 +17,11 @@ CustomerPortalOAuthAccount = Annotated[
 ]
 
 
-# Member-only authenticators (for orgs with member_model_enabled=true)
-_CustomerPortalMemberRead = Authenticator(
-    required_scopes={
-        Scope.customer_portal_read,
-        Scope.customer_portal_write,
-    },
-    allowed_subjects={Member},
-)
-CustomerPortalMemberRead = Annotated[
-    AuthSubject[Member], Depends(_CustomerPortalMemberRead)
-]
-
+# Member-only write authenticator (used by _RoleCheck for role-based access)
 _CustomerPortalMemberWrite = Authenticator(
     required_scopes={Scope.customer_portal_write},
     allowed_subjects={Member},
 )
-CustomerPortalMemberWrite = Annotated[
-    AuthSubject[Member], Depends(_CustomerPortalMemberWrite)
-]
 
 
 class _RoleCheck:
@@ -69,11 +39,6 @@ class _RoleCheck:
 
 
 # Role-based authenticators (Member-only, with role restrictions)
-CustomerPortalOwner = Annotated[
-    AuthSubject[Member],
-    Depends(_RoleCheck(allowed_roles={MemberRole.owner})),
-]
-
 CustomerPortalBillingManager = Annotated[
     AuthSubject[Member],
     Depends(_RoleCheck(allowed_roles={MemberRole.owner, MemberRole.billing_manager})),

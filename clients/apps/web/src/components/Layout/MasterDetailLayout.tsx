@@ -13,7 +13,6 @@ export const MasterDetailLayout = ({
   children?: React.ReactNode
   wrapperClassName?: string
   listView?: React.ReactNode
-  listViewClassName?: string
   placement?: 'left' | 'right'
 }) => {
   const isIndexPage = !useSelectedLayoutSegment()

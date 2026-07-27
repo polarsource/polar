@@ -1,6 +1,7 @@
 'use client'
 
-import { List, ListItem } from '@polar-sh/orbit'
+import { Grid, GridItem, List, ListItem, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { ReactNode } from 'react'
 
 interface RankedListItemProps {
@@ -8,6 +9,7 @@ interface RankedListItemProps {
   rank: number
   label: ReactNode
   stats: ReactNode
+  value: ReactNode
   share: number
   onSelect?: () => void
 }
@@ -17,6 +19,7 @@ export const RankedListItem = ({
   rank,
   label,
   stats,
+  value,
   share,
   onSelect,
 }: RankedListItemProps) => {
@@ -27,24 +30,67 @@ export const RankedListItem = ({
       className="flex-col items-stretch gap-3 py-4"
       onSelect={onSelect}
     >
-      <div className="flex items-center gap-4">
-        <span className="dark:text-polar-500 shrink-0 text-xs text-gray-400 tabular-nums">
-          {rank}
-        </span>
-        {label}
-        <div className="flex shrink-0 items-center gap-3">{stats}</div>
-      </div>
-      <div className="flex items-center gap-3">
-        <div className="dark:bg-polar-700 relative h-1 flex-1 overflow-hidden rounded-full bg-gray-100">
-          <div
-            className="absolute inset-y-0 left-0 rounded-full bg-black transition-all dark:bg-white"
-            style={{ width: `${sharePct}%` }}
+      <Grid
+        templateAreas={{
+          base: '"rank label value" ". stats stats"',
+          sm: '"rank label stats value"',
+        }}
+        templateColumns={{
+          base: 'auto minmax(0, 1fr) auto',
+          sm: 'auto minmax(0, 1fr) auto auto',
+        }}
+        alignItems="center"
+        columnGap="l"
+        rowGap="s"
+      >
+        <GridItem area="rank">
+          <Text as="span" variant="caption" color="muted" tabularNums>
+            {rank}
+          </Text>
+        </GridItem>
+        <GridItem area="label" minWidth={0} alignItems="center" columnGap="m">
+          {label}
+        </GridItem>
+        <GridItem
+          area="stats"
+          alignItems="center"
+          flexWrap="wrap"
+          justifyContent={{ sm: 'end' }}
+          columnGap="m"
+          rowGap="xs"
+        >
+          {stats}
+        </GridItem>
+        <GridItem area="value" justifyContent="end">
+          {value}
+        </GridItem>
+      </Grid>
+      <Box alignItems="center" columnGap="m">
+        <Box
+          position="relative"
+          flex={1}
+          height={4}
+          overflow="hidden"
+          borderRadius="full"
+          backgroundColor="background-card"
+        >
+          <Box
+            position="absolute"
+            top={0}
+            bottom={0}
+            left={0}
+            width={`${sharePct}%`}
+            borderRadius="full"
+            backgroundColor="background-inverse"
+            transitionDuration="base"
           />
-        </div>
-        <span className="dark:text-polar-500 w-9 shrink-0 text-right text-xs text-gray-400 tabular-nums">
-          {sharePct}%
-        </span>
-      </div>
+        </Box>
+        <Box width={36} flexShrink={0} justifyContent="end">
+          <Text as="span" variant="caption" color="muted" tabularNums>
+            {sharePct}%
+          </Text>
+        </Box>
+      </Box>
     </ListItem>
   )
 }

@@ -1,23 +1,29 @@
+import dataclasses
 import uuid
 from decimal import Decimal
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
-from polar_sdk.models import (
+from polar.v2026_04.outputs import (
     BenefitGrant,
     CustomerIndividual,
     Order,
     Product,
     Subscription,
-    SubscriptionProrationBehavior,
+)
+from polar.v2026_04.webhooks import (
     WebhookBenefitGrantCreatedPayload,
     WebhookBenefitGrantRevokedPayload,
     WebhookBenefitGrantUpdatedPayload,
     WebhookOrderCreatedPayload,
+    WebhookSubscriptionCanceledPayload,
+    WebhookSubscriptionPastDuePayload,
+    WebhookSubscriptionRevokedPayload,
 )
 from pytest_mock import MockerFixture
 
+from polar import deserialize
 from polar.config import settings
 from polar.integrations.polar.exceptions import (
     PolarSelfInvoiceNotReady,
@@ -77,7 +83,7 @@ def _customer_dict(external_id: object) -> dict[str, Any]:
 
 
 def _make_customer(*, external_id: object = str(ORG_A)) -> CustomerIndividual:
-    return CustomerIndividual.model_validate(_customer_dict(external_id))
+    return deserialize(_customer_dict(external_id), CustomerIndividual)
 
 
 def _make_grant(
@@ -85,7 +91,7 @@ def _make_grant(
     benefit_id: str = _BENEFIT_ID,
     metadata: dict[str, Any] | None = None,
 ) -> BenefitGrant:
-    return BenefitGrant.model_validate(
+    return deserialize(
         {
             "created_at": "2026-01-01T00:00:00Z",
             "modified_at": None,
@@ -113,7 +119,8 @@ def _make_grant(
                 "properties": {"note": None},
             },
             "properties": {},
-        }
+        },
+        BenefitGrant,
     )
 
 
@@ -155,6 +162,10 @@ def _make_support_grant(
 
 def _make_preview_grant(*, benefit_id: str = _BENEFIT_ID) -> BenefitGrant:
     return _make_grant(benefit_id=benefit_id, metadata={"type": "preview_access"})
+
+
+def _make_sso_grant(*, benefit_id: str = _BENEFIT_ID) -> BenefitGrant:
+    return _make_grant(benefit_id=benefit_id, metadata={"type": "sso"})
 
 
 def _make_payload(
@@ -220,7 +231,7 @@ def read_session_mock() -> AsyncReadSession:
 def organization_repository_mock(mocker: MockerFixture) -> MagicMock:
     repository = MagicMock()
     active_organization = MagicMock(spec=Organization)
-    active_organization.is_active.return_value = True
+    active_organization.can_change_plan.return_value = True
     repository.get_by_id = AsyncMock(return_value=active_organization)
     mocker.patch(
         "polar.integrations.polar.service.OrganizationRepository.from_session",
@@ -240,6 +251,22 @@ def preview_access_org_repository_mock(mocker: MockerFixture) -> MagicMock:
     repository = MagicMock()
     organization = MagicMock(spec=Organization)
     organization.feature_settings = {}
+    repository.get_by_id = AsyncMock(return_value=organization)
+    mocker.patch(
+        "polar.integrations.polar.service.OrganizationRepository.from_session",
+        return_value=repository,
+    )
+    return repository
+
+
+@pytest.fixture
+def sso_org_repository_mock(mocker: MockerFixture) -> MagicMock:
+    """Repository whose organization enforces SSO and carries a real
+    feature_settings dict, so revocation can be observed on both."""
+    repository = MagicMock()
+    organization = MagicMock(spec=Organization)
+    organization.feature_settings = {"sso_enabled": True}
+    organization.sso_enforced = True
     repository.get_by_id = AsyncMock(return_value=organization)
     mocker.patch(
         "polar.integrations.polar.service.OrganizationRepository.from_session",
@@ -354,6 +381,89 @@ class TestEnqueueTrackOrganizationReviewUsage:
             output_tokens=50,
             cost_usd="0.0123",
         )
+
+    def test_accepts_float_cost(self, configured: None, mocker: MockerFixture) -> None:
+        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
+
+        self._call(cost_usd=0.5)
+
+        assert enqueue.call_count == 1
+        assert enqueue.call_args.kwargs["cost_usd"] == "0.5"
+
+
+class TestEnqueueTrackCompassAssistantUsage:
+    def _call(
+        self,
+        *,
+        external_customer_id: str = str(ORG_A),
+        cost_usd: Decimal | float | None = Decimal("0.0042"),
+    ) -> None:
+        polar_self.enqueue_track_compass_assistant_usage(
+            external_customer_id=external_customer_id,
+            vendor="openai",
+            model="gpt-5.5",
+            input_tokens=1200,
+            output_tokens=300,
+            cost_usd=cost_usd,
+            usage_id="run-1",
+        )
+
+    def test_noop_when_not_configured(self, mocker: MockerFixture) -> None:
+        settings = mocker.patch("polar.integrations.polar.service.settings")
+        settings.POLAR_SELF_ENABLED = False
+        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
+
+        self._call()
+
+        enqueue.assert_not_called()
+
+    def test_tracks_self_organization_usage(
+        self, configured: None, mocker: MockerFixture
+    ) -> None:
+        # Polar's own organization is deliberately not gated out: its Compass
+        # usage is cost-tracked like any merchant's, so Polar's own dashboard
+        # shows its AI costs.
+        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
+
+        self._call(external_customer_id=str(SELF_ORG_ID))
+
+        enqueue.assert_called_once()
+
+    def test_noop_when_cost_is_none(
+        self, configured: None, mocker: MockerFixture
+    ) -> None:
+        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
+
+        self._call(cost_usd=None)
+
+        enqueue.assert_not_called()
+
+    def test_enqueues_job_with_serialized_cost(
+        self, configured: None, mocker: MockerFixture
+    ) -> None:
+        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
+
+        self._call(cost_usd=Decimal("0.0042"))
+
+        enqueue.assert_called_once_with(
+            "polar_self.track_compass_assistant_usage",
+            external_customer_id=str(ORG_A),
+            vendor="openai",
+            model="gpt-5.5",
+            input_tokens=1200,
+            output_tokens=300,
+            cost_usd="0.0042",
+            usage_id="run-1",
+        )
+
+    def test_noop_when_cost_is_zero(
+        self, configured: None, mocker: MockerFixture
+    ) -> None:
+        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
+
+        self._call(cost_usd=Decimal(0))
+
+        enqueue.assert_not_called()
 
     def test_accepts_float_cost(self, configured: None, mocker: MockerFixture) -> None:
         enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
@@ -779,11 +889,12 @@ class TestHandleBenefitGrantEvent:
         list_grants_mock: AsyncMock,
     ) -> None:
         list_grants_mock.return_value = [_make_fee_grant()]
-        payload = WebhookBenefitGrantCreatedPayload.model_validate(
+        payload = deserialize(
             _make_payload(
                 "benefit_grant.created",
                 metadata={"type": "transaction_fee"},
-            )
+            ),
+            WebhookBenefitGrantCreatedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -804,11 +915,12 @@ class TestHandleBenefitGrantEvent:
         list_grants_mock: AsyncMock,
     ) -> None:
         list_grants_mock.return_value = []
-        payload = WebhookBenefitGrantRevokedPayload.model_validate(
+        payload = deserialize(
             _make_payload(
                 "benefit_grant.revoked",
                 metadata={"type": "transaction_fee"},
-            )
+            ),
+            WebhookBenefitGrantRevokedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -832,12 +944,13 @@ class TestHandleBenefitGrantEvent:
         list_grants_mock.return_value = [
             _make_fee_grant(benefit_id="tier_2", fee_percent="340", fee_fixed="30")
         ]
-        payload = WebhookBenefitGrantRevokedPayload.model_validate(
+        payload = deserialize(
             _make_payload(
                 "benefit_grant.revoked",
                 metadata={"type": "transaction_fee"},
                 benefit_id="tier_1",
-            )
+            ),
+            WebhookBenefitGrantRevokedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -857,8 +970,9 @@ class TestHandleBenefitGrantEvent:
         set_platform_fee_mock: AsyncMock,
         list_grants_mock: AsyncMock,
     ) -> None:
-        payload = WebhookBenefitGrantCreatedPayload.model_validate(
-            _make_payload("benefit_grant.created", metadata={"type": "something_else"})
+        payload = deserialize(
+            _make_payload("benefit_grant.created", metadata={"type": "something_else"}),
+            WebhookBenefitGrantCreatedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -873,8 +987,9 @@ class TestHandleBenefitGrantEvent:
         set_platform_fee_mock: AsyncMock,
         list_grants_mock: AsyncMock,
     ) -> None:
-        payload = WebhookBenefitGrantCreatedPayload.model_validate(
-            _make_payload("benefit_grant.created", metadata={})
+        payload = deserialize(
+            _make_payload("benefit_grant.created", metadata={}),
+            WebhookBenefitGrantCreatedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -889,12 +1004,13 @@ class TestHandleBenefitGrantEvent:
         set_platform_fee_mock: AsyncMock,
         list_grants_mock: AsyncMock,
     ) -> None:
-        payload = WebhookBenefitGrantCreatedPayload.model_validate(
+        payload = deserialize(
             _make_payload(
                 "benefit_grant.created",
                 metadata={"type": "transaction_fee"},
                 external_id=None,
-            )
+            ),
+            WebhookBenefitGrantCreatedPayload,
         )
 
         with pytest.raises(PolarSelfWebhookError, match="external_id"):
@@ -910,8 +1026,9 @@ class TestHandleBenefitGrantEvent:
         list_grants_mock: AsyncMock,
     ) -> None:
         list_grants_mock.return_value = [_make_preview_grant()]
-        payload = WebhookBenefitGrantCreatedPayload.model_validate(
-            _make_payload("benefit_grant.created", metadata={"type": "preview_access"})
+        payload = deserialize(
+            _make_payload("benefit_grant.created", metadata={"type": "preview_access"}),
+            WebhookBenefitGrantCreatedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -927,8 +1044,9 @@ class TestHandleBenefitGrantEvent:
         list_grants_mock: AsyncMock,
     ) -> None:
         list_grants_mock.return_value = [_make_preview_grant()]
-        payload = WebhookBenefitGrantUpdatedPayload.model_validate(
-            _make_payload("benefit_grant.updated", metadata={"type": "preview_access"})
+        payload = deserialize(
+            _make_payload("benefit_grant.updated", metadata={"type": "preview_access"}),
+            WebhookBenefitGrantUpdatedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -943,8 +1061,9 @@ class TestHandleBenefitGrantEvent:
         list_grants_mock: AsyncMock,
     ) -> None:
         list_grants_mock.return_value = []
-        payload = WebhookBenefitGrantRevokedPayload.model_validate(
-            _make_payload("benefit_grant.revoked", metadata={"type": "preview_access"})
+        payload = deserialize(
+            _make_payload("benefit_grant.revoked", metadata={"type": "preview_access"}),
+            WebhookBenefitGrantRevokedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
@@ -960,14 +1079,71 @@ class TestHandleBenefitGrantEvent:
     ) -> None:
         # Overlapping grant still active when the revoke event arrives.
         list_grants_mock.return_value = [_make_preview_grant(benefit_id="other")]
-        payload = WebhookBenefitGrantRevokedPayload.model_validate(
-            _make_payload("benefit_grant.revoked", metadata={"type": "preview_access"})
+        payload = deserialize(
+            _make_payload("benefit_grant.revoked", metadata={"type": "preview_access"}),
+            WebhookBenefitGrantRevokedPayload,
         )
 
         await polar_self.handle_benefit_grant_event(session_mock, payload)
 
         organization = preview_access_org_repository_mock.get_by_id.return_value
         assert organization.feature_settings == _PREVIEW_FLAGS_ENABLED
+
+    async def test_sso_created_enables_flag(
+        self,
+        session_mock: AsyncSession,
+        sso_org_repository_mock: MagicMock,
+        list_grants_mock: AsyncMock,
+    ) -> None:
+        list_grants_mock.return_value = [_make_sso_grant()]
+        payload = deserialize(
+            _make_payload("benefit_grant.created", metadata={"type": "sso"}),
+            WebhookBenefitGrantCreatedPayload,
+        )
+
+        await polar_self.handle_benefit_grant_event(session_mock, payload)
+
+        list_grants_mock.assert_awaited_once_with(customer_id=_CUSTOMER_ID)
+        organization = sso_org_repository_mock.get_by_id.return_value
+        assert organization.feature_settings == {"sso_enabled": True}
+
+    async def test_sso_revoked_disables_flag_and_lifts_enforcement(
+        self,
+        session_mock: AsyncSession,
+        sso_org_repository_mock: MagicMock,
+        list_grants_mock: AsyncMock,
+    ) -> None:
+        list_grants_mock.return_value = []
+        payload = deserialize(
+            _make_payload("benefit_grant.revoked", metadata={"type": "sso"}),
+            WebhookBenefitGrantRevokedPayload,
+        )
+
+        await polar_self.handle_benefit_grant_event(session_mock, payload)
+
+        organization = sso_org_repository_mock.get_by_id.return_value
+        assert organization.feature_settings == {"sso_enabled": False}
+        assert organization.sso_enforced is False
+
+    async def test_sso_revoked_with_remaining_grant_keeps_flag(
+        self,
+        session_mock: AsyncSession,
+        sso_org_repository_mock: MagicMock,
+        list_grants_mock: AsyncMock,
+    ) -> None:
+        # A replayed or late revoke must not disable a feature the customer still
+        # holds: the handler re-reads active grants instead of trusting the event.
+        list_grants_mock.return_value = [_make_sso_grant(benefit_id="other")]
+        payload = deserialize(
+            _make_payload("benefit_grant.revoked", metadata={"type": "sso"}),
+            WebhookBenefitGrantRevokedPayload,
+        )
+
+        await polar_self.handle_benefit_grant_event(session_mock, payload)
+
+        organization = sso_org_repository_mock.get_by_id.return_value
+        assert organization.feature_settings == {"sso_enabled": True}
+        assert organization.sso_enforced is True
 
 
 @pytest.mark.asyncio
@@ -1016,6 +1192,62 @@ class TestApplyPreviewAccess:
         )
 
 
+@pytest.mark.asyncio
+class TestApplySSO:
+    async def test_active_grant_enables_and_preserves_other_flags(
+        self,
+        session_mock: AsyncSession,
+        sso_org_repository_mock: MagicMock,
+    ) -> None:
+        organization = sso_org_repository_mock.get_by_id.return_value
+        organization.feature_settings = {"member_model_enabled": True}
+        organization.sso_enforced = False
+
+        await polar_self._apply_sso(session_mock, ORG_A, _make_sso_grant())
+
+        sso_org_repository_mock.get_by_id.assert_awaited_once_with(
+            ORG_A, include_blocked=True
+        )
+        assert organization.feature_settings == {
+            "member_model_enabled": True,
+            "sso_enabled": True,
+        }
+
+    async def test_active_grant_leaves_enforcement_alone(
+        self,
+        session_mock: AsyncSession,
+        sso_org_repository_mock: MagicMock,
+    ) -> None:
+        organization = sso_org_repository_mock.get_by_id.return_value
+
+        await polar_self._apply_sso(session_mock, ORG_A, _make_sso_grant())
+
+        assert organization.sso_enforced is True
+
+    async def test_no_grant_disables_flag_and_lifts_enforcement(
+        self,
+        session_mock: AsyncSession,
+        sso_org_repository_mock: MagicMock,
+    ) -> None:
+        organization = sso_org_repository_mock.get_by_id.return_value
+
+        await polar_self._apply_sso(session_mock, ORG_A, None)
+
+        # Enforcement must go with the feature: an enforcing organization whose
+        # login page offers no SSO factor is unreachable.
+        assert organization.feature_settings == {"sso_enabled": False}
+        assert organization.sso_enforced is False
+
+    async def test_missing_organization_is_silent_noop(
+        self,
+        session_mock: AsyncSession,
+        sso_org_repository_mock: MagicMock,
+    ) -> None:
+        sso_org_repository_mock.get_by_id.return_value = None
+
+        await polar_self._apply_sso(session_mock, ORG_A, None)
+
+
 def _make_product(
     *,
     id: str = "prod_1",
@@ -1041,7 +1273,7 @@ def _make_product(
                 "tax_behavior": "inclusive",
             }
         )
-    return Product.model_validate(
+    return deserialize(
         {
             "id": id,
             "created_at": "2026-01-01T00:00:00Z",
@@ -1053,6 +1285,8 @@ def _make_product(
             "visibility": "public",
             "recurring_interval": "month",
             "recurring_interval_count": 1,
+            "meter_interval": None,
+            "meter_interval_count": None,
             "is_recurring": True,
             "is_archived": False,
             "organization_id": str(SELF_ORG_ID),
@@ -1061,7 +1295,8 @@ def _make_product(
             "benefits": [],
             "medias": [],
             "attached_custom_fields": [],
-        }
+        },
+        Product,
     )
 
 
@@ -1073,7 +1308,7 @@ def _make_subscription(
     cancel_at_period_end: bool = False,
     discount_id: str | None = None,
 ) -> Subscription:
-    return Subscription.model_validate(
+    return deserialize(
         {
             "created_at": "2026-01-01T00:00:00Z",
             "modified_at": None,
@@ -1085,6 +1320,8 @@ def _make_subscription(
             "status": "active",
             "current_period_start": "2026-01-01T00:00:00Z",
             "current_period_end": "2026-02-01T00:00:00Z",
+            "current_meter_period_start": None,
+            "current_meter_period_end": None,
             "trial_start": None,
             "trial_end": None,
             "cancel_at_period_end": cancel_at_period_end,
@@ -1092,6 +1329,9 @@ def _make_subscription(
             "started_at": "2026-01-01T00:00:00Z",
             "ends_at": None,
             "ended_at": None,
+            "pause_at_period_end": False,
+            "paused_at": None,
+            "resumes_at": None,
             "customer_id": _CUSTOMER_DICT["id"],
             "product_id": product_id,
             "discount_id": discount_id,
@@ -1100,12 +1340,13 @@ def _make_subscription(
             "customer_cancellation_comment": None,
             "metadata": {},
             "customer": _CUSTOMER_DICT,
-            "product": _make_product(id=product_id).model_dump(mode="json"),
+            "product": dataclasses.asdict(_make_product(id=product_id)),
             "discount": None,
             "prices": [],
             "meters": [],
             "pending_update": None,
-        }
+        },
+        Subscription,
     )
 
 
@@ -1451,7 +1692,7 @@ class TestChangePlan:
         client_mock.update_subscription_product.assert_awaited_once_with(
             subscription_id="sub_existing",
             product_id="prod_2",
-            proration_behavior=SubscriptionProrationBehavior.INVOICE,
+            proration_behavior="invoice",
         )
 
     async def test_downgrade_defers_to_next_period(
@@ -1475,7 +1716,7 @@ class TestChangePlan:
         client_mock.update_subscription_product.assert_awaited_once_with(
             subscription_id="sub_existing",
             product_id="prod_2",
-            proration_behavior=SubscriptionProrationBehavior.NEXT_PERIOD,
+            proration_behavior="next_period",
         )
         client_mock.uncancel_subscription.assert_not_awaited()
 
@@ -1506,7 +1747,7 @@ class TestChangePlan:
         client_mock.update_subscription_product.assert_awaited_once_with(
             subscription_id="sub_existing",
             product_id="prod_2",
-            proration_behavior=SubscriptionProrationBehavior.INVOICE,
+            proration_behavior="invoice",
         )
 
     async def test_unapproved_rejected(
@@ -1520,7 +1761,7 @@ class TestChangePlan:
             _make_product(id="prod_2", metadata={"order": 2}),
         ]
         inactive = MagicMock(spec=Organization)
-        inactive.is_active.return_value = False
+        inactive.can_change_plan.return_value = False
         organization_repository_mock.get_by_id.return_value = inactive
 
         with pytest.raises(PolarSelfNotApproved):
@@ -1576,7 +1817,7 @@ class TestChangePlan:
         client_mock.update_subscription_product.assert_awaited_once_with(
             subscription_id="sub_existing",
             product_id="prod_growth",
-            proration_behavior=SubscriptionProrationBehavior.INVOICE,
+            proration_behavior="invoice",
         )
 
     async def test_does_not_clear_when_no_discount(
@@ -1821,7 +2062,7 @@ class TestClaimStartupProgram:
         client_mock.update_subscription_product.assert_awaited_once_with(
             subscription_id="sub_existing",
             product_id="prod_scale",
-            proration_behavior=SubscriptionProrationBehavior.INVOICE,
+            proration_behavior="invoice",
         )
         # The discount must be applied before the product update.
         method_call_order = [
@@ -1915,7 +2156,7 @@ def _order_dict(
         "platform_fee_amount": 0,
         "platform_fee_currency": None,
         "customer": _CUSTOMER_DICT,
-        "product": _make_product(id=product_id).model_dump(mode="json"),
+        "product": dataclasses.asdict(_make_product(id=product_id)),
         "discount": None,
         "subscription": None,
         "items": [],
@@ -1924,16 +2165,17 @@ def _order_dict(
 
 
 def _make_order(**kwargs: Any) -> Order:
-    return Order.model_validate(_order_dict(**kwargs))
+    return deserialize(_order_dict(**kwargs), Order)
 
 
 def _make_order_created_payload(**kwargs: Any) -> WebhookOrderCreatedPayload:
-    return WebhookOrderCreatedPayload.model_validate(
+    return deserialize(
         {
             "type": "order.created",
             "timestamp": "2026-01-01T00:00:00Z",
             "data": _order_dict(**kwargs),
-        }
+        },
+        WebhookOrderCreatedPayload,
     )
 
 
@@ -2262,3 +2504,213 @@ class TestHandleOrderCreatedEvent:
 
         order_webhook_client_mock.get_order.assert_awaited_once_with(order_id="ord_1")
         enqueue_email_mock.assert_not_called()
+
+
+def _make_subscription_canceled_payload(
+    *, ends_at: str | None = "2026-02-01T00:00:00Z", **kwargs: Any
+) -> WebhookSubscriptionCanceledPayload:
+    data = dataclasses.asdict(_make_subscription(**kwargs))
+    data["ends_at"] = ends_at
+    return deserialize(
+        {
+            "type": "subscription.canceled",
+            "timestamp": "2026-01-01T00:00:00Z",
+            "data": data,
+        },
+        WebhookSubscriptionCanceledPayload,
+    )
+
+
+def _make_subscription_past_due_payload(
+    **kwargs: Any,
+) -> WebhookSubscriptionPastDuePayload:
+    return deserialize(
+        {
+            "type": "subscription.past_due",
+            "timestamp": "2026-01-01T00:00:00Z",
+            "data": dataclasses.asdict(_make_subscription(**kwargs)),
+        },
+        WebhookSubscriptionPastDuePayload,
+    )
+
+
+def _make_subscription_revoked_payload(
+    **kwargs: Any,
+) -> WebhookSubscriptionRevokedPayload:
+    return deserialize(
+        {
+            "type": "subscription.revoked",
+            "timestamp": "2026-01-01T00:00:00Z",
+            "data": dataclasses.asdict(_make_subscription(**kwargs)),
+        },
+        WebhookSubscriptionRevokedPayload,
+    )
+
+
+@pytest.fixture
+def subscription_webhook_client_mock(mocker: MockerFixture) -> MagicMock:
+    client = MagicMock()
+    client.list_billing_contacts = AsyncMock(
+        return_value=[_make_contact("billing@example.com")]
+    )
+    mocker.patch("polar.integrations.polar.service.get_client", return_value=client)
+    return client
+
+
+@pytest.mark.asyncio
+class TestHandleSubscriptionCanceledEvent:
+    async def test_skips_free_subscription(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        payload = _make_subscription_canceled_payload(amount=0)
+
+        await polar_self.handle_subscription_canceled_event(payload)
+
+        subscription_webhook_client_mock.list_billing_contacts.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()
+
+    async def test_skips_when_no_billing_contacts(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        subscription_webhook_client_mock.list_billing_contacts.return_value = []
+        payload = _make_subscription_canceled_payload(amount=2000)
+
+        await polar_self.handle_subscription_canceled_event(payload)
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_sends_email_with_end_date(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        payload = _make_subscription_canceled_payload(
+            amount=2000, ends_at="2026-02-01T00:00:00Z"
+        )
+
+        await polar_self.handle_subscription_canceled_event(payload)
+
+        subscription_webhook_client_mock.list_billing_contacts.assert_awaited_once_with(
+            customer_id=_CUSTOMER_ID
+        )
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args.args[0]
+        assert email.template == "polar_self_subscription_cancellation"
+        assert email.props.product_name == "Pro"
+        assert email.props.ends_at is not None
+        assert email.props.ends_at.startswith("2026-02-01")
+        kwargs = enqueue_email_mock.call_args.kwargs
+        assert kwargs["to_email_addr"] == "billing@example.com"
+        assert kwargs["subject"] == "Your Pro subscription has been canceled"
+
+    async def test_sends_email_without_end_date(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        payload = _make_subscription_canceled_payload(amount=2000, ends_at=None)
+
+        await polar_self.handle_subscription_canceled_event(payload)
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args.args[0]
+        assert email.props.ends_at is None
+
+
+@pytest.mark.asyncio
+class TestHandleSubscriptionPastDueEvent:
+    async def test_skips_free_subscription(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        # A $0 subscription has no payment to fail, so there's nothing to notify.
+        payload = _make_subscription_past_due_payload(amount=0)
+
+        await polar_self.handle_subscription_past_due_event(payload)
+
+        subscription_webhook_client_mock.list_billing_contacts.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()
+
+    async def test_skips_when_no_billing_contacts(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        subscription_webhook_client_mock.list_billing_contacts.return_value = []
+        payload = _make_subscription_past_due_payload(amount=2000)
+
+        await polar_self.handle_subscription_past_due_event(payload)
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_sends_email_to_billing_contacts(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        payload = _make_subscription_past_due_payload(amount=2000)
+
+        await polar_self.handle_subscription_past_due_event(payload)
+
+        subscription_webhook_client_mock.list_billing_contacts.assert_awaited_once_with(
+            customer_id=_CUSTOMER_ID
+        )
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args.args[0]
+        assert email.template == "polar_self_subscription_past_due"
+        assert email.props.product_name == "Pro"
+        kwargs = enqueue_email_mock.call_args.kwargs
+        assert kwargs["to_email_addr"] == "billing@example.com"
+        assert kwargs["subject"] == "Your Pro subscription payment failed"
+
+
+@pytest.mark.asyncio
+class TestHandleSubscriptionRevokedEvent:
+    async def test_skips_free_subscription(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        payload = _make_subscription_revoked_payload(amount=0)
+
+        await polar_self.handle_subscription_revoked_event(payload)
+
+        subscription_webhook_client_mock.list_billing_contacts.assert_not_awaited()
+        enqueue_email_mock.assert_not_called()
+
+    async def test_skips_when_no_billing_contacts(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        subscription_webhook_client_mock.list_billing_contacts.return_value = []
+        payload = _make_subscription_revoked_payload(amount=2000)
+
+        await polar_self.handle_subscription_revoked_event(payload)
+
+        enqueue_email_mock.assert_not_called()
+
+    async def test_sends_email_to_billing_contacts(
+        self,
+        subscription_webhook_client_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+    ) -> None:
+        payload = _make_subscription_revoked_payload(amount=2000)
+
+        await polar_self.handle_subscription_revoked_event(payload)
+
+        subscription_webhook_client_mock.list_billing_contacts.assert_awaited_once_with(
+            customer_id=_CUSTOMER_ID
+        )
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args.args[0]
+        assert email.template == "polar_self_subscription_revoked"
+        assert email.props.product_name == "Pro"
+        kwargs = enqueue_email_mock.call_args.kwargs
+        assert kwargs["to_email_addr"] == "billing@example.com"
+        assert kwargs["subject"] == "Your Pro subscription has ended"

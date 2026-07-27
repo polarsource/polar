@@ -2,13 +2,15 @@
 
 import contextlib
 import json
-from collections.abc import Generator
+from collections.abc import Generator, Sequence
 from datetime import datetime
 
 from fastapi import Request
 from tagflow import tag, text
 
+from polar.enums import PayoutAccountStatus
 from polar.models import Organization
+from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.organization_review.report import AnyAgentReport
 from polar.organization_review.schemas import DimensionAssessment, ReviewVerdict
 from polar.organization_review.thresholds import (
@@ -21,13 +23,22 @@ from polar.organization_review.thresholds import (
     thresholds_for_prompt,
 )
 
-from ....components import card
+from ....components import button, card
 from ....components._metric_card import Variant
 from ._shared import (
     RISK_LEVEL_BADGE,
     ChecklistMixin,
     render_checklist_row,
+    render_review_context_badge,
 )
+from .risk_signals import render_risk_signals_block
+
+_PAYOUT_STATUS_DOTS = {
+    PayoutAccountStatus.ready: "bg-success",
+    PayoutAccountStatus.under_review: "bg-warning",
+    PayoutAccountStatus.incomplete: "bg-warning",
+    PayoutAccountStatus.paused: "bg-error",
+}
 
 
 class OverviewSection(ChecklistMixin):
@@ -41,6 +52,7 @@ class OverviewSection(ChecklistMixin):
         agent_report: AnyAgentReport | None = None,
         agent_reviewed_at: datetime | None = None,
         has_open_appeal_case: bool = False,
+        risk_signals: Sequence[OrganizationRiskSignal] = (),
     ) -> None:
         self.org = organization
         self.orders_count = orders_count
@@ -48,27 +60,11 @@ class OverviewSection(ChecklistMixin):
         self.agent_report = agent_report
         self.agent_reviewed_at = agent_reviewed_at
         self.has_open_appeal_case = has_open_appeal_case
+        self.risk_signals = risk_signals
 
     # ------------------------------------------------------------------
     # Full-width: Organization Review card (primary content)
     # ------------------------------------------------------------------
-
-    _REVIEW_CONTEXT_LABELS: dict[str, str] = {
-        "submission": "Submission",
-        "setup_complete": "Setup Complete",
-        "threshold": "Threshold",
-        "manual": "Manual",
-    }
-
-    def _render_review_context_badge(self, review_type: str | None) -> None:
-        """Render a small badge showing the review trigger context."""
-        if not review_type:
-            return
-        label = self._REVIEW_CONTEXT_LABELS.get(
-            review_type, review_type.replace("_", " ").title()
-        )
-        with tag.div(classes="badge badge-ghost badge-sm badge-outline gap-1"):
-            text(label)
 
     @staticmethod
     def _render_dimension_card(dim: DimensionAssessment) -> None:
@@ -230,6 +226,8 @@ class OverviewSection(ChecklistMixin):
                     with tag.p(classes="text-sm text-base-content/60 mb-4"):
                         text("No agent review yet")
 
+                render_risk_signals_block(self.risk_signals)
+
                 yield
                 return
 
@@ -243,7 +241,7 @@ class OverviewSection(ChecklistMixin):
                 with tag.div(classes="flex items-center gap-2"):
                     with tag.h2(classes="text-lg font-bold"):
                         text("Organization Review")
-                    self._render_review_context_badge(ar.review_type)
+                    render_review_context_badge(ar.review_type)
                 if self.agent_reviewed_at:
                     with tag.span(classes="text-xs text-base-content/60"):
                         text(self.agent_reviewed_at.strftime("%Y-%m-%d %H:%M UTC"))
@@ -326,6 +324,8 @@ class OverviewSection(ChecklistMixin):
                             with tag.div(classes="space-y-3"):
                                 for dim in low:
                                     self._render_dimension_card(dim)
+
+            render_risk_signals_block(self.risk_signals)
 
             # Appeal information
             if self.org.review and self.org.review.appeal_submitted_at:
@@ -593,11 +593,25 @@ class OverviewSection(ChecklistMixin):
     # ------------------------------------------------------------------
 
     @contextlib.contextmanager
-    def organization_profile_card(self) -> Generator[None]:
-        """Read-only org profile: website, details, social links."""
+    def organization_profile_card(self, request: Request) -> Generator[None]:
+        """Org profile: website, details, social links."""
         with card(bordered=True):
-            with tag.h2(classes="text-lg font-bold mb-4"):
-                text("Organization Profile")
+            with tag.div(classes="flex items-center justify-between mb-4"):
+                with tag.h2(classes="text-lg font-bold"):
+                    text("Organization Profile")
+                with button(
+                    variant="secondary",
+                    size="sm",
+                    ghost=True,
+                    hx_get=str(
+                        request.url_for(
+                            "organizations:edit_details",
+                            organization_id=self.org.id,
+                        )
+                    ),
+                    hx_target="#modal",
+                ):
+                    text("Edit")
 
             has_content = False
 
@@ -748,6 +762,42 @@ class OverviewSection(ChecklistMixin):
                             f"{self.unrefunded_orders_count} unrefunded order{'s' if self.unrefunded_orders_count != 1 else ''} — should be auto-refunded before approval."
                         )
 
+                self._render_payout_account_row()
+
+    def _render_payout_account_row(self) -> None:
+        """Payout status with Stripe's raw `disabled_reason`.
+
+        The merchant only ever sees a generic message for the paused reasons, so
+        this is the one place the actual reason is readable.
+        """
+        payout_account = self.org.payout_account
+
+        if payout_account is None:
+            render_checklist_row("Payout Account", False, None)
+            return
+
+        status = payout_account.status
+        dot_class = _PAYOUT_STATUS_DOTS[status]
+        requirements = payout_account.data.get("requirements") or {}
+        disabled_reason = requirements.get("disabled_reason")
+
+        value = status.value.replace("_", " ").capitalize()
+        if disabled_reason:
+            value = f"{value} — {disabled_reason}"
+
+        with tag.div(
+            classes="flex items-center justify-between py-2 border-b border-base-200"
+        ):
+            with tag.div(classes="flex items-center gap-2"):
+                with tag.span(
+                    classes=f"w-2.5 h-2.5 rounded-full {dot_class} inline-block"
+                ):
+                    pass
+                with tag.span(classes="text-sm font-medium"):
+                    text("Payout Account")
+            with tag.span(classes="text-sm"):
+                text(value)
+
     # ------------------------------------------------------------------
     # Main render: AI review first, then supporting evidence
     # ------------------------------------------------------------------
@@ -776,7 +826,7 @@ class OverviewSection(ChecklistMixin):
                 with self.setup_checklist_card(setup_data):
                     pass
 
-                with self.organization_profile_card():
+                with self.organization_profile_card(request):
                     pass
 
             yield

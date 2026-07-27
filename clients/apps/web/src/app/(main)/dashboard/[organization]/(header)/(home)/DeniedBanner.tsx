@@ -22,7 +22,7 @@ export const DeniedBanner = ({ organization }: DeniedBannerProps) => {
       <Box flexDirection="column" rowGap="s">
         <Box alignItems="center" columnGap="s">
           <AlertCircleIcon className="h-4 w-4 shrink-0" />
-          <Text as="strong">
+          <Text variant="title">
             Payments are unavailable for your organization
           </Text>
         </Box>

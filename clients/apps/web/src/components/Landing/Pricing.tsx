@@ -60,6 +60,7 @@ const TIERS: Tier[] = [
       'Preview access to new features',
       'Shared Slack channel',
       'P1 Support',
+      'Single Sign-On',
     ],
   },
 ]

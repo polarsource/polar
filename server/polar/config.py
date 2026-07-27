@@ -12,6 +12,7 @@ from pydantic import AfterValidator, DirectoryPath, Field, PostgresDsn
 from pydantic_ai.models import Model, infer_model, parse_model_id
 from pydantic_ai.providers.gateway import gateway_provider
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from sqlalchemy import URL
 
 from polar.enums import EmailSender, TaxProcessor
 from polar.kit.address import Address, CountryAlpha2
@@ -141,6 +142,7 @@ class Settings(BaseSettings):
 
     # User session
     USER_SESSION_TTL: timedelta = timedelta(days=31)
+    USER_SESSION_FRESHNESS_TTL: timedelta = timedelta(hours=1)
     USER_SESSION_COOKIE_KEY: str = "polar_session"
     USER_SESSION_COOKIE_DOMAIN: str = "127.0.0.1"
 
@@ -166,17 +168,23 @@ class Settings(BaseSettings):
     POSTGRES_PWD: str = "polar"
     POSTGRES_HOST: str = "127.0.0.1"
     POSTGRES_PORT: int = 5432
+    POSTGRES_HOST_FALLBACK: str | None = None
+    POSTGRES_PORT_FALLBACK: int | None = None
     POSTGRES_DATABASE: str = "polar"
+    POSTGRES_SSL: bool = False
     DATABASE_POOL_SIZE: int = 5
     DATABASE_SYNC_POOL_SIZE: int = 1  # Specific pool size for sync connection: since we only use it in OAuth2 router, don't waste resources.
     DATABASE_POOL_RECYCLE_SECONDS: int = 600  # 10 minutes
     DATABASE_COMMAND_TIMEOUT_SECONDS: float = 30.0
+    DATABASE_CONNECT_TIMEOUT_SECONDS: float = 10.0
     DATABASE_STREAM_YIELD_PER: int = 100
 
     POSTGRES_READ_USER: str | None = None
     POSTGRES_READ_PWD: str | None = None
     POSTGRES_READ_HOST: str | None = None
     POSTGRES_READ_PORT: int | None = None
+    POSTGRES_READ_HOST_FALLBACK: str | None = None
+    POSTGRES_READ_PORT_FALLBACK: int | None = None
     POSTGRES_READ_DATABASE: str | None = None
 
     # Redis
@@ -203,6 +211,8 @@ class Settings(BaseSettings):
     EMAIL_DEFAULT_REPLY_TO_NAME: str = "Polar Support"
     EMAIL_DEFAULT_REPLY_TO_EMAIL_ADDRESS: str = "support@polar.sh"
 
+    TURNSTILE_SECRET: str = ""
+
     # Github App
     GITHUB_CLIENT_ID: str = ""
     GITHUB_CLIENT_SECRET: str = ""
@@ -226,6 +236,16 @@ class Settings(BaseSettings):
     # Google
     GOOGLE_CLIENT_ID: str = ""
     GOOGLE_CLIENT_SECRET: str = ""
+    # Service account (JSON key) used to fetch the organization review AUP from
+    # Google Drive. The document must be shared with the service account email.
+    GOOGLE_SERVICE_ACCOUNT_JSON: str = ""
+
+    # Organization review Acceptable Use Policy source (Google Doc, fetched via
+    # the Drive API and cached in-process).
+    ORGANIZATION_REVIEW_AUP_DOCUMENT_ID: str = (
+        "13dRNFns8e_BD7yJ0uagDp3_1RB1-hGgam93d3p_9piw"
+    )
+    ORGANIZATION_REVIEW_AUP_CACHE_TTL_SECONDS: int = 3600
 
     # Apple
     APPLE_CLIENT_ID: str = ""
@@ -237,15 +257,19 @@ class Settings(BaseSettings):
     PYDANTIC_AI_GATEWAY_API_KEY: str = "DummyKey"
     PYDANTIC_AI_GATEWAY_MODEL: str = "openai:gpt-5.5"
 
-    # Organization review website scraping
+    # Organization review website scraping. Firecrawl Cloud backs the JS-render
+    # path of the collector: it renders JavaScript, follows redirects, and
+    # egresses from Firecrawl's network rather than ours.
     FIRECRAWL_API_KEY: str | None = None
-    # Which scraper backs the JS-render path of the organization-review website
-    # collector. "playwright" uses the in-house headless browser, "firecrawl"
-    # uses Firecrawl Cloud, and "shadow" runs Firecrawl alongside Playwright to
-    # log a comparison while still using Playwright's result for the live verdict.
-    ORGANIZATION_REVIEW_SCRAPER: Literal["playwright", "firecrawl", "shadow"] = (
-        "playwright"
-    )
+
+    # How long an organization stays in `offboarding` before it automatically
+    # transitions to the terminal `offboarded` state. Measured from the last paid
+    # (not fully refunded) order, i.e. the post-chargeback-risk wind-down window.
+    ORGANIZATION_OFFBOARDING_PERIOD: timedelta = timedelta(days=120)
+
+    # Delay after an org becomes denied/blocked/offboarded before its customers'
+    # subscriptions are auto-cancelled — silently, without notifying customers.
+    ORGANIZATION_SUBSCRIPTION_CANCELLATION_DELAY: timedelta = timedelta(days=7)
 
     # Stripe
     STRIPE_SECRET_KEY: str = ""
@@ -253,6 +277,8 @@ class Settings(BaseSettings):
     # Stripe webhook secrets
     STRIPE_WEBHOOK_SECRET: str = ""
     STRIPE_CONNECT_WEBHOOK_SECRET: str = ""
+    # Account risk signals (preview). Empty disables the endpoint.
+    STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET: str = ""
     STRIPE_STATEMENT_DESCRIPTOR: str = "POLAR"
 
     # Numeral
@@ -323,14 +349,27 @@ class Settings(BaseSettings):
     AWS_REGION: str = "us-east-2"
     AWS_SIGNATURE_VERSION: str = "v4"
 
+    # Secrets encryption. Production and sandbox wrap data keys with a KMS key
+    # (AWS_KMS_KEY_ID); local and CI use a static key instead, so tests make no
+    # cloud calls.
+    AWS_KMS_KEY_ID: str | None = None
+    ENCRYPTION_LOCAL_KEY: str = "super secret encryption key"
+
     # Worker SQS/Lambda execution engine (POC)
-    # When enabled, jobs enqueued for an allowlisted actor are routed to a
-    # per-actor SQS queue (consumed by a Lambda) instead of the Redis broker.
+    # When enabled, jobs enqueued for an allowlisted actor are routed to an
+    # SQS queue consumed by the Lambda worker instead of Redis.
     WORKER_SQS_ENABLED: bool = False
-    WORKER_SQS_ACTORS: set[str] = {"dummy"}
+    WORKER_SQS_ACTORS: set[str] = {
+        "dummy",
+        "observability.invariants.enqueue",
+        "observability.invariants.check",
+    }
     WORKER_SQS_QUEUE_PREFIX: str = "polar-tasks"
     # Override to http://127.0.0.1:4566 in .env to target LocalStack
     SQS_ENDPOINT_URL: str | None = None
+    WORKER_SQS_AWS_ACCESS_KEY_ID: str | None = None
+    WORKER_SQS_AWS_SECRET_ACCESS_KEY: str | None = None
+    WORKER_SQS_SCHEDULER_ROLE_ARN: str | None = None
 
     # Downloadable files
     S3_FILES_BUCKET_NAME: str = "polar-s3"
@@ -340,6 +379,15 @@ class Settings(BaseSettings):
     S3_FILES_DOWNLOAD_SALT: str = "saltysalty"
     # Override to http://127.0.0.1:9000 in .env during development
     S3_ENDPOINT_URL: str | None = None
+    # Endpoint used when generating presigned URLs handed to the browser.
+    # In local dev Minio must be reached as http://localhost:9000 from the host,
+    # while server-side calls use the in-network http://minio:9000. Defaults to
+    # S3_ENDPOINT_URL (production: same real AWS endpoint).
+    S3_PUBLIC_ENDPOINT_URL: str | None = None
+
+    @property
+    def s3_presign_endpoint_url(self) -> str | None:
+        return self.S3_PUBLIC_ENDPOINT_URL or self.S3_ENDPOINT_URL
 
     MINIO_USER: str = "polar"
     MINIO_PWD: str = "polarpolar"
@@ -398,6 +446,7 @@ class Settings(BaseSettings):
 
     # Application behaviours
     API_PAGINATION_MAX_LIMIT: int = 100
+    API_MAX_REQUEST_BODY_SIZE: int = 10 * 1024 * 1024
 
     ACCOUNT_PAYOUT_DELAY: timedelta = timedelta(seconds=1)
     ACCOUNT_DEFAULT_PAYOUT_INTERVAL: timedelta = timedelta(hours=24)
@@ -417,6 +466,7 @@ class Settings(BaseSettings):
         "cop": 5000,
         "eur": 1300,
         "gbp": 1500,
+        "ghs": 4000,
         "gmd": 4000,
         "gyd": 4000,
         "khr": 4000,
@@ -519,6 +569,7 @@ class Settings(BaseSettings):
         timedelta(days=7),  # Fourth retry after 21 days (2 + 5 + 7 + 7)
     ]
     CUSTOMER_RETRY_MAX_ATTEMPTS: int = 5
+    PAYMENT_LOCK_STALE_THRESHOLD: timedelta = timedelta(hours=1)
 
     TAX_PROCESSORS: list[TaxProcessor] = [TaxProcessor.stripe]
     TAX_RECORD_PROCESSOR: TaxProcessor = TaxProcessor.stripe
@@ -535,16 +586,54 @@ class Settings(BaseSettings):
     def redis_url(self) -> str:
         return f"redis://{self.REDIS_HOST}:{self.REDIS_PORT}/{self.REDIS_DB}"
 
-    def get_postgres_dsn(self, driver: Literal["asyncpg", "psycopg2"]) -> str:
-        return str(
-            PostgresDsn.build(
-                scheme=f"postgresql+{driver}",
-                username=self.POSTGRES_USER,
-                password=self.POSTGRES_PWD,
-                host=self.POSTGRES_HOST,
-                port=self.POSTGRES_PORT,
-                path=self.POSTGRES_DATABASE,
+    def _build_postgres_dsn(
+        self,
+        driver: Literal["asyncpg", "psycopg2"],
+        *,
+        username: str | None,
+        password: str | None,
+        host: str | None,
+        port: int | None,
+        database: str | None,
+        fallback_host: str | None,
+        fallback_port: int | None,
+    ) -> str:
+        if fallback_host is None:
+            return str(
+                PostgresDsn.build(
+                    scheme=f"postgresql+{driver}",
+                    username=username,
+                    password=password,
+                    host=host,
+                    port=port,
+                    path=database,
+                )
             )
+        return str(
+            URL.create(
+                f"postgresql+{driver}",
+                username=username,
+                password=password,
+                database=database,
+                query={
+                    "host": [
+                        f"{host}:{port}",
+                        f"{fallback_host}:{fallback_port or port}",
+                    ]
+                },
+            )
+        )
+
+    def get_postgres_dsn(self, driver: Literal["asyncpg", "psycopg2"]) -> str:
+        return self._build_postgres_dsn(
+            driver,
+            username=self.POSTGRES_USER,
+            password=self.POSTGRES_PWD,
+            host=self.POSTGRES_HOST,
+            port=self.POSTGRES_PORT,
+            database=self.POSTGRES_DATABASE,
+            fallback_host=self.POSTGRES_HOST_FALLBACK,
+            fallback_port=self.POSTGRES_PORT_FALLBACK,
         )
 
     def is_read_replica_configured(self) -> bool:
@@ -564,15 +653,15 @@ class Settings(BaseSettings):
         if not self.is_read_replica_configured():
             return None
 
-        return str(
-            PostgresDsn.build(
-                scheme=f"postgresql+{driver}",
-                username=self.POSTGRES_READ_USER,
-                password=self.POSTGRES_READ_PWD,
-                host=self.POSTGRES_READ_HOST,
-                port=self.POSTGRES_READ_PORT,
-                path=self.POSTGRES_READ_DATABASE,
-            )
+        return self._build_postgres_dsn(
+            driver,
+            username=self.POSTGRES_READ_USER,
+            password=self.POSTGRES_READ_PWD,
+            host=self.POSTGRES_READ_HOST,
+            port=self.POSTGRES_READ_PORT,
+            database=self.POSTGRES_READ_DATABASE,
+            fallback_host=self.POSTGRES_READ_HOST_FALLBACK,
+            fallback_port=self.POSTGRES_READ_PORT_FALLBACK,
         )
 
     def is_environment(self, environments: set[Environment]) -> bool:

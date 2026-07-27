@@ -52,6 +52,14 @@ const TransactionsList = ({
       ),
       cell: (props) => {
         const datetime = props.getValue() as string
+        const parentCreatedAt = props.row.getParentRow()?.original.created_at
+        const isSameDayAsParent =
+          parentCreatedAt !== undefined &&
+          new Date(parentCreatedAt).toDateString() ===
+            new Date(datetime).toDateString()
+        if (isSameDayAsParent) {
+          return null
+        }
         return (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -80,7 +88,7 @@ const TransactionsList = ({
           return <TransactionMeta transaction={transaction} />
         } else if (transaction.platform_fee_type) {
           return (
-            <div className="flex gap-x-4">
+            <div className="flex gap-x-4 pl-6">
               <div className="flex flex-row items-center gap-x-2">
                 <span className="text-sm">→</span>
                 <h3 className="text-sm">
@@ -287,6 +295,7 @@ const TransactionsList = ({
     {
       id: 'status',
       enableSorting: false,
+      size: 190,
       header: ({ column }) => (
         <DataTableColumnHeader
           column={column}
@@ -295,11 +304,14 @@ const TransactionsList = ({
         />
       ),
       cell: (props) => {
-        const transaction = props.row.original
+        const { row } = props
+        if (row.depth > 0) {
+          return null
+        }
         return (
-          <div className="flex justify-end">
+          <div className="flex justify-end whitespace-nowrap">
             <TransactionAvailabilityStatus
-              transaction={transaction}
+              transaction={row.original}
               delay={payoutTransactionDelay}
             />
           </div>

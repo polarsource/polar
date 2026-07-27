@@ -1,6 +1,6 @@
 import uuid
 from datetime import datetime
-from typing import Any, cast
+from typing import Any, Unpack, cast
 
 from polar.auth.models import AuthSubject
 from polar.authz.types import AccessibleOrganizationID
@@ -11,6 +11,7 @@ from polar.event.system import SystemEvent, build_system_event
 from polar.kit.utils import utc_now
 from polar.meter.repository import MeterRepository
 from polar.models import Benefit, Customer, Member, Organization, User
+from polar.models.benefit_grant import BenefitGrantScopeArgs
 
 from ..base.service import BenefitPropertiesValidationError, BenefitServiceProtocol
 from .properties import BenefitGrantMeterCreditProperties, BenefitMeterCreditProperties
@@ -30,6 +31,7 @@ class BenefitMeterCreditService(
         update: bool = False,
         attempt: int = 1,
         member: Member | None = None,
+        **scope: Unpack[BenefitGrantScopeArgs],
     ) -> BenefitGrantMeterCreditProperties:
         properties = self._get_properties(benefit)
         meter_id = uuid.UUID(properties["meter_id"])

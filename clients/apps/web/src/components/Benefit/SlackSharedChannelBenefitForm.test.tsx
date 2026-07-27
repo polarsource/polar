@@ -40,6 +40,12 @@ vi.mock('@polar-sh/orbit/Box', () => ({
 }))
 
 vi.mock('@polar-sh/orbit', () => ({
+  Alert: ({ title, description }: { title: string; description?: string }) => (
+    <div>
+      <p>{title}</p>
+      <p>{description}</p>
+    </div>
+  ),
   Button: ({ children, ...props }: { children: ReactNode }) => (
     <button {...props}>{children}</button>
   ),

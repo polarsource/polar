@@ -39,7 +39,7 @@ jobs:
       BRANCH: ${{ (startsWith(github.event_name, 'pull_request') && github.event.pull_request.head.ref) || github.ref_name }}
       SHA: ${{ (startsWith(github.event_name, 'pull_request') && github.event.pull_request.head.sha) || github.sha }}
     steps:
-      - uses: actions/checkout@v6.0.3
+      - uses: actions/checkout@v7.0.0
 
       - name: Determine action
         id: action
@@ -54,12 +54,12 @@ jobs:
 
       # --- Python/uv setup (needed for both deploy and destroy) ---
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.2.0
+        uses: astral-sh/setup-uv@v8.3.2
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v6
+        uses: actions/setup-python@v6.3.0
         with:
           python-version-file: "server/pyproject.toml"
 
@@ -71,7 +71,7 @@ jobs:
         run: curl https://tinybird.co | sh
 
       - name: Connect to Tailscale
-        uses: tailscale/github-action@v4
+        uses: tailscale/github-action@v4.1.3
         with:
           oauth-client-id: ${{ secrets.POLAR_TAILSCALE_OAUTH_CLIENT_ID }}
           oauth-secret: ${{ secrets.POLAR_TAILSCALE_OAUTH_SECRET }}
@@ -258,19 +258,6 @@ jobs:
             --branch "$BRANCH" \
             --sha "$SHA" \
             --github-output "$GITHUB_OUTPUT"
-
-  # --- E2E Tests ---
-  e2e:
-    name: "Preview: E2E"
-    needs: preview
-    if: |
-      github.event_name == 'pull_request' &&
-      needs.preview.result == 'success' &&
-      needs.preview.outputs.preview_url != ''
-    uses: ./.github/workflows/test_e2e.yaml
-    with:
-      preview_url: ${{ needs.preview.outputs.preview_url }}
-    secrets: inherit
 
   # --- PR Comment ---
   preview_comment:

@@ -2,6 +2,7 @@ import { useMetrics } from '@/hooks/queries'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import KeyboardArrowDown from '@mui/icons-material/KeyboardArrowDown'
 import KeyboardArrowUp from '@mui/icons-material/KeyboardArrowUp'
+import RemoveOutlined from '@mui/icons-material/RemoveOutlined'
 import { formatCurrency } from '@polar-sh/currency'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { endOfMonth, format, startOfMonth, subMonths } from 'date-fns'
@@ -9,12 +10,50 @@ import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { Spinner } from '@polar-sh/orbit'
 import { WidgetContainer } from './WidgetContainer'
+import { WidgetGuard } from './WidgetGuard'
 
 interface RevenueWidgetProps {
   className?: string
 }
 
-const RevenueWidget = ({ className }: RevenueWidgetProps) => {
+const WIDGET_TITLE = 'Revenue'
+
+type PeriodTrend =
+  | { type: 'change'; value: number }
+  | { type: 'new' }
+  | { type: 'none' }
+
+const getPeriodTrend = (
+  current: number,
+  previous: number | undefined,
+): PeriodTrend => {
+  if (previous === undefined) {
+    return { type: 'none' }
+  }
+
+  if (previous === 0) {
+    return current > 0 ? { type: 'new' } : { type: 'none' }
+  }
+
+  const value = ((current - previous) / Math.abs(previous)) * 100
+  if (!Number.isFinite(value) || value === 0) {
+    return { type: 'none' }
+  }
+
+  return { type: 'change', value }
+}
+
+const RevenueWidget = ({ className }: RevenueWidgetProps) => (
+  <WidgetGuard
+    permission="analytics:read"
+    title={WIDGET_TITLE}
+    className={className}
+  >
+    <RevenueWidgetContent className={className} />
+  </WidgetGuard>
+)
+
+const RevenueWidgetContent = ({ className }: RevenueWidgetProps) => {
   const { organization } = useContext(OrganizationContext)
 
   const revenueMetrics = useMetrics({
@@ -26,13 +65,14 @@ const RevenueWidget = ({ className }: RevenueWidgetProps) => {
   })
 
   const maxRevenue = Math.max(
+    1,
     ...(revenueMetrics.data?.periods.map((period) => period.revenue ?? 0) ??
       []),
   )
 
   return (
     <WidgetContainer
-      title="Revenue"
+      title={WIDGET_TITLE}
       action={
         <span className="dark:text-polar-500 text-gray-500">Last 3 Months</span>
       }
@@ -40,18 +80,12 @@ const RevenueWidget = ({ className }: RevenueWidgetProps) => {
     >
       <div className="grid flex-1 grid-cols-3 gap-4 pb-6">
         {revenueMetrics.data?.periods.map((period, index, array) => {
-          const currentPeriodValue = period.revenue ?? 0
-          const previousPeriodValue = array[index - 1]?.revenue ?? 0
-
-          const percentageChangeComparedToPreviousPeriod =
-            previousPeriodValue === 0 && currentPeriodValue === 0
-              ? 0
-              : ((currentPeriodValue - previousPeriodValue) /
-                  Math.abs(previousPeriodValue)) *
-                100
-
-          const isTrendFlat = percentageChangeComparedToPreviousPeriod === 0
-          const isTrendingUp = percentageChangeComparedToPreviousPeriod > 0
+          const revenue = period.revenue ?? 0
+          const previous =
+            index > 0 ? (array[index - 1].revenue ?? 0) : undefined
+          const trend = getPeriodTrend(revenue, previous)
+          const isTrendingUp =
+            trend.type === 'new' || (trend.type === 'change' && trend.value > 0)
 
           return (
             <div key={period.timestamp} className="flex flex-col gap-y-2">
@@ -70,14 +104,14 @@ const RevenueWidget = ({ className }: RevenueWidgetProps) => {
                           : 'dark:bg-polar-700 bg-gray-400',
                       )}
                       style={{
-                        height: `${((period.revenue ?? 0) / maxRevenue) * 100}%`,
+                        height: `${(revenue / maxRevenue) * 100}%`,
                       }}
                     />
                   )}
                 </TooltipTrigger>
                 <TooltipContent>
                   <span>
-                    {formatCurrency('compact')(period.revenue ?? 0, 'usd')} in{' '}
+                    {formatCurrency('compact')(revenue, 'usd')} in{' '}
                     {format(period.timestamp, 'MMMM')}
                   </span>
                 </TooltipContent>
@@ -88,9 +122,13 @@ const RevenueWidget = ({ className }: RevenueWidgetProps) => {
                 </span>
                 <div className="flex flex-row items-center justify-between gap-x-2">
                   <span className="dark:text-polar-500 text-sm text-gray-500">
-                    {formatCurrency('statistics')(period.revenue ?? 0, 'usd')}
+                    {formatCurrency('statistics')(revenue, 'usd')}
                   </span>
-                  {!isTrendFlat ? (
+                  {trend.type === 'none' ? (
+                    <span className="dark:bg-polar-700 dark:text-polar-500 flex flex-row items-center gap-x-1 rounded-xs bg-gray-100 p-0.5 text-xs text-gray-500">
+                      <RemoveOutlined fontSize="inherit" />
+                    </span>
+                  ) : (
                     <Tooltip>
                       <TooltipTrigger
                         className={twMerge(
@@ -108,15 +146,13 @@ const RevenueWidget = ({ className }: RevenueWidgetProps) => {
                       </TooltipTrigger>
                       <TooltipContent>
                         <span className="text-xs">
-                          {percentageChangeComparedToPreviousPeriod === Infinity
-                            ? 'Infinity'
-                            : percentageChangeComparedToPreviousPeriod.toFixed(
-                                0,
-                              ) + '%'}
+                          {trend.type === 'new'
+                            ? 'New'
+                            : `${trend.value.toFixed(0)}%`}
                         </span>
                       </TooltipContent>
                     </Tooltip>
-                  ) : null}
+                  )}
                 </div>
               </div>
             </div>

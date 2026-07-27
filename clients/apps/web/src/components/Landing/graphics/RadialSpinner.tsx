@@ -17,7 +17,7 @@ import { useInView } from '@/hooks/useInView'
  * and the same per-spoke stagger.
  */
 
-const SPOKE_COUNT = 14
+const SPOKE_COUNT = 10
 const INNER_R_FRAC = 0.1
 const OUTER_R_FRAC = 0.32
 

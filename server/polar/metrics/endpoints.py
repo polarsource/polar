@@ -3,14 +3,13 @@ from datetime import date
 from typing import Annotated
 from zoneinfo import ZoneInfo
 
-from fastapi import Depends, Path, Query, Response
-from fastapi.responses import StreamingResponse
+from fastapi import Depends, Path, Query
 from pydantic import UUID4
 from pydantic_extra_types.timezone_name import TimeZoneName
 
 from polar.customer.schemas.customer import CustomerID
 from polar.exceptions import PolarRequestValidationError, ResourceNotFound
-from polar.kit.csv import IterableCSVWriter
+from polar.kit.csv import CSVStreamingResponse, IterableCSVWriter
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.time_queries import (
     MAX_INTERVAL_DAYS,
@@ -150,15 +149,7 @@ async def get(
     )
 
 
-@router.get(
-    "/export",
-    summary="Export Metrics",
-    responses={
-        200: {
-            "content": {"text/csv": {"schema": {"type": "string"}}},
-        },
-    },
-)
+@router.get("/export", summary="Export Metrics", response_class=CSVStreamingResponse)
 async def export(
     auth_subject: auth.MetricsRead,
     start_date: date = Query(..., description="Start date."),
@@ -197,7 +188,7 @@ async def export(
     ),
     session: AsyncReadSession = Depends(get_db_read_session),
     redis: Redis | None = Depends(get_redis),
-) -> Response:
+) -> CSVStreamingResponse:
     """Export metrics as a CSV file."""
     if metrics is not None:
         invalid_slugs = set(metrics) - VALID_METRIC_SLUGS
@@ -262,12 +253,7 @@ async def export(
                 + [getattr(period, slug, None) for slug in ordered_slugs]
             )
 
-    filename = "polar-metrics.csv"
-    return StreamingResponse(
-        create_csv(),
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
-    )
+    return CSVStreamingResponse(create_csv(), "polar-metrics.csv")
 
 
 @router.get("/limits", summary="Get Metrics Limits", response_model=MetricsLimits)

@@ -7,12 +7,25 @@ import { formatCurrency } from '@polar-sh/currency'
 import { Card } from '@polar-sh/ui/components/atoms/Card'
 import { useContext } from 'react'
 import { WidgetContainer } from './WidgetContainer'
+import { WidgetGuard, WidgetRestricted } from './WidgetGuard'
 
 export interface AccountWidgetProps {
   className?: string
 }
 
-export const AccountWidget = ({ className }: AccountWidgetProps) => {
+const WIDGET_TITLE = 'Available balance'
+
+export const AccountWidget = ({ className }: AccountWidgetProps) => (
+  <WidgetGuard
+    permission="finance:read"
+    title={WIDGET_TITLE}
+    className={className}
+  >
+    <AccountWidgetContent className={className} />
+  </WidgetGuard>
+)
+
+const AccountWidgetContent = ({ className }: AccountWidgetProps) => {
   const { organization: org } = useContext(OrganizationContext)
 
   const { data: account, error: accountError } = useOrganizationAccount(org.id)
@@ -22,11 +35,19 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
     sorting: ['-created_at'],
   })
 
+  // The permission is granted, but the account can still 403 for reasons
+  // RBAC doesn't cover.
   if (
     accountError instanceof ClientResponseError &&
     accountError.response.status === 403
   ) {
-    return null
+    return (
+      <WidgetRestricted
+        permission="finance:read"
+        title={WIDGET_TITLE}
+        className={className}
+      />
+    )
   }
 
   const allPayouts = payouts?.items ?? []
@@ -37,7 +58,7 @@ export const AccountWidget = ({ className }: AccountWidgetProps) => {
 
   return (
     <WidgetContainer
-      title="Available balance"
+      title={WIDGET_TITLE}
       action={<h2 className="text-lg">{availableBalance}</h2>}
       className={className}
     >

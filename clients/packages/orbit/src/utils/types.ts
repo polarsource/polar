@@ -1,14 +1,16 @@
 import type {
   BackgroundColorToken,
   BorderColorToken,
+  TextColorToken,
+} from '../tokens/semantics.stylex'
+import type {
   BorderRadiusToken,
   BreakpointKey,
   DurationToken,
   EasingToken,
   ShadowToken,
   SpacingToken,
-  TextColorToken,
-} from '../tokens/tokens.stylex'
+} from '../tokens/value.stylex'
 
 export type PseudoState =
   | 'hover'

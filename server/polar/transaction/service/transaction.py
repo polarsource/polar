@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Sequence
+from datetime import datetime
 from enum import StrEnum
 from typing import Any, cast
 
@@ -7,8 +8,9 @@ from sqlalchemy import Select, UnaryExpression, asc, desc, func, or_, select
 from sqlalchemy.exc import NoResultFound
 from sqlalchemy.orm import joinedload, subqueryload
 
+from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
-from polar.authz.repository import select_user_org_ids
+from polar.authz.repository import select_accessible_org_ids
 from polar.exceptions import ResourceNotFound
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.sorting import Sorting
@@ -25,6 +27,7 @@ from polar.postgres import AsyncReadSession, AsyncSession
 
 from ..schemas import (
     TransactionsBalance,
+    TransactionsHeldBalance,
     TransactionsSummary,
 )
 from .base import BaseTransactionService
@@ -39,7 +42,7 @@ class TransactionService(BaseTransactionService):
     async def search(
         self,
         session: AsyncReadSession,
-        user: User,
+        auth_subject: AuthSubject[User],
         *,
         type: TransactionType | None = None,
         account_id: uuid.UUID | None = None,
@@ -52,7 +55,7 @@ class TransactionService(BaseTransactionService):
             (TransactionSortProperty.created_at, True)
         ],
     ) -> tuple[Sequence[Transaction], int]:
-        statement = self._get_readable_transactions_statement(user)
+        statement = self._get_readable_transactions_statement(auth_subject)
 
         statement = statement.options(
             # Incurred transactions
@@ -100,10 +103,13 @@ class TransactionService(BaseTransactionService):
         return results, count
 
     async def lookup(
-        self, session: AsyncReadSession, id: uuid.UUID, user: User
+        self,
+        session: AsyncReadSession,
+        id: uuid.UUID,
+        auth_subject: AuthSubject[User],
     ) -> Transaction:
         statement = (
-            self._get_readable_transactions_statement(user)
+            self._get_readable_transactions_statement(auth_subject)
             .options(
                 # Incurred transactions
                 subqueryload(Transaction.account_incurred_transactions),
@@ -177,7 +183,12 @@ class TransactionService(BaseTransactionService):
                     func.coalesce(
                         func.sum(Transaction.amount).filter(
                             or_(
-                                Transaction.type == TransactionType.payout,
+                                Transaction.type.in_(
+                                    (
+                                        TransactionType.payout,
+                                        TransactionType.payout_reversal,
+                                    )
+                                ),
                                 Transaction.platform_fee_type.in_(
                                     PlatformFeeType.payout_fee_types()
                                 ),
@@ -194,7 +205,12 @@ class TransactionService(BaseTransactionService):
                     func.coalesce(
                         func.sum(Transaction.account_amount).filter(
                             or_(
-                                Transaction.type == TransactionType.payout,
+                                Transaction.type.in_(
+                                    (
+                                        TransactionType.payout,
+                                        TransactionType.payout_reversal,
+                                    )
+                                ),
                                 Transaction.platform_fee_type.in_(
                                     PlatformFeeType.payout_fee_types()
                                 ),
@@ -234,6 +250,45 @@ class TransactionService(BaseTransactionService):
             available_amount = 0
             available_account_amount = 0
 
+        released_at = Transaction.created_at + Account.payout_transaction_delay
+        release_day = func.date_trunc("day", released_at)
+        held_statement = (
+            select(
+                cast(type[datetime], func.max(released_at)),
+                cast(type[int], func.sum(Transaction.amount)),
+                cast(type[int], func.sum(Transaction.account_amount)),
+            )
+            .join(Account, Account.id == Transaction.account_id)
+            .where(
+                Transaction.account_id == account.id,
+                Transaction.type.not_in(
+                    (TransactionType.payout, TransactionType.payout_reversal)
+                ),
+                or_(
+                    Transaction.platform_fee_type.is_(None),
+                    Transaction.platform_fee_type.not_in(
+                        PlatformFeeType.payout_fee_types()
+                    ),
+                ),
+                released_at > func.now(),
+            )
+            .group_by(release_day)
+            .order_by(release_day)
+        )
+
+        held_result = await session.execute(held_statement)
+        held_releases = held_result.tuples().all()
+
+        held_amount = sum(amount for _, amount, _ in held_releases)
+        held_account_amount = sum(
+            account_amount for _, _, account_amount in held_releases
+        )
+        fully_available_at = held_releases[-1][0] if held_releases else None
+        next_release_at, next_release_amount, next_release_account_amount = next(
+            (release for release in held_releases if release[1] > 0),
+            (None, 0, 0),
+        )
+
         return TransactionsSummary(
             balance=TransactionsBalance(
                 currency=currency,
@@ -246,6 +301,16 @@ class TransactionService(BaseTransactionService):
                 amount=available_amount,
                 account_currency=account_currency,
                 account_amount=available_account_amount,
+            ),
+            held_balance=TransactionsHeldBalance(
+                currency=currency,
+                amount=held_amount,
+                account_currency=account_currency,
+                account_amount=held_account_amount,
+                next_release_at=next_release_at,
+                next_release_amount=next_release_amount,
+                next_release_account_amount=next_release_account_amount,
+                fully_available_at=fully_available_at,
             ),
             payout=TransactionsBalance(
                 currency=currency,
@@ -272,9 +337,11 @@ class TransactionService(BaseTransactionService):
         result = await session.execute(statement)
         return int(result.scalar_one())
 
-    def _get_readable_transactions_statement(self, user: User) -> Select[Any]:
-        readable_org_ids = select_user_org_ids(
-            user.id, permission=OrganizationPermission.finance_read
+    def _get_readable_transactions_statement(
+        self, auth_subject: AuthSubject[User]
+    ) -> Select[Any]:
+        readable_org_ids = select_accessible_org_ids(
+            auth_subject, permission=OrganizationPermission.finance_read
         )
         statement = (
             select(Transaction)
@@ -287,9 +354,9 @@ class TransactionService(BaseTransactionService):
             .join(User, onclause=User.account_id == Account.id, isouter=True)
             .where(
                 or_(
-                    User.id == user.id,
+                    User.id == auth_subject.subject.id,
                     Organization.id.in_(readable_org_ids),
-                    Transaction.payment_user_id == user.id,
+                    Transaction.payment_user_id == auth_subject.subject.id,
                     Transaction.payment_organization_id.in_(readable_org_ids),
                 )
             )

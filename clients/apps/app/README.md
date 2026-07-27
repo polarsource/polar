@@ -79,6 +79,9 @@ Publish through `pnpm ota`, **not** raw `eas update`. It runs a preflight guard
 reach devices then forwards to `eas update` for you:
 
 ```bash
+# Make sure you are on the main branch first
+git checkout main
+
 # Test on preview first if it's a larger change
 pnpm ota --channel preview --message "Description of changes"
 
@@ -137,7 +140,7 @@ eas build --profile preview --platform ios   # Rebuild with the device included
 
 Once the build finishes, EAS gives you a URL. Open it on your phone to install directly (no TestFlight needed). For Android, you just download and install the APK.
 
-You don't need to rebuild the preview build for every change — only when native code changes. Day-to-day, you push OTA updates to it via `eas update --channel preview`.
+You don't need to rebuild the preview build for every change — only when native code changes. Day-to-day, you push OTA updates to it via `pnpm ota --channel preview`.
 
 ### Recommended workflow
 

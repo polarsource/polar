@@ -7,7 +7,7 @@ import { Text } from '../Shared/Text'
 interface AmountLabelProps {
   amount: number
   currency: string
-  interval?: schemas['SubscriptionRecurringInterval']
+  interval?: schemas['RecurringInterval']
   loading?: boolean
 }
 

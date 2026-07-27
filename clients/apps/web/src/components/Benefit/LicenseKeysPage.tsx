@@ -27,7 +27,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useState } from 'react'
-import { InlineModal } from '@polar-sh/orbit'
+import { InlineModal, InlineModalHeader } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import { BenefitPage } from './BenefitPage'
 
@@ -192,64 +192,79 @@ export const LicenseKeysPage = ({
     [updateLicenseKey, selectedLicenseKey, setStatusLoading],
   )
 
+  const closeLicenseKeyModal = useCallback(() => {
+    hideLicenseKeyModal()
+    setSelectedLicenseKeys({})
+    setDeepLinkParam(null)
+  }, [hideLicenseKeyModal, setSelectedLicenseKeys, setDeepLinkParam])
+
   const LicenseKeyContextView = selectedLicenseKey ? (
-    <Box flexDirection="column" rowGap="2xl" padding="2xl">
-      <Text variant="heading-xxs" as="h1">
-        License Key
-      </Text>
-      <Box alignItems="center" columnGap="m">
-        <Avatar
-          className="h-10 w-10"
-          avatar_url={selectedLicenseKey.customer.avatar_url}
-          name={
-            selectedLicenseKey.customer.email ??
-            selectedLicenseKey.customer.name ??
-            '—'
-          }
-        />
-        <Box flexDirection="column">
-          <Text>{selectedLicenseKey.customer.email ?? '—'}</Text>
+    <Box flexDirection="column" overflowY="auto">
+      <InlineModalHeader hide={closeLicenseKeyModal}>
+        <Text variant="heading-xxs" as="h1">
+          License Key
+        </Text>
+      </InlineModalHeader>
+      <Box
+        flexDirection="column"
+        rowGap="2xl"
+        paddingHorizontal="2xl"
+        paddingBottom="2xl"
+      >
+        <Box alignItems="center" columnGap="m">
+          <Avatar
+            className="h-10 w-10"
+            avatar_url={selectedLicenseKey.customer.avatar_url}
+            name={
+              selectedLicenseKey.customer.email ??
+              selectedLicenseKey.customer.name ??
+              '—'
+            }
+          />
+          <Box flexDirection="column">
+            <Text>{selectedLicenseKey.customer.email ?? '—'}</Text>
+          </Box>
         </Box>
-      </Box>
-      <Box flexDirection="column" rowGap="xl">
-        <CopyToClipboardInput
-          value={selectedLicenseKey.key}
-          onCopy={() => {
-            toast({
-              title: 'Copied To Clipboard',
-              description: `License Key was copied to clipboard`,
-            })
-          }}
-        />
-        <LicenseKeyDetails licenseKey={selectedLicenseKey} />
-      </Box>
-      <Box columnGap="l">
-        {['disabled', 'revoked'].includes(selectedLicenseKey.status) && (
-          <Button
-            onClick={() => handleToggleLicenseKeyStatus('granted')}
-            loading={statusLoading}
-          >
-            Enable
-          </Button>
-        )}
-        {selectedLicenseKey.status === 'granted' && (
-          <Button
-            onClick={() => handleToggleLicenseKeyStatus('disabled')}
-            variant="secondary"
-            loading={statusLoading}
-          >
-            Disable
-          </Button>
-        )}
-        {selectedLicenseKey.status === 'granted' && (
-          <Button
-            onClick={() => handleToggleLicenseKeyStatus('revoked')}
-            loading={statusLoading}
-            variant="destructive"
-          >
-            Revoke
-          </Button>
-        )}
+        <Box flexDirection="column" rowGap="xl">
+          <CopyToClipboardInput
+            value={selectedLicenseKey.key}
+            onCopy={() => {
+              toast({
+                title: 'Copied To Clipboard',
+                description: `License Key was copied to clipboard`,
+              })
+            }}
+          />
+          <LicenseKeyDetails licenseKey={selectedLicenseKey} />
+        </Box>
+        <Box columnGap="l">
+          {['disabled', 'revoked'].includes(selectedLicenseKey.status) && (
+            <Button
+              onClick={() => handleToggleLicenseKeyStatus('granted')}
+              loading={statusLoading}
+            >
+              Enable
+            </Button>
+          )}
+          {selectedLicenseKey.status === 'granted' && (
+            <Button
+              onClick={() => handleToggleLicenseKeyStatus('disabled')}
+              variant="secondary"
+              loading={statusLoading}
+            >
+              Disable
+            </Button>
+          )}
+          {selectedLicenseKey.status === 'granted' && (
+            <Button
+              onClick={() => handleToggleLicenseKeyStatus('revoked')}
+              loading={statusLoading}
+              variant="destructive"
+            >
+              Revoke
+            </Button>
+          )}
+        </Box>
       </Box>
     </Box>
   ) : undefined
@@ -300,11 +315,7 @@ export const LicenseKeysPage = ({
           <InlineModal
             modalContent={LicenseKeyContextView ?? null}
             isShown={isLicenseKeyModalShown}
-            hide={() => {
-              hideLicenseKeyModal()
-              setSelectedLicenseKeys({})
-              setDeepLinkParam(null)
-            }}
+            hide={closeLicenseKeyModal}
           />
         </Box>
       </TabsContent>

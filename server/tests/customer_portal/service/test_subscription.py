@@ -5,11 +5,15 @@ import pytest
 
 from polar.auth.models import AuthSubject
 from polar.customer_portal.schemas.subscription import (
+    CustomerSubscriptionChangePreviewProduct,
+    CustomerSubscriptionPause,
+    CustomerSubscriptionResume,
     CustomerSubscriptionUpdateClear,
     CustomerSubscriptionUpdateProduct,
     CustomerSubscriptionUpdateSeats,
 )
 from polar.customer_portal.service.subscription import (
+    PauseResumeNotAllowed,
     UpdateSubscriptionPlanNotAllowed,
     UpdateSubscriptionSeatsNotAllowed,
 )
@@ -296,6 +300,29 @@ class TestUpdate:
                 updates=CustomerSubscriptionUpdateSeats(seats=100),
             )
 
+    async def test_preview_change_not_allowed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        subscription: Subscription,
+        product_second: Product,
+        organization: Organization,
+    ) -> None:
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "subscription": {"update_seats": False, "update_plan": False},
+        }
+        await save_fixture(organization)
+
+        with pytest.raises(UpdateSubscriptionPlanNotAllowed):
+            await customer_subscription_service.preview_change(
+                session,
+                subscription,
+                change=CustomerSubscriptionChangePreviewProduct(
+                    product_id=product_second.id
+                ),
+            )
+
     @pytest.mark.keep_session_state
     async def test_valid(
         self,
@@ -450,3 +477,104 @@ class TestClearPendingUpdate:
         assert errors[0]["type"] == "value_error"
         assert errors[0]["loc"] == ("body", "pending_update")
         assert "no pending update" in errors[0]["msg"]
+
+
+@pytest.mark.asyncio
+class TestUpdatePause:
+    async def test_pause_not_allowed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        with pytest.raises(PauseResumeNotAllowed):
+            await customer_subscription_service.update(
+                session,
+                subscription,
+                updates=CustomerSubscriptionPause(pause_at_period_end=True),
+            )
+
+    async def test_pause_allowed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "subscription": {
+                **organization.customer_portal_settings["subscription"],
+                "pause": True,
+            },
+        }
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        updated = await customer_subscription_service.update(
+            session,
+            subscription,
+            updates=CustomerSubscriptionPause(pause_at_period_end=True),
+        )
+
+        assert updated.pause_at_period_end is True
+
+    async def test_resume_not_allowed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+
+        with pytest.raises(PauseResumeNotAllowed):
+            await customer_subscription_service.update(
+                session,
+                subscription,
+                updates=CustomerSubscriptionResume(resume=True),
+            )
+
+    async def test_resume_allowed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "subscription": {
+                **organization.customer_portal_settings["subscription"],
+                "pause": True,
+            },
+        }
+        await save_fixture(organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+
+        updated = await customer_subscription_service.update(
+            session,
+            subscription,
+            updates=CustomerSubscriptionResume(resume=True),
+        )
+
+        assert updated.status == SubscriptionStatus.active

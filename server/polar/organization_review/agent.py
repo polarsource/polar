@@ -23,11 +23,15 @@ from .collectors import (
     collect_metrics_data,
     collect_organization_data,
     collect_products_data,
+    collect_risk_signal_data,
     collect_setup_data,
     collect_website_data,
 )
 from .collectors.setup import resolve_url_redirects
-from .repository import OrganizationReviewRepository
+from .repository import (
+    OrganizationReviewRepository,
+    OrganizationRiskSignalRepository,
+)
 from .schemas import (
     AgentReviewResult,
     DataSnapshot,
@@ -38,6 +42,7 @@ from .schemas import (
     PriorFeedbackData,
     ProductsData,
     ReviewContext,
+    RiskSignalData,
     SetupData,
     UsageInfo,
     WebsiteData,
@@ -119,9 +124,6 @@ async def run_organization_review(
 async def _collect_products(
     organization_id: UUID, context: ReviewContext
 ) -> ProductsData:
-    if context == ReviewContext.SUBMISSION:
-        return ProductsData()
-
     async with AsyncReadSessionMaker() as session:
         repo = OrganizationReviewRepository.from_session(session)
         products = await repo.get_products_with_prices(organization_id)
@@ -130,9 +132,6 @@ async def _collect_products(
 
 
 async def _collect_setup(organization_id: UUID, context: ReviewContext) -> SetupData:
-    if context not in (ReviewContext.THRESHOLD, ReviewContext.MANUAL):
-        return SetupData()
-
     async with AsyncReadSessionMaker() as session:
         repo = OrganizationReviewRepository.from_session(session)
         checkout_links = await repo.get_checkout_links_with_benefits(organization_id)
@@ -173,7 +172,11 @@ async def _collect_setup(organization_id: UUID, context: ReviewContext) -> Setup
 async def _collect_metrics(
     organization_id: UUID, context: ReviewContext
 ) -> PaymentMetrics:
-    if context not in (ReviewContext.THRESHOLD, ReviewContext.MANUAL):
+    if context not in (
+        ReviewContext.THRESHOLD,
+        ReviewContext.MANUAL,
+        ReviewContext.PRODUCT_CHANGED,
+    ):
         return PaymentMetrics()
 
     async with AsyncReadSessionMaker() as session:
@@ -221,9 +224,6 @@ async def _collect_history(organization: Organization) -> HistoryData:
 async def _collect_account_identity(
     organization: Organization, context: ReviewContext
 ) -> tuple[PayoutAccountData, IdentityData]:
-    if context == ReviewContext.SUBMISSION:
-        return PayoutAccountData(), IdentityData()
-
     async with AsyncReadSessionMaker() as session:
         repo = OrganizationReviewRepository.from_session(session)
         payout_account = await repo.get_payout_account_with_admin(organization.id)
@@ -347,6 +347,13 @@ async def _collect_prior_feedback(organization_id: UUID) -> PriorFeedbackData:
         return collect_feedback_data(records)
 
 
+async def _collect_risk_signals(organization_id: UUID) -> RiskSignalData:
+    async with AsyncReadSessionMaker() as session:
+        repo = OrganizationRiskSignalRepository.from_session(session)
+        signals = await repo.list_by_organization(organization_id)
+        return collect_risk_signal_data(signals)
+
+
 async def _collect_data(
     organization: Organization,
     context: ReviewContext,
@@ -375,6 +382,7 @@ async def _collect_data(
             tuple[PayoutAccountData, IdentityData],
             WebsiteData | None,
             PriorFeedbackData,
+            RiskSignalData,
         ],
         await asyncio.gather(
             _collect_products(organization.id, context),
@@ -384,6 +392,7 @@ async def _collect_data(
             _collect_account_identity(organization, context),
             _collect_website(organization),
             _collect_prior_feedback(organization.id),
+            _collect_risk_signals(organization.id),
         ),
     )
     (
@@ -394,6 +403,7 @@ async def _collect_data(
         (account_data, identity_data),
         website_data,
         prior_feedback_data,
+        risk_signal_data,
     ) = results
 
     return DataSnapshot(
@@ -407,5 +417,6 @@ async def _collect_data(
         setup=setup_data,
         website=website_data,
         prior_feedback=prior_feedback_data,
+        risk_signals=risk_signal_data,
         collected_at=datetime.now(UTC),
     )

@@ -5,6 +5,7 @@ import structlog
 from pydantic_ai import Agent
 
 from polar.config import settings
+from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.observability.baggage import organization_baggage
 
 from .known_domains import known_domains_for_prompt, match_known_domain
@@ -405,7 +406,10 @@ sellers. False approvals can expose Polar to risk. Balance both.
 
 SUBMISSION_PREAMBLE = """\
 This is a SUBMISSION review. The user just created their organization, submitted their details. \
-No Stripe account, payments, or products exist yet. \
+Some merchants may already have created products, connected a payout account, set up an integration \
+(API keys, webhooks, checkout URLs), or verified their identity; when such signals are present, treat \
+them as corroborating evidence of a legitimate business. Their absence is normal at this stage and is \
+NOT a reason to deny. \
 Assess only: POLICY_COMPLIANCE, PRODUCT_LEGITIMACY, IDENTITY_TRUST. \
 Skip FINANCIAL_RISK and SETUP_READINESS — set those to LOW risk with confidence 0. \
 Identity verification is NOT expected at this stage — unverified identity is normal and should NOT be flagged. \
@@ -584,10 +588,12 @@ data contradicts it, APPROVE.
 - If the appeal is vague, evasive, or does not address the original concern, \
 DENY.
 - If the appeal asserts something that directly contradicts hard data \
-(prohibited products visible on Polar, Stripe fraud signals), DENY \
-regardless of the appeal text. Do NOT use prior denied or blocked \
-organizations as a signal at the appeal stage — judge this organization \
-on its own merits and the appeal text.
+(prohibited products visible on Polar, Stripe account fraud indicators \
+such as fraudulent verification documents), DENY regardless of the \
+appeal text. Probabilistic entries under "## External Risk Signals" are \
+NOT hard data by themselves — weigh them together with the appeal. Do \
+NOT use prior denied or blocked organizations as a signal at the appeal \
+stage — judge this organization on its own merits and the appeal text.
 - A short or generic appeal ("please approve me", "I disagree") with no \
 specific information is grounds for DENY.
 
@@ -612,6 +618,17 @@ Examples for DENY:
 Examples for APPROVE:
 - "Your appeal has been accepted. Your organization has been approved to sell on Polar."
 """
+
+POLICY_NOTE = (
+    "The policy below is a live internal working document. It may contain "
+    "authoring scaffolding — a title banner, reading guide, TODOs, editorial "
+    "comments, assessment dates, section-status labels (e.g. Hard/Soft AUP), "
+    "and links to Slack or the backoffice. Treat that scaffolding as context, "
+    "not as rules: base your decision on the actual prohibited/allowed "
+    "categories and their documented reasoning (Context/Why, Examples, "
+    "Nuances). Where a note records a decision or exception, honor it; where "
+    "it is an unresolved question or TODO, do not treat it as settled policy."
+)
 
 
 def _annotate_domains(domains: list[str]) -> str:
@@ -671,7 +688,7 @@ class ReviewAnalyzer:
         timeout_seconds: int = 60,
         policy_override: str | None = None,
     ) -> tuple[ReviewAgentReport, UsageInfo]:
-        policy_content = policy_override or fetch_policy_content()
+        policy_content = policy_override or await fetch_policy_content()
 
         prompt = self._build_prompt(snapshot)
 
@@ -680,9 +697,12 @@ class ReviewAnalyzer:
             ReviewContext.THRESHOLD: THRESHOLD_PREAMBLE,
             ReviewContext.MANUAL: MANUAL_PREAMBLE,
             ReviewContext.APPEAL: APPEAL_PREAMBLE,
+            # A product-change review is a comprehensive re-review of an
+            # active org, same as a threshold review.
+            ReviewContext.PRODUCT_CHANGED: THRESHOLD_PREAMBLE,
         }.get(context)
 
-        policy_block = f"## Acceptable Use Policy\n\n{policy_content}"
+        policy_block = f"## Acceptable Use Policy\n\n{POLICY_NOTE}\n\n{policy_content}"
         instructions = f"{preamble}\n\n{policy_block}" if preamble else policy_block
 
         try:
@@ -695,7 +715,7 @@ class ReviewAnalyzer:
                     timeout=timeout_seconds,
                 )
             usage = UsageInfo.from_agent_usage(
-                result.usage(), self.model_provider, self.model_name
+                result.usage, self.model_provider, self.model_name
             )
             return result.output, usage
         except Exception as e:
@@ -783,97 +803,94 @@ class ReviewAnalyzer:
                     f"(overriding the catalog price): {products.adhoc_prices_count}"
                 )
 
-        # Setup & Integration Signals (only for threshold/manual reviews)
+        # Setup & Integration Signals
         setup = snapshot.setup
-        if snapshot.context in (ReviewContext.THRESHOLD, ReviewContext.MANUAL):
-            parts.append("\n## Setup & Integration Signals")
+        parts.append("\n## Setup & Integration Signals")
 
-            if setup.checkout_success_urls.unique_urls:
-                parts.append(
-                    f"Checkout Success URLs ({len(setup.checkout_success_urls.unique_urls)}):"
-                )
-                for url in setup.checkout_success_urls.unique_urls:
-                    parts.append(f"  - {url}")
-                parts.append(
-                    f"Success URL Domains: {', '.join(setup.checkout_success_urls.domains)}"
-                )
-                if setup.checkout_success_urls.redirect_results:
-                    redirected = [
-                        r
-                        for r in setup.checkout_success_urls.redirect_results
-                        if r.redirected
-                    ]
-                    if redirected:
-                        parts.append(
-                            "⚠️ SUCCESS URL REDIRECT DETECTED — these URLs redirect "
-                            "to a DIFFERENT domain:"
-                        )
-                        for r in redirected:
-                            parts.append(
-                                f"  - {r.original_url} → REDIRECTS TO: "
-                                f"{r.final_url} (domain: {r.final_domain})"
-                            )
-            else:
-                parts.append("No custom checkout success URLs configured.")
-
-            if setup.checkout_return_urls.unique_urls:
-                parts.append(
-                    f"Checkout Return URLs ({len(setup.checkout_return_urls.unique_urls)}):"
-                )
-                for url in setup.checkout_return_urls.unique_urls:
-                    parts.append(f"  - {url}")
-                parts.append(
-                    f"Return URL Domains: {', '.join(setup.checkout_return_urls.domains)}"
-                )
-                if setup.checkout_return_urls.redirect_results:
-                    redirected = [
-                        r
-                        for r in setup.checkout_return_urls.redirect_results
-                        if r.redirected
-                    ]
-                    if redirected:
-                        parts.append(
-                            "⚠️ RETURN URL REDIRECT DETECTED — these URLs redirect "
-                            "to a DIFFERENT domain:"
-                        )
-                        for r in redirected:
-                            parts.append(
-                                f"  - {r.original_url} → REDIRECTS TO: "
-                                f"{r.final_url} (domain: {r.final_domain})"
-                            )
-            else:
-                parts.append("No custom checkout return URLs configured.")
-
-            if setup.checkout_links.total_links > 0:
-                parts.append(
-                    f"Checkout Links: {setup.checkout_links.total_links} total, "
-                    f"{setup.checkout_links.links_without_benefits} without benefits"
-                )
-                for link in setup.checkout_links.links[:20]:
-                    products_str = (
-                        ", ".join(link.product_names)
-                        if link.product_names
-                        else "no products"
+        if setup.checkout_success_urls.unique_urls:
+            parts.append(
+                f"Checkout Success URLs ({len(setup.checkout_success_urls.unique_urls)}):"
+            )
+            for url in setup.checkout_success_urls.unique_urls:
+                parts.append(f"  - {url}")
+            parts.append(
+                f"Success URL Domains: {', '.join(setup.checkout_success_urls.domains)}"
+            )
+            if setup.checkout_success_urls.redirect_results:
+                redirected = [
+                    r
+                    for r in setup.checkout_success_urls.redirect_results
+                    if r.redirected
+                ]
+                if redirected:
+                    parts.append(
+                        "⚠️ SUCCESS URL REDIRECT DETECTED — these URLs redirect "
+                        "to a DIFFERENT domain:"
                     )
-                    benefits_flag = (
-                        "has benefits" if link.has_benefits else "NO benefits"
-                    )
-                    label_str = f" [{link.label}]" if link.label else ""
-                    parts.append(f"  - {products_str}{label_str} ({benefits_flag})")
-            else:
-                parts.append("No checkout links created.")
+                    for r in redirected:
+                        parts.append(
+                            f"  - {r.original_url} → REDIRECTS TO: "
+                            f"{r.final_url} (domain: {r.final_domain})"
+                        )
+        else:
+            parts.append("No custom checkout success URLs configured.")
 
-            parts.append(f"API Keys: {setup.integration.api_key_count}")
-            if setup.integration.webhook_endpoints:
-                parts.append(f"Webhooks ({len(setup.integration.webhook_endpoints)}):")
-                for ep in setup.integration.webhook_endpoints:
-                    status = "enabled" if ep.enabled else "DISABLED"
-                    parts.append(f"  - {ep.url} ({status})")
-                parts.append(
-                    f"Webhook Domains: {_annotate_domains(setup.integration.webhook_domains)}"
+        if setup.checkout_return_urls.unique_urls:
+            parts.append(
+                f"Checkout Return URLs ({len(setup.checkout_return_urls.unique_urls)}):"
+            )
+            for url in setup.checkout_return_urls.unique_urls:
+                parts.append(f"  - {url}")
+            parts.append(
+                f"Return URL Domains: {', '.join(setup.checkout_return_urls.domains)}"
+            )
+            if setup.checkout_return_urls.redirect_results:
+                redirected = [
+                    r
+                    for r in setup.checkout_return_urls.redirect_results
+                    if r.redirected
+                ]
+                if redirected:
+                    parts.append(
+                        "⚠️ RETURN URL REDIRECT DETECTED — these URLs redirect "
+                        "to a DIFFERENT domain:"
+                    )
+                    for r in redirected:
+                        parts.append(
+                            f"  - {r.original_url} → REDIRECTS TO: "
+                            f"{r.final_url} (domain: {r.final_domain})"
+                        )
+        else:
+            parts.append("No custom checkout return URLs configured.")
+
+        if setup.checkout_links.total_links > 0:
+            parts.append(
+                f"Checkout Links: {setup.checkout_links.total_links} total, "
+                f"{setup.checkout_links.links_without_benefits} without benefits"
+            )
+            for link in setup.checkout_links.links[:20]:
+                products_str = (
+                    ", ".join(link.product_names)
+                    if link.product_names
+                    else "no products"
                 )
-            else:
-                parts.append("No webhook endpoints configured.")
+                benefits_flag = "has benefits" if link.has_benefits else "NO benefits"
+                label_str = f" [{link.label}]" if link.label else ""
+                parts.append(f"  - {products_str}{label_str} ({benefits_flag})")
+        else:
+            parts.append("No checkout links created.")
+
+        parts.append(f"API Keys: {setup.integration.api_key_count}")
+        if setup.integration.webhook_endpoints:
+            parts.append(f"Webhooks ({len(setup.integration.webhook_endpoints)}):")
+            for ep in setup.integration.webhook_endpoints:
+                status = "enabled" if ep.enabled else "DISABLED"
+                parts.append(f"  - {ep.url} ({status})")
+            parts.append(
+                f"Webhook Domains: {_annotate_domains(setup.integration.webhook_domains)}"
+            )
+        else:
+            parts.append("No webhook endpoints configured.")
 
         # Website Content
         if snapshot.website:
@@ -994,6 +1011,41 @@ class ReviewAnalyzer:
             parts.append(
                 f"Disputes: {metrics.dispute_count} (${metrics.dispute_amount_cents / 100:,.2f})"
             )
+
+        # External risk signals (e.g. Stripe Radar for Platforms)
+        risk_signals = snapshot.risk_signals
+        if risk_signals.entries:
+            parts.append("\n## External Risk Signals")
+            parts.append(
+                "⚠️ The following risk signals were raised against this organization "
+                "by external fraud-detection systems. Only signals at 'elevated' or "
+                "'highest' severity are recorded, so every entry below is significant. "
+                "They are probabilistic — not proof of fraud on their own — but treat "
+                "them as strong corroborating evidence: verify whether the website and "
+                "products match what the signal flags, and weigh them into "
+                "POLICY_COMPLIANCE and PRODUCT_LEGITIMACY."
+            )
+            # Highest severity first so the cap never drops the worst signals.
+            entries = sorted(
+                risk_signals.entries,
+                key=lambda e: (
+                    0
+                    if e.risk_level == OrganizationRiskSignal.HIGHEST_RISK_LEVEL
+                    else 1
+                ),
+            )
+            shown = entries[:20]
+            for signal in shown:
+                date_str = signal.created_at.strftime("%Y-%m-%d")
+                parts.append(
+                    f"- [{date_str}] {signal.source}: {signal.type} "
+                    f"(risk level: {signal.risk_level})"
+                )
+                if signal.description:
+                    parts.append(f"  Details: {signal.description[:500]}")
+            omitted = len(entries) - len(shown)
+            if omitted > 0:
+                parts.append(f"({omitted} more signal(s) omitted)")
 
         # Prior History
         parts.append("\n## User History")

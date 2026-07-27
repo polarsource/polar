@@ -5,12 +5,22 @@ from sqlalchemy import Boolean, ForeignKey, String, Uuid
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
-from polar.enums import PayoutAccountType
+from polar.enums import PayoutAccountStatus, PayoutAccountType
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
 
 if TYPE_CHECKING:
     from .user import User
+
+# Stripe `requirements.disabled_reason` values the merchant can act on themselves.
+ACTION_REQUIRED_DISABLED_REASONS = frozenset(
+    {"requirements.past_due", "action_required.requested_capabilities"}
+)
+# Values meaning Stripe is still deciding. Anything else — `listed`, `rejected.*`,
+# `platform_paused`, `other` — is a compliance outcome we don't disclose to the merchant.
+AWAITING_STRIPE_DISABLED_REASONS = frozenset(
+    {"requirements.pending_verification", "under_review"}
+)
 
 
 class PayoutAccount(RecordModel):
@@ -57,3 +67,26 @@ class PayoutAccount(RecordModel):
         return self.type != PayoutAccountType.stripe or (
             self.is_payouts_enabled and self.stripe_id is not None
         )
+
+    @property
+    def status(self) -> PayoutAccountStatus:
+        if self.is_payout_ready:
+            return PayoutAccountStatus.ready
+
+        requirements = self.data.get("requirements") or {}
+        disabled_reason = requirements.get("disabled_reason")
+
+        if (
+            self.stripe_id is None
+            or not self.is_details_submitted
+            or disabled_reason in ACTION_REQUIRED_DISABLED_REASONS
+        ):
+            return PayoutAccountStatus.incomplete
+
+        if (
+            disabled_reason is None
+            or disabled_reason in AWAITING_STRIPE_DISABLED_REASONS
+        ):
+            return PayoutAccountStatus.under_review
+
+        return PayoutAccountStatus.paused

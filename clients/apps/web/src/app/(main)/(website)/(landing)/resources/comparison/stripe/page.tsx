@@ -3,9 +3,10 @@ import { Metadata } from 'next'
 
 export const metadata: Metadata = {
   title: 'Polar vs Stripe',
-  description: 'Comparing Polar and Stripe',
+  description:
+    'Polar vs Stripe: Polar is a Merchant of Record that handles payments, subscriptions, usage-based billing and global sales tax for you, while Stripe leaves tax and compliance to you.',
   keywords:
-    'polar vs stripe, stripe, polar, comparison, pricing, pricing for polar, pricing for polar, pricing for polar',
+    'polar vs stripe, stripe alternative, merchant of record, saas billing, usage-based billing, payment infrastructure',
   openGraph: {
     siteName: 'Polar',
     type: 'website',

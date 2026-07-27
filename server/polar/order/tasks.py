@@ -20,6 +20,7 @@ from polar.worker import (
     actor,
     can_retry,
     enqueue_job,
+    get_retries,
 )
 
 from .repository import OrderRepository
@@ -98,6 +99,18 @@ async def trigger_payment(
     payment_method_id: uuid.UUID,
     payment_trigger: str | None = None,
 ) -> None:
+    if get_retries() > 0:
+        # We have a lot of piled up trigger payment jobs that we shouldn't retry
+        # Exhaust them for now so we don't trigger more dunning processes than necessary
+        log.info(
+            "Dead-lettering payment trigger",
+            order_id=order_id,
+            payment_method_id=payment_method_id,
+            payment_trigger=payment_trigger,
+            retries=get_retries(),
+        )
+        return
+
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)
         order = await repository.get_by_id(
@@ -130,6 +143,15 @@ async def trigger_payment(
             # Log the failure but don't retry the task
             log.info(
                 "Card payment failed, not retrying - will be handled by dunning",
+                order_id=order_id,
+            )
+            return
+        except PaymentAlreadyInProgress:
+            # Retrying would pile up behind the lock and, once released, burst
+            # real attempts that exhaust dunning. Stale locks are recovered by
+            # the order.process_stale_payment_lock cron.
+            log.info(
+                "Payment already in progress, not retrying",
                 order_id=order_id,
             )
             return
@@ -246,6 +268,37 @@ async def process_dunning_order(order_id: uuid.UUID) -> None:
             raise OrderDoesNotExist(order_id)
 
         await order_service.process_dunning_order(session, order)
+
+
+@actor(
+    actor_name="order.enqueue_stale_payment_locks",
+    cron_trigger=CronTrigger.from_crontab("15 * * * *"),
+    priority=TaskPriority.MEDIUM,
+)
+async def enqueue_stale_payment_locks() -> None:
+    async with AsyncSessionMaker() as session:
+        order_repository = OrderRepository.from_session(session)
+        async for order in order_repository.stream_stale_payment_lock():
+            enqueue_job("order.process_stale_payment_lock", order.id)
+
+
+@actor(actor_name="order.process_stale_payment_lock", priority=TaskPriority.MEDIUM)
+async def process_stale_payment_lock(order_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        order_repository = OrderRepository.from_session(session)
+        order = await order_repository.get_by_id(
+            order_id, options=order_repository.get_eager_options(), for_update=True
+        )
+        if order is None:
+            raise OrderDoesNotExist(order_id)
+
+        if not order.is_payment_lock_stale:
+            log.info("Order payment lock is not stale, skipping", order_id=order.id)
+            return
+
+        # Treat stale payment locks as manual retry payment failures,
+        # so the lock is released, but the dunning sequence is untouched.
+        await order_service.handle_payment_failure(session, order, skip_dunning=True)
 
 
 @actor(

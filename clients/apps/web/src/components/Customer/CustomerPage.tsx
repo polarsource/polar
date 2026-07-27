@@ -221,7 +221,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
 
   return (
     <Tabs defaultValue="overview" className="flex flex-col">
-      <TabsList className="mb-8">
+      <TabsList className="mb-8 max-w-full justify-start overflow-x-auto">
         <TabsTrigger value="overview">Overview</TabsTrigger>
         <TabsTrigger value="events">Events</TabsTrigger>
         <TabsTrigger value="usage">Usage</TabsTrigger>
@@ -549,7 +549,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
         <ShadowBox className="flex flex-col gap-8">
           <div className="flex flex-col gap-4">
             <h2 className="text-lg">Customer Details</h2>
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-y-3 md:gap-y-0.5">
               <DetailRow label="ID" value={customer.id} />
               <DetailRow label="External ID" value={customer.external_id} />
               <DetailRow label="Email" value={customer.email ?? '—'} />
@@ -572,7 +572,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
           </div>
           <div className="flex flex-col gap-4">
             <h4 className="text-lg">Billing Information</h4>
-            <div className="flex flex-col">
+            <div className="flex flex-col gap-y-3 md:gap-y-0.5">
               <DetailRow label="Billing Name" value={customer.billing_name} />
               <DetailRow
                 label="Tax ID"
@@ -623,7 +623,7 @@ export const CustomerPage: React.FC<CustomerPageProps> = ({
               <div className="flex flex-row items-center justify-between gap-2">
                 <h3 className="text-lg">Metadata</h3>
               </div>
-              <div className="flex flex-col">
+              <div className="flex flex-col gap-y-3 md:gap-y-0.5">
                 {Object.entries(customer.metadata).map(([key, value]) => (
                   <DetailRow key={key} label={key} value={value} />
                 ))}

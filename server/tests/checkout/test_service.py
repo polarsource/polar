@@ -27,6 +27,7 @@ from polar.checkout.service import (
     AlreadyActiveSubscriptionError,
     CheckoutCustomerDeleted,
     CheckoutCustomerExternalIdMismatch,
+    ExpiredCheckoutError,
     NotConfirmedCheckout,
     NotOpenCheckout,
     TrialAlreadyRedeemed,
@@ -65,7 +66,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.checkout import CheckoutStatus
+from polar.models.checkout import BillingAddressFieldMode, CheckoutStatus
 from polar.models.custom_field import CustomFieldType
 from polar.models.customer import CustomerType
 from polar.models.customer_seat import SeatStatus
@@ -2897,6 +2898,22 @@ class TestGetByClientSecret:
                 session, checkout_one_time_fixed.client_secret
             )
 
+    async def test_raises_expired_before_not_permitted_for_blocked_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        checkout_one_time_fixed.expires_at = utc_now() - timedelta(days=1)
+        checkout_one_time_fixed.organization.set_status(OrganizationStatus.BLOCKED)
+        await save_fixture(checkout_one_time_fixed)
+        await save_fixture(checkout_one_time_fixed.organization)
+
+        with pytest.raises(ExpiredCheckoutError):
+            await checkout_service.get_by_client_secret(
+                session, checkout_one_time_fixed.client_secret
+            )
+
     async def test_raises_not_permitted_for_soft_deleted_organization(
         self,
         save_fixture: SaveFixture,
@@ -3103,7 +3120,7 @@ class TestUpdate:
             prices=[(4242, "usd")],
         )
         checkout_recurring_fixed.checkout_products.append(
-            CheckoutProduct(product=new_product, order=1)
+            CheckoutProduct(product=new_product, order=1, ad_hoc_prices=[])
         )
         await save_fixture(checkout_recurring_fixed)
 
@@ -3149,7 +3166,7 @@ class TestUpdate:
         )
 
         checkout_recurring_fixed.checkout_products.append(
-            CheckoutProduct(product=new_product, order=1)
+            CheckoutProduct(product=new_product, order=1, ad_hoc_prices=[])
         )
         checkout_recurring_fixed.discount = discount
         await save_fixture(checkout_recurring_fixed)
@@ -3193,7 +3210,7 @@ class TestUpdate:
         )
 
         checkout_recurring_fixed.checkout_products.append(
-            CheckoutProduct(product=new_product, order=1)
+            CheckoutProduct(product=new_product, order=1, ad_hoc_prices=[])
         )
         checkout_recurring_fixed.discount = discount
         await save_fixture(checkout_recurring_fixed)
@@ -3524,6 +3541,40 @@ class TestUpdate:
 
         assert checkout.custom_field_data == {"text": "abc"}
 
+    async def test_custom_field_data_preserved_when_unset(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_custom_fields: Checkout,
+    ) -> None:
+        checkout_custom_fields.custom_field_data = {"text": "abc", "select": "a"}
+        await save_fixture(checkout_custom_fields)
+
+        checkout = await checkout_service.update(
+            session,
+            checkout_custom_fields,
+            CheckoutUpdate(),
+        )
+
+        assert checkout.custom_field_data == {"text": "abc", "select": "a"}
+
+    async def test_custom_field_data_merged_on_partial_update(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_custom_fields: Checkout,
+    ) -> None:
+        checkout_custom_fields.custom_field_data = {"text": "abc", "select": "a"}
+        await save_fixture(checkout_custom_fields)
+
+        checkout = await checkout_service.update(
+            session,
+            checkout_custom_fields,
+            CheckoutUpdate(custom_field_data={"text": "updated"}),
+        )
+
+        assert checkout.custom_field_data == {"text": "updated", "select": "a"}
+
     async def test_valid_embed_origin(
         self,
         session: AsyncSession,
@@ -3637,6 +3688,40 @@ class TestUpdate:
 
         assert checkout.discount == discount_fixed_once
 
+    async def test_payment_method_updates_billing_address_fields(
+        self,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_fixed,
+            CheckoutUpdatePublic(payment_method_type="upi"),
+        )
+
+        assert checkout.payment_method_type == "upi"
+        assert (
+            checkout.billing_address_fields["line1"] == BillingAddressFieldMode.required
+        )
+        assert (
+            checkout.billing_address_fields["city"] == BillingAddressFieldMode.required
+        )
+        assert (
+            checkout.billing_address_fields["postal_code"]
+            == BillingAddressFieldMode.required
+        )
+
+        checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdatePublic(payment_method_type="card"),
+        )
+
+        assert checkout.payment_method_type == "card"
+        assert (
+            checkout.billing_address_fields["line1"] == BillingAddressFieldMode.disabled
+        )
+
     async def test_full_discount_resets_is_business_customer(
         self,
         save_fixture: SaveFixture,
@@ -3661,6 +3746,30 @@ class TestUpdate:
         assert checkout.discount == discount_percentage_100
         assert checkout.is_payment_form_required is False
         assert checkout.is_business_customer is False
+
+    async def test_full_discount_resets_payment_method(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+        discount_percentage_100: Discount,
+    ) -> None:
+        checkout_one_time_fixed.payment_method_type = "upi"
+        await save_fixture(checkout_one_time_fixed)
+
+        assert checkout_one_time_fixed.is_billing_address_required is True
+
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_fixed,
+            CheckoutUpdatePublic(
+                discount_code=discount_percentage_100.code,
+            ),
+        )
+
+        assert checkout.is_payment_form_required is False
+        assert checkout.payment_method_type is None
+        assert checkout.is_billing_address_required is False
 
     async def test_multiple_subscriptions_allowed(
         self,
@@ -4246,6 +4355,39 @@ class TestConfirm:
         error_locations = {error["loc"] for error in errors}
         for missing_field in missing_fields:
             assert ("body", *missing_field) in error_locations
+
+    async def test_full_billing_address_required_for_payment_method(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)
+        confirmation_token.payment_method_preview = MagicMock()
+        confirmation_token.payment_method_preview.billing_details = MagicMock()
+        confirmation_token.payment_method_preview.billing_details.name = None
+        stripe_service_mock.get_confirmation_token.return_value = confirmation_token
+
+        with pytest.raises(PolarRequestValidationError) as e:
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                        "payment_method_type": "upi",
+                        "customer_billing_address": {"country": "IN"},
+                    }
+                ),
+            )
+
+        errors = e.value.errors()
+        error_locations = {error["loc"] for error in errors}
+        assert ("body", "customer_billing_address") in error_locations
 
     async def test_wallet_name_from_confirmation_token(
         self,
@@ -5025,6 +5167,50 @@ class TestConfirm:
 
         update_call = stripe_service_mock.update_customer.call_args
         assert update_call.kwargs.get("name") == "ACME Corp Inc."
+
+    async def test_existing_customer_without_name_gets_cardholder_name(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            stripe_customer_id="CHECKOUT_CUSTOMER_ID",
+        )
+        customer.name = None
+        await save_fixture(customer)
+        checkout_one_time_fixed.customer = customer
+        checkout_one_time_fixed.customer_email = customer.email
+        await save_fixture(checkout_one_time_fixed)
+
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        checkout = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "John Smith",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        assert checkout.status == CheckoutStatus.confirmed
+        assert checkout.customer is not None
+        # An existing customer with no name yet gets an initial value from the
+        # cardholder name, so billing_name resolves and invoices can generate.
+        assert checkout.customer.name == "John Smith"
+        assert checkout.customer.billing_name == "John Smith"
 
     async def test_valid_stripe_existing_customer_email(
         self,

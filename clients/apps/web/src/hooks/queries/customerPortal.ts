@@ -311,7 +311,11 @@ export const useCustomerOrders = (
     retry: defaultRetry,
   })
 
-export const useCustomerSubscriptionChargePreview = (api: Client, id: string) =>
+export const useCustomerSubscriptionChargePreview = (
+  api: Client,
+  id: string,
+  enabled = true,
+) =>
   useQuery({
     queryKey: ['customer_subscription_charge_preview', { id }],
     queryFn: () =>
@@ -321,6 +325,24 @@ export const useCustomerSubscriptionChargePreview = (api: Client, id: string) =>
         }),
       ),
     retry: defaultRetry,
+    enabled,
+  })
+
+export const useCustomerSubscriptionCancelPreview = (
+  api: Client,
+  id: string,
+  enabled = true,
+) =>
+  useQuery({
+    queryKey: ['customer_subscription_cancel_preview', { id }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customer-portal/subscriptions/{id}/cancel-preview', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled,
   })
 
 export const useCustomerUpdateSubscription = (api: Client) =>
@@ -374,6 +396,30 @@ export const useCustomerCancelSubscription = (api: Client) =>
     },
   })
 
+export const useCustomerRevokeSubscription = (api: Client) =>
+  useMutation({
+    mutationFn: (variables: {
+      id: string
+      body: schemas['CustomerSubscriptionRevoke']
+    }) =>
+      api.POST('/v1/customer-portal/subscriptions/{id}/revoke', {
+        params: { path: { id: variables.id } },
+        body: variables.body,
+      }),
+    onSuccess: (result) => {
+      if (result.error) {
+        return
+      }
+      const queryClient = getQueryClient()
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscriptions'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_charge_preview'],
+      })
+    },
+  })
+
 export const useCustomerUncancelSubscription = (api: Client) =>
   useMutation({
     mutationFn: (variables: { id: string }) =>
@@ -386,6 +432,67 @@ export const useCustomerUncancelSubscription = (api: Client) =>
         },
       }),
     onSuccess: () => {
+      const queryClient = getQueryClient()
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscriptions'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_charge_preview'],
+      })
+    },
+  })
+
+export const useCustomerPauseSubscription = (api: Client) =>
+  useMutation({
+    mutationFn: async (variables: {
+      id: string
+      body: schemas['CustomerSubscriptionPause']
+    }) => {
+      const result = await api.PATCH('/v1/customer-portal/subscriptions/{id}', {
+        params: { path: { id: variables.id } },
+        body: variables.body,
+      })
+      if (result.error) {
+        throw new Error(
+          extractApiErrorMessage(result.error, 'Failed to pause subscription'),
+        )
+      }
+      return result
+    },
+    onSuccess: (result) => {
+      if (result.error) {
+        return
+      }
+      const queryClient = getQueryClient()
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscriptions'],
+      })
+      queryClient.invalidateQueries({
+        queryKey: ['customer_subscription_charge_preview'],
+      })
+    },
+  })
+
+export const useCustomerResumeSubscription = (api: Client) =>
+  useMutation({
+    mutationFn: async (variables: { id: string }) => {
+      const result = await api.PATCH('/v1/customer-portal/subscriptions/{id}', {
+        params: { path: { id: variables.id } },
+        body: {
+          resume: true,
+        },
+      })
+      if (result.error) {
+        throw new Error(
+          extractApiErrorMessage(result.error, 'Failed to resume subscription'),
+        )
+      }
+      return result
+    },
+    onSuccess: (result) => {
+      if (result.error) {
+        return
+      }
       const queryClient = getQueryClient()
       queryClient.invalidateQueries({
         queryKey: ['customer_subscriptions'],

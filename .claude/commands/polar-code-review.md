@@ -1,177 +1,119 @@
 # Polar Code Review
 
-Comprehensive code review with 3 specialized agents running in parallel.
+Review the diff against Polar-specific rules that the built-in reviewers cannot know:
+conventions and Accepted ADRs.
+
+This command does NOT hunt for bugs, security issues, or generic simplifications. Those are
+covered better by the built-in `/code-review`, `/security-review`, and `/simplify` (they verify
+findings and can apply fixes). This command adds the one thing they lack: knowledge of Polar's
+own patterns and architecture decisions.
 
 ## Instructions
 
-1. **Get changed files** by running:
+1. **Get the diff** against main:
    ```bash
-   git diff --name-only main...HEAD
+   git diff main...HEAD
    ```
-   If that fails, use `git diff --name-only HEAD~1` or ask the user for the comparison base.
+   If that fails, use `git diff HEAD~1` or ask the user for the comparison base. Keep both the
+   file list and the full diff. You will pass the diff to the agents, not just file names.
 
-2. **Launch 3 agents IN PARALLEL** using the Task tool. All three must be launched in a SINGLE message with multiple Task tool calls.
+2. **List the Accepted ADRs** so the ADR agent knows what to check:
+   ```bash
+   ls handbook/engineering/decisions/
+   ```
 
-### Agent 1: Security Review
+3. **Launch 2 agents IN PARALLEL** using the Task tool. Both must be launched in a SINGLE message
+   with two Task tool calls. Give each agent the full diff from step 1.
 
-```
-description: "Security review"
-subagent_type: "feature-dev:code-reviewer"
-prompt: |
-  SECURITY REVIEW for Polar codebase.
+   The two agents must NOT overlap. Agent 2 owns everything covered by an Accepted ADR. Agent 1
+   only checks conventions that no ADR covers. If a rule is in an ADR, leave it to Agent 2.
 
-  Review these changed files for security vulnerabilities:
-  [INSERT CHANGED FILES LIST]
-
-  This is a PAYMENT PLATFORM. Be extra vigilant about:
-
-  1. **SQL Injection**
-     - Raw SQL queries with string interpolation
-     - Unparameterized queries
-     - Dynamic table/column names from user input
-
-  2. **Authentication/Authorization**
-     - Missing auth checks on endpoints
-     - IDOR (Insecure Direct Object Reference) - accessing resources without verifying ownership
-     - Auth subject not properly checked (AuthSubject[User|Organization|Customer])
-     - Missing scope checks
-
-  3. **Data Exposure**
-     - Sensitive data in logs (tokens, keys, passwords, PII)
-     - Sensitive data in API responses that shouldn't be exposed
-     - Secrets in error messages
-
-  4. **Input Validation**
-     - Missing validation on user input
-     - Path traversal possibilities
-     - Unsafe deserialization
-
-  5. **Payment-Specific**
-     - Race conditions in payment processing
-     - Amount manipulation possibilities
-     - Missing idempotency checks
-
-  Return findings with:
-  - file:line reference
-  - Severity: CRITICAL / HIGH / MEDIUM / LOW
-  - Description of the issue
-  - Suggested fix
-```
-
-### Agent 2: Conventions Review
+### Agent 1: Conventions Review
 
 ```
 description: "Conventions review"
 subagent_type: "feature-dev:code-reviewer"
 prompt: |
-  CONVENTIONS REVIEW for Polar codebase.
+  CONVENTIONS REVIEW for the Polar codebase.
 
-  Review these changed files against Polar conventions:
-  [INSERT CHANGED FILES LIST]
+  Review this diff against Polar conventions. Only the changed lines are in scope.
 
-  **Backend Conventions (server/polar/):**
-  - All DB queries MUST be in repository files, not services
-  - NEVER call session.commit() - framework handles this
-  - Services are singletons (instance at module level: `resource = ResourceService()`)
-  - Use AsyncReadSession for reads, AsyncSession for writes
-  - Pydantic schemas: separate read, create, update schemas
-  - Update schemas: ALL fields must be optional with None default
-  - snake_case for all API fields
-  - Auth dependencies defined in module's auth.py
-  - Use `from_session(session)` to create repository instances
-  - Use `get_readable_statement(auth_subject)` for auth-aware queries
+  [INSERT FULL DIFF]
 
-  **Frontend Conventions (clients/):**
-  - Use Orbit design tokens for colors (auto-resolve light/dark): background-primary, text-secondary, border-primary
-  - Never use Tailwind `dark:` variants — tokens handle dark mode automatically
-  - Border radius: rounded-xl (default), rounded-2xl (large cards)
-  - TanStack Query for data fetching
-  - Zustand for state management
-  - Components in atoms/ or molecules/ directories
+  These rules are NOT covered by an ADR. Do not check ADR topics here (errors, transactions,
+  auth, Orbit Box, output schema defaults, migrations). Another agent owns those.
 
-  **API Conventions:**
-  - POST returns 201 Created
-  - PATCH returns 200 OK
-  - DELETE returns 204 No Content
-  - List endpoints return ListResource with pagination
-  - Use PolarRequestValidationError for 422 errors
+  **Backend (server/polar/):**
+  - All DB queries live in repository files, not services.
+  - Services are singletons: instance at module level, e.g. `resource = ResourceService()`.
+  - Use AsyncReadSession for reads, AsyncSession for writes.
+  - Pydantic schemas: separate read, create, and update schemas.
+  - Update (input) schemas: every field optional with a None default.
+  - Create repositories with `from_session(session)`.
+  - Relationships use lazy="raise". Load what you need explicitly.
+  - Endpoints return ORM models, not hand-built dicts.
 
-  Return findings with file:line references.
+  **Frontend (clients/):**
+  - TanStack Query for data fetching. Zustand for client state.
+  - New translatable strings go only in clients/packages/i18n/src/locales/en.ts.
+  - Keep files under the 250-line max-lines limit.
+
+  **API:**
+  - POST returns 201. PATCH returns 200. DELETE returns 204.
+  - List endpoints return ListResource with pagination.
+  - Use PolarRequestValidationError for 422 errors.
+  - API fields are snake_case.
+
+  Report each violation with a file:line reference, the rule it breaks, and the fix.
+  Only report HIGH-confidence violations. Do not nitpick style or flag unchanged code.
 ```
 
-### Agent 3: Simplification Review
+### Agent 2: ADR Compliance
 
 ```
-description: "Simplification review"
+description: "ADR compliance"
 subagent_type: "feature-dev:code-reviewer"
 prompt: |
-  SIMPLIFICATION REVIEW for Polar codebase.
+  ADR COMPLIANCE REVIEW for the Polar codebase.
 
-  Review these changed files for opportunities to simplify:
-  [INSERT CHANGED FILES LIST]
+  Accepted ADRs live in handbook/engineering/decisions/. Read the index at
+  handbook/engineering/decisions/index.mdx and any ADR that looks relevant to this diff.
 
-  Look for:
+  Review this diff. Only the changed lines are in scope.
 
-  1. **Over-engineering**
-     - Abstractions used only once
-     - Unnecessary wrapper functions
-     - Premature generalization
+  [INSERT FULL DIFF]
 
-  2. **Complexity**
-     - Deep nesting that could use early returns
-     - Complex conditionals that could be simplified
-     - Long functions that should be split
+  For each change, check whether it contradicts an Accepted ADR. If it does, report:
+  - file:line reference
+  - the ADR id and title it violates (e.g. "violates ADR-0002")
+  - a short explanation of the conflict
+  - the fix, or a note that a new ADR may be needed
 
-  3. **Dead Code**
-     - Unused imports
-     - Unreachable code
-     - Commented-out code that should be removed
-
-  4. **Duplication**
-     - Copy-pasted logic that could be consolidated
-     - Repeated patterns that could be abstracted
-
-  5. **Verbosity**
-     - Code that could be more concise
-     - Unnecessary variable assignments
-     - Redundant type annotations
-
-  **IMPORTANT:** Only flag issues with HIGH confidence. Avoid nitpicking.
-  The goal is to catch genuine simplification opportunities, not enforce style preferences.
-
-  Return suggestions with file:line references.
+  Only report HIGH-confidence conflicts. If nothing conflicts, say so.
 ```
 
-3. **Wait for all agents to complete**, then summarize findings.
+4. **Wait for both agents to complete**, then summarize.
 
 ## Summary Format
 
-Present the combined findings in this format:
-
 ---
 
-## Code Review Summary
-
-### 🔴 Security Issues
-[List findings from Security Review agent, sorted by severity]
-- **CRITICAL**: [description] - `file:line`
-- **HIGH**: [description] - `file:line`
-- etc.
+## Polar Review Summary
 
 ### 🟡 Convention Violations
-[List findings from Conventions Review agent]
-- [description] - `file:line`
+[Findings from Agent 1, or "None found"]
+- [rule broken] - `file:line` - [fix]
 
-### 🔵 Simplification Opportunities
-[List findings from Simplification Review agent]
-- [description] - `file:line`
+### 📐 ADR Conflicts
+[Findings from Agent 2, or "None found"]
+- **violates ADR-XXXX**: [explanation] - `file:line`
 
 ### Verdict
 
-**✅ APPROVED** - No blocking issues found
+**✅ APPROVED** - No Polar-specific issues found
 or
-**❌ CHANGES REQUESTED** - [number] issues must be addressed before merge
+**❌ CHANGES REQUESTED** - [number] issues to address
 
 ---
 
-If there are CRITICAL or HIGH severity security issues, the verdict must be CHANGES REQUESTED.
+Any ADR conflict makes the verdict CHANGES REQUESTED.

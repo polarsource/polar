@@ -14,19 +14,23 @@ from polar.benefit.strategies.downloadables.schemas import (
 from polar.benefit.strategies.downloadables.service import BenefitDownloadablesService
 from polar.file.schemas import FileRead
 from polar.models import (
+    Benefit,
     Customer,
     Downloadable,
+    Member,
     Organization,
     Product,
     User,
     UserOrganization,
 )
+from polar.models.benefit import BenefitType
 from polar.models.downloadable import DownloadableStatus
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.downloadable import TestDownloadable
 from tests.fixtures.file import TestFile, uploaded_fixture
+from tests.fixtures.random_objects import create_benefit, create_member
 
 
 @pytest.mark.asyncio
@@ -519,6 +523,137 @@ class TestDownloadblesBenefit:
         by_file = {d.file_id: d for d in downloadables}
         assert by_file[uploaded_logo_jpg.id].status == DownloadableStatus.granted
         assert by_file[uploaded_logo_png.id].status == DownloadableStatus.revoked
+
+
+@pytest.mark.asyncio
+class TestMemberLevelDownloadables:
+    async def _create_benefit_and_members(
+        self,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        uploaded_logo_jpg: FileRead,
+    ) -> tuple[Benefit, Member, Member]:
+        benefit = await create_benefit(
+            save_fixture,
+            type=BenefitType.downloadables,
+            organization=organization,
+            properties=BenefitDownloadablesCreateProperties(
+                files=[uploaded_logo_jpg.id]
+            ).model_dump(mode="json"),
+        )
+        member_a = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="member-a@example.com",
+        )
+        member_b = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            email="member-b@example.com",
+        )
+        return benefit, member_a, member_b
+
+    @pytest.mark.auth
+    async def test_grant_creates_distinct_row_per_member(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        uploaded_logo_jpg: FileRead,
+    ) -> None:
+        benefit, member_a, member_b = await self._create_benefit_and_members(
+            save_fixture, customer, organization, uploaded_logo_jpg
+        )
+
+        await TestDownloadable.run_grant_task(
+            session, redis, benefit, customer, member=member_a
+        )
+        # Before the member-level constraint, this second grant collided on the
+        # shared (customer, file, benefit) row and member_b got nothing.
+        await TestDownloadable.run_grant_task(
+            session, redis, benefit, customer, member=member_b
+        )
+
+        downloadables = await TestDownloadable.get_customer_downloadables(
+            session, customer
+        )
+        assert len(downloadables) == 2
+        assert {d.member_id for d in downloadables} == {member_a.id, member_b.id}
+        for downloadable in downloadables:
+            assert downloadable.file_id == uploaded_logo_jpg.id
+            assert downloadable.status == DownloadableStatus.granted
+
+    @pytest.mark.auth
+    async def test_each_member_sees_their_own_downloadable(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        uploaded_logo_jpg: FileRead,
+    ) -> None:
+        benefit, member_a, member_b = await self._create_benefit_and_members(
+            save_fixture, customer, organization, uploaded_logo_jpg
+        )
+        await TestDownloadable.run_grant_task(
+            session, redis, benefit, customer, member=member_a
+        )
+        await TestDownloadable.run_grant_task(
+            session, redis, benefit, customer, member=member_b
+        )
+
+        member_a_downloadables = await TestDownloadable.get_member_downloadables(
+            session, member_a
+        )
+        member_b_downloadables = await TestDownloadable.get_member_downloadables(
+            session, member_b
+        )
+
+        assert len(member_a_downloadables) == 1
+        assert member_a_downloadables[0].member_id == member_a.id
+        assert member_a_downloadables[0].file_id == uploaded_logo_jpg.id
+
+        assert len(member_b_downloadables) == 1
+        assert member_b_downloadables[0].member_id == member_b.id
+        assert member_b_downloadables[0].file_id == uploaded_logo_jpg.id
+
+    @pytest.mark.auth
+    async def test_revoke_is_scoped_to_member(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        uploaded_logo_jpg: FileRead,
+    ) -> None:
+        benefit, member_a, member_b = await self._create_benefit_and_members(
+            save_fixture, customer, organization, uploaded_logo_jpg
+        )
+        await TestDownloadable.run_grant_task(
+            session, redis, benefit, customer, member=member_a
+        )
+        await TestDownloadable.run_grant_task(
+            session, redis, benefit, customer, member=member_b
+        )
+
+        await TestDownloadable.run_revoke_task(
+            session, redis, benefit, customer, member=member_a
+        )
+
+        assert await TestDownloadable.get_member_downloadables(session, member_a) == []
+
+        member_b_downloadables = await TestDownloadable.get_member_downloadables(
+            session, member_b
+        )
+        assert len(member_b_downloadables) == 1
+        assert member_b_downloadables[0].status == DownloadableStatus.granted
 
 
 @pytest.mark.asyncio

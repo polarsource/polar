@@ -2,7 +2,7 @@ import { CostInsightsPage } from '@/components/Landing/features/CostInsightsPage
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Cost Insights — Polar',
+  title: 'Cost Insights',
   description:
     'Track cost, profit, and customer LTV by annotating events with cost data.',
   keywords:

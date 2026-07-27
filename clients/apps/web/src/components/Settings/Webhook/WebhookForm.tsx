@@ -14,7 +14,6 @@ import {
   FormLabel,
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
-import Link from 'next/link'
 import { useEffect } from 'react'
 import { useFormContext } from 'react-hook-form'
 import { TreeMultiSelect } from '../TreeMultiSelect'
@@ -187,13 +186,14 @@ export const FieldEvents = () => {
               onChange={field.onChange}
               separator="."
               renderOptionSuffix={(event) => (
-                <Link
+                <a
                   className="text-xs text-blue-400"
                   href={`https://polar.sh/docs/api-reference/webhooks/${event}`}
                   target="_blank"
+                  rel="noopener noreferrer"
                 >
                   Schema
-                </Link>
+                </a>
               )}
             />
           </FormControl>

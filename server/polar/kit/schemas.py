@@ -1,6 +1,5 @@
 import dataclasses
-import json
-from collections.abc import Sequence
+from collections.abc import Collection, Mapping, Sequence
 from datetime import datetime
 from typing import Annotated, Any, Literal, cast, get_args, overload
 
@@ -8,6 +7,7 @@ from annotated_types import Ge, Le
 from pydantic import (
     UUID4,
     AfterValidator,
+    AnyUrl,
     BaseModel,
     ConfigDict,
     Field,
@@ -15,6 +15,8 @@ from pydantic import (
     GetJsonSchemaHandler,
     HttpUrl,
     PlainSerializer,
+    UrlConstraints,
+    field_validator,
 )
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, core_schema
@@ -23,6 +25,35 @@ from slugify import slugify
 
 class Schema(BaseModel):
     model_config = ConfigDict(from_attributes=True)
+
+    @field_validator("*", mode="after")
+    @classmethod
+    def _reject_nul_characters(cls, value: Any) -> Any:
+        pending = [value]
+        visited: set[int] = set()
+
+        while pending:
+            current = pending.pop()
+            if isinstance(current, str):
+                if "\x00" in current:
+                    raise ValueError("This value contains invalid characters")
+            elif isinstance(current, BaseModel):
+                continue
+            elif isinstance(current, Mapping):
+                if id(current) in visited:
+                    continue
+                visited.add(id(current))
+                pending.extend(current.keys())
+                pending.extend(current.values())
+            elif isinstance(current, Collection) and not isinstance(
+                current, (bytes, bytearray)
+            ):
+                if id(current) in visited:
+                    continue
+                visited.add(id(current))
+                pending.extend(current)
+
+        return value
 
 
 class IDSchema(Schema):
@@ -67,6 +98,15 @@ SlugValidator = AfterValidator(_validate_slug)
 
 UUID4ToStr = Annotated[UUID4, PlainSerializer(lambda v: str(v), return_type=str)]
 HttpUrlToStr = Annotated[HttpUrl, PlainSerializer(lambda v: str(v), return_type=str)]
+HttpsUrl = Annotated[
+    AnyUrl,
+    UrlConstraints(
+        max_length=2083,
+        allowed_schemes=["https"],
+        host_required=True,
+    ),
+    PlainSerializer(lambda v: str(v), return_type=str),
+]
 
 StripValidator = AfterValidator(lambda v: v.strip())
 
@@ -124,31 +164,6 @@ class SetSchemaReference:
 
     def __hash__(self) -> int:
         return hash(type(self.ref_name))
-
-
-@dataclasses.dataclass(slots=True)
-class SelectorWidget:
-    resource_root: str
-    resource_name: str
-    display_property: str
-
-    def __get_pydantic_json_schema__(
-        self, core_schema: core_schema.CoreSchema, handler: GetJsonSchemaHandler
-    ) -> JsonSchemaValue:
-        json_schema = handler(core_schema)
-        return {**json_schema, **self._get_extra_attributes()}
-
-    def _get_extra_attributes(self) -> dict[str, Any]:
-        return {
-            "x-polar-selector-widget": {
-                "resourceRoot": self.resource_root,
-                "resourceName": self.resource_name,
-                "displayProperty": self.display_property,
-            }
-        }
-
-    def __hash__(self) -> int:
-        return hash(json.dumps(self._get_extra_attributes()))
 
 
 class MultipleQueryFilter[Q](Sequence[Q]):

@@ -3,7 +3,7 @@ name: Polar
 icon: ./clients/apps/web/public/favicon.png
 processes:
   Containers:
-    command: cd server && docker compose up
+    command: docker compose up
     working_dir: ./server
     auto_start: true
     auto_restart: true
@@ -12,7 +12,7 @@ processes:
     auto_start: true
     auto_restart: true
   API:
-    command: cd server && uv run task api
+    command: uv run task api
     working_dir: ./server
     auto_start: true
     auto_restart: false
@@ -20,7 +20,7 @@ processes:
       - server/.env
     env: {}
   Worker:
-    command: cd server && uv run task worker
+    command: uv run task worker
     working_dir: ./server
     auto_start: true
     auto_restart: false
@@ -28,7 +28,7 @@ processes:
       - server/.env
     env: {}
   Web:
-    command: cd clients && pnpm dev
+    command: pnpm dev
     working_dir: ./clients
     auto_start: true
     auto_restart: false

@@ -1,5 +1,5 @@
 import Auth from '@/components/Auth/Auth'
-import { type schemas } from '@polar-sh/client'
+import { type LoginMethod } from '@/utils/auth'
 
 interface AuthModalProps {
   returnTo?: string
@@ -12,7 +12,7 @@ export const AuthModal = ({ returnTo, signup }: AuthModalProps) => {
   const lastLoginMethod =
     typeof document !== 'undefined'
       ? ((document.cookie.match(/polar_last_login_method=(\w+)/)?.[1] ??
-          null) as schemas['Factor'])
+          null) as LoginMethod)
       : null
 
   return (

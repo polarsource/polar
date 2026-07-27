@@ -76,27 +76,45 @@ class CheckoutLinkRepository(
             CheckoutLink.organization_id.in_(org_ids)
         )
 
-    async def has_with_benefit_types(
+    async def has_unfulfillable(
         self, organization_id: UUID, benefit_types: Iterable[BenefitType]
     ) -> bool:
-        """Whether the organization has any live checkout link pointing at
-        an active product that grants a benefit of the given types."""
-        statement = (
-            select(CheckoutLink.id)
+        """Whether the organization has a live checkout link with no
+        fulfillment path: no success_url, and at least one active product
+        granting no benefit of the given types. A customer can pick any
+        product on any live link, so such a link takes payment without
+        delivering anything."""
+        grants_benefit = (
+            select(ProductBenefit.product_id)
+            .join(Benefit, ProductBenefit.benefit_id == Benefit.id)
+            .where(
+                ProductBenefit.product_id == Product.id,
+                Benefit.deleted_at.is_(None),
+                Benefit.type.in_(list(benefit_types)),
+            )
+            .exists()
+        )
+        product_without_benefit = (
+            select(Product.id)
             .join(
                 CheckoutLinkProduct,
-                CheckoutLink.id == CheckoutLinkProduct.checkout_link_id,
+                CheckoutLinkProduct.product_id == Product.id,
             )
-            .join(Product, CheckoutLinkProduct.product_id == Product.id)
-            .join(ProductBenefit, Product.id == ProductBenefit.product_id)
-            .join(Benefit, ProductBenefit.benefit_id == Benefit.id)
+            .where(
+                CheckoutLinkProduct.checkout_link_id == CheckoutLink.id,
+                Product.deleted_at.is_(None),
+                Product.is_archived.is_(False),
+                ~grants_benefit,
+            )
+            .exists()
+        )
+        statement = (
+            select(CheckoutLink.id)
             .where(
                 CheckoutLink.organization_id == organization_id,
                 CheckoutLink.deleted_at.is_(None),
-                Product.deleted_at.is_(None),
-                Product.is_archived.is_(False),
-                Benefit.deleted_at.is_(None),
-                Benefit.type.in_(list(benefit_types)),
+                CheckoutLink._success_url.is_(None),
+                product_without_benefit,
             )
             .limit(1)
         )
@@ -111,22 +129,6 @@ class CheckoutLinkRepository(
             .where(
                 CheckoutLink.organization_id == organization_id,
                 CheckoutLink.deleted_at.is_(None),
-            )
-            .limit(1)
-        )
-        result = await self.session.execute(statement)
-        return result.scalar_one_or_none() is not None
-
-    async def has_with_success_url(self, organization_id: UUID) -> bool:
-        """Whether the organization has any live checkout link with a
-        success_url set, meaning the merchant handles fulfillment by
-        redirecting customers to their own site after checkout."""
-        statement = (
-            select(CheckoutLink.id)
-            .where(
-                CheckoutLink.organization_id == organization_id,
-                CheckoutLink.deleted_at.is_(None),
-                CheckoutLink._success_url.isnot(None),
             )
             .limit(1)
         )

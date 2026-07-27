@@ -10,7 +10,6 @@ import { useForm } from 'react-hook-form'
 import {
   FieldClientType,
   FieldClientURI,
-  FieldLogo,
   FieldName,
   FieldPrivacy,
   FieldRedirectURIs,
@@ -90,7 +89,6 @@ export const NewOAuthClientModal = ({
             className="max-w-[700px] space-y-8"
           >
             <FieldName />
-            <FieldLogo />
             <FieldClientType />
             <FieldRedirectURIs />
             <FieldScopes />

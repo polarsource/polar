@@ -115,6 +115,12 @@ export const setProductValidationErrors = <TFieldValues extends FieldValues>(
   })
 }
 
+export const isSessionNotFreshError = (error: unknown): boolean =>
+  typeof error === 'object' &&
+  error !== null &&
+  'error' in error &&
+  error.error === 'SessionNotFreshError'
+
 export const extractApiErrorMessage = (
   error: { detail?: string | { msg?: string }[] | unknown },
   fallback: string = 'An unexpected error occurred',

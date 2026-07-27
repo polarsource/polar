@@ -330,7 +330,7 @@ describe('CheckoutFormProvider', () => {
       expect(getCtx().form.formState.errors.root).toBeUndefined()
     })
 
-    it('on TrialAlreadyRedeemed, sets root error and retries with allow_trial=false', async () => {
+    it('on TrialAlreadyRedeemed, flags trialUnavailable and retries with allow_trial=false without a root error', async () => {
       const update = vi.fn<CheckoutContextProps['update']>(
         async () => ({ ok: true, value: { id: 'ch_retry' } }) as UpdateResult,
       )
@@ -353,10 +353,50 @@ describe('CheckoutFormProvider', () => {
         ).rejects.toBeDefined()
       })
 
-      expect(getCtx().form.formState.errors.root?.message).toBe(
-        'trial already used',
-      )
+      expect(getCtx().trialUnavailable).toBe(true)
+      expect(getCtx().form.formState.errors.root).toBeUndefined()
       expect(update).toHaveBeenCalledWith({ allow_trial: false })
+    })
+
+    it('resets trialUnavailable when a new confirm is attempted', async () => {
+      const update = vi.fn<CheckoutContextProps['update']>(
+        async () => ({ ok: true, value: { id: 'ch_retry' } }) as UpdateResult,
+      )
+      const confirm = vi
+        .fn<CheckoutContextProps['confirm']>()
+        .mockImplementationOnce(async () =>
+          confirmErrorResult({
+            error: 'TrialAlreadyRedeemed',
+            detail: 'trial already used',
+          }),
+        )
+        .mockImplementationOnce(
+          async () =>
+            ({
+              ok: true,
+              value: { id: 'ch_confirmed', status: 'confirmed' },
+            }) as ConfirmResult,
+        )
+
+      const getCtx = renderWithCheckout({
+        checkout: freeCheckout,
+        update,
+        confirm,
+      })
+
+      await act(async () => {
+        await expect(
+          getCtx().confirm({ customer_email: 'a@b.com' }, null, null),
+        ).rejects.toBeDefined()
+      })
+
+      expect(getCtx().trialUnavailable).toBe(true)
+
+      await act(async () => {
+        await getCtx().confirm({ customer_email: 'a@b.com' }, null, null)
+      })
+
+      expect(getCtx().trialUnavailable).toBe(false)
     })
   })
 })

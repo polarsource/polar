@@ -3,7 +3,6 @@ from typing import Any
 from uuid import UUID
 
 from pydantic import Field, field_validator, model_validator
-from sqlalchemy import inspect
 
 from polar.kit.email import EmailStrDNS
 from polar.kit.schemas import Schema, TimestampedSchema
@@ -124,73 +123,32 @@ class SeatClaim(Schema):
 class CustomerSeat(TimestampedSchema):
     id: UUID = Field(..., description="The seat ID")
     subscription_id: UUID | None = Field(
-        None, description="The subscription ID (for recurring seats)"
+        description="The subscription ID (for recurring seats)"
     )
     order_id: UUID | None = Field(
-        None, description="The order ID (for one-time purchase seats)"
+        description="The order ID (for one-time purchase seats)"
     )
-    status: SeatStatus = Field(..., description="Status of the seat")
+    status: SeatStatus = Field(description="Status of the seat")
     customer_id: UUID | None = Field(
-        None,
         description=(
             "The customer ID. When member_model_enabled is true, this is the billing "
             "customer (purchaser). When false, this is the seat member customer."
         ),
     )
-    member_id: UUID | None = Field(
-        None, description="The member ID of the seat occupant"
-    )
-    member: Member | None = Field(
-        None, description="The member associated with this seat"
-    )
+    member_id: UUID | None = Field(description="The member ID of the seat occupant")
+    member: Member | None = Field(description="The member associated with this seat")
     email: str | None = Field(
-        None,
         description="Email of the seat member (set when member_model_enabled is true)",
     )
-    customer_email: str | None = Field(None, description="The assigned customer email")
+    customer_email: str | None = Field(description="The assigned customer email")
     invitation_token_expires_at: datetime | None = Field(
-        None, description="When the invitation token expires"
+        description="When the invitation token expires"
     )
-    claimed_at: datetime | None = Field(None, description="When the seat was claimed")
-    revoked_at: datetime | None = Field(None, description="When the seat was revoked")
+    claimed_at: datetime | None = Field(description="When the seat was claimed")
+    revoked_at: datetime | None = Field(description="When the seat was revoked")
     seat_metadata: dict[str, Any] | None = Field(
-        None, description="Additional metadata for the seat"
+        description="Additional metadata for the seat"
     )
-
-    @model_validator(mode="before")
-    @classmethod
-    def extract_customer_email(cls, data: Any) -> Any:
-        if isinstance(data, dict):
-            # For dict data - priority: email > member.email > customer.email
-            if "email" in data and data["email"]:
-                data["customer_email"] = data["email"]
-            elif "member" in data and data["member"]:
-                data["customer_email"] = data.get("member", {}).get("email")
-            elif "customer" in data and data["customer"]:
-                data["customer_email"] = data.get("customer", {}).get("email")
-            return data
-        elif hasattr(data, "__dict__"):
-            state = inspect(data)
-
-            # Safely extract member: set to None if not loaded to avoid lazy='raise'
-            if "member" in state.unloaded:
-                object.__setattr__(data, "member", None)
-
-            # For SQLAlchemy models - check if email is set on the seat first
-            # Priority: seat.email > seat.member.email > seat.customer.email
-            if hasattr(data, "email") and data.email:
-                object.__setattr__(data, "customer_email", data.email)
-            else:
-                # Try member first
-                if "member" not in state.unloaded:
-                    if hasattr(data, "member") and data.member:
-                        object.__setattr__(data, "customer_email", data.member.email)
-                        return data
-                # Fall back to customer
-                if "customer" not in state.unloaded:
-                    if hasattr(data, "customer") and data.customer:
-                        object.__setattr__(data, "customer_email", data.customer.email)
-        return data
 
 
 class SeatsList(Schema):

@@ -1,11 +1,10 @@
 import secrets
 import typing
-from collections.abc import Awaitable, Iterable
+from collections.abc import Awaitable
 
-from fastapi import APIRouter, Depends, Form, Query, Request, Response
+from fastapi import APIRouter, Depends, Form, Query, Request
 from fastapi.responses import RedirectResponse
 from reauth.authentication_session import AuthenticationSession
-from reauth.factors import FactorBase
 from reauth.factors.oauth2.base import (
     OAuth2CallbackException,
     OAuth2Factor,
@@ -18,7 +17,7 @@ from reauth.factors.oauth2.state import ExpiredStateException, InvalidStateExcep
 
 from polar.authz.dependencies import AuthorizeWebUserWrite
 from polar.config import settings
-from polar.kit.http import ReturnTo, is_localhost
+from polar.kit.http import ReturnTo
 from polar.user.service import user as user_service
 
 from ..authentication_session import (
@@ -28,32 +27,8 @@ from ..authentication_session import (
     get_optional_authentication_session,
 )
 from ..exceptions import GetEmailError, PolarAuthRedirectionError
+from ..helpers import OIDC_ERROR_MESSAGE, check_factor, set_state_cookie
 from .factor import OAuth2FactorMixin
-
-OIDC_ERROR_MESSAGE = "An authentication error occurred. Please try again."
-
-
-def _set_state_cookie(
-    request: Request, response: Response, state: str, expires_at: int
-) -> None:
-    response.set_cookie(
-        settings.OAUTH2_SESSION_STATE_COOKIE_KEY,
-        state,
-        path="/",
-        httponly=True,
-        secure=not is_localhost(request),
-        samesite="lax",
-        expires=expires_at,
-    )
-
-
-def _check_factor(
-    factor: FactorBase[typing.Any], available_factors: Iterable[FactorBase[typing.Any]]
-) -> None:
-    for available_factor in available_factors:
-        if available_factor.identifier == factor.identifier:
-            return
-    raise PolarAuthRedirectionError("Factor not available for this session")
 
 
 def get_oauth_login_router(
@@ -78,7 +53,7 @@ def get_oauth_login_router(
         factors = await authentication_session_service.get_available_factors(
             authentication_session
         )
-        _check_factor(factor, factors)
+        check_factor(factor, factors)
 
         redirect_uri = str(request.url_for(f"auth.{identifier}.callback"))
 
@@ -93,7 +68,7 @@ def get_oauth_login_router(
             raise PolarAuthRedirectionError(OIDC_ERROR_MESSAGE) from e
 
         response = RedirectResponse(authorization_url, status_code=303)
-        _set_state_cookie(request, response, state, oauth2_state.expires_at)
+        set_state_cookie(request, response, state, oauth2_state.expires_at)
         return response
 
     QueryOrForm = Query if callback_method == "GET" else Form
@@ -183,7 +158,10 @@ def get_oauth_login_router(
             user, _ = await user_service.get_by_email_or_create(
                 authentication_session_service.session, email
             )
-            enrollment = await factor.enroll(user.id, oauth_account)
+            try:
+                enrollment = await factor.enroll(user.id, oauth_account)
+            except OAuth2GetProfileException as e:
+                raise PolarAuthRedirectionError("OAuth2 error") from e
             identity_id = user.id
 
         authentication_session = await authentication_session_service.advance(
@@ -192,7 +170,7 @@ def get_oauth_login_router(
         response = RedirectResponse(
             settings.generate_frontend_url("/auth"), status_code=303
         )
-        _set_state_cookie(request, response, "", 0)
+        set_state_cookie(request, response, "", 0)
         return response
 
     return router
@@ -231,7 +209,7 @@ def get_oauth_link_router(
             ) from e
 
         response = RedirectResponse(authorization_url, status_code=303)
-        _set_state_cookie(request, response, state, oauth2_state.expires_at)
+        set_state_cookie(request, response, state, oauth2_state.expires_at)
         return response
 
     @router.get("/callback", name=f"auth.{identifier}.link_callback")
@@ -296,6 +274,10 @@ def get_oauth_link_router(
             raise PolarAuthRedirectionError(
                 "OAuth2 error", url=return_to or default_return_to, **error_parameters
             ) from e
+        except OAuth2GetProfileException as e:
+            raise PolarAuthRedirectionError(
+                "OAuth2 error", url=default_return_to, **error_parameters
+            ) from e
         except OIDCException as e:
             raise PolarAuthRedirectionError(
                 OIDC_ERROR_MESSAGE, url=default_return_to, **error_parameters
@@ -305,7 +287,7 @@ def get_oauth_link_router(
             oauth_state.context.get("return_to") if oauth_state.context else None
         )
         response = RedirectResponse(return_to or default_return_to, status_code=303)
-        _set_state_cookie(request, response, "", 0)
+        set_state_cookie(request, response, "", 0)
         return response
 
     return router

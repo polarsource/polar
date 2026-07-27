@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.4.0
+
+### Minor Changes
+
+- 080f5e4: Make checkout more compact in embedded mode
+
 ## 0.3.0
 
 ### Minor Changes

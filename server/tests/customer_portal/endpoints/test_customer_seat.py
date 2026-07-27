@@ -402,8 +402,8 @@ class TestRevokeSeat:
 
         # Create a seat
         seat = CustomerSeat(
-            subscription_id=subscription.id,
-            customer_id=customer_second.id,
+            subscription=subscription,
+            customer=customer_second,
             status="pending",
         )
         await save_fixture(seat)
@@ -446,8 +446,8 @@ class TestRevokeSeat:
 
         # Create a seat
         seat = CustomerSeat(
-            subscription_id=subscription.id,
-            customer_id=customer.id,
+            subscription=subscription,
+            customer=customer,
             status="pending",
         )
         await save_fixture(seat)
@@ -502,8 +502,8 @@ class TestResendInvitation:
 
         # Create a pending seat
         seat = CustomerSeat(
-            subscription_id=subscription.id,
-            customer_id=customer_second.id,
+            subscription=subscription,
+            customer=customer_second,
             status="pending",
         )
         await save_fixture(seat)
@@ -546,8 +546,8 @@ class TestResendInvitation:
 
         # Create a claimed seat
         seat = CustomerSeat(
-            subscription_id=subscription.id,
-            customer_id=customer.id,
+            subscription=subscription,
+            customer=customer,
             status="claimed",
         )
         await save_fixture(seat)
@@ -590,8 +590,8 @@ class TestResendInvitation:
 
         # Create a pending seat with invitation token
         seat = CustomerSeat(
-            subscription_id=subscription.id,
-            customer_id=customer.id,
+            subscription=subscription,
+            customer=customer,
             status="pending",
             invitation_token="test-token-123",
         )
@@ -654,15 +654,15 @@ class TestListClaimedSubscriptions:
 
         # Create a claimed seat for the authenticated customer
         claimed_seat = CustomerSeat(
-            subscription_id=subscription.id,
-            customer_id=customer.id,
+            subscription=subscription,
+            customer=customer,
             status="claimed",
         )
         await save_fixture(claimed_seat)
 
         # Create a pending seat (should not be returned)
         pending_seat = CustomerSeat(
-            subscription_id=subscription.id,
+            subscription=subscription,
             status="pending",
         )
         await save_fixture(pending_seat)
@@ -735,8 +735,8 @@ class TestListClaimedSubscriptions:
 
         # Create a revoked seat
         revoked_seat = CustomerSeat(
-            subscription_id=subscription.id,
-            customer_id=customer.id,
+            subscription=subscription,
+            customer=customer,
             status="revoked",
         )
         await save_fixture(revoked_seat)
@@ -789,15 +789,15 @@ class TestListClaimedSubscriptions:
 
         # Create claimed seats for both subscriptions
         claimed_seat1 = CustomerSeat(
-            subscription_id=subscription1.id,
-            customer_id=customer.id,
+            subscription=subscription1,
+            customer=customer,
             status="claimed",
         )
         await save_fixture(claimed_seat1)
 
         claimed_seat2 = CustomerSeat(
-            subscription_id=subscription2.id,
-            customer_id=customer.id,
+            subscription=subscription2,
+            customer=customer,
             status="claimed",
         )
         await save_fixture(claimed_seat2)
@@ -935,8 +935,8 @@ class TestRevokeSeatForOrder:
         )
 
         seat = CustomerSeat(
-            order_id=order.id,
-            customer_id=customer.id,
+            order=order,
+            customer=customer,
             status="pending",
         )
         await save_fixture(seat)

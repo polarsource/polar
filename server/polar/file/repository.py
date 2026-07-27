@@ -33,6 +33,10 @@ class FileRepository(
         statement = statement.where(File.organization_id.in_(org_ids))
         return statement
 
+    async def get_by_path(self, path: str) -> File | None:
+        statement = self.get_base_statement().where(File.path == path)
+        return await self.get_one_or_none(statement)
+
     async def get_all_by_organization(
         self,
         organization_id: UUID,

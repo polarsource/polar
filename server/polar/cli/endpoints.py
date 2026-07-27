@@ -63,9 +63,6 @@ async def transform_webhook_events(
                         "webhook-timestamp": str(int(ts.timestamp())),
                         "webhook-signature": signature,
                     }
-
-                    event["payload"]["payload"] = json.loads(webhook_payload)
-
                     yield json.dumps(event)
                     continue
         except (json.JSONDecodeError, KeyError) as e:

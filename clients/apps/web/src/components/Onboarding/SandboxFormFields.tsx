@@ -177,7 +177,7 @@ export function SandboxFormFields({
                     href="https://polar.sh/legal/terms"
                     className="text-gray-900 underline dark:text-white"
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                   >
                     Terms
                   </a>
@@ -186,7 +186,7 @@ export function SandboxFormFields({
                     href="https://polar.sh/legal/privacy"
                     className="text-gray-900 underline dark:text-white"
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                   >
                     Privacy Policy
                   </a>{' '}
@@ -195,7 +195,7 @@ export function SandboxFormFields({
                     href="https://polar.sh/docs/merchant-of-record/account-reviews"
                     className="text-gray-900 underline dark:text-white"
                     target="_blank"
-                    rel="noreferrer"
+                    rel="noopener noreferrer"
                   >
                     AUP
                   </a>

@@ -19,7 +19,7 @@ def status_badge(
     Generates a badge element with appropriate styling based on organization status.
     Uses DaisyUI badge classes with semantic color mapping:
     - REVIEW, OFFBOARDING: warning (yellow)
-    - ACTIVE, SNOOZED, DENIED, CREATED: ghost (gray)
+    - ACTIVE, SNOOZED, DENIED, CREATED, OFFBOARDED: ghost (gray)
 
     Args:
         status: The organization status to display.
@@ -62,6 +62,10 @@ def status_badge(
         OrganizationStatus.OFFBOARDING: {
             "class": "badge-warning",
             "aria": "offboarding status",
+        },
+        OrganizationStatus.OFFBOARDED: {
+            "class": "badge-ghost border border-base-300",
+            "aria": "offboarded status",
         },
     }
 

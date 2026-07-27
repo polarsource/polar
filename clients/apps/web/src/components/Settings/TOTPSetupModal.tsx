@@ -2,6 +2,7 @@
 
 import { Modal, Text } from '@polar-sh/orbit'
 import { useTOTPEnroll, useTOTPEnable } from '@/hooks/auth'
+import { isSessionNotFreshError } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import {
@@ -135,7 +136,7 @@ const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
       onSuccess: (response) => {
         if (response.data) {
           setEnrollment(response.data)
-        } else {
+        } else if (!isSessionNotFreshError(response.error)) {
           setError('Failed to start TOTP setup. Please try again.')
         }
       },
@@ -152,8 +153,10 @@ const TOTPSetupContent = ({ onEnabled }: { onEnabled: () => void }) => {
     setError(null)
     const { error } = await totpEnable.mutateAsync(code)
     if (error) {
-      setError('Invalid code. Please try again.')
-      setInvalidCodeError(true)
+      if (!isSessionNotFreshError(error)) {
+        setError('Invalid code. Please try again.')
+        setInvalidCodeError(true)
+      }
       return
     }
     toast({ title: 'Two-factor authentication enabled' })

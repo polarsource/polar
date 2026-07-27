@@ -2,7 +2,6 @@
 
 import { useExperiment } from '@/experiments/client'
 import { CONFIG } from '@/utils/config'
-import { schemas } from '@polar-sh/client'
 import { usePostHog } from 'posthog-js/react'
 import { useCallback, useMemo } from 'react'
 
@@ -17,24 +16,6 @@ export type OnboardingStep =
   | 'business'
   | 'product_details'
 export type SignupMethod = 'github' | 'google' | 'email'
-
-export const inferSignupMethod = (
-  oauthAccounts?: schemas['OAuthAccountRead'][],
-): SignupMethod => {
-  if (!oauthAccounts || oauthAccounts.length === 0) {
-    return 'email'
-  }
-
-  if (oauthAccounts.some((account) => account.platform === 'github')) {
-    return 'github'
-  }
-
-  if (oauthAccounts.some((account) => account.platform === 'google')) {
-    return 'google'
-  }
-
-  return 'email'
-}
 
 export interface OnboardingSessionState {
   session_id: string

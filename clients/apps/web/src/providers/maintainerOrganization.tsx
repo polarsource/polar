@@ -12,6 +12,7 @@ const stub = (): never => {
 interface OrganizationContextType {
   organization: schemas['Organization']
   organizations: schemas['Organization'][]
+  memberOrganizations: schemas['MemberOrganization'][]
 }
 
 export const OrganizationContext =
@@ -21,10 +22,12 @@ export const OrganizationContext =
 export const OrganizationContextProvider = ({
   organization,
   organizations,
+  memberOrganizations,
   children,
 }: {
   organization: schemas['Organization']
   organizations: schemas['Organization'][]
+  memberOrganizations: schemas['MemberOrganization'][]
   children: React.ReactNode
 }) => {
   return (
@@ -32,6 +35,7 @@ export const OrganizationContextProvider = ({
       value={{
         organization,
         organizations,
+        memberOrganizations,
       }}
     >
       {children}

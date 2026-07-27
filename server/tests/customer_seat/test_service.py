@@ -29,6 +29,7 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.customer_seat import CustomerSeat, SeatStatus
+from polar.models.organization import OrganizationStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -2192,7 +2193,7 @@ class TestResendInvitation:
         """Test that resending invitation without a customer raises an error."""
         # Create a pending seat without a customer (edge case)
         seat = CustomerSeat(
-            subscription_id=subscription_with_seats.id,
+            subscription=subscription_with_seats,
             status=SeatStatus.pending,
             invitation_token="test-token",
         )
@@ -2217,8 +2218,8 @@ class TestResendInvitation:
         """Test that resending invitation without a token raises an error."""
         # Create a pending seat without an invitation token (edge case)
         seat = CustomerSeat(
-            subscription_id=subscription_with_seats.id,
-            customer_id=customer.id,
+            subscription=subscription_with_seats,
+            customer=customer,
             status=SeatStatus.pending,
             invitation_token=None,
         )
@@ -2657,6 +2658,50 @@ class TestRevokeAllSeatsForSubscription:
                 # Customer ID should be either customer1 or customer2
                 assert call[1]["customer_id"] in [customer1.id, customer2.id]
 
+    @pytest.mark.asyncio
+    async def test_revoke_all_seats_for_blocked_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+    ) -> None:
+        """Seats are revoked even when the organization is blocked.
+
+        This happens when a wound-down organization's subscriptions are
+        auto-cancelled: the organization is blocked, and the feature check must
+        still be able to read it, otherwise it raises FeatureNotEnabled and
+        breaks the cancellation.
+        """
+        customer = await create_customer(
+            save_fixture,
+            organization=subscription_with_seats.product.organization,
+            email="customer@example.com",
+        )
+        seat = await create_customer_seat(
+            save_fixture,
+            subscription=subscription_with_seats,
+            customer=customer,
+            status=SeatStatus.claimed,
+            claimed_at=utc_now(),
+        )
+
+        subscription_with_seats.product.organization.status = OrganizationStatus.BLOCKED
+        await save_fixture(subscription_with_seats.product.organization)
+
+        await session.refresh(subscription_with_seats, ["product"])
+        await session.refresh(subscription_with_seats.product, ["organization"])
+
+        revoked_count = await seat_service.revoke_all_seats_for_subscription(
+            session, subscription_with_seats
+        )
+
+        assert revoked_count == 1
+
+        await session.refresh(seat)
+        assert seat.status == SeatStatus.revoked
+        assert seat.revoked_at is not None
+        assert seat.customer_id is None
+
 
 class TestAssignSeatToDeletedMember:
     """Tests for assigning seats to previously deleted members."""
@@ -2977,7 +3022,7 @@ class TestUpdateProductBenefitsGrants:
             customer=billing_customer,
             status=SeatStatus.claimed,
             claimed_at=utc_now(),
-            member_id=member.id,
+            member=member,
             email="member@test.com",
         )
 

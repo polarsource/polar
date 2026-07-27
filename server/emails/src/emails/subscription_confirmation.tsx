@@ -51,10 +51,6 @@ SubscriptionConfirmation.PreviewProps = {
   email: 'john@example.com',
   organization,
   product,
-  subscription: {
-    id: '12345',
-    status: 'active',
-  },
   order,
   url: 'https://polar.sh/acme-inc/portal/subscriptions/12345',
 }

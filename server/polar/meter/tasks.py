@@ -4,7 +4,7 @@ from datetime import datetime
 from apscheduler.triggers.cron import CronTrigger
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import selectinload
 
 from polar.event.service import event as event_service
 from polar.exceptions import PolarTaskError
@@ -38,12 +38,16 @@ async def meter_enqueue_billing() -> None:
         await meter_service.enqueue_billing(session)
 
 
-@actor(actor_name="meter.billing_entries", priority=TaskPriority.LOW)
+@actor(actor_name="meter.billing_entries", priority=TaskPriority.LOW, max_retries=0)
 async def meter_billing_entries(meter_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = MeterRepository.from_session(session)
+        # Load the watermark after acquiring the meter lock. A joinedload can return
+        # the updated meter row with a stale event from the pre-lock snapshot.
         meter = await repository.get_by_id(
-            meter_id, options=(joinedload(Meter.last_billed_event),)
+            meter_id,
+            options=(selectinload(Meter.last_billed_event),),
+            for_update=True,
         )
         if meter is None:
             raise MeterDoesNotExist(meter_id)

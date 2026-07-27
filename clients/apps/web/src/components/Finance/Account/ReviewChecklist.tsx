@@ -41,16 +41,18 @@ export const ReviewChecklist = ({
       style={{ perspective: 1200 }}
     >
       {isLoading ? (
-        Array.from({ length: 8 }, (_, i) => (
-          <Box display="block" key={`placeholder-${i}`} {...cardStyles}>
-            <ChecklistRow isLoading={true} />
-          </Box>
-        ))
+        <Box flexDirection="column" rowGap="s">
+          {Array.from({ length: 8 }, (_, i) => (
+            <Box display="block" key={`placeholder-${i}`} {...cardStyles}>
+              <ChecklistRow isLoading={true} />
+            </Box>
+          ))}
+        </Box>
       ) : (
         <AnimatePresence initial={false}>
           {!isExiting &&
-            steps.map((step, i) => {
-              const exitDelay = (steps.length - 1 - i) * rowStagger
+            steps.map((step, index) => {
+              const exitDelay = (steps.length - 1 - index) * rowStagger
               return (
                 <motion.div
                   key={step.key}

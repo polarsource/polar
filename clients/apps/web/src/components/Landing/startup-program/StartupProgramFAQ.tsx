@@ -56,38 +56,60 @@ const FAQS: FAQItem[] = [
   },
 ]
 
+const faqJsonLd = {
+  '@context': 'https://schema.org',
+  '@type': 'FAQPage',
+  mainEntity: FAQS.map((faq) => ({
+    '@type': 'Question',
+    name: faq.question,
+    acceptedAnswer: {
+      '@type': 'Answer',
+      text: faq.answer,
+    },
+  })),
+}
+
 export const StartupProgramFAQ = () => {
   return (
-    <Box
-      display="grid"
-      gridTemplateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }}
-      gap={{ base: 'xl', md: '3xl' }}
-    >
-      <Text as="h2" variant="heading-l" wrap="balance">
-        Questions and answers
-      </Text>
-      <Box display="block" gridColumn={{ md: 'span 2' }}>
-        <Accordion type="multiple" className="flex flex-col">
-          {FAQS.map((faq, i) => (
-            <AccordionItem
-              key={faq.question}
-              value={`faq-${i}`}
-              className="dark:border-polar-700 rounded-none! border-b border-gray-200 px-0!"
-            >
-              <AccordionTrigger className="py-6 text-left text-base hover:no-underline md:text-lg">
-                {faq.question}
-              </AccordionTrigger>
-              <AccordionContent>
-                <Box display="block" paddingBottom="m" maxWidth="42rem">
-                  <Text variant="body" color="muted">
-                    {faq.answer}
-                  </Text>
-                </Box>
-              </AccordionContent>
-            </AccordionItem>
-          ))}
-        </Accordion>
+    <>
+      <script
+        type="application/ld+json"
+        // eslint-disable-next-line react/no-danger
+        dangerouslySetInnerHTML={{
+          __html: JSON.stringify(faqJsonLd).replace(/</g, '\\u003c'),
+        }}
+      />
+      <Box
+        display="grid"
+        gridTemplateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }}
+        gap={{ base: 'xl', md: '3xl' }}
+      >
+        <Text as="h2" variant="heading-l" wrap="balance">
+          Questions and answers
+        </Text>
+        <Box display="block" gridColumn={{ md: 'span 2' }}>
+          <Accordion type="multiple" className="flex flex-col">
+            {FAQS.map((faq, i) => (
+              <AccordionItem
+                key={faq.question}
+                value={`faq-${i}`}
+                className="dark:border-polar-700 rounded-none! border-b border-gray-200 px-0!"
+              >
+                <AccordionTrigger className="py-6 text-left text-base hover:no-underline md:text-lg">
+                  {faq.question}
+                </AccordionTrigger>
+                <AccordionContent>
+                  <Box display="block" paddingBottom="m" maxWidth="42rem">
+                    <Text variant="body" color="muted">
+                      {faq.answer}
+                    </Text>
+                  </Box>
+                </AccordionContent>
+              </AccordionItem>
+            ))}
+          </Accordion>
+        </Box>
       </Box>
-    </Box>
+    </>
   )
 }

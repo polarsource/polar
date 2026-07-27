@@ -1,17 +1,18 @@
-from typing import Any, cast
+from typing import Any, Unpack, cast
 
 import httpx
 import structlog
-from httpx_oauth.clients.discord import DiscordOAuth2
 from httpx_oauth.oauth2 import RefreshTokenError
 
 from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.integrations.discord.oauth import DiscordOAuth2WithProxy
 from polar.integrations.discord.service import discord_bot as discord_bot_service
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
 from polar.models import Benefit, Customer, Member, Organization, User
+from polar.models.benefit_grant import BenefitGrantScopeArgs
 from polar.models.customer import CustomerOAuthAccount, CustomerOAuthPlatform
 
 from ..base.service import (
@@ -37,6 +38,7 @@ class BenefitDiscordService(
         update: bool = False,
         attempt: int = 1,
         member: Member | None = None,
+        **scope: Unpack[BenefitGrantScopeArgs],
     ) -> BenefitGrantDiscordProperties:
         bound_logger = log.bind(
             benefit_id=str(benefit.id),
@@ -258,7 +260,7 @@ class BenefitDiscordService(
                 customer_id=str(customer.id),
                 member_id=str(member.id) if member else None,
             )
-            client = DiscordOAuth2(
+            client = DiscordOAuth2WithProxy(
                 settings.DISCORD_CLIENT_ID,
                 settings.DISCORD_CLIENT_SECRET,
                 scopes=["identify", "email", "guilds.join"],

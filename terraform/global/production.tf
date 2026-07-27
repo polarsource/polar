@@ -28,6 +28,14 @@ resource "tfe_variable" "google_client_secret_production" {
   variable_set_id = tfe_variable_set.production.id
 }
 
+resource "tfe_variable" "google_service_account_json_production" {
+  key             = "google_service_account_json"
+  category        = "terraform"
+  description     = "Google service account JSON key for fetching the organization review AUP for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
 resource "tfe_variable" "openai_api_key_production" {
   key             = "openai_api_key_production"
   category        = "terraform"
@@ -292,6 +300,14 @@ resource "tfe_variable" "stripe_webhook_secret_production" {
   variable_set_id = tfe_variable_set.production.id
 }
 
+resource "tfe_variable" "stripe_account_risk_webhook_secret_production" {
+  key             = "stripe_account_risk_webhook_secret_production"
+  category        = "terraform"
+  description     = "Stripe Account Risk Webhook Secret for production"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
 
 
 resource "tfe_variable" "backend_app_review_email" {
@@ -404,6 +420,10 @@ resource "tfe_variable" "polar_scale_product_id_production" {
   category        = "terraform"
   description     = "Polar Scale-tier product ID for production"
   variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
 }
 
 resource "tfe_variable" "customer_portal_url_overrides_production" {
@@ -432,6 +452,14 @@ resource "tfe_variable" "tailscale_advertise_routes_production" {
   category        = "terraform"
   description     = "IP routes that should go via Tailscale for production"
   sensitive       = false
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "lambda_worker_tailscale_token_production" {
+  key             = "lambda_worker_tailscale_token"
+  category        = "terraform"
+  description     = "Tailscale auth token for production Lambda workers"
+  sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 }
 
@@ -560,6 +588,43 @@ resource "tfe_variable" "vercel_next_public_stripe_payment_method_configuration_
   key             = "next_public_stripe_payment_method_configuration"
   category        = "terraform"
   description     = "Stripe payment method configuration ID for the Vercel production frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "worker_sqs_actors_production" {
+  key             = "worker_sqs_actors"
+  category        = "terraform"
+  description     = "JSON array of Dramatiq actor names routed to the SQS execution engine for production"
+  sensitive       = false
+  value           = "[\"dummy\"]"
+  variable_set_id = tfe_variable_set.production.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "stripe_app_client_id_production" {
+  key             = "stripe_app_client_id"
+  category        = "terraform"
+  description     = "Stripe App OAuth client ID for production"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "stripe_app_client_link_id_production" {
+  key             = "stripe_app_client_link_id"
+  category        = "terraform"
+  description     = "Stripe App OAuth client link ID for production"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.production.id
+}
+
+resource "tfe_variable" "turnstile_secret_production" {
+  key             = "turnstile_secret"
+  category        = "terraform"
+  description     = "Cloudflare Turnstile secret for production"
   sensitive       = true
   variable_set_id = tfe_variable_set.production.id
 }

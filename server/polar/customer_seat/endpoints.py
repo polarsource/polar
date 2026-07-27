@@ -8,6 +8,7 @@ from polar.authz.service import get_accessible_org_ids
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import BadRequest, ResourceNotFound
+from polar.kit.http import get_ip_address
 from polar.models import CustomerSeat, Order, Subscription
 from polar.models.customer_seat import SeatStatus
 from polar.openapi import APITag
@@ -18,7 +19,7 @@ from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 from polar.subscription.repository import SubscriptionRepository
 
-from .auth import SeatWrite
+from .auth import SeatRead, SeatWrite
 from .repository import CustomerSeatRepository
 from .schemas import CustomerSeat as CustomerSeatSchema
 from .schemas import (
@@ -113,7 +114,7 @@ async def assign_seat(
     },
 )
 async def list_seats(
-    auth_subject: SeatWrite,
+    auth_subject: SeatRead,
     session: AsyncSession = Depends(get_db_session),
     subscription_id: Annotated[UUID4 | None, Query()] = None,
     order_id: Annotated[UUID4 | None, Query()] = None,
@@ -336,7 +337,7 @@ async def claim_seat(
     # Capture request metadata for audit logging
     request_metadata = {
         "user_agent": request.headers.get("user-agent"),
-        "ip": request.client.host if request.client else None,
+        "ip": get_ip_address(request),
     }
 
     seat, customer_session_token = await seat_service.claim_seat(

@@ -1,19 +1,17 @@
 import { useCustomerBenefitGrants } from '@/hooks/queries/customerPortal'
-import { Client, schemas } from '@polar-sh/client'
+import { Client } from '@polar-sh/client'
 import { CustomerPortalGrantsComplex } from './CustomerPortalGrantsComplex'
 import { CustomerPortalGrantsSimple } from './CustomerPortalGrantsSimple'
 
 const SIMPLIFIED_VIEW_THRESHOLD = 10
 
 export interface CustomerPortalGrantsProps {
-  organization?: schemas['CustomerOrganization']
   api: Client
   subscriptionId?: string
   orderId?: string
 }
 
 export const CustomerPortalGrants = ({
-  organization,
   api,
   subscriptionId,
   orderId,
@@ -44,7 +42,6 @@ export const CustomerPortalGrants = ({
 
   return isSimplifiedView ? (
     <CustomerPortalGrantsSimple
-      organization={organization}
       benefitGrants={initialBenefitGrants}
       api={api}
     />

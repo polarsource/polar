@@ -1,3 +1,4 @@
+from textwrap import dedent
 from typing import Annotated
 
 from fastapi import Depends, Path, Query, Request
@@ -9,8 +10,9 @@ from polar.checkout import ip_geolocation
 from polar.checkout.service import checkout as checkout_service
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.exceptions import ResourceNotFound
+from polar.kit.http import get_ip_address
 from polar.kit.pagination import ListResource, PaginationParamsQuery
-from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.schemas import EmptyStrToNone, MultipleQueryFilter
 from polar.models import CheckoutLink
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
@@ -24,6 +26,18 @@ from .schemas import CheckoutLinkCreate, CheckoutLinkUpdate
 from .service import checkout_link as checkout_link_service
 
 router = APIRouter(prefix="/checkout-links", tags=["checkout-links", APITag.public])
+
+CHECKOUT_LINK_CREATE_MINTLIFY_CONTENT = dedent(
+    """
+    <Warning>
+      Looking to create a single use checkout session? Checkout Links are probably **not** what you're looking for.
+
+      Checkout Links are shareable links that generate checkout sessions when opened. They are very handy to start a purchase from your website or social media.
+
+      However, if you want to start a checkout for one of your user **inside** your product, you should use the [Checkout Sessions API](/api-reference/checkouts/create-checkout-session).
+    </Warning>
+    """
+).strip()
 
 
 CheckoutLinkID = Annotated[UUID4, Path(description="The checkout link ID.")]
@@ -94,6 +108,7 @@ async def get(
     status_code=201,
     summary="Create Checkout Link",
     responses={201: {"description": "Checkout link created."}},
+    openapi_extra={"x-mint": {"content": CHECKOUT_LINK_CREATE_MINTLIFY_CONTENT}},
 )
 async def create(
     checkout_link_create: CheckoutLinkCreate,
@@ -160,22 +175,22 @@ async def redirect(
     request: Request,
     client_secret: CheckoutLinkClientSecret,
     ip_geolocation_client: ip_geolocation.IPGeolocationClient,
-    embed_origin: str | None = Query(None),
+    embed_origin: Annotated[EmptyStrToNone, Query()] = None,
     session: AsyncSession = Depends(get_db_session),
     # Product pre-selection & query parameter prefill
     product_id: UUID4 | None = Query(None),
-    amount: str | None = Query(None),
-    customer_email: str | None = Query(None),
-    customer_name: str | None = Query(None),
-    discount_code: str | None = Query(None),
-    locale: str | None = Query(None),
+    amount: Annotated[EmptyStrToNone, Query()] = None,
+    customer_email: Annotated[EmptyStrToNone, Query()] = None,
+    customer_name: Annotated[EmptyStrToNone, Query()] = None,
+    discount_code: Annotated[EmptyStrToNone, Query()] = None,
+    locale: Annotated[EmptyStrToNone, Query()] = None,
     # Metadata that can be set from query parameters
-    reference_id: str | None = Query(None),
-    utm_source: str | None = Query(None),
-    utm_medium: str | None = Query(None),
-    utm_campaign: str | None = Query(None),
-    utm_term: str | None = Query(None),
-    utm_content: str | None = Query(None),
+    reference_id: Annotated[EmptyStrToNone, Query()] = None,
+    utm_source: Annotated[EmptyStrToNone, Query()] = None,
+    utm_medium: Annotated[EmptyStrToNone, Query()] = None,
+    utm_campaign: Annotated[EmptyStrToNone, Query()] = None,
+    utm_term: Annotated[EmptyStrToNone, Query()] = None,
+    utm_content: Annotated[EmptyStrToNone, Query()] = None,
 ) -> RedirectResponse:
     """Use a checkout link to create a checkout session and redirect to it."""
     repository = CheckoutLinkRepository.from_session(session)
@@ -186,7 +201,7 @@ async def redirect(
     if checkout_link is None:
         raise ResourceNotFound()
 
-    ip_address = request.client.host if request.client else None
+    ip_address = get_ip_address(request)
 
     # Build query_prefill dictionary from explicit parameters
     query_prefill: dict[str, str | UUID4 | dict[str, str] | None] = {
@@ -232,7 +247,7 @@ async def redirect(
         k: v
         for k, v in request.query_params.items()
         if k != "embed_origin"
-        and (k not in query_prefill or query_prefill[k] is None)
+        and k not in query_prefill
         and not (
             k.startswith("custom_field_data.")
             and k.replace("custom_field_data.", "") in validated_custom_field_keys

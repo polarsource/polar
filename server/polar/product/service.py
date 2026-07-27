@@ -38,11 +38,13 @@ from polar.models import (
     ProductVisibility,
     User,
 )
+from polar.models.organization import OrganizationStatus
 from polar.models.product_custom_field import ProductCustomField
 from polar.models.product_price import ProductPriceSource
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.repository import OrganizationRepository
 from polar.organization.resolver import get_payload_organization
+from polar.organization_review.schemas import ReviewContext
 from polar.product.guard import (
     is_custom_price,
     is_fixed_price,
@@ -436,6 +438,7 @@ class ProductService:
         await session.refresh(product, {"prices", "all_prices"})
 
         await self._after_product_updated(session, product)
+        self._enqueue_organization_review(product)
 
         return product
 
@@ -527,6 +530,9 @@ class ProductService:
             )
             enqueue_job("order.update_product_benefits_grants", product.id)
             enqueue_job("customer_seat.update_product_benefits_grants", product.id)
+            # A pure reorder (no added/deleted benefits) does not change the
+            # risk profile, so it does not warrant a review.
+            self._enqueue_organization_review(product)
 
         await self._after_product_updated(session, product)
 
@@ -773,11 +779,28 @@ class ProductService:
         product: Product,
     ) -> None:
         await self._send_webhook(session, product, WebhookEventType.product_created)
+        self._enqueue_organization_review(product)
 
     async def _after_product_updated(
         self, session: AsyncSession, product: Product
     ) -> None:
         await self._send_webhook(session, product, WebhookEventType.product_updated)
+
+    def _enqueue_organization_review(self, product: Product) -> None:
+        """Re-review an active organization when one of its products changes.
+
+        Creating or meaningfully editing a product can change the merchant's
+        risk profile, so we re-run the review agent. It is debounced
+        per-organization and only pulls the org back into review on a bad
+        verdict (see organization_review.tasks). Non-active orgs (e.g. still
+        onboarding) are skipped — there is nothing to pull back into review.
+        """
+        if product.organization.status == OrganizationStatus.ACTIVE:
+            enqueue_job(
+                "organization_review.run_agent",
+                organization_id=product.organization_id,
+                context=ReviewContext.PRODUCT_CHANGED,
+            )
 
     async def _send_webhook(
         self,

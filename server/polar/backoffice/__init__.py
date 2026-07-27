@@ -3,12 +3,14 @@ from pathlib import Path
 from fastapi import Depends, FastAPI, Request
 from tagflow import tag, text
 
+from polar.exceptions import PolarError
 from polar.observability.http_metrics import exclude_app_from_metrics
 
 from .benefits.endpoints import router as benefits_router
 from .customers.endpoints import router as customers_router
 from .dependencies import get_admin
 from .email_logs.endpoints import router as email_logs_router
+from .exception_handlers import backoffice_polar_exception_handler
 from .external_events.endpoints import router as external_events_router
 from .feedbacks.endpoints import router as feedbacks_router
 from .impersonation.endpoints import router as impersonation_router
@@ -16,6 +18,7 @@ from .layout import layout
 from .middlewares import SecurityHeadersMiddleware, TagflowMiddleware
 from .orders.endpoints import router as orders_router
 from .organizations_v2.endpoints import router as organizations_v2_router
+from .payout_accounts.endpoints import router as payout_accounts_router
 from .payouts.endpoints import router as payouts_router
 from .products.endpoints import router as products_router
 from .responses import TagResponse
@@ -39,6 +42,8 @@ exclude_app_from_metrics(app)
 app.add_middleware(SecurityHeadersMiddleware)
 app.add_middleware(TagflowMiddleware)
 
+app.add_exception_handler(PolarError, backoffice_polar_exception_handler)
+
 
 app.mount(
     "/static",
@@ -56,6 +61,7 @@ app.include_router(tasks_router, prefix="/tasks")
 app.include_router(subscriptions_router, prefix="/subscriptions")
 app.include_router(orders_router, prefix="/orders")
 app.include_router(payouts_router, prefix="/payouts")
+app.include_router(payout_accounts_router, prefix="/payout-accounts")
 app.include_router(impersonation_router, prefix="/impersonation")
 app.include_router(webhooks_router, prefix="/webhooks")
 app.include_router(feedbacks_router, prefix="/feedbacks")

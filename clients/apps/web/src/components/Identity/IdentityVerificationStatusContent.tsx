@@ -14,7 +14,8 @@ import {
 interface Props {
   status: schemas['IdentityVerificationStatus'] | undefined
   onStart: () => void
-  unverifiedDescription?: string
+  notAuthorized?: boolean
+  unverifiedDescription?: React.ReactNode
 }
 
 const DEFAULT_UNVERIFIED_DESCRIPTION =
@@ -23,8 +24,20 @@ const DEFAULT_UNVERIFIED_DESCRIPTION =
 export const IdentityVerificationStatusContent = ({
   status,
   onStart,
+  notAuthorized = false,
   unverifiedDescription = DEFAULT_UNVERIFIED_DESCRIPTION,
 }: Props) => {
+  if (notAuthorized) {
+    return (
+      <StatusBlock
+        tone="pending"
+        icon={ClockIcon}
+        title="Waiting for owner"
+        description="Waiting for this organization's owner to finish identity verification."
+      />
+    )
+  }
+
   if (status === 'verified') {
     return (
       <StatusBlock

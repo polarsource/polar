@@ -59,13 +59,16 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
     return { startDate: subDays(now, 30), endDate: now }
   }, [])
 
-  const metricsQuery = useMetrics({
-    organization_id: organization.id,
-    startDate,
-    endDate,
-    interval: 'day',
-    metrics: ['revenue', 'orders', 'monthly_recurring_revenue'],
-  })
+  const metricsQuery = useMetrics(
+    {
+      organization_id: organization.id,
+      startDate,
+      endDate,
+      interval: 'day',
+      metrics: ['revenue', 'orders', 'monthly_recurring_revenue'],
+    },
+    canManageBilling,
+  )
 
   const monthlyRevenue = Math.max(
     metricsQuery.data?.totals.revenue ?? 0,

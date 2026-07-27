@@ -1,6 +1,7 @@
 import { api } from '@/utils/client'
 import { schemas } from '@polar-sh/client'
 import { createSHA256 } from 'hash-wasm'
+import { getFileMimeType } from './mimeType'
 
 const CHUNK_SIZE = 10000000 // 10MB
 
@@ -84,9 +85,7 @@ export class Upload {
 
   async create() {
     const { sha256base64, parts } = await this.getMultiparts()
-    const mimeType = this.file.type
-      ? this.file.type
-      : 'application/octet-stream'
+    const mimeType = getFileMimeType(this.file)
 
     const params: schemas['FileCreate'] = {
       organization_id: this.organization.id,

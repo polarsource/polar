@@ -2,13 +2,15 @@ import * as stylex from '@stylexjs/stylex'
 import {
   backgroundColors,
   borderColors,
+  textColors,
+} from '../tokens/semantics.stylex'
+import {
   borderRadii,
   durations,
   easings,
   shadows,
   spacing,
-  textColors,
-} from '../tokens/tokens.stylex'
+} from '../tokens/value.stylex'
 
 // Property lists for the curated `transitionProperty` presets. Kept in one
 // place so the scalar (StyleX) path and the responsive path stay in sync.
@@ -272,6 +274,9 @@ export const backgroundColorStyles = stylex.create({
   'background-inverse': {
     backgroundColor: backgroundColors['background-inverse'],
   },
+  'background-accent': {
+    backgroundColor: backgroundColors['background-accent'],
+  },
   'background-warning': {
     backgroundColor: backgroundColors['background-warning'],
   },
@@ -280,9 +285,6 @@ export const backgroundColorStyles = stylex.create({
   },
   'background-danger': {
     backgroundColor: backgroundColors['background-danger'],
-  },
-  'background-pending': {
-    backgroundColor: backgroundColors['background-pending'],
   },
 })
 
@@ -293,7 +295,6 @@ export const colorStyles = stylex.create({
   'text-success': { color: textColors['text-success'] },
   'text-danger': { color: textColors['text-danger'] },
   'text-warning': { color: textColors['text-warning'] },
-  'text-pending': { color: textColors['text-pending'] },
 })
 
 export const borderColorStyles = stylex.create({
@@ -504,15 +505,6 @@ export const userSelectStyles = stylex.create({
   text: { userSelect: 'text' },
   all: { userSelect: 'all' },
   auto: { userSelect: 'auto' },
-})
-
-// ── Text Align ──────────────────────────────────────────────────────────────
-
-export const textAlignStyles = stylex.create({
-  left: { textAlign: 'left' },
-  center: { textAlign: 'center' },
-  right: { textAlign: 'right' },
-  justify: { textAlign: 'justify' },
 })
 
 // ── Motion ───────────────────────────────────────────────────────────────────

@@ -8,7 +8,7 @@ State, Secrets and Runs are directly managed on [HCP Terraform Cloud](https://ap
 
 - **Backend**: Hosted on Render (API server, workers)
 - **Frontend**: Hosted on Vercel (Next.js web application)
-- **Storage**: AWS S3 buckets for uploaded files
+- **AWS**: Multi-account AWS Organizations structure for storage and workloads (see `organization/`)
 
 ## HCP Terraform Cloud
 
@@ -18,6 +18,8 @@ Projects:
 ├── prod
 ├── sandbox
 └── test (For load testing, etc. This environment is fully destructed when needed)
+
+The `organization` workspace manages the AWS Organizations structure and account hierarchy.
 
 
 ## Adding environment variables

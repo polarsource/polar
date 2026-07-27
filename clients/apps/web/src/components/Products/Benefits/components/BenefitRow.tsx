@@ -111,16 +111,16 @@ export const BenefitRow = ({
     <>
       <div
         className={twMerge(
-          'flex items-center justify-between px-4 py-3 transition-colors',
+          'flex items-center justify-between py-3 pl-4 pr-2 transition-colors',
           selected
             ? 'dark:bg-polar-800/50 bg-blue-50/50'
             : 'dark:hover:bg-polar-800/30 hover:bg-gray-50',
         )}
       >
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-start gap-3">
           <div
             className={twMerge(
-              'flex h-8 w-8 items-center justify-center rounded-lg',
+              'flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
               selected
                 ? 'bg-blue-100 text-blue-500 dark:bg-blue-950 dark:text-blue-400'
                 : 'dark:bg-polar-700 dark:text-polar-400 bg-gray-100 text-gray-500',
@@ -128,8 +128,13 @@ export const BenefitRow = ({
           >
             {resolveBenefitIcon(benefit.type, 'h-4 w-4')}
           </div>
-          <div className="flex flex-col">
-            <span className={twMerge('text-sm', selected ? 'font-medium' : '')}>
+          <div className="flex min-w-0 flex-col">
+            <span
+              className={twMerge(
+                'truncate text-sm',
+                selected ? 'font-medium' : '',
+              )}
+            >
               {benefit.description}
             </span>
             <div className="flex items-center gap-2">

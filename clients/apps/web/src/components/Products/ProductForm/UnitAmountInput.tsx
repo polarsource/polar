@@ -122,7 +122,7 @@ const UnitAmountInput = ({
       ref={ref}
       {...rest}
       className={twMerge(
-        'dark:placeholder:text-polar-500 block w-full px-4 pl-14 text-base font-normal placeholder:text-gray-400',
+        'dark:placeholder:text-polar-500 block w-full px-4 pl-14 text-base placeholder:text-gray-400',
         className ?? '',
       )}
       type="text"

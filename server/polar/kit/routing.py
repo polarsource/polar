@@ -1,7 +1,8 @@
 import functools
 import inspect
+import re
 from collections.abc import Callable
-from typing import Any
+from typing import Any, Literal, TypedDict
 
 from fastapi import APIRouter as _APIRouter
 from fastapi.routing import APIRoute
@@ -149,6 +150,39 @@ class SpeakeasyPaginationAPIRoute(APIRoute):
             }
 
 
+class PaginationExtension(TypedDict):
+    type: Literal["page_limit"]
+    item_schema: dict[str, Any]
+
+
+class PaginationAPIRoute(APIRoute):
+    """
+    A subclass of `APIRoute` that automatically adds `x-polar-pagination` property
+    to the OpenAPI schema if the endpoint response model is a `ListResource`.
+    """
+
+    def __init__(self, path: str, endpoint: Callable[..., Any], **kwargs: Any) -> None:
+        super().__init__(path, endpoint, **kwargs)
+        response_model = self.response_model
+        if (
+            response_model is not None
+            and inspect.isclass(response_model)
+            and ListResource in response_model.mro()
+        ):
+            openapi_extra = self.openapi_extra or {}
+            item_schema_name_match = re.match(
+                r"ListResource\[(.+)\]", response_model.__name__
+            )
+            if item_schema_name_match is None:
+                return
+            item_schema_name = item_schema_name_match.group(1)
+            pagination: PaginationExtension = {
+                "type": "page_limit",
+                "item_schema": {"$ref": f"#/components/schemas/{item_schema_name}"},
+            }
+            self.openapi_extra = {**openapi_extra, "x-polar-pagination": pagination}
+
+
 def _inherit_signature_from[**P, T](
     _to: Callable[P, T],
 ) -> Callable[[Callable[..., T]], Callable[P, T]]:
@@ -172,6 +206,7 @@ def get_api_router_class(route_class: type[APIRoute]) -> type[_APIRouter]:
 __all__ = [
     "AutoCommitAPIRoute",
     "IncludedInSchemaAPIRoute",
+    "PaginationAPIRoute",
     "SpeakeasyGroupAPIRoute",
     "SpeakeasyIgnoreAPIRoute",
     "SpeakeasyNameOverrideAPIRoute",

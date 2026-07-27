@@ -2,6 +2,12 @@ import * as SecureStore from 'expo-secure-store'
 import { useCallback, useEffect, useReducer } from 'react'
 import { Platform } from 'react-native'
 
+// ⚠️ Changing this to a different group would make existing sessions unreadable
+const SECURE_STORE_OPTIONS: SecureStore.SecureStoreOptions = {
+  accessGroup: '55U3YA3QTA.com.polarsource.Polar',
+  keychainAccessible: SecureStore.AFTER_FIRST_UNLOCK,
+}
+
 type UseStateHook<T> = [[boolean, T | null], (value: T | null) => void]
 
 function useAsyncState<T>(
@@ -17,6 +23,10 @@ function useAsyncState<T>(
 }
 
 export async function getStorageItemAsync(key: string): Promise<string | null> {
+  const value = await SecureStore.getItemAsync(key, SECURE_STORE_OPTIONS)
+  if (value !== null) {
+    return value
+  }
   return await SecureStore.getItemAsync(key)
 }
 
@@ -33,9 +43,9 @@ export async function setStorageItemAsync(key: string, value: string | null) {
     }
   } else {
     if (value == null) {
-      await SecureStore.deleteItemAsync(key)
+      await SecureStore.deleteItemAsync(key, SECURE_STORE_OPTIONS)
     } else {
-      await SecureStore.setItemAsync(key, value)
+      await SecureStore.setItemAsync(key, value, SECURE_STORE_OPTIONS)
     }
   }
 }
@@ -55,7 +65,7 @@ export function useStorageState(key: string): UseStateHook<string> {
         console.error('Local storage is unavailable:', e)
       }
     } else {
-      SecureStore.getItemAsync(key).then((value) => {
+      getStorageItemAsync(key).then((value) => {
         setState(value)
       })
     }

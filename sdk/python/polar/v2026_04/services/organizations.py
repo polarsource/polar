@@ -1,0 +1,409 @@
+from __future__ import annotations
+
+import builtins
+import typing
+
+from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
+from polar.v2026_04.errors import (
+    CannotCreateOrganizationError,
+    HTTPValidationError,
+    NotPermitted,
+    ResourceNotFound,
+    SSOEnforcementRequiresConnection,
+)
+from polar.v2026_04.inputs import (
+    OrganizationCreate,
+    OrganizationUpdate,
+)
+from polar.v2026_04.literals import (
+    OrganizationSortProperty,
+)
+from polar.v2026_04.outputs import (
+    ListResourceOrganization,
+    Organization,
+)
+
+
+class OrganizationsSync(SyncServiceBase):
+    def list(
+        self,
+        *,
+        slug: str | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[OrganizationSortProperty] | None = ["created_at"],
+    ) -> ListResourceOrganization:
+        """
+        List organizations.
+
+        **Scopes**: `organizations:read` `organizations:write`
+
+        Args:
+            slug: Filter by slug.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/organizations/",
+            path_params={},
+            query_params={
+                "slug": slug,
+                "page": page,
+                "limit": limit,
+                "sorting": sorting,
+            },
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, ListResourceOrganization, method_errors)
+
+    def iter_list(
+        self,
+        *,
+        slug: str | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[OrganizationSortProperty] | None = ["created_at"],
+    ) -> typing.Generator[Organization, None, None]:
+        """
+        List organizations.
+
+        **Scopes**: `organizations:read` `organizations:write`
+
+        Args:
+            slug: Filter by slug.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Returns:
+            A generator that yields items of type Organization.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = self.list(
+                slug=slug,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+            )
+            yield from response.items
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
+    def create(
+        self,
+        **kwargs: typing.Unpack[OrganizationCreate],
+    ) -> Organization:
+        """
+        Create an organization.
+
+        **Scopes**: `organizations:write`
+
+        Args:
+            **kwargs: Request body parameters
+
+        Raises:
+            CannotCreateOrganizationError: Forbidden
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/organizations/",
+            path_params={},
+            query_params={},
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            403: CannotCreateOrganizationError,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, Organization, method_errors)
+
+    def get(
+        self,
+        id: str,
+    ) -> Organization:
+        """
+        Get an organization by ID.
+
+        **Scopes**: `organizations:read` `organizations:write`
+
+        Args:
+            id:
+
+        Raises:
+            ResourceNotFound: Organization not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/organizations/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, Organization, method_errors)
+
+    def update(
+        self,
+        id: str,
+        **kwargs: typing.Unpack[OrganizationUpdate],
+    ) -> Organization:
+        """
+        Update an organization.
+
+        **Scopes**: `organizations:write`
+
+        Args:
+            id:
+            **kwargs: Request body parameters
+
+        Raises:
+            NotPermitted: You don't have the permission to update this organization.
+            ResourceNotFound: Organization not found.
+            SSOEnforcementRequiresConnection: Cannot enforce SSO without an enabled connection.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="PATCH",
+            url="/v1/organizations/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            body=kwargs,
+        )
+        response = self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            404: ResourceNotFound,
+            409: SSOEnforcementRequiresConnection,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, Organization, method_errors)
+
+
+class OrganizationsAsync(AsyncServiceBase):
+    async def list(
+        self,
+        *,
+        slug: str | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[OrganizationSortProperty] | None = ["created_at"],
+    ) -> ListResourceOrganization:
+        """
+        List organizations.
+
+        **Scopes**: `organizations:read` `organizations:write`
+
+        Args:
+            slug: Filter by slug.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/organizations/",
+            path_params={},
+            query_params={
+                "slug": slug,
+                "page": page,
+                "limit": limit,
+                "sorting": sorting,
+            },
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, ListResourceOrganization, method_errors)
+
+    async def iter_list(
+        self,
+        *,
+        slug: str | None = None,
+        page: int = 1,
+        limit: int = 10,
+        sorting: builtins.list[OrganizationSortProperty] | None = ["created_at"],
+    ) -> typing.AsyncGenerator[Organization, None]:
+        """
+        List organizations.
+
+        **Scopes**: `organizations:read` `organizations:write`
+
+        Args:
+            slug: Filter by slug.
+            page: Page number, defaults to 1.
+            limit: Size of a page, defaults to 10. Maximum is 100.
+            sorting: Sorting criterion. Several criteria can be used simultaneously and will be applied in order. Add a minus sign `-` before the criteria name to sort by descending order.
+
+        Returns:
+            An async generator that yields items of type Organization.
+
+        Raises:
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        while True:
+            response = await self.list(
+                slug=slug,
+                page=page,
+                limit=limit,
+                sorting=sorting,
+            )
+            for item in response.items:
+                yield item
+            if page >= response.pagination.max_page:
+                break
+            page += 1
+
+    async def create(
+        self,
+        **kwargs: typing.Unpack[OrganizationCreate],
+    ) -> Organization:
+        """
+        Create an organization.
+
+        **Scopes**: `organizations:write`
+
+        Args:
+            **kwargs: Request body parameters
+
+        Raises:
+            CannotCreateOrganizationError: Forbidden
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="POST",
+            url="/v1/organizations/",
+            path_params={},
+            query_params={},
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            403: CannotCreateOrganizationError,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, Organization, method_errors)
+
+    async def get(
+        self,
+        id: str,
+    ) -> Organization:
+        """
+        Get an organization by ID.
+
+        **Scopes**: `organizations:read` `organizations:write`
+
+        Args:
+            id:
+
+        Raises:
+            ResourceNotFound: Organization not found.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="GET",
+            url="/v1/organizations/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            404: ResourceNotFound,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, Organization, method_errors)
+
+    async def update(
+        self,
+        id: str,
+        **kwargs: typing.Unpack[OrganizationUpdate],
+    ) -> Organization:
+        """
+        Update an organization.
+
+        **Scopes**: `organizations:write`
+
+        Args:
+            id:
+            **kwargs: Request body parameters
+
+        Raises:
+            NotPermitted: You don't have the permission to update this organization.
+            ResourceNotFound: Organization not found.
+            SSOEnforcementRequiresConnection: Cannot enforce SSO without an enabled connection.
+            HTTPValidationError: Validation Error
+            PolarNetworkError: Raised when a network error occurs while making the request.
+            PolarRateLimitError: Raised when the rate limit is exceeded.
+            PolarServerError: Raised when the server returns a 5xx error response.
+        """
+        request = self.client.build_request(
+            method="PATCH",
+            url="/v1/organizations/{id}",
+            path_params={
+                "id": id,
+            },
+            query_params={},
+            body=kwargs,
+        )
+        response = await self.client.send_request(request)
+        method_errors = {
+            403: NotPermitted,
+            404: ResourceNotFound,
+            409: SSOEnforcementRequiresConnection,
+            422: HTTPValidationError,
+        }
+        return parse_response_json(response, Organization, method_errors)

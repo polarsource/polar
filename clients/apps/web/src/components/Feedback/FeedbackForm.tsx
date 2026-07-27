@@ -244,8 +244,8 @@ export const FeedbackForm = ({
           <Box
             display="block"
             borderRadius="l"
-            backgroundColor="background-pending"
-            color="text-pending"
+            backgroundColor="background-card"
+            color="text-secondary"
             padding="l"
           >
             <div className="prose prose-sm dark:prose-invert">

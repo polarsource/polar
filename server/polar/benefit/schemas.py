@@ -26,7 +26,6 @@ from polar.customer.schemas.customer import CustomerResponse as Customer
 from polar.kit.schemas import (
     ClassName,
     MergeJSONSchema,
-    SelectorWidget,
     SetSchemaReference,
 )
 from polar.member.schemas import Member
@@ -78,11 +77,7 @@ from .strategies.slack_shared_channel.schemas import (
 BENEFIT_DESCRIPTION_MIN_LENGTH = 3
 BENEFIT_DESCRIPTION_MAX_LENGTH = 42
 
-BenefitID = Annotated[
-    UUID4,
-    MergeJSONSchema({"description": "The benefit ID."}),
-    SelectorWidget("/v1/benefits", "Benefit", "description"),
-]
+BenefitID = Annotated[UUID4, MergeJSONSchema({"description": "The benefit ID."})]
 
 
 BenefitCreate = Annotated[

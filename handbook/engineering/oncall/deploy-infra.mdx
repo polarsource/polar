@@ -71,9 +71,8 @@ deploy-sandbox:
   uses: ./.github/workflows/deploy-environment.yml
   with:
     environment: sandbox
-    docker-digest: ${{ needs.build.outputs.digest }}
-    # Modify render-service-ids
-    render-service-ids: "srv-crkocgbtq21c73ddsdbg,srv-d089jj7diees73934kgg"
+    render-api-service-id: "srv-crkocgbtq21c73ddsdbg"
+    render-worker-service-ids: "srv-..."
     # more config ...
 ```
 

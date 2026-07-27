@@ -87,6 +87,19 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     current_period_end: datetime = Field(
         description="The end timestamp of the current billing period."
     )
+    current_meter_period_start: datetime | None = Field(
+        description=(
+            "The start timestamp of the current meter period, if the product has a "
+            "meter cycle set. Metered credits are granted and overage is settled on "
+            "this cadence."
+        ),
+    )
+    current_meter_period_end: datetime | None = Field(
+        description=(
+            "The end timestamp of the current meter period, if the product has a "
+            "meter cycle set. This is when credits next renew."
+        ),
+    )
     trial_start: datetime | None = Field(
         description="The start timestamp of the trial period, if any."
     )
@@ -113,6 +126,24 @@ class SubscriptionBase(IDSchema, TimestampedSchema):
     )
     ended_at: datetime | None = Field(
         description="The timestamp when the subscription ended."
+    )
+    past_due_at: datetime | None = Field(
+        None,
+        description=("The timestamp when the subscription entered `past_due` status."),
+    )
+    pause_at_period_end: bool = Field(
+        description=(
+            "Whether the subscription will be paused at the end of the current period."
+        )
+    )
+    paused_at: datetime | None = Field(
+        description="The timestamp when the subscription was paused.",
+    )
+    resumes_at: datetime | None = Field(
+        description=(
+            "The timestamp when a paused subscription is scheduled to "
+            "automatically resume, if set."
+        ),
     )
 
     customer_id: UUID4 = Field(description="The ID of the subscribed customer.")
@@ -418,6 +449,43 @@ class SubscriptionRevoke(SubscriptionCancelBase):
     )
 
 
+class SubscriptionPause(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    pause_at_period_end: bool = Field(
+        description=inspect.cleandoc(
+            """
+        Pause an active subscription at the end of the current period.
+
+        Or cancel a scheduled pause on a subscription set to be paused at
+        period end.
+        """
+        ),
+    )
+    resumes_at: FutureDatetime | None = Field(
+        None,
+        description=inspect.cleandoc(
+            """
+        Date at which the paused subscription should automatically resume.
+
+        If not set, the subscription stays paused until it is resumed manually.
+        Must be after the current period end.
+        """
+        ),
+    )
+
+
+class SubscriptionResume(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    resume: Literal[True] = Field(
+        description=(
+            "Resume a paused subscription immediately, "
+            "starting a new billing period and charging the customer."
+        )
+    )
+
+
 class SubscriptionUpdateClear(Schema):
     model_config = ConfigDict(extra="forbid")
 
@@ -432,6 +500,8 @@ SubscriptionUpdate = Annotated[
     | SubscriptionUpdateBillingPeriod
     | SubscriptionCancel
     | SubscriptionRevoke
+    | SubscriptionPause
+    | SubscriptionResume
     | SubscriptionUpdateClear,
     SetSchemaReference("SubscriptionUpdate"),
 ]
@@ -470,4 +540,76 @@ class SubscriptionChargePreview(Schema):
     discount_amount: int = Field(description="Discount amount in cents")
     net_amount: int = Field(description="Net amount in cents before taxes")
     tax_amount: int = Field(description="Tax amount in cents")
-    total_amount: int = Field(description="Total amount in cents (final charge amount)")
+    total_amount: int = Field(
+        description="Total amount in cents (net + tax, before applying wallet balance)"
+    )
+    applied_balance_amount: int = Field(
+        description=(
+            "Wallet balance applied to this charge in cents: negative when the "
+            "customer's account credit reduces the amount due, positive when the "
+            "charge clears outstanding debt, zero otherwise."
+        )
+    )
+    due_amount: int = Field(
+        description=(
+            "Amount actually due in cents: total_amount plus the applied wallet "
+            "balance, floored at zero. This is the figure charged today."
+        )
+    )
+
+
+class SubscriptionCancelPreview(Schema):
+    """Preview of the effect of cancelling a subscription right now."""
+
+    stops_collection: bool = Field(
+        description=(
+            "Whether cancelling now also stops collecting the outstanding payment. "
+            "True for a past-due subscription whose organization has no benefit "
+            "revocation grace period: cancelling voids the pending order and stops "
+            "dunning retries."
+        )
+    )
+    outstanding_amount: int | None = Field(
+        description=(
+            "Amount in cents still due on the pending order that would be voided, "
+            "or null when nothing would be dropped."
+        )
+    )
+
+
+class SubscriptionChangePreviewProduct(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    product_id: UUID4 = Field(
+        description="Preview a change of the subscription to this product.",
+        examples=[PRODUCT_ID_EXAMPLE],
+    )
+    proration_behavior: SubscriptionProrationBehavior | None = Field(
+        default=None,
+        description=(
+            "Determine how to handle the proration billing. "
+            "If not provided, will use the default organization setting."
+        ),
+    )
+
+
+class SubscriptionChangePreviewSeats(Schema):
+    model_config = ConfigDict(extra="forbid")
+
+    seats: Int32 = Field(
+        description="Preview a change of the subscription to this number of seats.",
+        ge=1,
+    )
+    proration_behavior: SubscriptionProrationBehavior | None = Field(
+        default=None,
+        description=(
+            "Determine how to handle the proration billing. "
+            "If not provided, will use the default organization setting."
+        ),
+    )
+
+
+SubscriptionChangePreview = Annotated[
+    SubscriptionChangePreviewProduct | SubscriptionChangePreviewSeats,
+    SetSchemaReference("SubscriptionChangePreview"),
+]

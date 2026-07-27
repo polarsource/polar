@@ -42,7 +42,7 @@ export default async function Page(props: {
       notFound()
     } else if (
       error instanceof ClientResponseError &&
-      error.response.status === 410
+      (error.response.status === 403 || error.response.status === 410)
     ) {
       notFound() // TODO: show expired checkout page
     } else {

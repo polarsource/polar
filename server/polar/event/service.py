@@ -14,6 +14,7 @@ from sqlalchemy.orm import contains_eager
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
+from polar.authz.repository import select_accessible_org_ids
 from polar.authz.service import get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
 from polar.customer.repository import CustomerRepository
@@ -43,7 +44,6 @@ from polar.models import (
     MeterEvent,
     Organization,
     User,
-    UserOrganization,
 )
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
@@ -66,7 +66,7 @@ from .schemas import (
     VarianceEvent,
 )
 from .sorting import EventNamesSortProperty, EventSortProperty
-from .system import SystemEvent
+from .system import SYSTEM_EVENT_LABELS, SystemEvent
 
 log: Logger = structlog.get_logger()
 
@@ -779,9 +779,30 @@ class EventService:
         end = start + pagination.limit
         paginated_stats = tinybird_stats[start:end]
 
+        event_type_repository = EventTypeRepository.from_session(session)
+        event_types_by_name = await event_type_repository.get_by_names_and_organization(
+            [name for name, *_ in paginated_stats], list(organization_ids)
+        )
+        labels_by_name: dict[str, set[str]] = {}
+        for (_, name), event_type in event_types_by_name.items():
+            labels_by_name.setdefault(name, set()).add(event_type.label)
+        # Fall back to the event name when accessible orgs disagree on the label
+        event_type_labels = {
+            name: next(iter(labels))
+            for name, labels in labels_by_name.items()
+            if len(labels) == 1
+        }
+
+        def _resolve_label(name: str, event_source: EventSource) -> str:
+            fallback = event_type_labels.get(name, name)
+            if event_source == EventSource.system:
+                return SYSTEM_EVENT_LABELS.get(name, fallback)
+            return fallback
+
         event_names = [
             EventName(
                 name=name,
+                label=_resolve_label(name, event_source),
                 source=event_source,
                 occurrences=occurrences,
                 first_seen=first_seen,
@@ -1222,10 +1243,7 @@ class EventService:
             if is_user(auth_subject):
                 statement = statement.where(
                     Customer.organization_id.in_(
-                        select(UserOrganization.organization_id).where(
-                            UserOrganization.user_id == auth_subject.subject.id,
-                            UserOrganization.is_deleted.is_(False),
-                        )
+                        select_accessible_org_ids(auth_subject)
                     )
                 )
             else:
@@ -1267,12 +1285,7 @@ class EventService:
             )
             if is_user(auth_subject):
                 statement = statement.where(
-                    Member.organization_id.in_(
-                        select(UserOrganization.organization_id).where(
-                            UserOrganization.user_id == auth_subject.subject.id,
-                            UserOrganization.is_deleted.is_(False),
-                        )
-                    )
+                    Member.organization_id.in_(select_accessible_org_ids(auth_subject))
                 )
             else:
                 statement = statement.where(

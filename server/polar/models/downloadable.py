@@ -5,10 +5,11 @@ from uuid import UUID
 from sqlalchemy import (
     TIMESTAMP,
     ForeignKey,
+    Index,
     Integer,
     String,
-    UniqueConstraint,
     Uuid,
+    text,
 )
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
@@ -27,7 +28,22 @@ class DownloadableStatus(StrEnum):
 
 class Downloadable(RecordModel):
     __tablename__ = "downloadables"
-    __table_args__ = (UniqueConstraint("customer_id", "file_id", "benefit_id"),)
+    __table_args__ = (
+        # Member-aware uniqueness, matching benefit_grants: each member holding the
+        # benefit gets their own row. NULLS NOT DISTINCT keeps customer-level
+        # (member_id IS NULL) grants idempotent for products without members, and
+        # the partial WHERE excludes soft-deleted rows from the constraint.
+        Index(
+            "ix_downloadables_scope_unique",
+            "customer_id",
+            "member_id",
+            "file_id",
+            "benefit_id",
+            unique=True,
+            postgresql_nulls_not_distinct=True,
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
+    )
 
     file_id: Mapped[UUID] = mapped_column(
         Uuid, ForeignKey("files.id"), nullable=False, index=True
@@ -43,9 +59,10 @@ class Downloadable(RecordModel):
         Uuid,
         ForeignKey("customers.id", ondelete="cascade"),
         nullable=False,
-        # Don't create an index for customer_id
-        # as it's covered by the unique constraint, being the leading column of it
-        index=False,
+        # The scope unique index is partial (deleted_at IS NULL) so it doesn't
+        # cover soft-deleted rows; keep a full index for customer_id lookups and
+        # FK cascade deletes, like benefit_grants does.
+        index=True,
     )
 
     @declared_attr

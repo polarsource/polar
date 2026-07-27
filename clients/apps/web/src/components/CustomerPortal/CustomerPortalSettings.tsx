@@ -180,7 +180,10 @@ export const CustomerPortalSettings = ({
             </WellHeader>
             <Separator className="dark:bg-polar-700" />
             <WellContent>
-              <CustomerPortalTeamSection api={api} />
+              <CustomerPortalTeamSection
+                api={api}
+                organizationSlug={organization.slug}
+              />
             </WellContent>
           </Well>
         )}

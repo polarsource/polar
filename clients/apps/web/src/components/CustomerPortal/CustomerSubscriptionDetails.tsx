@@ -20,7 +20,6 @@ import { ConfirmModal } from '../Modal/ConfirmModal'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
 import { DetailRow } from '../Shared/DetailRow'
-import CustomerCancellationModal from './CustomerCancellationModal'
 import CustomerChangePlanModal from './CustomerChangePlanModal'
 import { CustomerSubscriptionHeader } from './CustomerSubscriptionHeader'
 
@@ -40,7 +39,6 @@ const CustomerSubscriptionDetails = ({
   customerSessionToken: string
 }) => {
   const [showChangePlanModal, setShowChangePlanModal] = useState(false)
-  const [showCancelModal, setShowCancelModal] = useState(false)
   const [showClearPendingUpdateModal, setShowClearPendingUpdateModal] =
     useState(false)
 
@@ -107,12 +105,15 @@ const CustomerSubscriptionDetails = ({
           />
         ) : (
           !subscription.ended_at &&
+          subscription.status !== 'paused' &&
           subscription.current_period_end && (
             <DetailRow
               label={
                 subscription.cancel_at_period_end
                   ? 'Expiry Date'
-                  : 'Renewal Date'
+                  : subscription.pause_at_period_end
+                    ? 'Pauses on'
+                    : 'Renewal Date'
               }
               value={
                 <FormattedDateTime
@@ -122,6 +123,33 @@ const CustomerSubscriptionDetails = ({
               }
             />
           )
+        )}
+        {subscription.status === 'paused' && subscription.paused_at && (
+          <DetailRow
+            label="Paused on"
+            value={
+              <FormattedDateTime
+                datetime={subscription.paused_at}
+                dateStyle="long"
+              />
+            }
+          />
+        )}
+        {(subscription.status === 'paused' ||
+          subscription.pause_at_period_end) && (
+          <DetailRow
+            label="Resumes on"
+            value={
+              subscription.resumes_at ? (
+                <FormattedDateTime
+                  datetime={subscription.resumes_at}
+                  dateStyle="long"
+                />
+              ) : (
+                'Until resumed'
+              )
+            }
+          />
         )}
         {subscription.meters.length > 0 && (
           <div className="flex flex-col gap-y-4 py-2">
@@ -227,13 +255,6 @@ const CustomerSubscriptionDetails = ({
             Change plan
           </Button>
         )}
-
-        <CustomerCancellationModal
-          isShown={showCancelModal}
-          hide={() => setShowCancelModal(false)}
-          subscription={subscription}
-          cancelSubscription={cancelSubscription}
-        />
       </div>
 
       <InlineModal

@@ -5,7 +5,7 @@ export const metadata: Metadata = {
   title: 'Pricing',
   description: 'Transparent pricing for every stage of growth',
   keywords:
-    'pricing, price, usage billing, polar, pricing, pricing for polar, pricing for polar, pricing for polar',
+    'polar pricing, merchant of record fees, usage-based billing pricing, saas billing costs, transaction fees',
   openGraph: {
     siteName: 'Polar',
     type: 'website',

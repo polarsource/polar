@@ -1,11 +1,18 @@
+import contextlib
+import enum
 import functools
 import inspect
-from collections.abc import Sequence
+import math
+from collections.abc import Iterator, Sequence
 from typing import Any
 
 import dramatiq
+import logfire
 import structlog
+from dramatiq.common import compute_backoff
+from dramatiq.errors import Retry
 from dramatiq.middleware.current_message import CurrentMessage
+from dramatiq.middleware.retries import DEFAULT_MAX_BACKOFF
 
 from polar import tasks  # noqa: F401  (registers all actors with the broker)
 from polar.config import settings
@@ -73,10 +80,75 @@ def validate_allowlist() -> None:
             raise ValueError(
                 f"Actor {actor_name!r} uses debounce, unsupported over SQS"
             )
-        if actor_obj.options.get("cron_trigger") is not None:
-            raise ValueError(
-                f"Actor {actor_name!r} is cron-scheduled; cron bypasses the SQS gate"
-            )
+
+
+def get_actor_max_retries(actor_name: str) -> int:
+    actor = dramatiq.get_broker().get_actor(actor_name)
+    return actor.options.get("max_retries", settings.WORKER_MAX_RETRIES)
+
+
+def compute_retry_backoff(
+    actor_name: str, receive_count: int, exception: BaseException | None = None
+) -> int:
+    """Seconds to delay the next redelivery, mirroring Dramatiq's Retries middleware."""
+    max_backoff_seconds = math.ceil(DEFAULT_MAX_BACKOFF / 1000)
+    if isinstance(exception, Retry) and exception.delay is not None:
+        return min(math.ceil(exception.delay / 1000), max_backoff_seconds)
+    actor = dramatiq.get_broker().get_actor(actor_name)
+    min_backoff = actor.options.get(
+        "min_backoff", settings.WORKER_MIN_BACKOFF_MILLISECONDS
+    )
+    max_backoff = min(
+        actor.options.get("max_backoff", DEFAULT_MAX_BACKOFF), DEFAULT_MAX_BACKOFF
+    )
+    retries = max(receive_count - 1, 0)
+    _, delay_ms = compute_backoff(retries, factor=min_backoff, max_backoff=max_backoff)
+    return min(math.ceil(delay_ms / 1000), max_backoff_seconds)
+
+
+class RetryAction(enum.Enum):
+    DEAD_LETTER = "dead_letter"
+    SCHEDULE = "schedule"
+    SET_VISIBILITY = "set_visibility"
+
+
+def plan_retry(
+    actor_name: str,
+    receive_count: int,
+    exception: BaseException | None,
+    *,
+    scheduler_available: bool,
+) -> tuple[RetryAction, int]:
+    """Decide how to redeliver a failed task and the delay (seconds) to apply."""
+    if receive_count - 1 >= get_actor_max_retries(actor_name):
+        return RetryAction.DEAD_LETTER, 0
+    backoff_seconds = compute_retry_backoff(actor_name, receive_count, exception)
+    if backoff_seconds > _sqs.MAX_VISIBILITY_TIMEOUT_SECONDS and scheduler_available:
+        return RetryAction.SCHEDULE, backoff_seconds
+    return RetryAction.SET_VISIBILITY, min(
+        backoff_seconds, _sqs.MAX_VISIBILITY_TIMEOUT_SECONDS
+    )
+
+
+@contextlib.contextmanager
+def _task_span(
+    actor_name: str,
+    message: dramatiq.Message[Any],
+    correlation_id: str,
+    source_correlation_id: str | None,
+) -> Iterator[None]:
+    if actor_name in settings.LOGFIRE_IGNORED_ACTORS:
+        with logfire.suppress_instrumentation():
+            yield
+    else:
+        with logfire.span(
+            "TASK {actor}",
+            actor=actor_name,
+            message=message.asdict(),
+            correlation_id=correlation_id,
+            source_correlation_id=source_correlation_id,
+        ):
+            yield
 
 
 async def run_task(
@@ -115,7 +187,8 @@ async def run_task(
     )
     token = CurrentMessage._MESSAGE.set(message)
     try:
-        await fn(*args, **kwargs)
+        with _task_span(actor_name, message, correlation_id, source_correlation_id):
+            await fn(*args, **kwargs)
     finally:
         CurrentMessage._MESSAGE.reset(token)
         structlog.contextvars.unbind_contextvars(
@@ -136,9 +209,13 @@ async def shutdown() -> None:
 
 
 __all__ = [
+    "RetryAction",
     "UnknownActor",
     "bootstrap",
     "build_registry",
+    "compute_retry_backoff",
+    "get_actor_max_retries",
+    "plan_retry",
     "run_task",
     "shutdown",
     "validate_allowlist",

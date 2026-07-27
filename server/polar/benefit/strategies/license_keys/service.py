@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import Any, Unpack, cast
 from uuid import UUID
 
 import structlog
@@ -9,6 +9,7 @@ from polar.auth.models import AuthSubject
 from polar.license_key.service import license_key as license_key_service
 from polar.logging import Logger
 from polar.models import Benefit, Customer, Member, Organization, User
+from polar.models.benefit_grant import BenefitGrantScopeArgs
 
 from ..base.service import BenefitServiceProtocol
 from .properties import BenefitGrantLicenseKeysProperties, BenefitLicenseKeysProperties
@@ -32,13 +33,18 @@ class BenefitLicenseKeysService(
         update: bool = False,
         attempt: int = 1,
         member: Member | None = None,
+        **scope: Unpack[BenefitGrantScopeArgs],
     ) -> BenefitGrantLicenseKeysProperties:
         current_lk_id = None
-        if update and "license_key_id" in grant_properties:
+        if "license_key_id" in grant_properties:
             current_lk_id = UUID(grant_properties["license_key_id"])
 
         user_provided_key: str | None = None
-        if not update and "user_provided_key" in grant_properties:
+        if (
+            not update
+            and current_lk_id is None
+            and "user_provided_key" in grant_properties
+        ):
             user_provided_key = grant_properties["user_provided_key"]
 
         license_key = await license_key_service.customer_grant(
@@ -48,6 +54,9 @@ class BenefitLicenseKeysService(
             license_key_id=current_lk_id,
             key=user_provided_key,
             member_id=member.id if member else None,
+            # Subscription-backed keys never expire; they follow the subscription.
+            set_expiration=scope.get("subscription_id") is None,
+            regrant=not update,
         )
         return {
             **grant_properties,

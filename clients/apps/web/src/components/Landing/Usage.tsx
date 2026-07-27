@@ -2,7 +2,7 @@
 
 import { RadialSpinner } from './graphics/RadialSpinner'
 import { GaugeSweep } from './graphics/GaugeSweep'
-import { OrbitingSpheres } from './graphics/OrbitingSpheres'
+import { ConcentricDraw } from './graphics/ConcentricDraw'
 
 const LAYERS = [
   {
@@ -25,20 +25,23 @@ const LAYERS = [
 export const Usage = () => (
   <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
     {LAYERS.map((l, i) => (
-      <div key={l.id} className="dark:bg-polar-900 flex flex-col bg-gray-50">
+      <div
+        key={l.id}
+        className="dark:bg-polar-900 flex flex-col bg-gray-50 p-2"
+      >
         {/* Graphic */}
         <div className="aspect-square">
           {i === 0 && <RadialSpinner />}
           {i === 1 && <GaugeSweep />}
-          {i === 2 && <OrbitingSpheres />}
+          {i === 2 && <ConcentricDraw />}
         </div>
         {/* Label */}
         <div className="flex flex-col px-8 py-8">
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col items-center gap-2 text-center">
             <span className="font-display text-2xl text-gray-900 dark:text-white">
-              {l.id} — {l.name}
+              {l.name}
             </span>
-            <span className="dark:text-polar-500 text-xl text-gray-500">
+            <span className="dark:text-polar-500 text-xl text-pretty text-gray-500">
               {l.desc}
             </span>
           </div>

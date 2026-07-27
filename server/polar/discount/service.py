@@ -9,7 +9,7 @@ from sqlalchemy.exc import DBAPIError
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
-from polar.authz.repository import select_user_org_ids
+from polar.authz.repository import select_accessible_org_ids
 from polar.authz.service import (
     assert_organization_permission,
     assert_resource_permission,
@@ -246,24 +246,22 @@ class DiscountService(ResourceServiceReader[Discount]):
                 else {"basis_points"}
             )
             for field in forbidden_fields:
-                discount_update_value = getattr(discount_update, field, None)
-                if (
-                    discount_update_value is not None
-                    and discount_update_value != getattr(discount, field, None)
-                ):
-                    raise PolarRequestValidationError(
-                        [
-                            {
-                                "type": "value_error",
-                                "loc": ("body", field),
-                                "msg": (
-                                    "This field cannot be changed because "
-                                    "the discount has already been redeemed."
-                                ),
-                                "input": getattr(discount, field),
-                            }
-                        ]
-                    )
+                if field in discount_update.model_fields_set:
+                    discount_update_value = getattr(discount_update, field)
+                    if discount_update_value != getattr(discount, field, None):
+                        raise PolarRequestValidationError(
+                            [
+                                {
+                                    "type": "value_error",
+                                    "loc": ("body", field),
+                                    "msg": (
+                                        "This field cannot be changed because "
+                                        "the discount has already been redeemed."
+                                    ),
+                                    "input": getattr(discount, field),
+                                }
+                            ]
+                        )
 
         if discount_update.products is not None:
             nested = await session.begin_nested()
@@ -440,7 +438,7 @@ class DiscountService(ResourceServiceReader[Discount]):
 
         # Acquire FOR UPDATE lock (we're already inside checkout's transaction)
         try:
-            await repository.get_by_id_for_update(discount.id, nowait=True)
+            await repository.get_by_id(discount.id, for_update=True, nowait=True)
         except DBAPIError as e:
             if is_lock_not_available_error(e):
                 raise DiscountNotRedeemableError(discount) from e
@@ -473,9 +471,8 @@ class DiscountService(ResourceServiceReader[Discount]):
         if is_user(auth_subject):
             statement = statement.where(
                 Discount.organization_id.in_(
-                    select_user_org_ids(
-                        auth_subject.subject.id,
-                        permission=OrganizationPermission.products_read,
+                    select_accessible_org_ids(
+                        auth_subject, permission=OrganizationPermission.products_read
                     )
                 )
             )

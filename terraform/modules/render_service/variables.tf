@@ -49,20 +49,27 @@ variable "workers" {
     plan               = optional(string, "pro")
     num_instances      = optional(number, 1)
     database_pool_size = optional(string, "5")
+    redis_host         = optional(string)
+    redis_port         = optional(string)
+    redis_db           = optional(string)
   }))
 }
 
 variable "postgres_config" {
   description = "PostgreSQL connection configuration"
   type = object({
-    host          = string
-    port          = string
-    user          = string
-    password      = string
-    read_host     = string
-    read_port     = string
-    read_user     = string
-    read_password = string
+    host               = string
+    port               = string
+    user               = string
+    password           = string
+    host_fallback      = optional(string)
+    port_fallback      = optional(string)
+    read_host          = string
+    read_port          = string
+    read_user          = string
+    read_password      = string
+    read_host_fallback = optional(string)
+    read_port_fallback = optional(string)
   })
   sensitive = true
 }
@@ -81,8 +88,9 @@ variable "redis_config" {
 variable "google_secrets" {
   description = "Google secrets (sensitive)"
   type = object({
-    client_id     = string
-    client_secret = string
+    client_id            = string
+    client_secret        = string
+    service_account_json = string
   })
   sensitive = true
 }
@@ -159,6 +167,7 @@ variable "backend_secrets" {
     chargeback_stop_webhook_secret = optional(string, "")
     numeral_api_key                = optional(string, "")
     firecrawl_api_key              = optional(string, "")
+    turnstile_secret               = string
   })
   sensitive = true
 }
@@ -188,6 +197,27 @@ variable "aws_s3_secrets" {
   sensitive = true
 }
 
+variable "aws_kms_config" {
+  description = "Secrets-encryption KMS key ARN and the OIDC role the backend assumes to use it (both in the workload account)."
+  type = object({
+    key_id   = string # full key ARN -> POLAR_AWS_KMS_KEY_ID
+    role_arn = string # OIDC role -> AWS_ROLE_ARN
+  })
+}
+
+variable "worker_sqs_config" {
+  description = "Worker SQS execution engine config (optional). null skips the env group. Omit the static credentials to send via the Render OIDC role instead."
+  type = object({
+    enabled               = string
+    actors                = string
+    queue_prefix          = string
+    aws_access_key_id     = optional(string)
+    aws_secret_access_key = optional(string)
+  })
+  default   = null
+  sensitive = true
+}
+
 variable "github_secrets" {
   description = "GitHub secrets (sensitive)"
   type = object({
@@ -205,9 +235,12 @@ variable "github_secrets" {
 variable "stripe_secrets" {
   description = "Stripe secrets (sensitive)"
   type = object({
-    connect_webhook_secret = string
-    secret_key             = string
-    webhook_secret         = string
+    connect_webhook_secret      = string
+    secret_key                  = string
+    webhook_secret              = string
+    account_risk_webhook_secret = optional(string, "")
+    app_client_id               = optional(string, "")
+    app_client_link_id          = optional(string, "")
   })
   sensitive = true
 }

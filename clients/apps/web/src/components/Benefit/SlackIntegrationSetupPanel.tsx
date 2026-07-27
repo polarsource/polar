@@ -90,12 +90,12 @@ export const SlackIntegrationSetupPanel = ({
   }
 
   return (
-    <Box display="flex" flexDirection="column" rowGap="l">
+    <Box display="flex" flexDirection="column" rowGap="xl">
       <SetupSection
         title="1. Create your Slack app"
         description="Create a Slack app from this manifest, then paste the credentials below."
       >
-        <Box display="flex" flexDirection="column" rowGap="m">
+        <Box display="flex" flexDirection="column" rowGap="l">
           <Box display="flex" flexDirection="column" rowGap="s">
             <Label htmlFor="slack-display-name">Display name</Label>
             <Input
@@ -108,27 +108,22 @@ export const SlackIntegrationSetupPanel = ({
               Shown on the bot user inside your Slack workspace.
             </Text>
           </Box>
-          <ManifestBlock manifest={displayedManifest} />
-          <Box display="flex" flexDirection="column" rowGap="s">
-            <Button
-              asChild
-              variant="secondary"
-              size="sm"
-              wrapperClassNames="self-start"
+          <Button asChild>
+            <a
+              href="https://api.slack.com/apps?new_app=1"
+              target="_blank"
+              rel="noopener noreferrer"
             >
-              <a
-                href="https://api.slack.com/apps?new_app=1"
-                target="_blank"
-                rel="noopener noreferrer"
-              >
-                Create app on api.slack.com
-              </a>
-            </Button>
-            <Text color="muted" variant="caption">
+              Create app on api.slack.com
+            </a>
+          </Button>
+          <Box display="flex" flexDirection="column" rowGap="s">
+            <Text color="muted">
               Choose &ldquo;From an app manifest&rdquo;, pick your workspace,
               and paste the manifest above.
             </Text>
           </Box>
+          <ManifestBlock manifest={displayedManifest} />
         </Box>
       </SetupSection>
 
@@ -238,7 +233,7 @@ const ManifestBlock = ({ manifest }: { manifest: string }) => {
           Copy manifest
         </Button>
       </Box>
-      <Well className="overflow-x-auto p-3 text-xs">
+      <Well className="dark:text-polar-500 overflow-x-auto rounded-md p-4 text-xs text-gray-500">
         {manifest ? (
           <SyntaxHighlighterClient lang="bash" code={manifest} />
         ) : (

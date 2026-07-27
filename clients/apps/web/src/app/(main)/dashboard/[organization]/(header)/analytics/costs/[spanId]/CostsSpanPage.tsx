@@ -14,7 +14,7 @@ import {
 import { fromISODate, getTimestampFormatter } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Button } from '@polar-sh/orbit'
+import { Button, Grid } from '@polar-sh/orbit'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { endOfDay, format, subDays, subMonths } from 'date-fns'
@@ -263,7 +263,13 @@ export default function SpanDetailPage({
 
         <TabsContent value="overview">
           <div className="flex flex-col gap-y-8">
-            <div className="grid grid-cols-4 gap-8">
+            <Grid
+              templateColumns={{
+                base: 'repeat(2, 1fr)',
+                lg: 'repeat(4, 1fr)',
+              }}
+              gap="2xl"
+            >
               <StatisticCard title="Occurrences" size="lg">
                 {costMetrics.totalOccurrences.toLocaleString()}
                 <Trend
@@ -308,7 +314,7 @@ export default function SpanDetailPage({
                   prevEnd={prevEnd}
                 />
               </StatisticCard>
-            </div>
+            </Grid>
 
             {chartData.length > 0 && (
               <div className="dark:border-polar-700 rounded-xl border border-gray-200 p-2">
@@ -378,7 +384,7 @@ export default function SpanDetailPage({
             </div>
           ) : (
             <div className="dark:border-polar-700 fl ex min-h-96 w-full flex-col items-center justify-center gap-4 rounded-4xl border border-gray-200 p-24">
-              <h1 className="text-2xl font-normal">No data</h1>
+              <h1 className="text-2xl">No data</h1>
               <p className="dark:text-polar-500 text-gray-500">
                 No metrics available for this period
               </p>
@@ -438,7 +444,7 @@ function Trend({
     <Tooltip>
       <TooltipTrigger asChild>
         <span
-          className={`mt-1 flex w-fit cursor-default items-center gap-1 text-xs font-normal ${
+          className={`mt-1 flex w-fit cursor-default items-center gap-1 text-xs ${
             isUp
               ? 'text-red-500'
               : isDown

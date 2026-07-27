@@ -2,7 +2,7 @@ import { FinancePage } from '@/components/Landing/features/FinancePage'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Finance — Polar',
+  title: 'Finance & Payouts',
   description:
     'Live balance, transactions ledger, transparent fees, and manual payouts. All visible.',
   keywords:

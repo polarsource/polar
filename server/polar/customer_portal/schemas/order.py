@@ -1,5 +1,3 @@
-from datetime import datetime
-
 from pydantic import UUID4, AliasChoices, AliasPath, Field, model_validator
 from pydantic.json_schema import SkipJsonSchema
 
@@ -52,9 +50,6 @@ class CustomerOrder(OrderBase):
     items: list[OrderItemSchema] = Field(description="Line items composing the order.")
     description: str = Field(
         description="A summary description of the order.", examples=["Pro Plan"]
-    )
-    next_payment_attempt_at: datetime | None = Field(
-        None, description="When the next payment retry is scheduled"
     )
 
 

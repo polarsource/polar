@@ -392,3 +392,128 @@ class TestDeleteExpired:
 
         preserved = await session.get(OAuth2Token, expired.id)
         assert preserved is not None
+
+
+@pytest.mark.asyncio
+class TestRevokeForSSOEnforcement:
+    async def test_revokes_token_scoped_to_org(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        oauth2_client: OAuth2Client,
+        user: User,
+        organization: Organization,
+    ) -> None:
+        token = await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="polar_at_u_sso1",
+            refresh_token="polar_rt_u_sso1",
+            scopes=["openid"],
+            user=user,
+            organizations=[organization],
+        )
+
+        await oauth2_token_service.revoke_for_sso_enforcement(session, organization.id)
+
+        await session.refresh(token)
+        assert token.access_token_revoked_at
+        assert token.refresh_token_revoked_at
+
+    async def test_revokes_token_scoped_to_multiple_orgs(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        oauth2_client: OAuth2Client,
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        # Revoked even though it also covers a non-enforced org.
+        token = await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="polar_at_u_sso2",
+            refresh_token="polar_rt_u_sso2",
+            scopes=["openid"],
+            user=user,
+            organizations=[organization, organization_second],
+        )
+
+        await oauth2_token_service.revoke_for_sso_enforcement(session, organization.id)
+
+        await session.refresh(token)
+        assert token.access_token_revoked_at
+
+    async def test_ignores_token_scoped_to_other_org(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        oauth2_client: OAuth2Client,
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        token = await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="polar_at_u_sso4",
+            refresh_token="polar_rt_u_sso4",
+            scopes=["openid"],
+            user=user,
+            organizations=[organization_second],
+        )
+
+        await oauth2_token_service.revoke_for_sso_enforcement(session, organization.id)
+
+        await session.refresh(token)
+        assert not token.access_token_revoked_at
+
+    async def test_ignores_unrestricted_token(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        oauth2_client: OAuth2Client,
+        user: User,
+        organization: Organization,
+    ) -> None:
+        # No org rows == unrestricted; handled at request time, not revoked here.
+        token = await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="polar_at_u_sso5",
+            refresh_token="polar_rt_u_sso5",
+            scopes=["openid"],
+            user=user,
+        )
+
+        await oauth2_token_service.revoke_for_sso_enforcement(session, organization.id)
+
+        await session.refresh(token)
+        assert not token.access_token_revoked_at
+
+    async def test_leaves_fully_revoked_token_untouched(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        oauth2_client: OAuth2Client,
+        user: User,
+        organization: Organization,
+    ) -> None:
+        token = await create_oauth2_token(
+            save_fixture,
+            client=oauth2_client,
+            access_token="polar_at_u_sso6",
+            refresh_token="polar_rt_u_sso6",
+            scopes=["openid"],
+            user=user,
+            organizations=[organization],
+            access_token_revoked_at=1,
+            refresh_token_revoked_at=1,
+        )
+
+        await oauth2_token_service.revoke_for_sso_enforcement(session, organization.id)
+
+        await session.refresh(token)
+        assert token.access_token_revoked_at == 1
+        assert token.refresh_token_revoked_at == 1

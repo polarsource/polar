@@ -1,27 +1,13 @@
 import base64
 import hashlib
-import unicodedata
 from datetime import datetime
-from typing import Any, Self
-from urllib.parse import quote
+from typing import Annotated, Any, Self
 
-from pydantic import UUID4, computed_field
+from pydantic import UUID4, Field, computed_field
 
-from polar.kit.schemas import IDSchema, Schema
+from polar.kit.schemas import IDSchema, Schema, StripValidator
 from polar.kit.utils import human_readable_size
 from polar.organization.schemas import OrganizationID
-
-
-def get_downloadable_content_disposition(filename: str) -> str:
-    if filename.isascii():
-        return f'attachment; filename="{filename}"'
-    ascii_fallback = (
-        unicodedata.normalize("NFKD", filename)
-        .encode("ascii", "ignore")
-        .decode("ascii")
-    )
-    encoded = quote(filename, safe="")
-    return f"attachment; filename=\"{ascii_fallback}\"; filename*=UTF-8''{encoded}"
 
 
 class S3FileCreatePart(Schema):
@@ -43,7 +29,7 @@ class S3FileCreatePart(Schema):
 
 
 class S3FileCreateMultipart(Schema):
-    parts: list[S3FileCreatePart]
+    parts: list[S3FileCreatePart] = Field(max_length=10_000)
 
 
 class S3FileCreate(Schema):
@@ -141,7 +127,7 @@ class S3FileUpload(S3File):
 
 class S3FileUploadCompletedPart(Schema):
     number: int
-    checksum_etag: str
+    checksum_etag: Annotated[str, StripValidator]
     checksum_sha256_base64: str | None
 
 

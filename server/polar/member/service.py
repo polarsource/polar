@@ -5,14 +5,19 @@ from uuid import UUID
 
 import structlog
 from sqlalchemy import UnaryExpression, asc, desc
-from sqlalchemy.exc import IntegrityError
+from sqlalchemy.exc import IntegrityError, MultipleResultsFound
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.authz.service import get_accessible_org_ids
 from polar.customer.repository import CustomerRepository
 from polar.customer_seat.repository import CustomerSeatRepository
-from polar.exceptions import NotPermitted, PolarRequestValidationError, ResourceNotFound
+from polar.exceptions import (
+    NotPermitted,
+    PolarError,
+    PolarRequestValidationError,
+    ResourceNotFound,
+)
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models.customer import Customer, CustomerType
@@ -28,6 +33,17 @@ from .repository import MemberRepository
 from .sorting import MemberSortProperty
 
 log = structlog.get_logger()
+
+
+class AmbiguousExternalCustomerID(PolarError):
+    def __init__(self, external_customer_id: str) -> None:
+        self.external_customer_id = external_customer_id
+        super().__init__(
+            "Several customers across your organizations share this external "
+            "customer ID. Use an organization-scoped token, the Polar customer "
+            "ID, or a unique external ID to disambiguate.",
+            409,
+        )
 
 
 class MemberService:
@@ -83,6 +99,19 @@ class MemberService:
         statement = repository.get_statement_by_org_ids(org_ids).where(Member.id == id)
         return await repository.get_one_or_none(statement)
 
+    async def get_for_customer(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        customer_id: UUID,
+        member_id: UUID,
+    ) -> Member | None:
+        """Get a member by ID, scoped to a customer the auth subject can access."""
+        member = await self.get(session, auth_subject, member_id)
+        if member is None or member.customer_id != customer_id:
+            return None
+        return member
+
     async def get_by_external_id(
         self,
         session: AsyncReadSession,
@@ -95,14 +124,24 @@ class MemberService:
         """Get a member by external ID if the auth subject has access to it."""
         repository = MemberRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
+
+        # Resolve the customer first so an ambiguous external customer ID always
+        # surfaces as a 409, regardless of how many members happen to match.
+        if external_customer_id is not None:
+            customer_repository = CustomerRepository.from_session(session)
+            try:
+                customer = await customer_repository.get_readable_by_external_id(
+                    org_ids, external_customer_id
+                )
+            except MultipleResultsFound as e:
+                raise AmbiguousExternalCustomerID(external_customer_id) from e
+            if customer is None:
+                return None
+            customer_id = customer.id
+
         statement = repository.get_statement_by_org_ids(org_ids).where(
             Member.external_id == external_id
         )
-
-        if external_customer_id is not None:
-            statement = statement.join(Customer).where(
-                Customer.external_id == external_customer_id
-            )
         if customer_id is not None:
             statement = statement.where(Member.customer_id == customer_id)
 
@@ -527,7 +566,8 @@ class MemberService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         *,
-        customer_id: UUID,
+        customer_id: UUID | None = None,
+        external_customer_id: str | None = None,
         email: str,
         name: str | None = None,
         external_id: str | None = None,
@@ -537,10 +577,14 @@ class MemberService:
         """
         Create a new member for a customer.
 
+        The customer is resolved by either its internal ID (`customer_id`) or its
+        external ID (`external_customer_id`); exactly one must be provided.
+
         Args:
             session: Database session
             auth_subject: Authenticated user/organization
             customer_id: ID of the customer to add member to
+            external_customer_id: External ID of the customer to add member to
             email: Email address of the member
             name: Optional name of the member
             external_id: Optional external ID of the member
@@ -553,14 +597,33 @@ class MemberService:
             ResourceNotFound: If customer not found or not accessible
             NotPermitted: If feature flag disabled or no permission to add members
         """
+        if customer_id is not None and external_customer_id is not None:
+            raise ValueError(
+                "Provide either customer_id or external_customer_id, not both."
+            )
+
         customer_repository = CustomerRepository.from_session(session)
         org_ids = await get_accessible_org_ids(session, auth_subject)
-        customer = await customer_repository.get_readable_by_id(
-            org_ids, customer_id, options=(joinedload(Customer.organization),)
-        )
+        if customer_id is not None:
+            customer = await customer_repository.get_readable_by_id(
+                org_ids, customer_id, options=(joinedload(Customer.organization),)
+            )
+        elif external_customer_id is not None:
+            try:
+                customer = await customer_repository.get_readable_by_external_id(
+                    org_ids,
+                    external_customer_id,
+                    options=(joinedload(Customer.organization),),
+                )
+            except MultipleResultsFound as e:
+                raise AmbiguousExternalCustomerID(external_customer_id) from e
+        else:
+            raise ResourceNotFound("Customer not found")
 
         if customer is None:
             raise ResourceNotFound("Customer not found")
+
+        customer_id = customer.id
 
         member_model = customer.organization.feature_settings.get(
             "member_model_enabled", False

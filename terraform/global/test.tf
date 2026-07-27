@@ -28,6 +28,14 @@ resource "tfe_variable" "google_client_secret_test" {
   variable_set_id = tfe_variable_set.test.id
 }
 
+resource "tfe_variable" "google_service_account_json_test" {
+  key             = "google_service_account_json"
+  category        = "terraform"
+  description     = "Google service account JSON key for fetching the organization review AUP for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
 resource "tfe_variable" "openai_api_key_test" {
   key             = "openai_api_key"
   category        = "terraform"
@@ -120,6 +128,14 @@ resource "tfe_variable" "backend_jwks_test" {
   key             = "backend_jwks"
   category        = "terraform"
   description     = "Backend JWKS content for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "lambda_worker_tailscale_token_test" {
+  key             = "lambda_worker_tailscale_token"
+  category        = "terraform"
+  description     = "Tailscale auth token for test Lambda workers"
   sensitive       = true
   variable_set_id = tfe_variable_set.test.id
 }
@@ -240,6 +256,14 @@ resource "tfe_variable" "stripe_webhook_secret_test" {
   key             = "stripe_webhook_secret"
   category        = "terraform"
   description     = "Stripe Webhook Secret for test"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "stripe_account_risk_webhook_secret_test" {
+  key             = "stripe_account_risk_webhook_secret"
+  category        = "terraform"
+  description     = "Stripe Account Risk Webhook Secret for test"
   sensitive       = true
   variable_set_id = tfe_variable_set.test.id
 }
@@ -464,6 +488,43 @@ resource "tfe_variable" "vercel_next_public_stripe_payment_method_configuration_
   key             = "next_public_stripe_payment_method_configuration"
   category        = "terraform"
   description     = "Stripe payment method configuration ID for the Vercel test frontend"
+  sensitive       = true
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "worker_sqs_actors_test" {
+  key             = "worker_sqs_actors"
+  category        = "terraform"
+  description     = "JSON array of Dramatiq actor names routed to the SQS execution engine for test"
+  sensitive       = false
+  value           = "[\"dummy\"]"
+  variable_set_id = tfe_variable_set.test.id
+
+  lifecycle {
+    ignore_changes = [value]
+  }
+}
+
+resource "tfe_variable" "stripe_app_client_id_test" {
+  key             = "stripe_app_client_id"
+  category        = "terraform"
+  description     = "Stripe App OAuth client ID for test"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "stripe_app_client_link_id_test" {
+  key             = "stripe_app_client_link_id"
+  category        = "terraform"
+  description     = "Stripe App OAuth client link ID for test"
+  sensitive       = false
+  variable_set_id = tfe_variable_set.test.id
+}
+
+resource "tfe_variable" "turnstile_secret_test" {
+  key             = "turnstile_secret"
+  category        = "terraform"
+  description     = "Cloudflare Turnstile secret for test"
   sensitive       = true
   variable_set_id = tfe_variable_set.test.id
 }

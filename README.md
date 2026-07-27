@@ -29,21 +29,28 @@
 </div>
 <hr />
 
-## Polar: Open Source payments infrastructure for the 21st century
+## Polar: A billing platform for the intelligence era
 
-Focus on building your passion, while we focus on the infrastructure to get you paid.
+Turn usage into revenue. Polar is the financial layer for a new generation of intelligent software, built for AI startups that need to charge for tokens, agents, and compute without building billing infrastructure from scratch.
 
-- Sell SaaS and digital products in minutes
-- All-in-one funding & monetization platform for developers.
-- Sell access to GitHub repositories, Discord Support channels, File Downloads, License Keys & much more with Digital Products & Subscriptions.
-- We're the merchant of record handling the...
-    - ...boilerplate (billing, receipts, customer accounts etc)
-    - ...headaches (sales tax, VAT)
+- **Ship any pricing model in an afternoon.** Usage billing, subscriptions, seats, credits, trials, and discounts. Compose them however your product charges.
+- **Meter what matters.** Bill tokens, API calls, agent runs, GPU seconds, and storage with precision down to the event.
+- **Checkouts that convert**, realtime metrics, and worldwide tax handled for you.
+- **We're the merchant of record**, so we take on the billing boilerplate (receipts, customer accounts, dunning) and the headaches (sales tax, VAT) on your behalf.
+
+### Built for AI workloads
+
+- **AI completions:** wrap any model with metered token billing on every call.
+- **Autonomous agents:** charge per run with step-level granularity, retries without double-billing.
+- **GPU & compute:** meter fine-tuning, hosted inference, and training runs by the second.
 
 ## Pricing
 
-- Starts at 5% + 50¢ (Starter plan, free)
-- Optional paid plans (Pro, Growth, Scale) with lower rates
+- **Starter** (free): 5.00% + 50¢ per transaction
+- **Pro:** 3.80% + 40¢ per transaction
+- **Growth:** 3.60% + 35¢ per transaction
+- **Scale:** 3.40% + 30¢ per transaction
+- Eligible startups can apply to the [Startup Program](https://polar.sh/startup-program) for a year on our most generous plan
 - Additional fees may apply. [Read more](https://polar.sh/docs/documentation/polar-as-merchant-of-record/fees)
 
 ## Roadmap, Issues & Feature Requests

@@ -303,7 +303,9 @@ const DownloadInvoice = ({
   }, [payout, handleDownloadInvoice, setSelectedPayout, openInvoiceModal])
 
   return (
-    <DropdownMenuItem onClick={onDownload}>Download invoice</DropdownMenuItem>
+    <DropdownMenuItem onClick={onDownload}>
+      {payout.is_invoice_generated ? 'Download invoice' : 'Generate invoice'}
+    </DropdownMenuItem>
   )
 }
 

@@ -3,6 +3,7 @@ from typing import Any
 
 import httpx
 import logfire
+import structlog
 from fastapi import Depends, Query, Request
 from fastapi.responses import RedirectResponse
 from httpx_oauth.clients.github import GitHubOAuth2
@@ -31,7 +32,10 @@ from polar.worker import enqueue_job
 from .. import auth
 from ..schemas.oauth_accounts import AuthorizeResponse
 
+log = structlog.get_logger()
+
 router = APIRouter(prefix="/oauth-accounts", tags=["oauth-accounts", APITag.private])
+
 
 OAUTH_CLIENTS: dict[CustomerOAuthPlatform, BaseOAuth2[Any]] = {
     CustomerOAuthPlatform.github: GitHubOAuth2(
@@ -193,6 +197,35 @@ async def callback(
             for k, v in _get_response_attributes(e.response).items():
                 span.set_attribute(k, v)
         return RedirectResponse(redirect_url, 303)
+    except httpx.RequestError as e:
+        log.warning(
+            "customer_portal.oauth_accounts.callback.access_token_network_error",
+            platform=platform.value,
+            customer_id=str(customer.id),
+            error=str(e),
+        )
+        redirect_url = add_query_parameters(
+            redirect_url,
+            error="Failed to get access token. Please try again later.",
+            error_platform=platform.value,
+        )
+        return RedirectResponse(redirect_url, 303)
+
+    # httpx-oauth only raises on status >= 400, but some providers (e.g. GitHub)
+    # return HTTP 200 with an error body for invalid/expired/reused codes.
+    if "access_token" not in oauth2_token_data:
+        error_params = {
+            "error": "Failed to get access token. Please try again later.",
+            "error_platform": platform.value,
+        }
+        redirect_url = add_query_parameters(redirect_url, **error_params)
+        log.info(
+            "customer_portal.oauth_accounts.callback.access_token_missing",
+            platform=platform.value,
+            customer_id=str(customer.id),
+            oauth2_token_data_keys=list(oauth2_token_data.keys()),
+        )
+        return RedirectResponse(redirect_url, 303)
 
     # Create a session only after the OAuth provider has confirmed the code.
     if is_anonymous(auth_subject):
@@ -226,6 +259,19 @@ async def callback(
         ) as span:
             for k, v in _get_response_attributes(e.response).items():
                 span.set_attribute(k, v)
+        return RedirectResponse(redirect_url, 303)
+    except httpx.RequestError as e:
+        log.warning(
+            "customer_portal.oauth_accounts.callback.profile_network_error",
+            platform=platform.value,
+            customer_id=str(customer.id),
+            error=str(e),
+        )
+        redirect_url = add_query_parameters(
+            redirect_url,
+            error="Failed to get profile information. Please try again later.",
+            error_platform=platform.value,
+        )
         return RedirectResponse(redirect_url, 303)
 
     oauth_account = CustomerOAuthAccount(

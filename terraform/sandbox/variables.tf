@@ -26,6 +26,12 @@ variable "google_client_secret_sandbox" {
   sensitive   = true
 }
 
+variable "google_service_account_json" {
+  description = "Google service account JSON key for fetching the organization review AUP"
+  type        = string
+  sensitive   = true
+}
+
 variable "openai_api_key_sandbox" {
   description = "OpenAI API Key for sandbox"
   type        = string
@@ -102,6 +108,12 @@ variable "backend_sentry_dsn_sandbox" {
 
 variable "backend_jwks_sandbox" {
   description = "Backend JWKS content for sandbox"
+  type        = string
+  sensitive   = true
+}
+
+variable "lambda_worker_tailscale_token" {
+  description = "Tailscale auth token for sandbox Lambda workers"
   type        = string
   sensitive   = true
 }
@@ -197,6 +209,13 @@ variable "stripe_webhook_secret_sandbox" {
   description = "Stripe Webhook Secret for sandbox"
   type        = string
   sensitive   = true
+}
+
+variable "stripe_account_risk_webhook_secret_sandbox" {
+  description = "Stripe Account Risk Webhook Secret for sandbox"
+  type        = string
+  sensitive   = true
+  default     = ""
 }
 
 # Apple (shared across environments)
@@ -410,6 +429,30 @@ variable "next_public_apple_domain_association" {
 
 variable "next_public_stripe_payment_method_configuration" {
   description = "Stripe payment method configuration ID for the Vercel frontend"
+  type        = string
+  sensitive   = true
+}
+
+variable "worker_sqs_actors" {
+  description = "JSON array of Dramatiq actor names routed to the SQS execution engine"
+  type        = string
+  default     = "[\"dummy\"]"
+}
+
+variable "stripe_app_client_id" {
+  description = "Stripe App OAuth client ID"
+  type        = string
+  default     = ""
+}
+
+variable "stripe_app_client_link_id" {
+  description = "Stripe App OAuth client link ID"
+  type        = string
+  default     = ""
+}
+
+variable "turnstile_secret" {
+  description = "Cloudflare Turnstile secret"
   type        = string
   sensitive   = true
 }

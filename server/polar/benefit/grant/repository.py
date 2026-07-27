@@ -153,23 +153,6 @@ class BenefitGrantRepository(
         )
         return await self.get_all(statement)
 
-    async def list_by_customer_and_benefit_type(
-        self,
-        customer: Customer,
-        benefit_type: BenefitType,
-        *,
-        options: Options = (),
-    ) -> Sequence[BenefitGrant]:
-        statement = (
-            self.get_base_statement()
-            .join(Benefit)
-            .where(
-                BenefitGrant.customer_id == customer.id,
-                Benefit.type == benefit_type,
-            )
-        ).options(*options)
-        return await self.get_all(statement)
-
     async def list_errored_by_customer_and_benefit_type(
         self,
         customer: Customer,

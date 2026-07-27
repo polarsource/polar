@@ -103,6 +103,10 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
             ["tmux", "send-keys", "-t", f"{svc}.2", f"{dev_bin} web", "C-m"],
             ["tmux", "send-keys", "-t", f"{svc}.3", f"{dev_bin} stripe --listen", "C-m"],
 
+            # Tag the web pane so `dev switch` can find it reliably (its cwd is
+            # not a stable marker — the stripe pane also lives in the web dir)
+            ["tmux", "set-option", "-p", "-t", f"{svc}.2", "@polar_role", "web"],
+
             # Create second window for general use
             ["tmux", "new-window", "-t", SESSION, "-n", "dev", "-c", root_dir],
 

@@ -1,4 +1,7 @@
-import { useAppealCase } from '@/hooks/queries/org'
+import {
+  useOrganizationReviewStatus,
+  useSupportCase,
+} from '@/hooks/queries/org'
 import { schemas } from '@polar-sh/client'
 import { useSyncExternalStore } from 'react'
 
@@ -38,11 +41,14 @@ export const useAppealCaseUnreadCount = (
 ): number => {
   // For polling for the navigation badge we can do it a bit less often
   const pollInterval = 60_000
-  const { data: thread } = useAppealCase(
+  const enabled = organization.status === 'denied'
+  const { data: reviewStatus } = useOrganizationReviewStatus(
     organization.id,
-    organization.status === 'denied',
+    enabled,
     pollInterval,
   )
+  const caseId = reviewStatus?.appeal_case_id ?? undefined
+  const { data: thread } = useSupportCase(caseId, enabled, pollInterval)
   const seen = useSyncExternalStore(
     subscribe,
     () => getSeenCount(organization.id),

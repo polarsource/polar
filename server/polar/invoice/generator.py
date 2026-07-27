@@ -1,3 +1,4 @@
+import re
 import textwrap
 from datetime import date, datetime
 from pathlib import Path
@@ -39,6 +40,10 @@ def format_percent(rate: float) -> str:
 
 def format_date(date: date | datetime) -> str:
     return _format_date(date, format="long", locale="en_US")
+
+
+def escape_markdown(text: str) -> str:
+    return re.sub(r"(\*\*|__|--|~~)", r"\\\1", text)
 
 
 class InvoiceItem(BaseModel):
@@ -220,7 +225,9 @@ class Invoice(BaseModel):
             seller_address=settings.INVOICES_ADDRESS,
             seller_additional_info=get_polar_additional_info(order.billing_address),
             customer_name=order.billing_name,
-            customer_additional_info=order.tax_id[0] if order.tax_id else None,
+            customer_additional_info=escape_markdown(order.tax_id[0])
+            if order.tax_id
+            else None,
             customer_address=order.billing_address,
             customer_locale=order.customer.locale,
             subtotal_amount=order.subtotal_amount,
@@ -390,6 +397,11 @@ class InvoiceGenerator(FPDF):
             self.add_font(family, fname=bold, style="B")
             self.loaded_font_families.add(family)
 
+        # fpdf markdown preloads styles "I"/"BI"; no italic Inter ships, so alias upright
+        regular, bold = self.font_files[self.font_name]
+        self.add_font(self.font_name, fname=regular, style="I")
+        self.add_font(self.font_name, fname=bold, style="BI")
+
         # Fallback order: Hebrew, Arabic, then CJK with the customer's script
         # first so shared Han chars get the right regional glyph form.
         # customer locale/country first, and then all other scripts.
@@ -435,11 +447,15 @@ class InvoiceGenerator(FPDF):
         # causing subsequent ASCII cells to render with the CJK font's
         # cmap. Re-resolve `current_font` from the canonical font_family +
         # font_style after delegating, so it always matches the logical
-        # font selection.
+        # font selection. When correcting such a drift, also clear
+        # `current_font_is_set_on_page` so fpdf re-emits the font-selection
+        # operator on the next cell; otherwise the corrected font never
+        # reaches the page and the text still renders with the stale cmap.
         super().set_font(family, style, size)
         fontkey = self.font_family + self.font_style
-        if fontkey in self.fonts:
+        if fontkey in self.fonts and self.current_font is not self.fonts[fontkey]:
             self.current_font = self.fonts[fontkey]
+            self.current_font_is_set_on_page = False
 
     def _shape_text(self, text: str) -> str:
         lines = text.split("\n")
@@ -543,6 +559,7 @@ class InvoiceGenerator(FPDF):
             new_y=YPos.NEXT,
         )
         if self.data.seller_additional_info:
+            self.set_font(style="")
             self.multi_cell(
                 80,
                 self.cell_height(),
@@ -574,6 +591,7 @@ class InvoiceGenerator(FPDF):
                 new_y=YPos.NEXT,
             )
         if self.data.customer_additional_info:
+            self.set_font(style="")
             self.multi_cell(
                 80,
                 self.cell_height(),

@@ -47,15 +47,17 @@ const WebhookSettings = (props: { org: schemas['Organization'] }) => {
             <Button asChild onClick={showNewWebhookModal}>
               Add Endpoint
             </Button>
-            <Link
+            <a
               href="https://polar.sh/docs/integrate/webhooks/endpoints"
+              target="_blank"
+              rel="noopener noreferrer"
               className="shrink-0"
             >
               <Button className="gap-x-2" asChild variant="ghost">
                 <span>Documentation</span>
                 <ArrowUpRightIcon className="h-4 w-4" />
               </Button>
-            </Link>
+            </a>
           </div>
         </ListGroup.Item>
       </ListGroup>

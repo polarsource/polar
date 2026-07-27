@@ -1,8 +1,9 @@
-from typing import Any, Protocol, cast
+from typing import Any, Protocol, Unpack, cast
 
 from polar.auth.models import AuthSubject
 from polar.exceptions import PolarError, PolarRequestValidationError, ValidationError
 from polar.models import Benefit, Customer, Member, Organization, User
+from polar.models.benefit_grant import BenefitGrantScopeArgs
 from polar.postgres import AsyncSession
 from polar.redis import Redis
 
@@ -97,6 +98,7 @@ class BenefitServiceProtocol[BP: BenefitProperties, BGP: BenefitGrantProperties]
         update: bool = False,
         attempt: int = 1,
         member: Member | None = None,
+        **scope: Unpack[BenefitGrantScopeArgs],
     ) -> BGP:
         """
         Executes the logic to grant a benefit to a customer.
@@ -110,6 +112,9 @@ class BenefitServiceProtocol[BP: BenefitProperties, BGP: BenefitGrantProperties]
             update: Whether we are updating an already granted benefit.
             attempt: Number of times we attempted to grant the benefit.
             Useful for the worker to implement retry logic.
+            member: The member the benefit is granted to, if any.
+            scope: The scope backing the grant, i.e. the `subscription_id` and/or
+            `order_id` it originates from.
 
         Returns:
             A dictionary with data to store for this specific benefit and customer.

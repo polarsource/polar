@@ -49,7 +49,7 @@ export function TermsCheckbox<T extends FieldValues>({
                       href="https://polar.sh/legal/master-services-terms"
                       className="text-gray-900 underline dark:text-white"
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                     >
                       Terms
                     </a>
@@ -58,7 +58,7 @@ export function TermsCheckbox<T extends FieldValues>({
                       href="https://polar.sh/legal/privacy-policy"
                       className="text-gray-900 underline dark:text-white"
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                     >
                       Privacy Policy
                     </a>{' '}
@@ -67,7 +67,7 @@ export function TermsCheckbox<T extends FieldValues>({
                       href="https://polar.sh/legal/acceptable-use-policy"
                       className="text-gray-900 underline dark:text-white"
                       target="_blank"
-                      rel="noreferrer"
+                      rel="noopener noreferrer"
                     >
                       AUP
                     </a>

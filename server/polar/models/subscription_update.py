@@ -121,15 +121,21 @@ class SubscriptionUpdate(RecordModel):
 
         if self.product is not None:
             assert is_recurring_product(self.product)
-            subscription.product = self.product
-            subscription.subscription_product_prices = [
+            # Resolve new product prices before updating the subscription to
+            # avoid inconsistent states if PriceSet.from_product raises, e.g.
+            # NoPricesForCurrencies.
+            subscription_product_prices = [
                 SubscriptionProductPrice.from_price(price, seats=subscription.seats)
                 for price in PriceSet.from_product(self.product, subscription.currency)
             ]
+            subscription.product = self.product
+            subscription.subscription_product_prices = subscription_product_prices
             subscription.recurring_interval = self.product.recurring_interval
             subscription.recurring_interval_count = (
                 self.product.recurring_interval_count
             )
+            subscription.meter_interval = self.product.meter_interval
+            subscription.meter_interval_count = self.product.meter_interval_count
 
         if self.new_cycle_start is not None:
             subscription.current_period_start = self.new_cycle_start
@@ -149,6 +155,11 @@ class SubscriptionUpdate(RecordModel):
             subscription.discount = None
         elif self.discount is not None:
             subscription.discount = self.discount
+
+        # A product change is a reset: re-anchor the meter clock to the (possibly
+        # new) billing period so the two-clock scheduler wakes on the new cadence.
+        if self.product is not None:
+            subscription.initialize_meter_period(subscription.current_period_start)
 
         self.applied_at = utc_now()
 

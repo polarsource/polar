@@ -324,6 +324,7 @@ class TestCreateCheckout:
                 },
                 id="wrong state",
             ),
+            pytest.param({"country": None}, id="null country"),
         ],
     )
     async def test_invalid_customer_billing_address(
@@ -749,6 +750,26 @@ class TestClientGet:
 
         assert response.status_code == 410
 
+    async def test_expired_blocked_organization(
+        self,
+        api_prefix: str,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            status=CheckoutStatus.expired,
+            expires_at=utc_now() - timedelta(days=1),
+        )
+        checkout.organization.set_status(OrganizationStatus.BLOCKED)
+        await save_fixture(checkout.organization)
+
+        response = await client.get(f"{api_prefix}/client/{checkout.client_secret}")
+
+        assert response.status_code == 410
+
     async def test_valid(
         self, api_prefix: str, client: AsyncClient, checkout_open: Checkout
     ) -> None:
@@ -831,6 +852,25 @@ class TestClientUpdate:
         assert updated_checkout is not None
         assert updated_checkout.user_metadata == {}
 
+    async def test_payment_method(
+        self,
+        api_prefix: str,
+        client: AsyncClient,
+        checkout_open: Checkout,
+    ) -> None:
+        response = await client.patch(
+            f"{api_prefix}/client/{checkout_open.client_secret}",
+            json={"payment_method_type": "upi"},
+        )
+
+        assert response.status_code == 200
+
+        json = response.json()
+        assert json["payment_method_type"] == "upi"
+        assert json["billing_address_fields"]["line1"] == "required"
+        assert json["billing_address_fields"]["city"] == "required"
+        assert json["billing_address_fields"]["postal_code"] == "required"
+
     async def test_update_with_discount_code(
         self,
         api_prefix: str,
@@ -885,6 +925,7 @@ class TestClientConfirm:
                 },
                 id="wrong state",
             ),
+            pytest.param({"country": None}, id="null country"),
         ],
     )
     async def test_invalid_customer_billing_address(

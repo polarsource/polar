@@ -23,6 +23,7 @@ const { diffFingerprints, stripPnpmPeerHashes } = require('./fingerprint-diff')
 const APP_DIR = path.resolve(__dirname, '../..')
 const PLATFORMS = ['ios', 'android']
 const OWN_FLAGS = new Set(['--check-only'])
+const OTA_BRANCH = 'main'
 
 const REASON_LABELS = {
   expoAutolinkingIos: 'native module (iOS autolinking)',
@@ -62,6 +63,39 @@ function readOption(argv, name) {
   return inline ? inline.slice(name.length + 1) : undefined
 }
 
+function git(args) {
+  return execFileSync('git', args, {
+    cwd: APP_DIR,
+    encoding: 'utf8',
+    stdio: ['ignore', 'pipe', 'pipe'],
+  }).trim()
+}
+
+function checkGitState() {
+  const branch = git(['rev-parse', '--abbrev-ref', 'HEAD'])
+  if (branch !== OTA_BRANCH) {
+    return (
+      `On branch "${branch}", but OTAs must ship from "${OTA_BRANCH}". ` +
+      `Switch branches before publishing.`
+    )
+  }
+
+  const dirty = git(['status', '--porcelain'])
+  if (dirty) {
+    const files = dirty
+      .split('\n')
+      .map((line) => `      ${line}`)
+      .join('\n')
+    return (
+      'Working tree has uncommitted changes — the OTA bundle is built from the ' +
+      'working tree, so commit or stash them to avoid shipping unintended code:\n' +
+      files
+    )
+  }
+
+  return undefined
+}
+
 function resolveRuntimeVersion() {
   const { expo } = require(path.join(APP_DIR, 'app.config.js'))
   const policy = expo.runtimeVersion
@@ -77,7 +111,7 @@ function resolveEasCommand() {
     execFileSync('eas', ['--version'], { stdio: 'ignore' })
     return ['eas']
   } catch {
-    return ['npx', 'eas']
+    return ['npx', '--yes', 'eas-cli']
   }
 }
 
@@ -230,6 +264,17 @@ function main(argv) {
       (runtime ? `, runtime "${runtime}" (appVersion policy)` : '') +
       '\n',
   )
+
+  if (!checkOnly) {
+    const gitIssue = checkGitState()
+    if (gitIssue) {
+      console.error('──────────────────────────────────────────────')
+      console.error('OTA preflight blocked by git state:\n')
+      console.error(`  • ${gitIssue}\n`)
+      return 1
+    }
+    console.log(`   ${'git'.padEnd(8)} on ${OTA_BRANCH}, working tree clean`)
+  }
 
   const eas = createEasClient()
   const results = PLATFORMS.map((platform) =>

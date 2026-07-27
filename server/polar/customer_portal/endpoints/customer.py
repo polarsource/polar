@@ -1,4 +1,5 @@
 import json
+from textwrap import dedent
 
 import structlog
 from fastapi import Depends, Request
@@ -10,6 +11,7 @@ from polar.customer.service import customer as main_customer_service
 from polar.eventstream.endpoints import subscribe
 from polar.eventstream.service import Receivers
 from polar.exceptions import ResourceNotFound
+from polar.kit.http import get_content_disposition
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import Customer
 from polar.openapi import APITag
@@ -40,6 +42,14 @@ from ..utils import get_audit_context, get_customer, get_customer_id
 log = structlog.get_logger()
 
 router = APIRouter(prefix="/customers", tags=["customers", APITag.public])
+
+LIST_PAYMENT_METHODS_MINTLIFY_CONTENT = dedent(
+    """
+    <Note>
+      To change the default payment method, call the [`PATCH /v1/customer-portal/customers/me`](/api-reference/customer_portal/update-customer) endpoint with the desired `default_payment_method_id`.
+    </Note>
+    """
+).strip()
 
 
 @router.get("/stream", include_in_schema=False)
@@ -83,7 +93,7 @@ async def export(
     return Response(
         content=json.dumps(data, indent=2),
         media_type="application/json",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
+        headers={"Content-Disposition": get_content_disposition(filename)},
     )
 
 
@@ -110,6 +120,7 @@ async def update(
     "/me/payment-methods",
     summary="List Customer Payment Methods",
     response_model=ListResource[CustomerPaymentMethod],
+    openapi_extra={"x-mint": {"content": LIST_PAYMENT_METHODS_MINTLIFY_CONTENT}},
 )
 async def list_payment_methods(
     auth_subject: auth.CustomerPortalUnionBillingRead,

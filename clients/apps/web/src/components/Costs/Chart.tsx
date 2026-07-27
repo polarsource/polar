@@ -33,6 +33,7 @@ export const Chart = <T extends Record<string, unknown>>({
   xAxisKey,
   xAxisFormatter,
   yAxisFormatter,
+  labelFormatter,
   showGrid = true,
   showLegend = true,
   showYAxis = false,
@@ -62,6 +63,11 @@ export const Chart = <T extends Record<string, unknown>>({
           xAxisFormatter={
             xAxisFormatter
               ? (value) => xAxisFormatter(value as T[keyof T])
+              : undefined
+          }
+          labelFormatter={
+            labelFormatter
+              ? (value) => labelFormatter(value as T[keyof T])
               : undefined
           }
           valueFormatter={yAxisFormatter}

@@ -2,7 +2,7 @@ import { TrialsPage } from '@/components/Landing/features/TrialsPage'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Trials — Polar',
+  title: 'Free Trials',
   description:
     'Free or paid trials with automatic conversion, conversion reminders, and abuse protection — built into your subscriptions.',
   keywords:

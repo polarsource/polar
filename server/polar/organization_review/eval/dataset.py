@@ -185,7 +185,7 @@ def _balance_and_dedup(
 
     log_kwargs["total"] = len(selected)
     log.info(f"dataset.{log_event}", **log_kwargs)
-    return Dataset(cases=selected)
+    return Dataset(name="organization_review", cases=selected)
 
 
 async def extract_dataset(

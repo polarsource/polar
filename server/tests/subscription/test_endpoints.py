@@ -5,7 +5,9 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
+from polar.auth.scope import Scope
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.models import (
     Customer,
@@ -15,14 +17,17 @@ from polar.models import (
     UserOrganization,
 )
 from polar.models.customer_seat import SeatStatus
+from polar.models.order import OrderStatus
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.postgres import AsyncSession
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
     create_canceled_subscription,
     create_customer,
     create_customer_seat,
+    create_order,
     create_product,
     create_subscription,
     create_subscription_with_seats,
@@ -1353,6 +1358,34 @@ class TestGetSubscription:
 
         assert response.status_code == 404
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.subscriptions_read}),
+    )
+    async def test_past_due_at(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        past_due_at = datetime(2025, 6, 1, tzinfo=UTC)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.past_due,
+            started_at=utc_now(),
+            past_due_at=past_due_at,
+        )
+
+        response = await client.get(f"/v1/subscriptions/{subscription.id}")
+
+        assert response.status_code == 200
+        assert response.json()["past_due_at"] == past_due_at.isoformat().replace(
+            "+00:00", "Z"
+        )
+
 
 @pytest.mark.asyncio
 class TestGetChargePreview:
@@ -1373,3 +1406,352 @@ class TestGetChargePreview:
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_paused_with_resume(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        current_period_end = utc_now() + timedelta(days=30)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=current_period_end,
+        )
+        subscription.status = SubscriptionStatus.paused
+        subscription.paused_at = utc_now()
+        subscription.resumes_at = current_period_end + timedelta(days=30)
+        await save_fixture(subscription)
+
+        response = await client.get(
+            f"/v1/subscriptions/{subscription.id}/charge-preview"
+        )
+
+        assert response.status_code == 200
+
+    @pytest.mark.auth
+    async def test_paused_indefinitely_not_found(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.status = SubscriptionStatus.paused
+        subscription.paused_at = utc_now()
+        subscription.resumes_at = None
+        await save_fixture(subscription)
+
+        response = await client.get(
+            f"/v1/subscriptions/{subscription.id}/charge-preview"
+        )
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestGetCancelPreview:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/subscriptions/{uuid.uuid4()}/cancel-preview")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_past_due_no_grace_stops_collection(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+        await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=utc_now(),
+        )
+
+        response = await client.get(
+            f"/v1/subscriptions/{subscription.id}/cancel-preview"
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["stops_collection"] is True
+        assert json["outstanding_amount"] == 1000
+
+    @pytest.mark.auth
+    async def test_past_due_within_grace_keeps_collecting(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        product.organization.subscription_settings = {
+            **product.organization.subscription_settings,
+            "benefit_revocation_grace_period": 7,
+        }
+        await save_fixture(product.organization)
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.status = SubscriptionStatus.past_due
+        subscription.past_due_at = utc_now()
+        await save_fixture(subscription)
+        await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.pending,
+            next_payment_attempt_at=utc_now(),
+        )
+
+        response = await client.get(
+            f"/v1/subscriptions/{subscription.id}/cancel-preview"
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["stops_collection"] is False
+        assert json["outstanding_amount"] is None
+
+    @pytest.mark.auth
+    async def test_active_keeps_collecting(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.get(
+            f"/v1/subscriptions/{subscription.id}/cancel-preview"
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["stops_collection"] is False
+        assert json["outstanding_amount"] is None
+
+
+@pytest.mark.asyncio
+class TestSubscriptionUpdatePause:
+    async def test_anonymous(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"pause_at_period_end": True},
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        current_period_end = utc_now() + timedelta(days=30)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=current_period_end,
+        )
+        resumes_at = current_period_end + timedelta(days=30)
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={
+                "pause_at_period_end": True,
+                "resumes_at": resumes_at.isoformat(),
+            },
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == SubscriptionStatus.active
+        assert data["pause_at_period_end"] is True
+        assert datetime.fromisoformat(data["resumes_at"]) == resumes_at
+        assert data["paused_at"] is None
+
+    @pytest.mark.auth
+    async def test_cancel_scheduled_pause(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.pause_at_period_end = True
+        subscription.resumes_at = utc_now() + timedelta(days=30)
+        await save_fixture(subscription)
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"pause_at_period_end": False},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == SubscriptionStatus.active
+        assert data["pause_at_period_end"] is False
+        assert data["resumes_at"] is None
+        assert data["paused_at"] is None
+
+    @pytest.mark.auth
+    async def test_not_pausable(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=utc_now(),
+            status=SubscriptionStatus.past_due,
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"pause_at_period_end": True},
+        )
+
+        assert response.status_code == 409
+
+
+@pytest.mark.asyncio
+class TestSubscriptionUpdateResume:
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=utc_now(),
+            status=SubscriptionStatus.paused,
+        )
+        subscription.paused_at = utc_now() - timedelta(days=10)
+        subscription.resumes_at = utc_now() + timedelta(days=20)
+        await save_fixture(subscription)
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"resume": True},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == SubscriptionStatus.active
+        assert data["paused_at"] is None
+        assert data["resumes_at"] is None
+
+    @pytest.mark.auth
+    async def test_renewals_disabled_skips_resume(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.capabilities = {
+            **organization.capabilities,
+            "subscription_renewals": False,
+        }
+        await save_fixture(organization)
+
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=utc_now(),
+            status=SubscriptionStatus.paused,
+        )
+        subscription.paused_at = utc_now() - timedelta(days=10)
+        subscription.resumes_at = utc_now() + timedelta(days=20)
+        await save_fixture(subscription)
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"resume": True},
+        )
+
+        # Guard skips the resume: the subscription stays paused, nothing is charged.
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == SubscriptionStatus.paused
+        assert data["paused_at"] is not None
+        assert data["resumes_at"] is not None
+
+    @pytest.mark.auth
+    async def test_not_paused(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.patch(
+            f"/v1/subscriptions/{subscription.id}",
+            json={"resume": True},
+        )
+
+        assert response.status_code == 409

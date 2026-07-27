@@ -34,14 +34,6 @@ class PaymentAnalyticsService:
         self.session = session
         self.payment_repo = PaymentRepository.from_session(session)
 
-    async def get_organization_account_id(self, organization_id: UUID4) -> UUID4 | None:
-        """Get account ID for organization."""
-        result = await self.session.execute(
-            select(Organization.account_id).where(Organization.id == organization_id)
-        )
-        row = result.first()
-        return row[0] if row else None
-
     async def get_succeeded_payments_stats(
         self, organization_id: UUID4
     ) -> tuple[int, int]:
@@ -197,16 +189,6 @@ class PaymentAnalyticsService:
         p90_risk = sorted_scores[p90_index]
 
         return p50_risk, p90_risk
-
-    @staticmethod
-    def determine_risk_level(p90_risk: float) -> str:
-        """Determine risk level based on P90 risk score."""
-        if p90_risk < 65:
-            return "green"
-        elif p90_risk < 75:
-            return "yellow"
-        else:
-            return "red"
 
 
 class OrganizationSetupAnalyticsService:

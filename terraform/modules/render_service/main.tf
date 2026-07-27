@@ -11,8 +11,9 @@ resource "render_env_group" "google" {
   environment_id = var.render_environment_id
   name           = "google-${var.environment}"
   env_vars = {
-    POLAR_GOOGLE_CLIENT_ID     = { value = var.google_secrets.client_id }
-    POLAR_GOOGLE_CLIENT_SECRET = { value = var.google_secrets.client_secret }
+    POLAR_GOOGLE_CLIENT_ID            = { value = var.google_secrets.client_id }
+    POLAR_GOOGLE_CLIENT_SECRET        = { value = var.google_secrets.client_secret }
+    POLAR_GOOGLE_SERVICE_ACCOUNT_JSON = { value = var.google_secrets.service_account_json }
   }
 }
 
@@ -69,6 +70,7 @@ resource "render_env_group" "backend" {
       POLAR_TAX_PROCESSORS                       = { value = var.backend_config.tax_processors }
       POLAR_TAX_RECORD_PROCESSOR                 = { value = var.backend_config.tax_record_processor }
       POLAR_NUMERAL_API_KEY                      = { value = var.backend_secrets.numeral_api_key }
+      POLAR_TURNSTILE_SECRET                     = { value = var.backend_secrets.turnstile_secret }
       POLAR_CUSTOMER_PORTAL_URL_OVERRIDES        = { value = var.backend_config.customer_portal_url_overrides }
     },
     var.backend_config.plain_default_tier_external_id != "" ? {
@@ -127,6 +129,34 @@ resource "render_env_group" "aws_s3" {
   }
 }
 
+# Setting AWS_ROLE_ARN makes Render inject a web-identity token, so boto3
+# assumes the role via OIDC and needs no static keys.
+resource "render_env_group" "secrets_kms" {
+  environment_id = var.render_environment_id
+  name           = "secrets-kms-${var.environment}"
+  env_vars = {
+    POLAR_AWS_KMS_KEY_ID = { value = var.aws_kms_config.key_id }
+    AWS_ROLE_ARN         = { value = var.aws_kms_config.role_arn }
+  }
+}
+
+resource "render_env_group" "worker_sqs" {
+  count          = var.worker_sqs_config != null ? 1 : 0
+  environment_id = var.render_environment_id
+  name           = "worker-sqs-${var.environment}"
+  env_vars = merge(
+    {
+      POLAR_WORKER_SQS_ENABLED      = { value = var.worker_sqs_config.enabled }
+      POLAR_WORKER_SQS_ACTORS       = { value = var.worker_sqs_config.actors }
+      POLAR_WORKER_SQS_QUEUE_PREFIX = { value = var.worker_sqs_config.queue_prefix }
+    },
+    var.worker_sqs_config.aws_access_key_id != null ? {
+      POLAR_WORKER_SQS_AWS_ACCESS_KEY_ID     = { value = var.worker_sqs_config.aws_access_key_id }
+      POLAR_WORKER_SQS_AWS_SECRET_ACCESS_KEY = { value = var.worker_sqs_config.aws_secret_access_key }
+    } : {}
+  )
+}
+
 resource "render_env_group" "github" {
   environment_id = var.render_environment_id
   name           = "github-${var.environment}"
@@ -145,9 +175,12 @@ resource "render_env_group" "stripe" {
   environment_id = var.render_environment_id
   name           = "stripe-${var.environment}"
   env_vars = {
-    POLAR_STRIPE_CONNECT_WEBHOOK_SECRET = { value = var.stripe_secrets.connect_webhook_secret }
-    POLAR_STRIPE_SECRET_KEY             = { value = var.stripe_secrets.secret_key }
-    POLAR_STRIPE_WEBHOOK_SECRET         = { value = var.stripe_secrets.webhook_secret }
+    POLAR_STRIPE_CONNECT_WEBHOOK_SECRET      = { value = var.stripe_secrets.connect_webhook_secret }
+    POLAR_STRIPE_SECRET_KEY                  = { value = var.stripe_secrets.secret_key }
+    POLAR_STRIPE_WEBHOOK_SECRET              = { value = var.stripe_secrets.webhook_secret }
+    POLAR_STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET = { value = var.stripe_secrets.account_risk_webhook_secret }
+    POLAR_STRIPE_APP_CLIENT_ID               = { value = var.stripe_secrets.app_client_id }
+    POLAR_STRIPE_APP_CLIENT_LINK_ID          = { value = var.stripe_secrets.app_client_link_id }
   }
 }
 
@@ -245,18 +278,28 @@ resource "render_env_group" "memory_profile" {
 resource "render_env_group" "database" {
   environment_id = var.render_environment_id
   name           = "database-${var.environment}"
-  env_vars = {
-    POLAR_POSTGRES_DATABASE      = { value = var.api_service_config.postgres_database }
-    POLAR_POSTGRES_HOST          = { value = var.postgres_config.host }
-    POLAR_POSTGRES_PORT          = { value = var.postgres_config.port }
-    POLAR_POSTGRES_USER          = { value = var.postgres_config.user }
-    POLAR_POSTGRES_PWD           = { value = var.postgres_config.password }
-    POLAR_POSTGRES_READ_DATABASE = { value = var.api_service_config.postgres_read_database }
-    POLAR_POSTGRES_READ_HOST     = { value = var.postgres_config.read_host }
-    POLAR_POSTGRES_READ_PORT     = { value = var.postgres_config.read_port }
-    POLAR_POSTGRES_READ_USER     = { value = var.postgres_config.read_user }
-    POLAR_POSTGRES_READ_PWD      = { value = var.postgres_config.read_password }
-  }
+  env_vars = merge(
+    {
+      POLAR_POSTGRES_DATABASE      = { value = var.api_service_config.postgres_database }
+      POLAR_POSTGRES_HOST          = { value = var.postgres_config.host }
+      POLAR_POSTGRES_PORT          = { value = var.postgres_config.port }
+      POLAR_POSTGRES_USER          = { value = var.postgres_config.user }
+      POLAR_POSTGRES_PWD           = { value = var.postgres_config.password }
+      POLAR_POSTGRES_READ_DATABASE = { value = var.api_service_config.postgres_read_database }
+      POLAR_POSTGRES_READ_HOST     = { value = var.postgres_config.read_host }
+      POLAR_POSTGRES_READ_PORT     = { value = var.postgres_config.read_port }
+      POLAR_POSTGRES_READ_USER     = { value = var.postgres_config.read_user }
+      POLAR_POSTGRES_READ_PWD      = { value = var.postgres_config.read_password }
+    },
+    var.postgres_config.host_fallback == null ? {} : {
+      POLAR_POSTGRES_HOST_FALLBACK = { value = var.postgres_config.host_fallback }
+      POLAR_POSTGRES_PORT_FALLBACK = { value = coalesce(var.postgres_config.port_fallback, var.postgres_config.port) }
+    },
+    var.postgres_config.read_host_fallback == null ? {} : {
+      POLAR_POSTGRES_READ_HOST_FALLBACK = { value = var.postgres_config.read_host_fallback }
+      POLAR_POSTGRES_READ_PORT_FALLBACK = { value = coalesce(var.postgres_config.read_port_fallback, var.postgres_config.read_port) }
+    },
+  )
 }
 
 resource "render_env_group" "redis" {
@@ -365,11 +408,18 @@ resource "render_web_service" "worker" {
 
   custom_domains = length(each.value.custom_domains) > 0 ? each.value.custom_domains : null
 
-  env_vars = {
-    SERVICE_NAME             = { value = each.key }
-    dramatiq_prom_port       = { value = each.value.dramatiq_prom_port }
-    POLAR_DATABASE_POOL_SIZE = { value = each.value.database_pool_size }
-  }
+  env_vars = merge(
+    {
+      SERVICE_NAME             = { value = each.key }
+      dramatiq_prom_port       = { value = each.value.dramatiq_prom_port }
+      POLAR_DATABASE_POOL_SIZE = { value = each.value.database_pool_size }
+    },
+    (each.value.redis_host != null && each.value.redis_port != null && each.value.redis_db) ? {
+      POLAR_REDIS_HOST = { value = each.value.redis_host }
+      POLAR_REDIS_PORT = { value = each.value.redis_port }
+      POLAR_REDIS_DB   = { value = each.value.redis_db }
+    } : {}
+  )
 }
 
 resource "render_cron_job" "cron" {
@@ -423,6 +473,17 @@ resource "render_env_group_link" "redis" {
 
 resource "render_env_group_link" "aws_s3" {
   env_group_id = render_env_group.aws_s3.id
+  service_ids  = local.all_service_ids
+}
+
+resource "render_env_group_link" "secrets_kms" {
+  env_group_id = render_env_group.secrets_kms.id
+  service_ids  = local.all_service_ids
+}
+
+resource "render_env_group_link" "worker_sqs" {
+  count        = var.worker_sqs_config != null ? 1 : 0
+  env_group_id = render_env_group.worker_sqs[0].id
   service_ids  = local.all_service_ids
 }
 

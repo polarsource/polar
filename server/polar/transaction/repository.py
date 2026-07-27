@@ -1,7 +1,7 @@
 from collections.abc import Sequence
 from uuid import UUID
 
-from sqlalchemy import Select, func, or_, update
+from sqlalchemy import Select, and_, func, or_, update
 from sqlalchemy.orm import selectinload
 
 from polar.kit.repository import (
@@ -20,6 +20,39 @@ class TransactionRepository(
     RepositoryBase[Transaction],
 ):
     model = Transaction
+
+    async def get_all_unpaid_by_account(self, account: UUID) -> Sequence[Transaction]:
+        statement = (
+            self.get_base_statement()
+            .join(Account, Account.id == Transaction.account_id)
+            .where(
+                Transaction.account_id == account,
+                Transaction.payout_transaction_id.is_(None),
+                or_(
+                    # Balance transactions that are either :
+                    # * Ready to be paid out (after the payout delay)
+                    # * Payout fees we just incurred (we need to pay them out immediately)
+                    and_(
+                        Transaction.type == TransactionType.balance,
+                        or_(
+                            Transaction.created_at + Account.payout_transaction_delay
+                            <= func.now(),
+                            Transaction.platform_fee_type.in_(
+                                PlatformFeeType.payout_fee_types()
+                            ),
+                        ),
+                    ),
+                    # Payout reversal transactions should always be included
+                    Transaction.type == TransactionType.payout_reversal,
+                ),
+            )
+            .options(
+                selectinload(Transaction.balance_reversal_transaction),
+                selectinload(Transaction.balance_reversal_transactions),
+                selectinload(Transaction.payment_transaction),
+            )
+        )
+        return await self.get_all(statement)
 
     async def get_all_paid_transactions_by_payout(
         self, payout_transaction_id: UUID
@@ -68,30 +101,6 @@ class PaymentTransactionRepository(TransactionRepository):
 
 
 class BalanceTransactionRepository(TransactionRepository):
-    async def get_all_unpaid_by_account(self, account: UUID) -> Sequence[Transaction]:
-        statement = (
-            self.get_base_statement()
-            .join(Account, Account.id == Transaction.account_id)
-            .where(
-                Transaction.type == TransactionType.balance,
-                Transaction.account_id == account,
-                Transaction.payout_transaction_id.is_(None),
-                or_(
-                    Transaction.created_at + Account.payout_transaction_delay
-                    <= func.now(),
-                    Transaction.platform_fee_type.in_(
-                        PlatformFeeType.payout_fee_types()
-                    ),
-                ),
-            )
-            .options(
-                selectinload(Transaction.balance_reversal_transaction),
-                selectinload(Transaction.balance_reversal_transactions),
-                selectinload(Transaction.payment_transaction),
-            )
-        )
-        return await self.get_all(statement)
-
     async def reset_payout_transaction_id(self, payout_transaction_id: UUID) -> None:
         statement = (
             update(Transaction)

@@ -1,4 +1,5 @@
 import uuid
+from collections import Counter
 from datetime import timedelta
 from decimal import Decimal
 from typing import Literal
@@ -30,6 +31,7 @@ from polar.meter.service import meter as meter_service
 from polar.meter.unit import MeterUnit
 from polar.models import (
     Account,
+    BillingEntry,
     Customer,
     Event,
     Meter,
@@ -44,6 +46,7 @@ from polar.models.billing_entry import BillingEntryDirection
 from polar.models.customer_seat import SeatStatus
 from polar.models.event import EventSource
 from polar.postgres import AsyncSession
+from polar.subscription.repository import SubscriptionProductPriceRepository
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -1258,6 +1261,74 @@ class TestCreateBillingEntries:
             "subscription.update_meters", metered_subscription.id
         )
 
+    async def test_multiple_customers(
+        self,
+        enqueue_job_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        meter: Meter,
+        organization: Organization,
+    ) -> None:
+        customer_1 = await create_customer(
+            save_fixture, organization=organization, email="customer-1@example.com"
+        )
+        customer_2 = await create_customer(
+            save_fixture, organization=organization, email="customer-2@example.com"
+        )
+        customer_without_subscription = await create_customer(
+            save_fixture, organization=organization, email="none@example.com"
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        subscription_1 = await create_active_subscription(
+            save_fixture, customer=customer_1, product=product
+        )
+        subscription_2 = await create_active_subscription(
+            save_fixture, customer=customer_2, product=product
+        )
+        events = [
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer_1,
+                metadata={"tokens": 20, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer_2,
+                metadata={"tokens": 10, "model": "lite"},
+            ),
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer_without_subscription,
+                metadata={"tokens": 5, "model": "lite"},
+            ),
+        ]
+        await event_service._create_meter_events(session, events)
+
+        entries = await meter_service.create_billing_entries(session, meter)
+
+        assert [
+            (entry.event, entry.customer, entry.subscription) for entry in entries
+        ] == [
+            (events[0], customer_1, subscription_1),
+            (events[1], customer_2, subscription_2),
+        ]
+        assert meter.last_billed_event == events[-1]
+        assert enqueue_job_mock.call_count == 2
+        enqueue_job_mock.assert_any_call(
+            "subscription.update_meters", subscription_1.id
+        )
+        enqueue_job_mock.assert_any_call(
+            "subscription.update_meters", subscription_2.id
+        )
+
     async def test_last_billed_event(
         self,
         enqueue_job_mock: AsyncMock,
@@ -1353,6 +1424,150 @@ class TestCreateBillingEntries:
         assert len(entries) == 1
         assert entries[0].customer == customer
         assert entries[0].subscription == subscription
+
+    async def test_unresolved_external_customers_do_not_expand_page(
+        self,
+        enqueue_job_mock: AsyncMock,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        metered_subscription: Subscription,
+    ) -> None:
+        mocker.patch("polar.meter.service._BILLING_ENTRY_BATCH_SIZE", 2)
+        events = [
+            await create_event(
+                save_fixture,
+                organization=customer.organization,
+                external_customer_id=f"unresolved-{index}",
+                metadata={"tokens": 10, "model": "lite"},
+            )
+            for index in range(2)
+        ]
+        events.append(
+            await create_event(
+                save_fixture,
+                organization=customer.organization,
+                customer=customer,
+                metadata={"tokens": 10, "model": "lite"},
+            )
+        )
+        await event_service._create_meter_events(session, events)
+
+        first_page_entries = await meter_service.create_billing_entries(session, meter)
+
+        assert first_page_entries == []
+        assert meter.last_billed_event == events[1]
+        enqueue_job_mock.assert_called_once_with("meter.billing_entries", meter.id)
+
+        enqueue_job_mock.reset_mock()
+        second_page_entries = await meter_service.create_billing_entries(session, meter)
+
+        assert [entry.event for entry in second_page_entries] == [events[2]]
+        assert meter.last_billed_event == events[2]
+        enqueue_job_mock.assert_called_once_with(
+            "subscription.update_meters", metered_subscription.id
+        )
+
+    async def test_backlog_across_reenqueued_pages(
+        self,
+        enqueue_job_mock: AsyncMock,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        meter: Meter,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.meter.service._BILLING_ENTRY_BATCH_SIZE", 2)
+        price_lookup_spy = mocker.spy(
+            SubscriptionProductPriceRepository, "get_by_customers_and_meter"
+        )
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+
+        customers: list[Customer] = []
+        subscriptions: list[Subscription] = []
+        for i in range(3):
+            customer = await create_customer(
+                save_fixture,
+                organization=organization,
+                email=f"batch-customer-{i}@example.com",
+            )
+            subscription = await create_active_subscription(
+                save_fixture, customer=customer, product=product
+            )
+            customers.append(customer)
+            subscriptions.append(subscription)
+
+        customer_without_subscription = await create_customer(
+            save_fixture, organization=organization, email="batch-none@example.com"
+        )
+
+        # Five events across three task invocations. The last event has no
+        # subscription and must not produce an entry, but must still advance the
+        # watermark.
+        events: list[Event] = []
+        for i in range(4):
+            events.append(
+                await create_event(
+                    save_fixture,
+                    organization=organization,
+                    customer=customers[i % 3],
+                    metadata={"tokens": 10, "model": "lite"},
+                )
+            )
+        events.append(
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer_without_subscription,
+                metadata={"tokens": 10, "model": "lite"},
+            )
+        )
+        await event_service._create_meter_events(session, events)
+
+        entries: list[BillingEntry] = []
+        for expected_watermark in (events[1], events[3], events[4]):
+            entries.extend(await meter_service.create_billing_entries(session, meter))
+            assert meter.last_billed_event == expected_watermark
+
+        assert [
+            (entry.event, entry.customer, entry.subscription) for entry in entries
+        ] == [(events[i], customers[i % 3], subscriptions[i % 3]) for i in range(4)]
+
+        assert meter.last_billed_event == events[-1]
+
+        assert price_lookup_spy.call_count == 3
+
+        continuation_jobs = [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args[0] == "meter.billing_entries"
+        ]
+        assert [call.args for call in continuation_jobs] == [
+            ("meter.billing_entries", meter.id),
+            ("meter.billing_entries", meter.id),
+        ]
+
+        subscription_jobs = [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args[0] == "subscription.update_meters"
+        ]
+        assert Counter(call.args[1] for call in subscription_jobs) == Counter(
+            (
+                subscriptions[0].id,
+                subscriptions[1].id,
+                subscriptions[2].id,
+                subscriptions[0].id,
+            )
+        )
 
 
 @pytest.mark.asyncio
@@ -1667,6 +1882,127 @@ class TestCreateBillingEntriesWithSeats:
 
         enqueue_job_mock.assert_called_once_with(
             "subscription.update_meters", billing_manager_subscription.id
+        )
+
+    async def test_seat_holders_across_reenqueued_pages(
+        self,
+        enqueue_job_mock: AsyncMock,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        account: Account,
+    ) -> None:
+        mocker.patch("polar.meter.service._BILLING_ENTRY_BATCH_SIZE", 2)
+        price_lookup_spy = mocker.spy(
+            SubscriptionProductPriceRepository, "get_by_customers_and_meter"
+        )
+
+        seat_org = await create_organization(
+            save_fixture, account, feature_settings={"seat_based_pricing_enabled": True}
+        )
+
+        meter = await create_meter(
+            save_fixture,
+            name="Lite Model Usage",
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="model", operator=FilterOperator.eq, value="lite"
+                    )
+                ],
+            ),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+            organization=seat_org,
+        )
+
+        billing_manager = await create_customer(save_fixture, organization=seat_org)
+
+        seat_product = await create_product(
+            save_fixture,
+            organization=seat_org,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd"), ("seat", 1000, "usd")],
+        )
+
+        billing_manager_subscription = await create_subscription_with_seats(
+            save_fixture,
+            product=seat_product,
+            customer=billing_manager,
+            seats=5,
+        )
+        await session.refresh(
+            billing_manager_subscription, ["subscription_product_prices"]
+        )
+
+        seat_holders: list[Customer] = []
+        for i in range(3):
+            seat_holder = await create_customer(
+                save_fixture,
+                organization=seat_org,
+                email=f"seat_holder_{i}@example.com",
+            )
+            seat = await create_customer_seat(
+                save_fixture,
+                subscription=billing_manager_subscription,
+                customer=seat_holder,
+                status=SeatStatus.claimed,
+                claimed_at=utc_now(),
+            )
+            await session.refresh(seat, ["subscription", "customer"])
+            assert seat.subscription is not None
+            await session.refresh(
+                seat.subscription,
+                ["product", "customer", "subscription_product_prices"],
+            )
+            await session.refresh(seat.subscription.product, ["organization"])
+            seat_holders.append(seat_holder)
+
+        timestamp = utc_now()
+        events: list[Event] = []
+        for i in range(5):
+            events.append(
+                await create_event(
+                    save_fixture,
+                    timestamp=timestamp + timedelta(seconds=i + 1),
+                    organization=seat_org,
+                    customer=seat_holders[i % 3],
+                    metadata={"tokens": 10, "model": "lite"},
+                )
+            )
+        await event_service._create_meter_events(session, events)
+
+        entries: list[BillingEntry] = []
+        for _ in range(3):
+            entries.extend(await meter_service.create_billing_entries(session, meter))
+
+        assert len(entries) == 5
+        for entry in entries:
+            assert entry.customer == billing_manager
+            assert entry.subscription == billing_manager_subscription
+            assert entry.product_price == seat_product.prices[0]
+            assert entry.direction == BillingEntryDirection.debit
+
+        assert meter.last_billed_event == events[-1]
+
+        assert price_lookup_spy.call_count == 3
+
+        assert (
+            sum(
+                call.args == ("meter.billing_entries", meter.id)
+                for call in enqueue_job_mock.call_args_list
+            )
+            == 2
+        )
+        assert (
+            sum(
+                call.args
+                == ("subscription.update_meters", billing_manager_subscription.id)
+                for call in enqueue_job_mock.call_args_list
+            )
+            == 3
         )
 
     async def test_billing_manager_is_seat_holder(

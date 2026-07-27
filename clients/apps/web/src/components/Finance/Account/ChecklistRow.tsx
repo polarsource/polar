@@ -4,17 +4,39 @@ import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { useAccountSetup } from '@/providers/accountSetup'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
+import { Pill, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import { AnimatePresence, motion } from 'motion/react'
 import { useContext, useEffect, useState } from 'react'
 import { StatusIcon } from './StatusIcon'
 import { COMMON_REASON_LABELS, STEP_CONFIG } from './sections'
+import {
+  OPTIONAL_STEP_KEYS,
+  STEP_ACTION_LABELS,
+  STEP_DESCRIPTIONS,
+} from './sections/stepLabels'
 
 interface Props {
   step?: schemas['OrganizationReviewCheck']
   isLoading: boolean
+}
+
+const collapsedActionLabel = (
+  step: schemas['OrganizationReviewCheck'],
+): string => {
+  const perStep = STEP_ACTION_LABELS[step.key]?.[step.status]
+  if (perStep) return perStep
+  switch (step.status) {
+    case 'pending':
+      return 'Add'
+    case 'failed':
+      return 'Fix'
+    case 'warning':
+      return 'Review'
+    default:
+      return 'Update'
+  }
 }
 
 export const ChecklistRow = ({ step, isLoading }: Props) => {
@@ -49,6 +71,7 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
   const stepConfig = STEP_CONFIG[step.key]
   const renderSection = stepConfig?.render
   const label = stepConfig?.label ?? step.key
+  const isOptional = OPTIONAL_STEP_KEYS.has(step.key)
   const reasonItems = (step.reasons ?? [])
     .map(
       (reason) =>
@@ -61,21 +84,29 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
       : reasonItems.length > 1
         ? 'Multiple issues need your attention'
         : reasonItems[0]
+  const subtitle =
+    step.status === 'passed'
+      ? undefined
+      : (reasonText ?? STEP_DESCRIPTIONS[step.key])
   const isActionable = !!renderSection
-  const collapsedLabel = step.status === 'pending' ? 'Add' : 'Update'
   const showExpanded = isExpanded && !!renderSection
 
   return (
     <Box flexDirection="column">
       <Box flexDirection="column" rowGap="m">
         <Box alignItems="center" columnGap="s">
-          <StatusIcon status={step.status} />
-          <Text variant="label">{label}</Text>
-          {reasonText && (
-            <Text variant="caption" color="muted">
-              {reasonText}
-            </Text>
-          )}
+          <StatusIcon status={step.status} reasons={step.reasons} />
+          <Box flexDirection="column" rowGap="none">
+            <Box alignItems="center" columnGap="s">
+              <Text variant="label">{label}</Text>
+              {isOptional && <Pill color="gray">Optional</Pill>}
+            </Box>
+            {subtitle && (
+              <Text variant="caption" color="muted">
+                {subtitle}
+              </Text>
+            )}
+          </Box>
           {isActionable && (
             <Box display="block" marginLeft="auto">
               <Button
@@ -84,7 +115,7 @@ export const ChecklistRow = ({ step, isLoading }: Props) => {
                 onClick={() => setIsExpanded((prev) => !prev)}
                 aria-expanded={isExpanded}
               >
-                {isExpanded ? 'Close' : collapsedLabel}
+                {isExpanded ? 'Close' : collapsedActionLabel(step)}
               </Button>
             </Box>
           )}

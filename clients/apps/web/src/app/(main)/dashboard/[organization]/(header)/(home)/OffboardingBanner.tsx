@@ -22,7 +22,7 @@ export const OffboardingBanner = ({ organization }: OffboardingBannerProps) => {
       <Box flexDirection="column" rowGap="s">
         <Box alignItems="center" columnGap="s">
           <AlertTriangleIcon className="h-4 w-4 shrink-0" />
-          <Text as="strong">Your organization is being offboarded</Text>
+          <Text variant="title">Your organization is being offboarded</Text>
         </Box>
         <Box maxWidth="45rem">
           <Text color="muted">

@@ -3,7 +3,7 @@ title: "Customer State"
 description: "The quickest way to integrate billing in your application"
 ---
 
-Customer State is a concept allowing you to query for the current state of a customer, including their active subscriptions and granted [benefits](/features/benefits/introduction), in a single [API call](/api-reference/customers/state-external) or single [webhook event](/api-reference/webhooks/customer.state_changed).
+Customer State is a concept allowing you to query for the current state of a customer, including their active subscriptions and granted [benefits](/features/benefits/introduction), in a single [API call](/api-reference/customers/get-customer-state-by-external-id) or single [webhook event](/api-reference/customerstate_changed).
 
 Combined with the [External ID](/features/customer-management#external-id) feature, you can get up-and-running in minutes.
 
@@ -22,7 +22,7 @@ Thus, with that single object, you have all the required information to check if
   title="Get Customer State by External ID"
   icon="ring"
   iconType="duotone"
-  href="/api-reference/customers/state-external"
+  href="/api-reference/customers/get-customer-state-by-external-id"
   horizontal
 >
   One endpoint to rule them all, using your own customer ID.
@@ -32,7 +32,7 @@ Thus, with that single object, you have all the required information to check if
   title="Get Customer State "
   icon="ring"
   iconType="duotone"
-  href="/api-reference/customers/state"
+  href="/api-reference/customers/get-customer-state"
   horizontal
 >
   The same one, but with internal Polar customer ID.
@@ -52,7 +52,7 @@ By subscribing to this webhook event, you keep your system up-to-date and update
   title="customer.state_changed"
   icon="ring"
   iconType="duotone"
-  href="/api-reference/webhooks/customer.state_changed"
+  href="/api-reference/customerstate_changed"
   horizontal
 >
   One webhook to rule them all.

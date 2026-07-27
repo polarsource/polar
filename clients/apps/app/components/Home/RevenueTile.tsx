@@ -3,7 +3,7 @@ import { useTheme } from '@/design-system/useTheme'
 import { useMetrics } from '@/hooks/polar/metrics'
 import { OrganizationContext } from '@/providers/OrganizationProvider'
 import { formatCurrency } from '@polar-sh/currency'
-import { subMonths } from 'date-fns'
+import { subDays } from 'date-fns'
 import { useContext, useEffect, useMemo } from 'react'
 import { useSharedValue, withDelay, withTiming } from 'react-native-reanimated'
 import { CartesianChart, Line } from 'victory-native'
@@ -18,7 +18,7 @@ export const RevenueTile = ({ loading }: RevenueTileProps) => {
   const { organization } = useContext(OrganizationContext)
   const theme = useTheme()
 
-  const startDate = useMemo(() => subMonths(new Date(), 1), [])
+  const startDate = useMemo(() => subDays(new Date(), 29), [])
   const endDate = useMemo(() => new Date(), [])
 
   const metrics = useMetrics(organization?.id, startDate, endDate, {

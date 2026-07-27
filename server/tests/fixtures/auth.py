@@ -1,10 +1,20 @@
+from datetime import timedelta
 from typing import Any, Literal
 
 import pytest
 
 from polar.auth.models import Anonymous, AuthSubject, Subject
 from polar.auth.scope import Scope
-from polar.models import Customer, Member, Organization, User
+from polar.config import settings
+from polar.kit.utils import utc_now
+from polar.models import Customer, Member, Organization, User, UserSession
+
+
+def make_session_stale(auth_subject: AuthSubject[User]) -> None:
+    assert isinstance(auth_subject.session, UserSession)
+    auth_subject.session.created_at = utc_now() - (
+        settings.USER_SESSION_FRESHNESS_TTL + timedelta(minutes=1)
+    )
 
 
 class AuthSubjectFixture:
@@ -106,9 +116,8 @@ def auth_subject(
     if isinstance(subject, User):
         from unittest.mock import MagicMock
 
-        from polar.models import UserSession
-
         session = MagicMock(spec=UserSession)
+        session.created_at = utc_now()
 
     return AuthSubject(subject, auth_subject_fixture.scopes, session)
 

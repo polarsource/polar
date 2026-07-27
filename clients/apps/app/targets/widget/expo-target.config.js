@@ -5,6 +5,7 @@ module.exports = (config) => ({
   entitlements: {
     'com.apple.security.application-groups':
       config.ios.entitlements['com.apple.security.application-groups'],
+    'keychain-access-groups': config.ios.entitlements['keychain-access-groups'],
   },
   colors: {
     accent: '#FF7B54',

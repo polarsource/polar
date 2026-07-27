@@ -27,7 +27,11 @@ class FeedbackService:
         membership = await user_organization_service.get_by_user_and_org(
             session, user.id, create_schema.organization_id
         )
-        if membership is None:
+        out_of_scope = (
+            auth_subject.organization_ids is not None
+            and create_schema.organization_id not in auth_subject.organization_ids
+        )
+        if membership is None or out_of_scope:
             raise PolarRequestValidationError(
                 [
                     {

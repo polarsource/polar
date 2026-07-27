@@ -90,17 +90,17 @@ export const getPreviousParams = (
   return {
     '24h': {
       startDate: subHours(startDate, 24),
-      endDate: startDate,
+      endDate: subDays(startDate, 1),
       title: '24h',
     },
     '30d': {
       startDate: subDays(startDate, 30),
-      endDate: startDate,
+      endDate: subDays(startDate, 1),
       title: '30d',
     },
     '3m': {
       startDate: subMonths(startDate, 3),
-      endDate: startDate,
+      endDate: subDays(startDate, 1),
       title: '3m',
     },
   }

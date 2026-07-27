@@ -102,7 +102,7 @@ describe('AmountLabel', () => {
   })
 
   describe('with intervalCount > 1', () => {
-    it('renders ordinal interval count for every 3rd month', () => {
+    it('renders interval count for every 3 months', () => {
       const { container } = render(
         <AmountLabel
           amount={2999}
@@ -114,11 +114,11 @@ describe('AmountLabel', () => {
         />,
       )
       expect(container.textContent).toContain('$29.99')
-      expect(container.textContent).toContain('3rd')
-      expect(container.textContent).toContain('mo')
+      expect(container.textContent).toContain('/ 3 mo')
+      expect(container.textContent).not.toContain('3rd')
     })
 
-    it('renders ordinal interval count for every 2nd year', () => {
+    it('renders interval count for every 2 years', () => {
       const { container } = render(
         <AmountLabel
           amount={19999}
@@ -130,8 +130,8 @@ describe('AmountLabel', () => {
         />,
       )
       expect(container.textContent).toContain('$199.99')
-      expect(container.textContent).toContain('2nd')
-      expect(container.textContent).toContain('yr')
+      expect(container.textContent).toContain('/ 2 yr')
+      expect(container.textContent).not.toContain('2nd')
     })
   })
 

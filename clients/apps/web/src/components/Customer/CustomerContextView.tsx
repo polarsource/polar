@@ -2,17 +2,18 @@
 
 import { StatisticCard } from '@/components/Shared/StatisticCard'
 import { useMetrics } from '@/hooks/queries/metrics'
+import { buildCustomerDashboardPath } from '@/utils/customer'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Pill } from '@polar-sh/orbit'
-import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import Link from 'next/link'
+import { ContextCard } from '../Shared/ContextCard'
 import { DetailRow } from '../Shared/DetailRow'
 import { useSubscriptions } from '@/hooks/queries'
-import { PropsWithChildren } from 'react'
+import { getSubscriptionStatusBorderColor } from '../Subscriptions/utils'
 
 interface CustomerContextViewProps {
   organization: schemas['Organization']
@@ -48,13 +49,17 @@ export const CustomerContextView = ({
             name={customer.name || customer.email || '—'}
             className="size-12 text-sm"
           />
-          <div className="flex flex-col">
-            {(customer.name?.length ?? 0) > 0 ? customer.name : '—'}
-            {customer.deleted_at && (
-              <Pill className="ml-2 text-xs" color="red">
-                Deleted
-              </Pill>
-            )}
+          <div className="flex flex-col items-start">
+            <div className="flex flex-row items-center gap-2">
+              <span>
+                {(customer.name?.length ?? 0) > 0 ? customer.name : '—'}
+              </span>
+              {customer.deleted_at && (
+                <Pill className="text-xs" color="red">
+                  Deleted
+                </Pill>
+              )}
+            </div>
 
             <div className="dark:text-polar-500 flex flex-row items-center gap-1 text-sm text-gray-500">
               {customer.email}
@@ -75,7 +80,7 @@ export const CustomerContextView = ({
           </StatisticCard>
         </div>
         <Link
-          href={`/dashboard/${organization.slug}/customers/${customer.id}?query=${customer.email}`}
+          href={buildCustomerDashboardPath(organization.slug, customer)}
           className="flex flex-row items-center gap-4"
         >
           <Button className="w-full" size="lg" variant="secondary">
@@ -150,20 +155,11 @@ export const CustomerContextView = ({
   )
 }
 
-type ContextCardProps = PropsWithChildren & {}
-
-const ContextCard = (props: ContextCardProps) => {
-  return (
-    <ShadowBox className="dark:border-polar-800 flex flex-col gap-4 border-gray-200 bg-white p-6 md:shadow-xs lg:rounded-2xl">
-      {props.children}
-    </ShadowBox>
-  )
-}
-
 const STATUS_DISPLAY_NAMES: Record<schemas['SubscriptionStatus'], string> = {
   active: 'Active',
   trialing: 'Trialing',
   past_due: 'Past Due',
+  paused: 'Paused',
   unpaid: 'Unpaid',
   canceled: 'Canceled',
   incomplete: 'Incomplete',
@@ -174,34 +170,29 @@ const STATUS_ORDER: Record<schemas['SubscriptionStatus'], number> = {
   active: 0,
   trialing: 1,
   past_due: 2,
-  unpaid: 3,
-  incomplete: 4,
-  canceled: 5,
-  incomplete_expired: 6,
+  paused: 3,
+  unpaid: 4,
+  incomplete: 5,
+  canceled: 6,
+  incomplete_expired: 7,
 }
 
-const STATUS_COLORS: Record<schemas['SubscriptionStatus'], string> = {
-  active: 'border-green-500',
-  trialing: 'border-blue-500',
-  past_due: 'border-yellow-500',
-  unpaid: 'border-orange-500',
-  canceled: 'border-red-500',
-  incomplete: 'dark:border-polar-500 border-gray-500',
-  incomplete_expired: 'dark:border-polar-500 border-gray-500',
+const INTERVAL_LABELS: Record<schemas['RecurringInterval'], string> = {
+  day: 'Daily',
+  week: 'Weekly',
+  month: 'Monthly',
+  year: 'Yearly',
 }
 
-const INTERVAL_LABELS: Record<
-  schemas['SubscriptionRecurringInterval'],
-  string
-> = { day: 'Daily', week: 'Weekly', month: 'Monthly', year: 'Yearly' }
-
-const INTERVAL_PLURAL: Record<
-  schemas['SubscriptionRecurringInterval'],
-  string
-> = { day: 'days', week: 'weeks', month: 'months', year: 'years' }
+const INTERVAL_PLURAL: Record<schemas['RecurringInterval'], string> = {
+  day: 'days',
+  week: 'weeks',
+  month: 'months',
+  year: 'years',
+}
 
 const formatInterval = (
-  interval: schemas['SubscriptionRecurringInterval'],
+  interval: schemas['RecurringInterval'],
   count: number,
 ): string =>
   count === 1
@@ -217,10 +208,10 @@ const SubscriptionRow = ({
   subscription,
   organization,
 }: SubscriptionRowProps) => {
-  const statusColor =
-    subscription.cancel_at_period_end && subscription.status === 'active'
-      ? 'border-yellow-500'
-      : STATUS_COLORS[subscription.status]
+  const statusColor = getSubscriptionStatusBorderColor(
+    subscription.status,
+    subscription.cancel_at_period_end,
+  )
 
   const formattedPrice =
     subscription.amount === 0

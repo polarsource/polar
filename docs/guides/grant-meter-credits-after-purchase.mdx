@@ -210,7 +210,7 @@ Test that credits are properly granted when a customer makes a purchase.
     Check your server logs to confirm the `order.paid` webhook was received.
   </Step>
   <Step title="Check customer balance">
-    Use the [Customer Meters API](/api-reference/customer-meters/list) to verify the credits were applied:
+    Use the [Customer Meters API](/api-reference/customer_meters/list-customer-meters) to verify the credits were applied:
     
     ```typescript
     const meters = await polar.customerMeters.list({

@@ -9,6 +9,7 @@ import Link from 'next/link'
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { WidgetContainer } from './WidgetContainer'
+import { WidgetGuard } from './WidgetGuard'
 
 const orderStatusBadgeColor = (
   order: schemas['Order'],
@@ -25,11 +26,10 @@ const orderStatusBadgeColor = (
 }
 
 interface OrderCardProps {
-  className?: string
   order: schemas['Order']
 }
 
-const OrderCard = ({ className, order }: OrderCardProps) => {
+const OrderCard = ({ order }: OrderCardProps) => {
   const createdAtDate = new Date(order.created_at)
 
   const displayDate = createdAtDate.toLocaleDateString('en-US', {
@@ -41,12 +41,7 @@ const OrderCard = ({ className, order }: OrderCardProps) => {
   })
 
   return (
-    <Card
-      className={twMerge(
-        className,
-        'dark:bg-polar-800 flex flex-col gap-y-1 rounded-xl border-none bg-gray-50 px-4 py-4 transition-opacity hover:opacity-60',
-      )}
-    >
+    <Card className="dark:bg-polar-800 flex flex-col gap-y-1 rounded-xl border-none bg-gray-50 px-4 py-4 transition-opacity hover:opacity-60">
       <div className="dark:text-polar-500 flex flex-row items-baseline justify-between text-sm text-gray-500">
         <span>{displayDate}</span>
         <Status
@@ -72,14 +67,26 @@ export interface OrdersWidgetProps {
   className?: string
 }
 
-export const OrdersWidget = ({ className }: OrdersWidgetProps) => {
+const WIDGET_TITLE = 'Latest Orders'
+
+export const OrdersWidget = ({ className }: OrdersWidgetProps) => (
+  <WidgetGuard
+    permission="sales:read"
+    title={WIDGET_TITLE}
+    className={twMerge('min-h-80', className)}
+  >
+    <OrdersWidgetContent className={className} />
+  </WidgetGuard>
+)
+
+const OrdersWidgetContent = ({ className }: OrdersWidgetProps) => {
   const { organization: org } = useContext(OrganizationContext)
 
   const orders = useOrders(org.id, { limit: 10, sorting: ['-created_at'] })
 
   return (
     <WidgetContainer
-      title="Latest Orders"
+      title={WIDGET_TITLE}
       action={
         <Link href={`/dashboard/${org.slug}/sales`}>
           <Button

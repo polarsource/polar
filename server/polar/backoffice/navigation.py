@@ -26,6 +26,11 @@ NAVIGATION = [
         "Payouts", "payouts:list", active_route_name_prefix="payouts:"
     ),
     navigation.NavigationItem(
+        "Payout Accounts",
+        "payout_accounts:list",
+        active_route_name_prefix="payout_accounts:",
+    ),
+    navigation.NavigationItem(
         "Email Logs", "email_logs:list", active_route_name_prefix="email_logs:"
     ),
     navigation.NavigationItem(

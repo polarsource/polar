@@ -9,7 +9,7 @@ from tagflow import tag, text
 
 from polar.models import Organization
 
-from ....components import card
+from ....components import card, dispute_status_badge
 from ....support_cases.queries import TYPE_LABELS, Row
 from ....support_cases.urls import case_detail_url
 
@@ -55,6 +55,10 @@ class SupportCasesListSection:
                         is_open,
                         assignee_email,
                         awaiting_platform,
+                        unread,
+                        dispute_status,
+                        _evidence_due_by,
+                        _evidence_past_due,
                     ) in self.rows:
                         case_url = case_detail_url(
                             request, case.id, return_to=return_to
@@ -64,7 +68,10 @@ class SupportCasesListSection:
                             _=f"on click set window.location to '{case_url}'",
                         ):
                             with tag.td():
-                                with tag.a(href=case_url, classes="link"):
+                                link_classes = "link"
+                                if unread:
+                                    link_classes += " font-semibold"
+                                with tag.a(href=case_url, classes=link_classes):
                                     text(TYPE_LABELS.get(case.type, case.type.value))
                             with tag.td():
                                 with tag.div(classes="flex items-center gap-2"):
@@ -73,6 +80,8 @@ class SupportCasesListSection:
                                     )
                                     with tag.div(classes=f"badge {variant} badge-sm"):
                                         text("Open" if is_open else "Closed")
+                                    if dispute_status is not None:
+                                        dispute_status_badge(dispute_status)
                                     if awaiting_platform:
                                         with tag.span(
                                             classes="tooltip text-warning",

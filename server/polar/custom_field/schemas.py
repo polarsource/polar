@@ -1,6 +1,13 @@
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
-from pydantic import UUID4, Discriminator, Field, StringConstraints, TypeAdapter
+from pydantic import (
+    UUID4,
+    BeforeValidator,
+    Discriminator,
+    Field,
+    StringConstraints,
+    TypeAdapter,
+)
 
 from polar.kit.metadata import (
     MetadataInputMixin,
@@ -40,6 +47,20 @@ Slug = Annotated[
 Name = Annotated[str, Field(description="Name of the custom field.", min_length=1)]
 
 
+def _drop_unset_properties(value: Any) -> Any:
+    if isinstance(value, dict):
+        return {key: item for key, item in value.items() if item not in (None, "")}
+    return value
+
+
+StripUnsetProperties = BeforeValidator(_drop_unset_properties)
+TextPropertiesInput = Annotated[CustomFieldTextProperties, StripUnsetProperties]
+NumberPropertiesInput = Annotated[CustomFieldNumberProperties, StripUnsetProperties]
+DatePropertiesInput = Annotated[CustomFieldDateProperties, StripUnsetProperties]
+CheckboxPropertiesInput = Annotated[CustomFieldCheckboxProperties, StripUnsetProperties]
+SelectPropertiesInput = Annotated[CustomFieldSelectProperties, StripUnsetProperties]
+
+
 class CustomFieldCreateBase(MetadataInputMixin, Schema):
     """Schema to create a new custom field."""
 
@@ -59,35 +80,35 @@ class CustomFieldCreateText(CustomFieldCreateBase):
     """Schema to create a custom field of type text."""
 
     type: Literal[CustomFieldType.text]
-    properties: CustomFieldTextProperties
+    properties: TextPropertiesInput
 
 
 class CustomFieldCreateNumber(CustomFieldCreateBase):
     """Schema to create a custom field of type number."""
 
     type: Literal[CustomFieldType.number]
-    properties: CustomFieldNumberProperties
+    properties: NumberPropertiesInput
 
 
 class CustomFieldCreateDate(CustomFieldCreateBase):
     """Schema to create a custom field of type date."""
 
     type: Literal[CustomFieldType.date]
-    properties: CustomFieldDateProperties
+    properties: DatePropertiesInput
 
 
 class CustomFieldCreateCheckbox(CustomFieldCreateBase):
     """Schema to create a custom field of type checkbox."""
 
     type: Literal[CustomFieldType.checkbox]
-    properties: CustomFieldCheckboxProperties
+    properties: CheckboxPropertiesInput
 
 
 class CustomFieldCreateSelect(CustomFieldCreateBase):
     """Schema to create a custom field of type select."""
 
     type: Literal[CustomFieldType.select]
-    properties: CustomFieldSelectProperties
+    properties: SelectPropertiesInput
 
 
 CustomFieldCreate = Annotated[
@@ -112,35 +133,35 @@ class CustomFieldUpdateText(CustomFieldUpdateBase):
     """Schema to update a custom field of type text."""
 
     type: Literal[CustomFieldType.text]
-    properties: CustomFieldTextProperties | None = None
+    properties: TextPropertiesInput | None = None
 
 
 class CustomFieldUpdateNumber(CustomFieldUpdateBase):
     """Schema to update a custom field of type number."""
 
     type: Literal[CustomFieldType.number]
-    properties: CustomFieldNumberProperties | None = None
+    properties: NumberPropertiesInput | None = None
 
 
 class CustomFieldUpdateDate(CustomFieldUpdateBase):
     """Schema to update a custom field of type date."""
 
     type: Literal[CustomFieldType.date]
-    properties: CustomFieldDateProperties | None = None
+    properties: DatePropertiesInput | None = None
 
 
 class CustomFieldUpdateCheckbox(CustomFieldUpdateBase):
     """Schema to update a custom field of type checkbox."""
 
     type: Literal[CustomFieldType.checkbox]
-    properties: CustomFieldCheckboxProperties | None = None
+    properties: CheckboxPropertiesInput | None = None
 
 
 class CustomFieldUpdateSelect(CustomFieldUpdateBase):
     """Schema to update a custom field of type select."""
 
     type: Literal[CustomFieldType.select]
-    properties: CustomFieldSelectProperties | None = None
+    properties: SelectPropertiesInput | None = None
 
 
 CustomFieldUpdate = Annotated[

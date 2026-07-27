@@ -2,14 +2,13 @@ from collections.abc import AsyncGenerator
 from datetime import datetime
 
 import structlog
-from fastapi import Depends, Query, Response
-from fastapi.responses import StreamingResponse
+from fastapi import Depends, Query
 
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import ResourceNotFound
-from polar.kit.csv import IterableCSVWriter
+from polar.kit.csv import CSVStreamingResponse, IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -30,6 +29,9 @@ from polar.routing import APIRouter
 from . import auth, sorting
 from .schemas import Subscription as SubscriptionSchema
 from .schemas import (
+    SubscriptionCancelPreview,
+    SubscriptionChangePreview,
+    SubscriptionChangePreviewSeats,
     SubscriptionChargePreview,
     SubscriptionCreate,
     SubscriptionID,
@@ -37,6 +39,7 @@ from .schemas import (
 )
 from .service import (
     AlreadyCanceledSubscription,
+    NotASeatBasedSubscription,
     SubscriptionLocked,
     SubscriptionUpdateContext,
 )
@@ -136,9 +139,7 @@ async def list(
 
 
 @router.get(
-    "/export",
-    summary="Export Subscriptions",
-    responses={200: {"content": {"text/csv": {"schema": {"type": "string"}}}}},
+    "/export", summary="Export Subscriptions", response_class=CSVStreamingResponse
 )
 async def export(
     auth_subject: auth.SubscriptionsRead,
@@ -146,7 +147,7 @@ async def export(
         None, description="Filter by organization ID."
     ),
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> Response:
+) -> CSVStreamingResponse:
     """Export subscriptions as a CSV file."""
 
     async def create_csv() -> AsyncGenerator[str, None]:
@@ -184,12 +185,7 @@ async def export(
                 )
             )
 
-    filename = "polar-subscribers.csv"
-    return StreamingResponse(
-        create_csv(),
-        media_type="text/csv",
-        headers={"Content-Disposition": f"attachment; filename={filename}"},
-    )
+    return CSVStreamingResponse(create_csv(), "polar-subscribers.csv")
 
 
 @router.get(
@@ -236,15 +232,20 @@ async def get_charge_preview(
 
     For trialing subscriptions, shows what the first charge will be when the trial ends.
     For subscriptions set to cancel at period end, shows the final charge.
-    Only available for active or trialing subscriptions, including those set to cancel.
+    For paused subscriptions scheduled to auto-resume, shows the charge on resume.
+    Available for active, trialing, and paused-with-resume subscriptions.
     """
     subscription = await subscription_service.get(session, auth_subject, id)
 
     if subscription is None:
         raise ResourceNotFound()
 
-    # Allow active, trialing, and subscriptions set to cancel at period end
-    if subscription.status not in ("active", "trialing"):
+    # Allow active/trialing subscriptions, and paused subscriptions scheduled to
+    # auto-resume — they still have an upcoming charge when they resume.
+    is_resumable_pause = (
+        subscription.status == "paused" and subscription.resumes_at is not None
+    )
+    if subscription.status not in ("active", "trialing") and not is_resumable_pause:
         raise ResourceNotFound()
 
     # If subscription will end (cancel_at_period_end or ends_at), ensure there's still a charge coming
@@ -254,6 +255,81 @@ async def get_charge_preview(
             raise ResourceNotFound()
 
     return await subscription_service.calculate_charge_preview(session, subscription)
+
+
+@router.get(
+    "/{id}/cancel-preview",
+    summary="Preview Subscription Cancellation",
+    response_model=SubscriptionCancelPreview,
+    responses={404: SubscriptionNotFound},
+    tags=[APITag.private],
+)
+async def get_cancel_preview(
+    id: SubscriptionID,
+    auth_subject: auth.SubscriptionsRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionCancelPreview:
+    """Preview the effect of cancelling a subscription right now.
+
+    Reports whether cancelling also stops collecting the outstanding payment,
+    and the amount that would no longer be collected.
+    """
+    subscription = await subscription_service.get(session, auth_subject, id)
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    return await subscription_service.calculate_cancel_preview(session, subscription)
+
+
+@router.post(
+    "/{id}/change-preview",
+    summary="Preview Subscription Change",
+    response_model=SubscriptionChargePreview,
+    responses={
+        403: {"model": AlreadyCanceledSubscription.schema()},
+        400: {"model": NotASeatBasedSubscription.schema()},
+        404: SubscriptionNotFound,
+    },
+    tags=[APITag.private],
+)
+async def preview_change(
+    id: SubscriptionID,
+    change: SubscriptionChangePreview,
+    auth_subject: auth.SubscriptionsWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionChargePreview:
+    """
+    Preview what a subscription change would cost, without applying it.
+
+    Returns the proration breakdown and the amount due today.
+    """
+    subscription = await subscription_service.get(session, auth_subject, id)
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    await assert_resource_permission(
+        session,
+        auth_subject,
+        subscription.product,
+        OrganizationPermission.sales_manage,
+    )
+
+    if isinstance(change, SubscriptionChangePreviewSeats):
+        return await subscription_service.calculate_change_preview(
+            session,
+            subscription,
+            seats=change.seats,
+            proration_behavior=change.proration_behavior,
+        )
+
+    return await subscription_service.calculate_change_preview(
+        session,
+        subscription,
+        product_id=change.product_id,
+        proration_behavior=change.proration_behavior,
+    )
 
 
 @router.post(

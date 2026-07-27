@@ -19,6 +19,7 @@ from polar.models.organization_access_token import OrganizationAccessToken
 from polar.models.organization_agent_review import OrganizationAgentReview
 from polar.models.organization_review import OrganizationReview
 from polar.models.organization_review_feedback import OrganizationReviewFeedback
+from polar.models.organization_risk_signal import OrganizationRiskSignal
 from polar.models.payment import Payment, PaymentStatus
 from polar.models.payout_account import PayoutAccount
 from polar.models.product import Product
@@ -30,6 +31,7 @@ from polar.models.webhook_endpoint import WebhookEndpoint
 from polar.organization_review.report import AnyAgentReport
 from polar.organization_review.schemas import (
     ActorType,
+    AUPSection,
     DecisionType,
     ReviewContext,
     ReviewVerdict,
@@ -252,6 +254,7 @@ class OrganizationReviewRepository(
         verdict: ReviewVerdict | None = None,
         risk_score: float | None = None,
         reason: str | None = None,
+        violated_aup_section: AUPSection | None = None,
         is_current: bool = True,
     ) -> OrganizationReviewFeedback:
         """Record a review decision (agent or human)."""
@@ -263,6 +266,7 @@ class OrganizationReviewRepository(
             verdict=verdict,
             risk_score=risk_score,
             reason=reason,
+            violated_aup_section=violated_aup_section,
             is_current=is_current,
             agent_review_id=agent_review_id,
             reviewer_id=reviewer_id,
@@ -278,6 +282,7 @@ class OrganizationReviewRepository(
         decision: DecisionType,
         review_context: ReviewContext | None = None,
         reason: str | None = None,
+        violated_aup_section: AUPSection | None = None,
     ) -> OrganizationReviewFeedback:
         """Record a human review decision with full context from the latest agent review.
 
@@ -318,6 +323,7 @@ class OrganizationReviewRepository(
             verdict=verdict,
             risk_score=risk_score,
             reason=reason,
+            violated_aup_section=violated_aup_section,
         )
 
     async def record_agent_decision(
@@ -475,6 +481,27 @@ class OrganizationReviewRepository(
         statement = select(WebhookEndpoint).where(
             WebhookEndpoint.organization_id == organization_id,
             WebhookEndpoint.is_deleted.is_(False),
+        )
+        result = await self.session.execute(statement)
+        return list(result.scalars().all())
+
+
+class OrganizationRiskSignalRepository(
+    RepositorySoftDeletionIDMixin[OrganizationRiskSignal, UUID],
+    RepositorySoftDeletionMixin[OrganizationRiskSignal],
+    RepositoryBase[OrganizationRiskSignal],
+):
+    model = OrganizationRiskSignal
+
+    async def list_by_organization(
+        self, organization_id: UUID, *, limit: int = 100
+    ) -> list[OrganizationRiskSignal]:
+        """Signals for an organization, most recent first, capped at `limit`."""
+        statement = (
+            self.get_base_statement()
+            .where(OrganizationRiskSignal.organization_id == organization_id)
+            .order_by(OrganizationRiskSignal.created_at.desc())
+            .limit(limit)
         )
         result = await self.session.execute(statement)
         return list(result.scalars().all())

@@ -1,24 +1,30 @@
 from datetime import UTC, datetime
 from typing import Literal
-from unittest.mock import MagicMock
+from unittest.mock import AsyncMock, MagicMock
 
 import pytest
 from pytest_mock import MockerFixture
 
 from polar.benefit.grant.service import BenefitGrantService
 from polar.dispute.dispute_case import dispute_case as dispute_case_service
-from polar.dispute.service import DisputePaymentNotFoundError
+from polar.dispute.service import DisputeNotOpenError, DisputePaymentNotFoundError
 from polar.dispute.service import dispute as dispute_service
 from polar.enums import PaymentProcessor, TaxProcessor
 from polar.integrations.chargeback_stop.types import ChargebackStopAlert
 from polar.models import Customer, Organization, Product
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
-from polar.models.support_case import DisputeSupportCase, SupportCaseMessageType
+from polar.models.support_case import (
+    DisputeSupportCase,
+    SupportCaseMessageType,
+)
 from polar.postgres import AsyncSession
 from polar.refund.service import RefundService
 from polar.support_case.repository import SupportCaseMessageRepository
 from polar.tax.calculation.base import AlreadyRevertedError
-from polar.transaction.service.dispute import DisputeTransactionService
+from polar.transaction.service.dispute import (
+    DisputeTransactionAlreadyExistsError,
+    DisputeTransactionService,
+)
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -223,6 +229,53 @@ class TestUpsertFromStripe:
             session, dispute=updated_dispute
         )
 
+    async def test_update_from_dispute_id_concurrent_transaction_noop(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        dispute_transaction_service_mock: MagicMock,
+        mocker: MockerFixture,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        charge_id = "STRIPE_CHARGE_ID"
+        payment = await create_payment(
+            save_fixture, organization, order=order, processor_id=charge_id
+        )
+        dispute = await create_dispute(save_fixture, order, payment)
+        assert dispute.payment_processor_id is not None
+
+        # The other writer already recorded the transactions, so this one hits
+        # the uniqueness guard and must no-op instead of raising.
+        dispute_transaction_service_mock.create_dispute.side_effect = (
+            DisputeTransactionAlreadyExistsError(dispute)
+        )
+        revoke_mock = mocker.patch.object(
+            dispute_service, "_revoke", new_callable=AsyncMock
+        )
+
+        stripe_dispute = build_stripe_dispute(
+            status="lost",
+            id=dispute.payment_processor_id,
+            charge_id=charge_id,
+            amount=order.subtotal_amount + order.tax_amount,
+            balance_transactions=[
+                build_stripe_balance_transaction(
+                    amount=-dispute.amount, reporting_category="dispute", fee=1500
+                )
+            ],
+        )
+
+        updated_dispute = await dispute_service.upsert_from_stripe(
+            session, stripe_dispute
+        )
+
+        assert updated_dispute.id == dispute.id
+        assert updated_dispute.status == DisputeStatus.lost
+        dispute_transaction_service_mock.create_dispute.assert_awaited_once()
+        revoke_mock.assert_not_awaited()
+
     async def test_update_from_matching_payment(
         self,
         save_fixture: SaveFixture,
@@ -260,6 +313,7 @@ class TestUpsertFromStripe:
         assert updated_dispute.status == DisputeStatus.won
         assert updated_dispute.payment_processor == PaymentProcessor.stripe
         assert updated_dispute.payment_processor_id == stripe_dispute.id
+        assert updated_dispute.payment == payment
 
         dispute_transaction_service_mock.create_dispute.assert_awaited_once_with(
             session, dispute=updated_dispute
@@ -1218,3 +1272,65 @@ class TestUpsertFromChargebackStop:
             == DisputeAlertProcessor.chargeback_stop
         )
         assert updated_dispute.dispute_alert_processor_id == alert["id"]
+
+
+@pytest.mark.asyncio
+class TestAccept:
+    async def test_concedes_and_marks_lost(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+        dispute_transaction_service_mock: MagicMock,
+        benefit_grant_service_mock: MagicMock,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer, product=product)
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(save_fixture, order, payment)
+        case = await dispute_case_service.open_case(
+            session, dispute, organization=organization
+        )
+
+        close_mock = mocker.patch("polar.dispute.service.stripe_service.close_dispute")
+        close_mock.return_value = build_stripe_dispute(
+            status="lost", balance_transactions=[]
+        )
+
+        result = await dispute_service.accept(session, dispute)
+
+        # Conceded with the processor, settled as lost.
+        close_mock.assert_awaited_once_with(dispute.payment_processor_id)
+        assert result.status == DisputeStatus.lost
+        # Both the merchant's decision and the resulting loss land on the thread.
+        message_types = {
+            message.type
+            for message in await SupportCaseMessageRepository.from_session(
+                session
+            ).list_by_case(case.id, visible_to=None)
+        }
+        assert SupportCaseMessageType.merchant_accepted in message_types
+        assert SupportCaseMessageType.dispute_lost in message_types
+
+    async def test_raises_when_not_awaiting_response(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer, product=product)
+        payment = await create_payment(save_fixture, organization, order=order)
+        dispute = await create_dispute(
+            save_fixture, order, payment, status=DisputeStatus.under_review
+        )
+        close_mock = mocker.patch("polar.dispute.service.stripe_service.close_dispute")
+
+        with pytest.raises(DisputeNotOpenError):
+            await dispute_service.accept(session, dispute)
+
+        close_mock.assert_not_awaited()

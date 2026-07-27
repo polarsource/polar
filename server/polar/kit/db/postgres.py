@@ -52,13 +52,19 @@ def create_async_engine(
     pool_size: int | None = None,
     pool_recycle: int | None = None,
     command_timeout: float | None = None,
+    connect_timeout: float | None = None,
     debug: bool = False,
+    ssl: str | None = None,
 ) -> AsyncEngine:
     connect_args: dict[str, Any] = {"prepared_statement_cache_size": 0}
     if application_name is not None:
         connect_args["server_settings"] = {"application_name": application_name}
     if command_timeout is not None:
         connect_args["command_timeout"] = command_timeout
+    if connect_timeout is not None:
+        connect_args["timeout"] = connect_timeout
+    if ssl is not None:
+        connect_args["ssl"] = ssl
 
     return _create_async_engine(
         dsn,
@@ -80,13 +86,19 @@ def create_sync_engine(
     pool_size: int | None = None,
     pool_recycle: int | None = None,
     command_timeout: float | None = None,
+    connect_timeout: float | None = None,
     debug: bool = False,
+    sslmode: str | None = None,
 ) -> Engine:
     connect_args: dict[str, Any] = {}
     if application_name is not None:
         connect_args["application_name"] = application_name
     if command_timeout is not None:
         connect_args["options"] = f"-c statement_timeout={int(command_timeout * 1000)}"
+    if connect_timeout is not None:
+        connect_args["connect_timeout"] = int(connect_timeout)
+    if sslmode is not None:
+        connect_args["sslmode"] = sslmode
     return _create_engine(
         dsn,
         echo=debug,

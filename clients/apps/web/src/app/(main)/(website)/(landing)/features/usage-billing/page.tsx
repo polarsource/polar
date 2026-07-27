@@ -2,7 +2,7 @@ import { UsageBillingPage } from '@/components/Landing/features/UsageBillingPage
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Usage Billing — Polar',
+  title: 'Usage-Based Billing',
   description:
     'Bill what your customers actually use. Ingest events, aggregate them into meters, and charge with precision — built for tokens, API calls, and compute.',
   keywords:

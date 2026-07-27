@@ -18,7 +18,7 @@ const TransactionAvailabilityStatusTitle: Record<
   'on_hold' | 'available' | 'paid_out',
   string
 > = {
-  on_hold: 'On hold',
+  on_hold: 'Pending',
   available: 'Available',
   paid_out: 'Paid out',
 }
@@ -73,21 +73,30 @@ export const TransactionAvailabilityStatus = ({
     const isWithin48Hours =
       availableAt.getTime() - mountedAt <= 48 * 60 * 60 * 1000
 
+    const badge = (
+      <Status
+        status={`${TransactionAvailabilityStatusTitle[status]} until ${availableAt.toLocaleDateString(
+          'en-US',
+          { month: 'short', day: 'numeric' },
+        )}`}
+        color={TransactionAvailabilityStatusColor[status]}
+      />
+    )
+
+    if (!isWithin48Hours) {
+      return badge
+    }
+
     return (
       <Tooltip>
-        <TooltipTrigger>
-          <Status
-            status={TransactionAvailabilityStatusTitle[status]}
-            color={TransactionAvailabilityStatusColor[status]}
-          />
-        </TooltipTrigger>
+        <TooltipTrigger>{badge}</TooltipTrigger>
         <TooltipContent>
           <p>
             Available on{' '}
             <FormattedDateTime
               datetime={availableAt}
               dateStyle="medium"
-              resolution={isWithin48Hours ? 'time' : 'day'}
+              resolution="time"
             />
           </p>
         </TooltipContent>

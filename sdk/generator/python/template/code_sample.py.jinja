@@ -1,0 +1,20 @@
+{% macro render_call() %}
+{%- if positional_arguments or keyword_arguments -%}
+{{ call_path }}(
+{% for argument in positional_arguments %}    {{ argument | python_literal | indent(4) }},
+{% endfor %}{% for name, argument in keyword_arguments.items() %}    {{ name }}={{ argument | python_literal | indent(4) }},
+{% endfor %})
+{%- else -%}
+{{ call_path }}()
+{%- endif -%}
+{% endmacro -%}
+from polar.{{ version }} import Polar
+
+polar = Polar("polar_oat_xxx")
+
+{% if pagination %}for item in {{ render_call() }}:
+    print(item)
+{% elif has_response %}response = {{ render_call() }}
+print(response)
+{% else %}{{ render_call() }}
+{% endif %}

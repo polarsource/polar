@@ -63,13 +63,14 @@ export const usePayoutAccountSetup = (
           <AccountCreateModal
             forOrganizationId={organization.id}
             returnPath={returnPath}
+            defaultCountry={organization.country}
           />
         }
       />
       <Modal
         title="Manage Payout Accounts"
         isShown={isManageShown}
-        className="min-w-[560px]"
+        className="sm:min-w-[560px]"
         hide={hideManage}
         modalContent={
           <ManagePayoutAccountModal

@@ -3,19 +3,18 @@
 import { Chat } from '@/components/Chat/Chat'
 import { type ChatMessage } from '@/components/Chat/types'
 import {
-  useAppealCase,
-  useReplyToAppealCase,
+  useOrganizationReviewStatus,
+  useReplyToSupportCase,
   useRequestHumanReview,
+  useSupportCase,
 } from '@/hooks/queries/org'
+import { useOrganizationSSE } from '@/hooks/sse'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
+import { useQueryClient } from '@tanstack/react-query'
 import { Loader2, MessageCircle } from 'lucide-react'
-import React, { useCallback, useMemo, useState } from 'react'
-import {
-  supportCaseUploader,
-  toChatAttachments,
-  toChatMessages,
-} from './chatAdapter'
+import React, { useCallback, useEffect, useState } from 'react'
+import { useSupportCaseChat } from '@/components/SupportCase/useSupportCaseChat'
 import { DecisionMessage } from './DecisionMessage'
 import { MessageAvatar } from './MessageAvatar'
 import { useUnreadTitleBadge } from './useUnreadTitleBadge'
@@ -29,26 +28,35 @@ interface Props {
 }
 
 const HumanReviewCase = ({ organization }: Props) => {
-  const { data: thread, isLoading, isError } = useAppealCase(organization.id)
+  const { data: reviewStatus, isLoading: statusLoading } =
+    useOrganizationReviewStatus(organization.id)
+  const caseId = reviewStatus?.appeal_case_id ?? undefined
+  const { data: thread, isLoading: threadLoading } = useSupportCase(caseId)
+  const isLoading = statusLoading || (!!caseId && threadLoading)
   const [started, setStarted] = useState(false)
   const requestReview = useRequestHumanReview(organization.id)
-  const reply = useReplyToAppealCase(organization.id)
+  const reply = useReplyToSupportCase()
   useUnreadTitleBadge(organization.id, thread?.messages)
 
-  const messages = useMemo(() => thread?.messages ?? [], [thread])
-  const messageById = useMemo(
-    () => new Map(messages.map((message) => [message.id, message])),
-    [messages],
-  )
-  const chatMessages = useMemo(() => toChatMessages(messages), [messages])
-  const chatAttachments = useMemo(
-    () => toChatAttachments(organization.id, thread?.attachments ?? []),
-    [organization.id, thread?.attachments],
-  )
-  const uploader = useMemo(
-    () => supportCaseUploader(organization),
-    [organization],
-  )
+  const queryClient = useQueryClient()
+  const eventEmitter = useOrganizationSSE(organization.id)
+  useEffect(() => {
+    const handler = () => {
+      queryClient.invalidateQueries({
+        queryKey: ['organizationReviewStatus', organization.id],
+      })
+      if (caseId) {
+        queryClient.invalidateQueries({ queryKey: ['supportCase', caseId] })
+      }
+    }
+    eventEmitter.on('appeal_case.updated', handler)
+    return () => {
+      eventEmitter.off('appeal_case.updated', handler)
+    }
+  }, [eventEmitter, queryClient, organization.id, caseId])
+
+  const { messageById, chatMessages, chatAttachments, uploader } =
+    useSupportCaseChat({ caseId, organization, thread })
 
   const renderMessage = useCallback(
     (chatMessage: ChatMessage) => {
@@ -82,7 +90,7 @@ const HumanReviewCase = ({ organization }: Props) => {
     )
   }
 
-  const hasCase = !isError && !!thread
+  const hasCase = !!caseId
 
   if (!hasCase && !started) {
     return (
@@ -133,8 +141,13 @@ const HumanReviewCase = ({ organization }: Props) => {
           ? 'Write a reply…'
           : 'Tell us why your organization should be approved…',
         onSend: (text, fileIds) =>
-          hasCase
-            ? reply.mutateAsync({ body: text, file_ids: fileIds })
+          caseId
+            ? reply.mutateAsync({
+                caseId,
+                type: 'review_appeal',
+                body: text,
+                file_ids: fileIds,
+              })
             : requestReview.mutateAsync({ reason: text }),
       }}
     />

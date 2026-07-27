@@ -1,6 +1,5 @@
 export {
   addressInputCountryValues,
-  appealDecisionValues,
   availableScopeValues,
   benefitGitHubRepositoryPropertiesPermissionValues,
   benefitTypeValues,

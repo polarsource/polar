@@ -35,8 +35,9 @@ class DeletePayoutAccountModal:
                 with tag.div(classes="alert alert-error"):
                     with tag.span(classes="font-semibold"):
                         text(
-                            "This will permanently delete the payout account."
-                            " This action cannot be undone."
+                            "This will permanently delete the payout account "
+                            "and unlink it from any associated organizations. "
+                            "This action cannot be undone."
                         )
 
                 # Account summary

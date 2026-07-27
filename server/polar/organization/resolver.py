@@ -46,7 +46,21 @@ async def get_payload_organization(
             )
         return auth_subject.subject
 
+    repository = OrganizationRepository.from_session(session)
+
     if model.organization_id is None:
+        # A credential down-scoped to exactly one organization resolves it
+        # implicitly, restoring organization-token ergonomics on create
+        # endpoints.
+        if (
+            auth_subject.organization_ids is not None
+            and len(auth_subject.organization_ids) == 1
+        ):
+            accessible = await get_accessible_org_ids(session, auth_subject)
+            if len(accessible) == 1:
+                organization = await repository.get_by_id(next(iter(accessible)))
+                if organization is not None:
+                    return organization
         raise PolarRequestValidationError(
             [
                 {
@@ -77,7 +91,6 @@ async def get_payload_organization(
             ]
         )
 
-    repository = OrganizationRepository.from_session(session)
     organization = await repository.get_by_id(model.organization_id)
 
     if organization is None:

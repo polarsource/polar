@@ -31,8 +31,6 @@ from polar.enums import (
     PaymentMode,
     PaymentProcessor,
     TaxBehavior,
-    TaxBehaviorOption,
-    TaxProcessor,
 )
 from polar.event.repository import EventRepository
 from polar.event.service import event as event_service
@@ -67,6 +65,7 @@ from polar.logging import Logger
 from polar.models import (
     Checkout,
     Customer,
+    Discount,
     Order,
     OrderItem,
     Organization,
@@ -100,7 +99,6 @@ from polar.payment_method.service import payment_method as payment_method_servic
 from polar.product.guard import (
     is_custom_price,
     is_fixed_price,
-    is_seat_price,
     is_static_price,
 )
 from polar.product.price_set import (
@@ -113,8 +111,6 @@ from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
     CalculationExpiredError,
-    TaxBreakdownItem,
-    TaxCalculation,
     TaxCalculationLogicalError,
     TaxCode,
 )
@@ -131,6 +127,7 @@ from polar.wallet.service import wallet as wallet_service
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import enqueue_job, make_bulk_job_delay_calculator
 
+from .amounts import apply_wallet_balance, calculate_tax, compute_order_amounts
 from .repository import OrderRepository
 from .schemas import OrderCreate, OrderInvoice, OrderReceipt, OrderUpdate
 from .sorting import OrderSortProperty
@@ -181,13 +178,6 @@ class AlreadyBalancedOrder(OrderError):
         super().__init__(message)
 
 
-class NotPaidOrder(OrderError):
-    def __init__(self, order: Order) -> None:
-        self.order = order
-        message = f"Order {order.id} is not paid, so an invoice cannot be generated."
-        super().__init__(message, 422)
-
-
 class MissingInvoiceBillingDetails(OrderError):
     def __init__(self, order: Order) -> None:
         self.order = order
@@ -196,6 +186,16 @@ class MissingInvoiceBillingDetails(OrderError):
             "to generate an invoice for this order."
         )
         super().__init__(message, 422)
+
+
+class OrderNotEligibleForInvoice(OrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = (
+            f"Order {order.id} is not eligible for invoice generation "
+            f"(current status: {order.status})."
+        )
+        super().__init__(message, 409)
 
 
 class InvoiceDoesNotExist(OrderError):
@@ -232,6 +232,13 @@ class OrderNotPending(OrderError):
     def __init__(self, order: Order) -> None:
         self.order = order
         message = f"Order {order.id} is not pending"
+        super().__init__(message)
+
+
+class OrderNotVoid(OrderError):
+    def __init__(self, order: Order) -> None:
+        self.order = order
+        message = f"Order {order.id} is not void"
         super().__init__(message)
 
 
@@ -329,17 +336,6 @@ class SubscriptionNotTrialing(OrderError):
     def __init__(self, subscription: Subscription) -> None:
         self.subscription = subscription
         message = f"Subscription {subscription.id} is not in trialing status."
-        super().__init__(message)
-
-
-class TaxCalculationChangedAfterPayment(OrderError):
-    def __init__(self, order: Order, new_calculation_id: str | None) -> None:
-        self.order = order
-        self.new_calculation_id = new_calculation_id
-        message = (
-            "Tax calculation for order {order.id} has changed after payment was made. "
-            "New calculation ID: {new_calculation_id}."
-        )
         super().__init__(message)
 
 
@@ -529,8 +525,8 @@ class OrderService:
     async def trigger_invoice_generation(
         self, session: AsyncSession, order: Order
     ) -> None:
-        if not order.paid:
-            raise NotPaidOrder(order)
+        if order.status in (OrderStatus.draft, OrderStatus.void):
+            raise OrderNotEligibleForInvoice(order)
 
         if order.billing_name is None or order.billing_address is None:
             raise MissingInvoiceBillingDetails(order)
@@ -614,11 +610,11 @@ class OrderService:
             session, checkout, OrderBillingReasonInternal.purchase, payment
         )
 
-        # For seat-based orders, benefits are granted when seats are claimed
-        # For non-seat orders, grant benefits immediately
-        prices = checkout.prices[product.id]
-        has_seat_price = any(is_seat_price(price) for price in prices)
-        if not has_seat_price:
+        # Key the decision off the seats actually purchased on this order, not the
+        # product's price catalog: a product may compose a fixed price with a seat
+        # price, so only `order.seats` reflects whether seats were really bought.
+        if order.seats is None:
+            # Non-seat orders grant benefits immediately
             enqueue_job(
                 "benefit.enqueue_benefits_grants",
                 task="grant",
@@ -626,6 +622,11 @@ class OrderService:
                 product_id=product.id,
                 order_id=order.id,
             )
+        else:
+            # Seat-based orders grant benefits when seats are claimed; upgrade the
+            # buyer to a 'team' customer so they can manage and claim their seats
+            # (mirrors the subscription flow)
+            await customer_service.upgrade_to_team(session, order.customer)
 
         # Trigger notifications
         organization = checkout.organization
@@ -820,6 +821,9 @@ class OrderService:
             ),
             flush=True,
         )
+
+        if subscription is not None:
+            subscription.update_net_amount_from(checkout)
 
         # Link payment and balance transaction to the order
         if payment is not None:
@@ -1033,7 +1037,7 @@ class OrderService:
                 tax_calculation_processor_id,
                 tax_amount,
                 tax_breakdown,
-            ) = await self._calculate_tax(
+            ) = await calculate_tax(
                 reference=str(order_id),
                 taxable_amount=subtotal_amount - discount_amount,
                 tax_behavior_option=organization.default_tax_behavior,
@@ -1099,10 +1103,8 @@ class OrderService:
         )
 
         # Fire the `order.created` webhook so merchants are notified about the
-        # draft. We deliberately don't route through `_on_order_created`: a draft
-        # isn't charged yet, so the customer-facing confirmation email it
-        # enqueues would be premature. The `order.paid`/`order.updated` events
-        # are emitted later by finalize_order once the charge settles.
+        # draft. The `order.paid`/`order.updated` events are emitted later by
+        # finalize_order once the charge settles.
         await self.send_webhook(session, order, WebhookEventType.order_created)
 
         return order
@@ -1186,13 +1188,6 @@ class OrderService:
                 session, charge, organization, None, None, order
             )
             order = await self.handle_payment(session, order, payment)
-
-        # Unlike the checkout flow, the off-session draft flow skips the
-        # confirmation email at draft creation (nothing is charged yet). Now that
-        # finalize has settled the order as paid, send it so the customer gets
-        # their confirmation.
-        if order.paid:
-            enqueue_job("order.confirmation_email", order.id)
 
         return order
 
@@ -1301,179 +1296,183 @@ class OrderService:
             if len(items) == 0:
                 raise NoPendingBillingEntries(subscription)
 
-            order_id = uuid.uuid4()
-            customer = subscription.customer
-
-            subtotal_amount = sum(item.amount for item in items)
-
-            discount = subscription.discount
-            discount_amount = 0
-            if discount is not None:
-                # Discount only applies to cycle and meter items, as prorations
-                # use "last month's" discount and so this month's discount
-                # shouldn't apply to those.
-                discountable_amount = sum(
-                    item.amount for item in items if item.discountable
-                )
-                discount_amount = discount.get_discount_amount(
-                    discountable_amount, subscription.currency
-                )
-
-            billing_address = customer.billing_address
-            tax_id = customer.tax_id
-            product = subscription.product
-
-            tax_behavior_option = (
-                subscription.tax_behavior.to_option()
-                if subscription.tax_behavior is not None
-                else customer.organization.default_tax_behavior
-            )
-            # Calculate tax
-            (
-                tax_processor,
-                tax_behavior,
-                tax_calculation_processor_id,
-                tax_amount,
-                tax_breakdown,
-            ) = await self._calculate_tax(
-                reference=str(order_id),
-                taxable_amount=subtotal_amount - discount_amount,
-                tax_behavior_option=tax_behavior_option,
-                currency=subscription.currency,
-                customer=customer,
-                product=product,
-                tax_exempted=subscription.tax_exempted,
+            return await self._create_order(
+                session,
+                subscription,
+                list(items),
+                billing_reason,
+                payment_mode=payment_mode,
             )
 
-            invoice_number = await organization_service.get_next_invoice_number(
-                session, subscription.organization, customer
+    async def build_subscription_order(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        items: Sequence[OrderItem],
+        billing_reason: OrderBillingReasonInternal,
+        *,
+        lock_balance: bool,
+        discount: Discount | None,
+        reference: str | None = None,
+    ) -> Order:
+        """Build the subscription order for ``items`` without persisting: no invoice
+        number, no side effects. ``lock_balance`` locks the wallet balance (the
+        persist path must; a preview must not); ``reference`` keys the tax calc."""
+        order_id = uuid.uuid4()
+        customer = subscription.customer
+
+        amounts = await compute_order_amounts(
+            subscription,
+            items,
+            reference=reference or str(order_id),
+            discount=discount,
+        )
+        total_amount = amounts.total_amount
+
+        customer_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, subscription.currency, for_update=lock_balance
+        )
+        applied_balance_amount = apply_wallet_balance(total_amount, customer_balance)
+
+        return Order(
+            id=order_id,
+            status=OrderStatus.pending,
+            subtotal_amount=amounts.subtotal_amount,
+            discount_amount=amounts.discount_amount,
+            tax_amount=amounts.tax_amount,
+            net_amount=amounts.net_amount,
+            applied_balance_amount=applied_balance_amount,
+            currency=subscription.currency,
+            billing_reason=billing_reason,
+            billing_name=customer.billing_name,
+            billing_address=customer.billing_address,
+            tax_behavior=amounts.tax_behavior,
+            tax_id=customer.tax_id,
+            tax_breakdown=amounts.tax_breakdown or None,
+            tax_processor=amounts.tax_processor,
+            tax_calculation_processor_id=amounts.tax_calculation_processor_id,
+            organization=subscription.organization,
+            customer=customer,
+            product=subscription.product,
+            discount=discount,
+            subscription=subscription,
+            checkout=None,
+            items=items,
+            user_metadata=subscription.user_metadata,
+            custom_field_data=subscription.custom_field_data,
+        )
+
+    async def _create_order(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        items: Sequence[OrderItem],
+        billing_reason: OrderBillingReasonInternal,
+        *,
+        payment_mode: PaymentMode = PaymentMode.background,
+    ) -> Order:
+        """Build, persist and dispatch a subscription order from ``items``: invoice
+        number, balance impact, optional meter reset, then payment."""
+        customer = subscription.customer
+
+        order = await self.build_subscription_order(
+            session,
+            subscription,
+            items,
+            billing_reason,
+            lock_balance=True,
+            discount=subscription.discount,
+        )
+        balance_change = (
+            order.applied_balance_amount
+            if order.total_amount >= 0
+            else -order.total_amount
+        )
+
+        order.invoice_number = await organization_service.get_next_invoice_number(
+            session, subscription.organization, customer
+        )
+
+        repository = OrderRepository.from_session(session)
+        order = await repository.create(order, flush=True)
+
+        subscription.update_net_amount_from(order)
+
+        # Impact customer's balance
+        if balance_change != 0:
+            await wallet_service.create_balance_transaction(
+                session,
+                customer,
+                balance_change,
+                subscription.currency,
+                order=order,
             )
 
-            net_amount = (
-                subtotal_amount
-                - discount_amount
-                - (tax_amount if tax_behavior == TaxBehavior.inclusive else 0)
-            )
-            total_amount = net_amount + tax_amount
-            customer_balance = await wallet_service.get_billing_wallet_balance(
-                session, customer, subscription.currency, for_update=True
-            )
+        # Reset the associated meters, if any
+        # Note: subscription_update is intentionally excluded - meter credits from
+        # benefit grants should persist within a billing cycle. Subscription updates
+        # are for prorations, not new billing periods.
+        if billing_reason in {
+            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+            OrderBillingReasonInternal.subscription_cancel,
+        }:
+            await subscription_service.reset_meters(session, subscription)
 
-            # Calculate balance change and applied amount
-            if total_amount >= 0:
-                # Order is a charge: use customer balance if available
-                balance_change = -min(total_amount, customer_balance)
-                applied_balance_amount = balance_change
+        # Emit creation events before settling payment, so `order.created` always
+        # precedes `order.paid` and the settling branches below own the paid
+        # transition.
+        await self._on_order_created(session, order)
+
+        # If the due amount is less or equal than zero, mark it as paid immediately
+        if order.due_amount <= 0:
+            previous_status = order.status
+            order = await repository.update(
+                order, update_dict={"status": OrderStatus.paid}
+            )
+            await self._emit_balance_credit_order_event(
+                session, order, subscription.organization
+            )
+            await self._on_order_updated(session, order, previous_status)
+        # Sync mode, attempt payment immediately and raise if it fails
+        elif payment_mode == PaymentMode.sync:
+            payment_method_id = (
+                subscription.payment_method_id or customer.default_payment_method_id
+            )
+            if payment_method_id is None:
+                raise PaymentFailed(PaymentFailedReason.missing_payment_method)
+            payment_method_repository = PaymentMethodRepository.from_session(session)
+            payment_method = await payment_method_repository.get_by_id(
+                payment_method_id
+            )
+            assert payment_method is not None
+            await self.trigger_payment(
+                session,
+                order,
+                payment_method,
+                payment_mode=payment_mode,
+                payment_trigger=PaymentTrigger.subscription_cycle,
+            )
+        # Async mode, allow payment to fail and be retried later
+        else:
+            payment_method_id = (
+                subscription.payment_method_id or customer.default_payment_method_id
+            )
+            if payment_method_id is None:
+                previous_status = order.status
+                order = await self.handle_payment_failure(session, order)
+                # Dunning state lands after `order.created` was emitted, so emit
+                # the update that carries the retry schedule to merchants.
+                await self._on_order_updated(session, order, previous_status)
             else:
-                # Order is a credit: always add to balance
-                balance_change = -total_amount
-                # Track how much existing debt was cleared
-                if customer_balance < 0:
-                    applied_balance_amount = min(-total_amount, -customer_balance)
-                else:
-                    applied_balance_amount = 0
-
-            repository = OrderRepository.from_session(session)
-            order = await repository.create(
-                Order(
-                    id=order_id,
-                    status=OrderStatus.pending,
-                    subtotal_amount=subtotal_amount,
-                    discount_amount=discount_amount,
-                    tax_amount=tax_amount,
-                    net_amount=net_amount,
-                    applied_balance_amount=applied_balance_amount,
-                    currency=subscription.currency,
-                    billing_reason=billing_reason,
-                    billing_name=customer.billing_name,
-                    billing_address=billing_address,
-                    tax_behavior=tax_behavior,
-                    tax_id=tax_id,
-                    tax_breakdown=tax_breakdown or None,
-                    tax_processor=tax_processor,
-                    tax_calculation_processor_id=tax_calculation_processor_id,
-                    invoice_number=invoice_number,
-                    organization=subscription.organization,
-                    customer=customer,
-                    product=subscription.product,
-                    discount=discount,
-                    subscription=subscription,
-                    checkout=None,
-                    items=items,
-                    user_metadata=subscription.user_metadata,
-                    custom_field_data=subscription.custom_field_data,
-                ),
-                flush=True,
-            )
-
-            # Impact customer's balance
-            if balance_change != 0:
-                await wallet_service.create_balance_transaction(
-                    session,
-                    customer,
-                    balance_change,
-                    subscription.currency,
-                    order=order,
-                )
-
-            # Reset the associated meters, if any
-            # Note: subscription_update is intentionally excluded - meter credits from
-            # benefit grants should persist within a billing cycle. Subscription updates
-            # are for prorations, not new billing periods.
-            if billing_reason in {
-                OrderBillingReasonInternal.subscription_cycle,
-                OrderBillingReasonInternal.subscription_cycle_after_trial,
-                OrderBillingReasonInternal.subscription_cancel,
-            }:
-                await subscription_service.reset_meters(session, subscription)
-
-            # If the due amount is less or equal than zero, mark it as paid immediately
-            if order.due_amount <= 0:
-                order = await repository.update(
-                    order, update_dict={"status": OrderStatus.paid}
-                )
-                await self._emit_balance_credit_order_event(
-                    session, order, subscription.organization
-                )
-            # Sync mode, attempt payment immediately and raise if it fails
-            elif payment_mode == PaymentMode.sync:
-                payment_method_id = (
-                    subscription.payment_method_id or customer.default_payment_method_id
-                )
-                if payment_method_id is None:
-                    raise PaymentFailed(PaymentFailedReason.missing_payment_method)
-                payment_method_repository = PaymentMethodRepository.from_session(
-                    session
-                )
-                payment_method = await payment_method_repository.get_by_id(
-                    payment_method_id
-                )
-                assert payment_method is not None
-                await self.trigger_payment(
-                    session,
-                    order,
-                    payment_method,
-                    payment_mode=payment_mode,
+                enqueue_job(
+                    "order.trigger_payment",
+                    order_id=order.id,
+                    payment_method_id=payment_method_id,
                     payment_trigger=PaymentTrigger.subscription_cycle,
                 )
-            # Async mode, allow payment to fail and be retried later
-            else:
-                payment_method_id = (
-                    subscription.payment_method_id or customer.default_payment_method_id
-                )
-                if payment_method_id is None:
-                    order = await self.handle_payment_failure(session, order)
-                else:
-                    enqueue_job(
-                        "order.trigger_payment",
-                        order_id=order.id,
-                        payment_method_id=payment_method_id,
-                        payment_trigger=PaymentTrigger.subscription_cycle,
-                    )
 
-            await self._on_order_created(session, order)
-
-            return order
+        return order
 
     async def create_trial_order(
         self,
@@ -1531,6 +1530,9 @@ class OrderService:
             ),
             flush=True,
         )
+
+        if checkout is not None:
+            subscription.update_net_amount_from(checkout)
 
         await self._on_order_created(session, order)
 
@@ -2075,91 +2077,11 @@ class OrderService:
                 "order.balance", order_id=order.id, charge_id=payment.processor_id
             )
 
-        # Record tax transaction
         if (
             order.tax_calculation_processor_id is not None
             and order.tax_transaction_processor_id is None
         ):
-            tax_processor: TaxProcessor | None = None
-            assert order.tax_processor is not None
-            assert order.tax_behavior is not None
-            assert order.billing_address is not None
-            assert order.product is not None
-            try:
-                transaction_id, tax_processor = await tax_calculation_service.record(
-                    order.tax_processor,
-                    order.tax_calculation_processor_id,
-                    amount=order.net_amount,
-                    tax_amount=order.tax_amount,
-                    currency=order.currency,
-                    address=order.billing_address,
-                    tax_code=order.product.tax_code,
-                    reference=str(order.id),
-                    transaction_date=order.created_at,
-                )
-                update_dict = {
-                    **update_dict,
-                    "tax_processor": tax_processor,
-                    "tax_transaction_processor_id": transaction_id,
-                }
-
-            except CalculationExpiredError as e:
-                # Recover by recalculating tax
-                # Happens if the order was created a long time ago and the tax calculation result expired before payment was completed
-                product = order.product
-                customer = order.customer
-                tax_exempted = (
-                    order.subscription.tax_exempted if order.subscription else False
-                )
-                assert product is not None
-                (
-                    tax_processor,
-                    tax_behavior,
-                    tax_calculation_processor_id,
-                    tax_amount,
-                    tax_breakdown,
-                ) = await self._calculate_tax(
-                    reference=str(order.id),
-                    taxable_amount=order.net_amount,
-                    currency=order.currency,
-                    customer=customer,
-                    product=product,
-                    tax_behavior_option=order.tax_behavior.to_option(),
-                    tax_exempted=tax_exempted,
-                )
-                update_dict = {
-                    **update_dict,
-                    "tax_calculation_processor_id": tax_calculation_processor_id,
-                    "tax_amount": tax_amount,
-                    "tax_behavior": tax_behavior,
-                    "tax_breakdown": tax_breakdown or None,
-                }
-
-                if tax_amount != order.tax_amount:
-                    raise TaxCalculationChangedAfterPayment(
-                        order, tax_calculation_processor_id
-                    )
-
-                if tax_processor and tax_calculation_processor_id:
-                    (
-                        transaction_id,
-                        tax_processor,
-                    ) = await tax_calculation_service.record(
-                        tax_processor,
-                        tax_calculation_processor_id,
-                        amount=order.net_amount,
-                        tax_amount=tax_amount,
-                        currency=order.currency,
-                        address=order.billing_address,
-                        tax_code=order.product.tax_code,
-                        reference=str(order.id),
-                        transaction_date=order.created_at,
-                    )
-                    update_dict = {
-                        **update_dict,
-                        "tax_processor": tax_processor,
-                        "tax_transaction_processor_id": transaction_id,
-                    }
+            update_dict = {**update_dict, **await self._record_tax_transaction(order)}
 
         repository = OrderRepository.from_session(session)
         order = await repository.update(order, update_dict=update_dict)
@@ -2176,6 +2098,120 @@ class OrderService:
             await self._on_order_updated(session, order, previous_status)
 
         return order
+
+    async def _record_tax_transaction(self, order: Order) -> dict[str, Any]:
+        """Book the order's tax with the recording processor.
+
+        Returns the order fields to update.
+        """
+        assert order.tax_calculation_processor_id is not None
+        assert order.tax_processor is not None
+        assert order.billing_address is not None
+        assert order.product is not None
+
+        try:
+            transaction_id, tax_processor = await tax_calculation_service.record(
+                order.tax_processor,
+                order.tax_calculation_processor_id,
+                amount=order.net_amount,
+                tax_amount=order.tax_amount,
+                currency=order.currency,
+                address=order.billing_address,
+                tax_code=order.product.tax_code,
+                reference=str(order.id),
+                transaction_date=order.created_at,
+            )
+        except CalculationExpiredError:
+            # Happens if the order was created a long time ago and the tax
+            # calculation expired before the payment was completed.
+            return await self._record_expired_tax_calculation(order)
+
+        return {
+            "tax_processor": tax_processor,
+            "tax_transaction_processor_id": transaction_id,
+        }
+
+    async def _record_expired_tax_calculation(self, order: Order) -> dict[str, Any]:
+        """Book the tax of an order whose calculation expired before payment.
+
+        Returns the order fields to update.
+        """
+        assert order.tax_behavior is not None
+        assert order.billing_address is not None
+        assert order.product is not None
+
+        (
+            tax_processor,
+            tax_behavior,
+            tax_calculation_processor_id,
+            tax_amount,
+            tax_breakdown,
+        ) = await calculate_tax(
+            reference=str(order.id),
+            taxable_amount=order.net_amount,
+            currency=order.currency,
+            customer=order.customer,
+            product=order.product,
+            tax_behavior_option=order.tax_behavior.to_option(),
+            tax_exempted=order.subscription.tax_exempted
+            if order.subscription
+            else False,
+        )
+
+        # The customer paid the tax we quoted them, so that's what we record and
+        # remit. A fresh calculation that disagrees can't be recorded: book the
+        # charged amounts as a manual transaction instead.
+        if tax_amount != order.tax_amount:
+            log.warning(
+                "Tax recalculation differs from the charged tax, "
+                "recording the charged amount",
+                order_id=order.id,
+                charged_tax_amount=order.tax_amount,
+                recalculated_tax_amount=tax_amount,
+                recalculated_calculation_id=tax_calculation_processor_id,
+            )
+            (
+                transaction_id,
+                tax_processor,
+            ) = await tax_calculation_service.record_amounts(
+                amount=order.net_amount,
+                tax_amount=order.tax_amount,
+                currency=order.currency,
+                address=order.billing_address,
+                tax_code=order.product.tax_code,
+                reference=str(order.id),
+                transaction_date=order.created_at,
+            )
+            return {
+                "tax_processor": tax_processor,
+                "tax_transaction_processor_id": transaction_id,
+            }
+
+        update_dict: dict[str, Any] = {
+            "tax_calculation_processor_id": tax_calculation_processor_id,
+            "tax_behavior": tax_behavior,
+            "tax_breakdown": tax_breakdown or None,
+        }
+
+        if tax_processor and tax_calculation_processor_id:
+            transaction_id, tax_processor = await tax_calculation_service.record(
+                tax_processor,
+                tax_calculation_processor_id,
+                amount=order.net_amount,
+                tax_amount=tax_amount,
+                currency=order.currency,
+                address=order.billing_address,
+                tax_code=order.product.tax_code,
+                reference=str(order.id),
+                transaction_date=order.created_at,
+            )
+            update_dict = {
+                **update_dict,
+                "tax_processor": tax_processor,
+                "tax_transaction_processor_id": transaction_id,
+            }
+
+        return update_dict
 
     async def send_admin_notification(
         self, session: AsyncSession, organization: Organization, order: Order
@@ -2637,6 +2673,39 @@ class OrderService:
 
         return order
 
+    async def unvoid(self, session: AsyncSession, order: Order) -> Order:
+        """Return a void order to pending without scheduling a payment retry."""
+        if order.status != OrderStatus.void:
+            raise OrderNotVoid(order)
+
+        previous_status = order.status
+
+        repository = OrderRepository.from_session(session)
+        order = await repository.update(
+            order,
+            update_dict={
+                "status": OrderStatus.pending,
+                "next_payment_attempt_at": None,
+            },
+        )
+
+        await event_service.create_event(
+            session,
+            build_system_event(
+                SystemEvent.order_unvoided,
+                customer=order.customer,
+                organization=order.organization,
+                metadata={
+                    "order_id": str(order.id),
+                    "amount": order.total_amount,
+                    "currency": order.currency,
+                },
+            ),
+        )
+        await self._on_order_updated(session, order, previous_status=previous_status)
+
+        return order
+
     async def void_pending_orders_for_subscription(
         self, session: AsyncSession, subscription: Subscription
     ) -> Sequence[Order]:
@@ -2655,7 +2724,6 @@ class OrderService:
 
     async def _on_order_created(self, session: AsyncSession, order: Order) -> None:
         enqueue_job("order.created", order.id)
-        enqueue_job("order.confirmation_email", order.id)
         await self.send_webhook(session, order, WebhookEventType.order_created)
 
         if order.paid:
@@ -2684,6 +2752,8 @@ class OrderService:
 
     async def _on_order_paid(self, session: AsyncSession, order: Order) -> None:
         assert order.paid
+
+        enqueue_job("order.confirmation_email", order.id)
 
         await receipt_service.allocate(session, order)
 
@@ -2757,16 +2827,17 @@ class OrderService:
             if order.product_id is not None:
                 credit_metadata["product_id"] = str(order.product_id)
 
-            event_repository = EventRepository.from_session(session)
-            exchange_rate = (
-                await event_repository.get_recent_balance_order_exchange_rate(
-                    organization.id,
-                    order.currency,
-                    before=order.created_at,
+            if order.net_amount != 0:
+                event_repository = EventRepository.from_session(session)
+                exchange_rate = (
+                    await event_repository.get_recent_balance_order_exchange_rate(
+                        organization.id,
+                        order.currency,
+                        before=order.created_at,
+                    )
                 )
-            )
-            if exchange_rate is not None:
-                credit_metadata["exchange_rate"] = exchange_rate
+                if exchange_rate is not None:
+                    credit_metadata["exchange_rate"] = exchange_rate
 
             credit_event = build_system_event(
                 SystemEvent.balance_credit_order,
@@ -2791,14 +2862,6 @@ class OrderService:
             skip_dunning: If True, skip dunning progression (e.g., for manual retries
                 where the user can try again without advancing the dunning state machine)
         """
-        # Don't process payment failure if the order is already paid
-        if order.status == OrderStatus.paid:
-            log.warning(
-                "Ignoring payment failure for already paid order",
-                order_id=order.id,
-            )
-            return order
-
         # Clear payment lock on failure
         if order.payment_lock_acquired_at is not None:
             log.info(
@@ -2807,6 +2870,14 @@ class OrderService:
             )
             repository = OrderRepository.from_session(session)
             order = await repository.release_payment_lock(order)
+
+        # Don't process payment failure if the order is already paid
+        if order.status == OrderStatus.paid:
+            log.warning(
+                "Ignoring payment failure for already paid order",
+                order_id=order.id,
+            )
+            return order
 
         # Skip dunning for manual retries - user can retry again
         if skip_dunning:
@@ -2944,92 +3015,6 @@ class OrderService:
             await subscription_service.enqueue_benefits_grants(session, subscription)
 
         return order
-
-    async def _calculate_tax(
-        self,
-        *,
-        reference: str,
-        taxable_amount: int,
-        tax_behavior_option: TaxBehaviorOption,
-        currency: str,
-        customer: Customer,
-        product: Product,
-        tax_exempted: bool,
-        allow_silent_failure: bool = True,
-    ) -> tuple[
-        TaxProcessor | None,
-        TaxBehavior | None,
-        str | None,
-        int,
-        Sequence[TaxBreakdownItem],
-    ]:
-        billing_address = customer.billing_address
-        tax_id = customer.tax_id
-
-        tax_processor: TaxProcessor | None = None
-        tax_behavior: TaxBehavior | None = None
-        tax_calculation: TaxCalculation | None = None
-        tax_amount = 0
-        tax_breakdown: list[TaxBreakdownItem] = []
-        tax_calculation_processor_id: str | None = None
-
-        if (
-            taxable_amount != 0
-            and product.is_tax_applicable
-            and billing_address is not None
-        ):
-            try:
-                (
-                    tax_calculation,
-                    tax_processor,
-                ) = await tax_calculation_service.calculate(
-                    reference,
-                    currency,
-                    # Stripe doesn't support calculating negative tax amounts
-                    taxable_amount if taxable_amount >= 0 else -taxable_amount,
-                    tax_behavior_option,
-                    product.tax_code,
-                    billing_address,
-                    [tax_id] if tax_id is not None else [],
-                    tax_exempted,
-                )
-            except TaxCalculationLogicalError:
-                # The subscription flow tolerates an uncomputable tax (the
-                # address is fixed up over the lifecycle). Off-session draft
-                # orders persist this result and never recompute it, so a silent
-                # zero would charge tax-free — the caller must surface it instead.
-                if not allow_silent_failure:
-                    raise
-                log.warning(
-                    "Failed to calculate tax for subscription order due to invalid or incomplete address",
-                    reference=reference,
-                    customer_id=customer.id,
-                )
-                tax_amount = 0
-                tax_calculation_processor_id = None
-            else:
-                if taxable_amount >= 0:
-                    tax_calculation_processor_id = tax_calculation["processor_id"]
-                    tax_amount = tax_calculation["amount"]
-                else:
-                    # When the taxable amount is negative it's usually due to a credit proration
-                    # this means we "owe" the customer money -- but we don't pay it back at this
-                    # point. This also means that there's no money transaction going on, and we
-                    # don't have to record the tax transaction either.
-                    tax_calculation_processor_id = None
-                    tax_amount = -tax_calculation["amount"]
-
-            if tax_calculation is not None:
-                tax_behavior = tax_calculation["tax_behavior"]
-                tax_breakdown = tax_calculation["tax_breakdown"]
-
-        return (
-            tax_processor,
-            tax_behavior,
-            tax_calculation_processor_id,
-            tax_amount,
-            tax_breakdown,
-        )
 
     async def schedule_retry_for_past_due_orders(
         self,

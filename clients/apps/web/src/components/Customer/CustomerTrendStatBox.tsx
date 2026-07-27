@@ -16,7 +16,6 @@ export interface CustomerTrendStatBoxProps extends StatisticCardProps {
     previousValue: number
     metric: schemas['Metric']
   }
-  period?: string
   trendUpIsBad?: boolean
 }
 

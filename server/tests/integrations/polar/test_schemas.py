@@ -1,7 +1,8 @@
 from typing import Any
 
-from polar_sdk.models import Product, Subscription
+from polar.v2026_04.outputs import Product, Subscription
 
+from polar import deserialize
 from polar.integrations.polar.schemas import (
     OrganizationPlan,
     OrganizationSubscription,
@@ -18,6 +19,8 @@ _PRODUCT_BASE: dict[str, Any] = {
     "visibility": "public",
     "recurring_interval": "month",
     "recurring_interval_count": 1,
+    "meter_interval": None,
+    "meter_interval_count": None,
     "is_recurring": True,
     "is_archived": False,
     "organization_id": "org_1",
@@ -68,7 +71,7 @@ def _fee_benefit(*, fee_percent: int = 380, fee_fixed: int = 35) -> dict[str, An
 
 def _make_product(**overrides: Any) -> Product:
     data = {**_PRODUCT_BASE, **overrides}
-    return Product.model_validate(data)
+    return deserialize(data, Product)
 
 
 class TestOrganizationPlanFromSdk:
@@ -152,6 +155,8 @@ class TestOrganizationSubscriptionFromSdk:
             "status": "active",
             "current_period_start": "2026-01-01T00:00:00Z",
             "current_period_end": "2026-02-01T00:00:00Z",
+            "current_meter_period_start": None,
+            "current_meter_period_end": None,
             "trial_start": None,
             "trial_end": None,
             "cancel_at_period_end": False,
@@ -159,6 +164,9 @@ class TestOrganizationSubscriptionFromSdk:
             "started_at": "2026-01-01T00:00:00Z",
             "ends_at": None,
             "ended_at": None,
+            "pause_at_period_end": False,
+            "paused_at": None,
+            "resumes_at": None,
             "customer_id": "cus_1",
             "product_id": "prod_1",
             "discount_id": None,
@@ -190,7 +198,7 @@ class TestOrganizationSubscriptionFromSdk:
             "pending_update": None,
             **overrides,
         }
-        return Subscription.model_validate(data)
+        return deserialize(data, Subscription)
 
     def test_basic(self) -> None:
         sub = OrganizationSubscription.from_sdk(self._subscription())

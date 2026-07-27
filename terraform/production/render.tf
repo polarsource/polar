@@ -23,12 +23,18 @@ locals {
   db_user     = render_postgres.db.database_user
   db_password = render_postgres.db.connection_info.password
 
+  db_external_host = nonsensitive(regex("@([^/:]+)", render_postgres.db.connection_info.external_connection_string)[0])
+
   # Read replica connection info
   read_replica = [for r in render_postgres.db.read_replicas : r if r.name == "polar-read"][0]
 
   # Redis connection info
   redis_host = render_redis.redis.id
   redis_port = "6379"
+
+  # Forwarded allow IPs: Cloudflare ranges + Render proxy
+  render_proxy_cidr   = "10.0.0.0/8"
+  forwarded_allow_ips = "${module.cloudflare_ips.all_ranges},${local.render_proxy_cidr}"
 }
 
 # =============================================================================
@@ -65,7 +71,6 @@ resource "render_postgres" "db" {
   environment_id = render_project.polar.environments["Production"].id
   name           = "db"
   database_name  = "polar_cpit"
-  database_user  = "polar_cpit_user"
   plan           = "pro_64gb"
   region         = "ohio"
   version        = "15"
@@ -83,7 +88,6 @@ resource "render_postgres" "db" {
     ignore_changes = [
       ip_allow_list,
       disk_size_gb,
-      database_user,
       database_name,
     ]
   }
@@ -111,6 +115,14 @@ resource "render_redis" "redis" {
   ip_allow_list = []
 
   depends_on = [render_registry_credential.ghcr, render_project.polar]
+}
+
+# =============================================================================
+# Cloudflare IP Ranges
+# =============================================================================
+
+module "cloudflare_ips" {
+  source = "../modules/cloudflare_ips"
 }
 
 # =============================================================================
@@ -147,6 +159,7 @@ module "production" {
     custom_domains         = [{ name = "api.polar.sh" }, { name = "api-alt.polar.sh" }, { name = "buy.polar.sh" }, { name = "backoffice.polar.sh" }]
     plan                   = "pro_plus"
     web_concurrency        = "6"
+    forwarded_allow_ips    = local.forwarded_allow_ips
   }
 
   postgres_config = {
@@ -195,11 +208,11 @@ module "production" {
       dramatiq_prom_port = "10001"
       database_pool_size = "16"
     }
-    "worker-tinybird" = {
-      start_command      = "uv run dramatiq polar.worker.run -p 4 -t 32 --queues tinybird"
+    worker-tinybird = {
+      start_command      = "uv run dramatiq polar.worker.run_without_db -p 4 -t 32 --queues tinybird"
       dramatiq_prom_port = "10002"
     }
-    "worker-invoices-receipts" = {
+    worker-invoices-receipts = {
       start_command      = "uv run dramatiq polar.worker.run -p 1 -t 3 --queues invoices_and_receipts"
       plan               = "standard"
       dramatiq_prom_port = "10003"
@@ -207,8 +220,9 @@ module "production" {
   }
 
   google_secrets = {
-    client_id     = var.google_client_id_production
-    client_secret = var.google_client_secret_production
+    client_id            = var.google_client_id_production
+    client_secret        = var.google_client_secret_production
+    service_account_json = var.google_service_account_json
   }
 
   openai_secrets = {
@@ -318,13 +332,14 @@ module "production" {
     app_review_otp_code            = var.backend_app_review_otp_code
     chargeback_stop_webhook_secret = var.backend_chargebackstop_webhook_secret_production
     numeral_api_key                = var.numeral_api_key_production
+    turnstile_secret               = var.turnstile_secret
   }
 
   aws_s3_config = {
     region                        = "us-east-2"
     signature_version             = "v4"
     files_presign_ttl             = "3600"
-    files_public_bucket_name      = "polar-public-files"
+    files_public_bucket_name      = local.files_public_bucket_name
     customer_invoices_bucket_name = "polar-customer-invoices"
     customer_receipts_bucket_name = "polar-customer-receipts"
     payout_invoices_bucket_name   = "polar-payout-invoices"
@@ -338,6 +353,17 @@ module "production" {
     files_download_secret = var.s3_files_download_secret_production
   }
 
+  aws_kms_config = {
+    key_id   = module.secrets_kms.key_arn
+    role_arn = module.secrets_kms.role_arn
+  }
+
+  worker_sqs_config = {
+    enabled      = "true"
+    actors       = var.worker_sqs_actors
+    queue_prefix = "polar-production-tasks"
+  }
+
   github_secrets = {
     client_id                           = var.github_client_id_production
     client_secret                       = var.github_client_secret_production
@@ -349,9 +375,12 @@ module "production" {
   }
 
   stripe_secrets = {
-    connect_webhook_secret = var.stripe_connect_webhook_secret_production
-    secret_key             = var.stripe_secret_key_production
-    webhook_secret         = var.stripe_webhook_secret_production
+    connect_webhook_secret      = var.stripe_connect_webhook_secret_production
+    secret_key                  = var.stripe_secret_key_production
+    webhook_secret              = var.stripe_webhook_secret_production
+    account_risk_webhook_secret = var.stripe_account_risk_webhook_secret_production
+    app_client_id               = var.stripe_app_client_id
+    app_client_link_id          = var.stripe_app_client_link_id
   }
 
   logfire_config = {
@@ -401,6 +430,69 @@ module "production" {
   }
 
   depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db, render_redis.redis]
+}
+
+# =============================================================================
+# PgBouncer
+# =============================================================================
+
+module "pgbouncer" {
+  source = "../modules/pgbouncer"
+
+  environment            = "production"
+  render_environment_id  = render_project.polar.environments["Production"].id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = local.db_internal_host
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = {
+    max_client_conn   = "5000"
+    default_pool_size = "50"
+    reserve_pool_size = "10"
+  }
+
+  depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db]
+}
+
+locals {
+  pgbouncer_read_pool_configs = {
+    "polar-read" = {
+      max_client_conn   = "5000"
+      default_pool_size = "50"
+      reserve_pool_size = "10"
+    }
+    "polar-replica" = {
+      max_client_conn   = "1000"
+      default_pool_size = "20"
+      reserve_pool_size = "0"
+    }
+  }
+}
+
+module "pgbouncer_read" {
+  source   = "../modules/pgbouncer"
+  for_each = { for replica in render_postgres.db.read_replicas : replica.name => replica }
+
+  name                   = "pgbouncer-${trimprefix(each.key, "polar-")}"
+  environment            = "production"
+  render_environment_id  = render_project.polar.environments["Production"].id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = each.value.id
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = local.pgbouncer_read_pool_configs[each.key]
+
+  depends_on = [render_registry_credential.ghcr, render_project.polar, render_postgres.db]
 }
 
 # =============================================================================

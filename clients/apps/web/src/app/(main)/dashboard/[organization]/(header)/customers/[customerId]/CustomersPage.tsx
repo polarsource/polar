@@ -292,7 +292,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
                 )}
               </p>
               {(customer.email || customer.type === 'individual') && (
-                <div className="dark:text-polar-500 flex flex-row items-center text-base font-normal text-gray-500">
+                <div className="dark:text-polar-500 flex flex-row items-center text-base text-gray-500">
                   <span>{customer.email ?? '—'}</span>
                 </div>
               )}

@@ -24,7 +24,7 @@ interface SeatViewOnlyTableProps {
 export const SeatViewOnlyTable = ({ seats }: SeatViewOnlyTableProps) => {
   return (
     <DataTable
-      data={seats.sort((a, b) => {
+      data={[...seats].sort((a, b) => {
         const order = ['claimed', 'pending', 'revoked']
         return order.indexOf(a.status) - order.indexOf(b.status)
       })}
@@ -45,7 +45,7 @@ export const SeatViewOnlyTable = ({ seats }: SeatViewOnlyTableProps) => {
           cell: ({ row }) => {
             const status = row.original.status
             const [label, color] = seatStatusDisplayConfig[status]
-            return <Status color={color} status={label} size="small" />
+            return <Status color={color} status={label} />
           },
         },
       ]}

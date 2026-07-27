@@ -10,6 +10,7 @@ import { useRouter } from 'next/navigation'
 import { useState, type ReactNode } from 'react'
 import LogoIcon from '../Brand/logos/LogoIcon'
 import { type APIPreviewStep, APIPreview } from './APIPreview'
+import { Text } from '@polar-sh/orbit'
 
 const STEPS = ['personal', 'business', 'product'] as const
 const STEP_ROUTES = [
@@ -53,12 +54,22 @@ export function OnboardingShell({
         gap="l"
         color="text-tertiary"
       >
+        {hadOrgs && (
+          <Link
+            href="/dashboard"
+            className="dark:hover:text-polar-200 text-sm hover:text-gray-900"
+          >
+            Back to dashboard
+          </Link>
+        )}
+
         <Link
           href="/dashboard/account/preferences"
           className="dark:hover:text-polar-200 text-sm hover:text-gray-900"
         >
           User settings
         </Link>
+
         <a
           href={`${CONFIG.BASE_URL}/v1/auth/logout`}
           className="dark:hover:text-polar-200 text-sm hover:text-gray-900"
@@ -120,24 +131,14 @@ export function OnboardingShell({
               </Box>
 
               <Box flexDirection="column" rowGap="m">
-                <h1 className="text-3xl font-bold text-gray-900 dark:text-white">
-                  {title}
-                </h1>
+                <Text variant="heading-s">{title}</Text>
                 {subtitle && (
-                  <p className="dark:text-polar-400 text-sm text-gray-500">
+                  <Text variant="body" color="muted">
                     {subtitle}
-                  </p>
+                  </Text>
                 )}
               </Box>
               {children}
-              {hadOrgs && (
-                <Link
-                  href="/dashboard"
-                  className="dark:text-polar-400 dark:hover:text-polar-200 text-center text-sm text-gray-500 hover:text-gray-900"
-                >
-                  Back to dashboard
-                </Link>
-              )}
             </Box>
           </motion.div>
         </Box>

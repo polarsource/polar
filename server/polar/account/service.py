@@ -9,15 +9,10 @@ from polar.auth.models import AuthSubject
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.config import settings
-from polar.exceptions import PolarError
 from polar.models import Account, Organization, User
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .schemas import AccountUpdate
-
-
-class AccountServiceError(PolarError):
-    pass
 
 
 class AccountService:
@@ -88,22 +83,6 @@ class AccountService:
                 "_platform_subscription_fee_percent": subscription_fee_percent,
             },
         )
-
-    async def _get_unrestricted(
-        self,
-        session: AsyncReadSession,
-        id: uuid.UUID,
-    ) -> Account | None:
-        repository = AccountRepository.from_session(session)
-        statement = (
-            repository.get_base_statement()
-            .where(Account.id == id)
-            .options(
-                joinedload(Account.users),
-                joinedload(Account.organizations),
-            )
-        )
-        return await repository.get_one_or_none(statement)
 
 
 account = AccountService()

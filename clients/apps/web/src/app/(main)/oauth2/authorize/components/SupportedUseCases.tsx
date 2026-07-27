@@ -36,7 +36,7 @@ export default function SupportedUseCases() {
                 href="https://polar.sh/legal/acceptable-use-policy"
                 className="text-blue-500 underline dark:text-blue-400"
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
               >
                 prohibited products
               </a>

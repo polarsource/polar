@@ -28,6 +28,23 @@ data "render_redis" "redis" {
 }
 
 # =============================================================================
+# Sandbox Redis Instance
+# =============================================================================
+
+resource "render_redis" "redis_sandbox" {
+  environment_id    = data.tfe_outputs.production.values.sandbox_environment_id
+  name              = "redis-sandbox"
+  plan              = "standard"
+  region            = "ohio"
+  max_memory_policy = "noeviction"
+
+  # Empty IP allow list means only private network connections
+  ip_allow_list = []
+
+  depends_on = [render_registry_credential.ghcr]
+}
+
+# =============================================================================
 # Locals
 # =============================================================================
 
@@ -35,6 +52,7 @@ locals {
   # Database connection info (derived from postgres resource)
   # db_host          = render_postgres.db.id
   db_internal_host = data.render_postgres.db.id
+  db_external_host = nonsensitive(regex("@([^/:]+)", data.render_postgres.db.connection_info.external_connection_string)[0])
   db_port          = "5432"
   # db_name          = data.render_postgres.db.database_name
   db_user     = data.render_postgres.db.database_user
@@ -44,8 +62,20 @@ locals {
   read_replica = [for r in data.render_postgres.db.read_replicas : r if r.name == "polar-read"][0]
 
   # Redis connection info
-  redis_host = data.render_redis.redis.id
+  redis_host = render_redis.redis_sandbox.id
   redis_port = "6379"
+
+  # Forwarded allow IPs: Cloudflare ranges + Render proxy
+  render_proxy_cidr   = "10.0.0.0/8"
+  forwarded_allow_ips = "${module.cloudflare_ips.all_ranges},${local.render_proxy_cidr}"
+}
+
+# =============================================================================
+# Cloudflare IP Ranges
+# =============================================================================
+
+module "cloudflare_ips" {
+  source = "../modules/cloudflare_ips"
 }
 
 # =============================================================================
@@ -101,7 +131,7 @@ module "sandbox" {
     cors_origins           = "[\"https://sandbox.polar.sh\", \"https://github.com\", \"https://docs.polar.sh\"]"
     custom_domains         = [{ name = "sandbox-api.polar.sh" }]
     web_concurrency        = "2"
-    forwarded_allow_ips    = "*"
+    forwarded_allow_ips    = local.forwarded_allow_ips
     database_pool_size     = "10"
     postgres_database      = "polar_sandbox"
     postgres_read_database = "polar_sandbox"
@@ -120,7 +150,7 @@ module "sandbox" {
       database_pool_size = "16"
     }
     worker-sandbox-tinybird = {
-      start_command      = "uv run dramatiq polar.worker.run -p 1 -t 16 --queues tinybird"
+      start_command      = "uv run dramatiq polar.worker.run_without_db -p 1 -t 16 --queues tinybird"
       dramatiq_prom_port = "10002"
     }
     worker-sandbox-invoices-receipts = {
@@ -131,8 +161,9 @@ module "sandbox" {
   }
 
   google_secrets = {
-    client_id     = var.google_client_id_sandbox
-    client_secret = var.google_client_secret_sandbox
+    client_id            = var.google_client_id_sandbox
+    client_secret        = var.google_client_secret_sandbox
+    service_account_json = var.google_service_account_json
   }
 
   openai_secrets = {
@@ -181,13 +212,14 @@ module "sandbox" {
     sentry_dsn               = var.backend_sentry_dsn_sandbox
     jwks                     = var.backend_jwks_sandbox
     numeral_api_key          = var.numeral_api_key_sandbox
+    turnstile_secret         = var.turnstile_secret
   }
 
   aws_s3_config = {
     region                        = "us-east-2"
     signature_version             = "v4"
     files_presign_ttl             = "3600"
-    files_public_bucket_name      = "polar-public-sandbox-files"
+    files_public_bucket_name      = local.files_public_bucket_name
     customer_invoices_bucket_name = "polar-sandbox-customer-invoices"
     customer_receipts_bucket_name = "polar-sandbox-customer-receipts"
     payout_invoices_bucket_name   = "polar-sandbox-payout-invoices"
@@ -201,6 +233,17 @@ module "sandbox" {
     files_download_secret = var.s3_files_download_secret_sandbox
   }
 
+  aws_kms_config = {
+    key_id   = module.secrets_kms.key_arn
+    role_arn = module.secrets_kms.role_arn
+  }
+
+  worker_sqs_config = {
+    enabled      = "true"
+    actors       = var.worker_sqs_actors
+    queue_prefix = "polar-sandbox-tasks"
+  }
+
   github_secrets = {
     client_id                           = var.github_client_id_sandbox
     client_secret                       = var.github_client_secret_sandbox
@@ -212,9 +255,12 @@ module "sandbox" {
   }
 
   stripe_secrets = {
-    connect_webhook_secret = var.stripe_connect_webhook_secret_sandbox
-    secret_key             = var.stripe_secret_key_sandbox
-    webhook_secret         = var.stripe_webhook_secret_sandbox
+    connect_webhook_secret      = var.stripe_connect_webhook_secret_sandbox
+    secret_key                  = var.stripe_secret_key_sandbox
+    webhook_secret              = var.stripe_webhook_secret_sandbox
+    account_risk_webhook_secret = var.stripe_account_risk_webhook_secret_sandbox
+    app_client_id               = var.stripe_app_client_id
+    app_client_link_id          = var.stripe_app_client_link_id
   }
 
   apple_secrets = {
@@ -257,7 +303,56 @@ module "sandbox" {
     workspace           = var.tinybird_workspace
   }
 
-  depends_on = [render_registry_credential.ghcr, data.render_postgres.db, data.render_redis.redis]
+  depends_on = [render_registry_credential.ghcr, data.render_postgres.db, data.render_redis.redis, render_redis.redis_sandbox]
+}
+
+# =============================================================================
+# PgBouncer
+# =============================================================================
+
+module "pgbouncer" {
+  source = "../modules/pgbouncer"
+
+  environment            = "sandbox"
+  render_environment_id  = data.tfe_outputs.production.values.sandbox_environment_id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = local.db_internal_host
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = {
+    max_client_conn   = "1000"
+    default_pool_size = "20"
+  }
+
+  depends_on = [render_registry_credential.ghcr, data.render_postgres.db]
+}
+
+module "pgbouncer_read" {
+  source = "../modules/pgbouncer"
+
+  name                   = "pgbouncer-read"
+  environment            = "sandbox"
+  render_environment_id  = data.tfe_outputs.production.values.sandbox_environment_id
+  registry_credential_id = render_registry_credential.ghcr.id
+
+  database = {
+    host     = local.read_replica.id
+    port     = local.db_port
+    user     = local.db_user
+    password = local.db_password
+  }
+
+  pool_config = {
+    max_client_conn   = "1000"
+    default_pool_size = "20"
+  }
+
+  depends_on = [render_registry_credential.ghcr, data.render_postgres.db]
 }
 
 # =============================================================================

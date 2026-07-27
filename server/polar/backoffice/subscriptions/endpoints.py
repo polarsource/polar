@@ -6,12 +6,19 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, HTTPException, Query, Request
 from pydantic import UUID4, BeforeValidator, ValidationError
 from sqlalchemy import func, or_
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import contains_eager, joinedload, selectinload
 from tagflow import classes, tag, text
 
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
-from polar.models import Customer, Order, Organization, Product, Subscription
+from polar.models import (
+    Customer,
+    Order,
+    Organization,
+    Product,
+    Subscription,
+    SubscriptionMeter,
+)
 from polar.models.subscription import SubscriptionStatus
 from polar.order.repository import OrderRepository
 from polar.postgres import AsyncSession, get_db_read_session, get_db_session
@@ -21,7 +28,14 @@ from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
 from polar.subscription.sorting import SubscriptionSortProperty
 
-from ..components import button, datatable, description_list, input, modal
+from ..components import (
+    alert,
+    button,
+    datatable,
+    description_list,
+    input,
+    modal,
+)
 from ..layout import layout
 from ..orders.components import orders_datatable
 from ..responses import HXRedirectResponse
@@ -62,6 +76,17 @@ class OrganizationColumn(
         )
 
 
+class SubscriptionMeterAmountColumn(
+    datatable.DatatableCurrencyColumn[SubscriptionMeter, SubscriptionSortProperty]
+):
+    def __init__(self, currency: str) -> None:
+        super().__init__("amount", "Amount")
+        self.currency = currency
+
+    def get_currency(self, item: SubscriptionMeter) -> str:
+        return self.currency
+
+
 @contextlib.contextmanager
 def subscription_status_badge(subscription: Subscription) -> Generator[None]:
     status = subscription.status
@@ -86,7 +111,7 @@ async def list(
     request: Request,
     pagination: PaginationParamsQuery,
     sorting: sorting.ListSorting,
-    query: str | None = Query(None),
+    query: Annotated[str | None, BeforeValidator(empty_str_to_none), Query()] = None,
     status: Annotated[
         SubscriptionStatus | None, BeforeValidator(empty_str_to_none), Query()
     ] = None,
@@ -204,8 +229,10 @@ async def get(
         id,
         options=(
             joinedload(Subscription.customer),
+            joinedload(Subscription.organization),
             joinedload(Subscription.product).joinedload(Product.organization),
             joinedload(Subscription.discount),
+            selectinload(Subscription.meters).joinedload(SubscriptionMeter.meter),
         ),
     )
 
@@ -255,6 +282,17 @@ async def get(
                             hx_target="#modal",
                         ):
                             text("Uncancel")
+                    if subscription.can_reinstate():
+                        with button(
+                            variant="warning",
+                            hx_get=str(
+                                request.url_for(
+                                    "subscriptions:reinstate", id=subscription.id
+                                )
+                            ),
+                            hx_target="#modal",
+                        ):
+                            text("Reinstate")
                     if subscription.active:
                         with button(
                             hx_get=str(
@@ -376,7 +414,17 @@ async def get(
                             ).render(request, subscription):
                                 pass
 
-            # Orders table
+            with tag.div(classes="flex flex-col gap-4"):
+                with tag.h2(classes="text-2xl"):
+                    text("Meters")
+                with datatable.Datatable[SubscriptionMeter, SubscriptionSortProperty](
+                    datatable.DatatableAttrColumn("meter.name", "Meter"),
+                    datatable.DatatableAttrColumn("consumed_units", "Consumed Units"),
+                    datatable.DatatableAttrColumn("credited_units", "Credited Units"),
+                    SubscriptionMeterAmountColumn(subscription.currency),
+                ).render(request, subscription.meters):
+                    pass
+
             with tag.div(classes="flex flex-col gap-4"):
                 with tag.h2(classes="text-2xl"):
                     text("Orders")
@@ -487,6 +535,62 @@ async def uncancel(
                     hx_target="#modal",
                 ):
                     text("Submit")
+
+
+@router.api_route(
+    "/{id}/reinstate", name="subscriptions:reinstate", methods=["GET", "POST"]
+)
+async def reinstate(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    subscription_repository = SubscriptionRepository.from_session(session)
+    subscription = await subscription_repository.get_by_id(
+        id, options=subscription_repository.get_eager_options()
+    )
+
+    if subscription is None:
+        raise HTTPException(status_code=404)
+
+    if not subscription.can_reinstate():
+        await add_toast(request, "This subscription cannot be reinstated.", "error")
+        return
+
+    if request.method == "POST":
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            await subscription_service.reinstate(session, ctx, subscription)
+        return HXRedirectResponse(
+            request, str(request.url_for("subscriptions:get", id=id)), 303
+        )
+
+    with modal("Reinstate subscription", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text("Are you sure you want to reinstate this subscription?")
+            with alert("warning", soft=True):
+                with tag.div(classes="flex flex-col gap-1"):
+                    with tag.p(classes="font-semibold"):
+                        text("Billing will resume")
+                    with tag.p():
+                        text(
+                            "No charge will be created immediately. "
+                            "The subscription cycle will resume, and the customer "
+                            "will start being billed again when the next cycle begins."
+                        )
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    type="button",
+                    variant="warning",
+                    hx_post=str(request.url),
+                    hx_target="#modal",
+                ):
+                    text("Reinstate")
 
 
 @router.api_route(

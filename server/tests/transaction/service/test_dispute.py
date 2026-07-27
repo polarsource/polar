@@ -17,6 +17,7 @@ from polar.models import (
 from polar.models.dispute import DisputeStatus
 from polar.models.transaction import Processor, TransactionType
 from polar.postgres import AsyncSession
+from polar.transaction.repository import DisputeTransactionRepository
 from polar.transaction.service.balance import BalanceTransactionService
 from polar.transaction.service.balance import (
     balance_transaction as balance_transaction_service,
@@ -122,6 +123,62 @@ class TestCreateDispute:
 
         with pytest.raises(DisputeTransactionAlreadyExistsError):
             await dispute_transaction_service.create_dispute(session, dispute=dispute)
+
+    async def test_transaction_already_exists_concurrent_flush(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        order: Order,
+        payment: Payment,
+        create_dispute_fees_mock: AsyncMock,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        charge = build_stripe_charge(id=payment.processor_id)
+        dispute = await create_dispute(
+            save_fixture, order, payment, status=DisputeStatus.lost, amount=1000
+        )
+        stripe_service_mock.get_dispute.return_value = build_stripe_dispute(
+            status="lost",
+            amount=1000,
+            charge_id=charge.id,
+            balance_transactions=[
+                build_stripe_balance_transaction(
+                    reporting_category="dispute", amount=-1000
+                ),
+            ],
+        )
+        payment_transaction = Transaction(
+            type=TransactionType.payment,
+            processor=Processor.stripe,
+            currency=charge.currency,
+            amount=charge.amount,
+            account_currency=charge.currency,
+            account_amount=charge.amount,
+            tax_amount=0,
+            charge_id=charge.id,
+        )
+        await save_fixture(payment_transaction)
+
+        # Pre-check ran before the racing insert was visible, so the unique
+        # index must turn it into the domain error, not a leaking IntegrityError.
+        existing_transaction = await create_transaction(
+            save_fixture, type=TransactionType.dispute, dispute=dispute
+        )
+        mocker.patch.object(
+            DisputeTransactionRepository,
+            "get_by_dispute_id",
+            new_callable=AsyncMock,
+            side_effect=[None, existing_transaction],
+        )
+
+        with pytest.raises(DisputeTransactionAlreadyExistsError):
+            await dispute_transaction_service.create_dispute(session, dispute=dispute)
+
+        create_dispute_fees_mock.assert_not_awaited()
+
+        # The savepoint must keep the outer transaction usable for the caller.
+        await session.flush()
 
     async def test_valid_lost(
         self,

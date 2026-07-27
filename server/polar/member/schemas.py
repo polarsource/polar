@@ -46,12 +46,12 @@ class MemberOwnerCreate(Schema):
     )
 
 
-class MemberCreate(Schema):
-    """Schema for creating a new member."""
+class MemberCreateFromCustomer(Schema):
+    """Schema for creating a new member nested under a customer.
 
-    customer_id: UUID4 = Field(
-        description="The ID of the customer this member belongs to."
-    )
+    The customer is taken from the URL path, so it's not part of the body.
+    """
+
     email: EmailStrDNS = Field(
         description=_email_description, examples=[_email_example]
     )
@@ -70,6 +70,14 @@ class MemberCreate(Schema):
             "ownership, use the member update endpoint."
         ),
         examples=[MemberRole.member],
+    )
+
+
+class MemberCreate(MemberCreateFromCustomer):
+    """Schema for creating a new member (deprecated; customer in the body)."""
+
+    customer_id: UUID4 = Field(
+        description="The ID of the customer this member belongs to."
     )
 
 

@@ -8,8 +8,8 @@ import httpx
 import structlog
 
 from polar.config import Environment, settings
+from polar.integrations.slack.client import SlackClient
 from polar.logging import Logger
-from polar.webhook.slack import SlackPayload
 from polar.worker import CronTrigger, TaskPriority, actor
 
 from .client import GrafanaCloudAPIError, GrafanaCloudConfigError
@@ -18,24 +18,7 @@ from .slack import format_slo_report_slack_payload
 
 log: Logger = structlog.get_logger()
 
-SLACK_API_URL = "https://slack.com/api/chat.postMessage"
-
-
-async def _send_slack_message(payload: SlackPayload, token: str, channel: str) -> None:
-    """Send message to Slack via chat.postMessage API."""
-    async with httpx.AsyncClient() as client:
-        response = await client.post(
-            SLACK_API_URL,
-            headers={"Authorization": f"Bearer {token}"},
-            json={**payload, "channel": channel},
-            timeout=30.0,
-        )
-        response.raise_for_status()
-        data = response.json()
-        if not data.get("ok"):
-            error_code = data.get("error", "unknown")
-            raise RuntimeError(f"Slack API error: {error_code}")
-        log.info("slo_report_sent_to_slack", channel=channel)
+_slack_client = SlackClient()
 
 
 @actor(
@@ -82,7 +65,9 @@ async def slo_report_send_weekly() -> None:
         )
 
         payload = format_slo_report_slack_payload(report)
-        await _send_slack_message(payload, bot_token, channel)
+        await _slack_client.chat_post_message(
+            bot_token=bot_token, channel=channel, **payload
+        )
 
     except GrafanaCloudConfigError as e:
         log.error("slo_report_config_error", error=str(e))

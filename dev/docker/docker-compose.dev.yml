@@ -35,7 +35,10 @@ x-common-backend-env: &common-backend-env
   POLAR_REDIS_PORT: "6379"
   POLAR_REDIS_DB: ${POLAR_REDIS_DB:-0}
   # S3/MinIO — shared instance; each app instance gets its own bucket pair.
+  # Server-side calls stay in-network (minio:9000); presigned URLs handed to
+  # the browser must point at the host-published port (localhost:9000).
   POLAR_S3_ENDPOINT_URL: http://minio:9000
+  POLAR_S3_PUBLIC_ENDPOINT_URL: http://localhost:9000
   POLAR_AWS_ACCESS_KEY_ID: ${POLAR_AWS_ACCESS_KEY_ID:-polar-development}
   POLAR_AWS_SECRET_ACCESS_KEY: ${POLAR_AWS_SECRET_ACCESS_KEY:-polar123456789}
   POLAR_S3_FILES_BUCKET_NAME: polar-s3-${POLAR_DOCKER_INSTANCE:-1}
@@ -46,9 +49,11 @@ x-common-backend-env: &common-backend-env
   # CORS and allowed hosts — configured for Docker networking
   POLAR_CORS_ORIGINS: '["http://localhost:${WEB_PORT:-3000}", "http://127.0.0.1:${WEB_PORT:-3000}", "http://web:3000"]'
   POLAR_ALLOWED_HOSTS: '["localhost:${WEB_PORT:-3000}", "127.0.0.1:${WEB_PORT:-3000}"]'
+  POLAR_BASE_URL: http://localhost:${API_PORT:-8000}
   POLAR_FRONTEND_BASE_URL: http://localhost:${WEB_PORT:-3000}
   POLAR_CHECKOUT_BASE_URL: http://localhost:${API_PORT:-8000}/v1/checkout-links/{client_secret}/redirect
   POLAR_USER_SESSION_COOKIE_DOMAIN: localhost
+  POLAR_AUTHENTICATION_SESSION_COOKIE_DOMAIN: localhost
   # Tinybird — shared instance. Queries filter by organization_id and each
   # instance has its own postgres DB, so org UUIDs are globally disjoint and
   # cross-instance leakage is impossible. Tokens are auto-discovered from the
@@ -94,6 +99,18 @@ services:
       # instances' api containers also on polar-shared).
       - default
       - polar-shared
+    # `start_period` is long because a cold first boot binds uvicorn only after
+    # a serial chain: uv sync, the email-template build (pnpm install + tsup +
+    # pkg), DB/bucket bootstrap, migrations, and full seed load — routinely
+    # several minutes. Checks that fail during it don't count against `retries`,
+    # so `dev docker up --wait` won't give up before /healthz answers. Plain
+    # `up -d` (no --wait) is unaffected either way.
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:8000/healthz"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 600s
     command: ["api"]
 
   worker:
@@ -128,10 +145,10 @@ services:
       # must be set in server/.env (they're loaded via env_file)
       # POLAR_API_URL is for server-side requests (container-to-container)
       POLAR_API_URL: http://api:8000
-      # Browser-side MinIO uploads require a host-reachable MinIO. Shared
-      # infra doesn't publish a host port by default, so direct browser
-      # uploads won't work in this dev model — file features that round-trip
-      # through the API still work fine.
+      # Browser-side MinIO uploads require a host-reachable MinIO. Shared infra
+      # publishes MinIO on host port 9000, and the API generates presigned URLs
+      # against POLAR_S3_PUBLIC_ENDPOINT_URL (http://localhost:9000), so direct
+      # browser uploads/downloads work.
       S3_PUBLIC_IMAGES_BUCKET_PROTOCOL: http
       S3_PUBLIC_IMAGES_BUCKET_HOSTNAME: localhost
       S3_PUBLIC_IMAGES_BUCKET_PORT: "9000"
@@ -150,7 +167,17 @@ services:
       # `http://api:8000` resolves unambiguously to THIS instance's api.
       - default
     depends_on:
-      - api
+      # Wait for the api to be serving, not just started — the SSR layer proxies
+      # to it, so starting web before api is healthy yields 500s on first load.
+      api:
+        condition: service_healthy
+    # node:22-slim ships no curl/wget, so probe with Node's built-in fetch.
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 600s
     deploy:
       resources:
         limits:

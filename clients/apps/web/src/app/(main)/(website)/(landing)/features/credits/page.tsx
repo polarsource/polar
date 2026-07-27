@@ -2,7 +2,7 @@ import { CreditsPage } from '@/components/Landing/features/CreditsPage'
 import { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Credits — Polar',
+  title: 'Credits & Prepaid Balances',
   description:
     'Prepaid usage for your API. Issue credits, draw down balances, and let metered pricing handle the overage.',
   keywords:

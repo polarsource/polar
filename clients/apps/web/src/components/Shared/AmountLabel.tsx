@@ -5,7 +5,7 @@ import { useMemo } from 'react'
 interface AmountLabelProps {
   amount: number
   currency: string
-  interval?: schemas['SubscriptionRecurringInterval']
+  interval?: schemas['RecurringInterval']
   intervalCount?: number | null
 }
 
@@ -56,10 +56,10 @@ const AmountLabel: React.FC<AmountLabelProps> = ({
   }, [interval, intervalCount])
 
   return (
-    <div className="flex flex-row items-baseline gap-x-1">
+    <span className="inline-flex flex-row items-baseline gap-x-1">
       {formatCurrency('compact')(amount, currency)}
       <span className="text-[max(12px,0.5em)]">{intervalDisplay}</span>
-    </div>
+    </span>
   )
 }
 

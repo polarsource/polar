@@ -5,9 +5,10 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 import sqlalchemy as sa
-from sqlalchemy import Select, and_, case, cast, or_, select
+from sqlalchemy import ColumnElement, Select, and_, case, cast, func, or_, select
 from sqlalchemy.orm import contains_eager
-from sqlalchemy.orm.strategy_options import joinedload, selectinload
+from sqlalchemy.orm.attributes import set_committed_value
+from sqlalchemy.orm.strategy_options import joinedload, raiseload, selectinload
 
 from polar.auth.models import (
     AuthSubject,
@@ -23,7 +24,7 @@ from polar.auth.models import (
     Customer as AuthCustomer,
 )
 from polar.auth.permission import OrganizationPermission
-from polar.authz.repository import select_user_org_ids
+from polar.authz.repository import select_accessible_org_ids
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.repository import (
     Options,
@@ -92,6 +93,33 @@ class SubscriptionRepository(
         )
         return await self.get_all(statement)
 
+    async def list_billable_by_customer(
+        self, customer_id: UUID, *, options: Options = ()
+    ) -> Sequence[Subscription]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                Subscription.customer_id == customer_id,
+                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                Subscription.ended_at.is_(None),
+            )
+            .options(*options)
+        )
+        return await self.get_all(statement)
+
+    def get_billable_by_organization_statement(
+        self, organization_id: UUID, *, options: Options = ()
+    ) -> Select[tuple[Subscription]]:
+        return (
+            self.get_base_statement()
+            .where(
+                Subscription.organization_id == organization_id,
+                Subscription.status.in_(SubscriptionStatus.billable_statuses()),
+                Subscription.ended_at.is_(None),
+            )
+            .options(*options)
+        )
+
     async def get_all_by_customer(
         self, customer_id: UUID, *, options: Options = ()
     ) -> Sequence[Subscription]:
@@ -107,6 +135,91 @@ class SubscriptionRepository(
             Subscription.product_id == product_id,
             Subscription.is_deleted.is_(False),
         )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
+
+    async def get_churn_breakdown(
+        self,
+        organization_id: UUID,
+        *,
+        since: datetime,
+    ) -> tuple[int, int]:
+        """(voluntary, involuntary) counts of subscriptions ended since the
+        cutoff.
+
+        Involuntary means the subscription ended while past due on payment
+        (`past_due_at` is set on entering dunning and cleared on recovery, so
+        it survives on subscriptions revoked for payment failure). Everything
+        else counts as voluntary, including immediate cancellations without a
+        stated reason.
+        """
+        involuntary = case(
+            (Subscription.past_due_at.is_not(None), 1),
+            else_=0,
+        )
+        statement = (
+            select(
+                func.coalesce(func.sum(involuntary), 0),
+                func.count(Subscription.id),
+            )
+            .join(Product, Product.id == Subscription.product_id)
+            .where(
+                Product.organization_id == organization_id,
+                Subscription.ended_at.is_not(None),
+                Subscription.ended_at >= since,
+                Subscription.is_deleted.is_(False),
+            )
+        )
+        result = await self.session.execute(statement)
+        row = result.one()
+        involuntary_count, total = int(row[0]), int(row[1])
+        return total - involuntary_count, involuntary_count
+
+    async def list_recently_ended(
+        self,
+        organization_id: UUID,
+        *,
+        since: datetime,
+        until: datetime | None = None,
+        limit: int,
+    ) -> tuple[Sequence[Subscription], int]:
+        """Subscriptions that ended in [since, until), most recent first, with
+        customer and product loaded. Second element is the window's total, so
+        callers can say "showing N of M" when the limit truncates."""
+        window: tuple[ColumnElement[bool], ...] = (
+            Subscription.organization_id == organization_id,
+            Subscription.ended_at.is_not(None),
+            Subscription.ended_at >= since,
+        )
+        if until is not None:
+            window = (*window, Subscription.ended_at < until)
+        statement = (
+            self.get_base_statement()
+            .where(*window)
+            .options(
+                joinedload(Subscription.customer),
+                joinedload(Subscription.product),
+            )
+            .order_by(Subscription.ended_at.desc())
+            .limit(limit)
+        )
+        count = await self.count(self.get_base_statement().where(*window))
+        return await self.get_all(statement), count
+
+    async def get_active_customer_ids_by_product(
+        self, product_id: UUID, *, limit: int | None = None
+    ) -> Sequence[UUID]:
+        statement = (
+            select(Subscription.customer_id)
+            .where(
+                Subscription.product_id == product_id,
+                Subscription.active.is_(True),
+                Subscription.is_deleted.is_(False),
+            )
+            .distinct()
+        )
+        if limit is not None:
+            statement = statement.limit(limit)
         result = await self.session.execute(statement)
         return result.scalars().all()
 
@@ -191,9 +304,8 @@ class SubscriptionRepository(
         if is_user(auth_subject):
             statement = statement.where(
                 Subscription.organization_id.in_(
-                    select_user_org_ids(
-                        auth_subject.subject.id,
-                        permission=OrganizationPermission.sales_read,
+                    select_accessible_org_ids(
+                        auth_subject, permission=OrganizationPermission.sales_read
                     )
                 )
             )
@@ -290,6 +402,7 @@ class SubscriptionRepository(
             .where(
                 Subscription.status == SubscriptionStatus.active,
                 Subscription.cancel_at_period_end.is_(False),
+                Subscription.pause_at_period_end.is_(False),
                 Subscription.current_period_end.isnot(None),
                 Subscription.current_period_end > now,
                 Subscription.current_period_end <= reminder_window_end,
@@ -390,9 +503,10 @@ class SubscriptionRepository(
                             (Subscription.cancel_at_period_end.is_(True), 5),
                         ),
                     ),
-                    (Subscription.status == SubscriptionStatus.past_due, 6),
-                    (Subscription.status == SubscriptionStatus.canceled, 7),
-                    (Subscription.status == SubscriptionStatus.unpaid, 8),
+                    (Subscription.status == SubscriptionStatus.paused, 6),
+                    (Subscription.status == SubscriptionStatus.past_due, 7),
+                    (Subscription.status == SubscriptionStatus.canceled, 8),
+                    (Subscription.status == SubscriptionStatus.unpaid, 9),
                 )
             case SubscriptionSortProperty.started_at:
                 return Subscription.started_at
@@ -453,9 +567,43 @@ class SubscriptionProductPriceRepository(
 
         return await self._get_seat_subscription_price(customer_id, meter_id)
 
+    async def get_by_customers_and_meter(
+        self, customer_ids: Sequence[UUID], meter_id: UUID
+    ) -> dict[UUID, CustomerSubscriptionProductPrice | None]:
+        """
+        Get prices for multiple customers in two queries.
+
+        Direct subscriptions take priority over seat-derived subscriptions.
+        """
+        unique_customer_ids = list(dict.fromkeys(customer_ids))
+        if not unique_customer_ids:
+            return {}
+
+        direct_prices = await self._get_direct_subscription_prices(
+            unique_customer_ids, meter_id
+        )
+        seat_prices = await self._get_seat_subscription_prices(
+            unique_customer_ids, meter_id
+        )
+
+        return {
+            customer_id: direct_prices.get(customer_id, seat_prices.get(customer_id))
+            for customer_id in unique_customer_ids
+        }
+
     async def _get_direct_subscription_price(
         self, customer_id: UUID, meter_id: UUID
     ) -> CustomerSubscriptionProductPrice | None:
+        return (
+            await self._get_direct_subscription_prices([customer_id], meter_id)
+        ).get(customer_id)
+
+    async def _get_direct_subscription_prices(
+        self, customer_ids: Sequence[UUID], meter_id: UUID
+    ) -> dict[UUID, CustomerSubscriptionProductPrice]:
+        customer_ids_parameter = sa.bindparam(
+            "customer_ids", customer_ids, type_=sa.ARRAY(sa.Uuid())
+        )
         statement = (
             self.get_base_statement()
             .join(
@@ -470,78 +618,87 @@ class SubscriptionProductPriceRepository(
                 ProductPrice.is_metered.is_(True),
                 ProductPriceMeteredUnit.meter_id == meter_id,
                 Subscription.billable.is_(True),
-                Subscription.customer_id == customer_id,
+                Subscription.customer_id == sa.any_(customer_ids_parameter),
             )
             # In case customer has several subscriptions, take the earliest one
-            .order_by(Subscription.started_at.asc())
-            .limit(1)
+            .distinct(Subscription.customer_id)
+            .order_by(Subscription.customer_id, Subscription.started_at.asc())
             .options(
                 contains_eager(SubscriptionProductPrice.product_price),
-                contains_eager(SubscriptionProductPrice.subscription).joinedload(
-                    Subscription.customer
+                contains_eager(SubscriptionProductPrice.subscription).options(
+                    joinedload(Subscription.customer).raiseload(Customer.owner),
+                    raiseload(Subscription.subscription_product_prices),
+                    raiseload(Subscription.meters),
                 ),
             )
         )
 
-        subscription_product_price = await self.get_one_or_none(statement)
-        if subscription_product_price is None:
-            return None
-
-        return CustomerSubscriptionProductPrice(
-            customer_id=subscription_product_price.subscription.customer_id,
-            subscription_product_price=subscription_product_price,
-        )
+        subscription_product_prices = await self.get_all(statement)
+        return {
+            subscription_product_price.subscription.customer_id: CustomerSubscriptionProductPrice(
+                customer_id=subscription_product_price.subscription.customer_id,
+                subscription_product_price=subscription_product_price,
+            )
+            for subscription_product_price in subscription_product_prices
+        }
 
     async def _get_seat_subscription_price(
         self, customer_id: UUID, meter_id: UUID
     ) -> CustomerSubscriptionProductPrice | None:
-        """
-        Get subscription product price for a customer who is a seat holder.
-
-        Returns the billing manager's subscription if the seat holder has access
-        to a metered price for the specified meter.
-        """
-        seat = await self._get_active_seat_for_customer(customer_id)
-        if seat is None or seat.subscription is None:
-            return None
-
-        # Find matching metered price in billing manager's subscription
-        assert seat.subscription is not None
-        metered_price = self._find_metered_price_in_subscription(
-            seat.subscription, meter_id
-        )
-        if metered_price is None:
-            return None
-
-        return CustomerSubscriptionProductPrice(
-            customer_id=seat.subscription.customer_id,
-            subscription_product_price=metered_price,
+        return (await self._get_seat_subscription_prices([customer_id], meter_id)).get(
+            customer_id
         )
 
-    async def _get_active_seat_for_customer(
-        self, customer_id: UUID
-    ) -> CustomerSeat | None:
-        """Get the active seat for a customer, with subscription data eagerly loaded."""
+    async def _get_seat_subscription_prices(
+        self, customer_ids: Sequence[UUID], meter_id: UUID
+    ) -> dict[UUID, CustomerSubscriptionProductPrice]:
+        seats = await self._get_active_seats_for_customers(customer_ids)
+        customer_prices: dict[UUID, CustomerSubscriptionProductPrice] = {}
+        for seat in seats:
+            if seat.customer_id is None or seat.subscription is None:
+                continue
+
+            metered_price = self._find_metered_price_in_subscription(
+                seat.subscription, meter_id
+            )
+            if metered_price is None:
+                continue
+
+            set_committed_value(metered_price, "subscription", seat.subscription)
+            customer_prices[seat.customer_id] = CustomerSubscriptionProductPrice(
+                customer_id=seat.subscription.customer_id,
+                subscription_product_price=metered_price,
+            )
+
+        return customer_prices
+
+    async def _get_active_seats_for_customers(
+        self, customer_ids: Sequence[UUID]
+    ) -> Sequence[CustomerSeat]:
+        """Get active seats for customers, with subscription data eagerly loaded."""
+        customer_ids_parameter = sa.bindparam(
+            "customer_ids", customer_ids, type_=sa.ARRAY(sa.Uuid())
+        )
         statement = (
             select(CustomerSeat)
             .where(
-                CustomerSeat.customer_id == customer_id,
+                CustomerSeat.customer_id == sa.any_(customer_ids_parameter),
                 CustomerSeat.status == SeatStatus.claimed,
             )
+            .distinct(CustomerSeat.customer_id)
+            .order_by(CustomerSeat.customer_id)
             .options(
                 joinedload(CustomerSeat.subscription).options(
-                    joinedload(Subscription.customer),
+                    joinedload(Subscription.customer).raiseload(Customer.owner),
                     joinedload(Subscription.subscription_product_prices).options(
                         joinedload(SubscriptionProductPrice.product_price),
-                        # Load the back-reference to satisfy lazy='raise_on_sql'
-                        # This points to the same Subscription already being loaded above
-                        joinedload(SubscriptionProductPrice.subscription),
                     ),
+                    raiseload(Subscription.meters),
                 )
             )
-            .limit(1)
         )
-        return await self.session.scalar(statement)
+        result = await self.session.execute(statement)
+        return result.scalars().unique().all()
 
     def _find_metered_price_in_subscription(
         self, subscription: Subscription, meter_id: UUID

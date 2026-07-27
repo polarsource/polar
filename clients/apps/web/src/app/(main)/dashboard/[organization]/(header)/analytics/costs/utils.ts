@@ -7,6 +7,12 @@ export const DEFAULT_INTERVAL: schemas['TimeInterval'] = 'day'
 export const getDefaultStartDate = () => toISODate(subMonths(endOfToday(), 1))
 export const getDefaultEndDate = () => toISODate(endOfToday())
 
+export const fmtPct = (n: number) =>
+  Math.abs(n).toLocaleString(undefined, {
+    minimumFractionDigits: 1,
+    maximumFractionDigits: 1,
+  }) + '%'
+
 export const getCostsSearchParams = (
   startDate: string,
   endDate: string,

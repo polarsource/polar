@@ -165,7 +165,7 @@ payload asynchronously.
 Webhook endpoints are automatically disabled after **10 consecutive failed deliveries** (non-2xx responses). When this happens:
 
 - The endpoint is marked as disabled and will no longer receive new events.
-- Admin of the organization will receive an email notification.
+- All organization members will receive an email notification.
 
 To re-enable a disabled endpoint, open your organization's [webhook settings](https://polar.sh/to/dashboard/settings/webhooks) and manually enable it. Before re-enabling, ensure your endpoint is properly configured and reachable to avoid repeated disabling.
 

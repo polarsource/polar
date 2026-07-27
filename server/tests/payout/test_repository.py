@@ -4,6 +4,7 @@ from polar.enums import PayoutAccountType
 from polar.kit.utils import utc_now
 from polar.models import Organization, User
 from polar.models.payout import PayoutStatus
+from polar.models.transaction import TransactionType
 from polar.payout.repository import PayoutRepository
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -12,6 +13,7 @@ from tests.fixtures.random_objects import (
     create_payout,
     create_payout_account,
 )
+from tests.transaction.conftest import create_transaction
 
 
 @pytest.mark.asyncio
@@ -112,3 +114,43 @@ class TestGetHeldCountsByAccounts:
 
         # Only the live held payout counts; the soft-deleted one is excluded.
         assert counts == {account.id: 1}
+
+
+@pytest.mark.asyncio
+class TestGetById:
+    async def test_for_update(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        # FOR UPDATE OF payouts must lock only the payout row so the eager-load
+        # joins (account, payout_account, transactions) don't trip the
+        # nullable-outer-join lock error. Exercises the real SQL on Postgres.
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture, account=account, payout_account=payout_account
+        )
+        await create_transaction(
+            save_fixture,
+            account=account,
+            type=TransactionType.payout,
+            amount=-payout.amount,
+            account_currency=account.currency,
+            payout=payout,
+        )
+
+        repository = PayoutRepository.from_session(session)
+        locked = await repository.get_by_id(
+            payout.id, options=repository.get_eager_options(), for_update=True
+        )
+
+        assert locked is not None
+        assert locked.id == payout.id
+        # Relationships resolve without a lazy load, confirming eager loading.
+        assert locked.account.id == account.id
+        assert locked.payout_account.id == payout_account.id

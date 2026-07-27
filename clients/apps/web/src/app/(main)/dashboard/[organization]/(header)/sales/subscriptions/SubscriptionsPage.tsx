@@ -326,13 +326,14 @@ const ClientPage: React.FC<ClientPageProps> = ({
   return (
     <DashboardBody wide>
       <div className="flex flex-col gap-8">
-        <div className="flex w-full flex-row items-center justify-between gap-2">
-          <div className="flex items-center gap-4">
+        <div className="flex w-full flex-row items-center justify-between gap-2 overflow-x-auto">
+          <div className="flex shrink-0 items-center gap-4">
             <div className="w-auto">
               <SubscriptionStatusSelect
                 statuses={[
                   'active',
                   'trialing',
+                  'paused',
                   'past_due',
                   'canceled',
                   'unpaid',
@@ -359,7 +360,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
           </div>
           <Button
             onClick={onExport}
-            className="flex flex-row items-center"
+            className="flex shrink-0 flex-row items-center"
             variant={'secondary'}
             wrapperClassNames="gap-x-2"
           >

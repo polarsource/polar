@@ -131,17 +131,15 @@ const AppealForm: React.FC<AppealFormProps> = ({
           <p className="dark:text-polar-400 text-sm text-gray-600">{reason}</p>
         )}
         {!showForm && (
-          <p className="dark:text-polar-400 text-sm text-gray-600">
-            If you believe this is incorrect, you can{' '}
-            <button
-              type="button"
-              onClick={() => setShowForm(true)}
-              className="cursor-pointer underline hover:no-underline"
-            >
-              submit an appeal
-            </button>
-            .
-          </p>
+          <div className="flex flex-col items-start gap-3">
+            <p className="dark:text-polar-400 text-sm text-gray-600">
+              If you believe this decision is incorrect, you can appeal it for a
+              manual review.
+            </p>
+            <Button type="button" onClick={() => setShowForm(true)}>
+              Submit an appeal
+            </Button>
+          </div>
         )}
       </div>
 

@@ -10,6 +10,9 @@ from authlib.oauth2.rfc6749 import (
 from starlette.datastructures import URL, ImmutableMultiDict, UploadFile
 from starlette.requests import Request
 
+from polar.auth.models import AuthSubject
+from polar.models import User
+
 
 class RequestPathParamsMixin:
     _request: Request
@@ -48,6 +51,9 @@ class StarletteOAuth2Request(RequestPathParamsMixin, OAuth2Request):
     def __init__(self, request: Request):
         super().__init__(request.method, str(request.url), headers=request.headers)
         self.user = getattr(request.state, "user", None)
+        self.auth_subject: AuthSubject[User] | None = getattr(
+            request.state, "auth_subject", None
+        )
         self.payload = StarletteOAuth2Payload(request)
         self._args = dict(request.query_params)
         self._form = dict(request._form) if request._form else {}

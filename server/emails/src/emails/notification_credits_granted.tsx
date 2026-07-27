@@ -37,7 +37,6 @@ export function NotificationCreditsGranted({
 
 NotificationCreditsGranted.PreviewProps = {
   organization_name: 'Acme Inc.',
-  amount: 5000,
   formatted_amount: '$50.00',
 }
 

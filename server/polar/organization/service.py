@@ -7,13 +7,14 @@ from urllib.parse import urlparse
 from uuid import UUID
 
 import email_validator
+import stripe as stripe_lib
 import structlog
 from pydantic import BaseModel, Field, TypeAdapter
 from pydantic import ValidationError as PydanticValidationError
 from sqlalchemy.exc import IntegrityError
 
 from polar.account.service import account as account_service
-from polar.auth.models import AuthSubject
+from polar.auth.models import AuthSubject, is_user
 from polar.authz.service import get_accessible_org_ids
 from polar.checkout_link.repository import CheckoutLinkRepository
 from polar.config import settings
@@ -24,7 +25,14 @@ from polar.exceptions import (
     PolarRequestValidationError,
     ValidationError,
 )
+from polar.integrations.polar.service import billing_member_role
 from polar.integrations.polar.service import polar_self as polar_self_service
+from polar.integrations.stripe.account_risk import (
+    ACTIONABLE_RISK_LEVELS,
+    AccountRiskSignal,
+)
+from polar.integrations.stripe.service import StripeAccountRejectReason
+from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.anonymization import anonymize_email_for_deletion, anonymize_for_deletion
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.http import check_url_reachable
@@ -36,6 +44,7 @@ from polar.member.service import member_service
 from polar.models import (
     Customer,
     Organization,
+    OrganizationRiskSignal,
     PayoutAccount,
     User,
     UserOrganization,
@@ -56,6 +65,9 @@ from polar.models.transaction import TransactionType
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
 from polar.models.webhook_endpoint import WebhookEventType
+from polar.oauth2.service.oauth2_token import (
+    oauth2_token as oauth2_token_service,
+)
 from polar.organization_access_token.repository import (
     OrganizationAccessTokenRepository,
 )
@@ -65,6 +77,7 @@ from polar.organization_review.appeal_case import (
 from polar.organization_review.repository import (
     OrganizationReviewRepository as AgentReviewRepository,
 )
+from polar.organization_review.risk_signal import risk_signal as risk_signal_service
 from polar.organization_review.schemas import (
     ActorType,
     DecisionType,
@@ -112,14 +125,20 @@ _MIN_REVIEW_THRESHOLD = 10_000
 SNOOZE_MIN_DAYS = 1
 SNOOZE_MAX_DAYS = 7
 
-# Benefit types Polar fulfills without merchant API integration.
-_CHECKOUT_FULFILLABLE_BENEFITS: frozenset[BenefitType] = frozenset(
-    {
-        BenefitType.downloadables,
-        BenefitType.license_keys,
-        BenefitType.github_repository,
-        BenefitType.discord,
-    }
+# Benefit types that deliver nothing to the customer without a merchant API
+# integration: `feature_flag` (the merchant's app has to read the flag via the
+# API) and `meter_credit` (the credit is only meaningful once the merchant
+# ingests usage events via the API).
+_CHECKOUT_API_ONLY_BENEFITS: frozenset[BenefitType] = frozenset(
+    {BenefitType.feature_flag, BenefitType.meter_credit}
+)
+
+# Every other benefit delivers something on
+# its own — Polar grants it automatically (downloadables, license_keys,
+# github_repository, discord, slack_shared_channel) or the customer sees it in
+# their portal (custom note).
+_CHECKOUT_FULFILLABLE_BENEFITS: frozenset[BenefitType] = (
+    frozenset(BenefitType) - _CHECKOUT_API_ONLY_BENEFITS
 )
 
 # Hosting domains where it's unreasonable to expect the organization's support email to
@@ -146,6 +165,20 @@ def _is_hosted_website_domain(website_domain: str) -> bool:
     return any(
         website_domain == d or website_domain.endswith(f".{d}")
         for d in _HOSTED_WEBSITE_DOMAINS
+    )
+
+
+def _email_domain_matches_website(email_domain: str, website_domain: str) -> bool:
+    """Whether the support email domain belongs to the website's domain.
+
+    A subdomain relationship in either direction counts as a match, so a
+    `support@example.com` email is accepted for a website hosted on a subdomain
+    like `app.example.com`, and vice versa.
+    """
+    if email_domain == website_domain:
+        return True
+    return website_domain.endswith(f".{email_domain}") or email_domain.endswith(
+        f".{website_domain}"
     )
 
 
@@ -207,6 +240,24 @@ class AccountAlreadySet(OrganizationError):
 class CannotChangeOwnerError(OrganizationError):
     def __init__(self, reason: str) -> None:
         super().__init__(f"Cannot change organization owner: {reason}")
+
+
+class CannotCreateOrganizationError(OrganizationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "You cannot create an organization from a session restricted to a "
+            "specific organization.",
+            403,
+        )
+
+
+class SSOEnforcementRequiresConnection(OrganizationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "This organization must have an enabled SSO connection before SSO "
+            "can be enforced.",
+            409,
+        )
 
 
 class OrganizationService:
@@ -295,6 +346,9 @@ class OrganizationService:
         create_schema: OrganizationCreate,
         auth_subject: AuthSubject[User],
     ) -> Organization:
+        if auth_subject.organization_ids is not None:
+            raise CannotCreateOrganizationError()
+
         repository = OrganizationRepository.from_session(session)
         if await repository.slug_exists(create_schema.slug):
             raise PolarRequestValidationError(
@@ -506,6 +560,10 @@ class OrganizationService:
                 session, organization, update_schema.default_presentment_currency
             )
 
+        sso_newly_enforced = (
+            update_schema.sso_enforced is True and not organization.sso_enforced
+        )
+
         update_dict = update_schema.model_dump(
             by_alias=True,
             exclude_unset=True,
@@ -523,6 +581,11 @@ class OrganizationService:
             )
 
         organization = await repository.update(organization, update_dict=update_dict)
+
+        if sso_newly_enforced:
+            await oauth2_token_service.revoke_for_sso_enforcement(
+                session, organization.id
+            )
 
         await self._after_update(session, organization)
         return organization
@@ -548,56 +611,6 @@ class OrganizationService:
         session.add(organization)
 
         await self._after_update(session, organization)
-        return organization
-
-    async def delete(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-    ) -> Organization:
-        """Anonymizes fields on the Organization that can contain PII and then
-        soft-deletes the Organization.
-
-        DOES NOT:
-        - Delete or anonymize Users related Organization
-        - Delete or anonymize Account of the Organization
-        - Delete or anonymize Customers, Products, Discounts, Benefits, Checkouts of the Organization
-        - Revoke Benefits granted
-        - Remove API tokens (organization or personal)
-        """
-        repository = OrganizationRepository.from_session(session)
-
-        update_dict: dict[str, Any] = {}
-
-        pii_fields = ["name", "slug", "website", "customer_invoice_prefix"]
-        github_fields = ["bio", "company", "blog", "location", "twitter_username"]
-        for pii_field in pii_fields + github_fields:
-            value = getattr(organization, pii_field)
-            if value:
-                update_dict[pii_field] = anonymize_for_deletion(
-                    value, organization.created_at
-                )
-
-        if organization.email:
-            update_dict["email"] = anonymize_email_for_deletion(
-                organization.email, organization.created_at
-            )
-
-        if organization._avatar_url:
-            # Anonymize by setting to Polar logo
-            update_dict["avatar_url"] = (
-                "https://avatars.githubusercontent.com/u/105373340?s=48&v=4"
-            )
-        if organization.details:
-            update_dict["details"] = {}
-
-        if organization.socials:
-            update_dict["socials"] = []
-
-        organization = await repository.update(organization, update_dict=update_dict)
-        await repository.soft_delete(organization)
-        polar_self_service.enqueue_delete_customer(organization_id=organization.id)
-
         return organization
 
     async def check_can_delete(
@@ -693,8 +706,8 @@ class OrganizationService:
             )
             return check_result
 
-        # Soft delete the organization
-        await self.soft_delete_organization(session, organization)
+        # Soft delete the organization, releasing its slug for reuse
+        await self.soft_delete_organization(session, organization, release_slug=True)
 
         return OrganizationDeletionCheckResult(
             can_delete_immediately=True,
@@ -705,25 +718,31 @@ class OrganizationService:
         self,
         session: AsyncSession,
         organization: Organization,
+        *,
+        release_slug: bool = False,
     ) -> Organization:
-        """Soft-delete an organization, releasing its slug for reuse.
+        """Soft-delete an organization, anonymizing its PII.
 
-        Anonymizes PII fields, archives the previous slug to ``slug_history``,
-        and rewrites the live slug to a tombstone so a new organization can
-        claim the original.
+        When ``release_slug`` is set, the previous slug is archived to
+        ``slug_history`` and the live slug is rewritten to a tombstone so a new
+        organization can claim the original. Otherwise the slug is scrubbed like
+        any other PII field, leaving no recoverable trace.
         """
         repository = OrganizationRepository.from_session(session)
 
-        now = datetime.now(UTC)
-        update_dict: dict[str, Any] = {
-            "slug_history": [
+        update_dict: dict[str, Any] = {}
+        pii_fields = ["name", "website", "customer_invoice_prefix"]
+
+        if release_slug:
+            now = datetime.now(UTC)
+            update_dict["slug_history"] = [
                 *organization.slug_history,
                 {"slug": organization.slug, "deleted_at": now.isoformat()},
-            ],
-            "slug": f"__deleted__-{organization.slug}-{organization.id}",
-        }
+            ]
+            update_dict["slug"] = f"__deleted__-{organization.slug}-{organization.id}"
+        else:
+            pii_fields = ["name", "slug", "website", "customer_invoice_prefix"]
 
-        pii_fields = ["name", "website", "customer_invoice_prefix"]
         github_fields = ["bio", "company", "blog", "location", "twitter_username"]
         for pii_field in pii_fields + github_fields:
             value = getattr(organization, pii_field)
@@ -785,11 +804,7 @@ class OrganizationService:
         if payout_account is None:
             return
 
-        # Unlink the payout account from the organization before deleting
-        organization_repository = OrganizationRepository.from_session(session)
-        await organization_repository.delete_payout_account(payout_account.id)
-
-        await payout_account_service.delete(session, payout_account)
+        await payout_account_service.delete(session, payout_account, unlink=True)
 
     async def set_payout_account(
         self,
@@ -884,6 +899,7 @@ class OrganizationService:
                     email=user.email,
                     name=user.full_name or user.email.split("@", 1)[0],
                     external_id=str(user.id),
+                    role=billing_member_role(role),
                     delay=polar_self_member_delay,
                 )
 
@@ -1031,15 +1047,31 @@ class OrganizationService:
                 account_id=organization.account_id,
             )
 
+    def _enqueue_reject_stripe_account(
+        self, organization: Organization, reason: StripeAccountRejectReason
+    ) -> None:
+        """Reject the org's Stripe connected account when a human reviewer opts
+        in from the backoffice. Rejection is permanent on Stripe's side."""
+        if organization.payout_account_id is not None:
+            enqueue_job(
+                "payout_account.reject_stripe_account",
+                payout_account_id=organization.payout_account_id,
+                reason=reason,
+            )
+
     async def block_organization(
         self,
         session: AsyncSession,
         organization: Organization,
+        *,
+        stripe_reject_reason: StripeAccountRejectReason | None = None,
     ) -> Organization:
         """Block an organization by setting status to BLOCKED."""
         organization.set_status(OrganizationStatus.BLOCKED)
         session.add(organization)
         self._enqueue_cancel_pending_payouts(organization)
+        if stripe_reject_reason is not None:
+            self._enqueue_reject_stripe_account(organization, stripe_reject_reason)
         return organization
 
     async def confirm_organization_reviewed(
@@ -1221,7 +1253,7 @@ class OrganizationService:
         organization: Organization,
         next_review_threshold: int | None = None,
         *,
-        reason: str,
+        reason: str | None = None,
         internal_note: str | None = None,
         staff_user: User,
     ) -> Organization:
@@ -1239,6 +1271,11 @@ class OrganizationService:
         ``internal_note`` overrides the default reactivation note (and omits the
         reason line) so callers can record a context-specific note instead — the
         appeal flow points to the support case rather than repeating its reason.
+
+        ``reason`` is optional and, when set, becomes the merchant-facing body of
+        the appeal decision message on the support case. The appeal flow keeps it
+        optional (the staff-facing override reason is recorded separately); the
+        org-level reactivation passes its required override reason through here.
         """
         notes = {
             OrganizationStatus.DENIED: "Organization reactivated from denied.",
@@ -1315,12 +1352,18 @@ class OrganizationService:
         return confirmed is not None
 
     async def deny_organization(
-        self, session: AsyncSession, organization: Organization
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        stripe_reject_reason: StripeAccountRejectReason | None = None,
     ) -> Organization:
         organization.set_status(OrganizationStatus.DENIED)
         session.add(organization)
 
         self._enqueue_cancel_pending_payouts(organization)
+        if stripe_reject_reason is not None:
+            self._enqueue_reject_stripe_account(organization, stripe_reject_reason)
 
         # If there's a pending appeal, mark it as rejected
         review_repository = OrganizationReviewRepository.from_session(session)
@@ -1415,6 +1458,78 @@ class OrganizationService:
             transitioned.append(organization)
         return transitioned
 
+    async def offboard_expired_organizations(
+        self, session: AsyncSession
+    ) -> Sequence[Organization]:
+        """Auto-transition offboarding orgs to the terminal offboarded state.
+
+        Run periodically by a worker once the offboarding period has elapsed
+        since both the org's last paid order (chargeback safety) and its
+        entry into offboarding (merchant wind-down floor). Returns the orgs
+        transitioned.
+        """
+        repository = OrganizationRepository.from_session(session)
+        cutoff = datetime.now(UTC) - settings.ORGANIZATION_OFFBOARDING_PERIOD
+        # The candidate query takes FOR UPDATE on each org row, so a concurrent
+        # admin status change either falls out of the WHERE clause or waits
+        # behind our lock — no per-row re-check needed.
+        candidates = await repository.get_offboarding_past_period(cutoff)
+        transitioned: list[Organization] = []
+        for organization in candidates:
+            self._transition_to_offboarded(
+                session,
+                organization,
+                "Automatically offboarded after the offboarding period elapsed.",
+            )
+            transitioned.append(organization)
+        return transitioned
+
+    async def cancel_expired_organizations_subscriptions(
+        self, session: AsyncSession
+    ) -> Sequence[Organization]:
+        """Enqueue a per-org cancellation job for each organization denied,
+        blocked, or offboarded past the cancellation delay that still has
+        billable subscriptions. Returns the organizations enqueued.
+        """
+        repository = OrganizationRepository.from_session(session)
+        cutoff = (
+            datetime.now(UTC) - settings.ORGANIZATION_SUBSCRIPTION_CANCELLATION_DELAY
+        )
+        organizations = await repository.get_status_cancellation_expired(cutoff)
+        for organization in organizations:
+            enqueue_job(
+                "subscription.cancel_for_organization",
+                organization_id=organization.id,
+            )
+        return organizations
+
+    async def set_organization_offboarded(
+        self, session: AsyncSession, organization: Organization
+    ) -> Organization:
+        """Manually transition an offboarding org to the terminal offboarded state.
+
+        Same effect as the auto-offboard cron, but triggered from the
+        backoffice — used to complete offboarding before the wind-down period
+        has fully elapsed.
+        """
+        if organization.status != OrganizationStatus.OFFBOARDING:
+            raise OrganizationError(
+                "Only organizations that are offboarding can be set to offboarded.",
+                403,
+            )
+        self._transition_to_offboarded(
+            session, organization, "Manually offboarded from the backoffice."
+        )
+        return organization
+
+    def _transition_to_offboarded(
+        self, session: AsyncSession, organization: Organization, note: str
+    ) -> None:
+        organization.set_status(OrganizationStatus.OFFBOARDED)
+        _append_internal_note(organization, note)
+        session.add(organization)
+        enqueue_job("organization.offboarded", organization_id=organization.id)
+
     async def _exit_snooze_to_review(
         self, session: AsyncSession, organization: Organization
     ) -> None:
@@ -1432,6 +1547,9 @@ class OrganizationService:
         enqueue_review: bool = True,
     ) -> Organization:
         organization.set_status(OrganizationStatus.REVIEW)
+        # Drop stale snooze metadata when coming from SNOOZED.
+        organization.snoozed_until = None
+        organization.snooze_type = None
         session.add(organization)
 
         # Record a human ESCALATE decision so the agent knows not to auto-act
@@ -1448,6 +1566,121 @@ class OrganizationService:
             enqueue_job("organization.under_review", organization_id=organization.id)
         return organization
 
+    async def evaluate_website_risk(
+        self, session: AsyncSession, organization: Organization
+    ) -> None:
+        # Gate the whole feature on the receiving side being configured.
+        if not settings.STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET:
+            log.info(
+                "organization.evaluate_website_risk.skipped",
+                reason="webhook_secret_not_configured",
+                organization_id=str(organization.id),
+            )
+            return
+
+        if organization.payout_account_id is None:
+            log.info(
+                "organization.evaluate_website_risk.skipped",
+                reason="no_payout_account",
+                organization_id=str(organization.id),
+            )
+            return
+
+        website = organization.website.strip() if organization.website else ""
+        if not website:
+            log.info(
+                "organization.evaluate_website_risk.skipped",
+                reason="no_website",
+                organization_id=str(organization.id),
+            )
+            return
+
+        payout_account_repository = PayoutAccountRepository.from_session(session)
+        payout_account = await payout_account_repository.get_by_id(
+            organization.payout_account_id
+        )
+        if payout_account is None or payout_account.stripe_id is None:
+            log.info(
+                "organization.evaluate_website_risk.skipped",
+                reason="no_stripe_account",
+                organization_id=str(organization.id),
+            )
+            return
+
+        # Stripe evaluates the website attached to the account, so sync it
+        # first. InvalidRequestError is a deterministic rejection (a URL
+        # Stripe won't accept, an account missing required fields): retrying
+        # can't succeed, so log instead of raising.
+        try:
+            await stripe_service.update_account_website(
+                payout_account.stripe_id, website
+            )
+        except stripe_lib.InvalidRequestError as e:
+            log.warning(
+                "organization.evaluate_website_risk.rejected",
+                step="sync_website",
+                organization_id=str(organization.id),
+                stripe_account_id=payout_account.stripe_id,
+                error=str(e),
+            )
+            return
+
+        try:
+            await stripe_service.create_website_risk_evaluation(
+                payout_account.stripe_id
+            )
+        except stripe_lib.InvalidRequestError as e:
+            log.warning(
+                "organization.evaluate_website_risk.rejected",
+                step="create_evaluation",
+                organization_id=str(organization.id),
+                stripe_account_id=payout_account.stripe_id,
+                error=str(e),
+            )
+
+    async def handle_account_risk_signal(
+        self,
+        session: AsyncSession,
+        signal: AccountRiskSignal,
+    ) -> None:
+        """Store an actionable Stripe risk signal and flag the org for a human.
+
+        Only elevated/highest signals are stored. Until we build signal triage,
+        we also pull a live org into review, so a high-risk signal isn't sitting
+        in a table nobody reads yet. We never auto-block.
+        """
+        if signal.risk_level not in ACTIONABLE_RISK_LEVELS:
+            return
+
+        payout_account_repository = PayoutAccountRepository.from_session(session)
+        payout_account = await payout_account_repository.get_by_stripe_id(
+            signal.account_id
+        )
+        if payout_account is None:
+            log.warning(
+                "Risk signal for unknown payout account",
+                stripe_account_id=signal.account_id,
+                signal_type=signal.type,
+            )
+            return
+
+        repository = OrganizationRepository.from_session(session)
+        organizations = await repository.get_all_by_payout_account(payout_account.id)
+        for organization in organizations:
+            await risk_signal_service.record(
+                session,
+                organization,
+                source=OrganizationRiskSignal.Source.STRIPE,
+                type=signal.type,
+                risk_level=signal.risk_level,
+                description=signal.description,
+                payload=signal.payload,
+            )
+            if organization.status == OrganizationStatus.ACTIVE:
+                await self.set_organization_under_review(
+                    session, organization, enqueue_review=False
+                )
+
     async def set_organization_offboarding(
         self,
         session: AsyncSession,
@@ -1455,9 +1688,12 @@ class OrganizationService:
         *,
         reason: str | None = None,
     ) -> Organization:
-        if organization.status != OrganizationStatus.REVIEW:
+        if organization.status not in (
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.DENIED,
+        ):
             raise OrganizationError(
-                "Only organizations under review can be set to offboarding.",
+                "Only organizations under review or denied can be set to offboarding.",
                 403,
             )
         organization.set_status(OrganizationStatus.OFFBOARDING)
@@ -1490,6 +1726,7 @@ class OrganizationService:
         self,
         session: AsyncReadSession,
         organization: Organization,
+        auth_subject: AuthSubject[User | Organization] | None = None,
     ) -> OrganizationReviewState:
         """Build the merchant self-review checklist state.
 
@@ -1507,6 +1744,17 @@ class OrganizationService:
         organization_repository = OrganizationRepository.from_session(session)
         owner_user = await organization_repository.get_owner_user(organization)
 
+        # Identity verification is the owner's to complete. When a non-owner
+        # member is viewing, surface that they can't action it
+        current_user = (
+            auth_subject.subject
+            if auth_subject is not None and is_user(auth_subject)
+            else None
+        )
+        identity_restricted = current_user is not None and not (
+            owner_user is not None and current_user.id == owner_user.id
+        )
+
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
 
@@ -1523,17 +1771,20 @@ class OrganizationService:
         )
 
         preliminary_steps = [
-            self._build_product_description_check(organization),
             product_configuration_check,
             setup_readiness_check,
-            self._build_identity_verification_check(owner_user),
+            self._build_identity_verification_check(
+                owner_user, restricted=identity_restricted
+            ),
             self._build_payout_account_check(payout_account),
-            self._build_socials_check(organization),
+            self._build_product_description_check(organization),
             await product_url_task,
             self._build_email_check(organization),
+            self._build_socials_check(organization),
         ]
 
         submitted_at = organization.details_submitted_at
+        optional_keys = {OrganizationReviewCheckKey.IDENTITY_SOCIAL_LINKS}
         is_blocked = any(
             step.status
             in (
@@ -1541,6 +1792,7 @@ class OrganizationService:
                 OrganizationReviewCheckStatus.PENDING,
             )
             for step in preliminary_steps
+            if step.key not in optional_keys
         )
         can_submit = submitted_at is None and not is_blocked
 
@@ -1602,7 +1854,7 @@ class OrganizationService:
 
         if (
             website_domain
-            and email_domain != website_domain
+            and not _email_domain_matches_website(email_domain, website_domain)
             and not _is_hosted_website_domain(website_domain)
         ):
             reasons.append(OrganizationReviewCheckReason.IDENTITY_DOMAIN_MISMATCH)
@@ -1646,9 +1898,21 @@ class OrganizationService:
         return self._passed_check(key)
 
     def _build_identity_verification_check(
-        self, owner_user: User | None
+        self, owner_user: User | None, *, restricted: bool = False
     ) -> OrganizationReviewCheck:
         key = OrganizationReviewCheckKey.IDENTITY_STRIPE_VERIFICATION
+        check = self._owner_identity_check(owner_user, key)
+        if restricted and check.status != OrganizationReviewCheckStatus.PASSED:
+            return OrganizationReviewCheck(
+                key=key,
+                status=check.status,
+                reasons=[OrganizationReviewCheckReason.NOT_AUTHORIZED],
+            )
+        return check
+
+    def _owner_identity_check(
+        self, owner_user: User | None, key: OrganizationReviewCheckKey
+    ) -> OrganizationReviewCheck:
         if owner_user is None:
             return self._not_started_check(key)
 
@@ -1735,13 +1999,21 @@ class OrganizationService:
         self, session: AsyncReadSession, organization: Organization
     ) -> OrganizationReviewCheck:
         """Setup readiness passes when the merchant has at least one
-        auto-fulfillable checkout link (selling a Polar-fulfilled benefit,
-        or with a success_url so the merchant handles fulfillment via
-        redirect), or has both an organization access token and a webhook
-        endpoint.
+        checkout link and every live checkout link is auto-fulfillable
+        (it sets a success_url so the merchant handles fulfillment via
+        redirect, or every product on it sells a Polar-fulfilled benefit),
+        or has both an organization access token and a webhook endpoint.
 
-        A checkout link with neither benefits nor a success_url has no
-        automatic fulfillment path, which is a broken integration.
+        Every live link is a purchasable surface, so a single link where
+        some product has neither a benefit nor a success_url covering it
+        means a customer can pay without receiving anything. That's treated
+        as in-progress (PENDING) rather than an error: the merchant simply
+        hasn't finished setting up delivery. It still blocks submission
+        (PENDING gates like FAILED), but the onboarding UI guides the
+        merchant to add a benefit or a success_url instead of surfacing a
+        scary "invalid" state. The underlying `checkout_link` sub-check
+        stays FAILED so internal review can still see a link isn't
+        fulfillable.
 
         An access token without a webhook is a non-blocking warning rather
         than a failure: the merchant can still fulfill via success_url +
@@ -1758,19 +2030,15 @@ class OrganizationService:
         )
         webhook_repository = WebhookEndpointRepository.from_session(session)
 
-        has_checkout_link_with_fulfillable_benefit = (
-            await checkout_link_repository.has_with_benefit_types(
+        has_any_checkout_link = await checkout_link_repository.has_any(organization.id)
+        has_unfulfillable_checkout_link = (
+            await checkout_link_repository.has_unfulfillable(
                 organization.id, _CHECKOUT_FULFILLABLE_BENEFITS
             )
         )
-        has_checkout_link_with_success_url = (
-            await checkout_link_repository.has_with_success_url(organization.id)
+        all_checkout_links_fulfillable = (
+            has_any_checkout_link and not has_unfulfillable_checkout_link
         )
-        has_fulfillable_checkout_link = (
-            has_checkout_link_with_fulfillable_benefit
-            or has_checkout_link_with_success_url
-        )
-        has_any_checkout_link = await checkout_link_repository.has_any(organization.id)
         has_access_token = await access_token_repository.has_by_organization_id(
             organization.id
         )
@@ -1787,20 +2055,16 @@ class OrganizationService:
                 reasons=[] if ok else [OrganizationReviewCheckReason.NOT_STARTED],
             )
 
-        # Checkout link escalates to WARNING when the merchant has created a
-        # checkout link but it neither sells a fulfillable benefit nor sets a
-        # success_url — i.e. the link exists but won't actually deliver
-        # anything to the customer post-purchase.
-        if has_fulfillable_checkout_link:
+        if all_checkout_links_fulfillable:
             checkout_link_sub = _sub(
                 OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK,
                 True,
             )
         elif has_any_checkout_link:
-            # The merchant created a checkout link but it neither sells a
-            # fulfillable benefit nor sets a success_url — it can't actually
-            # deliver anything post-purchase. Treat as a hard failure so the
-            # row surfaces it clearly; the parent rollup still falls back to
+            # The merchant has a checkout link that can't deliver on every
+            # product: no success_url, and at least one product sells no
+            # fulfillable benefit. Treat as a hard failure so the row
+            # surfaces it clearly; the parent rollup still falls back to
             # PASSED if the API path is fully configured.
             checkout_link_sub = OrganizationReviewSubCheck(
                 key=OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK,
@@ -1845,27 +2109,27 @@ class OrganizationService:
         ):
             parent_status = OrganizationReviewCheckStatus.PASSED
         elif checkout_link_sub.status == OrganizationReviewCheckStatus.FAILED:
-            # No-code path attempted but the link can't fulfill — surface as
-            # a hard failure so the user can't submit without fixing it.
-            parent_status = OrganizationReviewCheckStatus.FAILED
+            # No-code path attempted but the link can't fulfill yet. Treat as
+            # in-progress: still blocks submission (PENDING gates like FAILED),
+            # but the UI guides the merchant to finish setting up delivery
+            # rather than surfacing it as an error.
+            parent_status = OrganizationReviewCheckStatus.PENDING
         elif access_token_sub.status == OrganizationReviewCheckStatus.PASSED:
             # API path partially configured — token present, webhook missing.
             parent_status = OrganizationReviewCheckStatus.WARNING
         else:
             parent_status = OrganizationReviewCheckStatus.PENDING
 
-        # Propagate failure/warning-level reasons from sub-checks to the
-        # parent so the row header can surface a single, actionable hint
-        # without the frontend re-deriving which sub-check produced it. Skip
-        # propagation when the parent is already PASSED — one complete path
-        # makes any partial state on the other path irrelevant for the rollup
-        # message.
+        # Propagate warning-level reasons from sub-checks to the parent so the
+        # row header can surface a single, actionable hint without the
+        # frontend re-deriving which sub-check produced it. The checkout-link
+        # "not fulfillable" state is deliberately NOT propagated: it's guided
+        # in-product (add a benefit or a success_url), not shown as an error.
         sub_checks = [checkout_link_sub, access_token_sub, webhook_sub]
         parent_reasons: list[OrganizationReviewCheckReason] = []
         if parent_status != OrganizationReviewCheckStatus.PASSED:
             propagated_statuses = {
                 OrganizationReviewCheckStatus.WARNING,
-                OrganizationReviewCheckStatus.FAILED,
             }
             seen: set[OrganizationReviewCheckReason] = set()
             for sub in sub_checks:

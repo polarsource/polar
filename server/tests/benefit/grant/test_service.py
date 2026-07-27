@@ -500,6 +500,40 @@ class TestEnqueueBenefitsGrants:
         assert benefits[0].id not in grant_benefit_ids
         assert set(grant_benefit_ids) == {b.id for b in benefits[1:]}
 
+    async def test_grant_reenqueues_revoked_previously_errored_benefits(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        benefits: list[Benefit],
+        customer: Customer,
+        subscription: Subscription,
+    ) -> None:
+        """Revoked grants clear their error, so a benefit that previously failed
+        with BenefitActionRequiredError is re-enqueued after revocation."""
+        enqueue_job_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
+
+        grant = BenefitGrant(
+            subscription=subscription, customer=customer, benefit=benefits[0]
+        )
+        grant.set_grant_failed(BenefitActionRequiredError("Connect GitHub"))
+        grant.set_revoked()
+        await save_fixture(grant)
+
+        product = await set_product_benefits(
+            save_fixture, product=product, benefits=benefits
+        )
+
+        await benefit_grant_service.enqueue_benefits_grants(
+            session, "grant", customer, product, subscription=subscription
+        )
+
+        call_args = enqueue_job_mock.call_args
+        assert call_args[0][0] == "benefit.enqueue_grants"
+        grant_benefit_ids = call_args[1]["grant_benefit_ids"]
+        assert set(grant_benefit_ids) == {b.id for b in benefits}
+
     async def test_revoke_only_granted_benefits(
         self,
         mocker: MockerFixture,

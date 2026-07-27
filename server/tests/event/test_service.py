@@ -42,6 +42,7 @@ from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.event import EventSource
 from polar.models.order import OrderStatus
 from polar.models.subscription import CustomerCancellationReason
+from polar.models.user_organization import OrganizationRole
 from polar.order.service import order as order_service
 from polar.postgres import AsyncSession
 from polar.subscription.service import SubscriptionUpdateContext
@@ -416,6 +417,186 @@ class TestListNames:
 
         assert count == 2
         query_mock.assert_awaited_once()
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_resolves_labels(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Organization],
+    ) -> None:
+        now = utc_now()
+        organization = auth_subject.subject
+        event_type = EventType(
+            name="api.request",
+            label="API Request",
+            organization=organization,
+        )
+        await save_fixture(event_type)
+
+        mocker.patch(
+            "polar.event.tinybird_repository.TinybirdEventsQuery.get_event_type_stats",
+            new_callable=AsyncMock,
+            return_value=[
+                TinybirdEventTypeStats(
+                    organization_id=organization.id,
+                    name="customer.created",
+                    source=EventSource.system,
+                    occurrences=1,
+                    first_seen=now,
+                    last_seen=now,
+                ),
+                TinybirdEventTypeStats(
+                    organization_id=organization.id,
+                    name="api.request",
+                    source=EventSource.user,
+                    occurrences=2,
+                    first_seen=now,
+                    last_seen=now,
+                ),
+                TinybirdEventTypeStats(
+                    organization_id=organization.id,
+                    name="custom.event",
+                    source=EventSource.user,
+                    occurrences=3,
+                    first_seen=now,
+                    last_seen=now,
+                ),
+            ],
+        )
+
+        event_names, _ = await event_service.list_names(
+            session,
+            auth_subject,
+            pagination=PaginationParams(1, 10),
+            sorting=[(EventNamesSortProperty.event_name, False)],
+        )
+
+        labels = {event_name.name: event_name.label for event_name in event_names}
+        assert labels["customer.created"] == "Customer Created"
+        assert labels["api.request"] == "API Request"
+        assert labels["custom.event"] == "custom.event"
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user"))
+    async def test_resolves_conflicting_labels_across_organizations(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=user,
+                organization=organization_second,
+                role=OrganizationRole.owner,
+            )
+        )
+        await save_fixture(
+            EventType(
+                name="custom.event",
+                label="Custom Event",
+                organization=organization,
+            )
+        )
+        await save_fixture(
+            EventType(
+                name="custom.event",
+                label="Bespoke Event",
+                organization=organization_second,
+            )
+        )
+
+        now = utc_now()
+        mocker.patch(
+            "polar.event.tinybird_repository.TinybirdEventsQuery.get_event_type_stats",
+            new_callable=AsyncMock,
+            return_value=[
+                TinybirdEventTypeStats(
+                    organization_id=organization.id,
+                    name="custom.event",
+                    source=EventSource.user,
+                    occurrences=5,
+                    first_seen=now,
+                    last_seen=now,
+                ),
+            ],
+        )
+
+        event_names, _ = await event_service.list_names(
+            session,
+            auth_subject,
+            pagination=PaginationParams(1, 10),
+            sorting=[(EventNamesSortProperty.event_name, False)],
+        )
+
+        labels = {event_name.name: event_name.label for event_name in event_names}
+        assert labels["custom.event"] == "custom.event"
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="user"))
+    async def test_resolves_matching_labels_across_organizations(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User],
+        user: User,
+        organization: Organization,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=user,
+                organization=organization_second,
+                role=OrganizationRole.owner,
+            )
+        )
+        await save_fixture(
+            EventType(
+                name="custom.event",
+                label="Custom Event",
+                organization=organization,
+            )
+        )
+        await save_fixture(
+            EventType(
+                name="custom.event",
+                label="Custom Event",
+                organization=organization_second,
+            )
+        )
+
+        now = utc_now()
+        mocker.patch(
+            "polar.event.tinybird_repository.TinybirdEventsQuery.get_event_type_stats",
+            new_callable=AsyncMock,
+            return_value=[
+                TinybirdEventTypeStats(
+                    organization_id=organization.id,
+                    name="custom.event",
+                    source=EventSource.user,
+                    occurrences=5,
+                    first_seen=now,
+                    last_seen=now,
+                ),
+            ],
+        )
+
+        event_names, _ = await event_service.list_names(
+            session,
+            auth_subject,
+            pagination=PaginationParams(1, 10),
+            sorting=[(EventNamesSortProperty.event_name, False)],
+        )
+
+        labels = {event_name.name: event_name.label for event_name in event_names}
+        assert labels["custom.event"] == "Custom Event"
 
 
 @pytest.mark.asyncio

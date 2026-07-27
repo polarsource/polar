@@ -24,7 +24,7 @@ export function AUPBlocker({ categories }: { categories: string[] }) {
           href="https://polar.sh/legal/acceptable-use-policy"
           className="underline"
           target="_blank"
-          rel="noreferrer"
+          rel="noopener noreferrer"
         >
           Acceptable Use Policy
         </a>

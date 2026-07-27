@@ -4,7 +4,10 @@ import pytest
 import pytest_asyncio
 from httpx import AsyncClient
 
+from polar.auth.scope import Scope
 from polar.models import Customer, Organization, Payment, Product, UserOrganization
+from polar.models.payment import PaymentTrigger
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_checkout, create_order, create_payment
 
@@ -104,3 +107,27 @@ class TestGetPayment:
         response = await client.get(f"/v1/payments/{payment_organization_second.id}")
 
         assert response.status_code == 404
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.payments_read}),
+    )
+    async def test_trigger(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(save_fixture, customer=customer)
+        payment = await create_payment(
+            save_fixture,
+            organization,
+            order=order,
+            trigger=PaymentTrigger.retry_dunning,
+        )
+
+        response = await client.get(f"/v1/payments/{payment.id}")
+
+        assert response.status_code == 200
+        assert response.json()["trigger"] == PaymentTrigger.retry_dunning

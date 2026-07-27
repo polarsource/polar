@@ -7,7 +7,7 @@ import {
   schemas,
   unwrap,
 } from '@polar-sh/client'
-import { useMutation, useQuery } from '@tanstack/react-query'
+import { skipToken, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useListOrganizationMembers = (id: string) =>
@@ -90,7 +90,7 @@ export const useListOrganizations = (
   useQuery({
     queryKey: ['organizations', params],
     queryFn: () =>
-      unwrap(api.GET('/v1/organizations/', { param: { query: params } })),
+      unwrap(api.GET('/v1/organizations/', { params: { query: params } })),
     retry: defaultRetry,
     enabled,
   })
@@ -132,6 +132,9 @@ export const useUpdateOrganization = () =>
       }
       getQueryClient().invalidateQueries({
         queryKey: ['organizations', data.id],
+      })
+      await getQueryClient().invalidateQueries({
+        queryKey: ['organizationReviewState', data.id],
       })
       await revalidate(`organizations:${data.id}`, { expire: 0 })
       await revalidate(`organizations:${data.slug}`, { expire: 0 })
@@ -334,7 +337,10 @@ export const useOrganizationAppeal = (id: string) =>
     retry: defaultRetry,
   })
 
-export const useOrganizationReviewState = (id: string) =>
+export const useOrganizationReviewState = (
+  id: string,
+  enabled: boolean = true,
+) =>
   useQuery({
     queryKey: ['organizationReviewState', id],
     queryFn: () =>
@@ -344,7 +350,7 @@ export const useOrganizationReviewState = (id: string) =>
         }),
       ),
     retry: defaultRetry,
-    enabled: !!id,
+    enabled: enabled && !!id,
     refetchOnMount: 'always',
   })
 
@@ -396,27 +402,31 @@ export const useRequestHumanReview = (id: string) =>
         params: { path: { id } },
         body: { reason },
       }),
-    onSuccess: async (result) => {
+    onSuccess: (result) => {
       if (result.error) return
-      getQueryClient().invalidateQueries({ queryKey: ['appealCase', id] })
+      getQueryClient().invalidateQueries({
+        queryKey: ['organizationReviewStatus', id],
+      })
     },
   })
 
-export const useAppealCase = (
-  id: string,
+export const useSupportCase = (
+  id: string | undefined,
   enabled: boolean = true,
   pollInterval: number = 10_000,
 ) =>
   useQuery({
-    queryKey: ['appealCase', id],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/organizations/{id}/appeal/case', {
-          params: { path: { id } },
-        }),
-      ),
+    queryKey: ['supportCase', id],
+    queryFn: id
+      ? () =>
+          unwrap(
+            api.GET('/v1/support-cases/{id}', {
+              params: { path: { id } },
+            }),
+          )
+      : skipToken,
     retry: defaultRetry,
-    enabled: enabled && !!id,
+    enabled,
     refetchInterval: (query) => {
       if (!query.state.data?.is_open) return false
       const hidden = typeof document !== 'undefined' && document.hidden
@@ -425,16 +435,19 @@ export const useAppealCase = (
     refetchIntervalInBackground: true,
   })
 
-export const useReplyToAppealCase = (id: string) =>
+export const useReplyToSupportCase = () =>
   useMutation({
-    mutationFn: ({ body, file_ids }: { body?: string; file_ids?: string[] }) =>
-      api.POST('/v1/organizations/{id}/appeal/case/messages', {
-        params: { path: { id } },
-        body: { body: body || null, file_ids },
+    mutationFn: ({
+      caseId,
+      ...payload
+    }: { caseId: string } & schemas['SupportCaseMessageCreate']) =>
+      api.POST('/v1/support-cases/{id}/messages', {
+        params: { path: { id: caseId } },
+        body: { ...payload, body: payload.body || null },
       }),
-    onSuccess: async (result) => {
+    onSuccess: async (result, { caseId }) => {
       if (result.error) return
-      getQueryClient().invalidateQueries({ queryKey: ['appealCase', id] })
+      getQueryClient().invalidateQueries({ queryKey: ['supportCase', caseId] })
     },
   })
 

@@ -1,8 +1,9 @@
 import pytest
+import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
-from polar.enums import PayoutAccountType
+from polar.enums import PayoutAccountStatus, PayoutAccountType
 from polar.integrations.stripe.service import StripeService
 from polar.models import Organization, User
 from polar.models.payout_attempt import PayoutAttemptStatus
@@ -11,6 +12,8 @@ from polar.payout_account.service import (
     PayoutAccountLinkedToOrganization,
     PayoutAccountNonZeroBalance,
     PayoutAccountStripeAccountDoesNotExist,
+    PayoutAccountSyncFailed,
+    PayoutAccountSyncUnsupported,
 )
 from polar.payout_account.service import (
     payout_account as payout_account_service,
@@ -167,3 +170,165 @@ class TestDelete:
         stripe_service_mock.delete_account.assert_called_once_with(  # type: ignore[attr-defined]
             payout_account.stripe_id
         )
+
+    @pytest.mark.auth
+    async def test_successful_deletion_unlinked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        """Successfully deletes a payout account if forcing organization unlinking."""
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+
+        stripe_service_mock.account_exists.return_value = True  # type: ignore[attr-defined]
+        stripe_service_mock.retrieve_balance.return_value = ("usd", 0)  # type: ignore[attr-defined]
+        stripe_service_mock.delete_account.return_value = None  # type: ignore[attr-defined]
+
+        await payout_account_service.delete(session, payout_account, unlink=True)
+
+        stripe_service_mock.delete_account.assert_called_once_with(  # type: ignore[attr-defined]
+            payout_account.stripe_id
+        )
+
+
+@pytest.mark.asyncio
+class TestRejectStripeAccount:
+    async def test_rejects_existing_stripe_account(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        stripe_service_mock.account_exists.return_value = True  # type: ignore[attr-defined]
+
+        await payout_account_service.reject_stripe_account(
+            session, payout_account.id, "fraud"
+        )
+
+        stripe_service_mock.reject_account.assert_called_once_with(  # type: ignore[attr-defined]
+            payout_account.stripe_id, "fraud"
+        )
+
+    async def test_skips_when_stripe_account_missing(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        stripe_service_mock.account_exists.return_value = False  # type: ignore[attr-defined]
+
+        await payout_account_service.reject_stripe_account(
+            session, payout_account.id, "terms_of_service"
+        )
+
+        stripe_service_mock.reject_account.assert_not_called()  # type: ignore[attr-defined]
+
+
+@pytest.mark.asyncio
+class TestSyncFromStripe:
+    async def test_updates_account_from_stripe(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, is_payouts_enabled=False
+        )
+        stripe_service_mock.retrieve_account.return_value = (  # type: ignore[attr-defined]
+            stripe_lib.Account.construct_from(
+                {
+                    "id": payout_account.stripe_id,
+                    "email": "merchant@example.com",
+                    "country": "DE",
+                    "default_currency": "eur",
+                    "details_submitted": True,
+                    "charges_enabled": True,
+                    "payouts_enabled": True,
+                    "requirements": {"disabled_reason": None},
+                },
+                None,
+            )
+        )
+
+        updated = await payout_account_service.sync_from_stripe(session, payout_account)
+
+        assert updated.is_payouts_enabled is True
+        assert updated.status == PayoutAccountStatus.ready
+
+    async def test_manual_account_is_unsupported(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(
+            save_fixture,
+            organization,
+            user,
+            type=PayoutAccountType.manual,
+            stripe_id=None,
+        )
+
+        with pytest.raises(PayoutAccountSyncUnsupported):
+            await payout_account_service.sync_from_stripe(session, payout_account)
+
+        stripe_service_mock.retrieve_account.assert_not_called()  # type: ignore[attr-defined]
+
+    @pytest.mark.parametrize(
+        "error",
+        [
+            stripe_lib.PermissionError("no access"),
+            stripe_lib.InvalidRequestError("no such account", param="account"),
+        ],
+    )
+    async def test_inaccessible_account_is_not_transient(
+        self,
+        error: stripe_lib.StripeError,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        stripe_service_mock.retrieve_account.side_effect = error  # type: ignore[attr-defined]
+
+        with pytest.raises(PayoutAccountStripeAccountDoesNotExist):
+            await payout_account_service.sync_from_stripe(session, payout_account)
+
+    async def test_unreachable_stripe_raises_sync_failed(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+        stripe_service_mock: StripeService,
+    ) -> None:
+        payout_account = await create_payout_account(save_fixture, organization, user)
+        stripe_service_mock.retrieve_account.side_effect = (  # type: ignore[attr-defined]
+            stripe_lib.APIConnectionError("boom")
+        )
+
+        with pytest.raises(PayoutAccountSyncFailed):
+            await payout_account_service.sync_from_stripe(session, payout_account)

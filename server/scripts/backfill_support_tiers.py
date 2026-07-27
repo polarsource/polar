@@ -3,8 +3,8 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 
 import typer
-from polar_sdk import Polar
-from polar_sdk.models import Benefit, BenefitGrant
+from polar.v2026_04 import PolarAsync
+from polar.v2026_04.outputs import Benefit, BenefitGrant
 
 from polar.config import settings
 from polar.integrations.polar.service import polar_self as polar_self_service
@@ -88,31 +88,28 @@ def resolve_tiers(
     return resolved, result
 
 
-async def _list_support_benefits(sdk: Polar) -> list[Benefit]:
+async def _list_support_benefits(sdk: PolarAsync) -> list[Benefit]:
     benefits: list[Benefit] = []
-    response = await sdk.benefits.list_async(
+    async for benefit in sdk.benefits.iter_list(
         organization_id=settings.POLAR_ORGANIZATION_ID,
         metadata={"type": "support"},
         page=1,
         limit=100,
-    )
-    while response is not None:
-        benefits.extend(response.result.items)
-        response = response.next()
+    ):
+        benefits.append(benefit)
     return benefits
 
 
-async def _list_benefit_grants(sdk: Polar, benefit_id: str) -> list[BenefitGrant]:
+async def _list_benefit_grants(sdk: PolarAsync, benefit_id: str) -> list[BenefitGrant]:
     grants: list[BenefitGrant] = []
-    response = await sdk.benefits.grants_async(
-        id=benefit_id,
+    async for grant in sdk.benefit_grants.iter_list(
+        organization_id=settings.POLAR_ORGANIZATION_ID,
         is_granted=True,
         page=1,
         limit=100,
-    )
-    while response is not None:
-        grants.extend(response.result.items)
-        response = response.next()
+    ):
+        if grant.benefit_id == benefit_id:
+            grants.append(grant)
     return grants
 
 
@@ -128,9 +125,9 @@ async def run_backfill(
     sessionmaker: AsyncSessionMaker,
     dry_run: bool = False,
 ) -> BackfillResult:
-    sdk = Polar(
-        access_token=settings.POLAR_ACCESS_TOKEN,
-        server_url=settings.POLAR_API_URL,
+    sdk = PolarAsync(
+        settings.POLAR_ACCESS_TOKEN,
+        base_url=settings.POLAR_API_URL,
     )
     self_org_external_id = settings.POLAR_ORGANIZATION_ID
 

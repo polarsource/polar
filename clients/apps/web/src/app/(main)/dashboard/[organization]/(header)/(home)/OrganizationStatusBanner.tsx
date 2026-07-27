@@ -2,8 +2,9 @@ import { useOrganizationPaymentStatus } from '@/hooks/queries'
 import { CONFIG } from '@/utils/config'
 import { schemas } from '@polar-sh/client'
 import { DeniedBanner } from './DeniedBanner'
+import { OffboardedBanner } from './OffboardedBanner'
 import { OffboardingBanner } from './OffboardingBanner'
-import { OnboardingChecklistCard } from './OnboardingChecklistCard'
+import { OnboardingChecklistCard } from './OnboardingChecklistCard/OnboardingChecklistCard'
 
 interface OrganizationStatusBannerProps {
   organization: schemas['Organization']
@@ -26,6 +27,10 @@ export const OrganizationStatusBanner = ({
 
   if (paymentStatus?.organization_status === 'offboarding') {
     return <OffboardingBanner organization={organization} />
+  }
+
+  if (paymentStatus?.organization_status === 'offboarded') {
+    return <OffboardedBanner organization={organization} />
   }
 
   if (paymentStatus?.organization_status === 'created') {

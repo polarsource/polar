@@ -26,6 +26,7 @@ from tests.fixtures import random_objects as ro
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_account, create_payout_account
 from tests.fixtures.random_objects import create_payout as _create_payout
+from tests.transaction.conftest import create_transaction
 
 ten_days_ago = utc_now() - timedelta(days=10)
 create_payment_transaction = partial(
@@ -99,6 +100,16 @@ class TestCreate:
             save_fixture, account=account, payment_transaction=payment_transaction_2
         )
 
+        # Payout reversal transaction always available for payouts
+        payout_reversal_transaction = await create_transaction(
+            save_fixture,
+            account=account,
+            type=TransactionType.payout_reversal,
+        )
+        assert payout_reversal_transaction.id is not None
+        assert payout_reversal_transaction.account == account
+        assert payout_reversal_transaction.type == TransactionType.payout_reversal
+
         # Transactions not available for payouts
         payment_transaction_3 = await create_payment_transaction(
             save_fixture, created_at=utc_now(), charge_id="CHARGE_3"
@@ -125,12 +136,13 @@ class TestCreate:
         assert transaction.account_amount < 0
         assert transaction.transfer_id is None
 
-        assert len(transaction.paid_transactions) == 2 + len(
+        assert len(transaction.paid_transactions) == 3 + len(
             transaction.account_incurred_transactions
         )
         paid_transaction_ids = {t.id for t in transaction.paid_transactions}
         assert balance_transaction_1.id in paid_transaction_ids
         assert balance_transaction_2.id in paid_transaction_ids
+        assert payout_reversal_transaction.id in paid_transaction_ids
 
         assert len(transaction.incurred_transactions) > 0
         assert (

@@ -12,6 +12,10 @@ from polar.models.file import File, FileServiceTypes
 from polar.models.license_key import LicenseKey
 from polar.models.member import MemberRole
 from polar.models.subscription import SubscriptionStatus
+from polar.organization.member_backfill import (
+    downloadable_member_backfill_statement,
+    license_key_member_backfill_statement,
+)
 from scripts.migrate_organizations_members import (
     _backfill_downloadables,
     _backfill_license_keys,
@@ -982,3 +986,189 @@ class TestBackfillDownloadables:
         refreshed2 = await session.get(Downloadable, dl2_id)
         assert refreshed2 is not None
         assert refreshed2.member_id is None
+
+
+@pytest.mark.asyncio
+class TestDownloadableConflict:
+    async def test_skips_row_when_member_already_holds_file(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        account: Account,
+    ) -> None:
+        """A customer-scoped row is skipped when the target member already holds
+        the same (customer, file, benefit) — otherwise the update would violate
+        ix_downloadables_scope_unique."""
+        organization = await create_organization(
+            save_fixture, account, feature_settings={"member_model_enabled": True}
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, email="conflict@test.com"
+        )
+        member = await create_member(
+            save_fixture,
+            customer=customer,
+            organization=organization,
+            role=MemberRole.owner,
+        )
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.downloadables,
+            properties={"archived": {}, "files": []},
+        )
+        file = await _create_file(save_fixture, organization.id)
+
+        existing = Downloadable(
+            customer_id=customer.id,
+            benefit_id=benefit.id,
+            file_id=file.id,
+            member_id=member.id,
+            status=DownloadableStatus.granted,
+        )
+        await save_fixture(existing)
+        leftover = Downloadable(
+            customer_id=customer.id,
+            benefit_id=benefit.id,
+            file_id=file.id,
+            member_id=None,
+            status=DownloadableStatus.granted,
+        )
+        await save_fixture(leftover)
+        leftover_id = leftover.id
+
+        await create_benefit_grant(
+            save_fixture,
+            customer=customer,
+            benefit=benefit,
+            granted=True,
+            member=member,
+        )
+
+        session.expunge_all()
+        await _backfill_downloadables(session)
+        await session.flush()
+
+        refreshed = await session.get(Downloadable, leftover_id)
+        assert refreshed is not None
+        assert refreshed.member_id is None
+
+
+@pytest.mark.asyncio
+class TestMemberModelOnlyScoping:
+    async def test_license_keys_skip_non_member_model_orgs(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+    ) -> None:
+        keys: dict[str, uuid.UUID] = {}
+        for label, feature_settings in (
+            ("off", {}),
+            ("on", {"member_model_enabled": True}),
+        ):
+            account = await create_account(save_fixture, user)
+            organization = await create_organization(
+                save_fixture, account, feature_settings=feature_settings
+            )
+            customer = await create_customer(
+                save_fixture, organization=organization, email=f"lk-{label}@test.com"
+            )
+            member = await create_member(
+                save_fixture,
+                customer=customer,
+                organization=organization,
+                role=MemberRole.owner,
+            )
+            benefit = await create_benefit(
+                save_fixture, organization=organization, type=BenefitType.license_keys
+            )
+            license_key = LicenseKey(
+                organization_id=organization.id,
+                customer_id=customer.id,
+                benefit_id=benefit.id,
+                key=f"POLAR-SCOPE-{label}",
+            )
+            await save_fixture(license_key)
+            keys[label] = license_key.id
+            await create_benefit_grant(
+                save_fixture,
+                customer=customer,
+                benefit=benefit,
+                granted=True,
+                member=member,
+                properties={"license_key_id": str(license_key.id)},
+            )
+
+        session.expunge_all()
+        await session.execute(
+            license_key_member_backfill_statement(member_model_only=True)
+        )
+        await session.flush()
+
+        off_key = await session.get(LicenseKey, keys["off"])
+        assert off_key is not None
+        assert off_key.member_id is None
+        on_key = await session.get(LicenseKey, keys["on"])
+        assert on_key is not None
+        assert on_key.member_id is not None
+
+    async def test_downloadables_skip_non_member_model_orgs(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+    ) -> None:
+        downloadables: dict[str, uuid.UUID] = {}
+        for label, feature_settings in (
+            ("off", {}),
+            ("on", {"member_model_enabled": True}),
+        ):
+            account = await create_account(save_fixture, user)
+            organization = await create_organization(
+                save_fixture, account, feature_settings=feature_settings
+            )
+            customer = await create_customer(
+                save_fixture, organization=organization, email=f"dl-{label}@test.com"
+            )
+            member = await create_member(
+                save_fixture,
+                customer=customer,
+                organization=organization,
+                role=MemberRole.owner,
+            )
+            benefit = await create_benefit(
+                save_fixture,
+                organization=organization,
+                type=BenefitType.downloadables,
+                properties={"archived": {}, "files": []},
+            )
+            file = await _create_file(save_fixture, organization.id)
+            downloadable = Downloadable(
+                customer_id=customer.id,
+                benefit_id=benefit.id,
+                file_id=file.id,
+                status=DownloadableStatus.granted,
+            )
+            await save_fixture(downloadable)
+            downloadables[label] = downloadable.id
+            await create_benefit_grant(
+                save_fixture,
+                customer=customer,
+                benefit=benefit,
+                granted=True,
+                member=member,
+            )
+
+        session.expunge_all()
+        await session.execute(
+            downloadable_member_backfill_statement(member_model_only=True)
+        )
+        await session.flush()
+
+        off_dl = await session.get(Downloadable, downloadables["off"])
+        assert off_dl is not None
+        assert off_dl.member_id is None
+        on_dl = await session.get(Downloadable, downloadables["on"])
+        assert on_dl is not None
+        assert on_dl.member_id is not None

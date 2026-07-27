@@ -1,6 +1,11 @@
 'use client'
 
 import { ReviewChecklist } from '@/components/Finance/Account/ReviewChecklist'
+import {
+  STEP_LABELS,
+  isIncompleteStep,
+  isRequiredStep,
+} from '@/components/Finance/Account/sections/stepLabels'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { toast } from '@/components/Toast/use-toast'
 import { usePostHog } from '@/hooks/posthog'
@@ -15,7 +20,7 @@ import {
   usePayoutAccounts,
 } from '@/hooks/queries/payout_accounts'
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
+import { Text, Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import { useRouter } from 'next/navigation'
@@ -82,19 +87,49 @@ export const AccountPageDetailsRequired = ({ organization }: Props) => {
     router.refresh()
   }
 
+  const remainingSteps = steps.filter(
+    (step) => isRequiredStep(step) && isIncompleteStep(step),
+  )
+  const canSubmit = !!reviewState?.can_submit
+
+  const submitButton = (
+    <Button
+      onClick={handleSubmit}
+      disabled={!canSubmit || isExiting}
+      loading={isExiting}
+      className="w-full sm:w-auto"
+    >
+      Submit for review
+    </Button>
+  )
+
+  const submitAction =
+    canSubmit || remainingSteps.length === 0 ? (
+      submitButton
+    ) : (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Box display="block" width={{ base: '100%', sm: 'auto' }}>
+            {submitButton}
+          </Box>
+        </TooltipTrigger>
+        <TooltipContent>
+          <Box flexDirection="column" rowGap="xs">
+            <Text variant="caption">Still needed before you submit:</Text>
+            {remainingSteps.map((step) => (
+              <Text key={step.key} variant="caption" color="muted">
+                {STEP_LABELS[step.key]}
+              </Text>
+            ))}
+          </Box>
+        </TooltipContent>
+      </Tooltip>
+    )
+
   return (
     <DashboardBody
       wrapperClassName="max-w-(--breakpoint-sm)!"
       title="Account Review"
-      header={
-        <Button
-          onClick={handleSubmit}
-          disabled={!reviewState?.can_submit || isExiting}
-          loading={isExiting}
-        >
-          Submit for review
-        </Button>
-      }
     >
       <Box flexDirection="column" rowGap="xl" paddingBottom="3xl">
         <Text variant="body" color="muted">
@@ -108,6 +143,9 @@ export const AccountPageDetailsRequired = ({ organization }: Props) => {
           rowStagger={ROW_STAGGER}
           rowDuration={ROW_DURATION}
         />
+        <Box flexDirection="column" alignSelf={{ base: 'stretch', sm: 'end' }}>
+          {submitAction}
+        </Box>
       </Box>
     </DashboardBody>
   )

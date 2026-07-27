@@ -101,12 +101,15 @@ class UserRepository(
         *,
         include_deleted: bool = False,
         included_blocked: bool = False,
+        for_update: bool = False,
     ) -> User | None:
         statement = self.get_base_statement(include_deleted=include_deleted).where(
             User.identity_verification_id == identity_verification_id
         )
         if not included_blocked:
             statement = statement.where(User.blocked_at.is_(None))
+        if for_update:
+            statement = statement.with_for_update(of=User)
         return await self.get_one_or_none(statement)
 
     async def get_all_by_organization(

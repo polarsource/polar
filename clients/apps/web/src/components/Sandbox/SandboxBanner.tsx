@@ -28,6 +28,7 @@ const SandboxBanner = () => {
         <a
           href="https://polar.sh/start"
           className="font-medium transition-colors hover:text-yellow-600 dark:hover:text-yellow-400"
+          rel="noopener noreferrer"
         >
           Exit sandbox
         </a>

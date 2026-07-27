@@ -2,10 +2,10 @@
 
 import { useAuth } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
-import { useAupValidation } from '@/hooks/useAupValidation'
+import { AupVerdict, useAupValidation } from '@/hooks/useAupValidation'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import { Button } from '@polar-sh/orbit'
+import { Button, Text } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import { TextArea } from '@polar-sh/orbit'
 import {
@@ -46,9 +46,12 @@ interface FormSchema {
   currentlySellingOn: string[]
 }
 
+const MIN_LENGTH = 30
+const MAX_LENGTH = 3000
+
 export function ProductDetailsStep() {
   const router = useRouter()
-  const { setUserOrganizations } = useAuth()
+  const { reloadUser } = useAuth()
   const { data, updateData, setApiLoading, showApiResponse } =
     useOnboardingData()
   const { trackStepViewed, trackStepCompleted } = useOnboardingV2Tracking()
@@ -107,7 +110,10 @@ export function ProductDetailsStep() {
     [sellingCategories],
   )
 
-  const submitOrg = async (formData: FormSchema) => {
+  const submitOrg = async (
+    formData: FormSchema,
+    verdict: AupVerdict | null,
+  ) => {
     setApiLoading(true)
 
     if (!data.orgName || !data.orgSlug) {
@@ -177,16 +183,16 @@ export function ProductDetailsStep() {
       return false
     }
 
-    setUserOrganizations((previous) => [
-      ...previous,
-      { ...organization, role: 'owner' as const },
-    ])
+    await reloadUser()
     updateData({
       organizationId: organization.id,
       orgSlug: organization.slug,
     })
 
-    trackStepCompleted('product', { organization_id: organization.id })
+    trackStepCompleted('product', {
+      organization_id: organization.id,
+      ...(verdict && { aup_verdict: verdict }),
+    })
     await showApiResponse(201, 'Created')
     router.push('/onboarding/complete')
     return true
@@ -209,7 +215,7 @@ export function ProductDetailsStep() {
     if (result.verdict === 'DENY' || result.verdict === 'CLARIFY') return
 
     setLoading('submitting')
-    const success = await submitOrg(formData)
+    const success = await submitOrg(formData, result.verdict)
     if (!success) {
       setLoading(null)
     }
@@ -218,11 +224,19 @@ export function ProductDetailsStep() {
   const onContinueAnyway = async () => {
     setLoading('submitting-anyway')
     const formData = form.getValues()
-    const success = await submitOrg(formData)
+    const success = await submitOrg(formData, aup.verdict)
     if (!success) {
       setLoading(null)
     }
   }
+
+  const charCount = productDescription?.length ?? 0
+
+  const counterColor = useMemo(() => {
+    if (charCount > MAX_LENGTH) return 'danger'
+    if (charCount > 0 && charCount < MIN_LENGTH) return 'warning'
+    return 'muted'
+  }, [charCount])
 
   return (
     <OnboardingShell
@@ -266,7 +280,12 @@ export function ProductDetailsStep() {
                     style={{ fieldSizing: 'content' } as React.CSSProperties}
                   />
                 </FormControl>
-                <FormMessage />
+                <Box alignItems="center" justifyContent="between" columnGap="s">
+                  <FormMessage />
+                  <Text variant="caption" color={counterColor}>
+                    {charCount}/{MAX_LENGTH} (min {MIN_LENGTH})
+                  </Text>
+                </Box>
               </FormItem>
             )}
           />
@@ -381,27 +400,33 @@ export function ProductDetailsStep() {
                 blockedSelected.length > 0 ||
                 sellingCategories.length === 0 ||
                 pricingModel.length === 0 ||
-                productDescription.trim().length === 0
+                productDescription.trim().length < MIN_LENGTH
               }
               fullWidth
             >
               {aup.verdict ? 'Review again' : 'Launch Dashboard'}
             </Button>
 
-            {aup.verdict === 'CLARIFY' &&
-              aup.history.length >= 3 &&
-              productDescription.trim().length > 30 &&
+            {aup.verdict &&
+              aup.history.length >= 2 &&
+              productDescription.trim().length >= MIN_LENGTH &&
               !aup.isValidating && (
-                <Button
-                  variant="ghost"
-                  type="button"
-                  fullWidth
-                  onClick={onContinueAnyway}
-                  disabled={loading === 'submitting'}
-                  loading={loading === 'submitting-anyway'}
-                >
-                  Continue without review
-                </Button>
+                <>
+                  <Button
+                    variant="ghost"
+                    type="button"
+                    fullWidth
+                    onClick={onContinueAnyway}
+                    disabled={loading === 'submitting'}
+                    loading={loading === 'submitting-anyway'}
+                  >
+                    Continue anyway
+                  </Button>
+                  <Text variant="caption" color="muted" align="center">
+                    You can continue setting up your account, but it may require
+                    manual review before you can accept payments.
+                  </Text>
+                </>
               )}
             {form.formState.errors.root && (
               <p className="text-sm text-red-500 dark:text-red-500">

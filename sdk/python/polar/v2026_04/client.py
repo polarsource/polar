@@ -1,0 +1,155 @@
+import types
+import typing
+
+from polar.base import AsyncClientBase, SyncClientBase, resolve_base_url
+from polar.v2026_04.services.benefit_grants import BenefitGrantsAsync, BenefitGrantsSync
+from polar.v2026_04.services.benefits import BenefitsAsync, BenefitsSync
+from polar.v2026_04.services.checkout_links import CheckoutLinksAsync, CheckoutLinksSync
+from polar.v2026_04.services.checkouts import CheckoutsAsync, CheckoutsSync
+from polar.v2026_04.services.custom_fields import CustomFieldsAsync, CustomFieldsSync
+from polar.v2026_04.services.customer_meters import (
+    CustomerMetersAsync,
+    CustomerMetersSync,
+)
+from polar.v2026_04.services.customer_portal import (
+    CustomerPortalAsync,
+    CustomerPortalSync,
+)
+from polar.v2026_04.services.customer_seats import CustomerSeatsAsync, CustomerSeatsSync
+from polar.v2026_04.services.customer_sessions import (
+    CustomerSessionsAsync,
+    CustomerSessionsSync,
+)
+from polar.v2026_04.services.customers import CustomersAsync, CustomersSync
+from polar.v2026_04.services.discounts import DiscountsAsync, DiscountsSync
+from polar.v2026_04.services.disputes import DisputesAsync, DisputesSync
+from polar.v2026_04.services.event_types import EventTypesAsync, EventTypesSync
+from polar.v2026_04.services.events import EventsAsync, EventsSync
+from polar.v2026_04.services.files import FilesAsync, FilesSync
+from polar.v2026_04.services.license_keys import LicenseKeysAsync, LicenseKeysSync
+from polar.v2026_04.services.members import MembersAsync, MembersSync
+from polar.v2026_04.services.meters import MetersAsync, MetersSync
+from polar.v2026_04.services.metrics import MetricsAsync, MetricsSync
+from polar.v2026_04.services.oauth2 import Oauth2Async, Oauth2Sync
+from polar.v2026_04.services.orders import OrdersAsync, OrdersSync
+from polar.v2026_04.services.organizations import OrganizationsAsync, OrganizationsSync
+from polar.v2026_04.services.payments import PaymentsAsync, PaymentsSync
+from polar.v2026_04.services.products import ProductsAsync, ProductsSync
+from polar.v2026_04.services.refunds import RefundsAsync, RefundsSync
+from polar.v2026_04.services.subscriptions import SubscriptionsAsync, SubscriptionsSync
+from polar.v2026_04.services.webhooks import WebhooksAsync, WebhooksSync
+
+Environment = typing.Literal["production", "sandbox"]
+SERVERS: typing.Final[dict[Environment, str]] = {
+    "production": "https://api.polar.sh",
+    "sandbox": "https://sandbox-api.polar.sh",
+}
+
+
+class Polar:
+    version: str = "2026-04"
+
+    def __init__(
+        self,
+        access_token: str,
+        *,
+        environment: Environment = "production",
+        base_url: str | None = None,
+    ) -> None:
+        resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
+        self._client = SyncClientBase(resolved_base_url, self.version, access_token)
+        self.organizations = OrganizationsSync(self._client)
+        self.subscriptions = SubscriptionsSync(self._client)
+        self.oauth2 = Oauth2Sync(self._client)
+        self.benefits = BenefitsSync(self._client)
+        self.benefit_grants = BenefitGrantsSync(self._client)
+        self.webhooks = WebhooksSync(self._client)
+        self.products = ProductsSync(self._client)
+        self.orders = OrdersSync(self._client)
+        self.refunds = RefundsSync(self._client)
+        self.disputes = DisputesSync(self._client)
+        self.checkouts = CheckoutsSync(self._client)
+        self.files = FilesSync(self._client)
+        self.metrics = MetricsSync(self._client)
+        self.license_keys = LicenseKeysSync(self._client)
+        self.checkout_links = CheckoutLinksSync(self._client)
+        self.custom_fields = CustomFieldsSync(self._client)
+        self.discounts = DiscountsSync(self._client)
+        self.customers = CustomersSync(self._client)
+        self.members = MembersSync(self._client)
+        self.customer_portal = CustomerPortalSync(self._client)
+        self.customer_seats = CustomerSeatsSync(self._client)
+        self.customer_sessions = CustomerSessionsSync(self._client)
+        self.events = EventsSync(self._client)
+        self.event_types = EventTypesSync(self._client)
+        self.meters = MetersSync(self._client)
+        self.customer_meters = CustomerMetersSync(self._client)
+        self.payments = PaymentsSync(self._client)
+
+    def __enter__(self) -> typing.Self:
+        self._client.__enter__()
+        return self
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc_val: BaseException | None = None,
+        exc_tb: types.TracebackType | None = None,
+    ) -> None:
+        self._client.__exit__(exc_type, exc_val, exc_tb)
+
+
+class PolarAsync:
+    version: str = "2026-04"
+
+    def __init__(
+        self,
+        access_token: str,
+        *,
+        environment: Environment = "production",
+        base_url: str | None = None,
+    ) -> None:
+        resolved_base_url = resolve_base_url(SERVERS, environment, base_url)
+        self._client = AsyncClientBase(resolved_base_url, self.version, access_token)
+        self.organizations = OrganizationsAsync(self._client)
+        self.subscriptions = SubscriptionsAsync(self._client)
+        self.oauth2 = Oauth2Async(self._client)
+        self.benefits = BenefitsAsync(self._client)
+        self.benefit_grants = BenefitGrantsAsync(self._client)
+        self.webhooks = WebhooksAsync(self._client)
+        self.products = ProductsAsync(self._client)
+        self.orders = OrdersAsync(self._client)
+        self.refunds = RefundsAsync(self._client)
+        self.disputes = DisputesAsync(self._client)
+        self.checkouts = CheckoutsAsync(self._client)
+        self.files = FilesAsync(self._client)
+        self.metrics = MetricsAsync(self._client)
+        self.license_keys = LicenseKeysAsync(self._client)
+        self.checkout_links = CheckoutLinksAsync(self._client)
+        self.custom_fields = CustomFieldsAsync(self._client)
+        self.discounts = DiscountsAsync(self._client)
+        self.customers = CustomersAsync(self._client)
+        self.members = MembersAsync(self._client)
+        self.customer_portal = CustomerPortalAsync(self._client)
+        self.customer_seats = CustomerSeatsAsync(self._client)
+        self.customer_sessions = CustomerSessionsAsync(self._client)
+        self.events = EventsAsync(self._client)
+        self.event_types = EventTypesAsync(self._client)
+        self.meters = MetersAsync(self._client)
+        self.customer_meters = CustomerMetersAsync(self._client)
+        self.payments = PaymentsAsync(self._client)
+
+    async def __aenter__(self) -> typing.Self:
+        await self._client.__aenter__()
+        return self
+
+    async def __aexit__(
+        self,
+        exc_type: type[BaseException] | None = None,
+        exc_val: BaseException | None = None,
+        exc_tb: types.TracebackType | None = None,
+    ) -> None:
+        await self._client.__aexit__(exc_type, exc_val, exc_tb)
+
+
+__all__ = ["Environment", "Polar", "PolarAsync"]

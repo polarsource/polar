@@ -444,7 +444,7 @@ export const ProductPricingSection = ({
               <Label
                 key={option}
                 htmlFor={`price-type-${option}`}
-                className={`flex flex-col gap-3 rounded-2xl border p-4 font-normal transition-colors not-aria-disabled:cursor-pointer ${
+                className={`flex flex-col gap-3 rounded-2xl border p-4 transition-colors not-aria-disabled:cursor-pointer ${
                   productType === option
                     ? 'dark:bg-polar-800 bg-gray-50'
                     : 'dark:border-polar-700 dark:not-aria-disabled:hover:border-polar-700 dark:text-polar-500 dark:not-aria-disabled:hover:bg-polar-700 dark:bg-polar-900 border-gray-100 text-gray-500 not-aria-disabled:hover:border-gray-200'

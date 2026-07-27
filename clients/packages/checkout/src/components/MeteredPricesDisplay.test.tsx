@@ -41,7 +41,13 @@ describe('MeteredPricesDisplay', () => {
       const fixedPrice = createFixedPrice({ id: 'price_fixed' })
       const meteredPrice = createMeteredPrice({
         unit_amount: '0.05',
-        meter: { id: 'meter_1', name: 'API Calls', unit: 'scalar' as const },
+        meter: {
+          id: 'meter_1',
+          name: 'API Calls',
+          unit: 'scalar' as const,
+          custom_label: null,
+          custom_multiplier: null,
+        },
       })
 
       const checkout = createCheckout({
@@ -80,13 +86,25 @@ describe('MeteredPricesDisplay', () => {
       const fixedPrice = createFixedPrice({ id: 'price_fixed' })
       const meteredPrice1 = createMeteredPrice({
         id: 'price_metered_1',
-        meter: { id: 'meter_1', name: 'API Calls', unit: 'scalar' as const },
+        meter: {
+          id: 'meter_1',
+          name: 'API Calls',
+          unit: 'scalar' as const,
+          custom_label: null,
+          custom_multiplier: null,
+        },
       })
       const meteredPrice2 = createMeteredPrice({
         id: 'price_metered_2',
         unit_amount: '0.02',
         meter_id: 'meter_2',
-        meter: { id: 'meter_2', name: 'Storage (GB)', unit: 'scalar' as const },
+        meter: {
+          id: 'meter_2',
+          name: 'Storage (GB)',
+          unit: 'scalar' as const,
+          custom_label: null,
+          custom_multiplier: null,
+        },
       })
 
       const checkout = createCheckout({

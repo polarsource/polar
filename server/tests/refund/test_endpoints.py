@@ -527,6 +527,43 @@ class TestCreateRefunds(StripeRefund):
         )
         assert order.status == OrderStatus.refunded
 
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.refunds_write}),
+    )
+    async def test_reject_dispute_prevention_reason(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        order, payment, transaction = await create_order_and_payment(
+            save_fixture,
+            product=product,
+            customer=customer,
+            amount=2000,
+            tax_amount=500,
+        )
+
+        response = await client.post(
+            "/v1/refunds/",
+            json={
+                "order_id": str(order.id),
+                "reason": RefundReason.dispute_prevention.value,
+                "amount": 500,
+            },
+        )
+        assert response.status_code == 422
+
+        order_repository = OrderRepository.from_session(session)
+        updated = await order_repository.get_by_id(order.id)
+        assert updated is not None
+        assert updated.refunded_amount == 0
+        assert updated.status == OrderStatus.paid
+
 
 @pytest.mark.asyncio
 class TestCreateRefundsAndRevokeBenefits(StripeRefund):

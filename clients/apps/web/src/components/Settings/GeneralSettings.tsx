@@ -13,11 +13,7 @@ import { useCallback, useState } from 'react'
 
 export type Theme = 'system' | 'light' | 'dark'
 
-interface GeneralSettingsProps {
-  returnTo?: string
-}
-
-const GeneralSettings: React.FC<GeneralSettingsProps> = () => {
+const GeneralSettings: React.FC = () => {
   const [theme, setTheme] = useState<Theme>(() => {
     if (typeof localStorage === 'undefined') {
       return 'system'

@@ -142,6 +142,11 @@ class UserService:
     async def create_identity_verification(
         self, session: AsyncSession, user: User
     ) -> UserIdentityVerification:
+        repository = UserRepository.from_session(session)
+        user_update = await repository.get_by_id(user.id, for_update=True)
+        assert user_update is not None
+        user = user_update
+
         if user.identity_verified:
             raise IdentityAlreadyVerified(user.id)
 
@@ -162,7 +167,6 @@ class UserService:
                 user
             )
 
-        repository = UserRepository.from_session(session)
         await repository.update(
             user, update_dict={"identity_verification_id": verification_session.id}
         )
@@ -178,7 +182,9 @@ class UserService:
         verification_session: stripe_lib.identity.VerificationSession,
     ) -> User:
         repository = UserRepository.from_session(session)
-        user = await repository.get_by_identity_verification_id(verification_session.id)
+        user = await repository.get_by_identity_verification_id(
+            verification_session.id, for_update=True
+        )
         if user is None:
             raise IdentityVerificationDoesNotExist(verification_session.id)
 
@@ -203,12 +209,14 @@ class UserService:
         verification_session: stripe_lib.identity.VerificationSession,
     ) -> User:
         repository = UserRepository.from_session(session)
-        user = await repository.get_by_identity_verification_id(verification_session.id)
+        user = await repository.get_by_identity_verification_id(
+            verification_session.id, for_update=True
+        )
         if user is None:
             raise IdentityVerificationDoesNotExist(verification_session.id)
 
-        # If the user is already verified, we don't need to update their status.
-        # Might happen if the webhook was delayed
+        # Once a user is verified, keep them verified: a late `processing` webhook
+        # must not overwrite it. A failed user can retry, so `failed` -> `pending` is fine.
         if user.identity_verified:
             return user
 
@@ -226,9 +234,16 @@ class UserService:
         verification_session: stripe_lib.identity.VerificationSession,
     ) -> User:
         repository = UserRepository.from_session(session)
-        user = await repository.get_by_identity_verification_id(verification_session.id)
+        user = await repository.get_by_identity_verification_id(
+            verification_session.id, for_update=True
+        )
         if user is None:
             raise IdentityVerificationDoesNotExist(verification_session.id)
+
+        # Once a user is verified, keep them verified. An old or repeated webhook
+        # from a past attempt must not undo it.
+        if user.identity_verified:
+            return user
 
         # TODO: should we send an email?
 

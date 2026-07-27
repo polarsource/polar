@@ -13,16 +13,23 @@ from sqlalchemy import (
     String,
     UniqueConstraint,
     Uuid,
+    select,
 )
 from sqlalchemy.ext.hybrid import hybrid_property
-from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
+from sqlalchemy.orm import (
+    Mapped,
+    column_property,
+    declared_attr,
+    mapped_column,
+    relationship,
+)
 
 from polar.enums import PaymentProcessor
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
 
 if TYPE_CHECKING:
-    from polar.models import Order, Payment
+    from polar.models import Customer, Order, Payment
 
 
 class DisputeStatus(StrEnum):
@@ -125,6 +132,25 @@ class Dispute(RecordModel):
     @declared_attr
     def payment(cls) -> Mapped["Payment"]:
         return relationship("Payment", lazy="raise")
+
+    @declared_attr
+    def case_id(cls) -> Mapped[UUID | None]:
+        # The live merchant support case for this dispute, if one was opened.
+        from polar.models.support_case import DisputeSupportCase
+
+        return column_property(
+            select(DisputeSupportCase.id)
+            .where(
+                DisputeSupportCase.dispute_id == cls.id,
+                DisputeSupportCase.deleted_at.is_(None),
+            )
+            .correlate_except(DisputeSupportCase)
+            .scalar_subquery()
+        )
+
+    @property
+    def customer(self) -> "Customer":
+        return self.order.customer
 
     @hybrid_property
     def resolved(self) -> bool:

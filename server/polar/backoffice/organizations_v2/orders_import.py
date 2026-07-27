@@ -222,7 +222,6 @@ async def orders_import(
             else datetime.now(UTC)
         )
 
-        subtotal_amount = int(_getter(row, "subtotal", default="0"))
         order_number = _getter(
             row,
             "order_number",
@@ -273,8 +272,8 @@ async def orders_import(
                 items=[
                     OrderItem(
                         label="Imported",
-                        amount=subtotal_amount,
-                        net_amount=subtotal_amount,
+                        amount=0,
+                        net_amount=0,
                         tax_amount=0,  # Don't import tax to avoid perturbing our own tax reports
                         proration=False,
                     )

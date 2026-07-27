@@ -1,11 +1,16 @@
 'use client'
 
+import { useOrganizationSSE } from '@/hooks/sse'
+import { api } from '@/utils/client'
 import type { Client, schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import type EventEmitter from 'eventemitter3'
 import { useCallback, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { useCustomerPortalContext } from '../CustomerPortal/CustomerPortalProvider'
+import { buttonVariants } from '@polar-sh/orbit/ui/button'
+
+type Variant = NonNullable<Parameters<typeof buttonVariants>[0]>['variant']
 
 const RECEIPT_GENERATED_EVENT = 'order.receipt_generated'
 const RENDER_TIMEOUT_MS = 30_000
@@ -45,6 +50,7 @@ const DownloadReceipt = ({
   eventEmitter,
   receiptURL,
   className,
+  variant,
 }: {
   order: schemas['Order'] | schemas['CustomerOrder']
   api: Client
@@ -53,6 +59,7 @@ const DownloadReceipt = ({
     | '/v1/orders/{id}/receipt'
     | '/v1/customer-portal/orders/{id}/receipt'
   className?: string
+  variant?: Variant
 }) => {
   const [loading, setLoading] = useState(false)
   const [failed, setFailed] = useState(false)
@@ -138,9 +145,34 @@ const DownloadReceipt = ({
       loading={loading}
       disabled={loading}
       className={twMerge('w-full', className)}
+      variant={variant}
     >
       Download Receipt
     </Button>
+  )
+}
+
+export const DownloadReceiptDashboard = ({
+  organization,
+  order,
+  className,
+  variant,
+}: {
+  organization: schemas['Organization']
+  order: schemas['Order']
+  className?: string
+  variant?: Variant
+}) => {
+  const eventEmitter = useOrganizationSSE(organization.id)
+  return (
+    <DownloadReceipt
+      order={order}
+      api={api}
+      eventEmitter={eventEmitter}
+      receiptURL="/v1/orders/{id}/receipt"
+      className={className}
+      variant={variant}
+    />
   )
 }
 

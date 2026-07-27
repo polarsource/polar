@@ -31,6 +31,8 @@ def create_async_engine(
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
         command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
+        connect_timeout=settings.DATABASE_CONNECT_TIMEOUT_SECONDS,
+        ssl="require" if settings.POSTGRES_SSL else None,
     )
 
 
@@ -43,6 +45,8 @@ def create_async_read_engine(process_name: ProcessName) -> AsyncEngine:
         pool_size=settings.DATABASE_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
         command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
+        connect_timeout=settings.DATABASE_CONNECT_TIMEOUT_SECONDS,
+        ssl="require" if settings.POSTGRES_SSL else None,
     )
 
 
@@ -55,6 +59,8 @@ def create_sync_engine(process_name: ProcessName) -> Engine:
         pool_size=settings.DATABASE_SYNC_POOL_SIZE,
         pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
         command_timeout=settings.DATABASE_COMMAND_TIMEOUT_SECONDS,
+        connect_timeout=settings.DATABASE_CONNECT_TIMEOUT_SECONDS,
+        sslmode="require" if settings.POSTGRES_SSL else None,
     )
 
 
@@ -89,6 +95,13 @@ async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession]:
         yield session
     except:
         await session.rollback()
+        # Import deferred to avoid circular dependency with polar.worker
+        from polar.worker import JobQueueManager
+
+        # Jobs enqueued during the request reference state that was just
+        # rolled back; discard them so they aren't flushed if the exception
+        # is converted into an error response by an exception handler.
+        JobQueueManager.get().reset()
         raise
     else:
         await session.commit()

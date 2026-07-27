@@ -44,27 +44,42 @@ def tinybird_workspace() -> Generator[str, None, None]:
     host = settings.TINYBIRD_API_URL
     workspace_name = f"test_{uuid.uuid4().hex[:8]}"
 
+    organization_response = httpx.get(
+        f"{host}/v1/user/workspaces",
+        params={"with_organization": "true", "token": admin_token},
+    )
+    organization_response.raise_for_status()
+    organization_id = organization_response.json()["organization_id"]
+
     ws_response = httpx.post(
-        f"{host}/v0/workspaces",
-        params={"name": workspace_name},
+        f"{host}/v1/workspaces",
+        params={"name": workspace_name, "assign_to_organization_id": organization_id},
         headers={"Authorization": f"Bearer {user_token}"},
     )
     ws_response.raise_for_status()
     workspace_id = ws_response.json()["id"]
 
-    token_name = f"admin_{workspace_name}"
-    token_response = httpx.post(
-        f"{host}/v0/tokens",
-        params={"name": token_name, "scope": "ADMIN"},
-        headers={
-            "Authorization": f"Bearer {admin_token}",
-            "X-Workspace-ID": workspace_id,
-        },
+    workspaces_response = httpx.get(
+        f"{host}/v1/user/workspaces",
+        params={"token": user_token},
     )
-    token_response.raise_for_status()
-    workspace_token = token_response.json()["token"]
+    workspaces_response.raise_for_status()
+    workspace_token = next(
+        workspace["token"]
+        for workspace in workspaces_response.json()["workspaces"]
+        if workspace["id"] == workspace_id
+    )
 
-    deploy_cmd = ["tb", "--host", host, "--token", workspace_token, "deploy", "--wait"]
+    deploy_cmd = [
+        "tb",
+        "--cloud",
+        "--host",
+        host,
+        "--token",
+        workspace_token,
+        "deploy",
+        "--wait",
+    ]
     for attempt in range(3):
         result = subprocess.run(
             deploy_cmd,
@@ -106,7 +121,8 @@ def tinybird_workspace() -> Generator[str, None, None]:
     yield workspace_token
 
     httpx.delete(
-        f"{host}/v0/workspaces/{workspace_id}",
+        f"{host}/v1/workspaces/{workspace_id}",
+        params={"hard_delete_confirmation": "yes"},
         headers={"Authorization": f"Bearer {user_token}"},
     )
 

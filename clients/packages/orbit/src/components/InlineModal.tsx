@@ -20,6 +20,14 @@ export interface InlineModalProps {
   className?: string
 }
 
+// Let focus escape into iframes rendered outside the modal (e.g. Stripe's 3D
+// Secure challenge, which Stripe injects at the document root). Without this the
+// focus lock yanks focus back into the modal, making the challenge's inputs
+// uninteractable. Returning false tells the lock to ignore the element; every
+// other element stays trapped as usual.
+const allowFocusInIframes = (activeElement: HTMLElement) =>
+  activeElement.tagName !== 'IFRAME'
+
 export const InlineModal: FunctionComponent<InlineModalProps> = ({
   isShown,
   hide,
@@ -51,7 +59,7 @@ export const InlineModal: FunctionComponent<InlineModalProps> = ({
   }
 
   const modal = (
-    <FocusLock>
+    <FocusLock whiteList={allowFocusInIframes}>
       <div
         ref={ref}
         className="fixed inset-0 z-50 overflow-hidden focus-within:outline-none"

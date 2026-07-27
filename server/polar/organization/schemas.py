@@ -1,7 +1,7 @@
 import re
 from datetime import datetime
 from enum import StrEnum
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 from urllib.parse import urlparse
 
 from pydantic import (
@@ -16,7 +16,7 @@ from pydantic import (
 from pydantic.json_schema import SkipJsonSchema
 from pydantic.networks import HttpUrl
 
-from polar.auth.permission import OrganizationPermission
+from polar.auth.permission import ROLE_PERMISSIONS, OrganizationPermission
 from polar.config import settings
 from polar.enums import SubscriptionProrationBehavior, TaxBehaviorOption
 from polar.kit.address import CountryAlpha2, CountryAlpha2Input
@@ -28,7 +28,6 @@ from polar.kit.schemas import (
     IDSchema,
     MergeJSONSchema,
     Schema,
-    SelectorWidget,
     SlugValidator,
     TimestampedSchema,
 )
@@ -37,8 +36,10 @@ from polar.models.organization import (
     OrganizationCustomerPortalSettings,
     OrganizationStatus,
     OrganizationSubscriptionSettings,
+    _default_customer_email_settings,
 )
 from polar.models.organization_review import OrganizationReview
+from polar.models.support_case import ReviewAppealSupportCase
 from polar.models.user_organization import (
     OrganizationNotificationSettings,
     OrganizationRole,
@@ -47,7 +48,6 @@ from polar.models.user_organization import (
 OrganizationID = Annotated[
     UUID4,
     MergeJSONSchema({"description": "The organization ID."}),
-    SelectorWidget("/v1/organizations", "Organization", "name"),
     Field(examples=[ORGANIZATION_ID_EXAMPLE]),
 ]
 
@@ -172,6 +172,28 @@ class OrganizationFeatureSettings(Schema):
     preview_access_enabled: bool = Field(
         False,
         description="If this organization has preview access to new features enabled",
+    )
+    disputes_enabled: bool = Field(
+        False,
+        description="If this organization has the disputes dashboard enabled",
+    )
+    sso_enabled: bool = Field(
+        False,
+        description="If this organization has single sign-on configuration enabled",
+    )
+    compass_enabled: bool = Field(
+        False,
+        description=(
+            "If this organization has the split product navigation "
+            "(Billing / Compass / Customers) enabled in the dashboard"
+        ),
+    )
+    merchant_migration_enabled: bool = Field(
+        False,
+        description=(
+            "If this organization can migrate its billing from another "
+            "provider (e.g. Stripe) to Polar."
+        ),
     )
 
 
@@ -306,6 +328,20 @@ class OrganizationSocialLink(Schema):
         return data
 
 
+def _merge_customer_email_settings_defaults(value: Any) -> Any:
+    """Complete stored settings with defaults so reads tolerate keys added after
+    an organization's settings were last written (lazy materialization)."""
+    if isinstance(value, dict):
+        return {**_default_customer_email_settings(), **value}
+    return value
+
+
+CustomerEmailSettings = Annotated[
+    OrganizationCustomerEmailSettings,
+    BeforeValidator(_merge_customer_email_settings_defaults),
+]
+
+
 class OrganizationBase(IDSchema, TimestampedSchema):
     name: str = Field(
         description="Organization name shown in checkout, customer portal, emails etc.",
@@ -370,6 +406,7 @@ class LegacyOrganizationStatus(StrEnum):
             OrganizationStatus.ACTIVE: LegacyOrganizationStatus.ACTIVE,
             OrganizationStatus.BLOCKED: LegacyOrganizationStatus.DENIED,
             OrganizationStatus.OFFBOARDING: LegacyOrganizationStatus.ACTIVE,
+            OrganizationStatus.OFFBOARDED: LegacyOrganizationStatus.DENIED,
         }
         try:
             return mapping[status]
@@ -392,7 +429,7 @@ class OrganizationPublicBase(OrganizationBase):
 
     feature_settings: SkipJsonSchema[OrganizationFeatureSettings | None]
     subscription_settings: SkipJsonSchema[OrganizationSubscriptionSettings]
-    customer_email_settings: SkipJsonSchema[OrganizationCustomerEmailSettings]
+    customer_email_settings: SkipJsonSchema[CustomerEmailSettings]
 
 
 class Organization(OrganizationBase):
@@ -404,6 +441,11 @@ class Organization(OrganizationBase):
     status: OrganizationStatus = Field(description="Current organization status")
     details_submitted_at: datetime | None = Field(
         description="When the business details were submitted for review.",
+    )
+    sso_enforced: bool = Field(
+        description=(
+            "Whether members must access this organization through its SSO connection."
+        ),
     )
 
     default_presentment_currency: str = Field(
@@ -422,7 +464,7 @@ class Organization(OrganizationBase):
     subscription_settings: OrganizationSubscriptionSettings = Field(
         description="Settings related to subscriptions management",
     )
-    customer_email_settings: OrganizationCustomerEmailSettings = Field(
+    customer_email_settings: CustomerEmailSettings = Field(
         description="Settings related to customer emails",
     )
     customer_portal_settings: OrganizationCustomerPortalSettings = Field(
@@ -458,6 +500,9 @@ class OrganizationWithRole(Organization):
     includes the user's role on the organization."""
 
     role: OrganizationRole = Field(description="The user's role on this organization.")
+    permissions: list[OrganizationPermission] = Field(
+        description="The permissions the user's role grants on this organization."
+    )
 
     @classmethod
     def from_organization(
@@ -465,7 +510,11 @@ class OrganizationWithRole(Organization):
     ) -> "OrganizationWithRole":
         """Build from a SQLAlchemy `Organization` plus the user's role."""
         return cls.model_validate(
-            {**Organization.model_validate(organization).model_dump(), "role": role}
+            {
+                **Organization.model_validate(organization).model_dump(),
+                "role": role,
+                "permissions": sorted(ROLE_PERMISSIONS[role]),
+            }
         )
 
 
@@ -565,6 +614,14 @@ class OrganizationUpdate(Schema):
     default_tax_behavior: TaxBehaviorOption | None = Field(
         None, description="Default tax behavior applied on products."
     )
+    sso_enforced: bool | None = Field(
+        None,
+        description=(
+            "Whether members must access this organization through its SSO "
+            "connection. Turning this on requires an active SSO session for "
+            "this organization and at least one enabled SSO connection."
+        ),
+    )
 
 
 class OrganizationReviewSubmissionDetails(Schema):
@@ -583,7 +640,7 @@ class OrganizationReviewSubmission(Schema):
     name: Annotated[str, StringConstraints(strip_whitespace=True, min_length=1)]
     website: Annotated[str, StringConstraints(min_length=1)]
     email: EmailStrDNS
-    socials: list[OrganizationSocialLink] = Field(min_length=1)
+    socials: list[OrganizationSocialLink] = Field(default_factory=list)
     details: Annotated[
         OrganizationReviewSubmissionDetails,
         BeforeValidator(_empty_review_submission_details_to_dict),
@@ -634,6 +691,24 @@ class OrganizationReviewStatus(Schema):
     appeal_reviewed_at: datetime | None = Field(
         default=None, description="When appeal was reviewed"
     )
+    appeal_case_id: UUID4 | None = Field(
+        default=None,
+        description="ID of the human-review support case, if one was opened",
+    )
+
+    @classmethod
+    def from_review(
+        cls, review: OrganizationReview, case: ReviewAppealSupportCase | None
+    ) -> Self:
+        return cls(
+            verdict=review.verdict,  # type: ignore[arg-type]
+            reason=review.reason,
+            appeal_submitted_at=review.appeal_submitted_at,
+            appeal_reason=review.appeal_reason,
+            appeal_decision=review.appeal_decision,
+            appeal_reviewed_at=review.appeal_reviewed_at,
+            appeal_case_id=case.id if case is not None else None,
+        )
 
 
 class OrganizationReviewCheckKey(StrEnum):
@@ -662,6 +737,7 @@ class OrganizationReviewCheckReason(StrEnum):
 
     # Universal
     NOT_STARTED = "not_started"
+    NOT_AUTHORIZED = "not_authorized"
     IN_PROGRESS = "in_progress"
     EXTERNAL_PENDING = "external_pending"
 

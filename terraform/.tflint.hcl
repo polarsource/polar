@@ -11,6 +11,10 @@ plugin "aws" {
   enabled = true
   version = "0.38.0"
   source  = "github.com/terraform-linters/tflint-ruleset-aws"
+  # Force PGP verification: the default "auto" mode crashes in CI when
+  # GITHUB_TOKEN is set (tflint attestation path panics in sigstore-go).
+  # See https://github.com/terraform-linters/tflint/issues/2591
+  signature = "pgp"
 }
 
 rule "terraform_naming_convention" {

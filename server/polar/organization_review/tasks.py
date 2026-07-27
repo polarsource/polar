@@ -8,6 +8,10 @@ from polar.exceptions import PolarTaskError
 from polar.integrations.polar.service import polar_self
 from polar.models.organization import Organization, OrganizationStatus
 from polar.models.organization_review import OrganizationReview
+from polar.models.support_case import (
+    SupportCaseAudience,
+    SupportCaseMessageAuthorKind,
+)
 from polar.organization.repository import (
     OrganizationRepository,
 )
@@ -16,9 +20,15 @@ from polar.organization.repository import (
 )
 from polar.organization.service import organization as organization_service
 from polar.postgres import AsyncSession
+from polar.support_case.repository import (
+    SupportCaseMessageRepository,
+    SupportCaseRepository,
+)
+from polar.support_case.service import support_case as support_case_service
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .agent import run_organization_review
+from .appeal_case import HUMAN_REVIEW_GREETING, publish_appeal_update
 from .report import build_agent_report
 from .repository import OrganizationReviewRepository
 from .schemas import (
@@ -47,6 +57,27 @@ _VERDICT_MAP: dict[ReviewVerdict, OrganizationReview.Verdict] = {
     ReviewVerdict.APPROVE: OrganizationReview.Verdict.PASS,
     ReviewVerdict.DENY: OrganizationReview.Verdict.FAIL,
 }
+
+
+def _run_agent_debounce_key(
+    organization_id: uuid.UUID,
+    context: str = ReviewContext.THRESHOLD,
+    auto_approve_eligible: bool = False,
+    plain_thread_id: str | None = None,
+) -> str | None:
+    """Debounce only PRODUCT_CHANGED reviews, per organization.
+
+    A merchant may create or edit many products in quick succession (or in
+    bulk via the API); without debouncing each change would spawn a full
+    agent review. A single per-organization key also collapses a create
+    immediately followed by edits into one review. Other contexts
+    (submission, threshold, manual, appeal) must never be collapsed, so the
+    factory returns ``None`` for them — which disables debouncing for that
+    message.
+    """
+    if context == ReviewContext.PRODUCT_CHANGED:
+        return f"organization_review.product_changed:{organization_id}"
+    return None
 
 
 async def _persist_agent_result(
@@ -96,6 +127,8 @@ async def _persist_agent_result(
     time_limit=180_000,  # 3 min timeout
     max_retries=4,
     min_backoff=30_000,
+    debounce_key=_run_agent_debounce_key,
+    debounce_min_threshold=300,
 )
 async def run_review_agent(
     organization_id: uuid.UUID,
@@ -107,6 +140,7 @@ async def run_review_agent(
 
     For SUBMISSION context: creates an OrganizationReview record and auto-denies on DENY.
     For THRESHOLD context: log-only, persists to OrganizationAgentReview table.
+    For PRODUCT_CHANGED context: pulls an active org back into REVIEW on a bad verdict.
     """
     if settings.ENV == Environment.sandbox:
         return
@@ -118,6 +152,22 @@ async def run_review_agent(
         organization = await repository.get_by_id(organization_id, include_blocked=True)
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
+
+        # A product-change review only makes sense for active orgs: it exists
+        # to pull them back into review. Status may have changed between enqueue
+        # and execution (debounce delay), so re-check here before spending an
+        # agent run.
+        if (
+            review_context == ReviewContext.PRODUCT_CHANGED
+            and organization.status != OrganizationStatus.ACTIVE
+        ):
+            log.info(
+                "organization_review.product_changed.skip_non_active",
+                organization_id=str(organization_id),
+                slug=organization.slug,
+                status=organization.status,
+            )
+            return
 
         result = await run_organization_review(
             session, organization, context=review_context
@@ -232,6 +282,30 @@ async def run_review_agent(
             elif report.verdict == ReviewVerdict.APPROVE:
                 await organization_service.maybe_activate(session, organization)
 
+        # For PRODUCT_CHANGED context: a bad verdict pulls the active org back
+        # into REVIEW for a human to look at. A clean APPROVE is a no-op — the
+        # org keeps operating. We never auto-deny here, only escalate.
+        if review_context == ReviewContext.PRODUCT_CHANGED:
+            if report.verdict != ReviewVerdict.APPROVE:
+                organization.set_status(OrganizationStatus.REVIEW)
+                session.add(organization)
+
+                await review_repository.record_agent_decision(
+                    organization_id=organization_id,
+                    agent_review_id=agent_review_id,
+                    decision=DecisionType.ESCALATE,
+                    review_context=ReviewContext.PRODUCT_CHANGED,
+                    verdict=report.verdict,
+                    risk_score=report.overall_risk_score,
+                )
+
+                log.info(
+                    "organization_review.product_changed.escalated_to_review",
+                    organization_id=str(organization_id),
+                    slug=organization.slug,
+                    verdict=report.verdict.value,
+                )
+
 
 @actor(
     actor_name="organization_review.appeal_submitted",
@@ -302,3 +376,34 @@ async def review_appeal(organization_id: uuid.UUID) -> None:
             verdict=report.verdict,
             risk_score=report.overall_risk_score,
         )
+
+
+@actor(
+    actor_name="organization_review.post_appeal_greeting",
+    priority=TaskPriority.LOW,
+)
+async def post_appeal_greeting(case_id: uuid.UUID) -> None:
+    """Post the automated greeting to a freshly opened human-review case."""
+    async with AsyncSessionMaker() as session:
+        case = await SupportCaseRepository.from_session(session).get_by_id(case_id)
+        if case is None:
+            return
+
+        message_repository = SupportCaseMessageRepository.from_session(session)
+        if not await message_repository.is_open(case_id):
+            return
+        existing = await message_repository.list_by_case(case_id, visible_to=None)
+        if any(
+            message.author_kind == SupportCaseMessageAuthorKind.platform
+            for message in existing
+        ):
+            return
+
+        await support_case_service.post_message(
+            session,
+            case,
+            author_kind=SupportCaseMessageAuthorKind.platform,
+            body=HUMAN_REVIEW_GREETING,
+            audience=[SupportCaseAudience.merchant],
+        )
+        await publish_appeal_update(case.organization_id)

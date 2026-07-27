@@ -5,6 +5,9 @@
 #     "typer>=0.12.0",
 #     "rich>=13.0.0",
 #     "python-dotenv>=1.0.0",
+#     "inquirerpy>=0.3.4",
+#     "pillow>=10.0.0",
+#     "numpy>=1.26.0",
 # ]
 # ///
 """
@@ -208,6 +211,7 @@ def up(
     next_steps.add_row()
     next_steps.add_row("[dim]Start all services", "")
     next_steps.add_row("dev start", "API, worker, web, and Stripe in a tmux session")
+    next_steps.add_row("dev stop", "Stop all services")
     next_steps.add_row()
     next_steps.add_row("[dim]Start specific services", "")
     next_steps.add_row("dev api", "API server")
@@ -250,6 +254,8 @@ def help() -> None:
     recipes.add_row("dev api", "Start API server")
     recipes.add_row("dev worker", "Start background worker")
     recipes.add_row("dev web", "Start frontend dev server")
+    recipes.add_row("dev switch", "Switch branch with a clean web restart")
+    recipes.add_row("dev stop", "Stop all services")
 
     console.print("\n  [bold]Common commands[/bold]")
     console.print(Padding(recipes, (0, 2)))
@@ -362,4 +368,11 @@ register_commands()
 
 
 if __name__ == "__main__":
+    try:
+        import analytics
+
+        analytics.track(sys.argv)
+    except Exception:
+        pass
+
     app()

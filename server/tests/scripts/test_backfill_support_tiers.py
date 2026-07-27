@@ -1,8 +1,9 @@
 import uuid
 from typing import Any
 
-from polar_sdk.models import BenefitGrant
+from polar.v2026_04.outputs import BenefitGrant
 
+from polar import deserialize
 from polar.models.organization import SupportTier
 from scripts.backfill_support_tiers import resolve_tiers
 
@@ -13,7 +14,7 @@ _GROWTH_BENEFIT_ID = "00000000-0000-0000-0000-0000000000b2"
 
 
 def _make_grant(*, benefit_id: str, external_id: str) -> BenefitGrant:
-    return BenefitGrant.model_validate(
+    return deserialize(
         {
             "created_at": "2026-01-01T00:00:00Z",
             "modified_at": None,
@@ -27,7 +28,8 @@ def _make_grant(*, benefit_id: str, external_id: str) -> BenefitGrant:
             "customer": _customer_dict(external_id),
             "benefit": _benefit_dict(benefit_id),
             "properties": {},
-        }
+        },
+        BenefitGrant,
     )
 
 

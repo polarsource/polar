@@ -4,6 +4,7 @@ import {
 } from '@/components/Shared/ScrollFade'
 import { Box } from '@polar-sh/orbit/Box'
 import React, { Fragment, useEffect, useState } from 'react'
+import { twMerge } from 'tailwind-merge'
 import { ChatBubble } from './ChatBubble'
 import {
   type ChatAttachment,
@@ -21,6 +22,7 @@ interface Props {
   scrollToBottomSignal?: number
   scrollFadeRef?: React.Ref<ScrollFadeHandle>
   suppressSelfAnimation?: boolean
+  fillHeight?: boolean
 }
 
 export const MessageThread = ({
@@ -33,7 +35,9 @@ export const MessageThread = ({
   scrollToBottomSignal,
   scrollFadeRef,
   suppressSelfAnimation,
+  fillHeight,
 }: Props) => {
+  const heightClass = fillHeight ? 'min-h-0 flex-1' : 'h-[420px]'
   const [, setTimeTick] = useState(0)
   useEffect(() => {
     const interval = setInterval(() => setTimeTick((t) => t + 1), 60_000)
@@ -47,7 +51,12 @@ export const MessageThread = ({
 
   if (visibleCount === 0 && emptyState) {
     return (
-      <div className="flex h-[420px] flex-col items-center justify-center">
+      <div
+        className={twMerge(
+          'flex flex-col items-center justify-center',
+          heightClass,
+        )}
+      >
         {emptyState}
       </div>
     )
@@ -56,7 +65,7 @@ export const MessageThread = ({
   return (
     <ScrollFade
       ref={scrollFadeRef}
-      className="-mr-4 flex h-[420px] flex-col pr-4"
+      className={twMerge('-mr-4 flex flex-col pr-4', heightClass)}
       stickToBottom
       scrollToBottomSignal={scrollToBottomSignal}
     >

@@ -2,7 +2,7 @@ import revalidate from '@/app/actions'
 import { useUpdateCustomer } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, InlineModalHeader } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import {
   Form,
@@ -81,85 +81,87 @@ export const EditCustomerModal = ({
   }
 
   return (
-    <div className="flex flex-col gap-8 overflow-y-auto px-8 py-12">
-      <div className="flex flex-row items-center gap-x-4">
+    <div className="flex flex-col overflow-y-auto">
+      <InlineModalHeader hide={onClose}>
         <h2 className="text-xl">Edit Customer</h2>
-      </div>
-      <Form {...form}>
-        <form
-          onSubmit={form.handleSubmit(handleUpdateCustomer)}
-          className="flex flex-col gap-8"
-        >
-          <div className="flex flex-col gap-4">
-            <FormField
-              control={form.control}
-              name="name"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel> Name</FormLabel>
-                  <FormControl>
-                    <Input {...field} value={field.value || ''} />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="email"
-              rules={{
-                required:
-                  customer.type === 'team' ? false : 'Email is required',
-                validate: (value) => {
-                  if (!value) return true
-                  return (
-                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ||
-                    'Invalid email address'
-                  )
-                },
-              }}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Email</FormLabel>
-                  <FormControl>
-                    <Input {...field} value={field.value || ''} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="external_id"
-              disabled={!!customer.external_id}
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>External ID</FormLabel>
-                  <FormDescription>
-                    An optional ID of the customer in your system. Once set, it
-                    can&apos;t be updated.
-                  </FormDescription>
-                  <FormControl>
-                    <Input {...field} value={field.value || ''} />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            <FormField
-              control={form.control}
-              name="metadata"
-              render={() => <CustomerMetadataForm />}
-            />
-          </div>
-          <Button
-            type="submit"
-            className="self-start"
-            loading={updateCustomer.isPending}
+      </InlineModalHeader>
+      <div className="flex flex-col gap-8 px-8 pb-12">
+        <Form {...form}>
+          <form
+            onSubmit={form.handleSubmit(handleUpdateCustomer)}
+            className="flex flex-col gap-8"
           >
-            Save Customer
-          </Button>
-        </form>
-      </Form>
+            <div className="flex flex-col gap-4">
+              <FormField
+                control={form.control}
+                name="name"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel> Name</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="email"
+                rules={{
+                  required:
+                    customer.type === 'team' ? false : 'Email is required',
+                  validate: (value) => {
+                    if (!value) return true
+                    return (
+                      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value) ||
+                      'Invalid email address'
+                    )
+                  },
+                }}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Email</FormLabel>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="external_id"
+                disabled={!!customer.external_id}
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>External ID</FormLabel>
+                    <FormDescription>
+                      An optional ID of the customer in your system. Once set,
+                      it can&apos;t be updated.
+                    </FormDescription>
+                    <FormControl>
+                      <Input {...field} value={field.value || ''} />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              <FormField
+                control={form.control}
+                name="metadata"
+                render={() => <CustomerMetadataForm />}
+              />
+            </div>
+            <Button
+              type="submit"
+              className="self-start"
+              loading={updateCustomer.isPending}
+            >
+              Save Customer
+            </Button>
+          </form>
+        </Form>
+      </div>
     </div>
   )
 }

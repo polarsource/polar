@@ -10,6 +10,14 @@ output "public_assets_bucket_regional_domain_name" {
   value = aws_s3_bucket.public_assets.bucket_regional_domain_name
 }
 
+output "files_bucket_id" {
+  value = aws_s3_bucket.files.id
+}
+
+output "files_bucket_arn" {
+  value = aws_s3_bucket.files.arn
+}
+
 output "public_files_bucket_id" {
   value = aws_s3_bucket.public_files.id
 }

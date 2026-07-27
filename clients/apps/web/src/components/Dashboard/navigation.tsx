@@ -7,6 +7,8 @@ import CodeOutlined from '@mui/icons-material/CodeOutlined'
 import DiamondOutlined from '@mui/icons-material/DiamondOutlined'
 import DiscountOutlined from '@mui/icons-material/DiscountOutlined'
 import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
+import ExploreOutlined from '@mui/icons-material/ExploreOutlined'
+import GavelOutlined from '@mui/icons-material/GavelOutlined'
 import HiveOutlined from '@mui/icons-material/HiveOutlined'
 import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import PeopleAltOutlined from '@mui/icons-material/PeopleAltOutlined'
@@ -94,7 +96,7 @@ const applyIsActive = (path: string): ((r: Route) => RouteWithActive) => {
   }
 }
 
-const useResolveRoutes = (
+export const useResolveRoutes = (
   routesResolver: (
     org?: schemas['Organization'],
     posthog?: PolarHog,
@@ -189,6 +191,16 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     if: true,
   },
   {
+    id: 'compass',
+    title: 'Compass',
+    icon: <ExploreOutlined fontSize="inherit" />,
+    link: `/dashboard/${org?.slug}/compass`,
+    checkIsActive: (currentRoute: string): boolean => {
+      return currentRoute.startsWith(`/dashboard/${org?.slug}/compass`)
+    },
+    if: !!org?.feature_settings?.compass_enabled,
+  },
+  {
     id: 'new-products',
     title: 'Products',
     icon: <HiveOutlined fontSize="inherit" />,
@@ -281,6 +293,12 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
         link: `/dashboard/${org?.slug}/sales/checkouts`,
         icon: <ShoppingCart />,
       },
+      {
+        title: 'Disputes',
+        link: `/dashboard/${org?.slug}/sales/disputes`,
+        icon: <GavelOutlined fontSize="inherit" />,
+        if: !!org?.feature_settings?.disputes_enabled,
+      },
     ],
   },
 ]
@@ -372,6 +390,16 @@ const organizationRoutesList = (
       {
         title: 'Custom Fields',
         link: `/dashboard/${org?.slug}/settings/custom-fields`,
+      },
+      {
+        title: 'Single Sign-On',
+        link: `/dashboard/${org?.slug}/settings/sso`,
+        if: !!org?.feature_settings?.sso_enabled,
+      },
+      {
+        title: 'Migrations',
+        link: `/dashboard/${org?.slug}/settings/migrations`,
+        if: !!org?.feature_settings?.merchant_migration_enabled,
       },
     ],
   },

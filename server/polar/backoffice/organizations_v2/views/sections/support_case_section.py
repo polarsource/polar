@@ -13,8 +13,9 @@ from tagflow import attr, tag, text
 
 from polar.enums import PaymentProcessor
 from polar.models import Dispute, Organization
-from polar.models.dispute import DisputeStatus
 from polar.models.support_case import (
+    DisputeSupportCase,
+    DisputeWinReason,
     SupportCase,
     SupportCaseAttachment,
     SupportCaseMessage,
@@ -22,9 +23,10 @@ from polar.models.support_case import (
     SupportCaseMessageType,
     SupportCaseType,
 )
+from polar.support_case.pdf import is_mergeable
 
 from .... import formatters
-from ....components import button, card
+from ....components import button, card, dispute_status_badge, evidence_due_label
 from ....support_cases.urls import append_return_to
 
 _AUTHOR_LABELS: dict[SupportCaseMessageAuthorKind, str] = {
@@ -37,6 +39,15 @@ _AUTHOR_LABELS: dict[SupportCaseMessageAuthorKind, str] = {
 _CASE_TITLES: dict[SupportCaseType, str] = {
     SupportCaseType.review_appeal: "Appeal Support Case",
     SupportCaseType.dispute: "Dispute Support Case",
+}
+
+_WIN_REASON_LABELS: dict[DisputeWinReason, str] = {
+    DisputeWinReason.cardholder_withdrew: "The cardholder withdrew the dispute",
+    DisputeWinReason.cardholder_refunded: "The cardholder was refunded",
+    DisputeWinReason.rightful_cardholder: (
+        "The purchase was made by the rightful cardholder"
+    ),
+    DisputeWinReason.other: "Other",
 }
 
 # The "opened" milestone reads differently per case type (a merchant-requested
@@ -75,6 +86,7 @@ _EVENT_TITLES: dict[SupportCaseMessageType, str] = {
     SupportCaseMessageType.dispute_won: "Dispute won",
     SupportCaseMessageType.dispute_lost: "Dispute lost",
     SupportCaseMessageType.dispute_prevented: "Dispute prevented",
+    SupportCaseMessageType.merchant_accepted: "Merchant accepted the dispute",
     SupportCaseMessageType.assigned: "Case assigned",
     SupportCaseMessageType.released: "Case unassigned",
 }
@@ -106,22 +118,112 @@ _EVENT_NODES: dict[SupportCaseMessageType, tuple[str, str]] = {
         "icon-shield-check",
         "bg-success text-success-content",
     ),
+    SupportCaseMessageType.merchant_accepted: ("icon-x", _MUTED_NODE),
     SupportCaseMessageType.assigned: ("icon-user-check", _MUTED_NODE),
     SupportCaseMessageType.released: ("icon-user-x", _MUTED_NODE),
 }
 
-# Dispute lifecycle status surfaced in the details panel: (badge classes, label).
-# A dispute case only exists from `needs_response` onward — `early_warning`
-# never has a case (see DisputeService._sync_support_case).
-_DISPUTE_STATUS_BADGES: dict[DisputeStatus, tuple[str, str]] = {
-    DisputeStatus.needs_response: ("badge-warning", "Needs response"),
-    DisputeStatus.under_review: ("badge-info", "Under review"),
-    DisputeStatus.prevented: ("badge-success", "Prevented"),
-    DisputeStatus.won: ("badge-success", "Won"),
-    DisputeStatus.lost: ("badge-error", "Lost"),
-}
-
 Thread = tuple[SupportCase, bool, Sequence[SupportCaseMessage]]
+
+MERGED_PDFS_REGION_ID = "merged-pdfs"
+MERGE_POLL_MAX_ATTEMPTS = 60
+
+
+def render_attachment_pill(request: Request, attachment: SupportCaseAttachment) -> None:
+    file = attachment.file
+    url = str(
+        request.url_for(
+            "support_cases:attachment_download", attachment_id=attachment.id
+        )
+    )
+    with tag.a(
+        href=url,
+        target="_blank",
+        classes="flex items-center gap-3 max-w-md rounded-lg border "
+        "border-base-300 bg-base-100 px-3 py-2 hover:bg-base-200",
+    ):
+        if file.mime_type.startswith("image/"):
+            with tag.img(
+                src=url,
+                alt=file.name,
+                loading="lazy",
+                classes="h-12 w-12 flex-none rounded-md object-cover bg-base-200",
+            ):
+                pass
+        else:
+            with tag.div(
+                classes="flex h-12 w-12 flex-none items-center "
+                "justify-center rounded-md bg-base-200 "
+                "text-base-content/40"
+            ):
+                with tag.span(classes="icon-paperclip"):
+                    pass
+        with tag.div(classes="min-w-0"):
+            with tag.div(classes="text-sm font-medium truncate"):
+                text(file.name)
+            with tag.div(classes="text-xs text-base-content/50"):
+                text(_format_size(file.size))
+
+
+def render_merged_pdfs_region(
+    request: Request,
+    case_id: UUID,
+    merged_files: Sequence[SupportCaseAttachment],
+    *,
+    expected: int | None = None,
+    merging: int | None = None,
+    attempts: int = 0,
+) -> None:
+    """The "Merged PDFs" block below the evidence list.
+
+    While fewer files than ``expected`` exist, the region polls itself until
+    the new PDF appears, giving up after ``MERGE_POLL_MAX_ATTEMPTS``."""
+    pending = expected is not None and len(merged_files) < expected
+    timed_out = pending and attempts >= MERGE_POLL_MAX_ATTEMPTS
+    with tag.div(id=MERGED_PDFS_REGION_ID, classes="flex flex-col gap-2"):
+        if pending and not timed_out:
+            partial_url = str(
+                request.url_for(
+                    "support_cases:attachments_merged_partial", case_id=case_id
+                )
+            )
+            attr(
+                "hx-get",
+                f"{partial_url}?expected={expected}"
+                f"&merging={merging or 0}&attempts={attempts + 1}",
+            )
+            attr("hx-trigger", "every 2s")
+            attr("hx-swap", "outerHTML")
+        if merged_files or pending:
+            with tag.div(
+                classes="text-xs uppercase tracking-wide text-base-content/40 mt-2"
+            ):
+                text(f"Merged PDFs ({len(merged_files)})")
+        for attachment in merged_files:
+            with tag.div(classes="flex"):
+                render_attachment_pill(request, attachment)
+        if timed_out:
+            with tag.div(classes="text-sm text-error"):
+                text(
+                    "The merge did not complete. Reload the page to check "
+                    "for the file, or try again."
+                )
+        elif pending:
+            with tag.div(
+                classes="flex items-center gap-2 text-sm text-base-content/60"
+            ):
+                with tag.span(classes="loading loading-spinner loading-xs"):
+                    pass
+                text(f"Merging {merging} files…" if merging else "Merging files…")
+
+
+def _format_size(size: int) -> str:
+    value = float(size)
+    for unit in ("B", "KB", "MB", "GB"):
+        if value < 1024:
+            return f"{value:.0f} {unit}" if unit == "B" else f"{value:.1f} {unit}"
+        value /= 1024
+    return f"{value:.1f} TB"
 
 
 class SupportCaseSection:
@@ -134,6 +236,7 @@ class SupportCaseSection:
         author_emails: dict[UUID, str] | None = None,
         current_user_id: UUID | None = None,
         attachments_by_message: dict[UUID, list[SupportCaseAttachment]] | None = None,
+        attachments: Sequence[SupportCaseAttachment] | None = None,
         dispute: Dispute | None = None,
         return_to: str | None = None,
     ) -> None:
@@ -142,6 +245,7 @@ class SupportCaseSection:
         self.author_emails = author_emails or {}
         self.current_user_id = current_user_id
         self.attachments_by_message = attachments_by_message or {}
+        self.attachments = attachments or []
         # The dispute behind a dispute case, surfaced as a read-only facts panel.
         self.dispute = dispute
         # Origin to come back to after an action (e.g. the org page), threaded
@@ -172,8 +276,7 @@ class SupportCaseSection:
                 if self.dispute is not None:
                     self._render_dispute_details(request, self.dispute)
                 self._render_timeline(request, messages)
-                if is_open:
-                    self._render_composer(request, case)
+                self._render_composer(request, case, is_open)
             yield
 
     # -- Header -------------------------------------------------------------
@@ -316,19 +419,17 @@ class SupportCaseSection:
     def _render_dispute_details(self, request: Request, dispute: Dispute) -> None:
         """Read-only facts about the chargeback: what is owed, why, and by when."""
         order_url = str(request.url_for("orders:get", id=dispute.order_id))
-        with tag.div(classes="mb-8 rounded-xl border border-base-200"):
+        with tag.div(classes="mb-8 rounded-xl border border-base-300"):
             with tag.div(
                 classes="flex items-center justify-between gap-2 px-4 py-3 "
-                "border-b border-base-200"
+                "border-b border-base-300"
             ):
                 with tag.div(classes="flex items-center gap-2"):
                     with tag.span(classes="icon-gavel text-base-content/60"):
                         pass
                     with tag.span(classes="text-sm font-medium"):
                         text("Dispute details")
-                badge, label = _DISPUTE_STATUS_BADGES[dispute.status]
-                with tag.div(classes=f"badge {badge} badge-sm"):
-                    text(label)
+                dispute_status_badge(dispute.status)
             with tag.div(
                 classes="grid grid-cols-2 sm:grid-cols-3 gap-x-6 gap-y-4 px-4 py-4"
             ):
@@ -341,7 +442,9 @@ class SupportCaseSection:
                 with self._fact("Reason"):
                     text(self._dispute_reason(dispute))
                 with self._fact("Evidence due"):
-                    self._render_evidence_due(dispute)
+                    evidence_due_label(
+                        dispute.evidence_due_by, dispute.past_due, dispute.status
+                    )
                 with self._fact("Evidence"):
                     if dispute.has_evidence:
                         text(f"Submitted ({dispute.submission_count})")
@@ -354,6 +457,99 @@ class SupportCaseSection:
                 if dispute.payment_processor_id:
                     with self._fact("Processor dispute ID"):
                         self._render_processor_id(dispute)
+                with self._fact("Why they should win"):
+                    self._render_win_reason()
+            self._render_evidence_files(request)
+
+    def _render_win_reason(self) -> None:
+        case = self.thread[0] if self.thread else None
+        if not isinstance(case, DisputeSupportCase) or case.win_reason is None:
+            with tag.span(classes="text-base-content/50"):
+                text("Not provided")
+            return
+        label = _WIN_REASON_LABELS.get(case.win_reason, case.win_reason.value)
+        if case.win_reason == DisputeWinReason.other and case.win_reason_other:
+            text(f"{label} — {case.win_reason_other}")
+        else:
+            text(label)
+
+    def _merchant_attachments(self) -> list[SupportCaseAttachment]:
+        """Attachments carried by merchant-authored messages — internal
+        case-level files must not appear under a "merchant submitted" heading."""
+        if self.thread is None:
+            return []
+        _case, _is_open, messages = self.thread
+        merchant_message_ids = {
+            message.id
+            for message in messages
+            if message.author_kind == SupportCaseMessageAuthorKind.merchant
+        }
+        return [
+            attachment
+            for attachment in self.attachments
+            if attachment.message_id in merchant_message_ids
+        ]
+
+    def _render_evidence_files(self, request: Request) -> None:
+        """All merchant evidence consolidated, with checkboxes feeding the
+        "Merge into PDF" action for mergeable files."""
+        if self.thread is None:
+            return
+        attachments = self._merchant_attachments()
+        merged_files = [a for a in self.attachments if a.message_id is None]
+        if not attachments and not merged_files:
+            return
+        case = self.thread[0]
+        merge_url = str(
+            request.url_for("support_cases:attachments_merge", case_id=case.id)
+        )
+        with tag.form(
+            method="post",
+            action=merge_url,
+            hx_post=merge_url,
+            hx_target=f"#{MERGED_PDFS_REGION_ID}",
+            hx_swap="outerHTML",
+            _="on htmx:afterRequest[detail.elt is me and detail.successful] "
+            "from me reset() me "
+            "then add @disabled to first <button[type='submit']/> in me",
+            classes="flex flex-col gap-2 px-4 pb-4 border-t border-base-300 pt-4",
+        ):
+            with tag.div(
+                classes="text-xs uppercase tracking-wide text-base-content/40"
+            ):
+                text(f"Merchant submitted files ({len(attachments)})")
+            mergeable_count = 0
+            for attachment in attachments:
+                with tag.div(classes="flex items-center gap-3"):
+                    if is_mergeable(attachment.file.mime_type):
+                        mergeable_count += 1
+                        with tag.input(
+                            type="checkbox",
+                            name="attachment_ids",
+                            value=str(attachment.id),
+                            classes="checkbox checkbox-sm flex-none",
+                        ):
+                            pass
+                    else:
+                        with tag.div(classes="w-5 flex-none"):
+                            pass
+                    render_attachment_pill(request, attachment)
+            if mergeable_count > 0:
+                with tag.div(classes="mt-2"):
+                    with button(
+                        size="sm",
+                        outline=True,
+                        type="submit",
+                        disabled=True,
+                        _="on change from closest <form/> "
+                        "if <input[name='attachment_ids']:checked/> "
+                        "in closest <form/> is empty "
+                        "add @disabled else remove @disabled",
+                    ):
+                        with tag.span(classes="icon-file-text"):
+                            pass
+                        text("Merge into PDF")
+            render_merged_pdfs_region(request, case.id, merged_files)
 
     @contextlib.contextmanager
     def _fact(self, label: str) -> Generator[None]:
@@ -383,18 +579,6 @@ class SupportCaseSection:
             with tag.span(classes="font-mono text-xs break-all"):
                 text(processor_id)
 
-    def _render_evidence_due(self, dispute: Dispute) -> None:
-        if dispute.evidence_due_by is None:
-            with tag.span(classes="text-base-content/50"):
-                text("—")
-            return
-        when = dispute.evidence_due_by.strftime("%b %-d, %Y %H:%M UTC")
-        if dispute.past_due:
-            with tag.span(classes="text-error font-medium"):
-                text(f"{when} · Past due")
-        else:
-            text(when)
-
     @staticmethod
     def _dispute_reason(dispute: Dispute) -> str:
         if dispute.reason is None:
@@ -416,7 +600,7 @@ class SupportCaseSection:
             ):
                 pass
             with tag.div(
-                classes="grid grid-cols-[minmax(0,15rem)_minmax(0,1fr)] gap-x-6 gap-y-5"
+                classes="grid grid-cols-[minmax(0,15rem)_minmax(0,1fr)] gap-x-6 gap-y-10"
             ):
                 for message in messages:
                     self._render_entry(request, message)
@@ -504,69 +688,45 @@ class SupportCaseSection:
             if message.body:
                 with tag.div(classes=f"flex {justify}"):
                     with tag.div(
-                        classes=f"max-w-md text-sm whitespace-pre-wrap {self._bubble(message, internal)}"
+                        classes=f"max-w-md text-sm leading-relaxed whitespace-pre-wrap p-3 rounded-s {self._bubble(message, internal)}"
                     ):
                         text(message.body)
             for attachment in attachments:
                 with tag.div(classes=f"flex {justify}"):
-                    self._render_attachment(request, attachment)
-
-    def _render_attachment(
-        self, request: Request, attachment: SupportCaseAttachment
-    ) -> None:
-        file = attachment.file
-        url = str(
-            request.url_for(
-                "support_cases:attachment_download", attachment_id=attachment.id
-            )
-        )
-        with tag.a(
-            href=url,
-            target="_blank",
-            classes="flex items-center gap-2 max-w-md rounded-lg border "
-            "border-base-200 bg-base-100 px-3 py-2 hover:bg-base-200",
-        ):
-            with tag.span(classes="icon-paperclip text-base-content/40"):
-                pass
-            with tag.div(classes="min-w-0"):
-                with tag.div(classes="text-sm font-medium truncate"):
-                    text(file.name)
-                with tag.div(classes="text-xs text-base-content/50"):
-                    text(self._format_size(file.size))
-
-    @staticmethod
-    def _format_size(size: int) -> str:
-        value = float(size)
-        for unit in ("B", "KB", "MB", "GB"):
-            if value < 1024:
-                return f"{value:.0f} {unit}" if unit == "B" else f"{value:.1f} {unit}"
-            value /= 1024
-        return f"{value:.1f} TB"
+                    render_attachment_pill(request, attachment)
 
     def _bubble(self, message: SupportCaseMessage, internal: bool) -> str:
         if internal:
             return (
-                "bg-warning/10 border-l-2 border-warning rounded-lg px-3 py-2 "
+                "bg-warning/10 border-l-2 border-warning rounded-2xl px-5 py-3.5 "
                 "text-base-content/80"
             )
         if message.type == SupportCaseMessageType.appeal_approved:
-            return "bg-success/10 rounded-xl px-4 py-2.5"
+            return "bg-success/10 rounded-2xl px-5 py-3.5"
         if message.type == SupportCaseMessageType.appeal_denied:
-            return "bg-error/10 rounded-xl px-4 py-2.5"
+            return "bg-error/10 rounded-2xl px-5 py-3.5"
         if message.author_kind == SupportCaseMessageAuthorKind.merchant:
-            return "bg-info/10 rounded-2xl rounded-tr-md px-4 py-2.5"
-        return "bg-base-200 rounded-2xl rounded-tl-md px-4 py-2.5"
+            return "bg-info/10 rounded-2xl px-5 py-3.5"
+        return "bg-base-200 rounded-2xl px-5 py-3.5"
 
     # -- Composer -----------------------------------------------------------
 
-    def _render_composer(self, request: Request, case: SupportCase) -> None:
+    def _render_composer(
+        self, request: Request, case: SupportCase, is_open: bool
+    ) -> None:
         reply_url = self._with_return_to(
             str(request.url_for("support_cases:reply", case_id=case.id))
         )
-        # Disputes don't have a staff ↔ merchant reply channel yet, so the
-        # composer is internal-notes-only (the endpoint enforces this too).
-        internal_only = self._case_type == SupportCaseType.dispute
-        with tag.div(classes="mt-8 pt-6 border-t border-base-200"):
+        # A closed case only takes internal follow-ups after the decision.
+        internal_only = not is_open
+        with tag.div(classes="mt-8 pt-6 border-t border-base-300"):
+            if not is_open:
+                with tag.div(
+                    classes="flex items-center gap-2 mb-3 text-sm text-base-content/60"
+                ):
+                    with tag.span(classes="icon-square"):
+                        pass
+                    text("This case is closed — only internal notes can be added.")
             with tag.form(hx_post=reply_url, classes="flex flex-col gap-3"):
                 with tag.textarea(
                     name="body",

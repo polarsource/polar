@@ -76,6 +76,16 @@ const customerEmails: {
     title: 'Subscription past due',
     description: 'Sent when a subscription payment fails and becomes overdue',
   },
+  {
+    key: 'subscription_paused',
+    title: 'Subscription paused',
+    description: 'Sent when a customer pauses their subscription',
+  },
+  {
+    key: 'subscription_resumed',
+    title: 'Subscription resumed',
+    description: 'Sent when a paused subscription resumes and billing restarts',
+  },
 ]
 
 const OrganizationCustomerEmailSettings: React.FC<

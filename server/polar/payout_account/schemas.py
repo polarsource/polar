@@ -4,7 +4,8 @@ from uuid import UUID
 
 from pydantic import BeforeValidator, Field
 
-from polar.enums import PayoutAccountType
+from polar.enums import PayoutAccountStatus, PayoutAccountType
+from polar.kit.address import upper_if_str
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 
 
@@ -135,14 +136,16 @@ class PayoutAccountCreate(Schema):
     organization_id: UUID = Field(
         description="Organization ID to create or get account for"
     )
-    country: Annotated[StripeAccountCountry, BeforeValidator(str.upper)]
+    country: Annotated[StripeAccountCountry, BeforeValidator(upper_if_str)]
 
 
 class PayoutAccount(TimestampedSchema, IDSchema):
     type: PayoutAccountType
+    processor_id: str | None = Field(validation_alias="stripe_id")
     country: str
     currency: str
     is_payout_ready: bool
+    status: PayoutAccountStatus
 
 
 class PayoutAccountLink(Schema):

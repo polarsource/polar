@@ -1,7 +1,7 @@
 import builtins
 from collections.abc import Sequence
 from decimal import Decimal
-from typing import Annotated, Any, Literal
+from typing import Annotated, Any, Literal, Self
 
 from pydantic import (
     UUID4,
@@ -12,6 +12,7 @@ from pydantic import (
     ValidationInfo,
     computed_field,
     field_validator,
+    model_validator,
 )
 from pydantic.aliases import AliasChoices
 from pydantic.json_schema import SkipJsonSchema
@@ -22,7 +23,11 @@ from polar.custom_field.schemas import (
     AttachedCustomField,
     AttachedCustomFieldListCreate,
 )
-from polar.enums import SubscriptionRecurringInterval, TaxBehaviorOption
+from polar.enums import (
+    MeterInterval,
+    SubscriptionRecurringInterval,
+    TaxBehaviorOption,
+)
 from polar.file.schemas import ProductMediaFileRead
 from polar.kit.currency import (
     MAXIMUM_PRICE_PER_CURRENCY_DOCSTRING,
@@ -43,7 +48,6 @@ from polar.kit.schemas import (
     Int32,
     MergeJSONSchema,
     Schema,
-    SelectorWidget,
     SetSchemaReference,
     StripValidator,
     TimestampedSchema,
@@ -72,6 +76,7 @@ from polar.models.product_price import (
     ProductPriceSeatUnit as ProductPriceSeatUnitModel,
 )
 from polar.organization.schemas import OrganizationID
+from polar.product.meter_interval import meter_interval_divides_billing_interval
 
 PRODUCT_NAME_MIN_LENGTH = 3
 PRODUCT_NAME_MAX_LENGTH = 64
@@ -81,7 +86,6 @@ PRODUCT_NAME_MAX_LENGTH = 64
 ProductID = Annotated[
     UUID4,
     MergeJSONSchema({"description": "The product ID."}),
-    SelectorWidget("/v1/products", "Product", "name"),
 ]
 
 
@@ -474,6 +478,45 @@ class ProductCreateRecurring(TrialConfigurationInputMixin, ProductCreateBase):
             "if set to 2 it will be every other month, and so on."
         ),
     )
+    meter_interval: MeterInterval | None = Field(
+        default=None,
+        description=(
+            "Optional meter cycle, independent of the billing interval. "
+            "When set, overage settlement, meter resets and meter-credit grants run "
+            "on this cadence rather than the billing interval — e.g. yearly billing "
+            "with monthly credits. It must evenly divide the billing interval. "
+            "If `None`, metered concerns follow the billing interval. "
+            "**Once set, it can't be changed.**"
+        ),
+    )
+    meter_interval_count: int | None = Field(
+        default=None,
+        ge=1,
+        le=999,
+        description=(
+            "Number of meter interval units. Defaults to 1 when `meter_interval` is "
+            "set. Ignored when `meter_interval` is `None`."
+        ),
+    )
+
+    @model_validator(mode="after")
+    def validate_meter_interval(self) -> Self:
+        if self.meter_interval is None:
+            self.meter_interval_count = None
+            return self
+        if self.meter_interval_count is None:
+            self.meter_interval_count = 1
+        if not meter_interval_divides_billing_interval(
+            self.meter_interval,
+            self.meter_interval_count,
+            self.recurring_interval,
+            self.recurring_interval_count,
+        ):
+            raise ValueError(
+                "The meter interval must evenly divide the billing interval, "
+                "so the meter cycle re-aligns with the billing cycle at every renewal."
+            )
+        return self
 
 
 class ProductCreateOneTime(ProductCreateBase):
@@ -748,9 +791,9 @@ class ProductPriceMeter(IDSchema):
 
     name: str = Field(description="The name of the meter.")
     unit: MeterUnit = Field(description="The unit of the meter.")
-    custom_label: str | None = Field(None, description="The label for the custom unit.")
+    custom_label: str | None = Field(description="The label for the custom unit.")
     custom_multiplier: int | None = Field(
-        None, description="The multiplier to convert from base unit to display scale."
+        description="The multiplier to convert from base unit to display scale."
     )
 
 
@@ -812,6 +855,15 @@ class ProductBase(TrialConfigurationOutputMixin, TimestampedSchema, IDSchema):
             "if set to 2 it will be every other month, and so on. "
             "None for one-time products."
         )
+    )
+    meter_interval: MeterInterval | None = Field(
+        description=(
+            "The meter cycle of the product, independent of the billing interval. "
+            "If `None`, metered concerns follow the billing interval."
+        ),
+    )
+    meter_interval_count: int | None = Field(
+        description="Number of meter interval units. None when no meter cycle is set.",
     )
     is_recurring: bool = Field(description="Whether the product is a subscription.")
     is_archived: bool = Field(

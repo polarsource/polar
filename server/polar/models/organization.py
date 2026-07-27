@@ -8,6 +8,7 @@ from pydantic.json_schema import WithJsonSchema
 from sqlalchemy import (
     TIMESTAMP,
     BigInteger,
+    Boolean,
     CheckConstraint,
     ColumnElement,
     ForeignKey,
@@ -89,22 +90,24 @@ class OrganizationSubscriptionSettings(TypedDict):
     allow_customer_updates: bool
 
 
-_default_subscription_settings: OrganizationSubscriptionSettings = {
-    "allow_multiple_subscriptions": False,
-    "allow_customer_updates": True,
-    "proration_behavior": SubscriptionProrationBehavior.prorate,
-    "benefit_revocation_grace_period": 0,
-    "prevent_trial_abuse": False,
-}
+def _default_subscription_settings() -> OrganizationSubscriptionSettings:
+    return {
+        "allow_multiple_subscriptions": False,
+        "allow_customer_updates": True,
+        "proration_behavior": SubscriptionProrationBehavior.prorate,
+        "benefit_revocation_grace_period": 0,
+        "prevent_trial_abuse": False,
+    }
 
 
 class OrganizationOrderSettings(TypedDict):
     invoice_numbering: InvoiceNumbering
 
 
-_default_order_settings: OrganizationOrderSettings = {
-    "invoice_numbering": InvoiceNumbering.customer,
-}
+def _default_order_settings() -> OrganizationOrderSettings:
+    return {
+        "invoice_numbering": InvoiceNumbering.customer,
+    }
 
 
 class OrganizationCustomerEmailSettings(TypedDict):
@@ -114,6 +117,8 @@ class OrganizationCustomerEmailSettings(TypedDict):
     subscription_cycled: bool
     subscription_cycled_after_trial: bool
     subscription_past_due: bool
+    subscription_paused: bool
+    subscription_resumed: bool
     subscription_renewal_reminder: bool
     subscription_revoked: bool
     subscription_trial_conversion_reminder: bool
@@ -121,19 +126,22 @@ class OrganizationCustomerEmailSettings(TypedDict):
     subscription_updated: bool
 
 
-_default_customer_email_settings: OrganizationCustomerEmailSettings = {
-    "order_confirmation": True,
-    "subscription_cancellation": True,
-    "subscription_confirmation": True,
-    "subscription_cycled": True,
-    "subscription_cycled_after_trial": True,
-    "subscription_past_due": True,
-    "subscription_renewal_reminder": True,
-    "subscription_revoked": True,
-    "subscription_trial_conversion_reminder": True,
-    "subscription_uncanceled": True,
-    "subscription_updated": True,
-}
+def _default_customer_email_settings() -> OrganizationCustomerEmailSettings:
+    return {
+        "order_confirmation": True,
+        "subscription_cancellation": True,
+        "subscription_confirmation": True,
+        "subscription_cycled": True,
+        "subscription_cycled_after_trial": True,
+        "subscription_past_due": True,
+        "subscription_paused": True,
+        "subscription_resumed": True,
+        "subscription_renewal_reminder": True,
+        "subscription_revoked": True,
+        "subscription_trial_conversion_reminder": True,
+        "subscription_uncanceled": True,
+        "subscription_updated": True,
+    }
 
 
 class CustomerPortalUsageSettings(TypedDict):
@@ -143,6 +151,7 @@ class CustomerPortalUsageSettings(TypedDict):
 class CustomerPortalSubscriptionSettings(TypedDict):
     update_seats: bool
     update_plan: bool
+    pause: NotRequired[bool]
 
 
 class CustomerPortalCustomerSettings(TypedDict):
@@ -155,25 +164,27 @@ class OrganizationCustomerPortalSettings(TypedDict):
     customer: NotRequired[CustomerPortalCustomerSettings]
 
 
-_default_customer_portal_settings: OrganizationCustomerPortalSettings = {
-    "usage": {"show": True},
-    "subscription": {
-        "update_seats": True,
-        "update_plan": True,
-    },
-    "customer": {
-        "allow_email_change": False,
-    },
-}
+def _default_customer_portal_settings() -> OrganizationCustomerPortalSettings:
+    return {
+        "usage": {"show": True},
+        "subscription": {
+            "update_seats": True,
+            "update_plan": True,
+        },
+        "customer": {
+            "allow_email_change": False,
+        },
+    }
 
 
 class OrganizationCheckoutSettings(TypedDict):
     require_3ds: bool
 
 
-_default_checkout_settings: OrganizationCheckoutSettings = {
-    "require_3ds": True,
-}
+def _default_checkout_settings() -> OrganizationCheckoutSettings:
+    return {
+        "require_3ds": True,
+    }
 
 
 class OrganizationIndividualLegalEntity(TypedDict):
@@ -198,6 +209,7 @@ class OrganizationStatus(StrEnum):
     ACTIVE = "active"
     BLOCKED = "blocked"
     OFFBOARDING = "offboarding"
+    OFFBOARDED = "offboarded"
 
     def get_display_name(self) -> str:
         return {
@@ -208,6 +220,7 @@ class OrganizationStatus(StrEnum):
             OrganizationStatus.ACTIVE: "Active",
             OrganizationStatus.BLOCKED: "Blocked",
             OrganizationStatus.OFFBOARDING: "Offboarding",
+            OrganizationStatus.OFFBOARDED: "Offboarded",
         }[self]
 
     @classmethod
@@ -333,6 +346,16 @@ STATUS_CAPABILITIES: dict[OrganizationStatus, OrganizationCapabilities] = {
         "api_access": True,
         "dashboard_access": True,
     },
+    # Terminal wind-down: new payments are blocked, but payouts are released so
+    # the merchant can withdraw their remaining balance (auto-processed, not held).
+    OrganizationStatus.OFFBOARDED: {
+        "checkout_payments": False,
+        "subscription_renewals": False,
+        "payouts": True,
+        "refunds": False,
+        "api_access": True,
+        "dashboard_access": True,
+    },
     OrganizationStatus.BLOCKED: {
         "checkout_payments": False,
         "subscription_renewals": False,
@@ -413,6 +436,7 @@ ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatu
         {
             OrganizationStatus.CREATED,
             OrganizationStatus.ACTIVE,
+            OrganizationStatus.OFFBOARDING,
             OrganizationStatus.BLOCKED,
         }
     ),
@@ -420,6 +444,13 @@ ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatu
         {
             OrganizationStatus.REVIEW,
             OrganizationStatus.DENIED,
+            OrganizationStatus.BLOCKED,
+            OrganizationStatus.OFFBOARDED,
+        }
+    ),
+    # Terminal state: only a block escape hatch remains.
+    OrganizationStatus.OFFBOARDED: frozenset(
+        {
             OrganizationStatus.BLOCKED,
         }
     ),
@@ -610,6 +641,20 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def is_member_model_enabled(self) -> bool:
         return self.feature_settings.get("member_model_enabled", False)
 
+    @property
+    def is_sso_enabled(self) -> bool:
+        return self.feature_settings.get("sso_enabled", False)
+
+    @property
+    def is_compass_enabled(self) -> bool:
+        return self.feature_settings.get("compass_enabled", False)
+
+    @property
+    def is_merchant_migration_enabled(self) -> bool:
+        return self.feature_settings.get("merchant_migration_enabled", False)
+
+    sso_enforced: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+
     #
     # Currency and tax settings
     #
@@ -782,6 +827,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         )
 
     @property
+    def customer_portal_subscription_pause(self) -> bool:
+        return self.customer_portal_settings.get("subscription", {}).get("pause", False)
+
+    @property
     def checkout_require_3ds(self) -> bool:
         return self.checkout_settings.get("require_3ds", False)
 
@@ -805,12 +854,20 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     @declared_attr
     def review(cls) -> Mapped["OrganizationReview | None"]:
+        # The single live review. A partial unique index guarantees at most one
+        # row per organization with deleted_at IS NULL, so a soft-deleted prior
+        # review (e.g. a reset grandfathered one) never shadows the live one.
         return relationship(
             "OrganizationReview",
             lazy="raise",
-            back_populates="organization",
-            cascade="delete, delete-orphan",
-            uselist=False,  # This makes it a one-to-one relationship
+            uselist=False,
+            viewonly=True,
+            primaryjoin=(
+                "and_("
+                "OrganizationReview.organization_id == Organization.id, "
+                "OrganizationReview.deleted_at.is_(None)"
+                ")"
+            ),
         )
 
     @declared_attr
@@ -834,8 +891,13 @@ class Organization(RateLimitGroupMixin, RecordModel):
     def is_blocked(self) -> bool:
         return self.status == OrganizationStatus.BLOCKED
 
-    def is_active(self) -> bool:
-        return self.status == OrganizationStatus.ACTIVE
+    def can_change_plan(self) -> bool:
+        # Active organizations and organizations under silent review (review or
+        # snoozed) may change their plan; all other statuses are blocked.
+        return (
+            self.status == OrganizationStatus.ACTIVE
+            or self.status in OrganizationStatus.review_statuses()
+        )
 
     def statement_descriptor(self, suffix: str = "") -> str:
         max_length = settings.stripe_descriptor_suffix_max_length

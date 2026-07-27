@@ -1,4 +1,7 @@
-import { SectionLayout } from './SectionLayout'
+import React from 'react'
+import { BrandSection } from './BrandSection'
+import { brandSections } from './brand'
+import { Lead, Mono, Trait } from './primitives'
 
 const traits = [
   {
@@ -25,24 +28,23 @@ const traits = [
 
 export function VoiceSection() {
   return (
-    <SectionLayout label="Voice & Tone">
-      <div className="flex flex-col gap-16">
-        <div className="flex flex-col gap-12 md:gap-24">
-          {traits.map((item) => (
-            <div
-              key={item.trait}
-              className="grid grid-cols-1 gap-4 md:grid-cols-2 md:gap-48"
-            >
-              <span className="text-5xl font-light tracking-tighter md:text-9xl">
-                {item.trait}
-              </span>
-              <p className="dark:text-polar-500 max-w-xl text-base leading-relaxed text-neutral-500 md:text-2xl">
-                {item.description}
-              </p>
-            </div>
-          ))}
-        </div>
+    <BrandSection
+      meta={brandSections[4]}
+      title="How Polar speaks"
+      lead="The voice is the brand in words. Four principles keep every sentence recognizably Polar."
+    >
+      <div className="flex flex-col">
+        {traits.map((item, index) => (
+          <div
+            key={item.trait}
+            className="border-brand-line grid grid-cols-1 gap-6 border-t py-12 first:border-t-0 first:pt-0 md:grid-cols-12 md:gap-8 md:py-16"
+          >
+            <Mono className="md:col-span-1">0{index + 1}</Mono>
+            <Trait className="md:col-span-5">{item.trait}</Trait>
+            <Lead className="md:col-span-6">{item.description}</Lead>
+          </div>
+        ))}
       </div>
-    </SectionLayout>
+    </BrandSection>
   )
 }

@@ -139,9 +139,9 @@ from polar.backoffice.components import datatable
 class ResourceDatatable(datatable.Datatable[Resource, ResourceSortProperty]):
     def columns(self) -> list[datatable.DatatableColumn]:
         return [
-            datatable.DatatableAttrColumn("Name", "name"),
+            datatable.DatatableAttrColumn("name", "Name"),
             ResourceStatusColumn(),
-            datatable.DatatableDateColumn("Created", "created_at"),
+            datatable.DatatableDateColumn("created_at", "Created"),
         ]
 
 class ResourceStatusColumn(datatable.DatatableColumn[Resource, ResourceSortProperty]):

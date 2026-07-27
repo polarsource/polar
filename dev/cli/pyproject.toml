@@ -2,7 +2,9 @@
 target-version = "py312"
 
 [tool.ruff.lint]
-extend-select = ["I", "UP", "T20"]
+# Pinned explicitly: `extend-select` builds on ruff's default set, which widened
+# from 4 rule families to 37 in ruff 0.16 and failed CI on untouched files.
+select = ["E4", "E7", "E9", "F", "I", "UP", "T20"]
 
 [tool.ruff.lint.per-file-ignores]
 "cli.py" = ["E402"]

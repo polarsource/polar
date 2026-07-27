@@ -76,7 +76,7 @@ class OrganizationReview(RecordModel):
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
-        return relationship("Organization", lazy="raise", back_populates="review")
+        return relationship("Organization", lazy="raise")
 
     def clear_appeal_state(self) -> None:
         self.appeal_submitted_at = None

@@ -52,6 +52,7 @@ export const formatTrialEnd = (date: Date): string =>
       date.getUTCFullYear() === new Date().getUTCFullYear()
         ? undefined
         : 'numeric',
+    timeZone: 'UTC',
   })
 
 /**

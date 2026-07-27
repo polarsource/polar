@@ -2,6 +2,7 @@ from polar.auth.routing import DocumentedAuthSubjectAPIRoute
 from polar.kit.routing import (
     AutoCommitAPIRoute,
     IncludedInSchemaAPIRoute,
+    PaginationAPIRoute,
     SpeakeasyGroupAPIRoute,
     SpeakeasyIgnoreAPIRoute,
     SpeakeasyNameOverrideAPIRoute,
@@ -14,6 +15,7 @@ class APIRoute(
     AutoCommitAPIRoute,
     IncludedInSchemaAPIRoute,
     DocumentedAuthSubjectAPIRoute,
+    PaginationAPIRoute,
     SpeakeasyIgnoreAPIRoute,
     SpeakeasyNameOverrideAPIRoute,
     SpeakeasyGroupAPIRoute,

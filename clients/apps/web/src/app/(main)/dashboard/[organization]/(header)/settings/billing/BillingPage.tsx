@@ -1,6 +1,5 @@
 'use client'
 
-import AccessRestricted from '@/components/Finance/AccessRestricted'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { Modal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
@@ -10,12 +9,12 @@ import { BillingBenefitGrants } from '@/components/Settings/Billing/BillingBenef
 import { BillingOrdersTable } from '@/components/Settings/Billing/BillingOrdersTable'
 import { BillingPaymentMethods } from '@/components/Settings/Billing/BillingPaymentMethods'
 import { BillingSubscriptionCard } from '@/components/Settings/Billing/BillingSubscriptionCard'
+import { PastDueSubscriptionCallout } from '@/components/Settings/Billing/PastDueSubscriptionCallout'
 import { SandboxPreviewAccessNotice } from '@/components/Settings/Billing/SandboxPreviewAccessNotice'
 import { StartupProgramCallout } from '@/components/Settings/Billing/StartupProgramCallout'
 import { Section, SectionDescription } from '@/components/Settings/Section'
 import { LoadingBox } from '@/components/Shared/LoadingBox'
 import { toast } from '@/components/Toast/use-toast'
-import { useHasPermission } from '@/hooks/permissions'
 import { usePostHog } from '@/hooks/posthog'
 import { useBillingPlanCompleteListener } from '@/hooks/useBillingPlanTelemetry'
 import {
@@ -45,15 +44,9 @@ export default function BillingPage({
   const theme = useTheme()
   const posthog = usePostHog()
 
-  const canManageBilling = useHasPermission(
-    organization.id,
-    'organization:manage',
-  )
-  const gatedOrgId = canManageBilling ? organization.id : undefined
-
-  const subscriptionQuery = useOrganizationSubscription(gatedOrgId)
-  const plansQuery = useOrganizationPlans(gatedOrgId)
-  const ordersQuery = useOrganizationOrders(gatedOrgId)
+  const subscriptionQuery = useOrganizationSubscription(organization.id)
+  const plansQuery = useOrganizationPlans(organization.id)
+  const ordersQuery = useOrganizationOrders(organization.id)
 
   const customerSessionQuery = useOrganizationCustomerSession(organization.id)
 
@@ -119,17 +112,6 @@ export default function BillingPage({
     router.push(`/dashboard/${organization.slug}/settings/billing/change-plan`)
   }
 
-  if (canManageBilling === false) {
-    return (
-      <DashboardBody
-        wrapperClassName="max-w-(--breakpoint-md)!"
-        title="Billing"
-      >
-        <AccessRestricted message="You don't have permission to manage billing for this organization. Ask an admin if you need access." />
-      </DashboardBody>
-    )
-  }
-
   if (CONFIG.IS_SANDBOX) {
     return (
       <DashboardBody
@@ -153,6 +135,9 @@ export default function BillingPage({
                 organization={organization}
                 subscription={subscriptionQuery.data}
                 plans={plansQuery.data ?? []}
+              />
+              <PastDueSubscriptionCallout
+                subscription={subscriptionQuery.data}
               />
               <BillingSubscriptionCard
                 subscription={subscriptionQuery.data}

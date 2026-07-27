@@ -25,7 +25,7 @@ def _render_tab_indicator(tab: Tab) -> None:
     variant = tab.badge_variant or "neutral"
     if tab.dot:
         with tag.span(
-            classes=f"ml-2 inline-block w-1.5 h-1.5 rounded-full bg-{variant}"
+            classes=f"tab-dot ml-2 inline-block w-1.5 h-1.5 rounded-full bg-{variant}"
         ):
             pass
     elif tab.count is not None:

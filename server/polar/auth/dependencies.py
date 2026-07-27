@@ -45,7 +45,7 @@ customer_session_scheme = HTTPBearer(
         "Customer session tokens are specific tokens "
         "that are used to authenticate customers on your organization. "
         "You can create those sessions programmatically using the "
-        "[Create Customer Session endpoint](/api-reference/customer-portal/sessions/create)."
+        "[Create Customer Session endpoint](/api-reference/customer-sessions/create-customer-session)."
     ),
 )
 member_session_scheme = HTTPBearer(
@@ -55,7 +55,7 @@ member_session_scheme = HTTPBearer(
         "Member session tokens are specific tokens "
         "that are used to authenticate members on your organization. "
         "You can create those sessions programmatically using the "
-        "[Create Member Session endpoint](/api-reference/member-portal/sessions/create)."
+        "[Create Member Session endpoint](/api-reference/customer-sessions/create-customer-session)."
     ),
 )
 

@@ -1,5 +1,5 @@
 import { schemas } from '@polar-sh/client'
-import Alert from '@polar-sh/ui/components/atoms/Alert'
+import { Alert } from '@polar-sh/orbit'
 
 const messages: Record<schemas['FeedbackType'], string> = {
   feedback:
@@ -10,8 +10,10 @@ const messages: Record<schemas['FeedbackType'], string> = {
 
 export const ThanksPanel = ({ type }: { type: schemas['FeedbackType'] }) => {
   return (
-    <Alert color="green" className="p-4 text-sm">
-      {messages[type]}
-    </Alert>
+    <Alert
+      title="Successfully sent"
+      variant="success"
+      description={messages[type]}
+    />
   )
 }

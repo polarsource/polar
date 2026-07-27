@@ -9,6 +9,7 @@ from polar.kit.currency import PresentmentCurrency
 from polar.kit.visibility import Visibility
 from polar.models import Organization
 from polar.models.product_price import ProductPriceAmountType
+from polar.product.meter_interval import meter_interval_divides_billing_interval
 from polar.product.schemas import (
     BenefitPublicList,
     ProductCreate,
@@ -495,3 +496,206 @@ class TestBenefitPublicList:
 
         assert len(benefits) == 1
         assert benefits[0].description == "Public benefit"
+
+
+@pytest.mark.parametrize(
+    ("meter_interval", "meter_count", "billing_interval", "billing_count", "expected"),
+    [
+        # Headline case: monthly meter interval on yearly billing
+        (
+            SubscriptionRecurringInterval.month,
+            1,
+            SubscriptionRecurringInterval.year,
+            1,
+            True,
+        ),
+        # Quarterly / semi-annual meter interval on yearly billing
+        (
+            SubscriptionRecurringInterval.month,
+            3,
+            SubscriptionRecurringInterval.year,
+            1,
+            True,
+        ),
+        (
+            SubscriptionRecurringInterval.month,
+            6,
+            SubscriptionRecurringInterval.year,
+            1,
+            True,
+        ),
+        # Doesn't divide evenly
+        (
+            SubscriptionRecurringInterval.month,
+            5,
+            SubscriptionRecurringInterval.year,
+            1,
+            False,
+        ),
+        # Equal to billing interval behaves as today (valid no-op)
+        (
+            SubscriptionRecurringInterval.month,
+            1,
+            SubscriptionRecurringInterval.month,
+            1,
+            True,
+        ),
+        # Monthly meter interval on every-other-month billing
+        (
+            SubscriptionRecurringInterval.month,
+            1,
+            SubscriptionRecurringInterval.month,
+            2,
+            True,
+        ),
+        # Day/week family
+        (
+            SubscriptionRecurringInterval.day,
+            1,
+            SubscriptionRecurringInterval.week,
+            1,
+            True,
+        ),
+        (
+            SubscriptionRecurringInterval.day,
+            2,
+            SubscriptionRecurringInterval.week,
+            1,
+            False,
+        ),
+        (
+            SubscriptionRecurringInterval.week,
+            1,
+            SubscriptionRecurringInterval.week,
+            2,
+            True,
+        ),
+        # Daily is the only day cadence valid on month/year billing
+        (
+            SubscriptionRecurringInterval.day,
+            1,
+            SubscriptionRecurringInterval.month,
+            1,
+            True,
+        ),
+        (
+            SubscriptionRecurringInterval.day,
+            2,
+            SubscriptionRecurringInterval.month,
+            1,
+            False,
+        ),
+        (
+            SubscriptionRecurringInterval.day,
+            1,
+            SubscriptionRecurringInterval.year,
+            1,
+            True,
+        ),
+        # Cross-family drift / impossible combinations
+        (
+            SubscriptionRecurringInterval.week,
+            1,
+            SubscriptionRecurringInterval.month,
+            1,
+            False,
+        ),
+        (
+            SubscriptionRecurringInterval.week,
+            2,
+            SubscriptionRecurringInterval.year,
+            1,
+            False,
+        ),
+        (
+            SubscriptionRecurringInterval.year,
+            1,
+            SubscriptionRecurringInterval.month,
+            1,
+            False,
+        ),
+        (
+            SubscriptionRecurringInterval.month,
+            1,
+            SubscriptionRecurringInterval.week,
+            1,
+            False,
+        ),
+    ],
+)
+def test_meter_interval_divides_billing_interval(
+    meter_interval: SubscriptionRecurringInterval,
+    meter_count: int,
+    billing_interval: SubscriptionRecurringInterval,
+    billing_count: int,
+    expected: bool,
+) -> None:
+    assert (
+        meter_interval_divides_billing_interval(
+            meter_interval, meter_count, billing_interval, billing_count
+        )
+        is expected
+    )
+
+
+def _recurring_product(**kwargs: Any) -> ProductCreateRecurring:
+    return ProductCreateRecurring(
+        name="Usage product",
+        prices=[
+            ProductPriceFixedCreate(
+                amount_type=ProductPriceAmountType.fixed,
+                price_amount=1000,
+                price_currency=PresentmentCurrency.usd,
+            )
+        ],
+        **kwargs,
+    )
+
+
+class TestProductCreateMeterInterval:
+    def test_unset_nulls_count(self) -> None:
+        product = _recurring_product(
+            recurring_interval=SubscriptionRecurringInterval.year,
+        )
+        assert product.meter_interval is None
+        assert product.meter_interval_count is None
+
+    def test_unset_interval_ignores_provided_count(self) -> None:
+        product = _recurring_product(
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval_count=3,
+        )
+        assert product.meter_interval is None
+        assert product.meter_interval_count is None
+
+    def test_valid_defaults_count_to_one(self) -> None:
+        product = _recurring_product(
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=SubscriptionRecurringInterval.month,
+        )
+        assert product.meter_interval == SubscriptionRecurringInterval.month
+        assert product.meter_interval_count == 1
+
+    def test_valid_with_count(self) -> None:
+        product = _recurring_product(
+            recurring_interval=SubscriptionRecurringInterval.year,
+            meter_interval=SubscriptionRecurringInterval.month,
+            meter_interval_count=3,
+        )
+        assert product.meter_interval_count == 3
+
+    def test_invalid_does_not_divide(self) -> None:
+        with pytest.raises(ValidationError) as exc_info:
+            _recurring_product(
+                recurring_interval=SubscriptionRecurringInterval.year,
+                meter_interval=SubscriptionRecurringInterval.month,
+                meter_interval_count=5,
+            )
+        assert "evenly divide" in str(exc_info.value)
+
+    def test_invalid_coarser_than_billing(self) -> None:
+        with pytest.raises(ValidationError):
+            _recurring_product(
+                recurring_interval=SubscriptionRecurringInterval.month,
+                meter_interval=SubscriptionRecurringInterval.year,
+            )

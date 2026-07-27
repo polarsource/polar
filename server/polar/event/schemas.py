@@ -29,14 +29,18 @@ from polar.event.system import (
     MeterResetMetadata,
     OrderPaidMetadata,
     OrderRefundedMetadata,
+    OrderUnvoidedMetadata,
     OrderVoidedMetadata,
     SubscriptionBillingPeriodUpdatedMetadata,
     SubscriptionCanceledMetadata,
     SubscriptionCreatedMetadata,
     SubscriptionCycledMetadata,
     SubscriptionPastDueMetadata,
+    SubscriptionPausedMetadata,
     SubscriptionProductUpdatedMetadata,
     SubscriptionReactivatedMetadata,
+    SubscriptionReinstatedMetadata,
+    SubscriptionResumedMetadata,
     SubscriptionRevokedMetadata,
     SubscriptionSeatsUpdatedMetadata,
     SubscriptionUncanceledMetadata,
@@ -414,6 +418,39 @@ class SubscriptionReactivatedEvent(SystemEventBase):
     )
 
 
+class SubscriptionReinstatedEvent(SystemEventBase):
+    """An event created by Polar when a canceled subscription is reinstated."""
+
+    name: Literal[SystemEventEnum.subscription_reinstated] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: SubscriptionReinstatedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class SubscriptionPausedEvent(SystemEventBase):
+    """An event created by Polar when a subscription is paused."""
+
+    name: Literal[SystemEventEnum.subscription_paused] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: SubscriptionPausedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class SubscriptionResumedEvent(SystemEventBase):
+    """An event created by Polar when a paused subscription is resumed."""
+
+    name: Literal[SystemEventEnum.subscription_resumed] = Field(
+        description=_NAME_DESCRIPTION
+    )
+    metadata: SubscriptionResumedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
 class SubscriptionProductUpdatedEvent(SystemEventBase):
     """An event created by Polar when a subscription changes the product."""
 
@@ -492,6 +529,15 @@ class OrderVoidedEvent(SystemEventBase):
 
     name: Literal[SystemEventEnum.order_voided] = Field(description=_NAME_DESCRIPTION)
     metadata: OrderVoidedMetadata = Field(
+        validation_alias=AliasChoices("user_metadata", "metadata")
+    )
+
+
+class OrderUnvoidedEvent(SystemEventBase):
+    """An event created by Polar when an order is unvoided."""
+
+    name: Literal[SystemEventEnum.order_unvoided] = Field(description=_NAME_DESCRIPTION)
+    metadata: OrderUnvoidedMetadata = Field(
         validation_alias=AliasChoices("user_metadata", "metadata")
     )
 
@@ -605,6 +651,9 @@ SystemEvent = Annotated[
     | SubscriptionRevokedEvent
     | SubscriptionPastDueEvent
     | SubscriptionReactivatedEvent
+    | SubscriptionReinstatedEvent
+    | SubscriptionPausedEvent
+    | SubscriptionResumedEvent
     | SubscriptionUncanceledEvent
     | SubscriptionProductUpdatedEvent
     | SubscriptionSeatsUpdatedEvent
@@ -613,6 +662,7 @@ SystemEvent = Annotated[
     | OrderPaidEvent
     | OrderRefundedEvent
     | OrderVoidedEvent
+    | OrderUnvoidedEvent
     | CheckoutCreatedEvent
     | CustomerCreatedEvent
     | CustomerUpdatedEvent
@@ -660,6 +710,7 @@ EventTypeAdapter: TypeAdapter[Event] = TypeAdapter(Event)
 
 class EventName(Schema):
     name: str = Field(description="The name of the event.")
+    label: str = Field(description="Human readable label of the event.")
     source: EventSource = Field(description=_SOURCE_DESCRIPTION)
     occurrences: int = Field(description="Number of times the event has occurred.")
     first_seen: datetime = Field(description="The first time the event occurred.")

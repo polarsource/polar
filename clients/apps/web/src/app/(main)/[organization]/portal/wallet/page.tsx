@@ -95,11 +95,7 @@ export default async function Page(props: {
       organization={organization}
       searchParams={resolvedSearchParams}
     >
-      <WalletPage
-        organization={organization}
-        wallets={wallets.items}
-        customerSessionToken={token as string}
-      />
+      <WalletPage organization={organization} wallets={wallets.items} />
     </CustomerPortalPage>
   )
 }

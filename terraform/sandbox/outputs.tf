@@ -1,0 +1,24 @@
+output "lambda_worker_ecr_repository_url" {
+  description = "ECR repository URL for the sandbox Lambda worker image."
+  value       = module.lambda_worker_ecr.repository_url
+}
+
+output "lambda_worker_function_name" {
+  description = "Sandbox Lambda worker function name."
+  value       = module.lambda_worker.function_name
+}
+
+output "lambda_worker_queue_url" {
+  description = "Sandbox Lambda worker SQS queue URL."
+  value       = module.lambda_worker.queue_url
+}
+
+output "egress_ip" {
+  description = "Static NAT egress IP for the sandbox VPC. Add this (as a /32) to the database IP allow list."
+  value       = module.egress_ip.public_ip
+}
+
+output "redis_sandbox_id" {
+  description = "The sandbox Redis ID. Used for the render_redis data source."
+  value       = render_redis.redis_sandbox.id
+}

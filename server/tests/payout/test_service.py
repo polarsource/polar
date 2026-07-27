@@ -26,6 +26,8 @@ from polar.payout.service import (
     InvoiceAlreadyExists,
     MissingInvoiceBillingDetails,
     OrganizationCannotPayout,
+    PayoutCanceled,
+    PayoutHeld,
     PayoutIntervalLimitReached,
     PayoutNotCancelable,
     PayoutNotSucceeded,
@@ -88,6 +90,9 @@ class TestCreate:
             # Country-specific minimum (Panama: $50 USD) dominates the
             # currency-based USD default ($10).
             ("usd", "PA", settings.get_minimum_payout("usd", "PA") - 1),
+            # Ghana settles in GHS, whose currency minimum ($40) holds the
+            # payout until the converted amount clears Stripe's ₵300 floor.
+            ("ghs", "GH", settings.get_minimum_payout("ghs", "GH") - 1),
         ],
     )
     async def test_insufficient_balance(
@@ -243,6 +248,43 @@ class TestCreate:
         # The default organization fixture is ACTIVE: the payout is pending and
         # both the created event and the Stripe transfer are enqueued.
         enqueue_job_mock = mocker.patch("polar.payout.service.enqueue_job")
+
+        await create_payout_account(save_fixture, organization, user)
+
+        payment_transaction_1 = await create_payment_transaction(
+            save_fixture, charge_id="CHARGE_1"
+        )
+        await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction_1
+        )
+
+        payout_transaction_service_mock.create.return_value = Transaction()
+
+        payout = await payout_service.create(session, locker, organization)
+
+        assert payout.status == PayoutStatus.pending
+        assert enqueue_job_mock.call_count == 2
+        enqueue_job_mock.assert_any_call("payout.created", payout_id=payout.id)
+        enqueue_job_mock.assert_any_call("payout.transfer", payout_id=payout.id)
+
+    async def test_offboarded_enqueues_created_and_transfer(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        account: Account,
+        user: User,
+        payout_transaction_service_mock: MagicMock,
+    ) -> None:
+        # An offboarded org's payout is auto-processed (pending, not held): both
+        # the created event and the Stripe transfer are enqueued.
+        enqueue_job_mock = mocker.patch("polar.payout.service.enqueue_job")
+
+        organization.status = OrganizationStatus.OFFBOARDING
+        organization.set_status(OrganizationStatus.OFFBOARDED)
+        await save_fixture(organization)
 
         await create_payout_account(save_fixture, organization, user)
 
@@ -601,43 +643,61 @@ class TestTriggerStripePayouts:
 
 
 @pytest.mark.asyncio
-class TestGetByIdForUpdate:
-    async def test_locks_and_eager_loads(
+class TestTriggerStripePayout:
+    async def test_canceled_raises(
         self,
+        stripe_service_mock: MagicMock,
         session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         user: User,
     ) -> None:
-        # FOR UPDATE OF payouts must lock only the payout row so the eager-load
-        # joins (account, payout_account, transactions) don't trip the
-        # nullable-outer-join lock error. Exercises the real SQL on Postgres.
         account = await create_account(save_fixture, user)
         payout_account = await create_payout_account(
             save_fixture, organization, user, type=PayoutAccountType.stripe
         )
         payout = await create_payout(
-            save_fixture, account=account, payout_account=payout_account
-        )
-        await create_transaction(
             save_fixture,
             account=account,
-            type=TransactionType.payout,
-            amount=-payout.amount,
-            account_currency=account.currency,
-            payout=payout,
+            payout_account=payout_account,
+            status=PayoutStatus.canceled,
+            attempts=[],
         )
 
-        repository = PayoutRepository.from_session(session)
-        locked = await repository.get_by_id_for_update(
-            payout.id, options=repository.get_eager_options()
+        with pytest.raises(PayoutCanceled):
+            await payout_service.trigger_stripe_payout(session, payout)
+
+        stripe_service_mock.retrieve_balance.assert_not_called()
+        stripe_service_mock.create_payout.assert_not_called()
+
+    async def test_held_raises(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        # A held payout (org under review) must never reach Stripe, even through
+        # the manual retry/trigger path, or funds from other payouts in the same
+        # Connect account could be paid out against it.
+        account = await create_account(save_fixture, user)
+        payout_account = await create_payout_account(
+            save_fixture, organization, user, type=PayoutAccountType.stripe
+        )
+        payout = await create_payout(
+            save_fixture,
+            account=account,
+            payout_account=payout_account,
+            status=PayoutStatus.held,
+            attempts=[],
         )
 
-        assert locked is not None
-        assert locked.id == payout.id
-        # Relationships resolve without a lazy load, confirming eager loading.
-        assert locked.account.id == account.id
-        assert locked.payout_account.id == payout_account.id
+        with pytest.raises(PayoutHeld):
+            await payout_service.trigger_stripe_payout(session, payout)
+
+        stripe_service_mock.retrieve_balance.assert_not_called()
+        stripe_service_mock.create_payout.assert_not_called()
 
 
 @pytest.mark.asyncio

@@ -6,7 +6,7 @@ description: "Create checkout sessions programmatically for complete control"
 
 If you want to integrate more deeply the checkout process with your website or application, you can use our dedicated API.
 
-The first step is to [create a Checkout session](/api-reference/checkouts/create-session). For this you'll need at least your **Product ID**.
+The first step is to [create a Checkout session](/api-reference/checkouts/create-checkout-session). For this you'll need at least your **Product ID**.
 
 You can retrieve your Product ID from Products in your dashboard, click on "context-menu" button in front of your product and click on Copy Product ID.
 
@@ -108,11 +108,11 @@ Ad-hoc prices support all the same price types as catalog prices:
 - **Seat-based**: Pricing based on number of seats
 - **Metered**: Usage-based pricing tied to a meter
 
-For the complete schema of each price type, refer to the [Checkout API reference](/api-reference/checkouts/create-session).
+For the complete schema of each price type, refer to the [Checkout API reference](/api-reference/checkouts/create-checkout-session).
 
 ## External Customer ID
 
-Quite often, you'll have your own users management system in your application, where your customer already have an ID. To ease reconciliation between Polar and your system, you can inform us about your customer ID when creating a checkout session through the [`external_customer_id`](/api-reference/checkouts/create-session/) field.
+Quite often, you'll have your own users management system in your application, where your customer already have an ID. To ease reconciliation between Polar and your system, you can inform us about your customer ID when creating a checkout session through the [`external_customer_id`](/api-reference/checkouts/create-checkout-session) field.
 
 After a successful checkout, we'll create a Customer on Polar with the external ID you provided. It'll be provided through the `customer.external_id` property in webhooks you may have configured.
 
@@ -151,12 +151,12 @@ from polar_sdk import Polar
 with Polar(access_token="<YOUR_BEARER_TOKEN_HERE>") as polar:
     checkout = polar.checkouts.create(request={
         "products": ["<product_id>"],
-        "customer_ip_address": request.client.host,
+        "customer_ip_address": request.headers.get("True-Client-IP") or request.client.host,
     })
 ```
 </CodeGroup>
 
-The exact way to read the connecting IP depends on your runtime — for example, `CF-Connecting-IP` on Cloudflare Workers, `x-forwarded-for` behind most proxies, or `request.client.host` in FastAPI.
+The exact way to read the connecting IP depends on your runtime — for example, `CF-Connecting-IP` on Cloudflare Workers, `x-forwarded-for` behind most proxies, or `True-Client-IP`/`request.client.host` in FastAPI.
 
 <Note>
   When `customer_ip_address` is provided, you don't need to set `customer_billing_address.country` yourself — Polar will derive both the country and the currency from the IP.

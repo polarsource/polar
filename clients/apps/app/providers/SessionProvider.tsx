@@ -1,4 +1,10 @@
-import { configureRefresher, type SessionData } from '@/auth/refresher'
+import {
+  ACCESS_TOKEN_KEY,
+  configureRefresher,
+  EXPIRES_AT_KEY,
+  REFRESH_TOKEN_KEY,
+  type SessionData,
+} from '@/auth/refresher'
 import { useStorageState } from '@/hooks/storage'
 import { ExtensionStorage } from '@bacons/apple-targets'
 import {
@@ -9,10 +15,6 @@ import {
   useMemo,
   type PropsWithChildren,
 } from 'react'
-
-const ACCESS_TOKEN_KEY = 'session'
-const REFRESH_TOKEN_KEY = 'session_refresh_token'
-const EXPIRES_AT_KEY = 'session_expires_at'
 
 const widgetStorage = new ExtensionStorage('group.com.polarsource.Polar')
 

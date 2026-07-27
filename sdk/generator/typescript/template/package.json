@@ -1,0 +1,71 @@
+{
+  "name": "@polar-sh/sdk",
+  "version": "{{ version }}",
+  "description": "Polar SDK — A billing platform for the intelligence era",
+  "type": "module",
+  "sideEffects": false,
+  "files": [
+    "dist", "README.md", "LICENSE", ".agents"
+  ],
+  "engines": { "node": ">=22" },
+  "main": "dist/index.cjs",
+  "module": "dist/index.mjs",
+  "exports": {
+    ".": {
+      "import": { "types": "./dist/index.d.mts", "default": "./dist/index.mjs" },
+      "require": { "types": "./dist/index.d.cts", "default": "./dist/index.cjs" }
+    }
+{% for version in ir.versions %}
+    ,
+    "./{{version.version}}": {
+      "import": { "types": "./dist/{{version.version}}/index.d.mts", "default": "./dist/{{version.version}}/index.mjs" },
+      "require": { "types": "./dist/{{version.version}}/index.d.cts", "default": "./dist/{{version.version}}/index.cjs" }
+    },
+    "./{{version.version}}/services/*": {
+      "import": { "types": "./dist/{{version.version}}/services/*.d.mts", "default": "./dist/{{version.version}}/services/*.mjs" },
+      "require": { "types": "./dist/{{version.version}}/services/*.d.cts", "default": "./dist/{{version.version}}/services/*.cjs" }
+    }
+{% for service in version.services %}
+{% if service.services %}
+    ,
+    "./{{version.version}}/services/{{ service.name | snake }}": {
+      "import": { "types": "./dist/{{version.version}}/services/{{ service.name | snake }}/index.d.mts", "default": "./dist/{{version.version}}/services/{{ service.name | snake }}/index.mjs" },
+      "require": { "types": "./dist/{{version.version}}/services/{{ service.name | snake }}/index.d.cts", "default": "./dist/{{version.version}}/services/{{ service.name | snake }}/index.cjs" }
+    }
+{% endif %}
+{% endfor %}
+{% endfor %}
+  },
+  "scripts": {
+    "build": "tsdown",
+    "fmt": "oxfmt",
+    "fmt:check": "oxfmt --check",
+    "lint": "oxlint",
+    "lint:fix": "oxlint --fix",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "oxfmt": "^0.56.0",
+    "oxlint": "^1.71.0",
+    "standardwebhooks": "^1.0.0",
+    "tsdown": "^0.22.3",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.9"
+  },
+  "packageManager": "pnpm@11.13.1",
+  "keywords": [
+    "polar",
+    "sdk",
+    "api",
+    "typescript"
+  ],
+  "author": "Polar",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/polarsource/polar.git",
+    "directory": "sdk/typescript"
+  }
+}

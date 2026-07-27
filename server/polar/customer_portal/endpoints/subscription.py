@@ -3,7 +3,7 @@ from typing import Annotated
 import structlog
 from fastapi import Depends, Query
 
-from polar.exceptions import ResourceNotFound
+from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
@@ -14,13 +14,31 @@ from polar.order.service import PaymentFailed
 from polar.postgres import get_db_session
 from polar.product.schemas import ProductID
 from polar.routing import APIRouter
-from polar.subscription.schemas import SubscriptionChargePreview, SubscriptionID
-from polar.subscription.service import AlreadyCanceledSubscription
+from polar.subscription.schemas import (
+    SubscriptionCancelPreview,
+    SubscriptionChargePreview,
+    SubscriptionID,
+)
+from polar.subscription.service import (
+    AlreadyCanceledSubscription,
+    NotASeatBasedSubscription,
+)
 from polar.subscription.service import subscription as subscription_service
 
 from .. import auth
-from ..schemas.subscription import CustomerSubscription, CustomerSubscriptionUpdate
-from ..service.subscription import CustomerSubscriptionSortProperty
+from ..schemas.subscription import (
+    CustomerSubscription,
+    CustomerSubscriptionChangePreview,
+    CustomerSubscriptionRevoke,
+    CustomerSubscriptionUpdate,
+)
+from ..service.subscription import (
+    CustomerSubscriptionSortProperty,
+    PauseResumeNotAllowed,
+    RevokeNotAllowed,
+    UpdateSubscriptionPlanNotAllowed,
+    UpdateSubscriptionSeatsNotAllowed,
+)
 from ..service.subscription import (
     customer_subscription as customer_subscription_service,
 )
@@ -120,8 +138,12 @@ async def get_charge_preview(
     if subscription is None:
         raise ResourceNotFound()
 
-    # Allow active, trialing, and subscriptions set to cancel at period end
-    if subscription.status not in ("active", "trialing"):
+    # Allow active/trialing subscriptions, and paused subscriptions scheduled to
+    # auto-resume — they still have an upcoming charge when they resume.
+    is_resumable_pause = (
+        subscription.status == "paused" and subscription.resumes_at is not None
+    )
+    if subscription.status not in ("active", "trialing") and not is_resumable_pause:
         raise ResourceNotFound()
 
     # If subscription will end (cancel_at_period_end or ends_at), ensure there's still a charge coming
@@ -131,6 +153,64 @@ async def get_charge_preview(
             raise ResourceNotFound()
 
     return await subscription_service.calculate_charge_preview(session, subscription)
+
+
+@router.get(
+    "/{id}/cancel-preview",
+    summary="Preview Subscription Cancellation",
+    response_model=SubscriptionCancelPreview,
+    responses={404: SubscriptionNotFound},
+    tags=[APITag.private],
+)
+async def get_cancel_preview(
+    id: SubscriptionID,
+    auth_subject: auth.CustomerPortalUnionRead,
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionCancelPreview:
+    """Preview the effect of cancelling a subscription right now."""
+    subscription = await customer_subscription_service.get_by_id(
+        session, auth_subject, id
+    )
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    return await subscription_service.calculate_cancel_preview(session, subscription)
+
+
+@router.post(
+    "/{id}/change-preview",
+    summary="Preview Subscription Change",
+    response_model=SubscriptionChargePreview,
+    responses={
+        400: {"model": NotASeatBasedSubscription.schema()},
+        403: {
+            "description": "Previewing this change is not allowed.",
+            "model": AlreadyCanceledSubscription.schema()
+            | UpdateSubscriptionPlanNotAllowed.schema()
+            | UpdateSubscriptionSeatsNotAllowed.schema(),
+        },
+        404: SubscriptionNotFound,
+    },
+    tags=[APITag.private],
+)
+async def preview_change(
+    id: SubscriptionID,
+    change: CustomerSubscriptionChangePreview,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> SubscriptionChargePreview:
+    """Preview what a subscription change would cost, without applying it."""
+    subscription = await customer_subscription_service.get_by_id(
+        session, auth_subject, id
+    )
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    return await customer_subscription_service.preview_change(
+        session, subscription, change=change
+    )
 
 
 @router.patch(
@@ -147,9 +227,11 @@ async def get_charge_preview(
             "description": (
                 "Customer subscription is already canceled "
                 "or will be at the end of the period, "
-                "or the user lacks billing permissions."
+                "the user lacks billing permissions, "
+                "or pausing/resuming is not enabled for the organization."
             ),
-            "model": AlreadyCanceledSubscription.schema(),
+            "model": AlreadyCanceledSubscription.schema()
+            | PauseResumeNotAllowed.schema(),
         },
         404: SubscriptionNotFound,
     },
@@ -215,3 +297,58 @@ async def cancel(
         **get_audit_context(auth_subject),
     )
     return await customer_subscription_service.cancel(session, subscription)
+
+
+# TODO(api-vNext): fold this into DELETE /{id} as a hard-revoke to mirror the
+# merchant API. Kept as a separate private endpoint for now because the public
+# DELETE cancels at period end and has external usage we can't break mid-version.
+@router.post(
+    "/{id}/revoke",
+    summary="Revoke Subscription",
+    response_model=CustomerSubscription,
+    responses={
+        200: {"description": "Customer subscription is revoked."},
+        403: {
+            "description": (
+                "Customer subscription is already canceled "
+                "or the user lacks billing permissions."
+            ),
+            "model": AlreadyCanceledSubscription.schema() | NotPermitted.schema(),
+        },
+        409: {
+            "description": "This subscription cannot be revoked in its current state.",
+            "model": RevokeNotAllowed.schema(),
+        },
+        404: SubscriptionNotFound,
+    },
+    tags=[APITag.private],
+)
+async def revoke(
+    id: SubscriptionID,
+    revoke: CustomerSubscriptionRevoke,
+    auth_subject: auth.CustomerPortalUnionBillingWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> Subscription:
+    """Revoke a subscription immediately, stopping any further payment attempts.
+
+    Only allowed while the subscription is past-due and the organization has no
+    benefit revocation grace period.
+    """
+    subscription = await customer_subscription_service.get_by_id(
+        session, auth_subject, id, for_update=True
+    )
+
+    if subscription is None:
+        raise ResourceNotFound()
+
+    log.info(
+        "customer_portal.subscription.revoke",
+        subscription_id=id,
+        **get_audit_context(auth_subject),
+    )
+    return await customer_subscription_service.revoke(
+        session,
+        subscription,
+        reason=revoke.cancellation_reason,
+        comment=revoke.cancellation_comment,
+    )

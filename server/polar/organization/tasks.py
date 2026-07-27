@@ -1,10 +1,16 @@
 import uuid
+from typing import Any, cast
 
 import structlog
-from sqlalchemy import select
+from sqlalchemy import CursorResult, select
 from sqlalchemy.orm import joinedload
 
 from polar.customer.repository import CustomerRepository
+from polar.email.schemas import (
+    OrganizationOffboardedEmail,
+    OrganizationOffboardedProps,
+)
+from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarTaskError
 from polar.integrations.plain.service import plain as plain_service
 from polar.member.repository import MemberRepository
@@ -16,6 +22,9 @@ from polar.models.member import Member, MemberRole
 from polar.models.organization import OrganizationStatus
 from polar.postgres import AsyncSession
 from polar.user.repository import UserRepository
+from polar.user_organization.service import (
+    user_organization as user_organization_service,
+)
 from polar.worker import (
     AsyncSessionMaker,
     CronTrigger,
@@ -24,6 +33,10 @@ from polar.worker import (
     enqueue_job,
 )
 
+from .member_backfill import (
+    downloadable_member_backfill_statement,
+    license_key_member_backfill_statement,
+)
 from .repository import OrganizationRepository
 from .service import organization as organization_service
 
@@ -77,6 +90,60 @@ async def organization_unsnooze_expired() -> None:
         await organization_service.unsnooze_expired_organizations(session)
 
 
+@actor(
+    actor_name="organization.offboard_expired",
+    cron_trigger=CronTrigger.from_crontab("0 4 * * *"),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def organization_offboard_expired() -> None:
+    """Auto-transition offboarding orgs to offboarded once the period elapses."""
+    async with AsyncSessionMaker() as session:
+        await organization_service.offboard_expired_organizations(session)
+
+
+@actor(
+    actor_name="organization.cancel_expired_subscriptions",
+    cron_trigger=CronTrigger.from_crontab("0 5 * * *"),
+    priority=TaskPriority.LOW,
+    max_retries=0,
+)
+async def organization_cancel_expired_subscriptions() -> None:
+    """Cancel customer subscriptions of orgs denied/blocked/offboarded past the
+    cancellation delay. Customers are not notified."""
+    async with AsyncSessionMaker() as session:
+        await organization_service.cancel_expired_organizations_subscriptions(session)
+
+
+@actor(actor_name="organization.offboarded", priority=TaskPriority.LOW)
+async def organization_offboarded(organization_id: uuid.UUID) -> None:
+    """Notify an organization's members that it has been offboarded."""
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        # include_blocked: an admin may block the org between the offboard
+        # transition and this task running; we still want to send the email.
+        organization = await repository.get_by_id(organization_id, include_blocked=True)
+        if organization is None:
+            raise OrganizationDoesNotExist(organization_id)
+
+        members = await user_organization_service.list_by_org(session, organization.id)
+        for member in members:
+            email = member.user.email
+            if not email:
+                continue
+            enqueue_email_template(
+                OrganizationOffboardedEmail(
+                    props=OrganizationOffboardedProps(
+                        email=email,
+                        organization_name=organization.name,
+                        account_url=organization.account_url,
+                    )
+                ),
+                to_email_addr=email,
+                subject=f"{organization.name} has been offboarded from Polar",
+            )
+
+
 def _check_threshold_debounce_key(account_id: uuid.UUID) -> str:
     return f"organization.check_threshold:{account_id}"
 
@@ -124,6 +191,10 @@ async def organization_under_review(organization_id: uuid.UUID) -> None:
             "organization_review.run_agent",
             organization_id=organization_id,
             auto_approve_eligible=is_auto_approve_eligible,
+        )
+        enqueue_job(
+            "organization.evaluate_website_risk",
+            organization_id=organization_id,
         )
 
 
@@ -226,6 +297,16 @@ async def backfill_members(organization_id: uuid.UUID) -> None:
             session, organization, orphaned_customer_ids
         )
 
+    # Step E: Link license keys and downloadables to their grant's member
+    async with AsyncSessionMaker() as session:
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            organization_id
+        )
+        assert organization is not None
+        license_keys_linked, downloadables_linked = await _backfill_benefit_records(
+            session, organization
+        )
+
     log.info(
         "organization.backfill_members.complete",
         organization_id=str(organization_id),
@@ -233,6 +314,8 @@ async def backfill_members(organization_id: uuid.UUID) -> None:
         seats_migrated=seats_migrated,
         grants_linked=grants_linked,
         customers_deleted=customers_deleted,
+        license_keys_linked=license_keys_linked,
+        downloadables_linked=downloadables_linked,
     )
 
 
@@ -763,6 +846,30 @@ async def _cleanup_orphaned_seat_customers(
     return count
 
 
+async def _backfill_benefit_records(
+    session: AsyncSession,
+    organization: Organization,
+) -> tuple[int, int]:
+    """Link license keys and downloadables to their grant's member (Step C only covers transfers)."""
+    lk_result = cast(
+        "CursorResult[Any]",
+        await session.execute(license_key_member_backfill_statement(organization.id)),
+    )
+    dl_result = cast(
+        "CursorResult[Any]",
+        await session.execute(downloadable_member_backfill_statement(organization.id)),
+    )
+    await session.flush()
+
+    log.info(
+        "organization.backfill_members.step_e_complete",
+        organization_id=str(organization.id),
+        license_keys_linked=lk_result.rowcount,
+        downloadables_linked=dl_result.rowcount,
+    )
+    return lk_result.rowcount, dl_result.rowcount
+
+
 # ---------------------------------------------------------------------------
 # Phase 0B: Non-destructive prepare (run before member_model_enabled flip)
 # ---------------------------------------------------------------------------
@@ -984,8 +1091,6 @@ async def _prepare_benefit_grants(
     Since seat.customer_id is unchanged (prepare didn't rewrite it), we can
     match seats by customer_id + subscription/order to find the right member.
     """
-    from polar.models import Order, Subscription
-
     member_repository = MemberRepository.from_session(session)
 
     # Find grants without member_id for this organization's customers
@@ -1003,29 +1108,7 @@ async def _prepare_benefit_grants(
         execution_options={"yield_per": _PREPARE_BATCH_SIZE},
     )
 
-    # Lazy caches
     owner_members_map: dict[uuid.UUID, Member] = {}
-    billing_customer_cache: dict[uuid.UUID, uuid.UUID] = {}
-
-    async def _get_billing_customer_id(grant: BenefitGrant) -> uuid.UUID | None:
-        scope_id = grant.subscription_id or grant.order_id
-        if scope_id is None:
-            return None
-        if scope_id in billing_customer_cache:
-            return billing_customer_cache[scope_id]
-        if grant.subscription_id is not None:
-            cid = await session.scalar(
-                select(Subscription.customer_id).where(
-                    Subscription.id == grant.subscription_id
-                )
-            )
-        else:
-            cid = await session.scalar(
-                select(Order.customer_id).where(Order.id == grant.order_id)
-            )
-        if cid is not None:
-            billing_customer_cache[scope_id] = cid
-        return cid
 
     grants_found = 0
     count = 0
@@ -1033,8 +1116,6 @@ async def _prepare_benefit_grants(
     try:
         async for grant in results:
             grants_found += 1
-
-            billing_customer_id = await _get_billing_customer_id(grant)
 
             # Find the correct member for this grant.
             # Since seat.customer_id is still the original holder's ID,
@@ -1077,23 +1158,26 @@ async def _prepare_benefit_grants(
                     target_member_id = owner.id
 
             if target_member_id is not None:
-                # Check for conflict with benefit_grants_smb_key constraint
-                existing_id = await session.scalar(
+                # Skip if assigning this member would collide with a non-deleted
+                # grant on ix_benefit_grants_scope_unique
+                # (customer, benefit, member, subscription, order). Checking the
+                # full scope, not just the smb_key subset, keeps distinct
+                # one-off orders apart while catching duplicate grants for the
+                # same order (e.g. a revoke + re-grant that left two non-deleted
+                # rows for the same customer).
+                scope_conflict_id = await session.scalar(
                     select(BenefitGrant.id).where(
-                        BenefitGrant.subscription_id == grant.subscription_id,
-                        BenefitGrant.member_id == target_member_id,
+                        BenefitGrant.customer_id == grant.customer_id,
                         BenefitGrant.benefit_id == grant.benefit_id,
+                        BenefitGrant.member_id == target_member_id,
+                        BenefitGrant.subscription_id == grant.subscription_id,
+                        BenefitGrant.order_id == grant.order_id,
                         BenefitGrant.id != grant.id,
                         BenefitGrant.is_deleted.is_(False),
                     )
                 )
-                if existing_id is not None:
-                    if grant.order_id is not None:
-                        # One-off order — each purchase is distinct, keep both
-                        grant.member_id = target_member_id
-                        count += 1
-                    else:
-                        skipped_conflicts += 1
+                if scope_conflict_id is not None:
+                    skipped_conflicts += 1
                 else:
                     grant.member_id = target_member_id
                     count += 1
@@ -1115,3 +1199,14 @@ async def _prepare_benefit_grants(
         skipped_conflicts=skipped_conflicts,
     )
     return count
+
+
+@actor(actor_name="organization.evaluate_website_risk", priority=TaskPriority.LOW)
+async def evaluate_website_risk(organization_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrganizationRepository.from_session(session)
+        organization = await repository.get_by_id(organization_id)
+        if organization is None:
+            raise OrganizationDoesNotExist(organization_id)
+
+        await organization_service.evaluate_website_risk(session, organization)

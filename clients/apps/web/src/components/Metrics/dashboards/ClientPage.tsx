@@ -2,7 +2,8 @@
 
 import { useMetrics } from '@/hooks/queries'
 import { fromISODate, METRIC_GROUPS, toISODate } from '@/utils/metrics'
-import { getMetricsRangeDates } from '@polar-sh/client'
+import { getMetricsRangeDates, type schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   createParser,
   parseAsArrayOf,
@@ -28,13 +29,12 @@ const parseAsISODate = createParser({
 
 interface ClientPageProps {
   metric: string
-  organizationId: string
+  organization: schemas['Organization']
 }
 
-export default function ClientPage({
-  metric,
-  organizationId,
-}: ClientPageProps) {
+export default function ClientPage({ metric, organization }: ClientPageProps) {
+  const organizationId = organization.id
+
   const [defaultStartDate, defaultEndDate] = useMemo(
     () => getMetricsRangeDates('30d'),
     [],
@@ -78,7 +78,7 @@ export default function ClientPage({
   }
 
   return (
-    <div className="flex flex-col gap-12">
+    <Box flexDirection="column" rowGap="3xl">
       {metric === 'cancellations' ? (
         <CancellationsContent
           data={data}
@@ -93,6 +93,6 @@ export default function ClientPage({
       ) : (
         <MetricGroup metricKeys={metrics} data={data} interval={interval} />
       )}
-    </div>
+    </Box>
   )
 }

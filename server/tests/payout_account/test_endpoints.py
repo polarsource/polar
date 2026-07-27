@@ -255,3 +255,24 @@ class TestDashboardLink:
         )
 
         assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestSync:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.post(f"/v1/payout-accounts/{uuid.uuid4()}/sync")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_cannot_access_other_organization_account(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        payout_account_organization_second: PayoutAccount,
+    ) -> None:
+        response = await client.post(
+            f"/v1/payout-accounts/{payout_account_organization_second.id}/sync"
+        )
+
+        assert response.status_code == 404

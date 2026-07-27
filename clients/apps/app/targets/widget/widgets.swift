@@ -26,7 +26,7 @@ struct Provider: AppIntentTimelineProvider {
             return SimpleEntry(date: Date(), configuration: configuration, metricValue: metricValue, metricValueDouble: metricValueDouble, organizationName: orgName, chartData: chartData, lastUpdated: Date(), isError: false, isUnauthorized: false, combinedMetrics: combinedMetrics)
         }
         
-        let apiToken = defaults?.string(forKey: "widget_api_token")
+        let apiToken = await WidgetTokenStore.apiToken()
         let organizationId = defaults?.string(forKey: "widget_organization_id")
         let isUnauthorized = await checkIfUnauthorized(apiToken: apiToken, organizationId: organizationId)
         
@@ -47,7 +47,7 @@ struct Provider: AppIntentTimelineProvider {
         if let (metricValue, metricValueDouble, chartData, _) = result {
             entry = SimpleEntry(date: currentDate, configuration: configuration, metricValue: metricValue, metricValueDouble: metricValueDouble, organizationName: orgName, chartData: chartData, lastUpdated: currentDate, isError: false, isUnauthorized: false, combinedMetrics: combinedMetrics)
         } else {
-            let apiToken = defaults?.string(forKey: "widget_api_token")
+            let apiToken = await WidgetTokenStore.apiToken()
             let organizationId = defaults?.string(forKey: "widget_organization_id")
             let isUnauthorized = await checkIfUnauthorized(apiToken: apiToken, organizationId: organizationId)
             
@@ -76,9 +76,11 @@ struct Provider: AppIntentTimelineProvider {
     }
     
     private func checkIfUnauthorized(apiToken: String?, organizationId: String?) async -> Bool {
-        guard let apiToken = apiToken,
-              let organizationId = organizationId else {
+        guard let organizationId = organizationId else {
             return false
+        }
+        guard let apiToken = apiToken else {
+            return true
         }
         
         let endDate = Date()
@@ -121,10 +123,37 @@ struct Provider: AppIntentTimelineProvider {
         }
     }
     
+    private func authorizedMetricsData(url: URL) async -> Data? {
+        guard var token = await WidgetTokenStore.apiToken() else {
+            return nil
+        }
+
+        for attempt in 0..<2 {
+            var request = URLRequest(url: url)
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+
+            do {
+                let (data, response) = try await URLSession.shared.data(for: request)
+                if let httpResponse = response as? HTTPURLResponse,
+                   httpResponse.statusCode == 401 {
+                    if attempt == 0, let refreshed = await WidgetTokenStore.forceRefresh() {
+                        token = refreshed
+                        continue
+                    }
+                    return nil
+                }
+                return data
+            } catch {
+                return nil
+            }
+        }
+
+        return nil
+    }
+
     private func fetchMetrics(days: Int, metricType: MetricType) async -> (Int, Double?, [RevenueData], Int?)? {
         let defaults = UserDefaults(suiteName: "group.com.polarsource.Polar")
-        guard let apiToken = defaults?.string(forKey: "widget_api_token"),
-              let organizationId = defaults?.string(forKey: "widget_organization_id") else {
+        guard let organizationId = defaults?.string(forKey: "widget_organization_id") else {
             return nil
         }
         
@@ -152,21 +181,11 @@ struct Provider: AppIntentTimelineProvider {
             return nil
         }
         
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(apiToken)", forHTTPHeaderField: "Authorization")
-        
+        guard let data = await authorizedMetricsData(url: url) else {
+            return nil
+        }
+
         do {
-            let (data, response) = try await URLSession.shared.data(for: request)
-            
-            var statusCode: Int?
-            if let httpResponse = response as? HTTPURLResponse {
-                statusCode = httpResponse.statusCode
-                
-                if httpResponse.statusCode == 401 {
-                    return nil
-                }
-            }
-            
             let decodedResponse = try JSONDecoder().decode(MetricsResponse.self, from: data)
             
             let metricValue: Int
@@ -206,7 +225,7 @@ struct Provider: AppIntentTimelineProvider {
                 return RevenueData(day: index + 1, amount: cumulativeValue)
             }
             
-            return (metricValue, metricValueDouble, chartData, statusCode)
+            return (metricValue, metricValueDouble, chartData, 200)
             
         } catch {
             return nil
@@ -215,8 +234,7 @@ struct Provider: AppIntentTimelineProvider {
     
     private func fetchAllMetrics(days: Int) async -> CombinedMetrics? {
         let defaults = UserDefaults(suiteName: "group.com.polarsource.Polar")
-        guard let apiToken = defaults?.string(forKey: "widget_api_token"),
-              let organizationId = defaults?.string(forKey: "widget_organization_id") else {
+        guard let organizationId = defaults?.string(forKey: "widget_organization_id") else {
             return nil
         }
         
@@ -244,12 +262,11 @@ struct Provider: AppIntentTimelineProvider {
             return nil
         }
         
-        var request = URLRequest(url: url)
-        request.setValue("Bearer \(apiToken)", forHTTPHeaderField: "Authorization")
-        
+        guard let data = await authorizedMetricsData(url: url) else {
+            return nil
+        }
+
         do {
-            let (data, _) = try await URLSession.shared.data(for: request)
-            
             let decodedResponse = try JSONDecoder().decode(MetricsResponse.self, from: data)
             
             let revenueValue = Int(Double(decodedResponse.totals.revenue ?? 0) / 100.0)

@@ -60,10 +60,6 @@ class TestBearerToken:
         scope = _http_scope(headers=[(b"authorization", b"Bearer ")])
         assert _bearer_token(scope) is None
 
-    def test_non_ascii_header(self) -> None:
-        scope = _http_scope(headers=[(b"authorization", b"Bearer \xc3\xa9token")])
-        assert _bearer_token(scope) is None
-
     def test_non_http_scope(self) -> None:
         scope: dict[str, object] = {"type": "websocket", "headers": []}
         assert _bearer_token(scope) is None
@@ -144,6 +140,20 @@ class TestAuthenticate:
         )
         assert identity == (
             f"token:{_token_hash('polar_pat_unknown')}",
+            RateLimitGroup.pending_auth,
+        )
+
+    async def test_non_ascii_token_uses_token_hash_pending_auth(
+        self, redis: Redis
+    ) -> None:
+        header = "Bearer polar_pat_abc…".encode()
+        token = header.decode("latin-1").removeprefix("Bearer ")
+        identity = await _authenticate(
+            _http_scope(headers=[(b"authorization", header)], client=("8.8.8.8", 1234)),
+            redis=redis,
+        )
+        assert identity == (
+            f"token:{_token_hash(token)}",
             RateLimitGroup.pending_auth,
         )
 
@@ -274,3 +284,21 @@ class TestSensitiveEndpointZoneIsolation:
             f"Path {path!r} for group {group.value!r} resolved to "
             f"zone {rule.zone!r}, expected {expected_zone!r}"
         )
+
+
+@pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
+@pytest.mark.parametrize(
+    "path", ["/v1/email-update/request", "/v1/email-update/verify"]
+)
+@pytest.mark.parametrize("group", [RateLimitGroup.default, RateLimitGroup.web])
+class TestEmailUpdateZone:
+    """Email update is a web-session-only endpoint, so its callers resolve to
+    the `web` group; without a dedicated `web` rule they would fall through to
+    the catch-all "api" zone and its permissive per-second limits."""
+
+    def test_resolves_to_email_update_zone(
+        self, rules: dict[str, Sequence[Rule]], path: str, group: RateLimitGroup
+    ) -> None:
+        rule = _select_rule(rules, path, group)
+        assert rule is not None
+        assert rule.zone == "email-update"

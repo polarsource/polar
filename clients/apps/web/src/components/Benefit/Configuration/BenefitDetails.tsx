@@ -9,7 +9,6 @@ import {
   LicenseKeysCells,
   MeterCreditCells,
 } from './BenefitDetailCells'
-import { BenefitIdCell } from './BenefitIdCell'
 import { DiscordCells, SlackSharedChannelCells } from './IntegrationDetailCells'
 
 export interface BenefitDetailsProps {
@@ -52,6 +51,5 @@ export const BenefitDetails = ({
         </Text>
       }
     />
-    <BenefitIdCell id={benefit.id} />
   </DetailGrid>
 )

@@ -602,6 +602,7 @@ class OrganizationService:
 
         if organization.details_submitted_at is None:
             organization.details_submitted_at = datetime.now(UTC)
+            organization.onboarding_resubmission_requested_at = None
             enqueue_job(
                 "organization_review.run_agent",
                 organization_id=organization.id,
@@ -611,6 +612,57 @@ class OrganizationService:
         session.add(organization)
 
         await self._after_update(session, organization)
+        return organization
+
+    async def reset_onboarding_for_review(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        reset_by: str,
+    ) -> Organization:
+        resettable_statuses = {
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.SNOOZED,
+        }
+        if organization.status not in resettable_statuses:
+            raise OrganizationError(
+                "Only active, review, or snoozed organizations can be reset "
+                "for onboarding review.",
+                409,
+            )
+
+        previous_status = organization.status
+        organization.set_status(OrganizationStatus.CREATED)
+        organization.details_submitted_at = None
+        organization.snoozed_until = None
+        organization.snooze_type = None
+        organization.onboarding_resubmission_requested_at = datetime.now(UTC)
+
+        review_repository = OrganizationReviewRepository.from_session(session)
+        review = await review_repository.get_by_organization(organization.id)
+        if review is not None:
+            await AgentReviewRepository.from_session(session).soft_delete(review)
+
+        await AgentReviewRepository.from_session(session).deactivate_current_decisions(
+            organization.id
+        )
+
+        _append_internal_note(
+            organization,
+            "Onboarding reset from "
+            f"{previous_status.get_display_name()} to Created by {reset_by}. "
+            "The organization must review and resubmit its information.",
+        )
+        session.add(organization)
+        log.info(
+            "organization.onboarding_reset",
+            organization_id=str(organization.id),
+            slug=organization.slug,
+            previous_status=previous_status.value,
+            reset_by=reset_by,
+        )
         return organization
 
     async def check_can_delete(

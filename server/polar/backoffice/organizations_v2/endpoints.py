@@ -2327,6 +2327,91 @@ async def block_dialog(
 
 
 @router.api_route(
+    "/{organization_id}/reset-onboarding-dialog",
+    name="organizations:reset_onboarding_dialog",
+    methods=["GET", "POST"],
+    response_model=None,
+)
+async def reset_onboarding_dialog(
+    request: Request,
+    organization_id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+    user_session: UserSession = Depends(get_admin),
+) -> HXRedirectResponse | None:
+    repository = OrganizationRepository.from_session(session)
+    organization = await repository.get_by_id(organization_id, include_blocked=True)
+    if organization is None:
+        raise HTTPException(status_code=404, detail="Organization not found")
+
+    if request.method == "POST":
+        await organization_service.reset_onboarding_for_review(
+            session,
+            organization,
+            reset_by=user_session.user.email,
+        )
+        await add_toast(
+            request,
+            "Organization onboarding reset. They must review and resubmit their information.",
+            "success",
+        )
+        return HXRedirectResponse(
+            request,
+            str(
+                request.url_for("organizations:detail", organization_id=organization_id)
+            ),
+            303,
+        )
+
+    with modal("Reset Onboarding", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p(classes="font-semibold text-warning"):
+                text("Require a new onboarding review")
+
+            with tag.div(
+                classes="bg-warning/10 border border-warning/20 p-4 rounded-lg"
+            ):
+                with tag.p(classes="font-semibold mb-2"):
+                    text("This action will:")
+                with tag.ul(classes="list-disc list-inside space-y-1 text-sm"):
+                    with tag.li():
+                        text("Change the organization status to Created")
+                    with tag.li():
+                        text(
+                            "Disable payments, renewals, payouts, and refunds until "
+                            "the organization is approved again"
+                        )
+                    with tag.li():
+                        text("Retire the current review so the AI review runs again")
+                    with tag.li():
+                        text(
+                            "Keep the existing organization information available "
+                            "for the owner or admin to review and resubmit"
+                        )
+                    with tag.li():
+                        text(
+                            "Show the organization an onboarding requirements "
+                            "changed notice in the dashboard"
+                        )
+
+            with tag.div(classes="modal-action pt-6 border-t border-base-200"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with tag.form(
+                    hx_post=str(
+                        request.url_for(
+                            "organizations:reset_onboarding_dialog",
+                            organization_id=organization_id,
+                        )
+                    ),
+                ):
+                    with button(variant="warning", type="submit"):
+                        text("Reset Onboarding")
+
+    return None
+
+
+@router.api_route(
     "/{organization_id}/under-review-dialog",
     name="organizations:under_review_dialog",
     methods=["GET", "POST"],

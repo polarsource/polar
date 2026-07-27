@@ -442,6 +442,12 @@ class Organization(OrganizationBase):
     details_submitted_at: datetime | None = Field(
         description="When the business details were submitted for review.",
     )
+    onboarding_resubmission_requested_at: datetime | None = Field(
+        description=(
+            "When Polar requested that the organization review and resubmit "
+            "its onboarding information, if applicable."
+        ),
+    )
     sso_enforced: bool = Field(
         description=(
             "Whether members must access this organization through its SSO connection."

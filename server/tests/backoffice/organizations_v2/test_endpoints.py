@@ -248,6 +248,31 @@ class TestBlockDialog:
 
 
 @pytest.mark.asyncio
+class TestResetOnboardingDialog:
+    async def test_resets_organization(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.status = OrganizationStatus.ACTIVE
+        organization.details_submitted_at = datetime.now(UTC)
+        await session.flush()
+
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/reset-onboarding-dialog"
+        )
+
+        assert response.status_code == 303
+        assert organization.status == OrganizationStatus.CREATED
+        assert organization.details_submitted_at is None
+        assert organization.onboarding_resubmission_requested_at is not None
+        assert organization.internal_notes is not None
+        assert user.email in organization.internal_notes
+
+
+@pytest.mark.asyncio
 class TestOffboardDialog:
     async def test_missing_aup_section_does_not_offboard(
         self,

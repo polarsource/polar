@@ -17,6 +17,7 @@ from polar.postgres import AsyncSession
 from polar.user.schemas import UserDeletionBlockedReason, UserUpdate
 from polar.user.service import (
     IdentityAlreadyVerified,
+    IdentityVerificationForUnknownUser,
     IdentityVerificationProcessing,
 )
 from polar.user.service import user as user_service
@@ -344,9 +345,6 @@ class TestCreateIdentityVerification:
         session: AsyncSession,
         user: User,
     ) -> None:
-        """A user left at `pending` by a lost `requires_input` webhook can still
-        resume: Stripe's status decides, ours doesn't.
-        """
         user.identity_verification_id = "vs_existing"
         user.identity_verification_status = IdentityVerificationStatus.pending
         await save_fixture(user)
@@ -373,9 +371,6 @@ class TestCreateIdentityVerification:
         session: AsyncSession,
         user: User,
     ) -> None:
-        """Our status lags Stripe's until the `processing` webhook lands. Creating a
-        second session in that window orphans the first one's webhooks.
-        """
         user.identity_verification_id = "vs_existing"
         user.identity_verification_status = IdentityVerificationStatus.unverified
         await save_fixture(user)
@@ -500,7 +495,6 @@ class TestIdentityVerificationVerified:
             session, verification_session
         )
 
-        assert updated_user is not None
         assert (
             updated_user.identity_verification_status
             == IdentityVerificationStatus.verified
@@ -519,10 +513,6 @@ class TestIdentityVerificationVerified:
         session: AsyncSession,
         user: User,
     ) -> None:
-        """A user who started a second session is no longer reachable by the first
-        session's id. The `user_id` metadata still resolves them, so a pass from the
-        earlier attempt is applied instead of stranding the webhook unhandled.
-        """
         user.identity_verification_id = "vs_second"
         user.identity_verification_status = IdentityVerificationStatus.unverified
         await save_fixture(user)
@@ -545,14 +535,13 @@ class TestIdentityVerificationVerified:
             session, verification_session
         )
 
-        assert updated_user is not None
         assert (
             updated_user.identity_verification_status
             == IdentityVerificationStatus.verified
         )
         assert updated_user.identity_verification_id == "vs_first"
 
-    async def test_ignores_session_of_unknown_user(
+    async def test_raises_for_unattributable_session(
         self,
         session: AsyncSession,
     ) -> None:
@@ -560,12 +549,10 @@ class TestIdentityVerificationVerified:
             {"id": "vs_unknown", "status": "verified"}, None
         )
 
-        assert (
+        with pytest.raises(IdentityVerificationForUnknownUser):
             await user_service.identity_verification_verified(
                 session, verification_session
             )
-            is None
-        )
 
 
 @pytest.mark.asyncio
@@ -588,7 +575,6 @@ class TestIdentityVerificationPending:
             session, verification_session
         )
 
-        assert updated_user is not None
         assert (
             updated_user.identity_verification_status
             == IdentityVerificationStatus.pending
@@ -618,7 +604,6 @@ class TestIdentityVerificationPending:
             session, verification_session
         )
 
-        assert updated_user is not None
         assert (
             updated_user.identity_verification_status
             == IdentityVerificationStatus.verified
@@ -646,7 +631,6 @@ class TestIdentityVerificationPending:
             session, verification_session
         )
 
-        assert updated_user is not None
         assert (
             updated_user.identity_verification_status
             == IdentityVerificationStatus.pending
@@ -658,9 +642,6 @@ class TestIdentityVerificationPending:
         session: AsyncSession,
         user: User,
     ) -> None:
-        """The user has started another attempt, so a `processing` webhook from the
-        abandoned one says nothing about where they are now.
-        """
         user.identity_verification_id = "vs_second"
         user.identity_verification_status = IdentityVerificationStatus.failed
         await save_fixture(user)
@@ -674,12 +655,8 @@ class TestIdentityVerificationPending:
             None,
         )
 
-        assert (
-            await user_service.identity_verification_pending(
-                session, verification_session
-            )
-            is None
-        )
+        await user_service.identity_verification_pending(session, verification_session)
+
         assert user.identity_verification_status == IdentityVerificationStatus.failed
 
 
@@ -703,7 +680,6 @@ class TestIdentityVerificationFailed:
             session, verification_session
         )
 
-        assert updated_user is not None
         assert (
             updated_user.identity_verification_status
             == IdentityVerificationStatus.failed
@@ -730,7 +706,6 @@ class TestIdentityVerificationFailed:
             session, verification_session
         )
 
-        assert updated_user is not None
         assert (
             updated_user.identity_verification_status
             == IdentityVerificationStatus.verified
@@ -742,9 +717,6 @@ class TestIdentityVerificationFailed:
         session: AsyncSession,
         user: User,
     ) -> None:
-        """A `canceled` webhook from an abandoned attempt must not fail the user's
-        current one.
-        """
         user.identity_verification_id = "vs_second"
         user.identity_verification_status = IdentityVerificationStatus.pending
         await save_fixture(user)
@@ -758,10 +730,6 @@ class TestIdentityVerificationFailed:
             None,
         )
 
-        assert (
-            await user_service.identity_verification_failed(
-                session, verification_session
-            )
-            is None
-        )
+        await user_service.identity_verification_failed(session, verification_session)
+
         assert user.identity_verification_status == IdentityVerificationStatus.pending

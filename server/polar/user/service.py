@@ -47,6 +47,16 @@ class IdentityVerificationProcessing(UserError):
         super().__init__(message, 403)
 
 
+class IdentityVerificationForUnknownUser(UserError):
+    def __init__(self, identity_verification_id: str) -> None:
+        self.identity_verification_id = identity_verification_id
+        message = (
+            f"Received identity verification {identity_verification_id} from Stripe, "
+            "but it can't be attributed to any User."
+        )
+        super().__init__(message)
+
+
 class InvalidAccount(UserError):
     def __init__(self, account_id: UUID) -> None:
         self.account_id = account_id
@@ -146,9 +156,6 @@ class UserService:
                 user.identity_verification_id
             )
 
-        # Our status lags Stripe's while a webhook is in flight, so the session Stripe
-        # reports is the only gate: replacing one that's still live orphans the webhooks
-        # it has yet to send, and gating on a stale `pending` locks the user out.
         if verification_session is not None:
             match verification_session.status:
                 case "verified":
@@ -178,9 +185,7 @@ class UserService:
         self,
         repository: UserRepository,
         verification_session: stripe_lib.identity.VerificationSession,
-    ) -> User | None:
-        # `identity_verification_id` only points to the user's latest session, so an
-        # earlier one is unreachable by id: fall back to the metadata we set on create.
+    ) -> User:
         user = await repository.get_by_identity_verification_id(
             verification_session.id, for_update=True
         )
@@ -189,33 +194,22 @@ class UserService:
 
         metadata = verification_session.get("metadata") or {}
         user_id = metadata.get("user_id")
-        if user_id is None:
-            log.warning(
-                "identity_verification.session_without_user",
-                verification_session_id=verification_session.id,
-            )
-            return None
+        if user_id is not None:
+            user = await repository.get_by_id(UUID(user_id), for_update=True)
+            if user is not None:
+                return user
 
-        user = await repository.get_by_id(UUID(user_id), for_update=True)
-        if user is None:
-            log.warning(
-                "identity_verification.user_not_found",
-                verification_session_id=verification_session.id,
-                user_id=user_id,
-            )
-        return user
+        raise IdentityVerificationForUnknownUser(verification_session.id)
 
     async def identity_verification_verified(
         self,
         session: AsyncSession,
         verification_session: stripe_lib.identity.VerificationSession,
-    ) -> User | None:
+    ) -> User:
         repository = UserRepository.from_session(session)
         user = await self._get_verification_session_user(
             repository, verification_session
         )
-        if user is None:
-            return None
 
         assert verification_session.status == "verified"
         user = await repository.update(
@@ -237,15 +231,14 @@ class UserService:
         self,
         session: AsyncSession,
         verification_session: stripe_lib.identity.VerificationSession,
-    ) -> User | None:
+    ) -> User:
         repository = UserRepository.from_session(session)
-        user = await repository.get_by_identity_verification_id(
-            verification_session.id, for_update=True
+        user = await self._get_verification_session_user(
+            repository, verification_session
         )
-        # No user points at this session anymore: it belongs to an attempt the user
-        # has moved on from, so it says nothing about their current state.
-        if user is None:
-            return None
+
+        if user.identity_verification_id != verification_session.id:
+            return user
 
         # Once a user is verified, keep them verified: a late `processing` webhook
         # must not overwrite it. A failed user can retry, so `failed` -> `pending` is fine.
@@ -264,15 +257,14 @@ class UserService:
         self,
         session: AsyncSession,
         verification_session: stripe_lib.identity.VerificationSession,
-    ) -> User | None:
+    ) -> User:
         repository = UserRepository.from_session(session)
-        user = await repository.get_by_identity_verification_id(
-            verification_session.id, for_update=True
+        user = await self._get_verification_session_user(
+            repository, verification_session
         )
-        # No user points at this session anymore: it belongs to an attempt the user
-        # has moved on from, so it says nothing about their current state.
-        if user is None:
-            return None
+
+        if user.identity_verification_id != verification_session.id:
+            return user
 
         # Once a user is verified, keep them verified. An old or repeated webhook
         # from a past attempt must not undo it.

@@ -2,6 +2,7 @@
 
 import { BenefitPage } from '@/components/Benefit/BenefitPage'
 import { BenefitProducts } from '@/components/Benefit/BenefitProducts'
+import { BenefitConfiguration } from '@/components/Benefit/Configuration/BenefitConfiguration'
 import { LicenseKeysPage } from '@/components/Benefit/LicenseKeysPage'
 import UpdateBenefitModalContent from '@/components/Benefit/UpdateBenefitModalContent'
 import {
@@ -201,6 +202,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     >
       <Box flexDirection="column" width="100%" height="100%">
         <Box flexDirection="column" width="100%" gap="2xl" paddingBottom="2xl">
+          <BenefitConfiguration benefit={benefit} organization={organization} />
           <BenefitProducts benefit={benefit} organization={organization} />
           {benefit.type === 'license_keys' ? (
             <LicenseKeysPage organization={organization} benefit={benefit} />

@@ -368,29 +368,16 @@ class MemberService:
             created_at=customer.created_at,
         )
 
-        nested = await session.begin_nested()
+        # Scope the flush in a savepoint: on an IntegrityError the context manager
+        # rolls it back, so a concurrent insert that trips the partial unique index
+        # doesn't leave the session in an aborted state (which would make the
+        # re-query below raise PendingRollbackError). The savepoint is released on
+        # success, so callers that loop (e.g. the organization backfill) don't
+        # accumulate open savepoints.
         try:
-            created_member = await repository.create(member, flush=True)
-            customer.owner = created_member
-            log.info(
-                "member.create_owner_member.success",
-                customer_id=customer.id,
-                member_id=created_member.id,
-                organization_id=organization.id,
-            )
-            if send_webhook:
-                await webhook_service.send(
-                    session,
-                    organization,
-                    WebhookEventType.member_created,
-                    created_member,
-                )
-            return created_member
+            async with session.begin_nested():
+                created_member = await repository.create(member, flush=True)
         except IntegrityError as e:
-            # Roll back to the savepoint before re-querying: a failed flush leaves
-            # the session in an aborted state, so the follow-up query would raise
-            # PendingRollbackError instead of returning the concurrently-created owner.
-            await nested.rollback()
             log.info(
                 "member.create_owner_member.constraint_violation",
                 customer_id=customer.id,
@@ -417,6 +404,22 @@ class MemberService:
                 error=str(e),
             )
             raise
+        else:
+            customer.owner = created_member
+            log.info(
+                "member.create_owner_member.success",
+                customer_id=customer.id,
+                member_id=created_member.id,
+                organization_id=organization.id,
+            )
+            if send_webhook:
+                await webhook_service.send(
+                    session,
+                    organization,
+                    WebhookEventType.member_created,
+                    created_member,
+                )
+            return created_member
 
     async def get_or_create_seat_member(
         self,
@@ -484,23 +487,17 @@ class MemberService:
             role=role,
         )
 
-        nested = await session.begin_nested()
+        # Scope the flush in a savepoint: on an IntegrityError the context manager
+        # rolls it back, so a concurrent insert that trips the partial unique index
+        # doesn't leave the session in an aborted state (which would make the
+        # re-query below raise PendingRollbackError). The savepoint is released on
+        # success, so callers that create several members in one session don't
+        # accumulate open savepoints.
         try:
-            created = await repository.create(member, flush=True)
-            log.info(
-                "member.get_or_create_by_email.created",
-                member_id=created.id,
-                customer_id=customer_id,
-                organization_id=organization_id,
-                email=email,
-            )
-            return created
+            async with session.begin_nested():
+                created = await repository.create(member, flush=True)
         except IntegrityError:
             # Race condition: another transaction created the member concurrently.
-            # Roll back to the savepoint before re-querying: a failed flush leaves
-            # the session in an aborted state, so the follow-up query would raise
-            # PendingRollbackError instead of returning the existing member.
-            await nested.rollback()
             log.info(
                 "member.get_or_create_by_email.integrity_error_retry",
                 customer_id=customer_id,
@@ -510,6 +507,15 @@ class MemberService:
             if existing:
                 return existing
             raise
+        else:
+            log.info(
+                "member.get_or_create_by_email.created",
+                member_id=created.id,
+                customer_id=customer_id,
+                organization_id=organization_id,
+                email=email,
+            )
+            return created
 
     async def list_by_customer(
         self,

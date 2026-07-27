@@ -66,3 +66,11 @@ You can pass a `discount_code` query parameter to any Checkout Link URL to prefi
 ### Apply via API
 
 When creating a Checkout Session via the API, you can specify a discount to apply programmatically. See the [Checkout API documentation](/features/checkout/session) for details.
+
+## Stay in sync with webhooks
+
+Three events fire on the discount lifecycle: `discount.created`, `discount.updated` and `discount.deleted`. Each carries the full discount object.
+
+Subscribe to them if you keep your own copy of your active offers, for example to render pricing pages without calling the API on every request. The events cover changes made from the dashboard as well as through the API, so a manual edit never leaves your cache stale.
+
+See [Webhook Events](/integrate/webhooks/events) for the full list.

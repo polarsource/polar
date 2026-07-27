@@ -24663,7 +24663,7 @@
     "subscription.updated": {
       "post": {
         "summary": "subscription.updated",
-        "description": "Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.\n\nIf you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.\n\nTo listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.\n\n**Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.",
+        "description": "Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.\n\nIf you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.\n\nTo listen specifically for renewals, listen to `subscription.cycled`.\n\n**Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.",
         "operationId": "_endpointsubscription_updated_post",
         "requestBody": {
           "content": {
@@ -24824,6 +24824,48 @@
         "x-mint": {
           "metadata": {
             "sidebarTitle": "subscription.uncanceled"
+          }
+        }
+      }
+    },
+    "subscription.cycled": {
+      "post": {
+        "summary": "subscription.cycled",
+        "description": "Sent when a subscription enters a new billing period.\n\nThe payload carries the new `current_period_start` and `current_period_end`.\nIt fires when the period rolls over, before the renewal order exists and\nregardless of whether the renewal payment succeeds \u2014 listen to `order.paid`\nif you need the payment.\n\nA trial converting to a paid subscription starts a new period, so it fires\nthere too. Read `status` to tell the two apart.\n\n**Discord & Slack support:** Basic",
+        "operationId": "_endpointsubscription_cycled_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookSubscriptionCycledPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "metadata": {
+            "sidebarTitle": "subscription.cycled"
           }
         }
       }
@@ -25160,6 +25202,132 @@
         "x-mint": {
           "metadata": {
             "sidebarTitle": "product.updated"
+          }
+        }
+      }
+    },
+    "discount.created": {
+      "post": {
+        "summary": "discount.created",
+        "description": "Sent when a new discount is created.\n\n**Discord & Slack support:** Basic",
+        "operationId": "_endpointdiscount_created_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookDiscountCreatedPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "metadata": {
+            "sidebarTitle": "discount.created"
+          }
+        }
+      }
+    },
+    "discount.updated": {
+      "post": {
+        "summary": "discount.updated",
+        "description": "Sent when a discount is updated.\n\n**Discord & Slack support:** Basic",
+        "operationId": "_endpointdiscount_updated_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookDiscountUpdatedPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "metadata": {
+            "sidebarTitle": "discount.updated"
+          }
+        }
+      }
+    },
+    "discount.deleted": {
+      "post": {
+        "summary": "discount.deleted",
+        "description": "Sent when a discount is deleted.\n\n**Discord & Slack support:** Basic",
+        "operationId": "_endpointdiscount_deleted_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/WebhookDiscountDeletedPayload"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        },
+        "x-mint": {
+          "metadata": {
+            "sidebarTitle": "discount.deleted"
           }
         }
       }
@@ -85882,6 +86050,93 @@
         "title": "WebhookDelivery",
         "description": "A webhook delivery for a webhook event."
       },
+      "WebhookDiscountCreatedPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "discount.created",
+            "title": "Type",
+            "examples": [
+              "discount.created"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Discount",
+            "title": "Discount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "timestamp",
+          "data"
+        ],
+        "title": "WebhookDiscountCreatedPayload",
+        "description": "Sent when a new discount is created.\n\n**Discord & Slack support:** Basic"
+      },
+      "WebhookDiscountDeletedPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "discount.deleted",
+            "title": "Type",
+            "examples": [
+              "discount.deleted"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Discount",
+            "title": "Discount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "timestamp",
+          "data"
+        ],
+        "title": "WebhookDiscountDeletedPayload",
+        "description": "Sent when a discount is deleted.\n\n**Discord & Slack support:** Basic"
+      },
+      "WebhookDiscountUpdatedPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "discount.updated",
+            "title": "Type",
+            "examples": [
+              "discount.updated"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Discount",
+            "title": "Discount"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "timestamp",
+          "data"
+        ],
+        "title": "WebhookDiscountUpdatedPayload",
+        "description": "Sent when a discount is updated.\n\n**Discord & Slack support:** Basic"
+      },
       "WebhookEndpoint": {
         "properties": {
           "created_at": {
@@ -86231,6 +86486,7 @@
           "subscription.active",
           "subscription.canceled",
           "subscription.uncanceled",
+          "subscription.cycled",
           "subscription.revoked",
           "subscription.past_due",
           "subscription.paused",
@@ -86239,6 +86495,9 @@
           "refund.updated",
           "product.created",
           "product.updated",
+          "discount.created",
+          "discount.updated",
+          "discount.deleted",
           "benefit.created",
           "benefit.updated",
           "benefit_grant.created",
@@ -86678,6 +86937,34 @@
         "title": "WebhookSubscriptionCreatedPayload",
         "description": "Sent when a new subscription is created.\n\nWhen this event occurs, the subscription `status` might not be `active` yet, as we can still have to wait for the first payment to be processed.\n\n**Discord & Slack support:** Full"
       },
+      "WebhookSubscriptionCycledPayload": {
+        "properties": {
+          "type": {
+            "type": "string",
+            "const": "subscription.cycled",
+            "title": "Type",
+            "examples": [
+              "subscription.cycled"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Timestamp"
+          },
+          "data": {
+            "$ref": "#/components/schemas/Subscription"
+          }
+        },
+        "type": "object",
+        "required": [
+          "type",
+          "timestamp",
+          "data"
+        ],
+        "title": "WebhookSubscriptionCycledPayload",
+        "description": "Sent when a subscription enters a new billing period.\n\nThe payload carries the new `current_period_start` and `current_period_end`.\nIt fires when the period rolls over, before the renewal order exists and\nregardless of whether the renewal payment succeeds \u2014 listen to `order.paid`\nif you need the payment.\n\nA trial converting to a paid subscription starts a new period, so it fires\nthere too. Read `status` to tell the two apart.\n\n**Discord & Slack support:** Basic"
+      },
       "WebhookSubscriptionPastDuePayload": {
         "properties": {
           "type": {
@@ -86844,7 +87131,7 @@
           "data"
         ],
         "title": "WebhookSubscriptionUpdatedPayload",
-        "description": "Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.\n\nIf you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.\n\nTo listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.\n\n**Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped."
+        "description": "Sent when a subscription is updated. This event fires for all changes to the subscription, including renewals.\n\nIf you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.\n\nTo listen specifically for renewals, listen to `subscription.cycled`.\n\n**Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped."
       },
       "MetadataQuery": {
         "anyOf": [

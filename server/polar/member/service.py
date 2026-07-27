@@ -368,12 +368,6 @@ class MemberService:
             created_at=customer.created_at,
         )
 
-        # Scope the flush in a savepoint: on an IntegrityError the context manager
-        # rolls it back, so a concurrent insert that trips the partial unique index
-        # doesn't leave the session in an aborted state (which would make the
-        # re-query below raise PendingRollbackError). The savepoint is released on
-        # success, so callers that loop (e.g. the organization backfill) don't
-        # accumulate open savepoints.
         try:
             async with session.begin_nested():
                 created_member = await repository.create(member, flush=True)
@@ -487,12 +481,6 @@ class MemberService:
             role=role,
         )
 
-        # Scope the flush in a savepoint: on an IntegrityError the context manager
-        # rolls it back, so a concurrent insert that trips the partial unique index
-        # doesn't leave the session in an aborted state (which would make the
-        # re-query below raise PendingRollbackError). The savepoint is released on
-        # success, so callers that create several members in one session don't
-        # accumulate open savepoints.
         try:
             async with session.begin_nested():
                 created = await repository.create(member, flush=True)

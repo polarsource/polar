@@ -1,9 +1,7 @@
 'use client'
 
-import { DetailCell, DetailGrid } from '@/components/Orders/OrderSection'
+import { DetailGrid } from '@/components/Orders/OrderSection'
 import { schemas } from '@polar-sh/client'
-import { Text } from '@polar-sh/orbit'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import {
   GitHubRepositoryCells,
   LicenseKeysCells,
@@ -16,7 +14,10 @@ export interface BenefitDetailsProps {
   organization: schemas['Organization']
 }
 
-const BenefitTypeCells = ({ benefit, organization }: BenefitDetailsProps) => {
+const getBenefitTypeCells = ({
+  benefit,
+  organization,
+}: BenefitDetailsProps) => {
   switch (benefit.type) {
     case 'discord':
       return <DiscordCells benefit={benefit} />
@@ -37,19 +38,26 @@ const BenefitTypeCells = ({ benefit, organization }: BenefitDetailsProps) => {
   }
 }
 
+export const hasBenefitDetails = (benefit: schemas['Benefit']) => {
+  switch (benefit.type) {
+    case 'custom':
+    case 'downloadables':
+    case 'feature_flag':
+      return false
+    default:
+      return true
+  }
+}
+
 export const BenefitDetails = ({
   benefit,
   organization,
-}: BenefitDetailsProps) => (
-  <DetailGrid>
-    <BenefitTypeCells benefit={benefit} organization={organization} />
-    <DetailCell
-      label="Created"
-      value={
-        <Text variant="body" as="span">
-          <FormattedDateTime dateStyle="medium" datetime={benefit.created_at} />
-        </Text>
-      }
-    />
-  </DetailGrid>
-)
+}: BenefitDetailsProps) => {
+  const cells = getBenefitTypeCells({ benefit, organization })
+
+  if (!cells) {
+    return null
+  }
+
+  return <DetailGrid>{cells}</DetailGrid>
+}

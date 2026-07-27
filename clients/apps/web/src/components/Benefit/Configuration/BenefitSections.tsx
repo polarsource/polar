@@ -5,6 +5,7 @@ import { useFiles } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { List, ListItem, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import type { ReactNode } from 'react'
 import { BenefitDetailsProps } from './BenefitDetails'
 
 const Prose = ({
@@ -25,6 +26,27 @@ const Prose = ({
   ) : (
     <Text color="muted">{fallback}</Text>
   )
+
+const MutedProseSection = ({
+  title,
+  children,
+}: {
+  title: string
+  children: ReactNode
+}) => (
+  <Box flexDirection="column" rowGap="xl">
+    <Text variant="heading-xs" as="h3">
+      {title}
+    </Text>
+    <Box
+      backgroundColor="background-secondary"
+      borderRadius="l"
+      padding="xl"
+    >
+      {children}
+    </Box>
+  </Box>
+)
 
 const DownloadablesSection = ({
   benefit,
@@ -79,9 +101,9 @@ export const BenefitSections = ({
   switch (benefit.type) {
     case 'custom':
       return (
-        <OrderSection title="Private note">
+        <MutedProseSection title="Private note">
           <Prose fallback="No note configured">{benefit.properties.note}</Prose>
-        </OrderSection>
+        </MutedProseSection>
       )
     case 'downloadables':
       return (
@@ -89,11 +111,11 @@ export const BenefitSections = ({
       )
     case 'slack_shared_channel':
       return (
-        <OrderSection title="Welcome message">
+        <MutedProseSection title="Welcome message">
           <Prose fallback="No welcome message configured">
             {benefit.properties.welcome_message}
           </Prose>
-        </OrderSection>
+        </MutedProseSection>
       )
     default:
       return null

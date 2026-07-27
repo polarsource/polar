@@ -1,7 +1,6 @@
 'use client'
 
-import { useAuth } from '@/hooks'
-import { CONFIG } from '@/utils/config'
+import { useAuth, useLogout } from '@/hooks'
 import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'motion/react'
 import { ArrowLeft } from 'lucide-react'
@@ -36,6 +35,7 @@ export function OnboardingShell({
 }: OnboardingShellProps) {
   const router = useRouter()
   const { userOrganizations } = useAuth()
+  const logout = useLogout()
   const [hadOrgs] = useState(() => userOrganizations.length > 0)
   const currentIndex = step ? STEPS.indexOf(step) : -1
 
@@ -70,12 +70,13 @@ export function OnboardingShell({
           User settings
         </Link>
 
-        <a
-          href={`${CONFIG.BASE_URL}/v1/auth/logout`}
-          className="dark:hover:text-polar-200 text-sm hover:text-gray-900"
+        <button
+          type="button"
+          onClick={logout}
+          className="dark:hover:text-polar-200 cursor-pointer text-sm hover:text-gray-900"
         >
           Log out
-        </a>
+        </button>
       </Box>
       <Box width="100%" maxWidth="60rem">
         {/* Left: form */}

@@ -5,14 +5,11 @@ import {
   useSlackIntegration,
   useSlackWorkspaceUsers,
 } from '@/hooks/queries'
+import { DetailCell } from '@/components/Orders/OrderSection'
 import { schemas } from '@polar-sh/client'
-import {
-  ConfigurationBlock,
-  ConfigurationParagraph,
-  ConfigurationRow,
-} from './ConfigurationRow'
+import { Text } from '@polar-sh/orbit'
 
-export const DiscordProperties = ({
+export const DiscordCells = ({
   benefit,
 }: {
   benefit: schemas['BenefitDiscord']
@@ -23,17 +20,27 @@ export const DiscordProperties = ({
 
   return (
     <>
-      <ConfigurationRow
+      <DetailCell
         label="Discord server"
-        loading={isLoading}
-        value={guild?.name}
+        value={
+          isLoading ? (
+            <Text loading placeholderText="Server name" />
+          ) : (
+            guild?.name
+          )
+        }
       />
-      <ConfigurationRow
+      <DetailCell
         label="Granted role"
-        loading={isLoading}
-        value={role?.name ?? role_id}
+        value={
+          isLoading ? (
+            <Text loading placeholderText="Role name" />
+          ) : (
+            (role?.name ?? role_id)
+          )
+        }
       />
-      <ConfigurationRow
+      <DetailCell
         label="On revocation"
         value={
           kick_member
@@ -45,7 +52,7 @@ export const DiscordProperties = ({
   )
 }
 
-export const SlackSharedChannelProperties = ({
+export const SlackSharedChannelCells = ({
   benefit,
 }: {
   benefit: schemas['BenefitSlackSharedChannel']
@@ -54,7 +61,6 @@ export const SlackSharedChannelProperties = ({
     slack_integration_id,
     channel_name_template,
     private: isPrivate,
-    welcome_message,
     archive_on_revoke,
     team_invitees,
   } = benefit.properties
@@ -71,37 +77,40 @@ export const SlackSharedChannelProperties = ({
 
   return (
     <>
-      <ConfigurationRow
+      <DetailCell
         label="Slack app"
-        loading={isLoading}
         value={
-          integration
-            ? [integration.display_name, integration.team_name]
-                .filter(Boolean)
-                .join(' · ')
-            : undefined
+          isLoading ? (
+            <Text loading placeholderText="Slack app" />
+          ) : integration ? (
+            [integration.display_name, integration.team_name]
+              .filter(Boolean)
+              .join(' · ')
+          ) : undefined
         }
       />
-      <ConfigurationRow
+      <DetailCell
         label="Channel name template"
         value={channel_name_template}
         monospace
       />
-      <ConfigurationRow
+      <DetailCell
         label="Channel privacy"
         value={isPrivate ? 'Private channel' : 'Public channel'}
       />
-      <ConfigurationRow
+      <DetailCell
         label="Team members invited"
-        loading={invitees.length > 0 && isLoadingUsers}
-        value={inviteeNames.length > 0 ? inviteeNames.join(', ') : 'None'}
+        value={
+          invitees.length === 0 ? (
+            'None'
+          ) : isLoadingUsers ? (
+            <Text loading placeholderText="Team members" />
+          ) : (
+            inviteeNames.join(', ')
+          )
+        }
       />
-      <ConfigurationBlock label="Welcome message">
-        <ConfigurationParagraph fallback="No welcome message configured">
-          {welcome_message}
-        </ConfigurationParagraph>
-      </ConfigurationBlock>
-      <ConfigurationRow
+      <DetailCell
         label="On revocation"
         value={
           archive_on_revoke ? 'Channel is archived' : 'Channel is kept active'

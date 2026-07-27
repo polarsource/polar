@@ -2,7 +2,9 @@
 
 import { BenefitPage } from '@/components/Benefit/BenefitPage'
 import { BenefitProducts } from '@/components/Benefit/BenefitProducts'
-import { BenefitConfiguration } from '@/components/Benefit/Configuration/BenefitConfiguration'
+import { BenefitDetails } from '@/components/Benefit/Configuration/BenefitDetails'
+import { BenefitSecondaryDetails } from '@/components/Benefit/Configuration/BenefitSecondaryDetails'
+import { BenefitSections } from '@/components/Benefit/Configuration/BenefitSections'
 import { LicenseKeysPage } from '@/components/Benefit/LicenseKeysPage'
 import UpdateBenefitModalContent from '@/components/Benefit/UpdateBenefitModalContent'
 import {
@@ -151,7 +153,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 alignItems={{ base: 'start', sm: 'center' }}
                 gap={{ base: 'xs', sm: 'l' }}
               >
-                <Text variant="heading-xxs" as="p" truncate>
+                <Text variant="heading-xs" as="h2" truncate>
                   {(benefit.description?.length ?? 0) > 0
                     ? benefit.description
                     : '—'}
@@ -201,14 +203,30 @@ const ClientPage: React.FC<ClientPageProps> = ({
       }
     >
       <Box flexDirection="column" width="100%" height="100%">
-        <Box flexDirection="column" width="100%" gap="2xl" paddingBottom="2xl">
-          <BenefitConfiguration benefit={benefit} organization={organization} />
-          <BenefitProducts benefit={benefit} organization={organization} />
-          {benefit.type === 'license_keys' ? (
-            <LicenseKeysPage organization={organization} benefit={benefit} />
-          ) : (
-            <BenefitPage benefit={benefit} organization={organization} />
-          )}
+        <Box
+          flexDirection="column"
+          width="100%"
+          rowGap="4xl"
+          paddingBottom="2xl"
+        >
+          <BenefitDetails benefit={benefit} organization={organization} />
+          <Box
+            flexDirection="column"
+            rowGap="4xl"
+            borderTopWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
+            paddingTop="4xl"
+          >
+            <BenefitSections benefit={benefit} organization={organization} />
+            <BenefitProducts benefit={benefit} organization={organization} />
+            {benefit.type === 'license_keys' ? (
+              <LicenseKeysPage organization={organization} benefit={benefit} />
+            ) : (
+              <BenefitPage benefit={benefit} organization={organization} />
+            )}
+          </Box>
+          <BenefitSecondaryDetails benefit={benefit} />
         </Box>
       </Box>
 

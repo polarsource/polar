@@ -1,3 +1,4 @@
+import { OrderSection } from '@/components/Orders/OrderSection'
 import { Pagination } from '@/components/Products/Benefits/components/Pagination'
 import LegacyRecurringProductPrices from '@/components/Products/LegacyRecurringProductPrices'
 import ProductPriceLabel from '@/components/Products/ProductPriceLabel'
@@ -36,17 +37,14 @@ export const BenefitProducts = ({
   const totalPages = products?.pagination.max_page ?? 1
 
   return (
-    <Box flexDirection="column" gap="xl">
-      <Box alignItems="center" justifyContent="between" gap="l">
-        <Box flexDirection="column" gap="s">
-          <Text variant="heading-xxs" as="h2">
-            Products
-          </Text>
-          <Text color="muted">
-            Products where this benefit currently is enabled
-          </Text>
-        </Box>
-      </Box>
+    <OrderSection
+      title="Products"
+      description={
+        <Text color="muted">
+          Products where this benefit currently is enabled
+        </Text>
+      }
+    >
       {isLoading ? (
         <div className="animate-pulse">
           <Box height={96} borderRadius="l" backgroundColor="background-card" />
@@ -110,6 +108,6 @@ export const BenefitProducts = ({
           )}
         </Box>
       )}
-    </Box>
+    </OrderSection>
   )
 }

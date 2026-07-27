@@ -1,28 +1,10 @@
 'use client'
 
-import { useFiles } from '@/hooks/queries'
+import { DetailCell } from '@/components/Orders/OrderSection'
 import { useMeter } from '@/hooks/queries/meters'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import Link from 'next/link'
-import {
-  ConfigurationBlock,
-  ConfigurationEntry,
-  ConfigurationParagraph,
-  ConfigurationRow,
-} from './ConfigurationRow'
-
-export const CustomProperties = ({
-  benefit,
-}: {
-  benefit: schemas['BenefitCustom']
-}) => (
-  <ConfigurationBlock label="Private note">
-    <ConfigurationParagraph fallback="No note configured">
-      {benefit.properties.note}
-    </ConfigurationParagraph>
-  </ConfigurationBlock>
-)
 
 const GITHUB_PERMISSION_LABELS: Record<
   schemas['BenefitGitHubRepositoryProperties']['permission'],
@@ -35,7 +17,7 @@ const GITHUB_PERMISSION_LABELS: Record<
   admin: 'Admin',
 }
 
-export const GitHubRepositoryProperties = ({
+export const GitHubRepositoryCells = ({
   benefit,
 }: {
   benefit: schemas['BenefitGitHubRepository']
@@ -45,7 +27,7 @@ export const GitHubRepositoryProperties = ({
 
   return (
     <>
-      <ConfigurationRow
+      <DetailCell
         label="Repository"
         value={
           <a
@@ -53,13 +35,13 @@ export const GitHubRepositoryProperties = ({
             target="_blank"
             rel="noopener noreferrer"
           >
-            <Text monospace truncate>
+            <Text variant="body" monospace truncate>
               {repository}
             </Text>
           </a>
         }
       />
-      <ConfigurationRow
+      <DetailCell
         label="Granted permission"
         value={GITHUB_PERMISSION_LABELS[permission]}
       />
@@ -67,40 +49,7 @@ export const GitHubRepositoryProperties = ({
   )
 }
 
-export const DownloadablesProperties = ({
-  benefit,
-  organization,
-}: {
-  benefit: schemas['BenefitDownloadables']
-  organization: schemas['Organization']
-}) => {
-  const { files, archived } = benefit.properties
-  const activeFileIds = files.filter((id) => !archived[id])
-  const archivedCount = files.length - activeFileIds.length
-  const { data, isLoading } = useFiles(organization.id, activeFileIds)
-
-  return (
-    <ConfigurationBlock
-      label={`Files (${activeFileIds.length} active${archivedCount > 0 ? `, ${archivedCount} archived` : ''})`}
-    >
-      {activeFileIds.length === 0 ? (
-        <Text color="muted">No files uploaded yet</Text>
-      ) : isLoading ? (
-        <Text loading placeholderText="File name" />
-      ) : (
-        (data?.items ?? []).map((file) => (
-          <ConfigurationEntry
-            key={file.id}
-            name={file.name}
-            detail={file.size_readable}
-          />
-        ))
-      )}
-    </ConfigurationBlock>
-  )
-}
-
-export const LicenseKeysProperties = ({
+export const LicenseKeysCells = ({
   benefit,
 }: {
   benefit: schemas['BenefitLicenseKeys']
@@ -109,12 +58,12 @@ export const LicenseKeysProperties = ({
 
   return (
     <>
-      <ConfigurationRow
+      <DetailCell
         label="Key prefix"
         value={prefix ? `${prefix}-XXXX-XXXX-XXXX` : 'No prefix'}
         monospace={!!prefix}
       />
-      <ConfigurationRow
+      <DetailCell
         label="Expiration"
         value={
           expires
@@ -122,7 +71,7 @@ export const LicenseKeysProperties = ({
             : 'Never expires'
         }
       />
-      <ConfigurationRow
+      <DetailCell
         label="Activation limit"
         value={
           activations
@@ -131,12 +80,12 @@ export const LicenseKeysProperties = ({
         }
       />
       {activations && (
-        <ConfigurationRow
+        <DetailCell
           label="Customer can manage activations"
           value={activations.enable_customer_admin ? 'Yes' : 'No'}
         />
       )}
-      <ConfigurationRow
+      <DetailCell
         label="Usage limit"
         value={limit_usage ? limit_usage.toLocaleString() : 'Unlimited'}
       />
@@ -144,7 +93,7 @@ export const LicenseKeysProperties = ({
   )
 }
 
-export const MeterCreditProperties = ({
+export const MeterCreditCells = ({
   benefit,
   organization,
 }: {
@@ -156,21 +105,24 @@ export const MeterCreditProperties = ({
 
   return (
     <>
-      <ConfigurationRow
+      <DetailCell
         label="Meter"
-        loading={isLoading}
         value={
-          meter && (
+          isLoading ? (
+            <Text loading placeholderText="Meter name" />
+          ) : meter ? (
             <Link
               href={`/dashboard/${organization.slug}/products/meters/${meter.id}`}
             >
-              <Text truncate>{meter.name}</Text>
+              <Text variant="body" truncate>
+                {meter.name}
+              </Text>
             </Link>
-          )
+          ) : undefined
         }
       />
-      <ConfigurationRow label="Credited units" value={units.toLocaleString()} />
-      <ConfigurationRow
+      <DetailCell label="Credited units" value={units.toLocaleString()} />
+      <DetailCell
         label="Rollover"
         value={
           rollover ? 'Unused credits roll over' : 'Balance resets on each grant'

@@ -2,10 +2,7 @@
 
 import { BenefitPage } from '@/components/Benefit/BenefitPage'
 import { BenefitProducts } from '@/components/Benefit/BenefitProducts'
-import {
-  BenefitDetails,
-  hasBenefitDetails,
-} from '@/components/Benefit/Configuration/BenefitDetails'
+import { BenefitDetails } from '@/components/Benefit/Configuration/BenefitDetails'
 import { BenefitSecondaryDetails } from '@/components/Benefit/Configuration/BenefitSecondaryDetails'
 import { BenefitSections } from '@/components/Benefit/Configuration/BenefitSections'
 import { LicenseKeysPage } from '@/components/Benefit/LicenseKeysPage'
@@ -88,8 +85,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const handleDirtyChange = useCallback((dirty: boolean) => {
     isDirtyRef.current = dirty
   }, [])
-
-  const showDetails = hasBenefitDetails(benefit)
 
   useEffect(() => {
     if (editBenefitId !== benefit.id) {
@@ -213,22 +208,13 @@ const ClientPage: React.FC<ClientPageProps> = ({
           paddingBottom="2xl"
         >
           <BenefitDetails benefit={benefit} organization={organization} />
-          <Box
-            flexDirection="column"
-            rowGap="4xl"
-            borderTopWidth={showDetails ? 1 : 0}
-            borderStyle="solid"
-            borderColor="border-primary"
-            paddingTop={showDetails ? '4xl' : 'none'}
-          >
-            <BenefitSections benefit={benefit} organization={organization} />
-            <BenefitProducts benefit={benefit} organization={organization} />
-            {benefit.type === 'license_keys' ? (
-              <LicenseKeysPage organization={organization} benefit={benefit} />
-            ) : (
-              <BenefitPage benefit={benefit} organization={organization} />
-            )}
-          </Box>
+          <BenefitSections benefit={benefit} organization={organization} />
+          <BenefitProducts benefit={benefit} organization={organization} />
+          {benefit.type === 'license_keys' ? (
+            <LicenseKeysPage organization={organization} benefit={benefit} />
+          ) : (
+            <BenefitPage benefit={benefit} organization={organization} />
+          )}
           <BenefitSecondaryDetails benefit={benefit} />
         </Box>
       </Box>

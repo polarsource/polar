@@ -1,23 +1,19 @@
 'use client'
 
 import { DetailGrid } from '@/components/Orders/OrderSection'
-import { schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   GitHubRepositoryCells,
   LicenseKeysCells,
   MeterCreditCells,
 } from './BenefitDetailCells'
+import type { BenefitConfigurationProps } from './BenefitConfigurationProps'
 import { DiscordCells, SlackSharedChannelCells } from './IntegrationDetailCells'
-
-export interface BenefitDetailsProps {
-  benefit: schemas['Benefit']
-  organization: schemas['Organization']
-}
 
 const getBenefitTypeCells = ({
   benefit,
   organization,
-}: BenefitDetailsProps) => {
+}: BenefitConfigurationProps) => {
   switch (benefit.type) {
     case 'discord':
       return <DiscordCells benefit={benefit} />
@@ -35,29 +31,31 @@ const getBenefitTypeCells = ({
     case 'downloadables':
     case 'feature_flag':
       return null
-  }
-}
-
-export const hasBenefitDetails = (benefit: schemas['Benefit']) => {
-  switch (benefit.type) {
-    case 'custom':
-    case 'downloadables':
-    case 'feature_flag':
-      return false
     default:
-      return true
+      benefit satisfies never
+      return null
   }
 }
 
 export const BenefitDetails = ({
   benefit,
   organization,
-}: BenefitDetailsProps) => {
+}: BenefitConfigurationProps) => {
   const cells = getBenefitTypeCells({ benefit, organization })
 
   if (!cells) {
     return null
   }
 
-  return <DetailGrid>{cells}</DetailGrid>
+  return (
+    <Box
+      flexDirection="column"
+      borderBottomWidth={1}
+      borderStyle="solid"
+      borderColor="border-primary"
+      paddingBottom="4xl"
+    >
+      <DetailGrid>{cells}</DetailGrid>
+    </Box>
+  )
 }

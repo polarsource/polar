@@ -7,17 +7,7 @@ import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
-
-const GITHUB_PERMISSION_LABELS: Record<
-  schemas['BenefitGitHubRepositoryProperties']['permission'],
-  string
-> = {
-  pull: 'Read',
-  triage: 'Triage',
-  push: 'Write',
-  maintain: 'Maintain',
-  admin: 'Admin',
-}
+import { githubRepositoryPermissionDisplayNames } from '../utils'
 
 export const GitHubRepositoryCells = ({
   benefit,
@@ -38,7 +28,7 @@ export const GitHubRepositoryCells = ({
             rel="noopener noreferrer"
           >
             <Box alignItems="center" columnGap="xs" minWidth={0}>
-              <Text variant="body" monospace truncate >
+              <Text variant="body" monospace truncate>
                 {repository}
               </Text>
               <Box as="span" flexShrink={0} color="text-secondary">
@@ -50,7 +40,7 @@ export const GitHubRepositoryCells = ({
       />
       <DetailCell
         label="Granted permission"
-        value={GITHUB_PERMISSION_LABELS[permission]}
+        value={githubRepositoryPermissionDisplayNames[permission]}
       />
     </>
   )
@@ -108,16 +98,14 @@ export const MeterCreditCells = ({
   organization: schemas['Organization']
 }) => {
   const { meter_id, units, rollover } = benefit.properties
-  const { data: meter, isLoading } = useMeter(meter_id)
+  const { data: meter } = useMeter(meter_id)
 
   return (
     <>
       <DetailCell
         label="Meter"
         value={
-          isLoading ? (
-            <Text loading placeholderText="Meter name" />
-          ) : meter ? (
+          meter ? (
             <Link
               href={`/dashboard/${organization.slug}/products/meters/${meter.id}`}
             >

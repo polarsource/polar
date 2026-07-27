@@ -1,11 +1,11 @@
 'use client'
 
+import { DetailCell } from '@/components/Orders/OrderSection'
 import {
   useDiscordGuild,
   useSlackIntegration,
   useSlackWorkspaceUsers,
 } from '@/hooks/queries'
-import { DetailCell } from '@/components/Orders/OrderSection'
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 
@@ -66,12 +66,18 @@ export const SlackSharedChannelCells = ({
   } = benefit.properties
   const { data: integration, isLoading } =
     useSlackIntegration(slack_integration_id)
-  const { data: users, isLoading: isLoadingUsers } =
-    useSlackWorkspaceUsers(slack_integration_id)
 
   const invitees = team_invitees ?? []
+  // Resolving names means pulling the whole workspace roster, so only ask for
+  // it when there are invitees to name.
+  const { data: users, isLoading: isLoadingUsers } = useSlackWorkspaceUsers(
+    slack_integration_id,
+    { enabled: invitees.length > 0 },
+  )
+
+  const usersById = new Map(users?.map((user) => [user.id, user]))
   const inviteeNames = invitees.map((id) => {
-    const user = users?.find((user) => user.id === id)
+    const user = usersById.get(id)
     return user?.real_name || user?.name || id
   })
 
@@ -101,13 +107,14 @@ export const SlackSharedChannelCells = ({
       <DetailCell
         label="Team members invited"
         value={
-          invitees.length === 0 ? (
-            'None'
-          ) : isLoadingUsers ? (
-            <Text loading placeholderText="Team members" />
-          ) : (
-            inviteeNames.join(', ')
-          )
+          <Text
+            variant="body"
+            truncate
+            loading={isLoadingUsers}
+            placeholderText="Team members"
+          >
+            {invitees.length === 0 ? 'None' : inviteeNames.join(', ')}
+          </Text>
         }
       />
       <DetailCell

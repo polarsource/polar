@@ -5,47 +5,30 @@ import { useFiles } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { List, ListItem, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import type { ReactNode } from 'react'
-import { BenefitDetailsProps } from './BenefitDetails'
+import type { BenefitConfigurationProps } from './BenefitConfigurationProps'
 
-const Prose = ({
-  children,
+const ProseSection = ({
+  title,
+  text,
   fallback,
 }: {
-  children?: string | null
-  fallback: string
-}) =>
-  children ? (
-    // Notes and welcome messages are authored as multi-line text, so each
-    // source line gets its own Text to keep the author's line breaks.
-    <Box flexDirection="column" maxWidth="65ch">
-      {children.split('\n').map((line, index) => (
-        <Text key={index}>{line || '\u00a0'}</Text>
-      ))}
-    </Box>
-  ) : (
-    <Text color="muted">{fallback}</Text>
-  )
-
-const MutedProseSection = ({
-  title,
-  children,
-}: {
   title: string
-  children: ReactNode
+  text?: string | null
+  fallback: string
 }) => (
-  <Box flexDirection="column" rowGap="xl">
-    <Text variant="heading-xs" as="h3">
-      {title}
-    </Text>
-    <Box
-      backgroundColor="background-secondary"
-      borderRadius="l"
-      padding="xl"
-    >
-      {children}
+  <OrderSection title={title}>
+    <Box backgroundColor="background-secondary" borderRadius="l" padding="xl">
+      {text ? (
+        // Notes and welcome messages are authored as multi-line text, so the
+        // author's line breaks are preserved as written.
+        <div className="max-w-[65ch] whitespace-pre-wrap">
+          <Text>{text}</Text>
+        </div>
+      ) : (
+        <Text color="muted">{fallback}</Text>
+      )}
     </Box>
-  </Box>
+  </OrderSection>
 )
 
 const DownloadablesSection = ({
@@ -77,7 +60,7 @@ const DownloadablesSection = ({
       ) : (
         <List size="small">
           {(data?.items ?? []).map((file) => (
-            <ListItem key={file.id} size="small" className="px-6 py-4">
+            <ListItem key={file.id}>
               <Box minWidth={0} flexGrow={1}>
                 <Text truncate>{file.name}</Text>
               </Box>
@@ -97,13 +80,15 @@ const DownloadablesSection = ({
 export const BenefitSections = ({
   benefit,
   organization,
-}: BenefitDetailsProps) => {
+}: BenefitConfigurationProps) => {
   switch (benefit.type) {
     case 'custom':
       return (
-        <MutedProseSection title="Private note">
-          <Prose fallback="No note configured">{benefit.properties.note}</Prose>
-        </MutedProseSection>
+        <ProseSection
+          title="Private note"
+          text={benefit.properties.note}
+          fallback="No note configured"
+        />
       )
     case 'downloadables':
       return (
@@ -111,11 +96,11 @@ export const BenefitSections = ({
       )
     case 'slack_shared_channel':
       return (
-        <MutedProseSection title="Welcome message">
-          <Prose fallback="No welcome message configured">
-            {benefit.properties.welcome_message}
-          </Prose>
-        </MutedProseSection>
+        <ProseSection
+          title="Welcome message"
+          text={benefit.properties.welcome_message}
+          fallback="No welcome message configured"
+        />
       )
     default:
       return null

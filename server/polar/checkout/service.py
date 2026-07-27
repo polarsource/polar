@@ -2297,16 +2297,7 @@ class CheckoutService:
                 session, checkout.discount, checkout=checkout
             )
         ):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "discount_code"),
-                        "msg": "You have already redeemed this discount.",
-                        "input": checkout_update.discount_code,
-                    }
-                ]
-            )
+            raise DiscountRedemptionLimitReached(checkout)
 
         await self._validate_subscription_uniqueness(session, checkout)
 

@@ -3115,7 +3115,7 @@ class TestUpdate:
             save_fixture, discount=discount, checkout=prior_checkout
         )
 
-        with pytest.raises(PolarRequestValidationError):
+        with pytest.raises(DiscountRedemptionLimitReached):
             await checkout_service.update(
                 session,
                 checkout_one_time_fixed,

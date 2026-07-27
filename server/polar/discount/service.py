@@ -1,7 +1,7 @@
 import contextlib
 import uuid
 from collections.abc import AsyncIterator, Sequence
-from typing import Any
+from typing import Any, Literal
 
 import structlog
 from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, select
@@ -31,9 +31,11 @@ from polar.models import (
 from polar.models.checkout import Checkout
 from polar.models.discount import DiscountFixed
 from polar.models.discount_redemption import DiscountRedemption
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.organization.resolver import get_payload_organization
 from polar.postgres import AsyncSession
 from polar.product.repository import ProductRepository
+from polar.webhook.service import webhook as webhook_service
 
 from .schemas import DiscountCreate, DiscountFixedCreate, DiscountUpdate
 from .sorting import DiscountSortProperty
@@ -183,7 +185,11 @@ class DiscountService(ResourceServiceReader[Discount]):
             discount_redemptions=[],
             redemptions_count=0,
         )
-        return await repository.create(discount)
+        discount = await repository.create(discount, flush=True)
+
+        await self._send_webhook(session, discount, WebhookEventType.discount_created)
+
+        return discount
 
     async def update(
         self,
@@ -308,6 +314,8 @@ class DiscountService(ResourceServiceReader[Discount]):
         await session.flush()
         await session.refresh(discount)
 
+        await self._send_webhook(session, discount, WebhookEventType.discount_updated)
+
         return discount
 
     async def delete(
@@ -321,6 +329,9 @@ class DiscountService(ResourceServiceReader[Discount]):
         )
         discount.set_deleted_at()
         session.add(discount)
+
+        await self._send_webhook(session, discount, WebhookEventType.discount_deleted)
+
         return discount
 
     async def get_by_id_and_organization(
@@ -462,6 +473,18 @@ class DiscountService(ResourceServiceReader[Discount]):
             DiscountRedemption.checkout_id == checkout.id
         )
         await session.execute(statement)
+
+    async def _send_webhook(
+        self,
+        session: AsyncSession,
+        discount: Discount,
+        event_type: Literal[
+            WebhookEventType.discount_created,
+            WebhookEventType.discount_updated,
+            WebhookEventType.discount_deleted,
+        ],
+    ) -> None:
+        await webhook_service.send(session, discount.organization, event_type, discount)
 
     def _get_readable_discount_statement(
         self, auth_subject: AuthSubject[User | Organization]

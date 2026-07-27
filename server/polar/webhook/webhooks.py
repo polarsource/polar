@@ -23,6 +23,7 @@ from polar.checkout.schemas import Checkout as CheckoutSchema
 from polar.customer.schemas.customer import CustomerResponse as CustomerSchema
 from polar.customer.schemas.state import CustomerState as CustomerStateSchema
 from polar.customer_seat.schemas import CustomerSeat as CustomerSeatSchema
+from polar.discount.schemas import Discount as DiscountSchema
 from polar.exceptions import PolarError
 from polar.integrations.discord.webhook import (
     DiscordEmbedField,
@@ -42,6 +43,7 @@ from polar.models import (
     Checkout,
     Customer,
     CustomerSeat,
+    Discount,
     Member,
     Order,
     Organization,
@@ -88,6 +90,9 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.refund_updated], Refund]
     | tuple[Literal[WebhookEventType.product_created], Product]
     | tuple[Literal[WebhookEventType.product_updated], Product]
+    | tuple[Literal[WebhookEventType.discount_created], Discount]
+    | tuple[Literal[WebhookEventType.discount_updated], Discount]
+    | tuple[Literal[WebhookEventType.discount_deleted], Discount]
     | tuple[Literal[WebhookEventType.organization_updated], Organization]
     | tuple[Literal[WebhookEventType.benefit_created], Benefit]
     | tuple[Literal[WebhookEventType.benefit_updated], Benefit]
@@ -1381,6 +1386,39 @@ class WebhookProductUpdatedPayload(BaseWebhookPayload):
     data: ProductSchema
 
 
+class WebhookDiscountCreatedPayload(BaseWebhookPayload):
+    """
+    Sent when a new discount is created.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.discount_created]
+    data: DiscountSchema
+
+
+class WebhookDiscountUpdatedPayload(BaseWebhookPayload):
+    """
+    Sent when a discount is updated.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.discount_updated]
+    data: DiscountSchema
+
+
+class WebhookDiscountDeletedPayload(BaseWebhookPayload):
+    """
+    Sent when a discount is deleted.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.discount_deleted]
+    data: DiscountSchema
+
+
 class WebhookOrganizationUpdatedPayload(BaseWebhookPayload):
     """
     Sent when a organization is updated.
@@ -1490,6 +1528,9 @@ WebhookPayload = Annotated[
     | WebhookRefundUpdatedPayload
     | WebhookProductCreatedPayload
     | WebhookProductUpdatedPayload
+    | WebhookDiscountCreatedPayload
+    | WebhookDiscountUpdatedPayload
+    | WebhookDiscountDeletedPayload
     | WebhookOrganizationUpdatedPayload
     | WebhookBenefitCreatedPayload
     | WebhookBenefitUpdatedPayload

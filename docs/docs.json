@@ -583,6 +583,14 @@
                         ]
                       },
                       {
+                        "group": "Discounts",
+                        "pages": [
+                          "openapi.json webhook discount.created",
+                          "openapi.json webhook discount.updated",
+                          "openapi.json webhook discount.deleted"
+                        ]
+                      },
+                      {
                         "group": "Organization",
                         "pages": ["openapi.json webhook organization.updated"]
                       }

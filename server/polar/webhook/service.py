@@ -35,6 +35,7 @@ from polar.models import (
     Checkout,
     Customer,
     CustomerSeat,
+    Discount,
     Member,
     Order,
     Organization,
@@ -731,6 +732,33 @@ class WebhookService:
         target: Organization,
         event: Literal[WebhookEventType.product_updated],
         data: Product,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.discount_created],
+        data: Discount,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.discount_updated],
+        data: Discount,
+    ) -> list[WebhookEvent]: ...
+
+    @overload
+    async def send(
+        self,
+        session: AsyncSession,
+        target: Organization,
+        event: Literal[WebhookEventType.discount_deleted],
+        data: Discount,
     ) -> list[WebhookEvent]: ...
 
     @overload

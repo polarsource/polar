@@ -6638,6 +6638,72 @@ export interface webhooks {
     patch?: never
     trace?: never
   }
+  'discount.created': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * discount.created
+     * @description Sent when a new discount is created.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointdiscount_created_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'discount.updated': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * discount.updated
+     * @description Sent when a discount is updated.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointdiscount_updated_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'discount.deleted': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * discount.deleted
+     * @description Sent when a discount is deleted.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointdiscount_deleted_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   'organization.updated': {
     parameters: {
       query?: never
@@ -35642,6 +35708,69 @@ export interface components {
       webhook_event: components['schemas']['WebhookEvent']
     }
     /**
+     * WebhookDiscountCreatedPayload
+     * @description Sent when a new discount is created.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookDiscountCreatedPayload: {
+      /**
+       * Type
+       * @example discount.created
+       * @constant
+       */
+      type: 'discount.created'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      /** Discount */
+      data: components['schemas']['Discount']
+    }
+    /**
+     * WebhookDiscountDeletedPayload
+     * @description Sent when a discount is deleted.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookDiscountDeletedPayload: {
+      /**
+       * Type
+       * @example discount.deleted
+       * @constant
+       */
+      type: 'discount.deleted'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      /** Discount */
+      data: components['schemas']['Discount']
+    }
+    /**
+     * WebhookDiscountUpdatedPayload
+     * @description Sent when a discount is updated.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookDiscountUpdatedPayload: {
+      /**
+       * Type
+       * @example discount.updated
+       * @constant
+       */
+      type: 'discount.updated'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      /** Discount */
+      data: components['schemas']['Discount']
+    }
+    /**
      * WebhookEndpoint
      * @description A webhook endpoint.
      */
@@ -35841,6 +35970,9 @@ export interface components {
       | 'refund.updated'
       | 'product.created'
       | 'product.updated'
+      | 'discount.created'
+      | 'discount.updated'
+      | 'discount.deleted'
       | 'benefit.created'
       | 'benefit.updated'
       | 'benefit_grant.created'
@@ -56569,6 +56701,105 @@ export interface operations {
       }
     }
   }
+  _endpointdiscount_created_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookDiscountCreatedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointdiscount_updated_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookDiscountUpdatedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointdiscount_deleted_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookDiscountDeletedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   _endpointorganization_updated_post: {
     parameters: {
       query?: never
@@ -65858,6 +66089,9 @@ export const webhookEventTypeValues: ReadonlyArray<
   'refund.updated',
   'product.created',
   'product.updated',
+  'discount.created',
+  'discount.updated',
+  'discount.deleted',
   'benefit.created',
   'benefit.updated',
   'benefit_grant.created',

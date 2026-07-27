@@ -168,6 +168,13 @@ def assert_webhook_sent_once(
     )
 
 
+def assert_webhook_not_sent(send_mock: MagicMock, event_type: WebhookEventType) -> None:
+    for mock_calls in send_mock.call_args_list:
+        assert mock_calls.args[2] != event_type, (
+            f"Expected webhook {event_type} not to be sent"
+        )
+
+
 def build_stripe_payment_intent(
     *,
     amount: int = 0,
@@ -1188,6 +1195,13 @@ class TestCycle:
             updated_subscription,
         )
 
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_cycled,
+            organization,
+            updated_subscription,
+        )
+
         enqueue_email_mock.assert_not_called()
 
     async def test_free_price(
@@ -1399,6 +1413,7 @@ class TestCycle:
         session: AsyncSession,
         enqueue_job_mock: MagicMock,
         enqueue_email_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
@@ -1471,6 +1486,10 @@ class TestCycle:
             OrderBillingReasonInternal.subscription_cancel,
         )
 
+        assert_webhook_not_sent(
+            webhook_service_send_mock, WebhookEventType.subscription_cycled
+        )
+
         enqueue_email_mock.assert_called_once()
         assert isinstance(enqueue_email_mock.call_args[0][0], SubscriptionRevokedEmail)
         subject = enqueue_email_mock.call_args.kwargs["subject"]
@@ -1519,9 +1538,11 @@ class TestCycle:
         session: AsyncSession,
         enqueue_job_mock: MagicMock,
         enqueue_email_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
     ) -> None:
         subscription = await create_trialing_subscription(
             save_fixture,
@@ -1554,6 +1575,13 @@ class TestCycle:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
+        )
+
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_cycled,
+            organization,
+            updated_subscription,
         )
 
         enqueue_email_mock.assert_not_called()

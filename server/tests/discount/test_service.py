@@ -1,7 +1,9 @@
 from datetime import timedelta
 from typing import Any, Literal
+from unittest.mock import AsyncMock
 
 import pytest
+from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject, User
 from polar.checkout.schemas import CheckoutUpdatePublic
@@ -28,6 +30,7 @@ from polar.models.discount import (
     DiscountPercentage,
     DiscountType,
 )
+from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_checkout, create_discount
@@ -39,6 +42,11 @@ async def create_discount_redemption(
     discount_redemption = DiscountRedemption(discount=discount, checkout=checkout)
     await save_fixture(discount_redemption)
     return discount_redemption
+
+
+@pytest.fixture
+def webhook_service_send_mock(mocker: MockerFixture) -> AsyncMock:
+    return mocker.patch("polar.discount.service.webhook_service.send")
 
 
 @pytest.mark.asyncio
@@ -71,6 +79,37 @@ class TestCreate:
         )
 
         assert discount.name == "A" * 256
+
+    @pytest.mark.auth
+    async def test_webhook(
+        self,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+        webhook_service_send_mock: AsyncMock,
+    ) -> None:
+        discount = await discount_service.create(
+            session,
+            DiscountFixedCreate(
+                duration=DiscountDuration.once,
+                type=DiscountType.fixed,
+                amount=1000,
+                currency=PresentmentCurrency.usd,
+                name="Discount",
+                code=None,
+                starts_at=None,
+                ends_at=None,
+                max_redemptions=None,
+                products=None,
+                organization_id=organization.id,
+            ),
+            auth_subject,
+        )
+
+        webhook_service_send_mock.assert_called_once_with(
+            session, organization, WebhookEventType.discount_created, discount
+        )
 
 
 @pytest.mark.asyncio
@@ -483,6 +522,65 @@ class TestUpdate:
         )
 
         assert updated_discount.code == "mycode"
+
+    @pytest.mark.auth
+    async def test_webhook(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        webhook_service_send_mock: AsyncMock,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+
+        updated_discount = await discount_service.update(
+            session,
+            discount,
+            discount_update=DiscountUpdate(name="Updated"),
+            auth_subject=auth_subject,
+        )
+
+        webhook_service_send_mock.assert_called_once_with(
+            session, organization, WebhookEventType.discount_updated, updated_discount
+        )
+
+
+@pytest.mark.asyncio
+class TestDelete:
+    @pytest.mark.auth
+    async def test_webhook(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        webhook_service_send_mock: AsyncMock,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=1000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+
+        deleted_discount = await discount_service.delete(
+            session, discount, auth_subject
+        )
+
+        assert deleted_discount.deleted_at is not None
+        webhook_service_send_mock.assert_called_once_with(
+            session, organization, WebhookEventType.discount_deleted, deleted_discount
+        )
 
 
 @pytest.mark.asyncio

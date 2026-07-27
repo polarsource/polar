@@ -149,10 +149,20 @@ class UserService:
                 user.identity_verification_id
             )
 
-        if (
-            verification_session is None
-            or verification_session.status != "requires_input"
-        ):
+        # Our status lags Stripe's while a webhook is in flight, so trust Stripe here:
+        # replacing a session that's still live orphans the webhooks it has yet to send.
+        if verification_session is not None:
+            match verification_session.status:
+                case "verified":
+                    raise IdentityAlreadyVerified(user.id)
+                case "processing":
+                    raise IdentityVerificationProcessing(user.id)
+                case "requires_input":
+                    pass
+                case _:
+                    verification_session = None
+
+        if verification_session is None:
             verification_session = await stripe_service.create_verification_session(
                 user
             )

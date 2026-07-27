@@ -15,6 +15,10 @@ from polar.models.user import IdentityVerificationStatus, OAuthPlatform
 from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncSession
 from polar.user.schemas import UserDeletionBlockedReason, UserUpdate
+from polar.user.service import (
+    IdentityAlreadyVerified,
+    IdentityVerificationProcessing,
+)
 from polar.user.service import user as user_service
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -278,6 +282,143 @@ class TestRequestDeletion:
         recipients = result.scalars().all()
         assert len(recipients) == 2
         assert all(r.deleted_at is not None for r in recipients)
+
+
+def _verification_session(
+    id: str, status: str
+) -> stripe_lib.identity.VerificationSession:
+    return stripe_lib.identity.VerificationSession.construct_from(
+        {"id": id, "status": status, "client_secret": f"{id}_secret"}, None
+    )
+
+
+@pytest.mark.asyncio
+class TestCreateIdentityVerification:
+    async def test_creates_first_session(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        create_mock = mocker.patch(
+            "polar.user.service.stripe_service.create_verification_session",
+            new_callable=mocker.AsyncMock,
+            return_value=_verification_session("vs_new", "requires_input"),
+        )
+
+        verification = await user_service.create_identity_verification(session, user)
+
+        create_mock.assert_awaited_once()
+        assert verification.id == "vs_new"
+        assert user.identity_verification_id == "vs_new"
+
+    async def test_reuses_session_requiring_input(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        user.identity_verification_id = "vs_existing"
+        await save_fixture(user)
+
+        mocker.patch(
+            "polar.user.service.stripe_service.get_verification_session",
+            new_callable=mocker.AsyncMock,
+            return_value=_verification_session("vs_existing", "requires_input"),
+        )
+        create_mock = mocker.patch(
+            "polar.user.service.stripe_service.create_verification_session",
+            new_callable=mocker.AsyncMock,
+        )
+
+        verification = await user_service.create_identity_verification(session, user)
+
+        create_mock.assert_not_awaited()
+        assert verification.id == "vs_existing"
+
+    async def test_refuses_while_stripe_is_processing(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        """Our status lags Stripe's until the `processing` webhook lands. Creating a
+        second session in that window orphans the first one's webhooks.
+        """
+        user.identity_verification_id = "vs_existing"
+        user.identity_verification_status = IdentityVerificationStatus.unverified
+        await save_fixture(user)
+
+        mocker.patch(
+            "polar.user.service.stripe_service.get_verification_session",
+            new_callable=mocker.AsyncMock,
+            return_value=_verification_session("vs_existing", "processing"),
+        )
+        create_mock = mocker.patch(
+            "polar.user.service.stripe_service.create_verification_session",
+            new_callable=mocker.AsyncMock,
+        )
+
+        with pytest.raises(IdentityVerificationProcessing):
+            await user_service.create_identity_verification(session, user)
+
+        create_mock.assert_not_awaited()
+        assert user.identity_verification_id == "vs_existing"
+
+    async def test_refuses_when_stripe_already_verified(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        user.identity_verification_id = "vs_existing"
+        user.identity_verification_status = IdentityVerificationStatus.unverified
+        await save_fixture(user)
+
+        mocker.patch(
+            "polar.user.service.stripe_service.get_verification_session",
+            new_callable=mocker.AsyncMock,
+            return_value=_verification_session("vs_existing", "verified"),
+        )
+        create_mock = mocker.patch(
+            "polar.user.service.stripe_service.create_verification_session",
+            new_callable=mocker.AsyncMock,
+        )
+
+        with pytest.raises(IdentityAlreadyVerified):
+            await user_service.create_identity_verification(session, user)
+
+        create_mock.assert_not_awaited()
+        assert user.identity_verification_id == "vs_existing"
+
+    async def test_replaces_canceled_session(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        user: User,
+    ) -> None:
+        user.identity_verification_id = "vs_canceled"
+        await save_fixture(user)
+
+        mocker.patch(
+            "polar.user.service.stripe_service.get_verification_session",
+            new_callable=mocker.AsyncMock,
+            return_value=_verification_session("vs_canceled", "canceled"),
+        )
+        mocker.patch(
+            "polar.user.service.stripe_service.create_verification_session",
+            new_callable=mocker.AsyncMock,
+            return_value=_verification_session("vs_new", "requires_input"),
+        )
+
+        verification = await user_service.create_identity_verification(session, user)
+
+        assert verification.id == "vs_new"
+        assert user.identity_verification_id == "vs_new"
 
 
 @pytest.mark.asyncio

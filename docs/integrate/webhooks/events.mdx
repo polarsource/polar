@@ -126,7 +126,8 @@ In order to properly implement logic for handling subscriptions, you should look
   >
     Use this event if you want to handle cancellations, un-cancellations, etc. The
     updated event is a catch-all event for `subscription.active`,
-    `subscription.canceled`, `subscription.uncanceled`, `subscription.past_due` and `subscription.revoked`.
+    `subscription.canceled`, `subscription.uncanceled`, `subscription.past_due`,
+    `subscription.revoked`, `subscription.paused` and `subscription.resumed`.
   </Card>
 
   <Card
@@ -147,6 +148,24 @@ In order to properly implement logic for handling subscriptions, you should look
     href="/api-reference/subscriptionrevoked"
     horizontal
   ></Card>
+
+  <Card
+    title="subscription.paused"
+    icon="link"
+    href="/api-reference/subscriptionpaused"
+    horizontal
+  >
+    Fired when a scheduled pause takes effect at the end of the period. Billing stops and benefits are revoked until the subscription resumes.
+  </Card>
+
+  <Card
+    title="subscription.resumed"
+    icon="link"
+    href="/api-reference/subscriptionresumed"
+    horizontal
+  >
+    Fired when a paused subscription resumes. A new billing period starts and the customer is charged immediately.
+  </Card>
 </Columns>
 
 #### Cancellation Sequences
@@ -202,6 +221,33 @@ Shortly after the initial renewal events, the platform will trigger a payment fo
 4. `order.paid`
 
 Both events will contain the same order data, with the order status changed to `paid`.
+
+#### Pause Sequences
+
+Pausing is scheduled for the end of the current billing period, much like an end-of-period cancellation.
+
+When a subscription is **paused** (by customer action from the portal or by the merchant from the dashboard/API), only one event is sent immediately, because the subscription stays `active` until the period ends:
+
+1. `subscription.updated`
+
+The `pause_at_period_end` flag is set to `true`, and `resumes_at` holds the scheduled resume date if you set one.
+
+When the end of the current billing period arrives, the pause takes effect: billing stops and benefits are revoked. The following events are then sent:
+
+2. `subscription.updated`
+3. `subscription.paused`
+
+Both events contain the same subscription data, now with the `paused` status.
+
+**Resume**
+
+When a paused subscription resumes, either immediately when you resume it or automatically on its `resumes_at` date, a new billing period starts and the customer is charged right away. The following events are sent:
+
+1. `subscription.updated`
+2. `subscription.resumed`
+3. `order.created`
+
+The subscription data reflects the new period through `current_period_start` and `current_period_end`, and the order represents the immediate charge for the new cycle.
 
 ### Orders
 

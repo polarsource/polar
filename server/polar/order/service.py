@@ -1445,7 +1445,8 @@ class OrderService:
             payment_method = await payment_method_repository.get_by_id(
                 payment_method_id
             )
-            assert payment_method is not None
+            if payment_method is None:
+                raise PaymentFailed(PaymentFailedReason.missing_payment_method)
             await self.trigger_payment(
                 session,
                 order,

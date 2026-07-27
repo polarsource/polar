@@ -89,6 +89,7 @@ from polar.order.service import (
     PaymentActionRequired,
     PaymentAlreadyInProgress,
     PaymentFailed,
+    PaymentFailedReason,
     RecurringProduct,
     SubscriptionNotTrialing,
 )
@@ -2221,6 +2222,61 @@ class TestCreateSubscriptionOrder:
         trigger_payment_mock.assert_called_once()
         call_args = trigger_payment_mock.call_args
         assert call_args.args[2].id == default_pm.id
+
+    async def test_sync_mode_soft_deleted_payment_method_raises_payment_failed(
+        self,
+        mocker: MockerFixture,
+        calculate_tax_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+    ) -> None:
+        """When the referenced payment method has been soft-deleted, sync mode
+        should raise PaymentFailed(missing_payment_method) instead of crashing
+        with an AssertionError."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        payment_method = await create_payment_method(save_fixture, customer=customer)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+        )
+
+        payment_method.deleted_at = utc_now()
+        await save_fixture(payment_method)
+
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        trigger_payment_mock = mocker.patch.object(
+            order_service, "trigger_payment", new_callable=AsyncMock
+        )
+
+        with pytest.raises(PaymentFailed) as exc_info:
+            await order_service.create_subscription_order(
+                session,
+                subscription,
+                OrderBillingReasonInternal.subscription_update,
+                payment_mode=PaymentMode.sync,
+            )
+
+        assert exc_info.value.reason == PaymentFailedReason.missing_payment_method
+        trigger_payment_mock.assert_not_called()
 
     async def test_sync_under_minimum_emits_paid_transition_once(
         self,

@@ -20,9 +20,7 @@ from polar.exceptions import PolarRequestValidationError
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.utils import utc_now
 from polar.models import (
-    Checkout,
     Discount,
-    DiscountRedemption,
     Organization,
     Product,
     UserOrganization,
@@ -33,18 +31,22 @@ from polar.models.discount import (
     DiscountPercentage,
     DiscountType,
 )
+from polar.models.order import OrderStatus
+from polar.models.payment import PaymentStatus
+from polar.models.refund import RefundReason
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_checkout, create_discount
-
-
-async def create_discount_redemption(
-    save_fixture: SaveFixture, *, discount: Discount, checkout: Checkout
-) -> DiscountRedemption:
-    discount_redemption = DiscountRedemption(discount=discount, checkout=checkout)
-    await save_fixture(discount_redemption)
-    return discount_redemption
+from tests.fixtures.random_objects import (
+    create_checkout,
+    create_customer,
+    create_discount,
+    create_discount_redemption,
+    create_order,
+    create_payment,
+    create_refund,
+    create_subscription,
+)
 
 
 @pytest.fixture
@@ -806,6 +808,518 @@ class TestIsRepetitionExpired:
         assert discount.is_repetition_expired(now, within_duration) is False
         # Should expire after duration
         assert discount.is_repetition_expired(now, after_duration) is True
+
+
+@pytest.mark.asyncio
+class TestCheckPerCustomerLimitReached:
+    async def test_no_limit_set(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            max_redemptions_per_customer=None,
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+
+        assert (
+            await discount_service.check_per_customer_limit_reached(
+                session, discount, checkout=checkout, customer=customer
+            )
+            is False
+        )
+
+    async def test_under_limit(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            max_redemptions_per_customer=2,
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        prior_checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=prior_checkout
+        )
+        current_checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+
+        assert (
+            await discount_service.check_per_customer_limit_reached(
+                session, discount, checkout=current_checkout, customer=customer
+            )
+            is False
+        )
+
+    async def test_limit_reached_by_customer_id(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            max_redemptions_per_customer=1,
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        prior_checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=prior_checkout
+        )
+        current_checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+
+        assert (
+            await discount_service.check_per_customer_limit_reached(
+                session, discount, checkout=current_checkout, customer=customer
+            )
+            is True
+        )
+
+    async def test_limit_reached_by_email_alias(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            max_redemptions_per_customer=1,
+        )
+        # A *different* customer previously redeemed, but with the same base email.
+        prior_customer = await create_customer(
+            save_fixture, organization=organization, email="someone-else@example.com"
+        )
+        prior_checkout = await create_checkout(
+            save_fixture, products=[product], customer=prior_customer
+        )
+        prior_checkout.customer_email = "customer@example.com"
+        await save_fixture(prior_checkout)
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=prior_checkout
+        )
+
+        # Current customer uses a `+alias` variant of the same email.
+        current_customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer+alias@example.com",
+        )
+        current_checkout = await create_checkout(
+            save_fixture, products=[product], customer=current_customer
+        )
+
+        assert (
+            await discount_service.check_per_customer_limit_reached(
+                session,
+                discount,
+                checkout=current_checkout,
+                customer=current_customer,
+            )
+            is True
+        )
+
+    async def test_limit_reached_by_fingerprint(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            max_redemptions_per_customer=1,
+        )
+        # Different customer and email, but the same card fingerprint.
+        prior_customer = await create_customer(
+            save_fixture, organization=organization, email="other@example.com"
+        )
+        prior_checkout = await create_checkout(
+            save_fixture, products=[product], customer=prior_customer
+        )
+        prior_checkout.customer_email = "other@example.com"
+        await save_fixture(prior_checkout)
+        await create_payment(
+            save_fixture,
+            organization,
+            checkout=prior_checkout,
+            method_metadata={"fingerprint": "FINGERPRINT"},
+        )
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=prior_checkout
+        )
+
+        current_customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        current_checkout = await create_checkout(
+            save_fixture, products=[product], customer=current_customer
+        )
+
+        assert (
+            await discount_service.check_per_customer_limit_reached(
+                session,
+                discount,
+                checkout=current_checkout,
+                customer=current_customer,
+                payment_method_fingerprint="FINGERPRINT",
+            )
+            is True
+        )
+
+    async def test_declined_card_fingerprint_does_not_count(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            max_redemptions_per_customer=1,
+        )
+        prior_customer = await create_customer(
+            save_fixture, organization=organization, email="other@example.com"
+        )
+        prior_checkout = await create_checkout(
+            save_fixture, products=[product], customer=prior_customer
+        )
+        prior_checkout.customer_email = "other@example.com"
+        await save_fixture(prior_checkout)
+        # Declined once, then retried with another card.
+        await create_payment(
+            save_fixture,
+            organization,
+            status=PaymentStatus.failed,
+            checkout=prior_checkout,
+            method_metadata={"fingerprint": "DECLINED_CARD"},
+        )
+        await create_payment(
+            save_fixture,
+            organization,
+            checkout=prior_checkout,
+            method_metadata={"fingerprint": "SETTLED_CARD"},
+        )
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=prior_checkout
+        )
+
+        current_customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        current_checkout = await create_checkout(
+            save_fixture, products=[product], customer=current_customer
+        )
+
+        assert (
+            await discount_service.check_per_customer_limit_reached(
+                session,
+                discount,
+                checkout=current_checkout,
+                customer=current_customer,
+                payment_method_fingerprint="DECLINED_CARD",
+            )
+            is False
+        )
+
+    async def test_limit_reached_by_subscription_redemption(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            max_redemptions_per_customer=1,
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        # Applying a discount to an existing subscription redeems it without a checkout.
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        await create_discount_redemption(
+            save_fixture, discount=discount, subscription=subscription
+        )
+        current_checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+
+        assert (
+            await discount_service.check_per_customer_limit_reached(
+                session, discount, checkout=current_checkout, customer=customer
+            )
+            is True
+        )
+
+    async def test_refunded_order_frees_the_slot(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            max_redemptions_per_customer=1,
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        prior_checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=prior_checkout
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            checkout=prior_checkout,
+            status=OrderStatus.refunded,
+        )
+        current_checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+
+        assert (
+            await discount_service.check_per_customer_limit_reached(
+                session, discount, checkout=current_checkout, customer=customer
+            )
+            is False
+        )
+
+    async def test_chargeback_prevention_refund_keeps_the_slot(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            max_redemptions_per_customer=1,
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        prior_checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=prior_checkout
+        )
+        order = await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            checkout=prior_checkout,
+            status=OrderStatus.refunded,
+        )
+        payment = await create_payment(save_fixture, organization, order=order)
+        await create_refund(
+            save_fixture,
+            order,
+            payment,
+            reason=RefundReason.dispute_prevention,
+        )
+        current_checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+
+        assert (
+            await discount_service.check_per_customer_limit_reached(
+                session, discount, checkout=current_checkout, customer=customer
+            )
+            is True
+        )
+
+    async def test_partially_refunded_order_keeps_the_slot(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            max_redemptions_per_customer=1,
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        prior_checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=prior_checkout
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            checkout=prior_checkout,
+            status=OrderStatus.partially_refunded,
+        )
+        current_checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+
+        assert (
+            await discount_service.check_per_customer_limit_reached(
+                session, discount, checkout=current_checkout, customer=customer
+            )
+            is True
+        )
+
+    async def test_subscription_keeps_the_slot_while_a_cycle_is_paid(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            max_redemptions_per_customer=1,
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        subscription = await create_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        await create_discount_redemption(
+            save_fixture, discount=discount, subscription=subscription
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.refunded,
+        )
+        await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subscription=subscription,
+            status=OrderStatus.paid,
+        )
+        current_checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+
+        assert (
+            await discount_service.check_per_customer_limit_reached(
+                session, discount, checkout=current_checkout, customer=customer
+            )
+            is True
+        )
+
+    async def test_excludes_current_checkout(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            max_redemptions_per_customer=1,
+        )
+        customer = await create_customer(
+            save_fixture, organization=organization, email="customer@example.com"
+        )
+        current_checkout = await create_checkout(
+            save_fixture, products=[product], customer=customer
+        )
+        # The only redemption belongs to the in-progress checkout, so it must not count.
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=current_checkout
+        )
+
+        assert (
+            await discount_service.check_per_customer_limit_reached(
+                session, discount, checkout=current_checkout, customer=customer
+            )
+            is False
+        )
 
 
 @pytest.mark.asyncio

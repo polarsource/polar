@@ -1,0 +1,22 @@
+server/migrations/versions/2026-07-27-1553_add_partial_indexes_for_subscription_.py
+  s_6f32a2b1915810::t_2a029a46583186 1-19,26,35,67-69
+  s_6f32a2b1915810::t_d44ac8ba9efa98 20-25,27-34,36-66,70-82
+server/polar/models/subscription.py
+  s_6f32a2b1915810::t_87cb4ff30a5c46 125-142
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "ec98ca1e1dee70e580a25f91a60d6832547a789f",
+  "prompts": {},
+  "sessions": {
+    "s_6f32a2b1915810": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "6025f7d1-117d-420b-b9fe-a5eb535520c9",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

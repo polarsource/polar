@@ -1,7 +1,7 @@
 'use client'
 
+import { useLogout } from '@/hooks/auth'
 import { useDeleteUser } from '@/hooks/queries'
-import { CONFIG } from '@/utils/config'
 import { Button } from '@polar-sh/orbit'
 import { useCallback, useState } from 'react'
 import { ConfirmModal } from '../Modal/ConfirmModal'
@@ -12,6 +12,7 @@ const TOAST_LONG_DURATION = 8000
 
 export default function UserDeleteSettings() {
   const deleteUser = useDeleteUser()
+  const logout = useLogout()
   const [showDeleteModal, setShowDeleteModal] = useState(false)
 
   const handleDelete = useCallback(async () => {
@@ -36,7 +37,7 @@ export default function UserDeleteSettings() {
         variant: 'success',
         duration: TOAST_LONG_DURATION,
       })
-      window.location.href = `${CONFIG.BASE_URL}/v1/auth/logout`
+      logout()
     } else {
       const organizations = data.blocking_organizations ?? []
       const orgNames = organizations.map((o) => o.name).join(', ')
@@ -48,7 +49,7 @@ export default function UserDeleteSettings() {
       })
       setShowDeleteModal(false)
     }
-  }, [deleteUser])
+  }, [deleteUser, logout])
 
   return (
     <>

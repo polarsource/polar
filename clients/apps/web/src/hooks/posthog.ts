@@ -67,6 +67,7 @@ export interface PolarHog {
     options?: CaptureOptions,
   ) => void
   identify: (user: schemas['UserRead']) => void
+  reset: () => void
 }
 
 export const usePostHog = (): PolarHog => {
@@ -102,13 +103,18 @@ export const usePostHog = (): PolarHog => {
     [posthog],
   )
 
+  const reset: PolarHog['reset'] = useCallback(() => {
+    posthog.reset()
+  }, [posthog])
+
   const context = useMemo(
     () => ({
       setPersistence,
       capture,
       identify,
+      reset,
     }),
-    [setPersistence, capture, identify],
+    [setPersistence, capture, identify, reset],
   )
 
   return context

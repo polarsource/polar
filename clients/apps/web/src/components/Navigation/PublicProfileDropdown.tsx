@@ -1,5 +1,6 @@
 'use client'
 
+import { useLogout } from '@/hooks/auth'
 import { useListOrganizations } from '@/hooks/queries'
 import { CONFIG } from '@/utils/config'
 import { useOutsideClick } from '@/utils/useOutsideClick'
@@ -34,6 +35,8 @@ const PublicProfileDropdown = ({
   const loggedUser = authenticatedUser
 
   const organizations = useListOrganizations({}, !!loggedUser)
+
+  const logout = useLogout()
 
   if (!loggedUser) {
     return null
@@ -87,12 +90,18 @@ const PublicProfileDropdown = ({
 
             <Separator className="my-2" />
 
-            <LinkItem
-              href={`${CONFIG.BASE_URL}/v1/auth/logout`}
-              icon={<LogoutOutlined fontSize="small" />}
-            >
-              <span className="mx-2 py-2">Log out</span>
-            </LinkItem>
+            <ListItem current={false} className="rounded-lg px-4">
+              <button
+                type="button"
+                onClick={logout}
+                className="flex w-full cursor-pointer flex-row items-center gap-x-2 text-left text-sm"
+              >
+                <span className="text-lg">
+                  <LogoutOutlined fontSize="small" />
+                </span>
+                <span className="mx-2 py-2">Log out</span>
+              </button>
+            </ListItem>
           </ul>
         </div>
       )}

@@ -524,6 +524,7 @@
                           "openapi.json webhook subscription.updated",
                           "openapi.json webhook subscription.canceled",
                           "openapi.json webhook subscription.uncanceled",
+                          "openapi.json webhook subscription.cycled",
                           "openapi.json webhook subscription.revoked",
                           "openapi.json webhook subscription.past_due",
                           "openapi.json webhook subscription.paused",
@@ -580,6 +581,14 @@
                         "pages": [
                           "openapi.json webhook product.created",
                           "openapi.json webhook product.updated"
+                        ]
+                      },
+                      {
+                        "group": "Discounts",
+                        "pages": [
+                          "openapi.json webhook discount.created",
+                          "openapi.json webhook discount.updated",
+                          "openapi.json webhook discount.deleted"
                         ]
                       },
                       {

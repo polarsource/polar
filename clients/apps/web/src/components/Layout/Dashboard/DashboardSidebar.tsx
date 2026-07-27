@@ -1,5 +1,6 @@
 import { SupportButton } from '@/components/Feedback/SupportButton'
 import { useAuth } from '@/hooks/auth'
+import { useHasPermission } from '@/hooks/permissions'
 import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
 import { OmniSearch } from '@/components/Search/OmniSearch'
 import { CONFIG } from '@/utils/config'
@@ -55,7 +56,14 @@ export const DashboardSidebar = ({
 
   const [searchOpen, setSearchOpen] = useState(false)
 
-  const subscriptionPlan = useOrganizationSubscription(organization?.id ?? '')
+  const canManageBilling = useHasPermission(
+    organization?.id,
+    'organization:manage',
+  )
+  const subscriptionPlan = useOrganizationSubscription(
+    organization?.id,
+    canManageBilling,
+  )
   const isOnFreePlan = subscriptionPlan.data?.subscription_id === null
 
   const navigateToOrganization = (org: schemas['Organization']) => {

@@ -229,7 +229,7 @@ async def list(
                                 for status in PayoutStatus
                             ],
                         ],
-                        status[0] if status else "",
+                        status.value if status else "",
                         name="status",
                     ):
                         pass

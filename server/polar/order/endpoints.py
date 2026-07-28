@@ -1,4 +1,5 @@
 from collections.abc import AsyncGenerator
+from datetime import datetime
 from textwrap import dedent
 
 from fastapi import Depends, Query, Response
@@ -125,6 +126,14 @@ async def list(
     subscription_id: MultipleQueryFilter[SubscriptionID] | None = Query(
         None, title="SubscriptionID Filter", description="Filter by subscription ID."
     ),
+    created_after: datetime | None = Query(
+        None,
+        description="Only include orders created after this date",
+    ),
+    created_before: datetime | None = Query(
+        None,
+        description="Only include orders created before this date",
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[OrderSchema]:
     """List orders."""
@@ -139,6 +148,8 @@ async def list(
         external_customer_id=external_customer_id,
         checkout_id=checkout_id,
         subscription_id=subscription_id,
+        created_after=created_after,
+        created_before=created_before,
         metadata=metadata,
         pagination=pagination,
         sorting=sorting,

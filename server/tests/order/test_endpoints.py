@@ -107,6 +107,45 @@ class TestListOrders:
         json = response.json()
         assert json["pagination"]["total_count"] == 2
 
+    @pytest.mark.auth
+    async def test_created_at_date_range(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            created_at=datetime(2024, 3, 15, tzinfo=UTC),
+        )
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            created_at=datetime(2024, 6, 15, tzinfo=UTC),
+        )
+        await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            created_at=datetime(2024, 9, 15, tzinfo=UTC),
+        )
+
+        response = await client.get(
+            "/v1/orders/",
+            params={
+                "created_after": "2024-03-01T00:00:00Z",
+                "created_before": "2024-07-01T00:00:00Z",
+            },
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 2
+
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_read}))
     async def test_organization_scoped_session(
         self,

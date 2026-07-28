@@ -14,14 +14,19 @@ from polar.authz.service import (
     assert_organization_permission,
     assert_resource_permission,
 )
-from polar.discount.repository import DiscountRepository
+from polar.discount.repository import (
+    DiscountRedemptionRepository,
+    DiscountRepository,
+)
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.db.locking import is_lock_not_available_error
+from polar.kit.email import unalias_email
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.kit.utils import utc_now
 from polar.models import (
+    Customer,
     Discount,
     DiscountProduct,
     Organization,
@@ -435,25 +440,66 @@ class DiscountService(ResourceServiceReader[Discount]):
 
         return True
 
+    async def check_per_customer_limit_reached(
+        self,
+        session: AsyncSession,
+        discount: Discount,
+        *,
+        checkout: Checkout,
+        customer: Customer | None = None,
+        payment_method_fingerprint: str | None = None,
+    ) -> bool:
+        """
+        Check whether a customer has reached the discount's per-customer redemption limit.
+
+        The customer is identified using the same signals as the trial-abuse feature:
+        customer ID, unaliased email, and payment method fingerprint (OR logic), scoped
+        to this specific discount. Returns ``False`` when no per-customer limit is set.
+
+        Before confirmation there is no customer yet, so the checkout's own fields are
+        used instead.
+        """
+        if discount.max_redemptions_per_customer is None:
+            return False
+
+        customer_id = customer.id if customer is not None else checkout.customer_id
+        email = (
+            customer.email
+            if customer is not None and customer.email
+            else checkout.customer_email
+        )
+
+        repository = DiscountRedemptionRepository.from_session(session)
+        count = await repository.count_redemptions_by_customer(
+            discount.id,
+            exclude_checkout_id=checkout.id,
+            customer_id=customer_id,
+            customer_email=unalias_email(email).lower() if email else None,
+            payment_method_fingerprint=payment_method_fingerprint,
+        )
+        return count >= discount.max_redemptions_per_customer
+
     @contextlib.asynccontextmanager
     async def redeem_discount(
         self, session: AsyncSession, discount: Discount
     ) -> AsyncIterator[DiscountRedemption]:
         """
-        Redeem a discount with FOR UPDATE lock to prevent concurrent redemptions.
+        Redeem a discount, locking its row when globally capped so the count can't be
+        read stale. Without that cap the lock would make concurrent buyers of the same
+        code fail each other.
 
-        Uses PostgreSQL row-level locking instead of Redis distributed locks.
-        The lock is held until the parent transaction commits.
+        A per-customer cap serializes on the customer row instead, which the caller
+        must lock before it checks the count.
         """
         repository = DiscountRepository.from_session(session)
 
-        # Acquire FOR UPDATE lock (we're already inside checkout's transaction)
-        try:
-            await repository.get_by_id(discount.id, for_update=True, nowait=True)
-        except DBAPIError as e:
-            if is_lock_not_available_error(e):
-                raise DiscountNotRedeemableError(discount) from e
-            raise
+        if discount.max_redemptions is not None:
+            try:
+                await repository.get_by_id(discount.id, for_update=True, nowait=True)
+            except DBAPIError as e:
+                if is_lock_not_available_error(e):
+                    raise DiscountNotRedeemableError(discount) from e
+                raise
 
         if not await self.is_redeemable_discount(session, discount):
             raise DiscountNotRedeemableError(discount)

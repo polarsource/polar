@@ -205,6 +205,58 @@ class TestCreateDiscount:
 
         assert response.status_code == 201
 
+    @pytest.mark.auth
+    async def test_valid_max_redemptions_per_customer(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/discounts/",
+            json={
+                "name": "Discount",
+                "type": "percentage",
+                "code": "DISCOUNT",
+                "duration": "once",
+                "basis_points": 1000,
+                "max_redemptions_per_customer": 3,
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 201
+        json = response.json()
+        assert json["max_redemptions_per_customer"] == 3
+
+        repository = DiscountRepository.from_session(session)
+        discount = await repository.get_by_id(json["id"])
+        assert discount is not None
+        assert discount.max_redemptions_per_customer == 3
+
+    @pytest.mark.auth
+    async def test_max_redemptions_per_customer_zero_rejected(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.post(
+            "/v1/discounts/",
+            json={
+                "name": "Discount",
+                "type": "percentage",
+                "code": "DISCOUNT",
+                "duration": "once",
+                "basis_points": 1000,
+                "max_redemptions_per_customer": 0,
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 422
+
     @pytest.mark.parametrize(
         "payload",
         [
@@ -376,6 +428,28 @@ class TestUpdateDiscount:
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_update_max_redemptions_per_customer(
+        self,
+        session: AsyncSession,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        discount_fixed_once: Discount,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/discounts/{discount_fixed_once.id}",
+            json={"max_redemptions_per_customer": 5},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["max_redemptions_per_customer"] == 5
+
+        repository = DiscountRepository.from_session(session)
+        updated = await repository.get_by_id(discount_fixed_once.id)
+        assert updated is not None
+        assert updated.max_redemptions_per_customer == 5
 
 
 @pytest.mark.asyncio

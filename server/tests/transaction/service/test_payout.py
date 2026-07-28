@@ -221,6 +221,7 @@ class TestReverse:
         assert transaction.account_currency == payout.account_currency
         assert transaction.account_amount == -payout.account_amount
         assert transaction.transfer_reversal_id is None
+        assert transaction.payout_transaction_id == payout_transaction.id
 
         assert payout_transaction.payout == payout
 

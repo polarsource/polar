@@ -44,6 +44,7 @@ from polar.models.user_organization import (
     OrganizationNotificationSettings,
     OrganizationRole,
 )
+from polar.organization.embed_hosts import InvalidEmbedHost, validate_host_pattern
 
 OrganizationID = Annotated[
     UUID4,
@@ -68,6 +69,35 @@ NameInput = Annotated[
     str,
     StringConstraints(min_length=3),
     AfterValidator(validate_blocked_words),
+]
+
+
+def validate_embed_hosts(value: list[str]) -> list[str]:
+    hosts: list[str] = []
+    for entry in value:
+        try:
+            host = validate_host_pattern(entry)
+        except InvalidEmbedHost as e:
+            raise ValueError(str(e)) from e
+        if host not in hosts:
+            hosts.append(host)
+    return hosts
+
+
+_embed_hosts_description = (
+    "Hosts allowed to embed this organization's checkout. "
+    "An entry is a host, optionally prefixed by a scheme and suffixed by a port. "
+    "`*.example.com` matches any subdomain, but not `example.com` itself. "
+    "Without a scheme, HTTPS is implied."
+)
+
+EmbedHostsInput = Annotated[
+    list[str],
+    AfterValidator(validate_embed_hosts),
+    Field(
+        description=_embed_hosts_description,
+        examples=[["example.com", "*.example.com", "http://localhost:3000"]],
+    ),
 ]
 
 
@@ -476,6 +506,14 @@ class Organization(OrganizationBase):
     customer_portal_settings: OrganizationCustomerPortalSettings = Field(
         description="Settings related to the customer portal",
     )
+    embed_hosts: list[str] = Field(description=_embed_hosts_description)
+    embed_hosts_enforced: bool = Field(
+        description=(
+            "Whether an embedding page's origin must match `embed_hosts`. "
+            "Organizations that have not configured a list yet embed unchecked "
+            "until the allowlist is enforced for everyone."
+        ),
+    )
     country: CountryAlpha2 | None = Field(
         None, description="Two-letter country code (ISO 3166-1 alpha-2)."
     )
@@ -614,6 +652,7 @@ class OrganizationUpdate(Schema):
     subscription_settings: OrganizationSubscriptionSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None
+    embed_hosts: EmbedHostsInput | None = None
     default_presentment_currency: PresentmentCurrency | None = Field(
         None, description="Default presentment currency for the organization"
     )

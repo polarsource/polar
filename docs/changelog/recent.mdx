@@ -9,7 +9,7 @@ description: Stay up to date with the latest changes and improvements to Polar.
 
 Cap how many times one customer can redeem a discount while the code itself stays open to everyone. Share a code publicly, set **Maximum redemptions per customer** to 1, and every buyer gets exactly one use.
 
-Polar identifies a customer by account, email address (plus-aliases included), and payment card, so a fresh address on the same card doesn't buy a second run. A customer who enters an exhausted code is told on the code field, before the payment step.
+Polar identifies a customer by account, email address (ignoring plus-aliases) or payment card. One match is enough, so a fresh address on the same card doesn't buy a second run. A customer who enters an exhausted code is told on the code field, before the payment step.
 
 Set it under Products → Discounts, or send `max_redemptions_per_customer` when you create or update a discount through the API.
 

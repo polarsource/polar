@@ -483,8 +483,8 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
                   </FormControl>
                   <FormMessage />
                   <FormDescription>
-                    Polar identifies a customer by account, email address and
-                    payment card.
+                    Polar identifies a customer by account, email address or
+                    payment card. One match is enough.
                   </FormDescription>
                 </FormItem>
               )}

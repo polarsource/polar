@@ -42175,6 +42175,11 @@ export interface operations {
         checkout_id?: string | string[] | null
         /** @description Filter by subscription ID. */
         subscription_id?: string | string[] | null
+        /** @description Filter by order status. */
+        status?:
+          | components['schemas']['OrderStatus']
+          | components['schemas']['OrderStatus'][]
+          | null
         /** @description Only include orders created after this date */
         created_after?: string | null
         /** @description Only include orders created before this date */

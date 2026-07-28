@@ -17,6 +17,7 @@ from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Order
+from polar.models.order import OrderStatus
 from polar.models.product import ProductBillingType
 from polar.openapi import APITag
 from polar.organization.resolver import get_payload_organization
@@ -126,6 +127,9 @@ async def list(
     subscription_id: MultipleQueryFilter[SubscriptionID] | None = Query(
         None, title="SubscriptionID Filter", description="Filter by subscription ID."
     ),
+    status: MultipleQueryFilter[OrderStatus] | None = Query(
+        None, title="Status Filter", description="Filter by order status."
+    ),
     created_after: datetime | None = Query(
         None,
         description="Only include orders created after this date",
@@ -148,6 +152,7 @@ async def list(
         external_customer_id=external_customer_id,
         checkout_id=checkout_id,
         subscription_id=subscription_id,
+        status=status,
         created_after=created_after,
         created_before=created_before,
         metadata=metadata,

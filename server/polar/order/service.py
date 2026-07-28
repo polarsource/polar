@@ -378,6 +378,7 @@ class OrderService:
         external_customer_id: Sequence[str] | None = None,
         checkout_id: Sequence[uuid.UUID] | None = None,
         subscription_id: Sequence[uuid.UUID] | None = None,
+        status: Sequence[OrderStatus] | None = None,
         created_after: datetime | None = None,
         created_before: datetime | None = None,
         metadata: MetadataQuery | None = None,
@@ -437,6 +438,9 @@ class OrderService:
 
         if subscription_id is not None:
             statement = statement.where(Order.subscription_id.in_(subscription_id))
+
+        if status is not None:
+            statement = statement.where(Order.status.in_(status))
 
         if created_after is not None:
             statement = statement.where(Order.created_at > created_after)

@@ -111,6 +111,26 @@ export const SlackSharedChannelCells = ({
   )
 }
 
+export const FeatureFlagCells = ({
+  benefit,
+}: {
+  benefit: schemas['BenefitFeatureFlag']
+}) => {
+  const entries = Object.entries(benefit.metadata)
+
+  if (entries.length === 0) {
+    return null
+  }
+
+  return (
+    <>
+      {entries.map(([key, value]) => (
+        <DetailCell key={key} label={key} value={String(value)} />
+      ))}
+    </>
+  )
+}
+
 export const GitHubRepositoryCells = ({
   benefit,
 }: {

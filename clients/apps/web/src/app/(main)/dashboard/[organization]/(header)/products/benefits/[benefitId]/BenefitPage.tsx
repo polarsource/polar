@@ -4,7 +4,7 @@ import { BenefitPage } from '@/components/Benefit/BenefitPage'
 import { BenefitProducts } from '@/components/Benefit/BenefitProducts'
 import { BenefitDetails } from '@/components/Benefit/BenefitDetails'
 import { BenefitSecondaryDetails } from '@/components/Benefit/BenefitSecondaryDetails'
-import { BenefitSections } from '@/components/Benefit/BenefitSections'
+import { DownloadablesSection } from '@/components/Benefit/Downloadables/DownloadablesSection'
 import { LicenseKeysPage } from '@/components/Benefit/LicenseKeysPage'
 import UpdateBenefitModalContent from '@/components/Benefit/UpdateBenefitModalContent'
 import {
@@ -208,14 +208,18 @@ const ClientPage: React.FC<ClientPageProps> = ({
           paddingBottom="2xl"
         >
           <BenefitDetails benefit={benefit} organization={organization} />
-          <BenefitSections benefit={benefit} organization={organization} />
+          {benefit.type === 'downloadables' && (
+            <DownloadablesSection
+              benefit={benefit}
+              organization={organization}
+            />
+          )}
           <BenefitProducts benefit={benefit} organization={organization} />
           {benefit.type === 'license_keys' ? (
             <LicenseKeysPage organization={organization} benefit={benefit} />
           ) : (
             <BenefitPage benefit={benefit} organization={organization} />
           )}
-          <BenefitSecondaryDetails benefit={benefit} />
         </Box>
       </Box>
 

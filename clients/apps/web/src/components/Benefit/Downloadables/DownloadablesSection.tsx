@@ -6,31 +6,7 @@ import { schemas } from '@polar-sh/client'
 import { List, ListItem, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 
-const ProseSection = ({
-  title,
-  text,
-  fallback,
-}: {
-  title: string
-  text?: string | null
-  fallback: string
-}) => (
-  <OrderSection title={title}>
-    <Box backgroundColor="background-card" borderRadius="l" padding="xl">
-      {text ? (
-        // Notes and welcome messages are multi-line text, so the
-        // line breaks are preserved.
-        <div className="max-w-[65ch] whitespace-pre-wrap">
-          <Text>{text}</Text>
-        </div>
-      ) : (
-        <Text color="muted">{fallback}</Text>
-      )}
-    </Box>
-  </OrderSection>
-)
-
-const DownloadablesSection = ({
+export const DownloadablesSection = ({
   benefit,
   organization,
 }: {
@@ -74,37 +50,4 @@ const DownloadablesSection = ({
       )}
     </OrderSection>
   )
-}
-
-export const BenefitSections = ({
-  benefit,
-  organization,
-}: {
-  benefit: schemas['Benefit']
-  organization: schemas['Organization']
-}) => {
-  switch (benefit.type) {
-    case 'custom':
-      return (
-        <ProseSection
-          title="Private note"
-          text={benefit.properties.note}
-          fallback="No note configured"
-        />
-      )
-    case 'downloadables':
-      return (
-        <DownloadablesSection benefit={benefit} organization={organization} />
-      )
-    case 'slack_shared_channel':
-      return (
-        <ProseSection
-          title="Welcome message"
-          text={benefit.properties.welcome_message}
-          fallback="No welcome message configured"
-        />
-      )
-    default:
-      return null
-  }
 }

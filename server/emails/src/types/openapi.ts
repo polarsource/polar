@@ -1655,6 +1655,16 @@ export interface components {
       /** @description Settings related to the customer portal */
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
       /**
+       * Embed Hosts
+       * @description Hosts allowed to embed this organization's checkout. An entry is a host, optionally prefixed by a scheme and suffixed by a port. `*.example.com` matches any subdomain, but not `example.com` itself. Without a scheme, HTTPS is implied.
+       */
+      embed_hosts: string[]
+      /**
+       * Embed Hosts Enforced
+       * @description Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone.
+       */
+      embed_hosts_enforced: boolean
+      /**
        * @description Two-letter country code (ISO 3166-1 alpha-2).
        * @default null
        */

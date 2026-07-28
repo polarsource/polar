@@ -5,37 +5,41 @@ import { AlertTriangle, CheckCircle, Loader2 } from 'lucide-react'
 import React, { useState } from 'react'
 import { SettingsGroupItem } from './SettingsGroup'
 
-const URL_PLACEHOLDER = 'https://example.com/settings/billing'
+const URL_PLACEHOLDER = 'https://example.com/billing?email={EMAIL}'
 
-const APPENDED_PARAMS = [
-  { name: 'email', description: "The customer's email address" },
+const PLACEHOLDERS = [
+  { name: '{EMAIL}', description: "The recipient's email address" },
   {
-    name: 'external_id',
-    description: 'Your own ID for the customer, when set',
+    name: '{EXTERNAL_ID}',
+    description: 'Your own ID for the customer, empty when unset',
   },
   {
-    name: 'order_id',
-    description: 'The order the email concerns, when applicable',
+    name: '{ORDER_ID}',
+    description: 'The order the email concerns, empty when not applicable',
   },
   {
-    name: 'subscription_id',
-    description: 'The subscription the email concerns, when applicable',
+    name: '{SUBSCRIPTION_ID}',
+    description:
+      'The subscription the email concerns, empty when not applicable',
   },
 ] as const
 
-interface CustomerPortalCustomUrlSettingProps {
+const withoutPlaceholders = (url: string) =>
+  PLACEHOLDERS.reduce((acc, { name }) => acc.replaceAll(name, ''), url)
+
+interface CustomerPortalUrlSettingProps {
   organizationId: string
   value: string | null
   readOnly: boolean
-  onChange: (customUrl: string | null) => void
+  onChange: (portalUrl: string | null) => void
 }
 
-export default function CustomerPortalCustomUrlSetting({
+export default function CustomerPortalUrlSetting({
   organizationId,
   value,
   readOnly,
   onChange,
-}: CustomerPortalCustomUrlSettingProps) {
+}: CustomerPortalUrlSettingProps) {
   const [enabled, setEnabled] = useState(() => !!value)
   const [url, setUrl] = useState(value ?? '')
   const {
@@ -44,12 +48,10 @@ export default function CustomerPortalCustomUrlSetting({
     reset: resetValidation,
   } = useURLValidation({ organizationId })
 
-  const previewBase = url.trim() || URL_PLACEHOLDER
-
   return (
     <Box flexDirection="column" width="100%">
       <SettingsGroupItem
-        title="Custom customer portal URL"
+        title="Customer portal URL override"
         description="Point customer portal links in emails to your own billing page instead of the Polar customer portal."
       >
         <Switch
@@ -65,7 +67,7 @@ export default function CustomerPortalCustomUrlSetting({
               return
             }
             if (url.trim()) {
-              void validateURL(url.trim())
+              void validateURL(withoutPlaceholders(url.trim()))
             }
           }}
           disabled={readOnly}
@@ -100,11 +102,11 @@ export default function CustomerPortalCustomUrlSetting({
                   }}
                   onBlur={() => {
                     const trimmed = url.trim()
-                    const overrideUrl = trimmed === '' ? null : trimmed
-                    if (overrideUrl !== value) {
-                      onChange(overrideUrl)
+                    const portalUrl = trimmed === '' ? null : trimmed
+                    if (portalUrl !== value) {
+                      onChange(portalUrl)
                     }
-                    void validateURL(trimmed)
+                    void validateURL(withoutPlaceholders(trimmed))
                   }}
                   onKeyDown={(e) => {
                     if (e.key === 'Enter') {
@@ -141,65 +143,28 @@ export default function CustomerPortalCustomUrlSetting({
                 borderStyle="solid"
                 borderColor="border-primary"
               >
-                <Box
-                  flexDirection="column"
-                  rowGap="xs"
-                  padding="m"
-                  width="100%"
-                >
+                <Box flexDirection="column" rowGap="s" padding="m" width="100%">
                   <Text variant="caption" color="muted">
-                    Email links will point to
+                    Placeholders are replaced when each email is sent
                   </Text>
-                  <div className="wrap-anywhere">
-                    <Text variant="caption" monospace color="muted">
-                      {previewBase}
-                      {APPENDED_PARAMS.map(({ name }, index) => (
-                        <React.Fragment key={name}>
-                          <wbr />
-                          <Text
-                            as="span"
-                            variant="caption"
-                            monospace
-                            wrap="nowrap"
-                            color="muted"
-                          >
-                            {index === 0 ? '?' : '&'}
-                            <Text as="span" variant="caption" monospace>
-                              {name}
-                            </Text>
-                            {`=<${name}>`}
-                          </Text>
-                        </React.Fragment>
-                      ))}
-                    </Text>
-                  </div>
+                  <Grid
+                    templateColumns="auto 1fr"
+                    columnGap="l"
+                    rowGap="s"
+                    width="100%"
+                  >
+                    {PLACEHOLDERS.map(({ name, description }) => (
+                      <React.Fragment key={name}>
+                        <Text as="span" variant="caption" monospace>
+                          {name}
+                        </Text>
+                        <Text as="span" variant="caption" color="muted">
+                          {description}
+                        </Text>
+                      </React.Fragment>
+                    ))}
+                  </Grid>
                 </Box>
-
-                <Box
-                  width="100%"
-                  borderTopWidth={1}
-                  borderStyle="solid"
-                  borderColor="border-primary"
-                />
-
-                <Grid
-                  templateColumns="auto 1fr"
-                  columnGap="l"
-                  rowGap="s"
-                  padding="m"
-                  width="100%"
-                >
-                  {APPENDED_PARAMS.map(({ name, description }) => (
-                    <React.Fragment key={name}>
-                      <Text as="span" variant="caption" monospace>
-                        {name}
-                      </Text>
-                      <Text as="span" variant="caption" color="muted">
-                        {description}
-                      </Text>
-                    </React.Fragment>
-                  ))}
-                </Grid>
 
                 <Box
                   width="100%"

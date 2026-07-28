@@ -369,22 +369,8 @@ class MemberService:
         )
 
         try:
-            created_member = await repository.create(member, flush=True)
-            customer.owner = created_member
-            log.info(
-                "member.create_owner_member.success",
-                customer_id=customer.id,
-                member_id=created_member.id,
-                organization_id=organization.id,
-            )
-            if send_webhook:
-                await webhook_service.send(
-                    session,
-                    organization,
-                    WebhookEventType.member_created,
-                    created_member,
-                )
-            return created_member
+            async with session.begin_nested():
+                created_member = await repository.create(member, flush=True)
         except IntegrityError as e:
             log.info(
                 "member.create_owner_member.constraint_violation",
@@ -412,6 +398,22 @@ class MemberService:
                 error=str(e),
             )
             raise
+        else:
+            customer.owner = created_member
+            log.info(
+                "member.create_owner_member.success",
+                customer_id=customer.id,
+                member_id=created_member.id,
+                organization_id=organization.id,
+            )
+            if send_webhook:
+                await webhook_service.send(
+                    session,
+                    organization,
+                    WebhookEventType.member_created,
+                    created_member,
+                )
+            return created_member
 
     async def get_or_create_seat_member(
         self,
@@ -480,17 +482,10 @@ class MemberService:
         )
 
         try:
-            created = await repository.create(member, flush=True)
-            log.info(
-                "member.get_or_create_by_email.created",
-                member_id=created.id,
-                customer_id=customer_id,
-                organization_id=organization_id,
-                email=email,
-            )
-            return created
+            async with session.begin_nested():
+                created = await repository.create(member, flush=True)
         except IntegrityError:
-            # 4. Race condition: another transaction created the member concurrently
+            # Race condition: another transaction created the member concurrently.
             log.info(
                 "member.get_or_create_by_email.integrity_error_retry",
                 customer_id=customer_id,
@@ -500,6 +495,15 @@ class MemberService:
             if existing:
                 return existing
             raise
+        else:
+            log.info(
+                "member.get_or_create_by_email.created",
+                member_id=created.id,
+                customer_id=customer_id,
+                organization_id=organization_id,
+                email=email,
+            )
+            return created
 
     async def list_by_customer(
         self,

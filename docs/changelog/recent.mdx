@@ -4,6 +4,18 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
+<Update label="2026-07-23">
+## Pause and resume subscriptions
+
+You can now pause a subscription instead of canceling it. Pausing schedules the subscription to stop at the end of its current period: billing halts and benefits are revoked, but the subscription and its payment method stay on file. Resume whenever you're ready: a fresh billing period starts and the customer is charged immediately, with no new checkout.
+
+Set an optional resume date when you pause and the subscription comes back on its own. This fits seasonal plans and account "freezes", where a customer steps away and returns later.
+
+Drive it from the API through the [Update Subscription](/api-reference/subscriptions/update-subscription) endpoint, or let customers pause themselves from the Customer Portal by turning on **Enable subscription pause** under Settings → Customer portal. Two new webhook events, `subscription.paused` and `subscription.resumed`, tell you when the state changes.
+
+[Read more](/features/subscriptions/manage#pause-and-resume)
+</Update>
+
 <Update label="2026-07-22">
 ## Single Sign-On
 

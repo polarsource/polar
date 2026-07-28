@@ -6,12 +6,14 @@ import { CONFIG } from '@/utils/config'
 import Link from 'next/link'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
+import { useLogout } from '@/hooks/auth'
 import { usePostHog } from '@/hooks/posthog'
 import { redirect, useRouter } from 'next/navigation'
 
 export default function Page() {
   const router = useRouter()
   const posthog = usePostHog()
+  const logout = useLogout()
   const { updateData } = useOnboardingData()
 
   if (CONFIG.IS_SANDBOX) {
@@ -60,12 +62,13 @@ export default function Page() {
         >
           User settings
         </Link>
-        <a
-          href={`${CONFIG.BASE_URL}/v1/auth/logout`}
-          className="dark:hover:text-polar-200 text-sm hover:text-gray-900"
+        <button
+          type="button"
+          onClick={logout}
+          className="dark:hover:text-polar-200 cursor-pointer text-sm hover:text-gray-900"
         >
           Log out
-        </a>
+        </button>
       </Box>
       <Box
         width="100%"

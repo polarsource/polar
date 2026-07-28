@@ -930,6 +930,11 @@ class SubscriptionService:
             subscription, update_dict={"scheduler_locked_at": None}
         )
 
+        if not revoke:
+            await self._send_webhook(
+                session, subscription, WebhookEventType.subscription_cycled
+            )
+
         if revoke:
             billing_reason = OrderBillingReasonInternal.subscription_cancel
         elif previous_status == SubscriptionStatus.trialing:
@@ -3050,6 +3055,7 @@ class SubscriptionService:
             WebhookEventType.subscription_active,
             WebhookEventType.subscription_canceled,
             WebhookEventType.subscription_uncanceled,
+            WebhookEventType.subscription_cycled,
             WebhookEventType.subscription_revoked,
             WebhookEventType.subscription_past_due,
             WebhookEventType.subscription_paused,

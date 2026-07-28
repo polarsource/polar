@@ -1,6 +1,6 @@
 import { SupportButton } from '@/components/Feedback/SupportButton'
-import { useAuth } from '@/hooks/auth'
 import { useHasPermission } from '@/hooks/permissions'
+import { useAuth, useLogout } from '@/hooks/auth'
 import { NotificationsPopover } from '@/components/Notifications/NotificationsPopover'
 import { OmniSearch } from '@/components/Search/OmniSearch'
 import { CONFIG } from '@/utils/config'
@@ -53,6 +53,7 @@ export const DashboardSidebar = ({
 }) => {
   const router = useRouter()
   const { currentUser } = useAuth()
+  const logout = useLogout()
 
   const [searchOpen, setSearchOpen] = useState(false)
 
@@ -257,13 +258,7 @@ export const DashboardSidebar = ({
                     </DropdownMenuItem>
                   )}
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem
-                    onClick={() =>
-                      router.push(`${CONFIG.BASE_URL}/v1/auth/logout`)
-                    }
-                  >
-                    Logout
-                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={logout}>Logout</DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </SidebarMenuItem>

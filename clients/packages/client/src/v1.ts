@@ -6366,7 +6366,7 @@ export interface webhooks {
      *
      *     If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.
      *
-     *     To listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.
+     *     To listen specifically for renewals, listen to `subscription.cycled`.
      *
      *     **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.
      */
@@ -6443,6 +6443,36 @@ export interface webhooks {
      *     **Discord & Slack support:** Full
      */
     post: operations['_endpointsubscription_uncanceled_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'subscription.cycled': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * subscription.cycled
+     * @description Sent when a subscription enters a new billing period.
+     *
+     *     The payload carries the new `current_period_start` and `current_period_end`.
+     *     It fires when the period rolls over, before the renewal order exists and
+     *     regardless of whether the renewal payment succeeds — listen to `order.paid`
+     *     if you need the payment.
+     *
+     *     A trial converting to a paid subscription starts a new period, so it fires
+     *     there too. Read `status` to tell the two apart.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointsubscription_cycled_post']
     delete?: never
     options?: never
     head?: never
@@ -6632,6 +6662,72 @@ export interface webhooks {
      *     **Discord & Slack support:** Basic
      */
     post: operations['_endpointproduct_updated_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'discount.created': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * discount.created
+     * @description Sent when a new discount is created.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointdiscount_created_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'discount.updated': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * discount.updated
+     * @description Sent when a discount is updated.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointdiscount_updated_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'discount.deleted': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * discount.deleted
+     * @description Sent when a discount is deleted.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointdiscount_deleted_post']
     delete?: never
     options?: never
     head?: never
@@ -35642,6 +35738,69 @@ export interface components {
       webhook_event: components['schemas']['WebhookEvent']
     }
     /**
+     * WebhookDiscountCreatedPayload
+     * @description Sent when a new discount is created.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookDiscountCreatedPayload: {
+      /**
+       * Type
+       * @example discount.created
+       * @constant
+       */
+      type: 'discount.created'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      /** Discount */
+      data: components['schemas']['Discount']
+    }
+    /**
+     * WebhookDiscountDeletedPayload
+     * @description Sent when a discount is deleted.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookDiscountDeletedPayload: {
+      /**
+       * Type
+       * @example discount.deleted
+       * @constant
+       */
+      type: 'discount.deleted'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      /** Discount */
+      data: components['schemas']['Discount']
+    }
+    /**
+     * WebhookDiscountUpdatedPayload
+     * @description Sent when a discount is updated.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookDiscountUpdatedPayload: {
+      /**
+       * Type
+       * @example discount.updated
+       * @constant
+       */
+      type: 'discount.updated'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      /** Discount */
+      data: components['schemas']['Discount']
+    }
+    /**
      * WebhookEndpoint
      * @description A webhook endpoint.
      */
@@ -35833,6 +35992,7 @@ export interface components {
       | 'subscription.active'
       | 'subscription.canceled'
       | 'subscription.uncanceled'
+      | 'subscription.cycled'
       | 'subscription.revoked'
       | 'subscription.past_due'
       | 'subscription.paused'
@@ -35841,6 +36001,9 @@ export interface components {
       | 'refund.updated'
       | 'product.created'
       | 'product.updated'
+      | 'discount.created'
+      | 'discount.updated'
+      | 'discount.deleted'
       | 'benefit.created'
       | 'benefit.updated'
       | 'benefit_grant.created'
@@ -36186,6 +36349,34 @@ export interface components {
       data: components['schemas']['Subscription']
     }
     /**
+     * WebhookSubscriptionCycledPayload
+     * @description Sent when a subscription enters a new billing period.
+     *
+     *     The payload carries the new `current_period_start` and `current_period_end`.
+     *     It fires when the period rolls over, before the renewal order exists and
+     *     regardless of whether the renewal payment succeeds — listen to `order.paid`
+     *     if you need the payment.
+     *
+     *     A trial converting to a paid subscription starts a new period, so it fires
+     *     there too. Read `status` to tell the two apart.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookSubscriptionCycledPayload: {
+      /**
+       * Type
+       * @example subscription.cycled
+       * @constant
+       */
+      type: 'subscription.cycled'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Subscription']
+    }
+    /**
      * WebhookSubscriptionPastDuePayload
      * @description Sent when a subscription payment fails and the subscription enters `past_due` status.
      *
@@ -36308,7 +36499,7 @@ export interface components {
      *
      *     If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.
      *
-     *     To listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.
+     *     To listen specifically for renewals, listen to `subscription.cycled`.
      *
      *     **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.
      */
@@ -56305,6 +56496,39 @@ export interface operations {
       }
     }
   }
+  _endpointsubscription_cycled_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookSubscriptionCycledPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   _endpointsubscription_revoked_post: {
     parameters: {
       query?: never
@@ -56546,6 +56770,105 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['WebhookProductUpdatedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointdiscount_created_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookDiscountCreatedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointdiscount_updated_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookDiscountUpdatedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointdiscount_deleted_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookDiscountDeletedPayload']
       }
     }
     responses: {
@@ -65850,6 +66173,7 @@ export const webhookEventTypeValues: ReadonlyArray<
   'subscription.active',
   'subscription.canceled',
   'subscription.uncanceled',
+  'subscription.cycled',
   'subscription.revoked',
   'subscription.past_due',
   'subscription.paused',
@@ -65858,6 +66182,9 @@ export const webhookEventTypeValues: ReadonlyArray<
   'refund.updated',
   'product.created',
   'product.updated',
+  'discount.created',
+  'discount.updated',
+  'discount.deleted',
   'benefit.created',
   'benefit.updated',
   'benefit_grant.created',

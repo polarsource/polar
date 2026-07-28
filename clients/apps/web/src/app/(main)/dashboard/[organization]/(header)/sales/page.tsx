@@ -15,6 +15,7 @@ export default async function Page(props: {
   searchParams: Promise<
     DataTableSearchParams & {
       product_id?: string[] | string
+      status?: string
       metadata?: string[]
     }
   >
@@ -51,6 +52,7 @@ export default async function Page(props: {
       pagination={pagination}
       sorting={sorting}
       productId={productId}
+      status={searchParams.status ?? 'any'}
       metadata={metadata}
     />
   )

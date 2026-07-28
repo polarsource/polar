@@ -1,7 +1,10 @@
 import { schemas } from '@polar-sh/client'
 import { Status, type StatusColor } from '@polar-sh/orbit'
 
-const OrderStatusDisplayTitle: Record<schemas['Order']['status'], string> = {
+export const OrderStatusDisplayTitle: Record<
+  schemas['Order']['status'],
+  string
+> = {
   draft: 'Draft',
   paid: 'Paid',
   pending: 'Pending',

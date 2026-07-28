@@ -940,13 +940,7 @@ class CheckoutService:
         except TaxCalculationLogicalError:
             pass
 
-        # Reset payment form fields if it's no longer required
-        # This handles the case where a 100% discount is applied and the
-        # payment and billing address sections disappear from the frontend
-        if not checkout.is_payment_form_required:
-            checkout.payment_method_type = None
-            if not checkout.require_billing_address:
-                checkout.is_business_customer = False
+        self._reset_payment_form_fields_if_needed(checkout)
 
         await self._after_checkout_updated(session, checkout)
         return checkout
@@ -1015,6 +1009,8 @@ class CheckoutService:
                     "input": None,
                 }
             )
+
+        self._reset_payment_form_fields_if_needed(checkout)
 
         # Case where the price was archived after the checkout was created
         if has_product_checkout(checkout) and checkout.product_price.is_archived:
@@ -2242,6 +2238,15 @@ class CheckoutService:
         await self._validate_subscription_uniqueness(session, checkout)
 
         return checkout
+
+    def _reset_payment_form_fields_if_needed(self, checkout: Checkout) -> None:
+        # Reset payment form fields if it's no longer required
+        # This handles the case where a 100% discount is applied and the
+        # payment and billing address sections disappear from the frontend
+        if not checkout.is_payment_form_required:
+            checkout.payment_method_type = None
+            if not checkout.require_billing_address:
+                checkout.is_business_customer = False
 
     async def _update_price(
         self,

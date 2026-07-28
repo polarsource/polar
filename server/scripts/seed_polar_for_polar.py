@@ -96,6 +96,12 @@ BENEFITS: list[dict[str, object]] = [
         },
     },
     {
+        "description": "Preview access to new features",
+        "metadata": {
+            "type": "preview_access",
+        },
+    },
+    {
         "description": "Single Sign-On",
         "metadata": {
             "type": "sso",
@@ -112,9 +118,13 @@ PRODUCTS: list[dict[str, object]] = [
             "custom": False,
             "order": 2,
             "description": "For entrepreneurs & early teams.",
-            "features": "All features on Free, Prioritized Support",
+            "features": "All features on Free, Preview access to new features, Prioritized Support",
         },
-        "benefits": ["Transaction Fee (Tier 2)", "Support (Tier 2)"],
+        "benefits": [
+            "Transaction Fee (Tier 2)",
+            "Support (Tier 2)",
+            "Preview access to new features",
+        ],
     },
     {
         "name": "Growth",
@@ -127,7 +137,11 @@ PRODUCTS: list[dict[str, object]] = [
             "description": "For scaling startups.",
             "features": "All features on Pro, Prioritized Support",
         },
-        "benefits": ["Transaction Fee (Tier 3)", "Support (Tier 3)"],
+        "benefits": [
+            "Transaction Fee (Tier 3)",
+            "Support (Tier 3)",
+            "Preview access to new features",
+        ],
     },
     {
         "name": "Scale",
@@ -142,6 +156,7 @@ PRODUCTS: list[dict[str, object]] = [
         "benefits": [
             "Transaction Fee (Tier 4)",
             "Support (Tier 4)",
+            "Preview access to new features",
             "Single Sign-On",
         ],
     },

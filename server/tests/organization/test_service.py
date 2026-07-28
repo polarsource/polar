@@ -1427,6 +1427,7 @@ class TestResetOnboardingForReview:
         status: OrganizationStatus,
     ) -> None:
         organization.status = status
+        await session.flush()
 
         with pytest.raises(OrganizationError) as exc_info:
             await organization_service.reset_onboarding_for_review(

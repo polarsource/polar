@@ -621,12 +621,13 @@ class OrganizationService:
         *,
         reset_by: str,
     ) -> Organization:
-        resettable_statuses = {
+        await session.refresh(organization, with_for_update=True)
+
+        if organization.status not in {
             OrganizationStatus.ACTIVE,
             OrganizationStatus.REVIEW,
             OrganizationStatus.SNOOZED,
-        }
-        if organization.status not in resettable_statuses:
+        }:
             raise OrganizationError(
                 "Only active, review, or snoozed organizations can be reset "
                 "for onboarding review.",

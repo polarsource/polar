@@ -8,8 +8,13 @@ from datetime import UTC, datetime
 from unittest.mock import AsyncMock, patch
 
 import pytest
+from sqlalchemy import update
 
-from polar.models.organization import Organization, OrganizationStatus
+from polar.models.organization import (
+    STATUS_CAPABILITIES,
+    Organization,
+    OrganizationStatus,
+)
 from polar.models.organization_review import OrganizationReview
 from polar.organization.repository import (
     OrganizationReviewRepository as OrgReviewRepository,
@@ -164,6 +169,74 @@ class TestRunReviewAgentSubmission:
         assert updated.violated_sections == []
         assert updated.timed_out is False
         assert updated.organization_details_snapshot["name"] == organization.name
+
+    async def test_reset_while_agent_is_running_discards_stale_result(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        submitted_at = datetime(2026, 7, 28, 10, 0, tzinfo=UTC)
+        reset_requested_at = datetime(2026, 7, 28, 10, 1, tzinfo=UTC)
+        organization.status = OrganizationStatus.ACTIVE
+        organization.capabilities = {**STATUS_CAPABILITIES[OrganizationStatus.ACTIVE]}
+        organization.details_submitted_at = submitted_at
+        await session.flush()
+
+        agent_result = _make_agent_result(
+            verdict=ReviewVerdict.DENY,
+            risk_level=RiskLevel.HIGH,
+        )
+
+        async def reset_organization_during_review(
+            *_args: object, **_kwargs: object
+        ) -> AgentReviewResult:
+            await session.execute(
+                update(Organization)
+                .where(Organization.id == organization.id)
+                .values(
+                    status=OrganizationStatus.CREATED,
+                    capabilities=STATUS_CAPABILITIES[OrganizationStatus.CREATED],
+                    details_submitted_at=None,
+                    onboarding_resubmission_requested_at=reset_requested_at,
+                )
+                .execution_options(synchronize_session=False)
+            )
+            return agent_result
+
+        with (
+            patch(
+                "polar.organization_review.tasks.AsyncSessionMaker",
+                return_value=_mock_session_maker(session),
+            ),
+            patch(
+                "polar.organization_review.tasks.run_organization_review",
+                side_effect=reset_organization_during_review,
+            ),
+        ):
+            await _run_review_agent(
+                organization.id,
+                context=ReviewContext.SUBMISSION,
+            )
+
+        await session.flush()
+        session.expire_all()
+
+        await session.refresh(organization)
+        assert organization.status == OrganizationStatus.CREATED
+        assert organization.details_submitted_at is None
+        assert organization.onboarding_resubmission_requested_at == reset_requested_at
+
+        organization_review_repository = OrgReviewRepository.from_session(session)
+        assert (
+            await organization_review_repository.get_by_organization(organization.id)
+            is None
+        )
+
+        agent_review_repository = AgentReviewRepository.from_session(session)
+        assert (
+            await agent_review_repository.get_latest_agent_review(organization.id)
+            is None
+        )
 
     async def test_non_grandfathered_existing_review_is_overwritten(
         self,

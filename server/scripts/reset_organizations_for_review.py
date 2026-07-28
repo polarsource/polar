@@ -23,7 +23,9 @@ from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Organization
 from polar.models.organization import OrganizationStatus
 from polar.organization.repository import OrganizationRepository
-from polar.organization.service import organization as organization_service
+from polar.organization.service import (
+    organization as organization_service,
+)
 from polar.postgres import AsyncSession, create_async_engine
 from scripts.helper import configure_script_console_logging, typer_async
 
@@ -31,12 +33,6 @@ cli = typer.Typer()
 console = Console()
 
 configure_script_console_logging()
-
-_ELIGIBLE_STATUSES = {
-    OrganizationStatus.ACTIVE,
-    OrganizationStatus.REVIEW,
-    OrganizationStatus.SNOOZED,
-}
 
 
 async def _load_organizations(
@@ -46,7 +42,11 @@ async def _load_organizations(
     return [
         (
             organization_id,
-            await repository.get_by_id(organization_id, include_blocked=True),
+            await repository.get_by_id(
+                organization_id,
+                include_blocked=True,
+                for_update=True,
+            ),
         )
         for organization_id in organization_ids
     ]
@@ -66,7 +66,11 @@ def _show_plan(targets: list[tuple[UUID, Organization | None]]) -> bool:
             table.add_row(str(organization_id), "—", "—", "[red]Not found")
             continue
 
-        if organization.status not in _ELIGIBLE_STATUSES:
+        if organization.status not in {
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.SNOOZED,
+        }:
             is_valid = False
             table.add_row(
                 str(organization.id),

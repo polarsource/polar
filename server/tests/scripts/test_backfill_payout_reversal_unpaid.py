@@ -127,6 +127,41 @@ class TestRunBackfill:
         await session.refresh(reversal)
         assert reversal.payout_transaction_id == first_transaction.id
 
+    async def test_attributes_every_reversal_across_batches(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        account: Account,
+        user: User,
+    ) -> None:
+        await create_payout_account(save_fixture, organization, user)
+        reversal_repository = PayoutReversalTransactionRepository.from_session(session)
+        pairs: list[tuple[Transaction, Transaction]] = []
+        for index in range(3):
+            payment_transaction = await create_payment_transaction(
+                save_fixture, charge_id=f"STRIPE_CHARGE_ID_{index}"
+            )
+            await create_balance_transaction(
+                save_fixture, account=account, payment_transaction=payment_transaction
+            )
+            payout = await payout_service.create(session, locker, organization)
+            await payout_service.cancel(session, payout)
+            reversal = await reversal_repository.get_by_payout_id(payout.id)
+            assert reversal is not None
+            await reversal_repository.update(
+                reversal, update_dict={"payout_transaction_id": None}
+            )
+            pairs.append((reversal, payout.transaction))
+
+        attributed = await run_backfill(session, execute=True, batch_size=1)
+
+        assert attributed == 3
+        for reversal, payout_transaction in pairs:
+            await session.refresh(reversal)
+            assert reversal.payout_transaction_id == payout_transaction.id
+
     async def test_leaves_a_correctly_attributed_reversal_alone(
         self,
         save_fixture: SaveFixture,

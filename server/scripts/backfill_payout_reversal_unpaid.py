@@ -22,21 +22,26 @@ Usage:
 
 from collections.abc import Sequence
 from datetime import datetime
-from typing import Any, cast
+from typing import Any
 from uuid import UUID
 
 import structlog
 import typer
 from rich.console import Console
 from rich.table import Table
-from sqlalchemy import CursorResult, Row, Select, or_, select, update
+from sqlalchemy import Row, Select, Update, func, or_, select, update
 from sqlalchemy.orm import aliased
 
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.models import Transaction
 from polar.models.transaction import TransactionType
 from polar.postgres import create_async_engine
-from scripts.helper import configure_script_console_logging, typer_async
+from scripts.helper import (
+    configure_script_console_logging,
+    limit_bindparam,
+    run_batched_update,
+    typer_async,
+)
 
 cli = typer.Typer()
 console = Console()
@@ -50,10 +55,19 @@ _MISATTRIBUTED = or_(
     reversal.payout_transaction_id.is_(None),
     reversal.payout_transaction_id != reversed_payout_transaction.id,
 )
+_PREVIEW_LIMIT = 50
 
 
-def _candidates_statement() -> Select[tuple[UUID, datetime, int, UUID | None, UUID]]:
-    return (
+def _candidates[SelectT: Select[Any]](statement: SelectT) -> SelectT:
+    return statement.join(
+        reversed_payout_transaction,
+        (reversed_payout_transaction.payout_id == reversal.payout_id)
+        & (reversed_payout_transaction.type == TransactionType.payout),
+    ).where(reversal.type == TransactionType.payout_reversal, _MISATTRIBUTED)
+
+
+def _preview_statement() -> Select[tuple[UUID, datetime, int, UUID | None, UUID]]:
+    return _candidates(
         select(
             reversal.id,
             reversal.created_at,
@@ -61,20 +75,39 @@ def _candidates_statement() -> Select[tuple[UUID, datetime, int, UUID | None, UU
             reversal.payout_transaction_id,
             reversed_payout_transaction.id,
         )
-        .join(
-            reversed_payout_transaction,
-            (reversed_payout_transaction.payout_id == reversal.payout_id)
-            & (reversed_payout_transaction.type == TransactionType.payout),
+    ).order_by(reversal.created_at)
+
+
+def _count_statement() -> Select[tuple[int]]:
+    return select(func.count()).select_from(_candidates(select(reversal.id)).subquery())
+
+
+def _attribution_statement() -> Update:
+    batch = _candidates(select(reversal.id)).limit(limit_bindparam())
+    target = (
+        select(reversed_payout_transaction.id)
+        .where(
+            reversed_payout_transaction.payout_id == Transaction.payout_id,
+            reversed_payout_transaction.type == TransactionType.payout,
         )
-        .where(reversal.type == TransactionType.payout_reversal, _MISATTRIBUTED)
-        .order_by(reversal.created_at)
+        .correlate(Transaction)
+        .scalar_subquery()
+    )
+    return (
+        update(Transaction)
+        .where(Transaction.id.in_(batch))
+        .values(payout_transaction_id=target)
+        .execution_options(synchronize_session=False)
     )
 
 
 def _render(
-    rows: Sequence[Row[tuple[UUID, datetime, int, UUID | None, UUID]]],
+    rows: Sequence[Row[tuple[UUID, datetime, int, UUID | None, UUID]]], total: int
 ) -> None:
-    table = Table(title=f"Misattributed payout reversals ({len(rows)})")
+    title = f"Misattributed payout reversals ({total})"
+    if len(rows) < total:
+        title += f" — first {len(rows)}"
+    table = Table(title=title)
     table.add_column("Reversal ID", style="dim")
     table.add_column("Created")
     table.add_column("Amount", justify="right")
@@ -91,38 +124,32 @@ def _render(
     console.print(table)
 
 
-async def run_backfill(session: AsyncSession, *, execute: bool) -> int:
-    rows = (await session.execute(_candidates_statement())).all()
-    _render(rows)
+async def run_backfill(
+    session: AsyncSession,
+    *,
+    execute: bool,
+    batch_size: int = 5000,
+    sleep_seconds: float = 0.1,
+) -> int:
+    total = (await session.execute(_count_statement())).scalar_one()
+    rows = (await session.execute(_preview_statement().limit(_PREVIEW_LIMIT))).all()
+    _render(rows, total)
 
-    if not rows:
+    if total == 0:
         log.info("Nothing to do — every reversal points at the payout it reverses")
         return 0
     if not execute:
-        log.info("Dry-run only — re-run with --execute to attribute", total=len(rows))
+        log.info("Dry-run only — re-run with --execute to attribute", total=total)
         return 0
 
-    target = (
-        select(reversed_payout_transaction.id)
-        .where(
-            reversed_payout_transaction.payout_id == Transaction.payout_id,
-            reversed_payout_transaction.type == TransactionType.payout,
-        )
-        .scalar_subquery()
+    attributed = await run_batched_update(
+        _attribution_statement(),
+        batch_size=batch_size,
+        sleep_seconds=sleep_seconds,
+        session=session,
     )
-    result = cast(
-        CursorResult[Any],
-        await session.execute(
-            update(Transaction)
-            .where(
-                Transaction.type == TransactionType.payout_reversal,
-                Transaction.id.in_([row[0] for row in rows]),
-            )
-            .values(payout_transaction_id=target)
-        ),
-    )
-    log.info("Attributed payout reversals", attributed=result.rowcount)
-    return result.rowcount
+    log.info("Attributed payout reversals", attributed=attributed)
+    return attributed
 
 
 @cli.command()
@@ -131,6 +158,8 @@ async def backfill_payout_reversal_unpaid(
     execute: bool = typer.Option(
         False, help="Actually re-point the reversals (default: dry-run)"
     ),
+    batch_size: int = typer.Option(5000, help="Number of rows to process per batch"),
+    sleep_seconds: float = typer.Option(0.1, help="Seconds to sleep between batches"),
 ) -> None:
     engine = create_async_engine("script")
     sessionmaker = create_async_sessionmaker(engine)
@@ -141,8 +170,12 @@ async def backfill_payout_reversal_unpaid(
 
     try:
         async with sessionmaker() as session:
-            await run_backfill(session, execute=execute)
-            await session.commit()
+            await run_backfill(
+                session,
+                execute=execute,
+                batch_size=batch_size,
+                sleep_seconds=sleep_seconds,
+            )
     finally:
         await engine.dispose()
 

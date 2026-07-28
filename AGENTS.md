@@ -104,6 +104,9 @@ dev snap --branch my-feature        # test a specific branch
 dev snap --detect                   # auto-detect URLs from git diff
 ```
 
+The customer portal authenticates with a session token rather than the dashboard login, so
+`dev snap` can't reach it on its own. Get its URLs from `dev portal-urls --snap` first.
+
 See `server/AGENTS.md` for backend command and testing specifics.
 
 ## Conventions

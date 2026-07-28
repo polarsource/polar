@@ -49,8 +49,6 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
   }
 
   const accountHref = `/dashboard/${organization.slug}/finance/account`
-  const isResubmission =
-    organization.onboarding_resubmission_requested_at !== null
 
   if (isLoading) {
     return null
@@ -60,7 +58,7 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
   const requiredSteps = steps.filter(isRequiredStep)
   const total = requiredSteps.length
 
-  if (canManageOrganization && total === 0 && !isResubmission) {
+  if (canManageOrganization && total === 0) {
     return null
   }
 
@@ -77,42 +75,40 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
 
   return (
     <>
-      <Box position="relative" marginTop={isResubmission ? 'none' : 'xl'}>
-        {!isResubmission ? (
-          <button
-            type="button"
-            onClick={openAiSetup}
-            className="flex cursor-pointer focus:outline-none"
+      <Box position="relative" marginTop="xl">
+        <button
+          type="button"
+          onClick={openAiSetup}
+          className="flex cursor-pointer focus:outline-none"
+        >
+          <Box
+            position="absolute"
+            top={-38}
+            left={12}
+            right={12}
+            display="flex"
+            paddingVertical="m"
+            paddingHorizontal="l"
+            borderTopLeftRadius="l"
+            borderTopRightRadius="l"
+            backgroundColor="background-card"
           >
             <Box
-              position="absolute"
-              top={-38}
-              left={12}
-              right={12}
-              display="flex"
-              paddingVertical="m"
-              paddingHorizontal="l"
-              borderTopLeftRadius="l"
-              borderTopRightRadius="l"
-              backgroundColor="background-card"
+              flexDirection="row"
+              alignItems="center"
+              columnGap="xs"
+              color={{ base: 'text-secondary', hover: 'text-primary' }}
+              transitionProperty="colors"
+              transitionDuration="fast"
             >
-              <Box
-                flexDirection="row"
-                alignItems="center"
-                columnGap="xs"
-                color={{ base: 'text-secondary', hover: 'text-primary' }}
-                transitionProperty="colors"
-                transitionDuration="fast"
-              >
-                <SparklesIcon size={14} />
-                <Text variant="caption" color="inherit">
-                  Set up Polar with your coding agent
-                </Text>
-                <ChevronRight size={14} />
-              </Box>
+              <SparklesIcon size={14} />
+              <Text variant="caption" color="inherit">
+                Set up Polar with your coding agent
+              </Text>
+              <ChevronRight size={14} />
             </Box>
-          </button>
-        ) : null}
+          </Box>
+        </button>
         <Box
           position="relative"
           display="grid"
@@ -135,25 +131,19 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
               <Box alignItems="center" columnGap="m">
                 <RocketIcon className="h-4 w-4 shrink-0" />
                 <Text variant="title">
-                  {isResubmission
-                    ? canManageOrganization
-                      ? 'Review your organization information'
-                      : 'Onboarding requirements changed'
-                    : canManageOrganization
-                      ? 'Finish setting up your account'
-                      : 'Account setup in progress'}
+                  {canManageOrganization
+                    ? 'Finish setting up your account'
+                    : 'Account setup in progress'}
                 </Text>
               </Box>
               <Text color="muted">
-                {isResubmission
-                  ? canManageOrganization
-                    ? 'Since your last visit, our onboarding requirements have changed. Please review and resubmit your organization information to continue using Polar.'
-                    : 'Since your last visit, our onboarding requirements have changed. An admin needs to review and resubmit the organization information.'
-                  : 'Set up your products and integrate into your app. Test the full flow with 100% discount codes. When you’re ready, go live to start accepting payments from your customers.'}
+                Set up your products and integrate into your app. Test the full
+                flow with 100% discount codes. When you&rsquo;re ready, go live
+                to start accepting payments from your customers.
               </Text>
             </Box>
 
-            {canManageOrganization && total > 0 ? (
+            {canManageOrganization ? (
               <Box flexDirection="column" rowGap="s">
                 <Text color="muted">
                   {completed} of {total} required steps complete
@@ -192,14 +182,11 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
               {!canManageOrganization ? (
                 <>
                   <Text variant="title">
-                    {isResubmission
-                      ? 'Organization review required'
-                      : 'Payments aren’t enabled for your organization yet'}
+                    Payments aren&rsquo;t enabled for your organization yet
                   </Text>
                   <Text color="muted">
-                    {isResubmission
-                      ? 'An admin needs to review and resubmit the organization information before payments can be accepted.'
-                      : 'An admin needs to finish account setup before payments can be accepted.'}
+                    An owner or admin needs to finish account setup before you
+                    can accept payments.
                   </Text>
                 </>
               ) : nextLabel ? (
@@ -229,13 +216,7 @@ export const OnboardingChecklistCard = ({ organization }: Props) => {
                 }}
               >
                 <Button>
-                  {isResubmission
-                    ? canSubmit
-                      ? 'Review & resubmit'
-                      : 'Review requirements'
-                    : canSubmit
-                      ? 'Review & submit'
-                      : 'Continue setup'}
+                  {canSubmit ? 'Review & submit' : 'Continue setup'}
                 </Button>
               </Link>
             ) : null}

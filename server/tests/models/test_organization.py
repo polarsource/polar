@@ -95,13 +95,13 @@ class TestGetCustomPortalUrl:
             is None
         )
 
-    async def test_uses_db_setting_and_appends_identifiers(
+    async def test_substitutes_placeholders(
         self, customer: Customer, organization: Organization
     ) -> None:
         organization.feature_settings = {"portal_url_override_enabled": True}
         organization.customer_portal_settings = {
             **organization.customer_portal_settings,
-            "portal_url": "https://acme.example.com/billing",
+            "portal_url": "https://acme.example.com/billing?e={EMAIL}&u={EXTERNAL_ID}",
         }
         customer.external_id = "usr_123"
 
@@ -111,18 +111,18 @@ class TestGetCustomPortalUrl:
         assert url is not None
         params = parse_qs(urlparse(url).query)
         assert url.startswith("https://acme.example.com/billing?")
-        assert params["email"] == [customer.email]
-        assert params["external_id"] == ["usr_123"]
-        assert "order_id" not in params
-        assert "subscription_id" not in params
+        assert params["e"] == [customer.email]
+        assert params["u"] == ["usr_123"]
 
-    async def test_appends_entity_ids(
+    async def test_substitutes_entity_ids(
         self, customer: Customer, organization: Organization
     ) -> None:
         organization.feature_settings = {"portal_url_override_enabled": True}
         organization.customer_portal_settings = {
             **organization.customer_portal_settings,
-            "portal_url": "https://acme.example.com/billing",
+            "portal_url": (
+                "https://acme.example.com/billing?o={ORDER_ID}&s={SUBSCRIPTION_ID}"
+            ),
         }
         order_id = uuid.uuid4()
         subscription_id = uuid.uuid4()
@@ -137,8 +137,60 @@ class TestGetCustomPortalUrl:
 
         assert url is not None
         params = parse_qs(urlparse(url).query)
-        assert params["order_id"] == [str(order_id)]
-        assert params["subscription_id"] == [str(subscription_id)]
+        assert params["o"] == [str(order_id)]
+        assert params["s"] == [str(subscription_id)]
+
+    async def test_url_encodes_substituted_values(
+        self, customer: Customer, organization: Organization
+    ) -> None:
+        organization.feature_settings = {"portal_url_override_enabled": True}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "portal_url": "https://acme.example.com/billing?e={EMAIL}",
+        }
+
+        url = organization.get_customer_portal_url_override(
+            customer, "jane+billing@example.com"
+        )
+
+        assert url is not None
+        assert "jane%2Bbilling%40example.com" in url
+        params = parse_qs(urlparse(url).query)
+        assert params["e"] == ["jane+billing@example.com"]
+
+    async def test_missing_values_substitute_empty_string(
+        self, customer: Customer, organization: Organization
+    ) -> None:
+        organization.feature_settings = {"portal_url_override_enabled": True}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "portal_url": (
+                "https://acme.example.com/billing"
+                "?u={EXTERNAL_ID}&o={ORDER_ID}&s={SUBSCRIPTION_ID}"
+            ),
+        }
+        customer.external_id = None
+
+        assert customer.email is not None
+        url = organization.get_customer_portal_url_override(customer, customer.email)
+
+        assert url == "https://acme.example.com/billing?u=&o=&s="
+
+    async def test_url_without_placeholders_used_verbatim(
+        self, customer: Customer, organization: Organization
+    ) -> None:
+        organization.feature_settings = {"portal_url_override_enabled": True}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "portal_url": "https://acme.example.com/billing",
+        }
+
+        assert customer.email is not None
+        url = organization.get_customer_portal_url_override(
+            customer, customer.email, order_id=uuid.uuid4()
+        )
+
+        assert url == "https://acme.example.com/billing"
 
     async def test_db_setting_takes_precedence_over_env_override(
         self,
@@ -159,8 +211,7 @@ class TestGetCustomPortalUrl:
         assert customer.email is not None
         url = organization.get_customer_portal_url_override(customer, customer.email)
 
-        assert url is not None
-        assert url.startswith("https://acme.example.com/billing?")
+        assert url == "https://acme.example.com/billing"
 
     async def test_disabled_flag_ignores_db_setting(
         self, customer: Customer, organization: Organization

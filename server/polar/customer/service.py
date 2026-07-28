@@ -732,7 +732,7 @@ class CustomerService:
 
         return filtered
 
-    async def _create_session_token_for_recipient(
+    async def create_session_token_for_recipient(
         self,
         session: AsyncSession,
         customer: Customer,
@@ -785,7 +785,7 @@ class CustomerService:
         if override_url is not None:
             return override_url
 
-        token = await self._create_session_token_for_recipient(
+        token = await self.create_session_token_for_recipient(
             session, customer, recipient_email
         )
         if token is None:

@@ -2786,7 +2786,9 @@ class TestSendConfirmationEmail:
         organization.feature_settings = {"portal_url_override_enabled": True}
         organization.customer_portal_settings = {
             **organization.customer_portal_settings,
-            "portal_url": "https://acme.example.com/billing",
+            "portal_url": (
+                "https://acme.example.com/billing?e={EMAIL}&u={EXTERNAL_ID}&o={ORDER_ID}"
+            ),
         }
         await save_fixture(organization)
         customer.external_id = "usr_123"
@@ -2803,10 +2805,9 @@ class TestSendConfirmationEmail:
         parsed = urlparse(email.props.url)
         params = parse_qs(parsed.query)
         assert email.props.url.startswith("https://acme.example.com/billing?")
-        assert params["email"] == [customer.email]
-        assert params["external_id"] == ["usr_123"]
-        assert params["order_id"] == [str(order.id)]
-        assert "subscription_id" not in params
+        assert params["e"] == [customer.email]
+        assert params["u"] == ["usr_123"]
+        assert params["o"] == [str(order.id)]
         assert "customer_session_token" not in params
 
     async def test_renewal_email_uses_portal_url_override(
@@ -2826,7 +2827,10 @@ class TestSendConfirmationEmail:
         organization.feature_settings = {"portal_url_override_enabled": True}
         organization.customer_portal_settings = {
             **organization.customer_portal_settings,
-            "portal_url": "https://acme.example.com/billing",
+            "portal_url": (
+                "https://acme.example.com/billing"
+                "?e={EMAIL}&o={ORDER_ID}&s={SUBSCRIPTION_ID}"
+            ),
         }
         await save_fixture(organization)
         subscription = await create_active_subscription(
@@ -2846,9 +2850,9 @@ class TestSendConfirmationEmail:
         parsed = urlparse(email.props.url)
         params = parse_qs(parsed.query)
         assert email.props.url.startswith("https://acme.example.com/billing?")
-        assert params["email"] == [customer.email]
-        assert params["order_id"] == [str(order.id)]
-        assert params["subscription_id"] == [str(subscription.id)]
+        assert params["e"] == [customer.email]
+        assert params["o"] == [str(order.id)]
+        assert params["s"] == [str(subscription.id)]
         assert "customer_session_token" not in params
 
     async def test_excludes_non_public_benefits(

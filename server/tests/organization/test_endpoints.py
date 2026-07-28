@@ -634,7 +634,36 @@ class TestUpdateOrganization:
         assert response.status_code == 422
 
     @pytest.mark.auth
-    async def test_portal_url_override_rejects_query_params(
+    async def test_portal_url_override_accepts_placeholders(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"portal_url_override_enabled": True}
+        await save_fixture(organization)
+        portal_url = (
+            "https://acme.example.com/billing"
+            "?e={EMAIL}&u={EXTERNAL_ID}&o={ORDER_ID}&s={SUBSCRIPTION_ID}"
+        )
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    **_default_customer_portal_settings(),
+                    "portal_url": portal_url,
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_portal_settings"]
+        assert settings["portal_url"] == portal_url
+
+    @pytest.mark.auth
+    async def test_portal_url_override_rejects_unknown_placeholder(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -649,12 +678,14 @@ class TestUpdateOrganization:
             json={
                 "customer_portal_settings": {
                     **_default_customer_portal_settings(),
-                    "portal_url": "https://acme.example.com/billing?ref=x",
+                    "portal_url": "https://acme.example.com/billing?e={EMIAL}",
                 },
             },
         )
 
         assert response.status_code == 422
+        detail = response.json()["detail"]
+        assert "{EMIAL}" in detail[0]["msg"]
 
     @pytest.mark.auth
     async def test_submit_for_review_requires_relevant_fields(

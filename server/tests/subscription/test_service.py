@@ -8486,7 +8486,7 @@ class TestSendCancellationEmail:
         organization.feature_settings = {"portal_url_override_enabled": True}
         organization.customer_portal_settings = {
             **organization.customer_portal_settings,
-            "portal_url": "https://acme.example.com/billing",
+            "portal_url": "https://acme.example.com/billing?e={EMAIL}&s={SUBSCRIPTION_ID}",
         }
         await save_fixture(organization)
         subscription = await create_active_subscription(
@@ -8499,8 +8499,8 @@ class TestSendCancellationEmail:
         email = enqueue_email_mock.call_args[0][0]
         assert email.props.url.startswith("https://acme.example.com/billing?")
         params = parse_qs(urlparse(email.props.url).query)
-        assert params["email"] == [customer.email]
-        assert params["subscription_id"] == [str(subscription.id)]
+        assert params["e"] == [customer.email]
+        assert params["s"] == [str(subscription.id)]
         assert "customer_session_token" not in params
 
     async def test_defaults_to_polar_portal(

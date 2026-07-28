@@ -138,6 +138,8 @@ OverviewMetrics = Annotated[list[str] | None, BeforeValidator(_coerce_overview_m
 
 _http_url_adapter = TypeAdapter(HttpUrl)
 
+PORTAL_URL_PLACEHOLDERS = {"EMAIL", "EXTERNAL_ID", "ORDER_ID", "SUBSCRIPTION_ID"}
+
 
 def validate_customer_portal_url(value: str | None) -> str | None:
     if value is None:
@@ -151,11 +153,16 @@ def validate_customer_portal_url(value: str | None) -> str | None:
         raise ValueError("The customer portal URL must be a valid URL.")
     if url.scheme != "https":
         raise ValueError("The customer portal URL must use HTTPS.")
-    if url.query or url.fragment:
+    unknown = sorted(
+        f"{{{placeholder}}}"
+        for placeholder in set(re.findall(r"\{([^{}]*)\}", value))
+        if placeholder not in PORTAL_URL_PLACEHOLDERS
+    )
+    if unknown:
+        available = ", ".join(f"{{{p}}}" for p in sorted(PORTAL_URL_PLACEHOLDERS))
         raise ValueError(
-            "The customer portal URL must not contain query parameters. "
-            "The `email`, `external_id`, `order_id` and `subscription_id` "
-            "parameters are appended automatically."
+            f"Unknown placeholder: {', '.join(unknown)}. "
+            f"Available placeholders: {available}."
         )
     return value
 

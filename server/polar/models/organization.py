@@ -1,7 +1,7 @@
 from datetime import UTC, datetime
 from enum import IntEnum, StrEnum
 from typing import TYPE_CHECKING, Annotated, Any, Literal, NotRequired, Self, TypedDict
-from urllib.parse import urlencode, urlparse
+from urllib.parse import quote, urlencode, urlparse
 from uuid import UUID
 
 from pydantic.json_schema import WithJsonSchema
@@ -851,21 +851,32 @@ class Organization(RateLimitGroupMixin, RecordModel):
         """Build the customer portal link override for a recipient, if configured.
 
         Returns None when the organization uses the default Polar customer
-        portal links. The override link identifies the customer (email, external
-        ID) and the entity the email is about (order, subscription).
+        portal links. The configured URL may contain `{EMAIL}`, `{EXTERNAL_ID}`,
+        `{ORDER_ID}` and `{SUBSCRIPTION_ID}` placeholders, replaced with the
+        recipient's URL-encoded values — or an empty string when not applicable.
         """
         # The DB-configured URL is gated by the feature flag, so disabling the
-        # flag stops using it. The deprecated legacy env-var override is kept as
-        # a fallback regardless, until the remaining configured organization is
-        # migrated to the DB setting.
-        configured_url = (
-            self.customer_portal_url_override
-            if self.is_portal_url_override_enabled
-            else None
-        )
-        override_url = configured_url or settings.CUSTOMER_PORTAL_URL_OVERRIDES.get(
-            str(self.id)
-        )
+        # flag stops using it.
+        if self.is_portal_url_override_enabled:
+            configured_url = self.customer_portal_url_override
+            if configured_url is not None:
+                values = {
+                    "{EMAIL}": recipient_email,
+                    "{EXTERNAL_ID}": customer.external_id or "",
+                    "{ORDER_ID}": str(order_id) if order_id is not None else "",
+                    "{SUBSCRIPTION_ID}": str(subscription_id)
+                    if subscription_id is not None
+                    else "",
+                }
+                url = configured_url
+                for placeholder, value in values.items():
+                    url = url.replace(placeholder, quote(value, safe=""))
+                return url
+
+        # The deprecated legacy env-var override predates the placeholder
+        # syntax: it appends fixed query parameters instead. Kept until the
+        # remaining configured organization is migrated to the DB setting.
+        override_url = settings.CUSTOMER_PORTAL_URL_OVERRIDES.get(str(self.id))
         if not override_url:
             return None
         params = {"email": recipient_email}

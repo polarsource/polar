@@ -16,7 +16,7 @@ const ProseSection = ({
   fallback: string
 }) => (
   <OrderSection title={title}>
-    <Box backgroundColor="background-secondary" borderRadius="l" padding="xl">
+    <Box backgroundColor="background-card" borderRadius="l" padding="xl">
       {text ? (
         // Notes and welcome messages are multi-line text, so the
         // line breaks are preserved.

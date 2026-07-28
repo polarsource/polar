@@ -627,6 +627,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
         JSONB, nullable=False, default=_default_checkout_settings
     )
 
+    embed_hosts: Mapped[list[str] | None] = mapped_column(
+        JSONB, nullable=True, default=list
+    )
+
     legal_entity: Mapped[OrganizationLegalEntity | None] = mapped_column(
         JSONB, nullable=True, default=None
     )

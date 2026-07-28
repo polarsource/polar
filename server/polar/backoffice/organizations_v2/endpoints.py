@@ -2344,11 +2344,15 @@ async def reset_onboarding_dialog(
         raise HTTPException(status_code=404, detail="Organization not found")
 
     if request.method == "POST":
-        await organization_service.reset_onboarding_for_review(
-            session,
-            organization,
-            reset_by=user_session.user.email,
-        )
+        try:
+            await organization_service.reset_onboarding_for_review(
+                session,
+                organization,
+                reset_by=user_session.user.email,
+            )
+        except OrganizationError as e:
+            await add_toast(request, e.message, "error")
+            return None
         await add_toast(
             request,
             "Organization onboarding reset. They must review and resubmit their information.",

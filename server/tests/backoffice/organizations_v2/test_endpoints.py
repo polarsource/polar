@@ -284,6 +284,25 @@ class TestResetOnboardingDialog:
         assert organization.internal_notes is not None
         assert user.email in organization.internal_notes
 
+    async def test_shows_error_when_organization_was_already_reset(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.CREATED
+        await session.flush()
+
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/reset-onboarding-dialog"
+        )
+
+        assert response.status_code == 200
+        assert (
+            "Only active, review, or snoozed organizations can be reset "
+            "for onboarding review."
+        ) in response.text
+
 
 @pytest.mark.asyncio
 class TestOffboardDialog:

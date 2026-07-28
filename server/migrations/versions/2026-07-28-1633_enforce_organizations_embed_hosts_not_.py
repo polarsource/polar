@@ -11,7 +11,6 @@ from alembic import op
 from sqlalchemy.dialects import postgresql
 
 # Polar Custom Imports
-from polar.config import settings
 
 # revision identifiers, used by Alembic.
 revision = "45773b693045"
@@ -24,13 +23,7 @@ def upgrade() -> None:
     # Ensures we don't break app by applying a deadlock-inducing migration
     # `organizations` is a busy table: allow longer to acquire the lock.
     op.execute("SET LOCAL lock_timeout = '30s'")
-    # Local dev only, so a fresh database doesn't need the backfill script.
-    # Deployed environments run scripts.backfill_organization_embed_hosts first,
-    # and never rewrite the table under lock.
-    if settings.is_development():
-        op.execute(
-            "UPDATE organizations SET embed_hosts = '[]' WHERE embed_hosts IS NULL"
-        )
+    op.execute("UPDATE organizations SET embed_hosts = '[]' WHERE embed_hosts IS NULL")
     op.alter_column(
         "organizations",
         "embed_hosts",

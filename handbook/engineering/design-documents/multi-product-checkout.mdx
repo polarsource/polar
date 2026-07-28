@@ -249,6 +249,11 @@ The last rule follows from `Subscription.meter_interval`, which is snapshotted f
 creation. An add-on metered on a different cadence has nowhere to store it, so validation rejects it
 rather than silently rebasing it.
 
+An add-on matching none of the bases on the link is a mistake, and creation returns a 422. Say the link
+offers a monthly base and the merchant lists `<analytics_yearly>` beside it. No buyer can ever see that
+add-on: there is one base, it is monthly, and the intervals never match. Better to reject the link than
+to hand back one that quietly drops an add-on the merchant configured.
+
 ## API
 
 ### Merchant: offering the menu
@@ -261,11 +266,27 @@ POST /v1/checkout-links
 {
   "products": ["<base_monthly>", "<base_yearly>"],
   "addons": [
-    { "product_id": "<analytics>", "max_quantity": 1 },
-    { "product_id": "<extra_credits>", "min_quantity": 0, "max_quantity": 10 }
+    { "product_id": "<analytics_monthly>", "max_quantity": 1 },
+    { "product_id": "<analytics_yearly>", "max_quantity": 1 },
+    { "product_id": "<extra_credits_monthly>", "min_quantity": 0, "max_quantity": 10 },
+    { "product_id": "<extra_credits_yearly>", "min_quantity": 0, "max_quantity": 10 }
   ]
 }
 ```
+
+`addons` is one flat pool for the link, not a per-base mapping. A product carries a single interval
+(`Product.recurring_interval` and `recurring_interval_count`, `server/polar/models/product.py:73-81`),
+so monthly and yearly analytics are two products — exactly as the two bases are two products. The
+interval match **is** the mapping: the checkout offers only the add-ons eligible for the base the buyer
+has selected through `product_id` (`server/polar/checkout/schemas.py:356-361`), and the read schema
+returns that subset rather than the whole pool. Nothing declares which add-on belongs to which base, so
+no configuration can contradict the interval.
+
+Two costs come with that. Each add-on is duplicated per interval offered. And switching the base drops
+the selection instead of carrying it across: `<analytics_monthly>` and `<analytics_yearly>` are
+unrelated rows, and nothing in the model says they are one offer at two cadences. The buyer re-picks.
+Carrying the selection over needs a notion of product equivalence that does not exist today, and it is
+out of scope here.
 
 `PATCH /v1/checkout-links/{id}` takes `addons` as a full replacement set, matching how it already
 handles `products`. `POST /v1/checkouts` takes the same field. The dashboard's checkout-link editor

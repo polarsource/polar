@@ -126,11 +126,11 @@ async def list(
     subscription_id: MultipleQueryFilter[SubscriptionID] | None = Query(
         None, title="SubscriptionID Filter", description="Filter by subscription ID."
     ),
-    created_at_after: datetime | None = Query(
+    created_after: datetime | None = Query(
         None,
         description="Filter by creation date (after or equal to).",
     ),
-    created_at_before: datetime | None = Query(
+    created_before: datetime | None = Query(
         None,
         description="Filter by creation date (before or equal to).",
     ),
@@ -148,8 +148,8 @@ async def list(
         external_customer_id=external_customer_id,
         checkout_id=checkout_id,
         subscription_id=subscription_id,
-        created_at_after=created_at_after,
-        created_at_before=created_at_before,
+        created_after=created_after,
+        created_before=created_before,
         metadata=metadata,
         pagination=pagination,
         sorting=sorting,

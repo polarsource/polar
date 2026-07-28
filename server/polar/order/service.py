@@ -378,8 +378,8 @@ class OrderService:
         external_customer_id: Sequence[str] | None = None,
         checkout_id: Sequence[uuid.UUID] | None = None,
         subscription_id: Sequence[uuid.UUID] | None = None,
-        created_at_after: datetime | None = None,
-        created_at_before: datetime | None = None,
+        created_after: datetime | None = None,
+        created_before: datetime | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[OrderSortProperty]] = [
@@ -438,11 +438,11 @@ class OrderService:
         if subscription_id is not None:
             statement = statement.where(Order.subscription_id.in_(subscription_id))
 
-        if created_at_after is not None:
-            statement = statement.where(Order.created_at >= created_at_after)
+        if created_after is not None:
+            statement = statement.where(Order.created_at > created_after)
 
-        if created_at_before is not None:
-            statement = statement.where(Order.created_at <= created_at_before)
+        if created_before is not None:
+            statement = statement.where(Order.created_at < created_before)
 
         if metadata is not None:
             statement = apply_metadata_clause(Order, statement, metadata)

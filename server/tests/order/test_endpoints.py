@@ -138,8 +138,8 @@ class TestListOrders:
         response = await client.get(
             "/v1/orders/",
             params={
-                "created_at_after": "2024-03-01T00:00:00Z",
-                "created_at_before": "2024-07-01T00:00:00Z",
+                "created_after": "2024-03-01T00:00:00Z",
+                "created_before": "2024-07-01T00:00:00Z",
             },
         )
         assert response.status_code == 200

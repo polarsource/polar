@@ -277,8 +277,8 @@ class CheckoutService:
         external_customer_id: Sequence[str] | None = None,
         status: Sequence[CheckoutStatus] | None = None,
         query: str | None = None,
-        created_at_after: datetime | None = None,
-        created_at_before: datetime | None = None,
+        created_after: datetime | None = None,
+        created_before: datetime | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[CheckoutSortProperty]] = [
             (CheckoutSortProperty.created_at, True)
@@ -312,11 +312,11 @@ class CheckoutService:
         if query is not None:
             statement = statement.where(Checkout.customer_email.ilike(f"%{query}%"))
 
-        if created_at_after is not None:
-            statement = statement.where(Checkout.created_at >= created_at_after)
+        if created_after is not None:
+            statement = statement.where(Checkout.created_at > created_after)
 
-        if created_at_before is not None:
-            statement = statement.where(Checkout.created_at < created_at_before)
+        if created_before is not None:
+            statement = statement.where(Checkout.created_at < created_before)
 
         statement = repository.apply_sorting(statement, sorting)
 

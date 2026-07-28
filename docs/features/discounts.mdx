@@ -5,14 +5,8 @@ description: "Create discounts on products and subscriptions"
 
 Discounts are a way to reduce the price of a product or subscription. They can be applied to one-time purchasable products or subscriptions.
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/discounts/create.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/discounts/create.dark.png"
-/>
+<img className="block dark:hidden" src="/assets/features/discounts/create.light.png" />
+<img className="hidden dark:block" src="/assets/features/discounts/create.dark.png" />
 
 ## Create a discount
 
@@ -52,19 +46,15 @@ The percentage discount to apply to the product or subscription.
 
 ## Per-customer limits
 
-A per-customer limit caps how often one buyer uses a code while the code itself stays open to everyone else. Share it publicly, set the limit to 1, and each buyer gets one redemption.
+A per-customer limit caps how many times a single buyer can redeem a code, while leaving the code open to everyone else. Share it publicly, set the limit to 1, and each buyer gets one redemption.
 
-Polar identifies a customer by three signals, and one match is enough:
+Polar identifies a customer by three signals, and a match on any one is enough:
 
-- The customer account on the checkout or the subscription.
-- The email address, ignoring plus-aliases. `ada+polar@example.com` matches `ada@example.com`.
-- The payment card, so a new email address on the same card still counts.
+- The (external) customer ID on the checkout or the subscription.
+- The email address (ignoring plus-aliases: `ada+polar@example.com` matches `ada@example.com`)
+- The payment card, so a new email address on the same card still counts. Free products and 100% forever subscriptions never ask for a card, so those match on ID and email alone.
 
-Polar rejects an exhausted code on the code field itself, not after the payment form. The card is an extra signal, not a requirement: free products and 100% forever subscriptions never reach a card, so those checkouts match on account and email alone.
-
-Refunding every order of a redemption in full frees the customer's slot, so they can use the code again. A partial refund doesn't. The exception is a refund [Polar issues to head off a chargeback](/features/refunds): the slot stays taken, since buy-refund-repeat is the loop a per-customer limit exists to close. Either way the global **Maximum redemptions** budget is unaffected: the code was still handed out.
-
-Applying a discount to an existing subscription from the dashboard or the API counts toward the limit, but Polar never blocks you from granting one.
+Refunding an order frees the customer's slot, and they can use the code again (note: a partial refund doesn't). [Polar-issued refunds as part of chargeback prevention](/docs/features/refunds) also don't free the customer's slot.
 
 ## Apply a discount
 
@@ -72,9 +62,7 @@ Applying a discount to an existing subscription from the dashboard or the API co
 
 When creating a [Checkout Link](/features/checkout/links), you can preset a discount that will be automatically applied when customers land on the checkout page. This is useful for promotional campaigns or special offers where you want to guarantee the discount is applied without requiring customers to enter a code.
 
-<Info>
-Discounts without a code can only be auto-applied through Checkout Links or the API.
-</Info>
+<Info>Discounts without a code can only be auto-applied through Checkout Links or the API.</Info>
 
 ### Prefill via query parameter
 

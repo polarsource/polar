@@ -1075,7 +1075,9 @@ class TestSlackSharedChannelGrant:
         await _create_integration(save_fixture, benefit)
         client = _mock_client(
             mocker,
-            conversations_unarchive=AsyncMock(return_value={"ok": False, "error": error}),
+            conversations_unarchive=AsyncMock(
+                return_value={"ok": False, "error": error}
+            ),
         )
         strategy = _strategy(session, redis, client)
 

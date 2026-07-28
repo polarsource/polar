@@ -128,11 +128,11 @@ async def list(
     ),
     created_after: datetime | None = Query(
         None,
-        description="Filter by creation date (after or equal to).",
+        description="Only include orders created after this date",
     ),
     created_before: datetime | None = Query(
         None,
-        description="Filter by creation date (before or equal to).",
+        description="Only include orders created before this date",
     ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[OrderSchema]:

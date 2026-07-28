@@ -42160,9 +42160,9 @@ export interface operations {
         checkout_id?: string | string[] | null
         /** @description Filter by subscription ID. */
         subscription_id?: string | string[] | null
-        /** @description Filter by creation date (after or equal to). */
+        /** @description Only include orders created after this date */
         created_after?: string | null
-        /** @description Filter by creation date (before or equal to). */
+        /** @description Only include orders created before this date */
         created_before?: string | null
         /** @description Page number, defaults to 1. */
         page?: number

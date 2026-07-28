@@ -5,6 +5,7 @@ import {
   useCustomerOrderPaymentStatus,
 } from '@/hooks/queries/customerPortal'
 import { type Client, schemas } from '@polar-sh/client'
+import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
 import { PaymentElement } from '@stripe/react-stripe-js'
 import {
@@ -383,8 +384,7 @@ export const OrderPaymentRetry = ({
           <div className="flex justify-between">
             <span>Amount:</span>
             <span>
-              ${(order.total_amount / 100).toFixed(2)}{' '}
-              {order.currency.toUpperCase()}
+              {formatCurrency('accounting')(order.total_amount, order.currency)}
             </span>
           </div>
         </div>

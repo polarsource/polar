@@ -249,6 +249,19 @@ class TestBlockDialog:
 
 @pytest.mark.asyncio
 class TestResetOnboardingDialog:
+    async def test_warns_that_held_payouts_are_canceled(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        organization: Organization,
+    ) -> None:
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/reset-onboarding-dialog"
+        )
+
+        assert response.status_code == 200
+        assert "Cancel pending-review payouts" in response.text
+        assert "return their reserved funds" in response.text
+
     async def test_resets_organization(
         self,
         backoffice_client: httpx.AsyncClient,

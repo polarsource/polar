@@ -641,6 +641,11 @@ class OrganizationService:
         organization.snooze_type = None
         organization.onboarding_resubmission_requested_at = datetime.now(UTC)
 
+        enqueue_job(
+            "payout.cancel_held_payouts",
+            account_id=organization.account_id,
+        )
+
         review_repository = OrganizationReviewRepository.from_session(session)
         review = await review_repository.get_by_organization(organization.id)
         if review is not None:

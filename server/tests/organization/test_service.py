@@ -1370,10 +1370,12 @@ class TestResetOnboardingForReview:
     )
     async def test_resets_eligible_organization(
         self,
+        mocker: MockerFixture,
         session: AsyncSession,
         organization: Organization,
         status: OrganizationStatus,
     ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
         organization.status = status
         organization.capabilities = {**STATUS_CAPABILITIES[status]}
         organization.details_submitted_at = datetime.now(UTC)
@@ -1409,6 +1411,10 @@ class TestResetOnboardingForReview:
             in result.internal_notes
         )
         assert "admin@example.com" in result.internal_notes
+        enqueue_job_mock.assert_called_once_with(
+            "payout.cancel_held_payouts",
+            account_id=organization.account_id,
+        )
 
     @pytest.mark.parametrize(
         "status",

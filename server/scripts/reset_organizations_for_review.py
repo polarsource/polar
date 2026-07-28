@@ -2,7 +2,8 @@
 
 The organizations keep their existing information, but return to CREATED with
 payment capabilities disabled. Their current review is retired, and submitting
-the onboarding form starts a fresh AI review.
+the onboarding form starts a fresh AI review. Held payouts are canceled and
+their reserved funds are returned to the organization's balance.
 
 Usage:
     cd server

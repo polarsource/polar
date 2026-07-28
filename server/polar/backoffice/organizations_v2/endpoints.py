@@ -2381,6 +2381,11 @@ async def reset_onboarding_dialog(
                             "the organization is approved again"
                         )
                     with tag.li():
+                        text(
+                            "Cancel pending-review payouts and return their reserved "
+                            "funds to the organization's balance"
+                        )
+                    with tag.li():
                         text("Retire the current review so the AI review runs again")
                     with tag.li():
                         text(

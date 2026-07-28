@@ -226,6 +226,17 @@ const ClientPage: React.FC<ClientPageProps> = ({
       },
     },
     {
+      accessorKey: 'max_redemptions_per_customer',
+      enableSorting: false,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Per Customer" />
+      ),
+      cell: ({ getValue }) => {
+        const maxPerCustomer = getValue() as number | null
+        return maxPerCustomer ?? '—'
+      },
+    },
+    {
       accessorKey: 'created_at',
       enableSorting: true,
       header: ({ column }) => (

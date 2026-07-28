@@ -5,14 +5,8 @@ description: "Create discounts on products and subscriptions"
 
 Discounts are a way to reduce the price of a product or subscription. They can be applied to one-time purchasable products or subscriptions.
 
-<img
-  className="block dark:hidden"
-  src="/assets/features/discounts/create.light.png"
-/>
-<img
-  className="hidden dark:block"
-  src="/assets/features/discounts/create.dark.png"
-/>
+<img className="block dark:hidden" src="/assets/features/discounts/create.light.png" />
+<img className="hidden dark:block" src="/assets/features/discounts/create.dark.png" />
 
 ## Create a discount
 
@@ -47,7 +41,20 @@ The percentage discount to apply to the product or subscription.
 - **Products** The discount can only be applied to specific products. By default the discount can be applied to all products, also ones created after the discount was created.
 - **Starts at** The discount can only be applied after this date
 - **Ends at** The discount can only be applied before this date
-- **Maximum redemptions** The maximum number of times the discount can be applied.
+- **Maximum redemptions** The maximum number of times the discount can be applied, counting across all customers.
+- **Maximum redemptions per customer** The maximum number of times a single customer can apply the discount. See [Per-customer limits](#per-customer-limits).
+
+## Per-customer limits
+
+A per-customer limit caps how many times a single buyer can redeem a code, while leaving the code open to everyone else. Share it publicly, set the limit to 1, and each buyer gets one redemption.
+
+Polar identifies a customer by three signals, and a match on any one is enough:
+
+- The (external) customer ID on the checkout or the subscription.
+- The email address (ignoring plus-aliases: `ada+polar@example.com` matches `ada@example.com`)
+- The payment card, so a new email address on the same card still counts. Free products and 100% forever subscriptions never ask for a card, so those match on ID and email alone.
+
+Refunding an order frees the customer's slot, and they can use the code again (note: a partial refund doesn't). [Polar-issued refunds as part of chargeback prevention](/docs/features/refunds) also don't free the customer's slot.
 
 ## Apply a discount
 
@@ -55,9 +62,7 @@ The percentage discount to apply to the product or subscription.
 
 When creating a [Checkout Link](/features/checkout/links), you can preset a discount that will be automatically applied when customers land on the checkout page. This is useful for promotional campaigns or special offers where you want to guarantee the discount is applied without requiring customers to enter a code.
 
-<Info>
-Discounts without a code can only be auto-applied through Checkout Links or the API.
-</Info>
+<Info>Discounts without a code can only be auto-applied through Checkout Links or the API.</Info>
 
 ### Prefill via query parameter
 

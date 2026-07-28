@@ -38,7 +38,10 @@ export const useGetOrganizationOrderInvoice = (organizationId: string) =>
       ),
   })
 
-export const useOrganizationPlans = (organizationId: string | undefined) =>
+export const useOrganizationPlans = (
+  organizationId: string | undefined,
+  enabled: boolean = true,
+) =>
   useQuery({
     queryKey: ['organization-billing', organizationId, 'plans'],
     queryFn: () =>
@@ -48,11 +51,12 @@ export const useOrganizationPlans = (organizationId: string | undefined) =>
         }),
       ),
     retry: defaultRetry,
-    enabled: !!organizationId,
+    enabled: enabled && !!organizationId,
   })
 
 export const useOrganizationSubscription = (
   organizationId: string | undefined,
+  enabled: boolean = true,
 ) =>
   useQuery({
     queryKey: ['organization-billing', organizationId, 'subscription'],
@@ -63,7 +67,7 @@ export const useOrganizationSubscription = (
         }),
       ),
     retry: defaultRetry,
-    enabled: !!organizationId,
+    enabled: enabled && !!organizationId,
   })
 
 export const useStartSubscriptionCheckout = (organizationId: string) =>

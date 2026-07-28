@@ -765,6 +765,26 @@ class OrganizationDetailView:
                                     "withdraw their remaining balance."
                                 )
 
+                    if self.org.status in {
+                        OrganizationStatus.ACTIVE,
+                        OrganizationStatus.REVIEW,
+                        OrganizationStatus.SNOOZED,
+                    }:
+                        with tag.div(classes="w-full"):
+                            with button(
+                                variant="warning",
+                                size="sm",
+                                outline=True,
+                                hx_get=str(
+                                    request.url_for(
+                                        "organizations:reset_onboarding_dialog",
+                                        organization_id=self.org.id,
+                                    )
+                                ),
+                                hx_target="#modal",
+                            ):
+                                text("Reset Onboarding")
+
                     # Always available actions
                     with tag.div(classes="divider my-2"):
                         pass

@@ -25579,6 +25579,11 @@ export interface components {
        */
       details_submitted_at: string | null
       /**
+       * Onboarding Resubmission Requested At
+       * @description When Polar requested that the organization review and resubmit its onboarding information, if applicable.
+       */
+      onboarding_resubmission_requested_at: string | null
+      /**
        * Sso Enforced
        * @description Whether members must access this organization through its SSO connection.
        */
@@ -26813,6 +26818,11 @@ export interface components {
        * @description When the business details were submitted for review.
        */
       details_submitted_at: string | null
+      /**
+       * Onboarding Resubmission Requested At
+       * @description When Polar requested that the organization review and resubmit its onboarding information, if applicable.
+       */
+      onboarding_resubmission_requested_at: string | null
       /**
        * Sso Enforced
        * @description Whether members must access this organization through its SSO connection.
@@ -28213,6 +28223,11 @@ export interface components {
        * @description When the business details were submitted for review.
        */
       details_submitted_at: string | null
+      /**
+       * Onboarding Resubmission Requested At
+       * @description When Polar requested that the organization review and resubmit its onboarding information, if applicable.
+       */
+      onboarding_resubmission_requested_at: string | null
       /**
        * Sso Enforced
        * @description Whether members must access this organization through its SSO connection.

@@ -128,15 +128,15 @@ async def cancel_account_payouts(account_id: uuid.UUID) -> None:
 
 @actor(actor_name="payout.cancel_held_payouts", priority=TaskPriority.LOW)
 async def cancel_held_payouts(
-    account_id: uuid.UUID, payout_account_id: uuid.UUID
+    account_id: uuid.UUID, payout_account_id: uuid.UUID | None = None
 ) -> None:
-    """Cancel only held payouts for an account when its payout account changes.
+    """Cancel only held payouts for an account.
 
-    Enqueued by ``set_payout_account`` on a swap: a held payout pins the payout
-    account it was created against, so releasing it later would transfer to the
-    stale account. Scoped to ``payout_account_id`` (the previous account) so a
-    held payout already created against the new account isn't canceled. Pending
-    payouts are left alone (their transfer may already be in flight).
+    On an onboarding reset, every held payout is canceled because the
+    organization leaves the review flow. On a payout-account swap, the cancel
+    is scoped to the previous payout account so a hold against the new account
+    is preserved. Pending payouts are always left alone because their transfer
+    may already be in flight.
     """
     async with AsyncSessionMaker() as session:
         await payout_service.cancel_account_payouts(

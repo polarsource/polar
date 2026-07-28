@@ -414,6 +414,29 @@ class TestUpdateReviewSubmission:
         )
 
     @pytest.mark.auth
+    async def test_submit_clears_resubmission_requirement(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = OrganizationStatus.CREATED
+        organization.website = "https://example.com"
+        organization.email = "support@example.com"
+        organization.details = {
+            "product_description": "Subscription SaaS for software teams and agencies.",
+            "selling_categories": ["Software / SaaS"],
+            "pricing_models": ["Subscription"],
+            "switching": False,
+        }
+        organization.onboarding_resubmission_requested_at = datetime.now(UTC)
+
+        await organization_service.submit_for_review(session, organization)
+
+        assert organization.onboarding_resubmission_requested_at is None
+
+    @pytest.mark.auth
     async def test_update_with_submit_for_review_requires_relevant_fields(
         self,
         session: AsyncSession,
@@ -1333,6 +1356,94 @@ class TestBlockOrganization:
             payout_account_id=stripe_payout_account.id,
             reason="fraud",
         )
+
+
+@pytest.mark.asyncio
+class TestResetOnboardingForReview:
+    @pytest.mark.parametrize(
+        "status",
+        [
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.SNOOZED,
+        ],
+    )
+    async def test_resets_eligible_organization(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        status: OrganizationStatus,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = status
+        organization.capabilities = {**STATUS_CAPABILITIES[status]}
+        organization.details_submitted_at = datetime.now(UTC)
+        organization.snoozed_until = datetime.now(UTC) + timedelta(days=1)
+        organization.snooze_type = SnoozeType.NEXT_SALE
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.PASS,
+            risk_score=10.0,
+            violated_sections=[],
+            reason="Previously approved",
+            model_used="test",
+        )
+        session.add(review)
+        await session.flush()
+
+        result = await organization_service.reset_onboarding_for_review(
+            session,
+            organization,
+            reset_by="admin@example.com",
+        )
+
+        assert result.status == OrganizationStatus.CREATED
+        assert result.capabilities == STATUS_CAPABILITIES[OrganizationStatus.CREATED]
+        assert result.details_submitted_at is None
+        assert result.snoozed_until is None
+        assert result.snooze_type is None
+        assert result.onboarding_resubmission_requested_at is not None
+        assert review.deleted_at is not None
+        assert result.internal_notes is not None
+        assert (
+            f"reset from {status.get_display_name()} to Created"
+            in result.internal_notes
+        )
+        assert "admin@example.com" in result.internal_notes
+        enqueue_job_mock.assert_called_once_with(
+            "payout.cancel_held_payouts",
+            account_id=organization.account_id,
+        )
+
+    @pytest.mark.parametrize(
+        "status",
+        [
+            OrganizationStatus.CREATED,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.BLOCKED,
+            OrganizationStatus.OFFBOARDING,
+            OrganizationStatus.OFFBOARDED,
+        ],
+    )
+    async def test_rejects_ineligible_status(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        status: OrganizationStatus,
+    ) -> None:
+        organization.status = status
+        await session.flush()
+
+        with pytest.raises(OrganizationError) as exc_info:
+            await organization_service.reset_onboarding_for_review(
+                session,
+                organization,
+                reset_by="admin@example.com",
+            )
+
+        assert exc_info.value.status_code == 409
+        assert organization.status == status
 
 
 @pytest.mark.asyncio

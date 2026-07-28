@@ -69,6 +69,12 @@ class PayoutTransactionService(BaseTransactionService):
         transaction: Transaction,
         payout: Payout,
     ) -> Transaction:
+        # Reset first: it clears every row pointing at the payout, reversal included.
+        balance_transaction_repository = BalanceTransactionRepository.from_session(
+            session
+        )
+        await balance_transaction_repository.reset_payout_transaction_id(transaction.id)
+
         reversed_transaction = Transaction(
             id=generate_uuid(),
             type=TransactionType.payout_reversal,
@@ -86,17 +92,12 @@ class PayoutTransactionService(BaseTransactionService):
             incurred_transactions=[],
             account_incurred_transactions=[],
             payout=payout,
+            # The reversal belongs to the payout it reverses, never to a later one.
+            payout_transaction=transaction,
         )
 
         repository = PayoutReversalTransactionRepository.from_session(session)
-        reversed_transaction = await repository.create(reversed_transaction, flush=True)
-
-        balance_transaction_repository = BalanceTransactionRepository.from_session(
-            session
-        )
-        await balance_transaction_repository.reset_payout_transaction_id(transaction.id)
-
-        return reversed_transaction
+        return await repository.create(reversed_transaction, flush=True)
 
 
 payout_transaction = PayoutTransactionService(Transaction)

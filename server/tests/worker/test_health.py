@@ -173,6 +173,31 @@ class TestIsSchedulerHealthy:
             scheduler_module._last_heartbeat = original
 
 
+class TestBoundedWaitSeconds:
+    def test_caps_long_wait_to_heartbeat_interval(self) -> None:
+        from polar.worker.scheduler import (
+            HEARTBEAT_INTERVAL_SECONDS,
+            HEARTBEAT_STALENESS_SECONDS,
+            _bounded_wait_seconds,
+        )
+
+        assert _bounded_wait_seconds(900) == HEARTBEAT_INTERVAL_SECONDS
+        assert HEARTBEAT_INTERVAL_SECONDS < HEARTBEAT_STALENESS_SECONDS
+
+    def test_caps_none_wait_to_heartbeat_interval(self) -> None:
+        from polar.worker.scheduler import (
+            HEARTBEAT_INTERVAL_SECONDS,
+            _bounded_wait_seconds,
+        )
+
+        assert _bounded_wait_seconds(None) == HEARTBEAT_INTERVAL_SECONDS
+
+    def test_keeps_short_wait_unchanged(self) -> None:
+        from polar.worker.scheduler import _bounded_wait_seconds
+
+        assert _bounded_wait_seconds(5) == 5
+
+
 def _create_test_app() -> Starlette:
     mock_redis = AsyncMock()
     mock_redis.ping = AsyncMock()

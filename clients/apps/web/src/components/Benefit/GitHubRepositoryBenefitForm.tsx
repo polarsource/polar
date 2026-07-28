@@ -25,6 +25,7 @@ import {
 import { usePathname } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useFormContext } from 'react-hook-form'
+import { githubRepositoryPermissionDisplayNames } from './utils'
 
 interface GitHubRepositoryBenefitFormProps {
   update?: boolean
@@ -415,15 +416,7 @@ export const GitHubRepositoryBenefitForm = ({
                       enums.benefitGitHubRepositoryPropertiesPermissionValues,
                     ).map((permission) => (
                       <SelectItem key={permission} value={permission}>
-                        {
-                          {
-                            pull: 'Read',
-                            triage: 'Triage',
-                            push: 'Write',
-                            maintain: 'Maintain',
-                            admin: 'Admin',
-                          }[permission]
-                        }
+                        {githubRepositoryPermissionDisplayNames[permission]}
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -1,3 +1,4 @@
+import { OrderSection } from '@/components/Orders/OrderSection'
 import { useGrantsForBenefit } from '@/hooks/queries/benefits'
 import {
   DataTablePaginationState,
@@ -216,11 +217,9 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
   }, [benefit.type, memberColumnEnabled, organization.slug])
 
   return (
-    <Box flexDirection="column" gap="xl">
-      <Box alignItems="center" justifyContent="between" gap="l">
-        <Text variant="heading-xxs" as="h2">
-          Benefit Grants
-        </Text>
+    <OrderSection
+      title="Benefit Grants"
+      action={
         <Box width="auto">
           <BenefitGrantStatusSelect
             statuses={['granted', 'revoked']}
@@ -228,7 +227,8 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
             onChange={setGrantStatus}
           />
         </Box>
-      </Box>
+      }
+    >
       <DataTable
         data={benefitGrants?.items || []}
         isLoading={isLoading}
@@ -240,7 +240,7 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
         onPaginationChange={setPagination}
         columns={columns}
       />
-    </Box>
+    </OrderSection>
   )
 }
 

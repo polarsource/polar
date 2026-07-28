@@ -42160,6 +42160,10 @@ export interface operations {
         checkout_id?: string | string[] | null
         /** @description Filter by subscription ID. */
         subscription_id?: string | string[] | null
+        /** @description Filter by creation date (after or equal to). */
+        created_after?: string | null
+        /** @description Filter by creation date (before or equal to). */
+        created_before?: string | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

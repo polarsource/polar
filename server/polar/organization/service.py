@@ -2018,9 +2018,12 @@ class OrganizationService:
         An access token without a webhook is a non-blocking warning rather
         than a failure: the merchant can still fulfill via success_url +
         API calls, we just can't observe state changes (refunds,
-        cancellations) without webhooks during review. Aggregate checks
-        expose per-component state via `sub_checks`; the parent `status`
-        remains the source of truth for gating.
+        cancellations) without webhooks during review. That warning wins
+        over an unfulfillable checkout link, so a merchant who started the
+        no-code path and then switched to the API isn't gated on a webhook
+        we only recommend. Aggregate checks expose per-component state via
+        `sub_checks`; the parent `status` remains the source of truth for
+        gating.
         """
         key = OrganizationReviewCheckKey.SETUP_READINESS
 
@@ -2108,15 +2111,18 @@ class OrganizationService:
             or api_path_passed
         ):
             parent_status = OrganizationReviewCheckStatus.PASSED
+        elif access_token_sub.status == OrganizationReviewCheckStatus.PASSED:
+            # API path partially configured — token present, webhook missing.
+            # Evaluated before the checkout-link failure so a leftover no-code
+            # link the merchant abandoned can't turn the recommended webhook
+            # into a hard gate on the API path.
+            parent_status = OrganizationReviewCheckStatus.WARNING
         elif checkout_link_sub.status == OrganizationReviewCheckStatus.FAILED:
             # No-code path attempted but the link can't fulfill yet. Treat as
             # in-progress: still blocks submission (PENDING gates like FAILED),
             # but the UI guides the merchant to finish setting up delivery
             # rather than surfacing it as an error.
             parent_status = OrganizationReviewCheckStatus.PENDING
-        elif access_token_sub.status == OrganizationReviewCheckStatus.PASSED:
-            # API path partially configured — token present, webhook missing.
-            parent_status = OrganizationReviewCheckStatus.WARNING
         else:
             parent_status = OrganizationReviewCheckStatus.PENDING
 

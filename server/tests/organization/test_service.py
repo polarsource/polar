@@ -2764,6 +2764,41 @@ class TestGetReviewState:
         ]
         assert non_setup_failing  # other checks block, not this warning
 
+    async def test_setup_readiness_access_token_warns_despite_unfulfillable_link(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """A merchant who created a no-code link and then switched to the API
+        path is warned about the missing webhook, not gated by the link."""
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        await create_checkout_link(save_fixture, products=[product])
+        await save_fixture(
+            OrganizationAccessToken(
+                comment="test",
+                token="hash",
+                organization=organization,
+                scope="openid",
+            )
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.WARNING
+        assert step.reasons == [
+            OrganizationReviewCheckReason.SETUP_READINESS_WEBHOOK_MISSING
+        ]
+        assert (
+            _sub(
+                step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
+            ).status
+            == OrganizationReviewCheckStatus.FAILED
+        )
+
     async def test_all_checks_pass_can_submit(
         self,
         save_fixture: SaveFixture,
@@ -2813,6 +2848,32 @@ class TestGetReviewState:
         setup_step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
         assert setup_step.status == OrganizationReviewCheckStatus.PENDING
         assert state.can_submit is False
+
+    async def test_api_key_unblocks_submission_despite_unfulfillable_link(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """The webhook is recommended, not required: an API key alone clears
+        setup readiness even when an abandoned no-code link can't fulfill."""
+        product = await _setup_passing_org(save_fixture, organization, user)
+        await set_product_benefits(save_fixture, product=product, benefits=[])
+        await save_fixture(
+            OrganizationAccessToken(
+                comment="test",
+                token="hash",
+                organization=organization,
+                scope="openid",
+            )
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+
+        setup_step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+        assert setup_step.status == OrganizationReviewCheckStatus.WARNING
+        assert state.can_submit is True
 
     async def test_submitted_blocks_resubmission(
         self,

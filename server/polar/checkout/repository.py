@@ -1,7 +1,7 @@
 import typing
 from uuid import UUID
 
-from sqlalchemy import Select, update
+from sqlalchemy import Select, select, update
 from sqlalchemy.orm import joinedload, selectinload
 
 from polar.authz.types import AccessibleOrganizationID
@@ -83,6 +83,18 @@ class CheckoutRepository(
         )
         result = await self.session.execute(statement)
         return list(result.scalars().all())
+
+    async def has_embedded(self, organization_id: UUID) -> bool:
+        statement = select(
+            select(Checkout.id)
+            .where(
+                Checkout.organization_id == organization_id,
+                Checkout.embed_origin.is_not(None),
+            )
+            .exists()
+        )
+        result = await self.session.execute(statement)
+        return bool(result.scalar())
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

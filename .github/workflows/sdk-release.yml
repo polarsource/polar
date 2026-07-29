@@ -16,7 +16,7 @@ jobs:
     outputs:
       version: ${{ steps.extract.outputs.version }}
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
@@ -44,7 +44,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           fetch-depth: 0
 
@@ -62,13 +62,13 @@ jobs:
     runs-on: ubuntu-latest
     environment: sdk-release
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           ref: "sdk/${{ needs.detect-release.outputs.version }}"
           fetch-depth: 0
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.3.2
+        uses: astral-sh/setup-uv@v9.0.0
 
       - name: Build Python SDK
         working-directory: sdk/python
@@ -85,7 +85,7 @@ jobs:
     runs-on: ubuntu-latest
     environment: sdk-release
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           ref: "sdk/${{ needs.detect-release.outputs.version }}"
           fetch-depth: 0
@@ -132,7 +132,7 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v3.0.2
         with:

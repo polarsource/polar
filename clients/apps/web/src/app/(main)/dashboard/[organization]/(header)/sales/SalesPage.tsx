@@ -115,18 +115,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       },
     },
     {
-      accessorKey: 'net_amount',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Amount" />
-      ),
-      cell: ({ row: { original: order } }) => (
-        <span>
-          {formatCurrency('standard')(order.net_amount, order.currency)}
-        </span>
-      ),
-    },
-    {
       accessorKey: 'product',
       enableSorting: false,
       header: ({ column }) => (
@@ -151,6 +139,18 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       },
     },
     {
+      accessorKey: 'net_amount',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Amount" />
+      ),
+      cell: ({ row: { original: order } }) => (
+        <span>
+          {formatCurrency('standard')(order.net_amount, order.currency)}
+        </span>
+      ),
+    },
+    {
       accessorKey: 'status',
       enableSorting: true,
       header: ({ column }) => (
@@ -163,13 +163,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       ),
     },
     {
-      accessorKey: 'invoice_number',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Invoice number" />
-      ),
-    },
-    {
       accessorKey: 'created_at',
       enableSorting: true,
       header: ({ column }) => (
@@ -177,6 +170,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       ),
       cell: (props) => (
         <FormattedDateTime datetime={props.getValue() as string} />
+      ),
+    },
+    {
+      accessorKey: 'invoice_number',
+      enableSorting: true,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Invoice number" />
       ),
     },
     ...(metadata

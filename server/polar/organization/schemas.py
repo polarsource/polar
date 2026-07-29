@@ -706,6 +706,13 @@ class OrganizationPaymentStatus(Schema):
     organization_status: OrganizationStatus = Field(
         description="Current organization status"
     )
+    onboarding_resubmission_requested_at: datetime | None = Field(
+        description=(
+            "When Polar requested that the organization review and resubmit "
+            "its onboarding information, if applicable. Null for organizations "
+            "that have never been reset for review."
+        ),
+    )
 
 
 class OrganizationAppealRequest(Schema):

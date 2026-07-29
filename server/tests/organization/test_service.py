@@ -1934,6 +1934,32 @@ class TestGetPaymentStatus:
 
         assert payment_status.payment_ready is False
 
+    def test_reflects_resubmission_timestamp(
+        self,
+        organization: Organization,
+    ) -> None:
+        """The resubmission timestamp from the organization is surfaced so
+        the dashboard can distinguish a backoffice reset from initial
+        onboarding using fresh DB-backed data."""
+        reset_at = datetime(2026, 7, 28, 12, 0, tzinfo=UTC)
+        organization.status = OrganizationStatus.CREATED
+        organization.onboarding_resubmission_requested_at = reset_at
+
+        payment_status = organization_service.get_payment_status(organization)
+
+        assert payment_status.onboarding_resubmission_requested_at == reset_at
+
+    def test_resubmission_null_when_never_reset(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.CREATED
+        organization.onboarding_resubmission_requested_at = None
+
+        payment_status = organization_service.get_payment_status(organization)
+
+        assert payment_status.onboarding_resubmission_requested_at is None
+
 
 @pytest.mark.asyncio
 class TestGetAIReview:

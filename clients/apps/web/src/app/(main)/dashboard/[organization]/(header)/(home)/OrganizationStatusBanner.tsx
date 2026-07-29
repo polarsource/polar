@@ -35,7 +35,7 @@ export const OrganizationStatusBanner = ({
   }
 
   if (paymentStatus?.organization_status === 'created') {
-    if (organization.onboarding_resubmission_requested_at) {
+    if (paymentStatus.onboarding_resubmission_requested_at) {
       return <ResubmissionBanner organization={organization} />
     }
 

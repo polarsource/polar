@@ -204,6 +204,12 @@ class PaymentStatusResponse(BaseModel):
     organization_status: OrganizationStatus = Field(
         description="Current organization status"
     )
+    onboarding_resubmission_requested_at: datetime | None = Field(
+        description=(
+            "When Polar requested that the organization review and resubmit "
+            "its onboarding information, if applicable."
+        ),
+    )
 
 
 class OrganizationDeletionCheckResult(BaseModel):
@@ -1767,6 +1773,7 @@ class OrganizationService:
         return PaymentStatusResponse(
             payment_ready=organization.can_accept_payments,
             organization_status=organization.status,
+            onboarding_resubmission_requested_at=organization.onboarding_resubmission_requested_at,
         )
 
     async def get_ai_review(

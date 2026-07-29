@@ -27275,6 +27275,11 @@ export interface components {
       payment_ready: boolean
       /** @description Current organization status */
       organization_status: components['schemas']['OrganizationStatus']
+      /**
+       * Onboarding Resubmission Requested At
+       * @description When Polar requested that the organization review and resubmit its onboarding information, if applicable. Null for organizations that have never been reset for review.
+       */
+      onboarding_resubmission_requested_at: string | null
     }
     /** OrganizationPayoutAccountSet */
     OrganizationPayoutAccountSet: {

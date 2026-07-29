@@ -47,6 +47,28 @@ export const useFiles = (
     enabled: fileIds.length > 0,
   })
 
+export const useDownloadFile = (
+  id: string,
+  onSuccessCallback?: (res: schemas['FileDownload']) => void,
+) =>
+  useMutation({
+    mutationFn: () =>
+      api.GET('/v1/files/{id}/download', {
+        params: {
+          path: { id },
+        },
+      }),
+    onSuccess: (response) => {
+      if (response.error) {
+        return
+      }
+
+      if (onSuccessCallback) {
+        onSuccessCallback(response.data)
+      }
+    },
+  })
+
 export const usePatchFile = (
   id: string,
   onSuccessCallback?: (res: FileRead) => void,

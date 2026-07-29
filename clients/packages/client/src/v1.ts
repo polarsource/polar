@@ -2937,6 +2937,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/files/{id}/download': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get File Download
+     * @description Get a presigned URL to download a file.
+     *
+     *     **Scopes**: `files:read` `files:write`
+     */
+    get: operations['files:download']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/files/{id}/uploaded': {
     parameters: {
       query?: never
@@ -43495,6 +43517,56 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['FileUpload']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'files:download': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The file ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['FileDownload']
+        }
+      }
+      /** @description You don't have the permission to download this file. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description File not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */

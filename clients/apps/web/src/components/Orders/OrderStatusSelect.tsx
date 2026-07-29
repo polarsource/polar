@@ -25,7 +25,7 @@ const OrderStatusSelect: React.FC<OrderStatusSelectProps> = ({
         <SelectValue placeholder="Select a status" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="any">Any status</SelectItem>
+        <SelectItem value="all">All statuses</SelectItem>
         <SelectSeparator />
         {enums.orderStatusValues.map((status) => (
           <SelectItem key={status} value={status}>

@@ -52,7 +52,7 @@ export default async function Page(props: {
       pagination={pagination}
       sorting={sorting}
       productId={productId}
-      status={searchParams.status ?? 'any'}
+      status={searchParams.status ?? 'all'}
       metadata={metadata}
     />
   )

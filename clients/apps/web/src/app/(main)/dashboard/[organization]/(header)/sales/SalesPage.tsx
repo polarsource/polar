@@ -65,7 +65,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       productId.forEach((id) => params.append('product_id', id))
     }
 
-    if (status && status !== 'any') {
+    if (status && status !== 'all') {
       params.append('status', status)
     }
 
@@ -143,7 +143,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const ordersHook = useOrders(organization.id, {
     ...getAPIParams(pagination, sorting),
     product_id: productId,
-    ...(status !== 'any' ? { status: [status as schemas['OrderStatus']] } : {}),
+    ...(status !== 'all' ? { status: [status as schemas['OrderStatus']] } : {}),
   })
 
   const orders = ordersHook.data?.items || []

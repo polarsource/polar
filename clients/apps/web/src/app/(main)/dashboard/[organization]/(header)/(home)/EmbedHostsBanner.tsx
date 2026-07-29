@@ -35,7 +35,7 @@ export const EmbedHostsBanner = ({ organization }: EmbedHostsBannerProps) => {
         <>
           {data.embed_hosts_enforced
             ? 'Your checkout is embedded on at least one site, and no hosts are listed, so those checkouts are not opening.'
-            : 'Your checkout is embedded on at least one site. List the hosts allowed to embed it, or those checkouts will stop opening.'}{' '}
+            : 'Your checkout is embedded on at least one site. Nothing breaks today, but a host you leave out will stop opening your checkout once we enforce the list.'}{' '}
           <a
             href="https://polar.sh/docs/features/checkout/embed#embed-hosts"
             target="_blank"

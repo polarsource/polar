@@ -71,7 +71,7 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
         description={
           organization.embed_hosts_enforced
             ? 'Only these hosts can embed your checkout.'
-            : 'Listing a host starts restricting your checkout to it right away.'
+            : 'Only these hosts will be able to embed your checkout once we enforce the list. Nothing changes until then.'
         }
         vertical
       >
@@ -141,11 +141,10 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
           )}
 
           <Text variant="caption" color="muted">
-            Add every host at once, separated by commas or spaces — the list
-            takes effect as soon as you save. Write each host on its own,
-            without a scheme: example.com, *.example.com for any subdomain, or
-            localhost:3000 with a port. HTTPS is always allowed, and HTTP too on
-            localhost and private addresses.
+            Add every host at once, separated by commas or spaces. Write each
+            host on its own, without a scheme: example.com, *.example.com for
+            any subdomain, or localhost:3000 with a port. HTTPS is always
+            allowed, and HTTP too on localhost and private addresses.
           </Text>
         </Box>
       </SettingsGroupItem>

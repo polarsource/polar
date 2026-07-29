@@ -1,11 +1,17 @@
+from datetime import UTC, datetime
+
 import pytest
 
 from polar.organization.embed_hosts import (
     InvalidEmbedHost,
     match_origin,
     parse_origin,
+    uncovered_hosts,
     validate_host_pattern,
 )
+
+SEEN = datetime(2026, 1, 1, tzinfo=UTC)
+LATER = datetime(2026, 2, 1, tzinfo=UTC)
 
 
 class TestParseOrigin:
@@ -219,3 +225,50 @@ class TestMatchOrigin:
 
     def test_empty_allowlist(self) -> None:
         assert match_origin("https://example.com", []) is None
+
+
+class TestUncoveredHosts:
+    def test_host_the_allowlist_admits_is_left_out(self) -> None:
+        observed = [("https://example.com", 3, SEEN)]
+
+        assert uncovered_hosts(observed, ["example.com"]) == []
+        assert uncovered_hosts(observed, ["*.example.com"]) != []
+
+    def test_suggests_the_entry_admitting_the_origin(self) -> None:
+        observed = [
+            ("https://myshop.framer.website", 2, SEEN),
+            ("http://localhost:3000", 1, SEEN),
+            ("chrome-extension://abcdef", 1, SEEN),
+        ]
+
+        assert [host.host for host in uncovered_hosts(observed, [])] == [
+            "myshop.framer.website",
+            "localhost:3000",
+            "chrome-extension://abcdef",
+        ]
+
+    def test_public_http_host_cannot_be_listed(self) -> None:
+        """Whatever we allowed, the token would still cross the network in clear."""
+        assert uncovered_hosts([("http://example.com", 9, SEEN)], []) == []
+
+    def test_paths_collapse_onto_one_host(self) -> None:
+        observed = [
+            ("https://example.com/checkout", 2, SEEN),
+            ("https://example.com/pricing", 3, LATER),
+        ]
+
+        (host,) = uncovered_hosts(observed, [])
+        assert host.host == "example.com"
+        assert host.checkouts == 5
+        assert host.last_seen_at == LATER
+
+    def test_ordered_by_volume(self) -> None:
+        observed = [("https://quiet.com", 1, SEEN), ("https://busy.com", 50, SEEN)]
+
+        assert [host.host for host in uncovered_hosts(observed, [])] == [
+            "busy.com",
+            "quiet.com",
+        ]
+
+    def test_origin_carrying_none_is_dropped(self) -> None:
+        assert uncovered_hosts([("null", 4, SEEN)], []) == []

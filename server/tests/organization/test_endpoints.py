@@ -891,6 +891,47 @@ class TestGetEmbedStatus:
         assert json["embed_hosts_enforced"] is False
 
     @pytest.mark.auth
+    async def test_uncovered_host_reported(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        checkout = await create_checkout(save_fixture, products=[product])
+        checkout.embed_origin = "https://example.com/checkout"
+        await save_fixture(checkout)
+
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 200
+        (host,) = response.json()["uncovered_hosts"]
+        assert host["host"] == "example.com"
+        assert host["origin"] == "https://example.com"
+        assert host["checkouts"] == 1
+
+    @pytest.mark.auth
+    async def test_listed_host_not_reported(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.embed_hosts = ["example.com"]
+        await save_fixture(organization)
+        checkout = await create_checkout(save_fixture, products=[product])
+        checkout.embed_origin = "https://example.com"
+        await save_fixture(checkout)
+
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 200
+        assert response.json()["uncovered_hosts"] == []
+
+    @pytest.mark.auth
     async def test_hosts_configured(
         self,
         client: AsyncClient,

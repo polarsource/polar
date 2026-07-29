@@ -26675,6 +26675,11 @@ export interface components {
        * @description Whether an embedding page's origin must match `embed_hosts`.
        */
       embed_hosts_enforced: boolean
+      /**
+       * Uncovered Hosts
+       * @description Hosts seen embedding this organization's checkout that `embed_hosts` would refuse. Anyone can name an origin when they create a checkout, so these are observations, not hosts we vouch for.
+       */
+      uncovered_hosts: components['schemas']['OrganizationUncoveredHost'][]
     }
     /** OrganizationFeatureSettings */
     OrganizationFeatureSettings: {
@@ -27897,6 +27902,30 @@ export interface components {
        * @description Polar product ID to switch the plan to.
        */
       product_id: string
+    }
+    /** OrganizationUncoveredHost */
+    OrganizationUncoveredHost: {
+      /**
+       * Host
+       * @description The entry that would admit this origin.
+       */
+      host: string
+      /**
+       * Origin
+       * @description The origin seen embedding the checkout.
+       */
+      origin: string
+      /**
+       * Checkouts
+       * @description Embedded checkouts opened from this origin.
+       */
+      checkouts: number
+      /**
+       * Last Seen At
+       * Format: date-time
+       * @description When it last opened one.
+       */
+      last_seen_at: string
     }
     /** OrganizationUpdate */
     OrganizationUpdate: {

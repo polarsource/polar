@@ -1,4 +1,7 @@
-import { useUpdateOrganization } from '@/hooks/queries'
+import {
+  useOrganizationEmbedStatus,
+  useUpdateOrganization,
+} from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -8,7 +11,10 @@ import { Text } from '@polar-sh/orbit/Text'
 import { X } from 'lucide-react'
 import React, { useCallback, useState } from 'react'
 import { toast } from '../Toast/use-toast'
+import OrganizationEmbedUncoveredHosts from './OrganizationEmbedUncoveredHosts'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
+
+const NO_HOSTS: schemas['OrganizationUncoveredHost'][] = []
 
 interface OrganizationEmbedSettingsProps {
   organization: schemas['Organization']
@@ -24,6 +30,7 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
   const [error, setError] = useState<string | null>(null)
 
   const updateOrganization = useUpdateOrganization()
+  const { data: embedStatus } = useOrganizationEmbedStatus(organization.id)
 
   const save = useCallback(
     async (embed_hosts: string[]) => {
@@ -64,6 +71,11 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
     [hosts, save],
   )
 
+  const addSuggested = useCallback(
+    (entries: string[]) => save([...hosts, ...entries]),
+    [hosts, save],
+  )
+
   return (
     <SettingsGroup>
       <SettingsGroupItem
@@ -77,7 +89,13 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
       >
         <Box flexDirection="column" gap="m" width="100%">
           {hosts.length > 0 ? (
-            <Box as="ul" flexDirection="column" gap="xs">
+            <Box
+              as="ul"
+              flexDirection="column"
+              gap="xs"
+              maxHeight={320}
+              overflowY="auto"
+            >
               {hosts.map((host) => (
                 <Box
                   as="li"
@@ -108,6 +126,14 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
               ))}
             </Box>
           ) : null}
+
+          {readOnly ? null : (
+            <OrganizationEmbedUncoveredHosts
+              hosts={embedStatus?.uncovered_hosts ?? NO_HOSTS}
+              onAdd={addSuggested}
+              pending={updateOrganization.isPending}
+            />
+          )}
 
           {readOnly ? null : (
             <Box gap="s" alignItems="start">

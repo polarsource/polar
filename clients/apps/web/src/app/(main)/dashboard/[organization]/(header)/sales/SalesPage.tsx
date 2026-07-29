@@ -11,9 +11,8 @@ import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { getServerURL } from '@/utils/api'
 import { getAPIParams } from '@/utils/datatable'
 import { getChartRangeParams } from '@/utils/metrics'
-import { orderStatusFilterValues, type OrderStatusFilter } from '@/utils/order'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
-import { schemas } from '@polar-sh/client'
+import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { formatCurrency } from '@polar-sh/currency'
 import { Truncated } from '@polar-sh/orbit'
@@ -38,7 +37,7 @@ import React, { useEffect, useState } from 'react'
 
 const filterParsers = {
   product_id: parseAsArrayOf(parseAsString),
-  status: parseAsStringLiteral(orderStatusFilterValues).withDefault('any'),
+  status: parseAsStringLiteral(enums.orderStatusValues),
   metadata: parseAsArrayOf(parseAsString),
 }
 
@@ -66,7 +65,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     resetPage()
   }
 
-  const onStatusSelect = (value: OrderStatusFilter) => {
+  const onStatusSelect = (value: schemas['OrderStatus'] | null) => {
     setFilters({ status: value })
     resetPage()
   }
@@ -74,7 +73,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const ordersHook = useOrders(organization.id, {
     ...getAPIParams(pagination, sorting),
     product_id: productId ?? undefined,
-    status: status === 'any' ? undefined : [status],
+    status: status ? [status] : undefined,
   })
 
   const orders = ordersHook.data?.items || []

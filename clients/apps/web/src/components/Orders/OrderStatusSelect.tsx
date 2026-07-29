@@ -1,5 +1,4 @@
-import type { OrderStatusFilter } from '@/utils/order'
-import { enums } from '@polar-sh/client'
+import { enums, schemas } from '@polar-sh/client'
 import {
   Select,
   SelectContent,
@@ -12,8 +11,8 @@ import React from 'react'
 import { OrderStatusDisplayTitle } from './OrderStatus'
 
 interface OrderStatusSelectProps {
-  value: OrderStatusFilter
-  onChange: (value: OrderStatusFilter) => void
+  value: schemas['OrderStatus'] | null
+  onChange: (value: schemas['OrderStatus'] | null) => void
 }
 
 const OrderStatusSelect: React.FC<OrderStatusSelectProps> = ({
@@ -22,8 +21,10 @@ const OrderStatusSelect: React.FC<OrderStatusSelectProps> = ({
 }) => {
   return (
     <Select
-      value={value}
-      onValueChange={(value) => onChange(value as OrderStatusFilter)}
+      value={value ?? 'any'}
+      onValueChange={(value) =>
+        onChange(value === 'any' ? null : (value as schemas['OrderStatus']))
+      }
     >
       <SelectTrigger>
         <SelectValue placeholder="Select a status" />

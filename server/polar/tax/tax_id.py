@@ -13,6 +13,7 @@ import stdnum.il.idnr
 import stdnum.in_.gstin
 import stdnum.mk.edb
 import stdnum.tr.vkn
+import stdnum.tw.ubn
 import stdnum.vn.mst
 from pydantic import Field
 from sqlalchemy.dialects.postgresql import JSONB
@@ -352,6 +353,23 @@ class TRTINValidator(ValidatorProtocol):
             raise InvalidTaxID(number, country) from e
 
 
+class TWVATValidator(ValidatorProtocol):
+    # Since April 2023, Taiwan also issues UBN whose weighted digit sum is
+    # divisible by 5; stdnum only implements the original divisible-by-10 rule.
+    # The seventh digit "7" alternative applies to both rules.
+    def validate(self, number: str, country: str) -> str:
+        number = stdnum.tw.ubn.compact(number)
+        try:
+            return stdnum.tw.ubn.validate(number)
+        except stdnum.exceptions.InvalidChecksum as e:
+            checksum = stdnum.tw.ubn.calc_checksum(number)
+            if checksum % 5 == 0 or (number[6] == "7" and (checksum + 1) % 5 == 0):
+                return number
+            raise InvalidTaxID(number, country) from e
+        except stdnum.exceptions.ValidationError as e:
+            raise InvalidTaxID(number, country) from e
+
+
 class INGSTValidator(ValidatorProtocol):
     def validate(self, number: str, country: str) -> str:
         number = stdnum.in_.gstin.compact(number)
@@ -443,6 +461,8 @@ def _get_validator(tax_id_type: TaxIDFormat) -> ValidatorProtocol:
             return MKVATValidator()
         case TaxIDFormat.tr_tin:
             return TRTINValidator()
+        case TaxIDFormat.tw_vat:
+            return TWVATValidator()
         case TaxIDFormat.in_gst:
             return INGSTValidator()
         case TaxIDFormat.vn_tin:

@@ -2776,7 +2776,14 @@ class CheckoutService:
         }
 
         if created:
-            async with repository.create_context(customer, flush=False) as customer:
+            # Flush the new customer immediately so its row exists in the database
+            # before the per-customer discount limit check runs. This lets the
+            # `get_by_id(..., for_update=True)` lock acquire a real row lock and
+            # serialize concurrent confirmations for the same email, and it
+            # surfaces the unique-constraint violation on email *before* the
+            # Stripe PaymentIntent is created (and the card charged). The
+            # transaction still commits atomically at request end.
+            async with repository.create_context(customer, flush=True) as customer:
                 await member_service.create_owner_member(
                     session, customer, checkout.organization
                 )

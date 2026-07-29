@@ -2,6 +2,7 @@ import ipaddress
 from dataclasses import dataclass
 
 from pydantic import AnyUrl, TypeAdapter, ValidationError
+from tld import is_tld
 
 DEFAULT_PORTS = {"http": 80, "https": 443}
 WEB_SCHEMES = frozenset(DEFAULT_PORTS)
@@ -165,6 +166,15 @@ def validate_host_pattern(value: str) -> str:
     pattern = parse_host_pattern(value)
     if pattern is None:
         raise InvalidEmbedHost(value, "write a host and an optional port, with no path")
+
+    # Subdomains of a public suffix belong to whoever registered them.
+    if pattern.wildcard and is_tld(pattern.host):
+        raise InvalidEmbedHost(
+            value,
+            f"{pattern.host} is shared by many different sites, so this would let "
+            f"any of them embed your checkout. Name your own site, "
+            f"like myshop.{pattern.host}",
+        )
 
     return str(pattern)
 

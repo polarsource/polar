@@ -126,6 +126,42 @@ class TestValidateHostPattern:
         with pytest.raises(InvalidEmbedHost):
             validate_host_pattern(value)
 
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "*.vercel.app",
+            "*.framer.website",
+            "*.framercanvas.com",
+            "*.github.io",
+            "*.myshopify.com",
+            "*.FRAMER.WEBSITE",
+            "*.com",
+            "*.co.uk",
+        ],
+    )
+    def test_wildcard_on_public_suffix_rejected(self, value: str) -> None:
+        """Every subdomain belongs to someone else, so this admits all of them."""
+        with pytest.raises(InvalidEmbedHost):
+            validate_host_pattern(value)
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("myshop.framer.website", "myshop.framer.website"),
+            ("myshop.vercel.app", "myshop.vercel.app"),
+            ("*.myshop.framer.website", "*.myshop.framer.website"),
+            ("toto.co.uk", "toto.co.uk"),
+            ("*.toto.co.uk", "*.toto.co.uk"),
+        ],
+    )
+    def test_own_host_under_public_suffix(self, value: str, expected: str) -> None:
+        assert validate_host_pattern(value) == expected
+
+    def test_bare_public_suffix_allowed(self) -> None:
+        """It matches that one host and admits nobody else, and a platform selling
+        through Polar may serve its own site there."""
+        assert validate_host_pattern("framer.website") == "framer.website"
+
 
 class TestMatchOrigin:
     @pytest.mark.parametrize(

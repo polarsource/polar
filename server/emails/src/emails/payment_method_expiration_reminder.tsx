@@ -20,7 +20,7 @@ export function PaymentMethodExpirationReminder({
   const brandLabel = brand.charAt(0).toUpperCase() + brand.slice(1)
   const plural = product_names.length > 1
   const productList = plural
-    ? `${product_names.slice(0, -1).join(', ')} and ${product_names[product_names.length - 1]}`
+    ? `${product_names.slice(0, -1).join(', ')} and ${product_names.at(-1)}`
     : product_names[0]
 
   return (

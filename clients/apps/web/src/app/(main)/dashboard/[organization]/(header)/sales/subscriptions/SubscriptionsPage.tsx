@@ -298,7 +298,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             <span>Export</span>
           </Button>
         </div>
-        {subscriptions && pageCount !== undefined && (
+        {subscriptions && pageCount !== undefined ? (
           <DataTable
             columns={columns}
             data={subscriptions}
@@ -316,7 +316,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             getRowId={(row) => row.id.toString()}
             enableRowSelection
           />
-        )}
+        ) : null}
       </div>
     </DashboardBody>
   )

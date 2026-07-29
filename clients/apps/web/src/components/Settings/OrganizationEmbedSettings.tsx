@@ -50,11 +50,11 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
   )
 
   const add = useCallback(async () => {
-    const entry = draft.trim()
-    if (!entry) {
+    const entries = draft.split(/[\s,]+/).filter(Boolean)
+    if (entries.length === 0) {
       return
     }
-    if (await save([...hosts, entry])) {
+    if (await save([...hosts, ...entries])) {
       setDraft('')
     }
   }, [draft, hosts, save])
@@ -113,8 +113,8 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
             <Box gap="s" alignItems="start">
               <Input
                 value={draft}
-                aria-label="Embed host"
-                placeholder="example.com"
+                aria-label="Embed hosts"
+                placeholder="example.com, *.example.com"
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => {
                   if (e.key === 'Enter') {
@@ -141,10 +141,11 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
           )}
 
           <Text variant="caption" color="muted">
-            Write a host on its own, without a scheme: example.com,
-            *.example.com for any subdomain, or localhost:3000 with a port.
-            HTTPS is always allowed, and HTTP too on localhost and private
-            addresses.
+            Add every host at once, separated by commas or spaces — the list
+            takes effect as soon as you save. Write each host on its own,
+            without a scheme: example.com, *.example.com for any subdomain, or
+            localhost:3000 with a port. HTTPS is always allowed, and HTTP too on
+            localhost and private addresses.
           </Text>
         </Box>
       </SettingsGroupItem>

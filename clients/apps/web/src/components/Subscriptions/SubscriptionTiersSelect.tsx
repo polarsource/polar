@@ -11,8 +11,8 @@ import React from 'react'
 
 interface SubscriptionTiersSelectProps {
   products: schemas['Product'][]
-  value: string
-  onChange: (value: string) => void
+  value: string | null
+  onChange: (value: string | null) => void
 }
 
 const SubscriptionTiersSelect: React.FC<SubscriptionTiersSelectProps> = ({
@@ -21,7 +21,10 @@ const SubscriptionTiersSelect: React.FC<SubscriptionTiersSelectProps> = ({
   onChange,
 }) => {
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select
+      value={value ?? 'all'}
+      onValueChange={(value) => onChange(value === 'all' ? null : value)}
+    >
       <SelectTrigger>
         <SelectValue placeholder="Select a product" />
       </SelectTrigger>

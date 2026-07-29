@@ -3,16 +3,15 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import SubscriptionCancellationSelect from '@/components/Subscriptions/SubscriptionCancellationSelect'
 import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
-import SubscriptionStatusSelect from '@/components/Subscriptions/SubscriptionStatusSelect'
+import SubscriptionStatusSelect, {
+  subscriptionStatusFilterValues,
+  type SubscriptionStatusFilter,
+} from '@/components/Subscriptions/SubscriptionStatusSelect'
 import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
 import { useProducts, useSubscriptions } from '@/hooks/queries'
+import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { getServerURL } from '@/utils/api'
-import {
-  DataTablePaginationState,
-  DataTableSortingState,
-  getAPIParams,
-  serializeSearchParams,
-} from '@/utils/datatable'
+import { DataTableSortingState, getAPIParams } from '@/utils/datatable'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
@@ -24,171 +23,110 @@ import {
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Status } from '@polar-sh/orbit'
-import { RowSelectionState } from '@tanstack/react-table'
+import {
+  functionalUpdate,
+  OnChangeFn,
+  RowSelectionState,
+} from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
+import {
+  parseAsArrayOf,
+  parseAsBoolean,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryStates,
+} from 'nuqs'
 import React, { useEffect, useState } from 'react'
+
+const filterParsers = {
+  product_id: parseAsString,
+  status: parseAsStringLiteral(subscriptionStatusFilterValues).withDefault(
+    'active',
+  ),
+  cancel_at_period_end: parseAsBoolean,
+  metadata: parseAsArrayOf(parseAsString),
+}
+
+// Secondary sort on ends_at when sorting by status
+const withEndsAtSecondarySort = (
+  sorting: DataTableSortingState,
+): DataTableSortingState => {
+  const statusSort = sorting.find((s) => s.id === 'status')
+  if (!statusSort || sorting.some((s) => s.id === 'ends_at')) {
+    return sorting
+  }
+  return [
+    statusSort,
+    { id: 'ends_at', desc: statusSort.desc },
+    ...sorting.filter((s) => s.id !== 'status'),
+  ]
+}
 
 interface ClientPageProps {
   organization: schemas['Organization']
-  pagination: DataTablePaginationState
-  sorting: DataTableSortingState
-  productId?: string
-  subscriptionStatus?: schemas['SubscriptionStatus'] | 'any'
-  cancelAtPeriodEnd?: 'all' | 'true' | 'false'
-  metadata?: string[]
 }
 
-const ClientPage: React.FC<ClientPageProps> = ({
-  organization,
-  pagination,
-  sorting,
-  productId,
-  subscriptionStatus,
-  cancelAtPeriodEnd,
-  metadata,
-}) => {
+const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const [selectedSubscriptionState, setSelectedSubscriptionState] =
     useState<RowSelectionState>({})
+
+  const router = useRouter()
 
   const subscriptionTiers = useProducts(organization.id, {
     is_recurring: true,
     limit: 100,
   })
 
-  const filter = productId || 'all'
-  const status = subscriptionStatus || 'active'
-  const cancelAtPeriodEndFilter = cancelAtPeriodEnd || 'all'
-  const getSearchParams = (
-    pagination: DataTablePaginationState,
-    sorting: DataTableSortingState,
-    filter: string,
-    status: string,
-    cancelAtPeriodEndFilter: string,
-  ) => {
-    const params = serializeSearchParams(pagination, sorting)
-    if (filter !== 'all') {
-      params.append('product_id', filter)
-    }
+  const {
+    pagination,
+    setPagination,
+    sorting,
+    setSorting: setSortingState,
+    resetPage,
+  } = useDataTableQueryState({
+    defaultSorting: [{ id: 'started_at', desc: true }],
+    defaultPageSize: 50,
+  })
 
-    params.append('status', status)
+  const [
+    {
+      product_id: productId,
+      status,
+      cancel_at_period_end: cancelAtPeriodEnd,
+      metadata,
+    },
+    setFilters,
+  ] = useQueryStates(filterParsers)
 
-    if (cancelAtPeriodEndFilter !== 'all') {
-      params.append('cancel_at_period_end', cancelAtPeriodEndFilter)
-    }
-
-    if (metadata) {
-      metadata.forEach((key) => params.append('metadata', key))
-    }
-
-    return params
-  }
-
-  const router = useRouter()
-
-  const setPagination = (
-    updaterOrValue:
-      | DataTablePaginationState
-      | ((old: DataTablePaginationState) => DataTablePaginationState),
-  ) => {
-    const updatedPagination =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(pagination)
-        : updaterOrValue
-
-    router.push(
-      `/dashboard/${organization.slug}/sales/subscriptions?${getSearchParams(
-        updatedPagination,
-        sorting,
-        filter,
-        status,
-        cancelAtPeriodEndFilter,
-      )}`,
+  const setSorting: OnChangeFn<DataTableSortingState> = (updater) => {
+    setSortingState((old) =>
+      withEndsAtSecondarySort(functionalUpdate(updater, old)),
     )
   }
 
-  const setSorting = (
-    updaterOrValue:
-      | DataTableSortingState
-      | ((old: DataTableSortingState) => DataTableSortingState),
-  ) => {
-    let updatedSorting =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(sorting)
-        : updaterOrValue
-
-    // Add secondary sort on ends_at when sorting by status
-    const statusSort = updatedSorting.find((s) => s.id === 'status')
-    if (statusSort) {
-      const hasSecondarySortOnEndsAt = updatedSorting.some(
-        (s) => s.id === 'ends_at',
-      )
-      if (!hasSecondarySortOnEndsAt) {
-        updatedSorting = [
-          statusSort,
-          { id: 'ends_at', desc: statusSort.desc },
-          ...updatedSorting.filter((s) => s.id !== 'status'),
-        ]
-      }
-    }
-
-    router.push(
-      `/dashboard/${organization.slug}/sales/subscriptions?${getSearchParams(
-        pagination,
-        updatedSorting,
-        filter,
-        status,
-        cancelAtPeriodEndFilter,
-      )}`,
-    )
+  const onProductSelect = (value: string | null) => {
+    setFilters({ product_id: value })
+    resetPage()
   }
 
-  const setFilter = (filter: string) => {
-    router.push(
-      `/dashboard/${organization.slug}/sales/subscriptions?${getSearchParams(
-        pagination,
-        sorting,
-        filter,
-        status,
-        cancelAtPeriodEndFilter,
-      )}`,
-    )
+  const onStatusSelect = (value: SubscriptionStatusFilter) => {
+    setFilters({
+      status: value,
+      cancel_at_period_end: value === 'active' ? cancelAtPeriodEnd : null,
+    })
+    resetPage()
   }
 
-  const setStatus = (status: string) => {
-    const newCancelAtPeriodEnd =
-      status === 'active' ? cancelAtPeriodEndFilter : 'all'
-    router.push(
-      `/dashboard/${organization.slug}/sales/subscriptions?${getSearchParams(
-        pagination,
-        sorting,
-        filter,
-        status,
-        newCancelAtPeriodEnd,
-      )}`,
-    )
-  }
-
-  const setCancelAtPeriodEnd = (cancelAtPeriodEnd: string) => {
-    router.push(
-      `/dashboard/${organization.slug}/sales/subscriptions?${getSearchParams(
-        pagination,
-        sorting,
-        filter,
-        status,
-        cancelAtPeriodEnd,
-      )}`,
-    )
+  const onCancelAtPeriodEndSelect = (value: boolean | null) => {
+    setFilters({ cancel_at_period_end: value })
+    resetPage()
   }
 
   const subscriptionsHook = useSubscriptions(organization.id, {
     ...getAPIParams(pagination, sorting),
-    ...(productId ? { product_id: productId } : {}),
-    ...(status !== 'any' ? { status: [status] } : {}),
-    ...(cancelAtPeriodEndFilter === 'false'
-      ? { cancel_at_period_end: false }
-      : cancelAtPeriodEndFilter === 'true'
-        ? { cancel_at_period_end: true }
-        : {}),
+    product_id: productId ?? undefined,
+    status: status === 'any' ? undefined : [status],
+    cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
   })
 
   const subscriptions = subscriptionsHook.data?.items || []
@@ -330,31 +268,23 @@ const ClientPage: React.FC<ClientPageProps> = ({
           <div className="flex shrink-0 items-center gap-4">
             <div className="w-auto">
               <SubscriptionStatusSelect
-                statuses={[
-                  'active',
-                  'trialing',
-                  'paused',
-                  'past_due',
-                  'canceled',
-                  'unpaid',
-                ]}
-                value={subscriptionStatus || 'any'}
-                onChange={setStatus}
+                value={status}
+                onChange={onStatusSelect}
               />
             </div>
             {status === 'active' && (
               <div className="w-auto">
                 <SubscriptionCancellationSelect
-                  value={cancelAtPeriodEnd || 'all'}
-                  onChange={setCancelAtPeriodEnd}
+                  value={cancelAtPeriodEnd}
+                  onChange={onCancelAtPeriodEndSelect}
                 />
               </div>
             )}
             <div className="w-auto">
               <SubscriptionTiersSelect
                 products={subscriptionTiers.data?.items || []}
-                value={productId || 'all'}
-                onChange={setFilter}
+                value={productId}
+                onChange={onProductSelect}
               />
             </div>
           </div>

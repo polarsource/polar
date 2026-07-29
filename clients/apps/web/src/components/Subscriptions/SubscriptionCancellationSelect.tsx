@@ -8,15 +8,20 @@ import {
 import React from 'react'
 
 interface SubscriptionCancellationSelectProps {
-  value: string
-  onChange: (value: string) => void
+  value: boolean | null
+  onChange: (value: boolean | null) => void
 }
 
 const SubscriptionCancellationSelect: React.FC<
   SubscriptionCancellationSelectProps
 > = ({ value, onChange }) => {
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select
+      value={value === null ? 'all' : String(value)}
+      onValueChange={(value) =>
+        onChange(value === 'all' ? null : value === 'true')
+      }
+    >
       <SelectTrigger>
         <SelectValue placeholder="Select cancellation status" />
       </SelectTrigger>

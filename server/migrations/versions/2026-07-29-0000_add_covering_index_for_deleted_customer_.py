@@ -22,6 +22,14 @@ INDEX_NAME = "ix_customers_deleted_at_id"
 
 def upgrade() -> None:
     with op.get_context().autocommit_block():
+        # A failed/canceled concurrent build leaves an INVALID index behind;
+        # drop it first so rerunning this (unrecorded) migration recovers.
+        op.drop_index(
+            INDEX_NAME,
+            table_name="customers",
+            if_exists=True,
+            postgresql_concurrently=True,
+        )
         op.create_index(
             INDEX_NAME,
             "customers",

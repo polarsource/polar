@@ -32,7 +32,7 @@ class TestParseOrigin:
     @pytest.mark.parametrize(
         ("value", "expected"),
         [
-            ("https://example.com/laserHinge", "https://example.com"),
+            ("https://example.com/checkout", "https://example.com"),
             ("https://example.com/?verified=true", "https://example.com"),
             ("https://example.com/#/", "https://example.com"),
             ("https://example.com/sales?status=cancelled", "https://example.com"),
@@ -52,7 +52,7 @@ class TestParseOrigin:
         [
             ("http://example.com", "http://example.com"),
             ("http://192.168.1.43:5500", "http://192.168.1.43:5500"),
-            ("http://tauri.localhost", "http://tauri.localhost"),
+            ("http://app.localhost", "http://app.localhost"),
             ("chrome-extension://abcdef", "chrome-extension://abcdef"),
         ],
     )
@@ -83,12 +83,12 @@ class TestValidateHostPattern:
             ("*.example.com", "*.example.com"),
             ("EXAMPLE.com", "example.com"),
             ("  example.com  ", "example.com"),
-            ("https://example.com", "example.com"),
             ("example.com:443", "example.com"),
             ("example.com:8443", "example.com:8443"),
             ("localhost:3000", "localhost:3000"),
-            ("http://localhost:3000", "http://localhost:3000"),
-            ("http://192.168.1.43:5500", "http://192.168.1.43:5500"),
+            ("192.168.1.43:5500", "192.168.1.43:5500"),
+            ("app.localhost", "app.localhost"),
+            ("example.local", "example.local"),
             ("chrome-extension://abcdef", "chrome-extension://abcdef"),
             ("*.exämple.com", "*.xn--exmple-cua.com"),
         ],
@@ -97,13 +97,20 @@ class TestValidateHostPattern:
         assert validate_host_pattern(value) == expected
 
     @pytest.mark.parametrize(
+        "value", ["https://example.com", "http://example.com", "HTTP://example.com"]
+    )
+    def test_web_scheme_rejected(self, value: str) -> None:
+        """The host decides which schemes it admits, so entries never carry one."""
+        with pytest.raises(InvalidEmbedHost):
+            validate_host_pattern(value)
+
+    @pytest.mark.parametrize(
         "value",
         [
             "",
             "   ",
             "*",
             "*.",
-            "https://*",
             "*example.com",
             "a.*.com",
             "example.com/path",
@@ -111,7 +118,6 @@ class TestValidateHostPattern:
             "example.com#fragment",
             "example.com\\evil.com",
             "user@example.com",
-            "https://evil.com@good.com",
             "exa mple.com",
             "x" * 260,
         ],
@@ -129,12 +135,27 @@ class TestMatchOrigin:
             ("https://a.example.com", "*.example.com"),
             ("https://a.b.example.com", "*.example.com"),
             ("https://example.com:8443", "example.com:8443"),
-            ("http://localhost:3000", "http://localhost:3000"),
             ("https://a.xn--exmple-cua.com", "*.exämple.com"),
             ("chrome-extension://abcdef", "chrome-extension://abcdef"),
         ],
     )
     def test_allowed(self, origin: str, entry: str) -> None:
+        assert match_origin(origin, [entry]) == origin
+
+    @pytest.mark.parametrize(
+        ("origin", "entry"),
+        [
+            ("http://localhost:3000", "localhost:3000"),
+            ("https://localhost:3000", "localhost:3000"),
+            ("http://127.0.0.1:3000", "127.0.0.1:3000"),
+            ("http://192.168.1.43:5500", "192.168.1.43:5500"),
+            ("http://10.5.0.2:5500", "10.5.0.2:5500"),
+            ("http://172.20.0.5:3000", "172.20.0.5:3000"),
+            ("http://app.localhost", "app.localhost"),
+            ("http://example.local", "example.local"),
+        ],
+    )
+    def test_http_allowed_on_local_host(self, origin: str, entry: str) -> None:
         assert match_origin(origin, [entry]) == origin
 
     @pytest.mark.parametrize(
@@ -146,7 +167,8 @@ class TestMatchOrigin:
             ("https://notexample.com", "*.example.com"),
             ("https://example.com:8443", "example.com"),
             ("http://example.com", "example.com"),
-            ("http://localhost:3000", "localhost:3000"),
+            ("http://8.8.8.8:3000", "8.8.8.8:3000"),
+            ("https://abcdef", "chrome-extension://abcdef"),
         ],
     )
     def test_refused(self, origin: str, entry: str) -> None:
@@ -154,8 +176,8 @@ class TestMatchOrigin:
 
     def test_reduced_to_origin(self) -> None:
         assert (
-            match_origin("https://www.makercase.com/laserHinge", ["*.makercase.com"])
-            == "https://www.makercase.com"
+            match_origin("https://www.example.com/checkout", ["*.example.com"])
+            == "https://www.example.com"
         )
 
     def test_empty_allowlist(self) -> None:

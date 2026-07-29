@@ -86,9 +86,11 @@ def validate_embed_hosts(value: list[str]) -> list[str]:
 
 _embed_hosts_description = (
     "Hosts allowed to embed this organization's checkout. "
-    "An entry is a host, optionally prefixed by a scheme and suffixed by a port. "
+    "An entry is a host and an optional port, without a scheme: HTTPS is always "
+    "allowed, and HTTP as well when the host is localhost or a private address. "
     "`*.example.com` matches any subdomain, but not `example.com` itself. "
-    "Without a scheme, HTTPS is implied."
+    "An app origin such as `chrome-extension://abcdef` carries its scheme, "
+    "having no host to match on."
 )
 
 EmbedHostsInput = Annotated[
@@ -96,7 +98,7 @@ EmbedHostsInput = Annotated[
     AfterValidator(validate_embed_hosts),
     Field(
         description=_embed_hosts_description,
-        examples=[["example.com", "*.example.com", "http://localhost:3000"]],
+        examples=[["example.com", "*.example.com", "localhost:3000"]],
     ),
 ]
 

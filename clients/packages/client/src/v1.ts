@@ -25607,7 +25607,7 @@ export interface components {
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
       /**
        * Embed Hosts
-       * @description Hosts allowed to embed this organization's checkout. An entry is a host, optionally prefixed by a scheme and suffixed by a port. `*.example.com` matches any subdomain, but not `example.com` itself. Without a scheme, HTTPS is implied.
+       * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP as well when the host is localhost or a private address. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
        */
       embed_hosts: string[]
       /**
@@ -26857,7 +26857,7 @@ export interface components {
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
       /**
        * Embed Hosts
-       * @description Hosts allowed to embed this organization's checkout. An entry is a host, optionally prefixed by a scheme and suffixed by a port. `*.example.com` matches any subdomain, but not `example.com` itself. Without a scheme, HTTPS is implied.
+       * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP as well when the host is localhost or a private address. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
        */
       embed_hosts: string[]
       /**
@@ -28274,7 +28274,7 @@ export interface components {
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
       /**
        * Embed Hosts
-       * @description Hosts allowed to embed this organization's checkout. An entry is a host, optionally prefixed by a scheme and suffixed by a port. `*.example.com` matches any subdomain, but not `example.com` itself. Without a scheme, HTTPS is implied.
+       * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP as well when the host is localhost or a private address. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
        */
       embed_hosts: string[]
       /**

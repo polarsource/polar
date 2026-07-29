@@ -59,6 +59,7 @@ locals {
     POLAR_EMAIL_SENDER                = "resend"
     POLAR_EMAIL_FROM_NAME             = "Polar"
     POLAR_EMAIL_FROM_DOMAIN           = "notifications.polar.sh"
+    POLAR_SLACK_CHANNEL               = var.slo_report_slack_channel
     POLAR_WORKER_SQS_ENABLED          = "true"
     POLAR_WORKER_SQS_QUEUE_PREFIX     = "polar-production-tasks"
   }
@@ -71,6 +72,7 @@ locals {
     POLAR_RESEND_API_KEY  = var.backend_resend_api_key_production
     POLAR_SECRET          = var.backend_secret_production
     POLAR_SENTRY_DSN      = var.backend_sentry_dsn_production
+    POLAR_SLACK_BOT_TOKEN = var.slo_report_slack_bot_token
     TAILSCALE_AUTHKEY     = var.lambda_worker_tailscale_token
   }
 

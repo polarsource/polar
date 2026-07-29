@@ -17,8 +17,8 @@
   "packageManager": "pnpm@10.28.1",
   "dependencies": {
     "commander": "^15.0.0",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "react-email": "^6.8.1"
   },
   "devDependencies": {

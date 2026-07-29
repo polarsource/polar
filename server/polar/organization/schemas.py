@@ -574,6 +574,16 @@ class OrganizationRoleDefinition(Schema):
     )
 
 
+class OrganizationEmbedStatus(Schema):
+    has_embedded: bool = Field(
+        description="Whether this organization has ever opened an embedded checkout."
+    )
+    embed_hosts: list[str] = Field(description=_embed_hosts_description)
+    embed_hosts_enforced: bool = Field(
+        description="Whether an embedding page's origin must match `embed_hosts`."
+    )
+
+
 class OrganizationKYC(Organization):
     """Organization with compliance/KYC details. Only returned from the dedicated KYC endpoint."""
 

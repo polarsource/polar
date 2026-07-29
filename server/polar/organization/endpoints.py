@@ -18,6 +18,7 @@ from polar.authz.dependencies import (
     AuthorizeOrgManageRead,
     AuthorizeOrgManageUser,
 )
+from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
 from polar.email.schemas import OrganizationInviteEmail, OrganizationInviteProps
 from polar.email.sender import enqueue_email_template
@@ -111,6 +112,7 @@ from .schemas import (
     OrganizationAppealResponse,
     OrganizationCreate,
     OrganizationDeletionResponse,
+    OrganizationEmbedStatus,
     OrganizationID,
     OrganizationKYC,
     OrganizationPaymentStatus,
@@ -257,6 +259,27 @@ async def get_kyc(
 ) -> Organization:
     """Get an organization's KYC/compliance details."""
     return authz.organization
+
+
+@router.get(
+    "/{id}/embed-status",
+    summary="Get Organization Embed Status",
+    response_model=OrganizationEmbedStatus,
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def get_embed_status(
+    authz: AuthorizeOrgManageRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> OrganizationEmbedStatus:
+    """Whether this organization needs to configure its embed hosts."""
+    organization = authz.organization
+    repository = CheckoutRepository.from_session(session)
+    return OrganizationEmbedStatus(
+        has_embedded=await repository.has_embedded(organization.id),
+        embed_hosts=organization.embed_hosts,
+        embed_hosts_enforced=organization.embed_hosts_enforced,
+    )
 
 
 @router.post(

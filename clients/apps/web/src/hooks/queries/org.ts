@@ -311,6 +311,21 @@ export const useDeleteOrganizationAccessToken = () =>
     },
   })
 
+export const useOrganizationEmbedStatus = (id: string, enabled = true) =>
+  useQuery({
+    queryKey: ['organizations', id, 'embed-status'],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/organizations/{id}/embed-status', {
+          params: {
+            path: { id },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!id && enabled,
+  })
+
 export const useOrganizationPaymentStatus = (id: string) =>
   useQuery({
     queryKey: ['organizations', 'payment-status', id],

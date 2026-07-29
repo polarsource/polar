@@ -11,6 +11,7 @@ import RevenueWidget from '@/components/Widgets/RevenueWidget'
 import { useHasPermission } from '@/hooks/permissions'
 import { schemas } from '@polar-sh/client'
 import { DisputesBanner } from './DisputesBanner'
+import { EmbedHostsBanner } from './EmbedHostsBanner'
 import { OrganizationStatusBanner } from './OrganizationStatusBanner'
 
 const cellClassName =
@@ -40,6 +41,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
       <PlanUpsell organization={organization} />
       <OrganizationStatusBanner organization={organization} />
       <DisputesBanner organization={organization} />
+      <EmbedHostsBanner organization={organization} />
       <OverviewSection organization={organization} />
       <CompassWidget organization={organization} limit={3} hideWhenEmpty />
 

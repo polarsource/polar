@@ -28,6 +28,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_account,
     create_appeal_case,
+    create_checkout,
     create_customer,
     create_order,
     create_organization_review,
@@ -839,6 +840,69 @@ async def test_list_members_not_member(
     response = await client.get(f"/v1/organizations/{organization.id}/members")
 
     assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestGetEmbedStatus:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_never_embedded(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["has_embedded"] is False
+        assert json["embed_hosts"] == []
+        assert json["embed_hosts_enforced"] is False
+
+    @pytest.mark.auth
+    async def test_embedded_without_hosts(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        checkout = await create_checkout(save_fixture, products=[product])
+        checkout.embed_origin = "https://example.com"
+        await save_fixture(checkout)
+
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["has_embedded"] is True
+        assert json["embed_hosts_enforced"] is False
+
+    @pytest.mark.auth
+    async def test_hosts_configured(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.embed_hosts = ["example.com"]
+        await save_fixture(organization)
+
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["embed_hosts"] == ["example.com"]
+        assert json["embed_hosts_enforced"] is True
 
 
 @pytest.mark.asyncio

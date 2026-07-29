@@ -737,6 +737,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/embed-status': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Organization Embed Status
+     * @description Whether this organization needs to configure its embed hosts.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['organizations:get_embed_status']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/check-slug': {
     parameters: {
       query?: never
@@ -26636,6 +26658,24 @@ export interface components {
        */
       previous_annual_revenue?: number | null
     }
+    /** OrganizationEmbedStatus */
+    OrganizationEmbedStatus: {
+      /**
+       * Has Embedded
+       * @description Whether this organization has ever opened an embedded checkout.
+       */
+      has_embedded: boolean
+      /**
+       * Embed Hosts
+       * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
+       */
+      embed_hosts: string[]
+      /**
+       * Embed Hosts Enforced
+       * @description Whether an embedding page's origin must match `embed_hosts`.
+       */
+      embed_hosts_enforced: boolean
+    }
     /** OrganizationFeatureSettings */
     OrganizationFeatureSettings: {
       /**
@@ -38204,6 +38244,46 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['OrganizationKYC']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:get_embed_status': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationEmbedStatus']
         }
       }
       /** @description Organization not found. */

@@ -230,15 +230,23 @@ export const FileListItem = ({
   })
 
   const onDownload = useCallback(() => {
-    downloadFile.mutateAsync().then((response) => {
-      if (response.error) {
-        toast({
-          title: 'File Download Failed',
-          description: `Error downloading file ${file.name}: ${extractApiErrorMessage(response.error)}`,
-        })
-      }
-    })
-  }, [downloadFile, file])
+    const showFailure = (reason: string) =>
+      toast({
+        title: 'File Download Failed',
+        description: `Error downloading file ${file.name}: ${reason}`,
+      })
+
+    downloadFile
+      .mutateAsync()
+      .then((response) => {
+        if (response.error) {
+          showFailure(extractApiErrorMessage(response.error))
+        }
+      })
+      .catch(() => {
+        showFailure('Please try again later')
+      })
+  }, [downloadFile, file.name])
 
   const onToggleEnabled = useCallback(
     (enabled: boolean) => {

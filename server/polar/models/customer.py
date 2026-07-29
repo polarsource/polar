@@ -144,6 +144,12 @@ class Customer(MetadataMixin, RecordModel):
             "search_vector",
             postgresql_using="gin",
         ),
+        Index(
+            "ix_customers_deleted_at_id",
+            "deleted_at",
+            "id",
+            postgresql_where=text("deleted_at IS NOT NULL"),
+        ),
         UniqueConstraint("organization_id", "external_id"),
         UniqueConstraint("organization_id", "short_id"),
     )

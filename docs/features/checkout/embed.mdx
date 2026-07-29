@@ -86,6 +86,37 @@ For this to work, make sure to set the [`embed_origin`](/api-reference/checkouts
 
 </Tip>
 
+## Embed Hosts
+
+List the hosts allowed to embed your checkout under **Settings → Preferences → Embedding**. An embedded checkout only opens on a host you've listed.
+
+After a payment, the checkout sends your page a message carrying a session token for your customer. The allowlist is how we know that page is yours.
+
+### Writing a host
+
+Write the host on its own, without a scheme:
+
+| Entry | Matches |
+| --- | --- |
+| `example.com` | `example.com`, and nothing else |
+| `*.example.com` | any subdomain, but not `example.com` itself |
+| `example.com:8443` | that host on that port |
+| `localhost:3000` | your local development server |
+
+HTTPS is always allowed. HTTP is allowed as well when the host is local: `localhost`, any name ending in `.localhost` or `.local`, and loopback or private addresses such as `192.168.1.10` or `10.0.0.5`.
+
+An entry without a port matches the default port only, so `example.com` does not match `https://example.com:8443`. Write the port when your site uses one.
+
+Applications embedding checkout from their own origin, such as a browser extension, list that origin in full: `chrome-extension://abcdefghijklmnopqrstuvwxyzabcdef`.
+
+<Note>
+  Add every host in one go, staging and preview domains included — paste them separated by commas or new lines. The list takes effect as soon as you save it, so a host you leave out stops working straight away.
+</Note>
+
+### Serving over HTTP
+
+If your site is served over plain HTTP on a public domain, move it to HTTPS before listing it. A public HTTP host can't be listed, and the message we send after payment carries a customer session token — on a plain HTTP page, anyone on the network can read it.
+
 ## Advanced Integration
 
 For users who need more control over the embedded checkout flow, the `PolarEmbedCheckout` class provides several advanced features.

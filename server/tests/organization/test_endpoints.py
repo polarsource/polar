@@ -10,7 +10,11 @@ from polar.config import settings
 from polar.integrations.polar.service import PolarSelfService
 from polar.models import OrganizationSSOConnection, Product, User
 from polar.models.account import Account
-from polar.models.organization import Organization, OrganizationStatus
+from polar.models.organization import (
+    EMBED_HOSTS_ENFORCED_FROM,
+    Organization,
+    OrganizationStatus,
+)
 from polar.models.organization_sso_connection import (
     OIDCAuthMethod,
     OIDCConfiguration,
@@ -902,6 +906,23 @@ class TestGetEmbedStatus:
         assert response.status_code == 200
         json = response.json()
         assert json["embed_hosts"] == ["example.com"]
+        assert json["embed_hosts_enforced"] is False
+
+    @pytest.mark.auth
+    async def test_organization_past_the_cutoff(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.created_at = EMBED_HOSTS_ENFORCED_FROM
+        await save_fixture(organization)
+
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 200
+        json = response.json()
         assert json["embed_hosts_enforced"] is True
 
 

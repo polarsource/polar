@@ -716,6 +716,12 @@ class CheckoutService:
                     str(parsed_embed_origin), organization.embed_hosts
                 )
                 if embed_origin is None:
+                    log.warning(
+                        "Embedded checkout refused: origin is not an allowed embed host",
+                        organization_id=str(organization.id),
+                        embed_origin=str(parsed_embed_origin),
+                        embed_hosts=organization.embed_hosts,
+                    )
                     raise EmbedHostNotAllowed(str(parsed_embed_origin))
             else:
                 embed_origin = str(parsed_embed_origin)

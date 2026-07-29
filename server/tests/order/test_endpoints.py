@@ -155,37 +155,6 @@ class TestListOrders:
         product: Product,
         customer: Customer,
     ) -> None:
-        paid_order = await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            status=OrderStatus.paid,
-        )
-        await create_order(
-            save_fixture,
-            product=product,
-            customer=customer,
-            status=OrderStatus.refunded,
-        )
-
-        response = await client.get(
-            "/v1/orders/", params={"status": OrderStatus.paid.value}
-        )
-
-        assert response.status_code == 200
-        json = response.json()
-        assert json["pagination"]["total_count"] == 1
-        assert json["items"][0]["id"] == str(paid_order.id)
-
-    @pytest.mark.auth
-    async def test_status_filter_multiple(
-        self,
-        save_fixture: SaveFixture,
-        client: AsyncClient,
-        user_organization: UserOrganization,
-        product: Product,
-        customer: Customer,
-    ) -> None:
         for status in (OrderStatus.paid, OrderStatus.refunded, OrderStatus.pending):
             await create_order(
                 save_fixture,

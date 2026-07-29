@@ -140,6 +140,7 @@ class PaymentMethodRepository(
             .where(
                 Subscription.payment_method_id == PaymentMethod.id,
                 Subscription.billable.is_(True),
+                Subscription.deleted_at.is_(None),
             )
             .correlate(PaymentMethod)
             .exists()

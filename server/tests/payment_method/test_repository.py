@@ -4,10 +4,12 @@ from typing import Any
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy import select
 
 from polar.email.react import serialize_email_props
 from polar.enums import EmailSender
-from polar.models import Customer, PaymentMethod, Product
+from polar.kit.utils import utc_now
+from polar.models import Customer, PaymentMethod, Product, Subscription
 from polar.models.email_log import EmailLog, EmailLogStatus
 from polar.models.subscription import SubscriptionStatus
 from polar.payment_method.repository import (
@@ -173,6 +175,33 @@ class TestGetCardsExpiring:
         await create_expiring_card(
             save_fixture, customer, product, status=SubscriptionStatus.canceled
         )
+
+        repository = PaymentMethodRepository.from_session(session)
+        result = await repository.get_cards_needing_expiration_reminder(NOW, WINDOW_END)
+
+        assert result == []
+
+    async def test_excludes_card_whose_subscription_is_soft_deleted(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        payment_method = await create_expiring_card(save_fixture, customer, product)
+        subscription = (
+            (
+                await session.execute(
+                    select(Subscription).where(
+                        Subscription.payment_method_id == payment_method.id
+                    )
+                )
+            )
+            .scalars()
+            .one()
+        )
+        subscription.deleted_at = utc_now()
+        await save_fixture(subscription)
 
         repository = PaymentMethodRepository.from_session(session)
         result = await repository.get_cards_needing_expiration_reminder(NOW, WINDOW_END)

@@ -32,7 +32,7 @@ def is_local_host(host: str) -> bool:
         address = ipaddress.ip_address(host.strip("[]"))
     except ValueError:
         return False
-    return address.is_loopback or address.is_private
+    return not address.is_global
 
 
 @dataclass(frozen=True, slots=True)

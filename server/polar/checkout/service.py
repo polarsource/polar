@@ -91,6 +91,7 @@ from polar.observability.checkout_metrics import (
     CHECKOUT_SUCCEEDED_TOTAL,
 )
 from polar.order.service import order as order_service
+from polar.organization.embed_hosts import parse_origin
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.posthog import posthog
 from polar.product.custom_price import validate_custom_price_amount
@@ -698,6 +699,12 @@ class CheckoutService:
         query_prefill: dict[str, str | UUID4 | dict[str, str] | None] | None = None,
         **query_metadata: str | None,
     ) -> Checkout:
+        if embed_origin is not None:
+            parsed_embed_origin = parse_origin(embed_origin)
+            embed_origin = (
+                str(parsed_embed_origin) if parsed_embed_origin is not None else None
+            )
+
         products: list[Product] = []
         for product in checkout_link.products:
             if not product.is_archived and product.visibility != Visibility.draft:

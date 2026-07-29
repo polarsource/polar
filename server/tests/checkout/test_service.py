@@ -2565,6 +2565,38 @@ class TestCheckoutLinkCreate:
         assert checkout.success_url == "https://example.com/success"
         assert checkout.user_metadata == {"key": "value"}
 
+    async def test_dropped_embed_origin(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_one_time]
+        )
+
+        checkout = await checkout_service.checkout_link_create(
+            session, checkout_link, embed_origin="*"
+        )
+
+        assert checkout.embed_origin is None
+
+    async def test_normalized_embed_origin(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_one_time]
+        )
+
+        checkout = await checkout_service.checkout_link_create(
+            session, checkout_link, embed_origin="https://Example.com:443/"
+        )
+
+        assert checkout.embed_origin == "https://example.com"
+
     async def test_valid_custom_price_honors_zero_prefill(
         self,
         save_fixture: SaveFixture,

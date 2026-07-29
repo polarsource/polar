@@ -366,6 +366,24 @@ class TestRedirect:
         assert response.status_code == 307
         assert CHECKOUT_CLIENT_SECRET_PREFIX in response.headers["location"]
 
+    async def test_wildcard_embed_origin(
+        self, session: AsyncSession, client: AsyncClient, checkout_link: CheckoutLink
+    ) -> None:
+        response = await client.get(
+            f"/v1/checkout-links/{checkout_link.client_secret}/redirect",
+            params={"embed_origin": "*"},
+        )
+
+        assert response.status_code == 307
+
+        checkout_repository = CheckoutRepository.from_session(session)
+        checkouts = await checkout_repository.get_all(
+            checkout_repository.get_base_statement().order_by(
+                Checkout.created_at.desc()
+            )
+        )
+        assert checkouts[0].embed_origin is None
+
     async def test_allowed_metadata(
         self, session: AsyncSession, client: AsyncClient, checkout_link: CheckoutLink
     ) -> None:

@@ -181,6 +181,10 @@ class OrganizationCheckoutSettings(TypedDict):
     require_3ds: bool
 
 
+# Organizations created from this point must list their embed hosts.
+EMBED_HOSTS_ENFORCED_FROM = datetime(2026, 8, 4, tzinfo=UTC)
+
+
 def _default_checkout_settings() -> OrganizationCheckoutSettings:
     return {
         "require_3ds": True,
@@ -628,6 +632,13 @@ class Organization(RateLimitGroupMixin, RecordModel):
     )
 
     embed_hosts: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+
+    @property
+    def embed_hosts_enforced(self) -> bool:
+        """Filling the list in opts an older organization in: nothing but a
+        merchant ever writes to the column, so a non-empty list is a deliberate
+        choice."""
+        return bool(self.embed_hosts) or self.created_at >= EMBED_HOSTS_ENFORCED_FROM
 
     legal_entity: Mapped[OrganizationLegalEntity | None] = mapped_column(
         JSONB, nullable=True, default=None

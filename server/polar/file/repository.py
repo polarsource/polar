@@ -1,4 +1,3 @@
-from collections.abc import Sequence
 from uuid import UUID
 
 from sqlalchemy import Select
@@ -36,28 +35,6 @@ class FileRepository(
     async def get_by_path(self, path: str) -> File | None:
         statement = self.get_base_statement().where(File.path == path)
         return await self.get_one_or_none(statement)
-
-    async def get_all_by_organization(
-        self,
-        organization_id: UUID,
-        *,
-        service: FileServiceTypes | None = None,
-        sorting: list[Sorting[FileSortProperty]] = [
-            (FileSortProperty.created_at, True)
-        ],
-    ) -> Sequence[File]:
-        """Get all files for an organization, optionally filtered by service type."""
-        statement = self.get_base_statement().where(
-            File.organization_id == organization_id,
-            File.is_uploaded.is_(True),
-        )
-
-        if service is not None:
-            statement = statement.where(File.service == service)
-
-        statement = self.apply_sorting(statement, sorting)
-
-        return await self.get_all(statement)
 
     async def paginate_by_organization(
         self,

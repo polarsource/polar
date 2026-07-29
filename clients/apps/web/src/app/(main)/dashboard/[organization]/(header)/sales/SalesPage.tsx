@@ -3,6 +3,7 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
+import OrderStatusSelect from '@/components/Orders/OrderStatusSelect'
 import ProductSelect from '@/components/Products/ProductSelect'
 import { useMetrics } from '@/hooks/queries/metrics'
 import { useOrders } from '@/hooks/queries/orders'
@@ -14,8 +15,10 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { getChartRangeParams } from '@/utils/metrics'
+import type { OrderStatusFilter } from '@/utils/order'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import { formatCurrency } from '@polar-sh/currency'
 import { Truncated } from '@polar-sh/orbit'
 import { Avatar } from '@polar-sh/orbit'
@@ -36,6 +39,7 @@ interface ClientPageProps {
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
   productId?: string[]
+  status: OrderStatusFilter
   metadata?: string[]
 }
 
@@ -44,6 +48,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   pagination,
   sorting,
   productId,
+  status,
   metadata,
 }) => {
   const [selectedOrderState, setSelectedOrderState] =
@@ -53,11 +58,16 @@ const ClientPage: React.FC<ClientPageProps> = ({
     pagination: DataTablePaginationState,
     sorting: DataTableSortingState,
     productId?: string[],
+    status?: OrderStatusFilter,
   ) => {
     const params = serializeSearchParams(pagination, sorting)
 
     if (productId) {
       productId.forEach((id) => params.append('product_id', id))
+    }
+
+    if (status && status !== 'any') {
+      params.append('status', status)
     }
 
     if (metadata) {
@@ -84,6 +94,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         updatedPagination,
         sorting,
         productId,
+        status,
       )}`,
     )
   }
@@ -103,6 +114,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
         pagination,
         updatedSorting,
         productId,
+        status,
       )}`,
     )
   }
@@ -113,6 +125,18 @@ const ClientPage: React.FC<ClientPageProps> = ({
         pagination,
         sorting,
         value,
+        status,
+      )}`,
+    )
+  }
+
+  const onStatusSelect = (value: OrderStatusFilter) => {
+    router.push(
+      `/dashboard/${organization.slug}/sales?${getSearchParams(
+        pagination,
+        sorting,
+        productId,
+        value,
       )}`,
     )
   }
@@ -120,6 +144,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const ordersHook = useOrders(organization.id, {
     ...getAPIParams(pagination, sorting),
     product_id: productId,
+    status: status === 'any' ? undefined : [status],
   })
 
   const orders = ordersHook.data?.items || []
@@ -282,7 +307,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     <DashboardBody wide>
       <div className="flex flex-col gap-8">
         <div className="flex items-center justify-between gap-2">
-          <div className="w-auto">
+          <Box alignItems="center" columnGap="m">
             <ProductSelect
               organization={organization}
               value={productId || []}
@@ -290,7 +315,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
               className="w-[300px]"
               includeArchived
             />
-          </div>
+            <Box width={200}>
+              <OrderStatusSelect value={status} onChange={onStatusSelect} />
+            </Box>
+          </Box>
           <Button
             onClick={onExport}
             className="flex flex-row items-center"

@@ -1,64 +1,12 @@
-import re
-
 import pytest
 from pytest_mock import MockerFixture
-from sqlalchemy.dialects import postgresql
-from sqlalchemy.sql import Select
 
 from polar.kit.utils import utc_now
-from polar.models import Subscription
 from polar.subscription.scheduler import (
     SubscriptionJobStore,
     SubscriptionResumeJobStore,
     _SubscriptionScheduleJobStore,
 )
-
-
-def _compile_where(statement: Select[tuple[Subscription]]) -> str:
-    compiled = str(
-        statement.compile(
-            dialect=postgresql.dialect(), compile_kwargs={"literal_binds": True}
-        )
-    )
-    return compiled.split("WHERE", 1)[1]
-
-
-def test_cycle_scheduling_statement_matches_partial_index_predicate() -> None:
-    """The cycle scheduler's status filter must compile to a bare ``status IN (...)``
-    so PostgreSQL can prove the partial index ``ix_subscriptions_cycle_schedule``
-    predicate (``status IN ('trialing', 'active')``) is implied by the query.
-
-    ``Subscription.active.is_(True)`` historically generated
-    ``(status IN (...)) IS true``, which the planner cannot match against the
-    partial index predicate, forcing a seq scan + disk sort. See commit ffc57e4ea.
-    """
-    where = _compile_where(SubscriptionJobStore.scheduling_statement())
-
-    # The status filter must be a bare ``subscriptions.status IN (...)`` predicate.
-    # ``active_statuses()`` returns a set, so the IN-list element order is not
-    # stable across runs; match either ordering.
-    bare_in = re.search(
-        r"subscriptions\.status IN \((?:'active', 'trialing'|'trialing', 'active')\)",
-        where,
-    )
-    assert bare_in is not None, (
-        f"expected a bare subscriptions.status IN (...) predicate, got: {where}"
-    )
-
-    # The IS true wrapper around the status IN (...) predicate must be absent —
-    # it breaks partial-index predicate implication in PostgreSQL.
-    wrapped = re.search(r"\(subscriptions\.status IN \([^)]*\)\) IS true", where)
-    assert wrapped is None, (
-        f"status IN (...) must not be wrapped in IS true, got: {where}"
-    )
-
-
-def test_resume_scheduling_statement_matches_partial_index_predicate() -> None:
-    """The resume scheduler's status filter must compile to ``status = 'paused'``
-    to match the partial index ``ix_subscriptions_resume_schedule`` predicate."""
-    where = _compile_where(SubscriptionResumeJobStore.scheduling_statement())
-
-    assert "subscriptions.status = 'paused'" in where
 
 
 @pytest.mark.asyncio

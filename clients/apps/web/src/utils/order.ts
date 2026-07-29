@@ -25,10 +25,12 @@ const _getOrderById = async (
 // Tell React to memoize it for the duration of the request
 export const getOrderById = cache(_getOrderById)
 
-export type OrderStatusFilter = schemas['OrderStatus'] | 'any'
+export const orderStatusFilterValues = [
+  'any',
+  ...enums.orderStatusValues,
+] as const
 
-export const isOrderStatus = (value: string): value is schemas['OrderStatus'] =>
-  (enums.orderStatusValues as readonly string[]).includes(value)
+export type OrderStatusFilter = (typeof orderStatusFilterValues)[number]
 
 /**
  * Determines if an order is eligible for payment retry

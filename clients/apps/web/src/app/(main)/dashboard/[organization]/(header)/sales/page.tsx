@@ -1,6 +1,4 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
-import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
-import { isOrderStatus } from '@/utils/order'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
 import SalesPage from './SalesPage'
@@ -13,15 +11,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 export default async function Page(props: {
   params: Promise<{ organization: string }>
-  searchParams: Promise<
-    DataTableSearchParams & {
-      product_id?: string[] | string
-      status?: string | string[]
-      metadata?: string[]
-    }
-  >
 }) {
-  const searchParams = await props.searchParams
   const params = await props.params
   const api = await getServerSideAPI()
   const organization = await getOrganizationBySlugOrNotFound(
@@ -29,37 +19,5 @@ export default async function Page(props: {
     params.organization,
   )
 
-  const { pagination, sorting } = parseSearchParams(
-    searchParams,
-    [{ id: 'created_at', desc: true }],
-    50,
-  )
-
-  const productId = searchParams.product_id
-    ? Array.isArray(searchParams.product_id)
-      ? searchParams.product_id
-      : [searchParams.product_id]
-    : undefined
-
-  const rawStatus = Array.isArray(searchParams.status)
-    ? searchParams.status[0]
-    : searchParams.status
-  const status = rawStatus && isOrderStatus(rawStatus) ? rawStatus : 'any'
-
-  const metadata = searchParams.metadata
-    ? Array.isArray(searchParams.metadata)
-      ? searchParams.metadata
-      : [searchParams.metadata]
-    : undefined
-
-  return (
-    <SalesPage
-      organization={organization}
-      pagination={pagination}
-      sorting={sorting}
-      productId={productId}
-      status={status}
-      metadata={metadata}
-    />
-  )
+  return <SalesPage organization={organization} />
 }

@@ -91,7 +91,7 @@ from polar.observability.checkout_metrics import (
     CHECKOUT_SUCCEEDED_TOTAL,
 )
 from polar.order.service import order as order_service
-from polar.organization.embed_hosts import parse_origin
+from polar.organization.embed_hosts import match_origin, parse_origin
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.posthog import posthog
 from polar.product.custom_price import validate_custom_price_amount
@@ -261,6 +261,13 @@ class CheckoutCustomerExternalIdMismatch(CheckoutError):
             "but with a different email address."
         )
         super().__init__(message, 422)
+
+
+class EmbedHostNotAllowed(CheckoutError):
+    def __init__(self, embed_origin: str) -> None:
+        self.embed_origin = embed_origin
+        message = f"{embed_origin} is not allowed to embed this checkout."
+        super().__init__(message, 403)
 
 
 CHECKOUT_CLIENT_SECRET_PREFIX = "polar_c_"
@@ -700,10 +707,18 @@ class CheckoutService:
         **query_metadata: str | None,
     ) -> Checkout:
         if embed_origin is not None:
+            organization = checkout_link.organization
             parsed_embed_origin = parse_origin(embed_origin)
-            embed_origin = (
-                str(parsed_embed_origin) if parsed_embed_origin is not None else None
-            )
+            if parsed_embed_origin is None:
+                embed_origin = None
+            elif organization.embed_hosts_enforced:
+                embed_origin = match_origin(
+                    str(parsed_embed_origin), organization.embed_hosts
+                )
+                if embed_origin is None:
+                    raise EmbedHostNotAllowed(str(parsed_embed_origin))
+            else:
+                embed_origin = str(parsed_embed_origin)
 
         products: list[Product] = []
         for product in checkout_link.products:

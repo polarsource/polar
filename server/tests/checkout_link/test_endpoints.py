@@ -384,6 +384,23 @@ class TestRedirect:
         )
         assert checkouts[0].embed_origin is None
 
+    async def test_refused_embed_origin(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        checkout_link: CheckoutLink,
+    ) -> None:
+        organization.embed_hosts = ["example.com"]
+        await save_fixture(organization)
+
+        response = await client.get(
+            f"/v1/checkout-links/{checkout_link.client_secret}/redirect",
+            params={"embed_origin": "https://evil.com"},
+        )
+
+        assert response.status_code == 403
+
     async def test_allowed_metadata(
         self, session: AsyncSession, client: AsyncClient, checkout_link: CheckoutLink
     ) -> None:

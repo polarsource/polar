@@ -28,6 +28,7 @@ from polar.checkout.service import (
     CheckoutCustomerDeleted,
     CheckoutCustomerExternalIdMismatch,
     DiscountRedemptionLimitReached,
+    EmbedHostNotAllowed,
     ExpiredCheckoutError,
     NotConfirmedCheckout,
     NotOpenCheckout,
@@ -74,7 +75,10 @@ from polar.models.customer_seat import SeatStatus
 from polar.models.discount import DiscountDuration, DiscountType
 from polar.models.member import MemberRole
 from polar.models.order import OrderBillingReasonInternal, OrderStatus
-from polar.models.organization import OrganizationStatus
+from polar.models.organization import (
+    EMBED_HOSTS_ENFORCED_FROM,
+    OrganizationStatus,
+)
 from polar.models.product_price import (
     ProductPriceAmountType,
     ProductPriceCustom,
@@ -2596,6 +2600,82 @@ class TestCheckoutLinkCreate:
         )
 
         assert checkout.embed_origin == "https://example.com"
+
+    async def test_allowed_embed_origin(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product_one_time: Product,
+    ) -> None:
+        organization.embed_hosts = ["*.example.com"]
+        await save_fixture(organization)
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_one_time]
+        )
+
+        checkout = await checkout_service.checkout_link_create(
+            session, checkout_link, embed_origin="https://www.example.com/checkout"
+        )
+
+        assert checkout.embed_origin == "https://www.example.com"
+
+    async def test_refused_embed_origin(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product_one_time: Product,
+    ) -> None:
+        organization.embed_hosts = ["example.com"]
+        await save_fixture(organization)
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_one_time]
+        )
+
+        with pytest.raises(EmbedHostNotAllowed):
+            await checkout_service.checkout_link_create(
+                session, checkout_link, embed_origin="https://evil.com"
+            )
+
+    async def test_refused_embed_origin_for_new_organization(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product_one_time: Product,
+    ) -> None:
+        """An organization past the cutoff must configure a list before embedding."""
+        organization.created_at = EMBED_HOSTS_ENFORCED_FROM
+        await save_fixture(organization)
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_one_time]
+        )
+
+        with pytest.raises(EmbedHostNotAllowed):
+            await checkout_service.checkout_link_create(
+                session, checkout_link, embed_origin="https://example.com"
+            )
+
+    async def test_dropped_embed_origin_when_enforced(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product_one_time: Product,
+    ) -> None:
+        """A value carrying no origin can't embed anyway, so it doesn't 403."""
+        organization.embed_hosts = ["example.com"]
+        await save_fixture(organization)
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_one_time]
+        )
+
+        checkout = await checkout_service.checkout_link_create(
+            session, checkout_link, embed_origin="null"
+        )
+
+        assert checkout.embed_origin is None
 
     async def test_valid_custom_price_honors_zero_prefill(
         self,

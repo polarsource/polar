@@ -2608,6 +2608,7 @@ class TestCheckoutLinkCreate:
         organization: Organization,
         product_one_time: Product,
     ) -> None:
+        organization.created_at = EMBED_HOSTS_ENFORCED_FROM
         organization.embed_hosts = ["*.example.com"]
         await save_fixture(organization)
         checkout_link = await create_checkout_link(
@@ -2627,6 +2628,7 @@ class TestCheckoutLinkCreate:
         organization: Organization,
         product_one_time: Product,
     ) -> None:
+        organization.created_at = EMBED_HOSTS_ENFORCED_FROM
         organization.embed_hosts = ["example.com"]
         await save_fixture(organization)
         checkout_link = await create_checkout_link(
@@ -2637,6 +2639,28 @@ class TestCheckoutLinkCreate:
             await checkout_service.checkout_link_create(
                 session, checkout_link, embed_origin="https://evil.com"
             )
+
+    async def test_unlisted_embed_origin_before_the_cutoff(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product_one_time: Product,
+    ) -> None:
+        """Listing hosts doesn't enforce them: older organizations embed
+        unchecked until the cutoff applies to everyone."""
+        organization.created_at = EMBED_HOSTS_ENFORCED_FROM - timedelta(days=1)
+        organization.embed_hosts = ["example.com"]
+        await save_fixture(organization)
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_one_time]
+        )
+
+        checkout = await checkout_service.checkout_link_create(
+            session, checkout_link, embed_origin="https://other.com"
+        )
+
+        assert checkout.embed_origin == "https://other.com"
 
     async def test_refused_embed_origin_for_new_organization(
         self,
@@ -2665,6 +2689,7 @@ class TestCheckoutLinkCreate:
         product_one_time: Product,
     ) -> None:
         """A value carrying no origin can't embed anyway, so it doesn't 403."""
+        organization.created_at = EMBED_HOSTS_ENFORCED_FROM
         organization.embed_hosts = ["example.com"]
         await save_fixture(organization)
         checkout_link = await create_checkout_link(

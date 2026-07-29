@@ -853,6 +853,7 @@ class TestGetPaymentStatus:
         json = response.json()
         assert "payment_ready" in json
         assert "organization_status" in json
+        assert "onboarding_resubmission_requested_at" in json
 
     @pytest.mark.auth
     async def test_valid_grandfathered_organization(
@@ -874,6 +875,54 @@ class TestGetPaymentStatus:
         json = response.json()
         # Should be payment ready even without completing steps
         assert json["payment_ready"] is True
+
+    async def test_resubmission_null_for_initial_onboarding(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """A freshly created organization that was never reset has a null
+        resubmission timestamp — the dashboard should show the initial
+        onboarding checklist, not the resubmission banner."""
+        organization.status = OrganizationStatus.CREATED
+        organization.onboarding_resubmission_requested_at = None
+        await save_fixture(organization)
+
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/payment-status"
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["organization_status"] == "created"
+        assert json["onboarding_resubmission_requested_at"] is None
+
+    async def test_resubmission_set_after_backoffice_reset(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """After backoffice resets an organization for review, the fresh
+        payment-status response must surface the resubmission timestamp so
+        the dashboard can show ResubmissionBanner instead of the initial
+        onboarding checklist — even while the cached organization prop is
+        stale."""
+        reset_at = datetime(2026, 7, 28, 12, 0, tzinfo=UTC)
+        organization.status = OrganizationStatus.CREATED
+        organization.onboarding_resubmission_requested_at = reset_at
+        await save_fixture(organization)
+
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/payment-status"
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["organization_status"] == "created"
+        assert json["onboarding_resubmission_requested_at"] is not None
+        assert json["onboarding_resubmission_requested_at"].startswith(
+            "2026-07-28T12:00:00"
+        )
 
 
 @pytest.mark.asyncio

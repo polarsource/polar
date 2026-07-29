@@ -455,6 +455,7 @@ async def get_payment_status(
     return OrganizationPaymentStatus(
         payment_ready=payment_status.payment_ready,
         organization_status=payment_status.organization_status,
+        onboarding_resubmission_requested_at=payment_status.onboarding_resubmission_requested_at,
     )
 
 

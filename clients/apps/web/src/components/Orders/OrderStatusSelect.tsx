@@ -1,3 +1,4 @@
+import type { OrderStatusFilter } from '@/utils/order'
 import { enums } from '@polar-sh/client'
 import {
   Select,
@@ -11,8 +12,8 @@ import React from 'react'
 import { OrderStatusDisplayTitle } from './OrderStatus'
 
 interface OrderStatusSelectProps {
-  value: string
-  onChange: (value: string) => void
+  value: OrderStatusFilter
+  onChange: (value: OrderStatusFilter) => void
 }
 
 const OrderStatusSelect: React.FC<OrderStatusSelectProps> = ({
@@ -20,12 +21,17 @@ const OrderStatusSelect: React.FC<OrderStatusSelectProps> = ({
   onChange,
 }) => {
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select
+      value={value}
+      onValueChange={(value) => onChange(value as OrderStatusFilter)}
+    >
       <SelectTrigger>
         <SelectValue placeholder="Select a status" />
       </SelectTrigger>
       <SelectContent>
-        <SelectItem value="all">All statuses</SelectItem>
+        <SelectItem value="any">
+          <span className="whitespace-nowrap">Any status</span>
+        </SelectItem>
         <SelectSeparator />
         {enums.orderStatusValues.map((status) => (
           <SelectItem key={status} value={status}>

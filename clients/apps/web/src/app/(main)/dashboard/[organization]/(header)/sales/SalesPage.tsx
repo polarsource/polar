@@ -15,6 +15,7 @@ import {
   serializeSearchParams,
 } from '@/utils/datatable'
 import { getChartRangeParams } from '@/utils/metrics'
+import type { OrderStatusFilter } from '@/utils/order'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -38,7 +39,7 @@ interface ClientPageProps {
   pagination: DataTablePaginationState
   sorting: DataTableSortingState
   productId?: string[]
-  status: string
+  status: OrderStatusFilter
   metadata?: string[]
 }
 
@@ -57,7 +58,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     pagination: DataTablePaginationState,
     sorting: DataTableSortingState,
     productId?: string[],
-    status?: string,
+    status?: OrderStatusFilter,
   ) => {
     const params = serializeSearchParams(pagination, sorting)
 
@@ -65,7 +66,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
       productId.forEach((id) => params.append('product_id', id))
     }
 
-    if (status && status !== 'all') {
+    if (status && status !== 'any') {
       params.append('status', status)
     }
 
@@ -129,7 +130,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     )
   }
 
-  const onStatusSelect = (value: string) => {
+  const onStatusSelect = (value: OrderStatusFilter) => {
     router.push(
       `/dashboard/${organization.slug}/sales?${getSearchParams(
         pagination,
@@ -143,7 +144,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const ordersHook = useOrders(organization.id, {
     ...getAPIParams(pagination, sorting),
     product_id: productId,
-    ...(status !== 'all' ? { status: [status as schemas['OrderStatus']] } : {}),
+    status: status === 'any' ? undefined : [status],
   })
 
   const orders = ordersHook.data?.items || []

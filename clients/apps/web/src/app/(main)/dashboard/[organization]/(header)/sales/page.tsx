@@ -1,5 +1,6 @@
 import { getServerSideAPI } from '@/utils/client/serverside'
 import { DataTableSearchParams, parseSearchParams } from '@/utils/datatable'
+import { isOrderStatus } from '@/utils/order'
 import { getOrganizationBySlugOrNotFound } from '@/utils/organization'
 import { Metadata } from 'next'
 import SalesPage from './SalesPage'
@@ -15,7 +16,7 @@ export default async function Page(props: {
   searchParams: Promise<
     DataTableSearchParams & {
       product_id?: string[] | string
-      status?: string
+      status?: string | string[]
       metadata?: string[]
     }
   >
@@ -40,6 +41,11 @@ export default async function Page(props: {
       : [searchParams.product_id]
     : undefined
 
+  const rawStatus = Array.isArray(searchParams.status)
+    ? searchParams.status[0]
+    : searchParams.status
+  const status = rawStatus && isOrderStatus(rawStatus) ? rawStatus : 'any'
+
   const metadata = searchParams.metadata
     ? Array.isArray(searchParams.metadata)
       ? searchParams.metadata
@@ -52,7 +58,7 @@ export default async function Page(props: {
       pagination={pagination}
       sorting={sorting}
       productId={productId}
-      status={searchParams.status ?? 'all'}
+      status={status}
       metadata={metadata}
     />
   )

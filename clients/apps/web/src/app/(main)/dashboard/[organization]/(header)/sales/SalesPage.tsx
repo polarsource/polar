@@ -84,6 +84,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     {
       accessorKey: 'customer',
       enableSorting: true,
+      size: 200,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Customer" />
       ),
@@ -115,10 +116,29 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       },
     },
     {
+      accessorKey: 'created_at',
+      enableSorting: true,
+      size: 180,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Date" />
+      ),
+      cell: (props) => (
+        <FormattedDateTime
+          datetime={props.getValue() as string}
+          resolution="time"
+        />
+      ),
+    },
+    {
       accessorKey: 'product',
       enableSorting: false,
+      size: 200,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Description" />
+        <DataTableColumnHeader
+          column={column}
+          title="Product"
+          className="text-black font-[550] dark:text-white"
+        />
       ),
       cell: ({
         row: {
@@ -126,11 +146,17 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         },
       }) => {
         if (!product) {
-          return <span>{description}</span>
+          return (
+            <Truncated>
+              <span>{description}</span>
+            </Truncated>
+          )
         }
         return (
-          <div className="flex flex-row items-center gap-4">
-            {product.name}
+          <div className="flex flex-row items-center gap-2">
+            <Truncated>
+              <span>{product.name}</span>
+            </Truncated>
             {product.is_archived && (
               <Status status="Archived" color="red" size="small" />
             )}
@@ -141,18 +167,23 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     {
       accessorKey: 'net_amount',
       enableSorting: true,
+      size: 100,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Amount" />
+        <DataTableColumnHeader
+          column={column}
+          title="Amount"
+        />
       ),
       cell: ({ row: { original: order } }) => (
-        <span>
+        <div className="">
           {formatCurrency('standard')(order.net_amount, order.currency)}
-        </span>
+        </div>
       ),
     },
     {
       accessorKey: 'status',
       enableSorting: true,
+      size: 140,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />
       ),
@@ -163,18 +194,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       ),
     },
     {
-      accessorKey: 'created_at',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Date" />
-      ),
-      cell: (props) => (
-        <FormattedDateTime datetime={props.getValue() as string} />
-      ),
-    },
-    {
       accessorKey: 'invoice_number',
       enableSorting: true,
+      size: 180,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Invoice number" />
       ),
@@ -184,7 +206,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           accessorKey: `metadata.${key}`,
           enableSorting: false,
           header: ({ column }) => (
-            <DataTableColumnHeader column={column} title={key} />
+            <DataTableColumnHeader
+              column={column}
+              title={key}
+              className="text-black dark:text-white"
+            />
           ),
           cell: (props) => (
             <span className="font-mono">{props.getValue() as string}</span>

@@ -22,7 +22,6 @@ import {
 } from 'react'
 import { twMerge } from 'tailwind-merge'
 import { DashboardProvider } from '../Dashboard/DashboardProvider'
-import EmbedHostsBanner from './EmbedHostsBanner'
 import { useRoute } from '../Navigation/useRoute'
 import { DashboardSidebar } from './Dashboard/DashboardSidebar'
 import TopbarRight from './Public/TopbarRight'
@@ -66,9 +65,6 @@ const DashboardLayout = (
         >
           {/* On large devices, scroll here. On small devices the _document_ is the only element that should scroll. */}
           <main className="relative flex min-h-0 min-w-0 grow flex-col">
-            {props.type !== 'account' && organization ? (
-              <EmbedHostsBanner organization={organization} />
-            ) : null}
             {props.children}
           </main>
         </div>

@@ -82,6 +82,7 @@ async def list(
 @router.get(
     "/{id}/download",
     summary="Get File Download",
+    tags=[APITag.private],
     response_model=FileDownload,
     responses={
         403: {

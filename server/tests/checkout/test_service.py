@@ -10,6 +10,7 @@ import pytest_asyncio
 import stripe as stripe_lib
 from pydantic import HttpUrl, ValidationError
 from pytest_mock import MockerFixture
+from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import Anonymous, AuthSubject
@@ -5744,6 +5745,92 @@ class TestConfirm:
                     }
                 ),
             )
+
+    async def test_new_customer_flushed_before_payment_intent_charge(
+        self,
+        save_fixture: SaveFixture,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """The new customer must be persisted to the database *before* the Stripe
+        PaymentIntent is created and the card is charged.
+
+        This is the safety property that prevents the duplicate-email race from
+        charging a card for a checkout that will fail: with the customer flushed
+        eagerly, the unique constraint on email surfaces a duplicate *before*
+        ``create_payment_intent`` runs (``confirm=True`` charges the card).
+
+        The path under test carries a discount *without* a per-customer limit, so
+        the per-customer lock query (which would itself autoflush the customer) is
+        skipped. The only thing ensuring the flush happens before the charge is
+        ``create_context(flush=True)`` — making this a meaningful regression test
+        for the race described in the bug report.
+        """
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 100},
+            duration=DiscountDuration.once,
+            organization=organization,
+            code="FLUSHBEFORECHARGE",
+        )
+        checkout = await create_checkout(
+            save_fixture, products=[product], discount=discount
+        )
+
+        confirmation_token = MagicMock(spec=stripe_lib.ConfirmationToken)
+        confirmation_token.payment_method_preview = MagicMock()
+        confirmation_token.payment_method_preview.billing_details = MagicMock()
+        confirmation_token.payment_method_preview.billing_details.name = "Customer Name"
+        confirmation_token.payment_method_preview.card = SimpleNamespace(
+            fingerprint="FINGERPRINT"
+        )
+        stripe_service_mock.get_confirmation_token.return_value = confirmation_token
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        # When the payment intent is created, the card is charged (confirm=True).
+        # Verify the customer is already persisted in the DB at that point: a
+        # pending (un-flushed) customer would mean the unique constraint on email
+        # is not yet enforced, so a concurrent duplicate-email confirmation could
+        # also charge before either transaction fails.
+        seen_customer_states: list[bool] = []
+
+        async def _capture_intent(*args: Any, **kwargs: Any) -> Any:
+            assert checkout.customer is not None
+            # `persistent` == the row has been INSERTed (flushed). `pending` ==
+            # only held in the session identity map, not yet in the DB.
+            state = orm_inspect(checkout.customer)
+            seen_customer_states.append(state.persistent)
+            return SimpleNamespace(client_secret="CLIENT_SECRET", status="succeeded")
+
+        stripe_service_mock.create_payment_intent.side_effect = _capture_intent
+
+        confirmed = await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "flushbeforecharge@example.com",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        assert confirmed.status == CheckoutStatus.confirmed
+        assert stripe_service_mock.create_payment_intent.called
+        # The customer must be persisted (flushed) before the card is charged.
+        assert seen_customer_states == [True]
 
     async def test_existing_email_external_id_provided(
         self,

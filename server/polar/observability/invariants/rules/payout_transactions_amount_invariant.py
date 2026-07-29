@@ -48,8 +48,8 @@ class PayoutTransactionsAmountInvariant(Invariant):
     AGE_LIMIT = timedelta(days=30)
 
     async def check(self) -> None:
-        # Payout transactions without reversal (same payout_id)
-        payout_subq = (
+        # Recent payout transactions without reversal (same payout_id)
+        recent_payouts = (
             select(Transaction.id, Transaction.amount)
             .where(
                 Transaction.created_at > (func.now() - self.AGE_LIMIT),
@@ -61,38 +61,40 @@ class PayoutTransactionsAmountInvariant(Invariant):
                     )
                 ),
             )
-            .subquery()
+            .cte("recent_payouts")
         )
 
-        # Sum of amounts per payout_transaction_id
+        # Sum of paid amounts, bounded to the recent payout transactions so we
+        # don't aggregate over the entire transactions history.
         paid_subq = (
             select(
                 Transaction.payout_transaction_id,
                 func.coalesce(func.sum(Transaction.amount), 0).label("total_amount"),
             )
-            .where(Transaction.payout_transaction_id.isnot(None))
+            .where(Transaction.payout_transaction_id.in_(select(recent_payouts.c.id)))
             .group_by(Transaction.payout_transaction_id)
             .subquery()
         )
 
         # Find mismatches
-        diff_expr = func.abs(payout_subq.c.amount) - func.coalesce(
+        diff_expr = func.abs(recent_payouts.c.amount) - func.coalesce(
             paid_subq.c.total_amount, 0
         )
         statement = (
             select(
-                payout_subq.c.id,
+                recent_payouts.c.id,
                 diff_expr.label("diff"),
                 over(func.count()),
             )
             .select_from(
-                payout_subq.outerjoin(
-                    paid_subq, payout_subq.c.id == paid_subq.c.payout_transaction_id
+                recent_payouts.outerjoin(
+                    paid_subq,
+                    recent_payouts.c.id == paid_subq.c.payout_transaction_id,
                 )
             )
             .where(func.abs(diff_expr) > 0)
             .limit(self.LIMIT)
-            .order_by(func.abs(diff_expr).desc(), payout_subq.c.id.asc())
+            .order_by(func.abs(diff_expr).desc(), recent_payouts.c.id.asc())
         )
 
         result = await self.session.execute(statement)

@@ -29,7 +29,7 @@ jobs:
 
     steps:
       - name: Check out code
-        uses: actions/checkout@v7.0.0
+        uses: actions/checkout@v7.0.1
 
       - uses: pnpm/action-setup@v6.0.9
         with:
@@ -117,7 +117,7 @@ jobs:
 
       - name: Configure AWS credentials
         if: steps.e2e.outcome == 'failure'
-        uses: aws-actions/configure-aws-credentials@6.2.2
+        uses: aws-actions/configure-aws-credentials@v6.2.3
         with:
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           role-session-name: e2e-traces

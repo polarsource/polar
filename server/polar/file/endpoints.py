@@ -94,7 +94,7 @@ async def list(
 async def download(
     id: FileID,
     auth_subject: auth.FileRead,
-    session: AsyncReadSession = Depends(get_db_read_session),
+    session: AsyncSession = Depends(get_db_session),
 ) -> FileDownload:
     """Get a presigned URL to download a file."""
     file = await file_service.get(session, auth_subject, id)

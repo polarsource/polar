@@ -59,7 +59,7 @@ class FileService:
 
     async def get(
         self,
-        session: AsyncReadSession,
+        session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         id: uuid.UUID,
     ) -> File | None:

@@ -72,6 +72,11 @@ const customerEmails: {
       'Sent when a canceled subscription permanently ends at the end of the billing cycle',
   },
   {
+    key: 'payment_method_expiration_reminder',
+    title: 'Card expiring',
+    description: 'Sent before a card backing an active subscription expires',
+  },
+  {
     key: 'subscription_past_due',
     title: 'Subscription past due',
     description: 'Sent when a subscription payment fails and becomes overdue',

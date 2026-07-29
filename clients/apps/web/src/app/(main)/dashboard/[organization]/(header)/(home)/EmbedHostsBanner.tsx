@@ -18,12 +18,12 @@ export const EmbedHostsBanner = ({ organization }: EmbedHostsBannerProps) => {
     'organization:manage',
   )
 
-  const { data } = useOrganizationEmbedStatus(organization.id)
+  const { data } = useOrganizationEmbedStatus(
+    organization.id,
+    canManageOrganization,
+  )
 
-  if (!canManageOrganization || !data?.has_embedded) {
-    return null
-  }
-  if (data.embed_hosts.length > 0) {
+  if (!data?.has_embedded || data.embed_hosts.length > 0) {
     return null
   }
 

@@ -311,7 +311,7 @@ export const useDeleteOrganizationAccessToken = () =>
     },
   })
 
-export const useOrganizationEmbedStatus = (id: string) =>
+export const useOrganizationEmbedStatus = (id: string, enabled = true) =>
   useQuery({
     queryKey: ['organizations', id, 'embed-status'],
     queryFn: () =>
@@ -323,7 +323,7 @@ export const useOrganizationEmbedStatus = (id: string) =>
         }),
       ),
     retry: defaultRetry,
-    enabled: !!id,
+    enabled: !!id && enabled,
   })
 
 export const useOrganizationPaymentStatus = (id: string) =>

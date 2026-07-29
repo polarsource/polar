@@ -88,6 +88,7 @@ class CheckoutRepository(
         statement = select(
             select(Checkout.id)
             .where(
+                Checkout.is_deleted.is_(False),
                 Checkout.organization_id == organization_id,
                 Checkout.embed_origin.is_not(None),
             )

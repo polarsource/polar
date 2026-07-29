@@ -98,6 +98,7 @@ describe('CheckoutFormProvider', () => {
     })
 
     it.each([
+      'DiscountRedemptionLimitReached',
       'AlreadyActiveSubscriptionError',
       'NotOpenCheckout',
       'PaymentNotReady',
@@ -120,6 +121,7 @@ describe('CheckoutFormProvider', () => {
       expect(getCtx().form.formState.errors.root?.message).toBe(
         `${errorCode} detail`,
       )
+      expect(getCtx().form.formState.errors.discount_code).toBeUndefined()
     })
 
     it('sets discount_code error for DiscountRedemptionLimitReached when the code input is shown', async () => {
@@ -276,6 +278,7 @@ describe('CheckoutFormProvider', () => {
 
     it.each([
       'PaymentError',
+      'DiscountRedemptionLimitReached',
       'AlreadyActiveSubscriptionError',
       'NotOpenCheckout',
       'PaymentNotReady',
@@ -300,6 +303,7 @@ describe('CheckoutFormProvider', () => {
       expect(getCtx().form.formState.errors.root?.message).toBe(
         `${errorCode} detail`,
       )
+      expect(getCtx().form.formState.errors.discount_code).toBeUndefined()
     })
 
     it('sets discount_code error for DiscountRedemptionLimitReached when the code input is shown', async () => {

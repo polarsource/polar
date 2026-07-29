@@ -117,7 +117,7 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
                 placeholder="example.com, *.example.com"
                 onChange={(e) => setDraft(e.target.value)}
                 onKeyDown={(e) => {
-                  if (e.key === 'Enter') {
+                  if (e.key === 'Enter' && !updateOrganization.isPending) {
                     e.preventDefault()
                     add()
                   }

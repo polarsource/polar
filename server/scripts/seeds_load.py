@@ -1588,6 +1588,7 @@ async def create_seed_data(
             },
             "customer_email_settings": {
                 "order_confirmation": False,
+                "payment_method_expiration_reminder": False,
                 "subscription_cancellation": False,
                 "subscription_confirmation": False,
                 "subscription_cycled": False,

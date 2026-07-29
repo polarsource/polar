@@ -112,6 +112,7 @@ def _default_order_settings() -> OrganizationOrderSettings:
 
 class OrganizationCustomerEmailSettings(TypedDict):
     order_confirmation: bool
+    payment_method_expiration_reminder: bool
     subscription_cancellation: bool
     subscription_confirmation: bool
     subscription_cycled: bool
@@ -129,6 +130,7 @@ class OrganizationCustomerEmailSettings(TypedDict):
 def _default_customer_email_settings() -> OrganizationCustomerEmailSettings:
     return {
         "order_confirmation": True,
+        "payment_method_expiration_reminder": True,
         "subscription_cancellation": True,
         "subscription_confirmation": True,
         "subscription_cycled": True,

@@ -6,6 +6,7 @@ import FeatureSettings from '@/components/Settings/FeatureSettings'
 import OrganizationAccessTokensSettings from '@/components/Settings/OrganizationAccessTokensSettings'
 import OrganizationCustomerEmailSettings from '@/components/Settings/OrganizationCustomerEmailSettings'
 import OrganizationCustomerPortalSettings from '@/components/Settings/OrganizationCustomerPortalSettings'
+import OrganizationEmbedSettings from '@/components/Settings/OrganizationEmbedSettings'
 import OrganizationDeleteSettings from '@/components/Settings/OrganizationDeleteSettings'
 import OrganizationNotificationSettings from '@/components/Settings/OrganizationNotificationSettings'
 import OrganizationPaymentSettings from '@/components/Settings/OrganizationPaymentSettings'
@@ -61,6 +62,17 @@ export default function ClientPage({
         <Section id="customer_portal">
           <SectionDescription title="Customer portal" />
           <OrganizationCustomerPortalSettings
+            organization={org}
+            readOnly={!canManageOrganization}
+          />
+        </Section>
+
+        <Section id="embedding">
+          <SectionDescription
+            title="Embedding"
+            description="Hosts allowed to embed your checkout"
+          />
+          <OrganizationEmbedSettings
             organization={org}
             readOnly={!canManageOrganization}
           />

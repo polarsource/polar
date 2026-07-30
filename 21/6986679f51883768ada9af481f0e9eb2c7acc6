@@ -1,0 +1,24 @@
+server/migrations/versions/2026-07-30-0900_add_payment_method_expiration_reminder_.py
+  s_c048718634e803::t_117e0f192e70e9 1-54
+server/polar/payment_method/tasks.py
+  s_c048718634e803::t_15bd00fa1656f8 17-19
+server/tests/payment_method/test_repository.py
+  s_c048718634e803::t_bf3511f9839469 22
+  s_c048718634e803::t_1bd834b16703cf 46-57
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "216986679f51883768ada9af481f0e9eb2c7acc6",
+  "prompts": {},
+  "sessions": {
+    "s_c048718634e803": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c4cab576-6da1-43cb-9272-0cd01c564d76",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

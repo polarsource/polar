@@ -26,6 +26,7 @@ import FormattedInterval from '@polar-sh/ui/components/atoms/FormattedInterval'
 import { Calendar } from '@polar-sh/ui/components/ui/calendar'
 import {
   Popover,
+  PopoverClose,
   PopoverContent,
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
@@ -226,18 +227,19 @@ const DateRangeIntervals = ({
   return (
     <div className="flex w-full flex-col gap-1">
       {allIntervals.map((int) => (
-        <div
-          key={int.slug}
-          onClick={() => onIntervalChange(int)}
-          role="button"
-          className={twMerge(
-            'dark:hover:bg-polar-800 dark:text-polar-500 flex w-full items-center justify-between rounded-sm border border-transparent px-3 py-2 text-sm text-gray-500 select-none hover:bg-gray-100',
-            interval?.slug === int.slug &&
-              'dark:bg-polar-800 dark:border-polar-700 bg-gray-100 text-black dark:text-white',
-          )}
-        >
-          {int.label}
-        </div>
+        <PopoverClose asChild key={int.slug}>
+          <div
+            onClick={() => onIntervalChange(int)}
+            role="button"
+            className={twMerge(
+              'dark:hover:bg-polar-800 dark:text-polar-500 flex w-full items-center justify-between rounded-sm border border-transparent px-3 py-2 text-sm text-gray-500 select-none hover:bg-gray-100',
+              interval?.slug === int.slug &&
+                'dark:bg-polar-800 dark:border-polar-700 bg-gray-100 text-black dark:text-white',
+            )}
+          >
+            {int.label}
+          </div>
+        </PopoverClose>
       ))}
     </div>
   )

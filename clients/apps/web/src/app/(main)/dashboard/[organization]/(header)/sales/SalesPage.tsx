@@ -1,6 +1,9 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import DateRangePicker, {
+  DateRange,
+} from '@/components/Metrics/DateRangePicker'
 import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
 import OrderStatusSelect from '@/components/Orders/OrderStatusSelect'
@@ -9,8 +12,9 @@ import { useMetrics } from '@/hooks/queries/metrics'
 import { useOrders } from '@/hooks/queries/orders'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { getServerURL } from '@/utils/api'
+import { useDateRange } from '@/utils/date'
 import { getAPIParams } from '@/utils/datatable'
-import { getChartRangeParams } from '@/utils/metrics'
+import { dateRangeToInterval } from '@/utils/metrics'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
@@ -27,6 +31,7 @@ import {
 import { Status } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { RowSelectionState } from '@tanstack/react-table'
+import { startOfDay } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import {
   parseAsArrayOf,
@@ -61,6 +66,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const [{ product_id: productId, status, metadata }, setFilters] =
     useQueryStates(filterParsers)
 
+  const { startDate, endDate, setStartDate, setEndDate } = useDateRange()
+
   const onProductSelect = (value: string[]) => {
     setFilters({ product_id: value.length > 0 ? value : null })
     resetPage()
@@ -71,10 +78,18 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     resetPage()
   }
 
+  const onDateChange = (range: DateRange) => {
+    setStartDate(range.from)
+    setEndDate(range.to)
+    resetPage()
+  }
+
   const ordersHook = useOrders(organization.id, {
     ...getAPIParams(pagination, sorting),
     product_id: productId ?? undefined,
     status: status ? [status] : undefined,
+    created_after: startDate.toISOString(),
+    created_before: endDate.toISOString(),
   })
 
   const orders = ordersHook.data?.items || []
@@ -223,15 +238,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     }
   }, [selectedOrder, router, organization])
 
-  const [allTimeStart, allTimeEnd, allTimeInterval] = getChartRangeParams(
-    'all_time',
-    organization.created_at,
-  )
   const { data: metricsData } = useMetrics({
     organization_id: organization.id,
-    startDate: allTimeStart,
-    endDate: allTimeEnd,
-    interval: allTimeInterval,
+    startDate,
+    endDate,
+    interval: dateRangeToInterval(startDate, endDate),
     product_id: productId ?? undefined,
     metrics: ['orders', 'revenue', 'average_order_value'],
   })
@@ -261,6 +272,12 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             <Box width={200}>
               <OrderStatusSelect value={status} onChange={onStatusSelect} />
             </Box>
+            <DateRangePicker
+              className="w-52 shrink-0 [&>button:last-child]:text-left"
+              date={{ from: startDate, to: endDate }}
+              onDateChange={onDateChange}
+              minDate={startOfDay(new Date(organization.created_at))}
+            />
           </Box>
           <Button
             onClick={onExport}

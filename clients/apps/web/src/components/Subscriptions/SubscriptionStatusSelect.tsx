@@ -11,19 +11,37 @@ import {
 import React from 'react'
 import { subscriptionStatusDisplayNames } from './utils'
 
+const SELECTABLE_STATUSES = [
+  'active',
+  'trialing',
+  'paused',
+  'past_due',
+  'canceled',
+  'unpaid',
+] as const satisfies readonly schemas['SubscriptionStatus'][]
+
+export const subscriptionStatusFilterValues = [
+  'any',
+  ...SELECTABLE_STATUSES,
+] as const
+
+export type SubscriptionStatusFilter =
+  (typeof subscriptionStatusFilterValues)[number]
+
 interface SubscriptionStatusSelectProps {
-  statuses: schemas['SubscriptionStatus'][]
-  value: string
-  onChange: (value: string) => void
+  value: SubscriptionStatusFilter
+  onChange: (value: SubscriptionStatusFilter) => void
 }
 
 const SubscriptionStatusSelect: React.FC<SubscriptionStatusSelectProps> = ({
-  statuses,
   value,
   onChange,
 }) => {
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select
+      value={value}
+      onValueChange={(value) => onChange(value as SubscriptionStatusFilter)}
+    >
       <SelectTrigger>
         <SelectValue placeholder="Select a status" />
       </SelectTrigger>
@@ -32,7 +50,7 @@ const SubscriptionStatusSelect: React.FC<SubscriptionStatusSelectProps> = ({
           <span className="whitespace-nowrap">Any status</span>
         </SelectItem>
         <SelectSeparator />
-        {statuses.map((status) => (
+        {SELECTABLE_STATUSES.map((status) => (
           <React.Fragment key={status}>
             <SelectGroup>
               <SelectItem value={status}>

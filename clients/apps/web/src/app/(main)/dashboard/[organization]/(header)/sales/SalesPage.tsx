@@ -7,17 +7,12 @@ import OrderStatusSelect from '@/components/Orders/OrderStatusSelect'
 import ProductSelect from '@/components/Products/ProductSelect'
 import { useMetrics } from '@/hooks/queries/metrics'
 import { useOrders } from '@/hooks/queries/orders'
+import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { getServerURL } from '@/utils/api'
-import {
-  DataTablePaginationState,
-  DataTableSortingState,
-  getAPIParams,
-  serializeSearchParams,
-} from '@/utils/datatable'
+import { getAPIParams } from '@/utils/datatable'
 import { getChartRangeParams } from '@/utils/metrics'
-import type { OrderStatusFilter } from '@/utils/order'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
-import { schemas } from '@polar-sh/client'
+import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { formatCurrency } from '@polar-sh/currency'
 import { Truncated } from '@polar-sh/orbit'
@@ -32,119 +27,53 @@ import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Status } from '@polar-sh/orbit'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
+import {
+  parseAsArrayOf,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryStates,
+} from 'nuqs'
 import React, { useEffect, useState } from 'react'
+
+const filterParsers = {
+  product_id: parseAsArrayOf(parseAsString),
+  status: parseAsStringLiteral(enums.orderStatusValues),
+  metadata: parseAsArrayOf(parseAsString),
+}
 
 interface ClientPageProps {
   organization: schemas['Organization']
-  pagination: DataTablePaginationState
-  sorting: DataTableSortingState
-  productId?: string[]
-  status: OrderStatusFilter
-  metadata?: string[]
 }
 
-const ClientPage: React.FC<ClientPageProps> = ({
-  organization,
-  pagination,
-  sorting,
-  productId,
-  status,
-  metadata,
-}) => {
+const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const [selectedOrderState, setSelectedOrderState] =
     useState<RowSelectionState>({})
 
-  const getSearchParams = (
-    pagination: DataTablePaginationState,
-    sorting: DataTableSortingState,
-    productId?: string[],
-    status?: OrderStatusFilter,
-  ) => {
-    const params = serializeSearchParams(pagination, sorting)
-
-    if (productId) {
-      productId.forEach((id) => params.append('product_id', id))
-    }
-
-    if (status && status !== 'any') {
-      params.append('status', status)
-    }
-
-    if (metadata) {
-      metadata.forEach((key) => params.append('metadata', key))
-    }
-
-    return params
-  }
-
   const router = useRouter()
 
-  const setPagination = (
-    updaterOrValue:
-      | DataTablePaginationState
-      | ((old: DataTablePaginationState) => DataTablePaginationState),
-  ) => {
-    const updatedPagination =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(pagination)
-        : updaterOrValue
+  const { pagination, setPagination, sorting, setSorting, resetPage } =
+    useDataTableQueryState({
+      defaultSorting: [{ id: 'created_at', desc: true }],
+      defaultPageSize: 50,
+    })
 
-    router.push(
-      `/dashboard/${organization.slug}/sales?${getSearchParams(
-        updatedPagination,
-        sorting,
-        productId,
-        status,
-      )}`,
-    )
-  }
-
-  const setSorting = (
-    updaterOrValue:
-      | DataTableSortingState
-      | ((old: DataTableSortingState) => DataTableSortingState),
-  ) => {
-    const updatedSorting =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(sorting)
-        : updaterOrValue
-
-    router.push(
-      `/dashboard/${organization.slug}/sales?${getSearchParams(
-        pagination,
-        updatedSorting,
-        productId,
-        status,
-      )}`,
-    )
-  }
+  const [{ product_id: productId, status, metadata }, setFilters] =
+    useQueryStates(filterParsers)
 
   const onProductSelect = (value: string[]) => {
-    router.push(
-      `/dashboard/${organization.slug}/sales?${getSearchParams(
-        pagination,
-        sorting,
-        value,
-        status,
-      )}`,
-    )
+    setFilters({ product_id: value.length > 0 ? value : null })
+    resetPage()
   }
 
-  const onStatusSelect = (value: OrderStatusFilter) => {
-    router.push(
-      `/dashboard/${organization.slug}/sales?${getSearchParams(
-        pagination,
-        sorting,
-        productId,
-        value,
-      )}`,
-    )
+  const onStatusSelect = (value: schemas['OrderStatus'] | null) => {
+    setFilters({ status: value })
+    resetPage()
   }
 
   const ordersHook = useOrders(organization.id, {
     ...getAPIParams(pagination, sorting),
-    product_id: productId,
-    status: status === 'any' ? undefined : [status],
+    product_id: productId ?? undefined,
+    status: status ? [status] : undefined,
   })
 
   const orders = ordersHook.data?.items || []
@@ -281,7 +210,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     startDate: allTimeStart,
     endDate: allTimeEnd,
     interval: allTimeInterval,
-    product_id: productId,
+    product_id: productId ?? undefined,
     metrics: ['orders', 'revenue', 'cumulative_revenue'],
   })
   const { data: todayMetricsData } = useMetrics({
@@ -289,7 +218,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
     startDate: new Date(),
     endDate: new Date(),
     interval: 'day',
-    product_id: productId,
+    product_id: productId ?? undefined,
     metrics: ['revenue'],
   })
 

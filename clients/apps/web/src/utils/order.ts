@@ -1,4 +1,4 @@
-import { Client, enums, schemas, unwrap } from '@polar-sh/client'
+import { Client, schemas, unwrap } from '@polar-sh/client'
 import { parseISO } from 'date-fns'
 import { notFound } from 'next/navigation'
 import { cache } from 'react'
@@ -24,11 +24,6 @@ const _getOrderById = async (
 
 // Tell React to memoize it for the duration of the request
 export const getOrderById = cache(_getOrderById)
-
-export type OrderStatusFilter = schemas['OrderStatus'] | 'any'
-
-export const isOrderStatus = (value: string): value is schemas['OrderStatus'] =>
-  (enums.orderStatusValues as readonly string[]).includes(value)
 
 /**
  * Determines if an order is eligible for payment retry

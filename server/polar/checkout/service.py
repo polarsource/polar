@@ -2610,38 +2610,23 @@ class CheckoutService:
 
         The customer didn't ask for a new seat count, so never fail on their behalf:
         carry over what the checkout already had (or the locked minimum) and clamp it
-        into the range the new price set actually supports.
+        into the range the new price set actually supports. The price's tiers are
+        applied last because a count outside them can't be purchased at all, whereas
+        the checkout's own bounds are merchant policy.
         """
         tier_minimum = price.get_minimum_seats()
         tier_maximum = price.get_maximum_seats()
 
-        # Clamping below the merchant's floor would let the customer buy fewer seats
-        # than the checkout requires, so refuse the price set instead.
-        if (
-            checkout.min_seats is not None
-            and tier_maximum is not None
-            and checkout.min_seats > tier_maximum
-        ):
-            raise PolarRequestValidationError(
-                [
-                    {
-                        "type": "value_error",
-                        "loc": ("body", "product_id"),
-                        "msg": (
-                            f"Product doesn't support the {checkout.min_seats} seats "
-                            "required by this checkout."
-                        ),
-                        "input": checkout.product_id,
-                    }
-                ]
-            )
+        seats = previous_seats or checkout.min_seats or tier_minimum
+        if checkout.min_seats is not None:
+            seats = max(seats, checkout.min_seats)
+        if checkout.max_seats is not None:
+            seats = min(seats, checkout.max_seats)
 
-        minimum_seats = max(tier_minimum, checkout.min_seats or tier_minimum)
-        seats = max(previous_seats or minimum_seats, minimum_seats)
-        for limit in (tier_maximum, checkout.max_seats):
-            if limit is not None:
-                seats = min(seats, limit)
-        return max(seats, minimum_seats)
+        seats = max(seats, tier_minimum)
+        if tier_maximum is not None:
+            seats = min(seats, tier_maximum)
+        return seats
 
     def _validate_checkout_seat_constraints(
         self,

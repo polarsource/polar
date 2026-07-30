@@ -4348,13 +4348,18 @@ class TestUpdate:
 
         assert updated_checkout.seats == 10
 
-    async def test_switching_product_rejects_incompatible_locked_seats(
+    async def test_switching_product_clamps_locked_seats_to_new_tier(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         product_seat_based: Product,
         product_seat_based_with_max: Product,
     ) -> None:
+        """A locked count above the new tier's ceiling clamps down to it.
+
+        The tier is a hard bound, so the switch stays possible rather than
+        dead-ending the customer on a product the merchant offered.
+        """
         checkout = await create_checkout(
             save_fixture,
             products=[product_seat_based, product_seat_based_with_max],
@@ -4364,14 +4369,13 @@ class TestUpdate:
             max_seats=15,
         )
 
-        with pytest.raises(PolarRequestValidationError) as e:
-            await checkout_service.update(
-                session,
-                checkout,
-                CheckoutUpdate(product_id=product_seat_based_with_max.id),
-            )
+        updated_checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(product_id=product_seat_based_with_max.id),
+        )
 
-        assert e.value.errors()[0]["loc"] == ("body", "product_id")
+        assert updated_checkout.seats == 10
 
     async def test_switching_currency_preserves_seats(
         self,

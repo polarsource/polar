@@ -23,7 +23,6 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
 } from '@polar-sh/orbit'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Status } from '@polar-sh/orbit'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
@@ -118,16 +117,25 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     {
       accessorKey: 'created_at',
       enableSorting: true,
-      size: 180,
+      size: 160,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Date" />
       ),
-      cell: (props) => (
-        <FormattedDateTime
-          datetime={props.getValue() as string}
-          resolution="time"
-        />
-      ),
+      cell: (props) => {
+        const date = new Date(props.getValue() as string)
+        return (
+          <time dateTime={date.toISOString()} >
+            {date.toLocaleString('en-US', {
+              month: 'short',
+              day: 'numeric',
+              year: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit',
+              hour12: false,
+            })}
+          </time>
+        )
+      },
     },
     {
       accessorKey: 'product',
@@ -237,15 +245,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     endDate: allTimeEnd,
     interval: allTimeInterval,
     product_id: productId ?? undefined,
-    metrics: ['orders', 'revenue', 'cumulative_revenue'],
-  })
-  const { data: todayMetricsData } = useMetrics({
-    organization_id: organization.id,
-    startDate: new Date(),
-    endDate: new Date(),
-    interval: 'day',
-    product_id: productId ?? undefined,
-    metrics: ['revenue'],
+    metrics: ['orders', 'revenue', 'average_order_value'],
   })
 
   const onExport = () => {
@@ -291,14 +291,14 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             metric={metricsData?.metrics.orders}
           />
           <MiniMetricChartBox
-            title="Today's Revenue"
-            value={todayMetricsData?.totals.revenue}
-            metric={todayMetricsData?.metrics.revenue}
+            title="Revenue"
+            value={metricsData?.totals.revenue}
+            metric={metricsData?.metrics.revenue}
           />
           <MiniMetricChartBox
-            title="Cumulative Revenue"
-            value={metricsData?.totals.revenue}
-            metric={metricsData?.metrics.cumulative_revenue}
+            title="Average Order Value"
+            value={metricsData?.totals.average_order_value}
+            metric={metricsData?.metrics.average_order_value}
           />
         </div>
         {orders && pageCount !== undefined && (

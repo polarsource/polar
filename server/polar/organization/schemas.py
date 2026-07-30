@@ -208,7 +208,7 @@ def validate_customer_portal_settings(
     return settings
 
 
-CustomerPortalSettingsInput = Annotated[
+OrganizationCustomerPortalSettingsInput = Annotated[
     OrganizationCustomerPortalSettings | None,
     AfterValidator(validate_customer_portal_settings),
 ]
@@ -703,7 +703,7 @@ class OrganizationCreate(Schema):
     feature_settings: OrganizationFeatureSettingsUpdate | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
-    customer_portal_settings: CustomerPortalSettingsInput = None
+    customer_portal_settings: OrganizationCustomerPortalSettingsInput = None
     default_presentment_currency: PresentmentCurrency = Field(
         PresentmentCurrency.usd,
         description="Default presentment currency for the organization",
@@ -736,7 +736,7 @@ class OrganizationUpdate(Schema):
     feature_settings: OrganizationFeatureSettingsUpdate | None = None
     subscription_settings: OrganizationSubscriptionSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
-    customer_portal_settings: CustomerPortalSettingsInput = None
+    customer_portal_settings: OrganizationCustomerPortalSettingsInput = None
     default_presentment_currency: PresentmentCurrency | None = Field(
         None, description="Default presentment currency for the organization"
     )

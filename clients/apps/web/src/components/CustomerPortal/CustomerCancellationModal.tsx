@@ -94,7 +94,7 @@ const CustomerCancellationModal = ({
       cancellation_comment: undefined,
     },
   })
-  const { control, handleSubmit, setError, setValue } = form
+  const { control, handleSubmit, setError } = form
 
   const handleCancellation = useCallback(
     async (cancellation: schemas['CustomerSubscriptionCancel']) => {
@@ -139,10 +139,6 @@ const CustomerCancellationModal = ({
     ],
   )
 
-  const onReasonSelect = (value: schemas['CustomerCancellationReason']) => {
-    setValue('cancellation_reason', value ?? '')
-  }
-
   return (
     <Modal
       {...props}
@@ -174,8 +170,12 @@ const CustomerCancellationModal = ({
                   <FormItem>
                     <FormControl>
                       <RadioGroup
-                        value={field.value ?? 'other'}
-                        onValueChange={onReasonSelect}
+                        value={field.value ?? ''}
+                        onValueChange={(value) =>
+                          field.onChange(
+                            value as schemas['CustomerCancellationReason'],
+                          )
+                        }
                       >
                         <CancellationReasonRadio
                           value="unused"

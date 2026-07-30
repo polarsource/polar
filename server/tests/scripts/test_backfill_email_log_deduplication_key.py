@@ -169,6 +169,33 @@ class TestBackfillEmailLogDeduplicationKey:
         # Different recipient is a distinct index entry and gets keyed.
         assert await _get_key(session, other_recipient) == expected
 
+    async def test_skips_group_already_keyed_by_a_newer_row(
+        self, save_fixture: SaveFixture, session: AsyncSession
+    ) -> None:
+        payment_method_id = str(uuid4())
+        expected = f"payment_method_expiration_reminder:{payment_method_id}:2026-4"
+        older_null = await _create_email_log(
+            save_fixture,
+            template="payment_method_expiration_reminder",
+            email_props=_card_props(payment_method_id),
+            created_at=datetime(2026, 1, 1, tzinfo=UTC),
+        )
+        # A newer row (e.g. from the new send path) already holds the target key
+        # for this recipient; backfilling the older row would collide.
+        newer_keyed = await _create_email_log(
+            save_fixture,
+            template="payment_method_expiration_reminder",
+            email_props=_card_props(payment_method_id),
+            deduplication_key=expected,
+            created_at=datetime(2026, 1, 2, tzinfo=UTC),
+        )
+
+        updated = await run_backfill(session=session)
+
+        assert updated == 0
+        assert await _get_key(session, older_null) is None
+        assert await _get_key(session, newer_keyed) == expected
+
     async def test_is_idempotent(
         self, save_fixture: SaveFixture, session: AsyncSession
     ) -> None:

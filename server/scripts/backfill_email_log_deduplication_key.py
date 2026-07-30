@@ -95,10 +95,12 @@ async def run_backfill(
         src = aliased(EmailLog)
         other = aliased(EmailLog)
 
-        # Only key the earliest row per (computed key, recipient) group so any
-        # historical duplicate leaves the others NULL — excluded from the partial
-        # unique index PR2 builds. Membership is defined over ALL sent rows in the
-        # group, so it stays stable as batches fill keys in.
+        # Only key the earliest not-yet-keyed row per (computed key, recipient)
+        # group so any historical duplicate leaves the others NULL — excluded from
+        # the partial unique index PR2 builds. A row is skipped if another row in
+        # the group is already keyed (it occupies the target key, e.g. via the
+        # new send path or a previous run) or is earlier. Membership is defined
+        # over ALL sent rows in the group, so it stays stable as batches fill in.
         is_canonical = ~(
             select(other.id)
             .where(
@@ -107,6 +109,7 @@ async def run_backfill(
                 key(other) == key(src),
                 other.to_email_addr == src.to_email_addr,
                 or_(
+                    other.deduplication_key.isnot(None),
                     other.created_at < src.created_at,
                     and_(
                         other.created_at == src.created_at,

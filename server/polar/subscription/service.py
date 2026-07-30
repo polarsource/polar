@@ -928,8 +928,12 @@ class SubscriptionService:
 
             await self._create_cycle_billing_entries(session, subscription)
 
-        if previous_status == SubscriptionStatus.trialing:
-            subscription.status = SubscriptionStatus.active
+            # Trial conversion is part of the normal renewal path: a trialing
+            # subscription becomes active on its first billed cycle. This must
+            # NOT run on the revoke path, where the status has just been set to
+            # ``canceled`` above and must be preserved.
+            if previous_status == SubscriptionStatus.trialing:
+                subscription.status = SubscriptionStatus.active
 
         # Re-arm the meter clock off the new billing period. At the billing boundary
         # both clocks coincide, so the full cycle settles the final meter period and

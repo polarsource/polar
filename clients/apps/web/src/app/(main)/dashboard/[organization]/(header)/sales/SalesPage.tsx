@@ -102,7 +102,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
               name={customer.email ?? customer.name ?? '—'}
             />
             <Truncated>
-              <Text>
+              <Text as="span">
                 {customer.name || customer.email || '—'}
                 {showBillingName && (
                   <span className="dark:text-polar-500 ml-2 text-gray-500">
@@ -157,14 +157,14 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         if (!product) {
           return (
             <Truncated>
-              <Text>{description}</Text>
+              <Text as="span">{description}</Text>
             </Truncated>
           )
         }
         return (
           <div className="flex flex-row items-center gap-2">
             <Truncated>
-              <Text>{product.name}</Text>
+              <Text as="span">{product.name}</Text>
             </Truncated>
             {product.is_archived && (
               <Status status="Archived" color="red" size="small" />

@@ -1,6 +1,9 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
+import DateRangePicker, {
+  DateRange,
+} from '@/components/Metrics/DateRangePicker'
 import SubscriptionCancellationSelect from '@/components/Subscriptions/SubscriptionCancellationSelect'
 import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
 import SubscriptionStatusSelect, {
@@ -12,6 +15,7 @@ import { useProducts, useSubscriptions } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { getServerURL } from '@/utils/api'
 import { DataTableSortingState, getAPIParams } from '@/utils/datatable'
+import { useDateRange } from '@/utils/date'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { schemas } from '@polar-sh/client'
 import { Avatar } from '@polar-sh/orbit'
@@ -98,6 +102,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     setFilters,
   ] = useQueryStates(filterParsers)
 
+  const { startDate, endDate, setStartDate, setEndDate } = useDateRange()
+
   const setSorting: OnChangeFn<DataTableSortingState> = (updater) => {
     setSortingState((old) =>
       withEndsAtSecondarySort(functionalUpdate(updater, old)),
@@ -122,11 +128,19 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     resetPage()
   }
 
+  const onDateChange = (range: DateRange) => {
+    setStartDate(range.from)
+    setEndDate(range.to)
+    resetPage()
+  }
+
   const subscriptionsHook = useSubscriptions(organization.id, {
     ...getAPIParams(pagination, sorting),
     product_id: productId ?? undefined,
     status: status === 'any' ? undefined : [status],
     cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
+    started_at_after: startDate.toISOString(),
+    started_at_before: endDate.toISOString(),
   })
 
   const subscriptions = subscriptionsHook.data?.items || []
@@ -287,6 +301,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
                 onChange={onProductSelect}
               />
             </div>
+            <DateRangePicker
+              date={{ from: startDate, to: endDate }}
+              onDateChange={onDateChange}
+              className="[&>button:last-child]:text-left"
+            />
           </div>
           <Button
             onClick={onExport}

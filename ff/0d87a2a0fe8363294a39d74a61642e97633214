@@ -1,0 +1,21 @@
+server/tests/scripts/test_backfill_email_log_deduplication_key.py
+  s_c8cf2107f4871e::t_31cfd80bcf5010 172-198
+server/scripts/backfill_email_log_deduplication_key.py
+  s_c8cf2107f4871e::t_1df1ef28624f77 98-103,112
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.18",
+  "base_commit_sha": "ff0d87a2a0fe8363294a39d74a61642e97633214",
+  "prompts": {},
+  "sessions": {
+    "s_c8cf2107f4871e": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "3ef8d40f-d68f-4b36-a8d9-6f70208fe886",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

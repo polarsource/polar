@@ -2589,8 +2589,11 @@ class TestCheckoutLinkCreate:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        organization: Organization,
         product_one_time: Product,
     ) -> None:
+        organization.created_at = EMBED_HOSTS_ENFORCED_FROM - timedelta(days=1)
+        await save_fixture(organization)
         checkout_link = await create_checkout_link(
             save_fixture, products=[product_one_time]
         )

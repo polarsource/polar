@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -40,6 +40,10 @@ from tests.fixtures.random_objects import (
     create_subscription,
     create_user,
 )
+
+# The organization fixture is created now, which is past the cutoff from
+# 4 August 2026 onwards. Tests that assert the unenforced behaviour pin it.
+BEFORE_EMBED_CUTOFF = EMBED_HOSTS_ENFORCED_FROM - timedelta(days=1)
 
 
 @pytest.mark.asyncio
@@ -859,9 +863,13 @@ class TestGetEmbedStatus:
     async def test_never_embedded(
         self,
         client: AsyncClient,
+        save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
+        organization.created_at = BEFORE_EMBED_CUTOFF
+        await save_fixture(organization)
+
         response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
 
         assert response.status_code == 200
@@ -879,6 +887,8 @@ class TestGetEmbedStatus:
         product: Product,
         user_organization: UserOrganization,
     ) -> None:
+        organization.created_at = BEFORE_EMBED_CUTOFF
+        await save_fixture(organization)
         checkout = await create_checkout(save_fixture, products=[product])
         checkout.embed_origin = "https://example.com"
         await save_fixture(checkout)
@@ -939,6 +949,7 @@ class TestGetEmbedStatus:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
+        organization.created_at = BEFORE_EMBED_CUTOFF
         organization.embed_hosts = ["example.com"]
         await save_fixture(organization)
 

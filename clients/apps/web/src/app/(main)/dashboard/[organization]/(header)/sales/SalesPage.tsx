@@ -41,6 +41,34 @@ const filterParsers = {
   metadata: parseAsArrayOf(parseAsString),
 }
 
+/**
+ * Invoice numbers are `{orgPrefix}-{seq}` or `{orgPrefix}-{customerShortId}-{seq}`.
+ * Org prefix defaults to `slug.upper()` (may include hyphens, e.g. ACME-CORP).
+ */
+const formatInvoiceNumber = (
+  invoiceNumber: string | null,
+  organizationSlug: string,
+) => {
+  if (!invoiceNumber) return null
+  const prefix = `${organizationSlug.toUpperCase()}-`
+  if (invoiceNumber.startsWith(prefix)) {
+    return invoiceNumber.slice(prefix.length)
+  }
+  return invoiceNumber
+}
+
+const formatOrderDate = (value: string) => {
+  const date = new Date(value)
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: false
+  })
+}
+
 interface ClientPageProps {
   organization: schemas['Organization']
 }
@@ -82,6 +110,27 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
 
   const columns: DataTableColumnDef<schemas['Order']>[] = [
     {
+      accessorKey: 'created_at',
+      enableSorting: true,
+      size: 120,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Invoice" />
+      ),
+      cell: ({ row: { original: order } }) => (
+        <Box flexDirection="column" rowGap="xs" minWidth={0}>
+          <Text>
+            <time dateTime={order.created_at}>
+              {formatOrderDate(order.created_at)}
+            </time>
+          </Text>
+          <Text color="muted" monospace tabularNums>
+            {formatInvoiceNumber(order.invoice_number, organization.slug) ??
+              '—'}
+          </Text>
+        </Box>
+      ),
+    },
+    {
       accessorKey: 'customer',
       enableSorting: true,
       size: 200,
@@ -93,7 +142,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         const showBillingName =
           !!customer.billing_name &&
           customer.name?.toLocaleLowerCase() !==
-            customer.billing_name.toLocaleLowerCase()
+          customer.billing_name.toLocaleLowerCase()
         return (
           <div className="flex flex-row items-center gap-2">
             <Avatar
@@ -112,29 +161,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
               </Text>
             </Truncated>
           </div>
-        )
-      },
-    },
-    {
-      accessorKey: 'created_at',
-      enableSorting: true,
-      size: 160,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Date" />
-      ),
-      cell: (props) => {
-        const date = new Date(props.getValue() as string)
-        return (
-          <time dateTime={date.toISOString()}>
-            {date.toLocaleString('en-US', {
-              month: 'short',
-              day: 'numeric',
-              year: 'numeric',
-              hour: '2-digit',
-              minute: '2-digit',
-              hour12: false,
-            })}
-          </time>
         )
       },
     },
@@ -176,14 +202,20 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     {
       accessorKey: 'net_amount',
       enableSorting: true,
-      size: 100,
+      size: 80,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Amount" />
+        <DataTableColumnHeader
+          column={column}
+          title="Amount"
+          className="flex justify-end"
+        />
       ),
       cell: ({ row: { original: order } }) => (
-        <Text>
-          {formatCurrency('standard')(order.net_amount, order.currency)}
-        </Text>
+        <Box display="block" textAlign="right">
+          <Text variant='default' tabularNums>
+            {formatCurrency('accounting')(order.net_amount, order.currency)}
+          </Text>
+        </Box>
       ),
     },
     {
@@ -191,33 +223,30 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       enableSorting: true,
       size: 140,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Status" />
+        <div className="flex justify-end">
+          <DataTableColumnHeader column={column} title="Status" />
+        </div>
       ),
       cell: ({ row: { original: order } }) => (
-        <OrderStatus status={order.status} />
-      ),
-    },
-    {
-      accessorKey: 'invoice_number',
-      enableSorting: true,
-      size: 180,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Invoice number" />
+        <div className="flex justify-end">
+          <OrderStatus status={order.status} />
+        </div>
+
       ),
     },
     ...(metadata
       ? metadata.map<DataTableColumnDef<schemas['Order']>>((key) => ({
-          accessorKey: `metadata.${key}`,
-          enableSorting: false,
-          header: ({ column }) => (
-            <DataTableColumnHeader
-              column={column}
-              title={key}
-              className="text-black dark:text-white"
-            />
-          ),
-          cell: (props) => <Text monospace>{props.getValue() as string}</Text>,
-        }))
+        accessorKey: `metadata.${key}`,
+        enableSorting: false,
+        header: ({ column }) => (
+          <DataTableColumnHeader
+            column={column}
+            title={key}
+            className="text-black dark:text-white"
+          />
+        ),
+        cell: (props) => <Text monospace>{props.getValue() as string}</Text>,
+      }))
       : []),
   ]
 

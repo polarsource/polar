@@ -5131,6 +5131,54 @@ class TestUpdateProduct:
             for error in errors
         )
 
+    async def test_payment_failure_propagates_and_reverts_product(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        # The benefit grant job is enqueued before the synchronous payment runs, so
+        # nothing may swallow `PaymentFailed` here: `get_db_session` only discards the
+        # buffered job when the exception reaches the request boundary. Catching it and
+        # returning normally would flush a grant for a product change that never applied.
+        mocker.patch.object(
+            subscription_service,
+            "_create_subscription_update_order",
+            side_effect=PaymentFailed(PaymentFailedReason.card_error),
+        )
+
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(5000, "usd")],
+        )
+
+        nested = await session.begin_nested()
+
+        with pytest.raises(PaymentFailed):
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.update_product(
+                    session,
+                    ctx,
+                    subscription,
+                    product_id=new_product.id,
+                    proration_behavior=SubscriptionProrationBehavior.invoice,
+                )
+
+        await nested.rollback()
+        await session.refresh(subscription)
+        assert subscription.product_id == product.id
+
 
 @pytest.mark.asyncio
 class TestUpdateDiscount:

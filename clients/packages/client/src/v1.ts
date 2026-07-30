@@ -26676,6 +26676,11 @@ export interface components {
        */
       embed_hosts_enforced: boolean
       /**
+       * Shared Hosts
+       * @description Entries of `embed_hosts` admitting every tenant of a platform, such as `*.vercel.app`.
+       */
+      shared_hosts: string[]
+      /**
        * Uncovered Hosts
        * @description Hosts seen embedding this organization's checkout that `embed_hosts` would refuse. Anyone can name an origin when they create a checkout, so these are observations, not hosts we vouch for.
        */

@@ -107,7 +107,7 @@ from polar.user_organization.service import (
 )
 
 from . import auth, sorting
-from .embed_hosts import EMBED_ORIGIN_WINDOW, uncovered_hosts
+from .embed_hosts import EMBED_ORIGIN_WINDOW, is_shared_host, uncovered_hosts
 from .schemas import Organization as OrganizationSchema
 from .schemas import (
     OrganizationAppealRequest,
@@ -285,6 +285,9 @@ async def get_embed_status(
         has_embedded=await repository.has_embedded(organization.id),
         embed_hosts=organization.embed_hosts,
         embed_hosts_enforced=organization.embed_hosts_enforced,
+        shared_hosts=[
+            entry for entry in organization.embed_hosts if is_shared_host(entry)
+        ],
         uncovered_hosts=[
             OrganizationUncoveredHost.model_validate(host)
             for host in uncovered_hosts(observed, organization.embed_hosts)

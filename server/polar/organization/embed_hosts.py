@@ -180,16 +180,25 @@ def validate_host_pattern(value: str) -> str:
     if pattern is None:
         raise InvalidEmbedHost(value, "write a host and an optional port, with no path")
 
-    # Subdomains of a public suffix belong to whoever registered them.
-    if pattern.wildcard and is_tld(pattern.host):
+    # Nobody's site sits directly under a registry suffix, so this is a slip.
+    if pattern.wildcard and is_tld(pattern.host, search_private=False):
         raise InvalidEmbedHost(
             value,
-            f"{pattern.host} is shared by many different sites, so this would let "
-            f"any of them embed your checkout. Name your own site, "
-            f"like myshop.{pattern.host}",
+            f"{pattern.host} is a domain suffix, so this would admit every site "
+            f"registered under it. Name your own site, like myshop.{pattern.host}",
         )
 
     return str(pattern)
+
+
+def is_shared_host(entry: str) -> bool:
+    """Whether an entry admits every tenant of a platform such as `vercel.app`.
+
+    Preview deployments get a fresh host each time, so a merchant has no other
+    way to embed from them; the risk is theirs to weigh.
+    """
+    pattern = parse_host_pattern(entry)
+    return pattern is not None and pattern.wildcard and is_tld(pattern.host)
 
 
 def match_origin(origin: str, hosts: list[str]) -> str | None:

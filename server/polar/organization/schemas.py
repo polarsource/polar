@@ -589,6 +589,12 @@ class OrganizationEmbedStatus(Schema):
     embed_hosts_enforced: bool = Field(
         description="Whether an embedding page's origin must match `embed_hosts`."
     )
+    shared_hosts: list[str] = Field(
+        description=(
+            "Entries of `embed_hosts` admitting every tenant of a platform, "
+            "such as `*.vercel.app`."
+        )
+    )
     uncovered_hosts: list[OrganizationUncoveredHost] = Field(
         description=(
             "Hosts seen embedding this organization's checkout that `embed_hosts` "

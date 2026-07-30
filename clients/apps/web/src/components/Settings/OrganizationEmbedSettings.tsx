@@ -15,6 +15,7 @@ import OrganizationEmbedUncoveredHosts from './OrganizationEmbedUncoveredHosts'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 const NO_HOSTS: schemas['OrganizationUncoveredHost'][] = []
+const NO_SHARED: string[] = []
 
 interface OrganizationEmbedSettingsProps {
   organization: schemas['Organization']
@@ -31,6 +32,7 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
 
   const updateOrganization = useUpdateOrganization()
   const { data: embedStatus } = useOrganizationEmbedStatus(organization.id)
+  const shared = embedStatus?.shared_hosts ?? NO_SHARED
 
   const save = useCallback(
     async (embed_hosts: string[]) => {
@@ -79,7 +81,20 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
   return (
     <SettingsGroup>
       <SettingsGroupItem
-        title="Embed hosts"
+        title={
+          shared.length === 0 ? (
+            'Embed hosts'
+          ) : (
+            <Box as="span" display="inline-flex" alignItems="center" gap="s">
+              Embed hosts
+              <Text variant="caption" color="warning">
+                {shared.length === 1
+                  ? '1 host is too broad'
+                  : `${shared.length} hosts are too broad`}
+              </Text>
+            </Box>
+          )
+        }
         description={
           organization.embed_hosts_enforced
             ? 'Only these hosts can embed your checkout.'
@@ -109,7 +124,14 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
                   backgroundColor="background-card"
                   borderRadius="s"
                 >
-                  <Text variant="body">{host}</Text>
+                  <Box flexDirection="column">
+                    <Text variant="body">{host}</Text>
+                    {shared.includes(host) ? (
+                      <Text variant="caption" color="warning">
+                        {`${host.replace('*.', '')} hosts other people's sites. Any of them can embed your checkout.`}
+                      </Text>
+                    ) : null}
+                  </Box>
                   {readOnly ? null : (
                     <Button
                       variant="ghost"

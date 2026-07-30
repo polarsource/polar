@@ -4,6 +4,7 @@ import pytest
 
 from polar.organization.embed_hosts import (
     InvalidEmbedHost,
+    is_shared_host,
     match_origin,
     parse_origin,
     uncovered_hosts,
@@ -132,23 +133,24 @@ class TestValidateHostPattern:
         with pytest.raises(InvalidEmbedHost):
             validate_host_pattern(value)
 
-    @pytest.mark.parametrize(
-        "value",
-        [
-            "*.vercel.app",
-            "*.framer.website",
-            "*.framercanvas.com",
-            "*.github.io",
-            "*.myshopify.com",
-            "*.FRAMER.WEBSITE",
-            "*.com",
-            "*.co.uk",
-        ],
-    )
-    def test_wildcard_on_public_suffix_rejected(self, value: str) -> None:
-        """Every subdomain belongs to someone else, so this admits all of them."""
+    @pytest.mark.parametrize("value", ["*.com", "*.co.uk", "*.CO.UK", "*.io"])
+    def test_wildcard_on_registry_suffix_rejected(self, value: str) -> None:
+        """No site sits directly under a registry suffix, so this is a slip."""
         with pytest.raises(InvalidEmbedHost):
             validate_host_pattern(value)
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("*.vercel.app", "*.vercel.app"),
+            ("*.framer.website", "*.framer.website"),
+            ("*.FRAMER.WEBSITE", "*.framer.website"),
+        ],
+    )
+    def test_wildcard_on_platform_accepted(self, value: str, expected: str) -> None:
+        """Preview deployments get a fresh host each time, so it's the only way
+        to embed from them. Settings warns rather than refusing."""
+        assert validate_host_pattern(value) == expected
 
     @pytest.mark.parametrize(
         ("value", "expected"),
@@ -272,3 +274,26 @@ class TestUncoveredHosts:
 
     def test_origin_carrying_none_is_dropped(self) -> None:
         assert uncovered_hosts([("null", 4, SEEN)], []) == []
+
+
+class TestIsSharedHost:
+    @pytest.mark.parametrize(
+        "entry", ["*.vercel.app", "*.framer.website", "*.framercanvas.com"]
+    )
+    def test_platform_wildcard(self, entry: str) -> None:
+        assert is_shared_host(entry) is True
+
+    @pytest.mark.parametrize(
+        "entry",
+        [
+            "*.example.com",
+            "*.myshop.vercel.app",
+            "myshop.vercel.app",
+            "vercel.app",
+            "example.com",
+            "chrome-extension://abcdef",
+            "not a host",
+        ],
+    )
+    def test_everything_else(self, entry: str) -> None:
+        assert is_shared_host(entry) is False

@@ -9,7 +9,7 @@ export const SettingsGroup: React.FC<React.PropsWithChildren> = ({
 )
 
 export interface SettingsGroupItemProps {
-  title: string
+  title: React.ReactNode
   description?: React.ReactNode
   vertical?: boolean
 }

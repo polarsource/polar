@@ -5,6 +5,7 @@ from uuid import UUID
 import stripe as stripe_lib
 import structlog
 from sqlalchemy import func, update
+from sqlalchemy.exc import IntegrityError
 
 from polar.exceptions import PolarError
 from polar.integrations.polar.service import polar_self as polar_self_service
@@ -76,14 +77,23 @@ class UserService:
     ) -> tuple[User, bool]:
         repository = UserRepository.from_session(session)
         user = await repository.get_by_email(email)
-        created = False
-        if user is None:
+        if user is not None:
+            return (user, False)
+
+        nested = await session.begin_nested()
+        try:
             user = await self.create_by_email(
                 session, email, signup_attribution=signup_attribution
             )
-            created = True
+        except IntegrityError:
+            await nested.rollback()
+            user = await repository.get_by_email(email)
+            if user is None:
+                raise
+            log.info("user.get_by_email_or_create.concurrent_creation", user_id=user.id)
+            return (user, False)
 
-        return (user, created)
+        return (user, True)
 
     async def create_by_email(
         self,

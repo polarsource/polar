@@ -27,6 +27,7 @@ from polar.routing import APIRouter
 from . import auth
 from .schemas import (
     FileCreate,
+    FileDownload,
     FilePatch,
     FileRead,
     FileReadAdapter,
@@ -76,6 +77,37 @@ async def list(
         count,
         pagination,
     )
+
+
+@router.get(
+    "/{id}/download",
+    summary="Get File Download",
+    tags=[APITag.private],
+    response_model=FileDownload,
+    responses={
+        403: {
+            "description": "You don't have the permission to download this file.",
+            "model": NotPermitted.schema(),
+        },
+        404: FileNotFound,
+    },
+)
+async def download(
+    id: FileID,
+    auth_subject: auth.FileRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> FileDownload:
+    """Get a presigned URL to download a file."""
+    file = await file_service.get(session, auth_subject, id)
+    if file is None or not file.is_uploaded:
+        raise ResourceNotFound()
+
+    if file.service == FileServiceTypes.support_case_attachment:
+        raise NotPermitted(
+            "Support case attachments cannot be downloaded through the files API."
+        )
+
+    return file_service.generate_downloadable_schema(file)
 
 
 @router.post(

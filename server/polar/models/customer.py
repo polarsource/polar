@@ -200,6 +200,16 @@ class Customer(MetadataMixin, RecordModel):
     For new customers, this field will be null.
     """
 
+    first_user_event_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
+    )
+    """
+    Timestamp of the earliest `user` event attributed to this customer.
+
+    Events can carry an `external_customer_id` before the customer exists, so this can
+    predate `created_at`. Null when the organization never ingested an event for them.
+    """
+
     meters_dirtied_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None, index=True, deferred=True
     )

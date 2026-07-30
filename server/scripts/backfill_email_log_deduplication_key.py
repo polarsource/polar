@@ -24,12 +24,6 @@ KeyExpr = Callable[[Any], ColumnElement[str]]
 ValidExpr = Callable[[Any], ColumnElement[bool]]
 
 
-def _iso_date(value: ColumnElement[str]) -> ColumnElement[str]:
-    """Reconstruct the ISO date from the legacy localized string (e.g.
-    "July 30, 2026") that the reminder builders now emit as YYYY-MM-DD."""
-    return func.to_char(func.to_date(value, "FMMonth FMDD, YYYY"), "YYYY-MM-DD")
-
-
 def _card_key(model: Any) -> ColumnElement[str]:
     metadata = model.email_props["payment_method"]["method_metadata"]
     return func.concat(
@@ -52,30 +46,38 @@ def _card_valid(model: Any) -> ColumnElement[bool]:
 
 
 def _subscription_date_key(
-    template: EmailTemplate, date_prop: str
+    template: EmailTemplate, date_field: str
 ) -> tuple[KeyExpr, ValidExpr]:
+    # The date comes from the serialized subscription's ISO datetime (the same
+    # value the send-path key builder uses), so we take its YYYY-MM-DD prefix
+    # rather than parsing the localized `renewal_date`/`conversion_date` string.
+    def _iso_date(model: Any) -> ColumnElement[str]:
+        return func.substring(
+            model.email_props["subscription"][date_field].as_string(), 1, 10
+        )
+
     def key(model: Any) -> ColumnElement[str]:
         return func.concat(
             f"{template}:",
             model.email_props["subscription"]["id"].as_string(),
             ":",
-            _iso_date(model.email_props[date_prop].as_string()),
+            _iso_date(model),
         )
 
     def valid(model: Any) -> ColumnElement[bool]:
         return and_(
             model.email_props["subscription"]["id"].as_string().isnot(None),
-            model.email_props[date_prop].as_string().isnot(None),
+            model.email_props["subscription"][date_field].as_string().isnot(None),
         )
 
     return key, valid
 
 
 _renewal_key, _renewal_valid = _subscription_date_key(
-    EmailTemplate.subscription_renewal_reminder, "renewal_date"
+    EmailTemplate.subscription_renewal_reminder, "current_period_end"
 )
 _trial_key, _trial_valid = _subscription_date_key(
-    EmailTemplate.subscription_trial_conversion_reminder, "conversion_date"
+    EmailTemplate.subscription_trial_conversion_reminder, "trial_end"
 )
 
 CONFIGS: list[tuple[EmailTemplate, KeyExpr, ValidExpr]] = [

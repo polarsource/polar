@@ -79,15 +79,26 @@ const appendDelta = (
 
 /**
  * Client for the Compass assistant SSE endpoint. Streams one turn at a time:
- * `text` deltas and `block` events append to the pending assistant message,
- * `done` carries opaque conversation state we replay on the next turn.
+ * `text` deltas and `block` events append to the pending assistant message.
+ * Conversation state lives server-side on a thread: `thread` / `done` carry
+ * the thread id we send back on the next turn, and `hydrate` replays a
+ * stored thread into the message list.
  */
-export const useCompassAssistant = (organizationId: string) => {
+export const useCompassAssistant = (
+  organizationId: string,
+  onThreadCreated?: (threadId: string) => void,
+) => {
   const [messages, setMessages] = useState<AssistantMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
-  const historyRef = useRef<string | null>(null)
+  // The server-side thread the conversation belongs to. The ref is what the
+  // next `send` posts (updated mid-stream without re-rendering); the state
+  // mirrors it for consumers that render against it.
+  const [threadId, setThreadId] = useState<string | null>(null)
+  const threadIdRef = useRef<string | null>(null)
   const idRef = useRef(0)
   const controllerRef = useRef<AbortController | null>(null)
+  const onThreadCreatedRef = useRef(onThreadCreated)
+  onThreadCreatedRef.current = onThreadCreated
 
   useEffect(() => {
     // Abort the in-flight stream on unmount so the SSE connection closes and
@@ -123,7 +134,7 @@ export const useCompassAssistant = (organizationId: string) => {
       setIsStreaming(true)
 
       // One live stream at a time: a new send supersedes the previous one,
-      // which would otherwise race it for historyRef and isStreaming.
+      // which would otherwise race it for the thread and isStreaming.
       controllerRef.current?.abort()
       const controller = new AbortController()
       controllerRef.current = controller
@@ -137,7 +148,7 @@ export const useCompassAssistant = (organizationId: string) => {
           body: JSON.stringify({
             organization_id: organizationId,
             prompt,
-            message_history: historyRef.current,
+            thread_id: threadIdRef.current,
           }),
         })
         if (!response.ok || !response.body) {
@@ -166,8 +177,15 @@ export const useCompassAssistant = (organizationId: string) => {
               ...parts,
               { kind: 'block', block: payload as AssistantBlock },
             ])
+          } else if (event === 'thread') {
+            // A new thread was created server-side; adopt it immediately so
+            // a refresh mid-stream can find its way back.
+            threadIdRef.current = payload.thread_id
+            setThreadId(payload.thread_id)
+            onThreadCreatedRef.current?.(payload.thread_id)
           } else if (event === 'done') {
-            historyRef.current = payload.message_history
+            threadIdRef.current = payload.thread_id
+            setThreadId(payload.thread_id)
           } else if (event === 'error') {
             appendToAssistant(assistantId, (parts) =>
               appendDelta(parts, payload.message),
@@ -205,10 +223,41 @@ export const useCompassAssistant = (organizationId: string) => {
     [appendToAssistant, organizationId],
   )
 
+  const hydrate = useCallback(
+    (thread: schemas['CompassThreadWithMessages']) => {
+      // Replaying a stored thread supersedes whatever was on screen,
+      // including a live stream.
+      controllerRef.current?.abort()
+      controllerRef.current = null
+      setIsStreaming(false)
+      threadIdRef.current = thread.id
+      setThreadId(thread.id)
+      setMessages(
+        thread.messages.flatMap((message) => [
+          {
+            id: `${message.id}-prompt`,
+            role: 'user' as const,
+            parts: [{ kind: 'text' as const, text: message.prompt }],
+          },
+          {
+            id: message.id,
+            role: 'assistant' as const,
+            parts: message.parts as AssistantPart[],
+          },
+        ]),
+      )
+    },
+    [],
+  )
+
   const reset = useCallback(() => {
+    controllerRef.current?.abort()
+    controllerRef.current = null
+    setIsStreaming(false)
     setMessages([])
-    historyRef.current = null
+    threadIdRef.current = null
+    setThreadId(null)
   }, [])
 
-  return { messages, send, isStreaming, reset }
+  return { messages, send, isStreaming, reset, hydrate, threadId }
 }

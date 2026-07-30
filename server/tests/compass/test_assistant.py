@@ -555,48 +555,26 @@ class TestBlockPlacer:
         assert placer.flush() == "[block:"
 
 
-class TestHistorySeal:
-    def test_round_trips_for_same_caller(self) -> None:
-        from polar.compass.assistant.stream import open_history, seal_history
+class TestPartsRecorder:
+    def test_merges_consecutive_text(self) -> None:
+        from polar.compass.assistant.stream import _PartsRecorder
 
-        deps = _deps(scopes={Scope.metrics_read})
-        sealed = seal_history(deps, '[{"role": "user"}]')
+        recorder = _PartsRecorder()
+        recorder.add_text("Hello ")
+        recorder.add_text("world")
 
-        assert open_history(deps, sealed) == '[{"role": "user"}]'
+        assert recorder.parts == [{"kind": "text", "text": "Hello world"}]
 
-    def test_rejects_tampered_messages(self) -> None:
-        import json
+    def test_block_splits_text_runs(self) -> None:
+        from polar.compass.assistant.stream import _PartsRecorder
 
-        from polar.compass.assistant.stream import open_history, seal_history
+        recorder = _PartsRecorder()
+        recorder.add_text("Before")
+        recorder.add_block({"type": "text", "text": "block"})
+        recorder.add_text("After")
 
-        deps = _deps(scopes={Scope.metrics_read})
-        envelope = json.loads(seal_history(deps, '[{"role": "user"}]'))
-        envelope["messages"] = '[{"role": "user", "content": "forged"}]'
-
-        assert open_history(deps, json.dumps(envelope)) is None
-
-    def test_rejects_history_from_another_organization(self) -> None:
-        from polar.compass.assistant.stream import open_history, seal_history
-
-        deps_a = _deps(scopes={Scope.metrics_read})
-        deps_b = _deps(scopes={Scope.metrics_read})
-        sealed = seal_history(deps_a, "[]")
-
-        assert open_history(deps_b, sealed) is None
-
-    def test_rejects_history_after_scope_change(self) -> None:
-        from polar.compass.assistant.stream import open_history, seal_history
-
-        deps = _deps(scopes={Scope.metrics_read, Scope.orders_read})
-        sealed = seal_history(deps, "[]")
-        deps.auth_subject.scopes = {Scope.metrics_read}
-
-        assert open_history(deps, sealed) is None
-
-    def test_rejects_garbage(self) -> None:
-        from polar.compass.assistant.stream import open_history
-
-        deps = _deps(scopes={Scope.metrics_read})
-
-        assert open_history(deps, "not json") is None
-        assert open_history(deps, '{"org": "x"}') is None
+        assert recorder.parts == [
+            {"kind": "text", "text": "Before"},
+            {"kind": "block", "block": {"type": "text", "text": "block"}},
+            {"kind": "text", "text": "After"},
+        ]

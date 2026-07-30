@@ -1,30 +1,47 @@
 from datetime import datetime
+from typing import Annotated
 from zoneinfo import ZoneInfo
 
-from fastapi import Depends, Query, Request
+from fastapi import Depends, Path, Query, Request
+from pydantic import UUID4
 from pydantic_extra_types.timezone_name import TimeZoneName
 from sse_starlette.sse import EventSourceResponse
 
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.exceptions import ResourceNotFound
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
+from polar.models import CompassThread
 from polar.openapi import APITag
 from polar.organization.repository import OrganizationRepository
 from polar.organization.schemas import OrganizationID
-from polar.postgres import AsyncReadSession, get_db_read_session
+from polar.postgres import (
+    AsyncReadSession,
+    AsyncSession,
+    get_db_read_session,
+    get_db_session,
+)
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
 
 from . import auth
 from .assistant.agent import build_assistant_agent
 from .assistant.deps import AssistantDeps
-from .assistant.schemas import AssistantChatRequest
-from .assistant.stream import stream_assistant_run
+from .assistant.schemas import (
+    AssistantChatRequest,
+    CompassThreadSchema,
+    CompassThreadUpdate,
+    CompassThreadWithMessages,
+)
+from .assistant.stream import sse_event, stream_assistant_run
 from .schemas import Insight, InsightCategory
 from .service import compass as compass_service
+from .thread_service import compass_thread as compass_thread_service
 
 router = APIRouter(prefix="/compass", tags=["compass", APITag.private])
+
+CompassThreadID = Annotated[UUID4, Path(description="The thread ID.")]
 
 
 @router.get("/insights", summary="List Insights", response_model=list[Insight])
@@ -59,6 +76,90 @@ async def list_insights(
     )
 
 
+@router.get(
+    "/threads",
+    summary="List Assistant Threads",
+    response_model=ListResource[CompassThreadSchema],
+)
+async def list_threads(
+    auth_subject: auth.CompassRead,
+    pagination: PaginationParamsQuery,
+    organization_id: OrganizationID = Query(
+        description="Organization whose threads to list."
+    ),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ListResource[CompassThreadSchema]:
+    """List the caller's assistant conversation threads, most recent first."""
+    results, count = await compass_thread_service.list(
+        session, auth_subject, organization_id=organization_id, pagination=pagination
+    )
+    return ListResource.from_paginated_results(
+        [CompassThreadSchema.model_validate(t) for t in results], count, pagination
+    )
+
+
+@router.get(
+    "/threads/{id}",
+    summary="Get Assistant Thread",
+    response_model=CompassThreadWithMessages,
+)
+async def get_thread(
+    auth_subject: auth.CompassRead,
+    id: CompassThreadID,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> CompassThreadWithMessages:
+    """Get a thread with its rendered messages, for rehydrating the UI."""
+    thread = await compass_thread_service.get(session, auth_subject, id)
+    if thread is None:
+        raise ResourceNotFound()
+    messages = await compass_thread_service.list_messages(session, thread)
+    return CompassThreadWithMessages.model_validate(
+        {
+            "id": thread.id,
+            "created_at": thread.created_at,
+            "modified_at": thread.modified_at,
+            "organization_id": thread.organization_id,
+            "title": thread.title,
+            "messages": messages,
+        }
+    )
+
+
+@router.patch(
+    "/threads/{id}",
+    summary="Update Assistant Thread",
+    response_model=CompassThreadSchema,
+)
+async def update_thread(
+    auth_subject: auth.CompassRead,
+    id: CompassThreadID,
+    body: CompassThreadUpdate,
+    session: AsyncSession = Depends(get_db_session),
+) -> CompassThread:
+    """Rename a thread."""
+    thread = await compass_thread_service.get(session, auth_subject, id)
+    if thread is None:
+        raise ResourceNotFound()
+    return await compass_thread_service.update(session, thread, body)
+
+
+@router.delete(
+    "/threads/{id}",
+    summary="Delete Assistant Thread",
+    status_code=204,
+)
+async def delete_thread(
+    auth_subject: auth.CompassRead,
+    id: CompassThreadID,
+    session: AsyncSession = Depends(get_db_session),
+) -> None:
+    """Delete a thread and its conversation history."""
+    thread = await compass_thread_service.get(session, auth_subject, id)
+    if thread is None:
+        raise ResourceNotFound()
+    await compass_thread_service.delete(session, thread)
+
+
 @router.post(
     "/assistant",
     summary="Ask the Compass Assistant",
@@ -76,11 +177,12 @@ async def assistant_chat(
     redis: Redis | None = Depends(get_redis),
 ) -> EventSourceResponse:
     """Stream one assistant turn as SSE: `text` deltas, renderable `block`
-    events, then `done` with opaque conversation state for the next turn.
+    events, then `done` with the thread id to continue on the next turn.
 
     The agent runs under the caller's auth subject: its toolset is derived
     from the token's granted scopes, so a restricted token can only reach the
-    data those scopes allow.
+    data those scopes allow. Turns are persisted server-side on the thread;
+    the client never carries conversation state.
     """
     org_ids = await get_accessible_org_ids(
         session, auth_subject, permission=OrganizationPermission.analytics_read
@@ -92,13 +194,57 @@ async def assistant_chat(
     if organization is None or not organization.is_compass_enabled:
         raise ResourceNotFound()
 
+    history = None
+    is_new_thread = body.thread_id is None
+    if body.thread_id is not None:
+        thread = await compass_thread_service.get(session, auth_subject, body.thread_id)
+        if thread is None or thread.organization_id != organization.id:
+            raise ResourceNotFound()
+        history = await compass_thread_service.build_message_history(session, thread)
+    else:
+        # Created (and committed) before streaming starts, so the thread —
+        # and its title — survive an aborted stream and mid-stream refreshes.
+        write_sessionmaker = request.state.async_sessionmaker
+        async with write_sessionmaker() as write_session:
+            thread = await compass_thread_service.create(
+                write_session,
+                auth_subject,
+                organization_id=organization.id,
+                prompt=body.prompt,
+            )
+            await write_session.commit()
+    thread_id = thread.id
+    thread_title = thread.title
+
     tz = ZoneInfo(timezone)
     agent, model_provider, model_name = build_assistant_agent(auth_subject.scopes)
     # The request-scoped session closes when this handler returns, before the
-    # response streams — the generator opens its own session for tool calls.
+    # response streams — the generator opens its own sessions for tool calls
+    # (read) and turn persistence (write).
     read_sessionmaker = request.state.async_read_sessionmaker
+    write_sessionmaker = request.state.async_sessionmaker
+
+    async def record_turn(
+        parts: list[dict],  # type: ignore[type-arg]
+        model_messages: list[dict],  # type: ignore[type-arg]
+    ) -> None:
+        async with write_sessionmaker() as write_session:
+            await compass_thread_service.record_turn(
+                write_session,
+                thread_id,
+                prompt=body.prompt,
+                parts=parts,
+                model_messages=model_messages,
+            )
+            await write_session.commit()
 
     async def event_stream():  # type: ignore[no-untyped-def]
+        if is_new_thread:
+            # Announced up-front so the client can point its URL at the
+            # thread before the first token arrives.
+            yield sse_event(
+                "thread", {"thread_id": str(thread_id), "title": thread_title}
+            )
         async with read_sessionmaker() as stream_session:
             deps = AssistantDeps(
                 session=stream_session,
@@ -112,9 +258,11 @@ async def assistant_chat(
                 agent,
                 deps,
                 body.prompt,
-                body.message_history,
+                history,
                 model_provider=model_provider,
                 model_name=model_name,
+                record_turn=record_turn,
+                done_data={"thread_id": str(thread_id)},
             ):
                 yield event
 

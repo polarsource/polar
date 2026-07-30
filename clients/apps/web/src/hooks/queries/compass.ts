@@ -1,6 +1,6 @@
 import { api } from '@/utils/client'
 import { paths, unwrap } from '@polar-sh/client'
-import { useQuery } from '@tanstack/react-query'
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 type CompassTimezone = NonNullable<
@@ -29,5 +29,48 @@ export const useCompassInsights = (organizationId: string, enabled = true) => {
         }),
       ),
     retry: defaultRetry,
+  })
+}
+
+export const useCompassThreads = (organizationId: string, enabled = true) => {
+  return useQuery({
+    queryKey: ['compass_threads', { organizationId }],
+    enabled,
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/compass/threads', {
+          params: { query: { organization_id: organizationId, limit: 50 } },
+        }),
+      ),
+    retry: defaultRetry,
+  })
+}
+
+export const useCompassThread = (threadId: string | null) => {
+  return useQuery({
+    queryKey: ['compass_threads', 'detail', threadId],
+    enabled: !!threadId,
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/compass/threads/{id}', {
+          params: { path: { id: threadId as string } },
+        }),
+      ),
+    retry: defaultRetry,
+  })
+}
+
+export const useDeleteCompassThread = (organizationId: string) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (threadId: string) =>
+      api.DELETE('/v1/compass/threads/{id}', {
+        params: { path: { id: threadId } },
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ['compass_threads', { organizationId }],
+      })
+    },
   })
 }

@@ -1,6 +1,10 @@
-from pydantic import UUID4, Field
+from typing import Annotated, Literal
 
-from polar.kit.schemas import Schema
+from pydantic import UUID4, Discriminator, Field
+
+from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
+
+from .blocks import AssistantBlock
 
 
 class AssistantChatRequest(Schema):
@@ -11,11 +15,49 @@ class AssistantChatRequest(Schema):
         "to the caller; tools are always scoped to it."
     )
     prompt: str = Field(min_length=1, max_length=4000)
-    message_history: str | None = Field(
+    thread_id: UUID4 | None = Field(
         default=None,
         description=(
-            "Opaque conversation state from the previous turn's `done` event. "
-            "Send it back verbatim to continue the conversation; omit to start "
-            "a new one."
+            "Thread to continue, from a previous turn's `done` event or the "
+            "thread list. Omit to start a new thread."
         ),
     )
+
+
+class AssistantTextPart(Schema):
+    """A run of assistant prose, as it was streamed."""
+
+    kind: Literal["text"] = "text"
+    text: str
+
+
+class AssistantBlockPart(Schema):
+    """A renderable block, at the position the model placed it."""
+
+    kind: Literal["block"] = "block"
+    block: AssistantBlock
+
+
+AssistantPart = Annotated[AssistantTextPart | AssistantBlockPart, Discriminator("kind")]
+
+
+class CompassThreadSchema(IDSchema, TimestampedSchema):
+    """An assistant conversation thread."""
+
+    organization_id: UUID4
+    title: str
+
+
+class CompassThreadMessageSchema(IDSchema, TimestampedSchema):
+    """One completed turn: the user's prompt and the rendered answer."""
+
+    prompt: str
+    parts: list[AssistantPart]
+
+
+class CompassThreadWithMessages(CompassThreadSchema):
+    messages: list[CompassThreadMessageSchema]
+
+
+class CompassThreadUpdate(Schema):
+    title: str = Field(min_length=1, max_length=200)

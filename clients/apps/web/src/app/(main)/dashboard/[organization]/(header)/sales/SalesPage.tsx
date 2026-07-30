@@ -14,6 +14,7 @@ import { getChartRangeParams } from '@/utils/metrics'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
+import { Text } from '@polar-sh/orbit'
 import { formatCurrency } from '@polar-sh/currency'
 import { Truncated } from '@polar-sh/orbit'
 import { Avatar } from '@polar-sh/orbit'
@@ -101,14 +102,14 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
               name={customer.email ?? customer.name ?? '—'}
             />
             <Truncated>
-              <span>
+              <Text>
                 {customer.name || customer.email || '—'}
                 {showBillingName && (
                   <span className="dark:text-polar-500 ml-2 text-gray-500">
                     {customer.billing_name}
                   </span>
                 )}
-              </span>
+              </Text>
             </Truncated>
           </div>
         )
@@ -124,7 +125,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       cell: (props) => {
         const date = new Date(props.getValue() as string)
         return (
-          <time dateTime={date.toISOString()} >
+          <time dateTime={date.toISOString()}>
             {date.toLocaleString('en-US', {
               month: 'short',
               day: 'numeric',
@@ -145,7 +146,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         <DataTableColumnHeader
           column={column}
           title="Product"
-          className="text-black font-[550] dark:text-white"
+          className="font-[550] text-black dark:text-white"
         />
       ),
       cell: ({
@@ -156,14 +157,14 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         if (!product) {
           return (
             <Truncated>
-              <span>{description}</span>
+              <Text>{description}</Text>
             </Truncated>
           )
         }
         return (
           <div className="flex flex-row items-center gap-2">
             <Truncated>
-              <span>{product.name}</span>
+              <Text>{product.name}</Text>
             </Truncated>
             {product.is_archived && (
               <Status status="Archived" color="red" size="small" />
@@ -177,15 +178,12 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       enableSorting: true,
       size: 100,
       header: ({ column }) => (
-        <DataTableColumnHeader
-          column={column}
-          title="Amount"
-        />
+        <DataTableColumnHeader column={column} title="Amount" />
       ),
       cell: ({ row: { original: order } }) => (
-        <div className="">
+        <Text>
           {formatCurrency('standard')(order.net_amount, order.currency)}
-        </div>
+        </Text>
       ),
     },
     {
@@ -196,9 +194,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         <DataTableColumnHeader column={column} title="Status" />
       ),
       cell: ({ row: { original: order } }) => (
-        <span className="flex shrink">
-          <OrderStatus status={order.status} />
-        </span>
+        <OrderStatus status={order.status} />
       ),
     },
     {
@@ -220,9 +216,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
               className="text-black dark:text-white"
             />
           ),
-          cell: (props) => (
-            <span className="font-mono">{props.getValue() as string}</span>
-          ),
+          cell: (props) => <Text monospace>{props.getValue() as string}</Text>,
         }))
       : []),
   ]

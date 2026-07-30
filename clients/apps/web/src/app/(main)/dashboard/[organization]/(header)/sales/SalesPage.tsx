@@ -260,20 +260,38 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   return (
     <DashboardBody wide>
       <div className="flex flex-col gap-8">
-        <div className="flex items-center justify-between gap-2">
-          <Box alignItems="center" columnGap="m">
-            <ProductSelect
-              organization={organization}
-              value={productId || []}
-              onChange={onProductSelect}
-              className="w-[300px]"
-              includeArchived
-            />
-            <Box width={200}>
+        <Box
+          flexDirection={{ base: 'column', md: 'row' }}
+          alignItems={{ base: 'stretch', md: 'center' }}
+          justifyContent="between"
+          gap="l"
+        >
+          <Box
+            flexDirection={{ base: 'column', sm: 'row' }}
+            flexWrap="wrap"
+            alignItems={{ base: 'stretch', sm: 'center' }}
+            gap="m"
+            width={{ base: '100%', md: 'auto' }}
+          >
+            <Box width={{ base: '100%', md: 300 }} flexGrow={{ sm: 1, md: 0 }}>
+              <ProductSelect
+                organization={organization}
+                value={productId || []}
+                onChange={onProductSelect}
+                className="w-full"
+                includeArchived
+              />
+            </Box>
+            <Box
+              width={{ base: '100%', sm: 'auto' }}
+              minWidth={{ sm: 160 }}
+              maxWidth={{ md: 200 }}
+              flexGrow={{ sm: 1, md: 0 }}
+            >
               <OrderStatusSelect value={status} onChange={onStatusSelect} />
             </Box>
             <DateRangePicker
-              className="w-52 shrink-0 [&>button:last-child]:text-left"
+              className="w-full shrink-0 sm:w-52 [&>button:last-child]:text-left"
               date={{ from: startDate, to: endDate }}
               onDateChange={onDateChange}
               minDate={startOfDay(new Date(organization.created_at))}
@@ -281,14 +299,14 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           </Box>
           <Button
             onClick={onExport}
-            className="flex flex-row items-center"
+            className="flex w-full flex-row items-center md:w-auto"
             variant={'secondary'}
             wrapperClassNames="gap-x-2"
           >
             <FileDownloadOutlined fontSize="inherit" />
             <span>Export</span>
           </Button>
-        </div>
+        </Box>
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <MiniMetricChartBox
             title="Orders"

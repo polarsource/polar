@@ -200,6 +200,18 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       },
     },
     {
+      accessorKey: 'status',
+      enableSorting: true,
+      size: 140,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Status" />
+      ),
+      cell: ({ row: { original: order } }) => (
+        <OrderStatus status={order.status} />
+
+      ),
+    },
+    {
       accessorKey: 'net_amount',
       enableSorting: true,
       size: 80,
@@ -212,26 +224,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       ),
       cell: ({ row: { original: order } }) => (
         <Box display="block" textAlign="right">
-          <Text variant='default' tabularNums>
+          <Text variant='body' tabularNums>
             {formatCurrency('accounting')(order.net_amount, order.currency)}
           </Text>
         </Box>
-      ),
-    },
-    {
-      accessorKey: 'status',
-      enableSorting: true,
-      size: 140,
-      header: ({ column }) => (
-        <div className="flex justify-end">
-          <DataTableColumnHeader column={column} title="Status" />
-        </div>
-      ),
-      cell: ({ row: { original: order } }) => (
-        <div className="flex justify-end">
-          <OrderStatus status={order.status} />
-        </div>
-
       ),
     },
     ...(metadata

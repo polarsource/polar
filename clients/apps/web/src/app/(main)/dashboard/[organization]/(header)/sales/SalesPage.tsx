@@ -92,10 +92,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       cell: ({ row: { original: order } }) => (
         <Box flexDirection="column" rowGap="xs" minWidth={0}>
           <Text tabularNums>
-            <FormattedDateTime
-              datetime={order.created_at}
-              resolution="time"
-            />
+            <FormattedDateTime datetime={order.created_at} resolution="time" />
           </Text>
           <Text color="muted" monospace tabularNums>
             {order.invoice_number ?? '—'}

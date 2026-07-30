@@ -44,6 +44,7 @@ from polar.exceptions import PolarError
 from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.models import RateLimitGroupMixin, RecordModel
 from polar.kit.extensions.sqlalchemy import StringEnum
+from polar.kit.utils import utc_now
 
 from .account import Account
 
@@ -209,6 +210,10 @@ class OrganizationCheckoutSettings(TypedDict):
 
 # Organizations created from this point must list their embed hosts.
 EMBED_HOSTS_ENFORCED_FROM = datetime(2026, 8, 4, tzinfo=UTC)
+
+# From this point every organization must, whenever it was created. Noon rather
+# than midnight so it lands on 17 August across most of the world.
+EMBED_HOSTS_ENFORCED_FOR_ALL = datetime(2026, 8, 17, 12, tzinfo=UTC)
 
 
 def _default_checkout_settings() -> OrganizationCheckoutSettings:
@@ -661,10 +666,14 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     @property
     def embed_hosts_enforced(self) -> bool:
-        """Configuring a list does not enforce it. Existing organizations keep
-        embedding unchecked until the allowlist is enforced for everyone, so a
-        list that misses a host they use costs them nothing until then."""
-        return self.created_at >= EMBED_HOSTS_ENFORCED_FROM
+        """Configuring a list does not enforce it. Merchants were emailed ahead
+        of the date it starts applying to everyone; until then, only
+        organizations young enough to have never embedded unchecked are held to
+        their list."""
+        return (
+            utc_now() >= EMBED_HOSTS_ENFORCED_FOR_ALL
+            or self.created_at >= EMBED_HOSTS_ENFORCED_FROM
+        )
 
     legal_entity: Mapped[OrganizationLegalEntity | None] = mapped_column(
         JSONB, nullable=True, default=None

@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime
 
 import pytest
 from httpx import AsyncClient
@@ -29,6 +29,7 @@ from polar.user_organization.service import (
 )
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.embed_hosts import BEFORE_EMBED_CUTOFF
 from tests.fixtures.random_objects import (
     create_account,
     create_appeal_case,
@@ -43,7 +44,6 @@ from tests.fixtures.random_objects import (
 
 # The organization fixture is created now, which is past the cutoff from
 # 4 August 2026 onwards. Tests that assert the unenforced behaviour pin it.
-BEFORE_EMBED_CUTOFF = EMBED_HOSTS_ENFORCED_FROM - timedelta(days=1)
 
 
 @pytest.mark.asyncio
@@ -862,6 +862,7 @@ class TestGetEmbedStatus:
     @pytest.mark.auth
     async def test_never_embedded(
         self,
+        embed_hosts_not_enforced: None,
         client: AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -881,6 +882,7 @@ class TestGetEmbedStatus:
     @pytest.mark.auth
     async def test_embedded_without_hosts(
         self,
+        embed_hosts_not_enforced: None,
         client: AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,
@@ -944,6 +946,7 @@ class TestGetEmbedStatus:
     @pytest.mark.auth
     async def test_hosts_configured(
         self,
+        embed_hosts_not_enforced: None,
         client: AsyncClient,
         save_fixture: SaveFixture,
         organization: Organization,

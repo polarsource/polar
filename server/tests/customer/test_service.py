@@ -1060,7 +1060,10 @@ class TestDelete:
         deleted = await customer_service.delete(session, customer, anonymize=True)
         assert deleted.deleted_at is not None
         assert deleted.external_id is None
+        # Anonymization and deletion each write metadata; neither clobbers the
+        # other's key, nor the customer's own.
         assert deleted.saved_external_id == "will-be-recycled"
+        assert "__anonymized_at" in deleted.user_metadata
         assert deleted.user_metadata["user_id"] == "ABC"
         await session.flush()
 
@@ -1389,7 +1392,7 @@ class TestAnonymize:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        """External ID should be preserved in metadata, freeing the column."""
+        """External ID should be preserved: only deletion frees it."""
         customer = await create_customer(
             save_fixture,
             organization=organization,
@@ -1399,11 +1402,8 @@ class TestAnonymize:
 
         anonymized = await customer_service.anonymize(session, customer)
 
-        # The column is cleared so the external ID can be recycled...
-        assert anonymized.external_id is None
-        # ...but the original value is PRESERVED for legal reasons
-        assert anonymized.user_metadata["__external_id"] == "ext-123"
-        assert anonymized.saved_external_id == "ext-123"
+        # External ID should be PRESERVED
+        assert anonymized.external_id == "ext-123"
 
     async def test_hashes_billing_name(
         self,

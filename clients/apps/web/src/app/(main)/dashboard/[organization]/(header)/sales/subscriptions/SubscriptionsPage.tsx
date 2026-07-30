@@ -18,6 +18,7 @@ import { DataTableSortingState, getAPIParams } from '@/utils/datatable'
 import { useDateRange } from '@/utils/date'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import { Avatar } from '@polar-sh/orbit'
 import { Button } from '@polar-sh/orbit'
 import {
@@ -27,6 +28,7 @@ import {
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Status } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import {
   functionalUpdate,
   OnChangeFn,
@@ -41,6 +43,7 @@ import {
   useQueryStates,
 } from 'nuqs'
 import React, { useEffect, useState } from 'react'
+import { startOfDay } from 'date-fns'
 
 const filterParsers = {
   product_id: parseAsString,
@@ -182,9 +185,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             <div className="overflow-hidden text-ellipsis">
               {customer.name || customer.email || '—'}
               {showBillingName && (
-                <span className="dark:text-polar-500 ml-2 text-gray-500">
-                  {customer.billing_name}
-                </span>
+                <Box as="span" ml="s">
+                  <Text as="span" color="muted">
+                    {customer.billing_name}
+                  </Text>
+                </Box>
               )}
             </div>
           </div>
@@ -261,7 +266,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             <DataTableColumnHeader column={column} title={key} />
           ),
           cell: (props) => (
-            <span className="font-mono">{props.getValue() as string}</span>
+            <Text as="span" monospace>
+              {props.getValue() as string}
+            </Text>
           ),
         }))
       : []),
@@ -305,6 +312,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
               date={{ from: startDate, to: endDate }}
               onDateChange={onDateChange}
               className="[&>button:last-child]:text-left"
+              minDate={startOfDay(new Date(organization.created_at))}
             />
           </div>
           <Button

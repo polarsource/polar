@@ -211,8 +211,9 @@ class OrganizationCheckoutSettings(TypedDict):
 # Organizations created from this point must list their embed hosts.
 EMBED_HOSTS_ENFORCED_FROM = datetime(2026, 8, 4, tzinfo=UTC)
 
-# From this point every organization must, whenever it was created.
-EMBED_HOSTS_ENFORCED_FOR_ALL = datetime(2026, 8, 17, tzinfo=UTC)
+# From this point every organization must, whenever it was created. Noon rather
+# than midnight so it lands on 17 August across most of the world.
+EMBED_HOSTS_ENFORCED_FOR_ALL = datetime(2026, 8, 17, 12, tzinfo=UTC)
 
 
 def _default_checkout_settings() -> OrganizationCheckoutSettings:

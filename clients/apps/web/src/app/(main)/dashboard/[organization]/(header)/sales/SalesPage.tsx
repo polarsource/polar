@@ -25,6 +25,7 @@ import {
   DataTableColumnHeader,
 } from '@polar-sh/orbit'
 import { Status } from '@polar-sh/orbit'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import {
@@ -39,18 +40,6 @@ const filterParsers = {
   product_id: parseAsArrayOf(parseAsString),
   status: parseAsStringLiteral(enums.orderStatusValues),
   metadata: parseAsArrayOf(parseAsString),
-}
-
-const formatOrderDate = (value: string) => {
-  const date = new Date(value)
-  return date.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  })
 }
 
 interface ClientPageProps {
@@ -103,9 +92,10 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       cell: ({ row: { original: order } }) => (
         <Box flexDirection="column" rowGap="xs" minWidth={0}>
           <Text tabularNums>
-            <time dateTime={order.created_at}>
-              {formatOrderDate(order.created_at)}
-            </time>
+            <FormattedDateTime
+              datetime={order.created_at}
+              resolution="time"
+            />
           </Text>
           <Text color="muted" monospace tabularNums>
             {order.invoice_number ?? '—'}

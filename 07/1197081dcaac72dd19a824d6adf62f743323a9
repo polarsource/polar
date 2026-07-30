@@ -1,0 +1,39 @@
+server/polar/payment_method/service.py
+  s_c048718634e803::t_77b8c4d75c670b 20,182-185
+server/tests/organization/test_schemas.py
+  s_c048718634e803::t_9924db6442e484 6-9,107-142
+server/tests/payment_method/test_service.py
+  s_c048718634e803::t_94426267cbf5d8 443,447-457,466-475
+  s_c048718634e803::t_a4913e3a433e6e 458-465
+  s_c048718634e803::t_139cdcc569c47f 1,10
+  s_c048718634e803::t_6c240d87315b73 441-442,444-446
+server/tests/payment_method/test_repository.py
+  s_c048718634e803::t_bca3d661f16ac0 54
+  s_c048718634e803::t_3852300cceffda 52-53
+  s_c048718634e803::t_1bd834b16703cf 46-51,55
+  s_c048718634e803::t_bf3511f9839469 22
+server/polar/models/organization.py
+  s_c048718634e803::t_776341cb8bb95e 1,4-13
+  s_c048718634e803::t_67feca8a45ed34 159-172
+server/polar/organization/schemas.py
+  s_c048718634e803::t_8bbf98cd76600d 39,333
+server/polar/payment_method/tasks.py
+  s_c048718634e803::t_15bd00fa1656f8 17-18
+  s_c048718634e803::t_b1089a85332de7 19
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.16",
+  "base_commit_sha": "071197081dcaac72dd19a824d6adf62f743323a9",
+  "prompts": {},
+  "sessions": {
+    "s_c048718634e803": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "c4cab576-6da1-43cb-9272-0cd01c564d76",
+        "model": "claude-opus-5"
+      },
+      "human_author": null
+    }
+  }
+}

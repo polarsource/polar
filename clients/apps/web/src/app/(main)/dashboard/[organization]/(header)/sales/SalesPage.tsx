@@ -114,7 +114,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       enableSorting: true,
       size: 120,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Invoice" />
+        <DataTableColumnHeader column={column} title="Date" />
       ),
       cell: ({ row: { original: order } }) => (
         <Box flexDirection="column" rowGap="xs" minWidth={0}>

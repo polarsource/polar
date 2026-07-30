@@ -14,6 +14,7 @@ import { getChartRangeParams } from '@/utils/metrics'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
+import { Text } from '@polar-sh/orbit'
 import { formatCurrency } from '@polar-sh/currency'
 import { Truncated } from '@polar-sh/orbit'
 import { Avatar } from '@polar-sh/orbit'
@@ -23,8 +24,8 @@ import {
   DataTableColumnDef,
   DataTableColumnHeader,
 } from '@polar-sh/orbit'
-import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Status } from '@polar-sh/orbit'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import {
@@ -82,8 +83,27 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
 
   const columns: DataTableColumnDef<schemas['Order']>[] = [
     {
+      accessorKey: 'created_at',
+      enableSorting: true,
+      size: 120,
+      header: ({ column }) => (
+        <DataTableColumnHeader column={column} title="Date" />
+      ),
+      cell: ({ row: { original: order } }) => (
+        <Box flexDirection="column" rowGap="xs" minWidth={0}>
+          <Text tabularNums>
+            <FormattedDateTime datetime={order.created_at} resolution="time" />
+          </Text>
+          <Text color="muted" monospace tabularNums>
+            {order.invoice_number ?? '—'}
+          </Text>
+        </Box>
+      ),
+    },
+    {
       accessorKey: 'customer',
       enableSorting: true,
+      size: 200,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Customer" />
       ),
@@ -101,36 +121,29 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
               name={customer.email ?? customer.name ?? '—'}
             />
             <Truncated>
-              <span>
+              <Text as="span">
                 {customer.name || customer.email || '—'}
                 {showBillingName && (
                   <span className="dark:text-polar-500 ml-2 text-gray-500">
                     {customer.billing_name}
                   </span>
                 )}
-              </span>
+              </Text>
             </Truncated>
           </div>
         )
       },
     },
     {
-      accessorKey: 'net_amount',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Amount" />
-      ),
-      cell: ({ row: { original: order } }) => (
-        <span>
-          {formatCurrency('standard')(order.net_amount, order.currency)}
-        </span>
-      ),
-    },
-    {
       accessorKey: 'product',
       enableSorting: false,
+      size: 200,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Description" />
+        <DataTableColumnHeader
+          column={column}
+          title="Product"
+          className="font-[550] text-black dark:text-white"
+        />
       ),
       cell: ({
         row: {
@@ -138,11 +151,17 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         },
       }) => {
         if (!product) {
-          return <span>{description}</span>
+          return (
+            <Truncated>
+              <Text as="span">{description}</Text>
+            </Truncated>
+          )
         }
         return (
-          <div className="flex flex-row items-center gap-4">
-            {product.name}
+          <div className="flex flex-row items-center gap-2">
+            <Truncated>
+              <Text as="span">{product.name}</Text>
+            </Truncated>
             {product.is_archived && (
               <Status status="Archived" color="red" size="small" />
             )}
@@ -153,30 +172,31 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     {
       accessorKey: 'status',
       enableSorting: true,
+      size: 140,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Status" />
       ),
       cell: ({ row: { original: order } }) => (
-        <span className="flex shrink">
-          <OrderStatus status={order.status} />
-        </span>
+        <OrderStatus status={order.status} />
       ),
     },
     {
-      accessorKey: 'invoice_number',
+      accessorKey: 'net_amount',
       enableSorting: true,
+      size: 80,
       header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Invoice number" />
+        <DataTableColumnHeader
+          column={column}
+          title="Amount"
+          className="flex justify-end"
+        />
       ),
-    },
-    {
-      accessorKey: 'created_at',
-      enableSorting: true,
-      header: ({ column }) => (
-        <DataTableColumnHeader column={column} title="Date" />
-      ),
-      cell: (props) => (
-        <FormattedDateTime datetime={props.getValue() as string} />
+      cell: ({ row: { original: order } }) => (
+        <Box display="block" textAlign="right">
+          <Text variant="body" tabularNums>
+            {formatCurrency('accounting')(order.net_amount, order.currency)}
+          </Text>
+        </Box>
       ),
     },
     ...(metadata
@@ -184,11 +204,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           accessorKey: `metadata.${key}`,
           enableSorting: false,
           header: ({ column }) => (
-            <DataTableColumnHeader column={column} title={key} />
+            <DataTableColumnHeader
+              column={column}
+              title={key}
+              className="text-black dark:text-white"
+            />
           ),
-          cell: (props) => (
-            <span className="font-mono">{props.getValue() as string}</span>
-          ),
+          cell: (props) => <Text monospace>{props.getValue() as string}</Text>,
         }))
       : []),
   ]
@@ -211,15 +233,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     endDate: allTimeEnd,
     interval: allTimeInterval,
     product_id: productId ?? undefined,
-    metrics: ['orders', 'revenue', 'cumulative_revenue'],
-  })
-  const { data: todayMetricsData } = useMetrics({
-    organization_id: organization.id,
-    startDate: new Date(),
-    endDate: new Date(),
-    interval: 'day',
-    product_id: productId ?? undefined,
-    metrics: ['revenue'],
+    metrics: ['orders', 'revenue', 'average_order_value'],
   })
 
   const onExport = () => {
@@ -265,14 +279,14 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             metric={metricsData?.metrics.orders}
           />
           <MiniMetricChartBox
-            title="Today's Revenue"
-            value={todayMetricsData?.totals.revenue}
-            metric={todayMetricsData?.metrics.revenue}
+            title="Revenue"
+            value={metricsData?.totals.revenue}
+            metric={metricsData?.metrics.revenue}
           />
           <MiniMetricChartBox
-            title="Cumulative Revenue"
-            value={metricsData?.totals.revenue}
-            metric={metricsData?.metrics.cumulative_revenue}
+            title="Average Order Value"
+            value={metricsData?.totals.average_order_value}
+            metric={metricsData?.metrics.average_order_value}
           />
         </div>
         {orders && pageCount !== undefined && (

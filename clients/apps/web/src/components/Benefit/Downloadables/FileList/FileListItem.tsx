@@ -1,4 +1,4 @@
-import { useDeleteFile } from '@/hooks/queries'
+import { useDeleteFile, useDownloadFile } from '@/hooks/queries'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import AudioFileOutlined from '@mui/icons-material/AudioFileOutlined'
@@ -225,6 +225,29 @@ export const FileListItem = ({
     removeFile()
   })
 
+  const downloadFile = useDownloadFile(file.id, (fileDownload) => {
+    window.location.href = fileDownload.download.url
+  })
+
+  const onDownload = useCallback(() => {
+    const showFailure = (reason: string) =>
+      toast({
+        title: 'File Download Failed',
+        description: `Error downloading file ${file.name}: ${reason}`,
+      })
+
+    downloadFile
+      .mutateAsync()
+      .then((response) => {
+        if (response.error) {
+          showFailure(extractApiErrorMessage(response.error))
+        }
+      })
+      .catch(() => {
+        showFailure('Please try again later')
+      })
+  }, [downloadFile, file.name])
+
   const onToggleEnabled = useCallback(
     (enabled: boolean) => {
       setArchivedFile(file.id, !enabled)
@@ -317,6 +340,11 @@ export const FileListItem = ({
               align="end"
               className="dark:bg-polar-800 bg-gray-50 shadow-lg"
             >
+              {file.is_uploaded && (
+                <DropdownMenuItem onClick={onDownload}>
+                  Download
+                </DropdownMenuItem>
+              )}
               {file.checksum_sha256_hex && (
                 <DropdownMenuItem onClick={onCopySHA}>
                   Copy SHA256 Checksum

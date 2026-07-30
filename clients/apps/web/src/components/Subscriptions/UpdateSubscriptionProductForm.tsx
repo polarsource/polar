@@ -96,6 +96,7 @@ export const UpdateSubscriptionProductForm = ({
           <FormField
             control={control}
             name="product_id"
+            rules={{ required: 'Please select a product' }}
             render={({ field }) => (
               <FormItem>
                 <Box flexDirection="column" rowGap="none">

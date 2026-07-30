@@ -44,9 +44,11 @@ export const PlanUpsell = ({ organization }: PlanUpsellProps) => {
     organization.id,
     'organization:manage',
   )
-  const gatedOrgId = canManageBilling ? organization.id : undefined
-  const subscriptionQuery = useOrganizationSubscription(gatedOrgId)
-  const plansQuery = useOrganizationPlans(gatedOrgId)
+  const subscriptionQuery = useOrganizationSubscription(
+    organization.id,
+    canManageBilling,
+  )
+  const plansQuery = useOrganizationPlans(organization.id, canManageBilling)
   const startCheckout = useStartSubscriptionCheckout(organization.id)
   const { buildUrls } = useBillingPlanTelemetry({
     source: 'plan_upsell',

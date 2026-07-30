@@ -576,6 +576,9 @@ class SeatService:
         session: AsyncSession,
         seat: CustomerSeat,
     ) -> CustomerSeat:
+        if seat.is_revoked():
+            return seat
+
         # Get product and organization from either subscription or order
         if seat.subscription_id and seat.subscription:
             organization_id = seat.subscription.product.organization_id

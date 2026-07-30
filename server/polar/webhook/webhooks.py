@@ -23,6 +23,7 @@ from polar.checkout.schemas import Checkout as CheckoutSchema
 from polar.customer.schemas.customer import CustomerResponse as CustomerSchema
 from polar.customer.schemas.state import CustomerState as CustomerStateSchema
 from polar.customer_seat.schemas import CustomerSeat as CustomerSeatSchema
+from polar.discount.schemas import Discount as DiscountSchema
 from polar.exceptions import PolarError
 from polar.integrations.discord.webhook import (
     DiscordEmbedField,
@@ -42,6 +43,7 @@ from polar.models import (
     Checkout,
     Customer,
     CustomerSeat,
+    Discount,
     Member,
     Order,
     Organization,
@@ -83,11 +85,15 @@ WebhookTypeObject = (
     | tuple[Literal[WebhookEventType.subscription_canceled], Subscription]
     | tuple[Literal[WebhookEventType.subscription_revoked], Subscription]
     | tuple[Literal[WebhookEventType.subscription_uncanceled], Subscription]
+    | tuple[Literal[WebhookEventType.subscription_cycled], Subscription]
     | tuple[Literal[WebhookEventType.subscription_past_due], Subscription]
     | tuple[Literal[WebhookEventType.refund_created], Refund]
     | tuple[Literal[WebhookEventType.refund_updated], Refund]
     | tuple[Literal[WebhookEventType.product_created], Product]
     | tuple[Literal[WebhookEventType.product_updated], Product]
+    | tuple[Literal[WebhookEventType.discount_created], Discount]
+    | tuple[Literal[WebhookEventType.discount_updated], Discount]
+    | tuple[Literal[WebhookEventType.discount_deleted], Discount]
     | tuple[Literal[WebhookEventType.organization_updated], Organization]
     | tuple[Literal[WebhookEventType.benefit_created], Benefit]
     | tuple[Literal[WebhookEventType.benefit_updated], Benefit]
@@ -1006,7 +1012,7 @@ class WebhookSubscriptionUpdatedPayload(WebhookSubscriptionUpdatedPayloadBase):
 
     If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.
 
-    To listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.
+    To listen specifically for renewals, listen to `subscription.cycled`.
 
     **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.
     """
@@ -1122,6 +1128,25 @@ class WebhookSubscriptionUncanceledPayload(WebhookSubscriptionUpdatedPayloadBase
             raise UnsupportedTarget(target, self.__class__, WebhookFormat.slack)
 
         return self._get_uncanceled_slack_payload(target)
+
+
+class WebhookSubscriptionCycledPayload(BaseWebhookPayload):
+    """
+    Sent when a subscription enters a new billing period.
+
+    The payload carries the new `current_period_start` and `current_period_end`.
+    It fires when the period rolls over, before the renewal order exists and
+    regardless of whether the renewal payment succeeds — listen to `order.paid`
+    if you need the payment.
+
+    A trial converting to a paid subscription starts a new period, so it fires
+    there too. Read `status` to tell the two apart.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.subscription_cycled]
+    data: SubscriptionSchema
 
 
 class WebhookSubscriptionRevokedPayload(WebhookSubscriptionUpdatedPayloadBase):
@@ -1381,6 +1406,39 @@ class WebhookProductUpdatedPayload(BaseWebhookPayload):
     data: ProductSchema
 
 
+class WebhookDiscountCreatedPayload(BaseWebhookPayload):
+    """
+    Sent when a new discount is created.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.discount_created]
+    data: DiscountSchema
+
+
+class WebhookDiscountUpdatedPayload(BaseWebhookPayload):
+    """
+    Sent when a discount is updated.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.discount_updated]
+    data: DiscountSchema
+
+
+class WebhookDiscountDeletedPayload(BaseWebhookPayload):
+    """
+    Sent when a discount is deleted.
+
+    **Discord & Slack support:** Basic
+    """
+
+    type: Literal[WebhookEventType.discount_deleted]
+    data: DiscountSchema
+
+
 class WebhookOrganizationUpdatedPayload(BaseWebhookPayload):
     """
     Sent when a organization is updated.
@@ -1482,6 +1540,7 @@ WebhookPayload = Annotated[
     | WebhookSubscriptionActivePayload
     | WebhookSubscriptionCanceledPayload
     | WebhookSubscriptionUncanceledPayload
+    | WebhookSubscriptionCycledPayload
     | WebhookSubscriptionRevokedPayload
     | WebhookSubscriptionPastDuePayload
     | WebhookSubscriptionPausedPayload
@@ -1490,6 +1549,9 @@ WebhookPayload = Annotated[
     | WebhookRefundUpdatedPayload
     | WebhookProductCreatedPayload
     | WebhookProductUpdatedPayload
+    | WebhookDiscountCreatedPayload
+    | WebhookDiscountUpdatedPayload
+    | WebhookDiscountDeletedPayload
     | WebhookOrganizationUpdatedPayload
     | WebhookBenefitCreatedPayload
     | WebhookBenefitUpdatedPayload

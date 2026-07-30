@@ -103,6 +103,15 @@ In order to properly implement logic for handling subscriptions, you should look
   ></Card>
 
   <Card
+    title="subscription.cycled"
+    icon="link"
+    href="/api-reference/subscriptioncycled"
+    horizontal
+  >
+    Fired when a subscription enters a new billing period, before the renewal order exists and whether or not the payment succeeds.
+  </Card>
+
+  <Card
     title="subscription.canceled"
     icon="link"
     href="/api-reference/subscriptioncanceled"
@@ -126,7 +135,9 @@ In order to properly implement logic for handling subscriptions, you should look
   >
     Use this event if you want to handle cancellations, un-cancellations, etc. The
     updated event is a catch-all event for `subscription.active`,
-    `subscription.canceled`, `subscription.uncanceled`, `subscription.past_due` and `subscription.revoked`.
+    `subscription.canceled`, `subscription.uncanceled`, `subscription.cycled`,
+    `subscription.past_due`, `subscription.revoked`, `subscription.paused` and
+    `subscription.resumed`.
   </Card>
 
   <Card
@@ -135,10 +146,10 @@ In order to properly implement logic for handling subscriptions, you should look
     href="/api-reference/ordercreated"
     horizontal
   >
-    In case you want to do logic when a subscription is renewed, you should listen
-    to `order.created` and the `billing_reason` field. It can be `purchase`,
-    `subscription_create`, `subscription_cycle` and `subscription_update`.
-    `subscription_cycle` is used when subscriptions renew.
+    Carries a `billing_reason` field, which can be `purchase`,
+    `subscription_create`, `subscription_cycle` and `subscription_update`. To act
+    on a renewal, listen to `subscription.cycled` instead: it fires whether or not
+    the renewal payment succeeds.
   </Card>
 
   <Card
@@ -147,6 +158,24 @@ In order to properly implement logic for handling subscriptions, you should look
     href="/api-reference/subscriptionrevoked"
     horizontal
   ></Card>
+
+  <Card
+    title="subscription.paused"
+    icon="link"
+    href="/api-reference/subscriptionpaused"
+    horizontal
+  >
+    Fired when a scheduled pause takes effect at the end of the period. Billing stops and benefits are revoked until the subscription resumes.
+  </Card>
+
+  <Card
+    title="subscription.resumed"
+    icon="link"
+    href="/api-reference/subscriptionresumed"
+    horizontal
+  >
+    Fired when a paused subscription resumes. A new billing period starts and the customer is charged immediately.
+  </Card>
 </Columns>
 
 #### Cancellation Sequences
@@ -187,8 +216,11 @@ When a subscription is renewed for a new cycle, the webhook events are triggered
 
 When a subscription reaches its renewal date, the following events are sent immediately (if enabled on the webhook):
 
-1. `subscription.updated`
-2. `order.created`
+1. `subscription.cycled`
+2. `subscription.updated`
+3. `order.created`
+
+`subscription.cycled` fires only on a new billing period, so you can act on a renewal without inspecting `billing_reason` on the order. It also fires when a trial converts to a paid subscription, since that starts a period too: read `status` to tell the two apart.
 
 The subscription data will reflect the new billing period through the `current_period_start` and `current_period_end` properties, showing the updated cycle dates.
 
@@ -198,10 +230,37 @@ The order data represents the new invoice for the upcoming cycle, with a total r
 
 Shortly after the initial renewal events, the platform will trigger a payment for the new order. Once the payment is successfully processed, the following events are sent:
 
-3. `order.updated`
-4. `order.paid`
+4. `order.updated`
+5. `order.paid`
 
 Both events will contain the same order data, with the order status changed to `paid`.
+
+#### Pause Sequences
+
+Pausing is scheduled for the end of the current billing period, much like an end-of-period cancellation.
+
+When a subscription is **paused** (by customer action from the portal or by the merchant from the dashboard/API), only one event is sent immediately, because the subscription stays `active` until the period ends:
+
+1. `subscription.updated`
+
+The `pause_at_period_end` flag is set to `true`, and `resumes_at` holds the scheduled resume date if you set one.
+
+When the end of the current billing period arrives, the pause takes effect: billing stops and benefits are revoked. The following events are then sent:
+
+2. `subscription.updated`
+3. `subscription.paused`
+
+Both events contain the same subscription data, now with the `paused` status.
+
+**Resume**
+
+When a paused subscription resumes, either immediately when you resume it or automatically on its `resumes_at` date, a new billing period starts and the customer is charged right away. The following events are sent:
+
+1. `subscription.updated`
+2. `subscription.resumed`
+3. `order.created`
+
+The subscription data reflects the new period through `current_period_start` and `current_period_end`, and the order represents the immediate charge for the new cycle.
 
 ### Orders
 
@@ -304,6 +363,31 @@ Both events will contain the same order data, with the order status changed to `
     title="product.updated"
     icon="link"
     href="/api-reference/productupdated"
+    horizontal
+  ></Card>
+</Columns>
+
+### Discounts
+
+<Columns cols={2}>
+  <Card
+    title="discount.created"
+    icon="link"
+    href="/api-reference/discountcreated"
+    horizontal
+  ></Card>
+
+  <Card
+    title="discount.updated"
+    icon="link"
+    href="/api-reference/discountupdated"
+    horizontal
+  ></Card>
+
+  <Card
+    title="discount.deleted"
+    icon="link"
+    href="/api-reference/discountdeleted"
     horizontal
   ></Card>
 </Columns>

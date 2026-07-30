@@ -60,18 +60,7 @@ const TransactionsList = ({
         if (isSameDayAsParent) {
           return null
         }
-        return (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="truncate whitespace-nowrap">
-                <FormattedDateTime datetime={datetime} resolution="day" />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <FormattedDateTime datetime={datetime} resolution="time" />
-            </TooltipContent>
-          </Tooltip>
-        )
+        return <FormattedDateTime datetime={datetime} resolution="time" />
       },
     },
     {
@@ -125,11 +114,11 @@ const TransactionsList = ({
 
         return (
           <div className="flex flex-row justify-end">
-            {paymentTransaction.presentment_currency !==
-            transaction.currency ? (
+            {amount !== 0 &&
+            paymentTransaction.presentment_currency !== transaction.currency ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="underline decoration-dotted">
+                  <span className="dark:decoration-polar-500 underline decoration-gray-400 decoration-dashed decoration-1 underline-offset-4">
                     {formatCurrency('accounting')(amount, transaction.currency)}
                   </span>
                 </TooltipTrigger>
@@ -221,11 +210,11 @@ const TransactionsList = ({
 
         return (
           <div className="flex justify-end">
-            {paymentTransaction.presentment_currency !==
-            transaction.currency ? (
+            {paymentTransaction.tax_amount !== 0 &&
+            paymentTransaction.presentment_currency !== transaction.currency ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="underline decoration-dotted">
+                  <span className="dark:decoration-polar-500 underline decoration-gray-400 decoration-dashed decoration-1 underline-offset-4">
                     {formatCurrency('accounting')(
                       -paymentTransaction.tax_amount,
                       transaction.currency,

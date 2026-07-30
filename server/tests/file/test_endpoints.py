@@ -1,3 +1,4 @@
+import uuid
 from urllib.parse import parse_qs, urlencode, urlparse
 
 import pytest
@@ -174,6 +175,81 @@ class TestList:
         assert response.status_code == 200
         json = response.json()
         assert [item["id"] for item in json["items"]] == [str(visible.id)]
+
+
+@pytest.mark.asyncio
+class TestDownload:
+    async def test_anonymous(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/files/{uuid.uuid4()}/download")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_existing(self, client: AsyncClient) -> None:
+        response = await client.get(f"/v1/files/{uuid.uuid4()}/download")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_not_uploaded(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        file = await create_support_case_attachment_file(
+            save_fixture,
+            organization,
+            name="release.zip",
+            service=FileServiceTypes.downloadable,
+            is_uploaded=False,
+        )
+
+        response = await client.get(f"/v1/files/{file.id}/download")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_support_case_attachment_not_permitted(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        file = await create_support_case_attachment_file(save_fixture, organization)
+
+        response = await client.get(f"/v1/files/{file.id}/download")
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="user"),
+        AuthSubjectFixture(subject="organization"),
+    )
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        file = await create_support_case_attachment_file(
+            save_fixture,
+            organization,
+            name="release.zip",
+            service=FileServiceTypes.downloadable,
+        )
+
+        response = await client.get(f"/v1/files/{file.id}/download")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["id"] == str(file.id)
+        assert json["service"] == "downloadable"
+        assert json["download"]["url"]
+        assert json["download"]["expires_at"]
 
 
 @pytest.mark.asyncio

@@ -414,6 +414,29 @@ class TestUpdateReviewSubmission:
         )
 
     @pytest.mark.auth
+    async def test_submit_clears_resubmission_requirement(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = OrganizationStatus.CREATED
+        organization.website = "https://example.com"
+        organization.email = "support@example.com"
+        organization.details = {
+            "product_description": "Subscription SaaS for software teams and agencies.",
+            "selling_categories": ["Software / SaaS"],
+            "pricing_models": ["Subscription"],
+            "switching": False,
+        }
+        organization.onboarding_resubmission_requested_at = datetime.now(UTC)
+
+        await organization_service.submit_for_review(session, organization)
+
+        assert organization.onboarding_resubmission_requested_at is None
+
+    @pytest.mark.auth
     async def test_update_with_submit_for_review_requires_relevant_fields(
         self,
         session: AsyncSession,
@@ -1336,6 +1359,94 @@ class TestBlockOrganization:
 
 
 @pytest.mark.asyncio
+class TestResetOnboardingForReview:
+    @pytest.mark.parametrize(
+        "status",
+        [
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.SNOOZED,
+        ],
+    )
+    async def test_resets_eligible_organization(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        organization: Organization,
+        status: OrganizationStatus,
+    ) -> None:
+        enqueue_job_mock = mocker.patch("polar.organization.service.enqueue_job")
+        organization.status = status
+        organization.capabilities = {**STATUS_CAPABILITIES[status]}
+        organization.details_submitted_at = datetime.now(UTC)
+        organization.snoozed_until = datetime.now(UTC) + timedelta(days=1)
+        organization.snooze_type = SnoozeType.NEXT_SALE
+        review = OrganizationReview(
+            organization_id=organization.id,
+            verdict=OrganizationReview.Verdict.PASS,
+            risk_score=10.0,
+            violated_sections=[],
+            reason="Previously approved",
+            model_used="test",
+        )
+        session.add(review)
+        await session.flush()
+
+        result = await organization_service.reset_onboarding_for_review(
+            session,
+            organization,
+            reset_by="admin@example.com",
+        )
+
+        assert result.status == OrganizationStatus.CREATED
+        assert result.capabilities == STATUS_CAPABILITIES[OrganizationStatus.CREATED]
+        assert result.details_submitted_at is None
+        assert result.snoozed_until is None
+        assert result.snooze_type is None
+        assert result.onboarding_resubmission_requested_at is not None
+        assert review.deleted_at is not None
+        assert result.internal_notes is not None
+        assert (
+            f"reset from {status.get_display_name()} to Created"
+            in result.internal_notes
+        )
+        assert "admin@example.com" in result.internal_notes
+        enqueue_job_mock.assert_called_once_with(
+            "payout.cancel_held_payouts",
+            account_id=organization.account_id,
+        )
+
+    @pytest.mark.parametrize(
+        "status",
+        [
+            OrganizationStatus.CREATED,
+            OrganizationStatus.DENIED,
+            OrganizationStatus.BLOCKED,
+            OrganizationStatus.OFFBOARDING,
+            OrganizationStatus.OFFBOARDED,
+        ],
+    )
+    async def test_rejects_ineligible_status(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        status: OrganizationStatus,
+    ) -> None:
+        organization.status = status
+        await session.flush()
+
+        with pytest.raises(OrganizationError) as exc_info:
+            await organization_service.reset_onboarding_for_review(
+                session,
+                organization,
+                reset_by="admin@example.com",
+            )
+
+        assert exc_info.value.status_code == 409
+        assert organization.status == status
+
+
+@pytest.mark.asyncio
 class TestMaybeActivate:
     @pytest.mark.parametrize(
         "status",
@@ -1822,6 +1933,32 @@ class TestGetPaymentStatus:
         payment_status = organization_service.get_payment_status(organization)
 
         assert payment_status.payment_ready is False
+
+    def test_reflects_resubmission_timestamp(
+        self,
+        organization: Organization,
+    ) -> None:
+        """The resubmission timestamp from the organization is surfaced so
+        the dashboard can distinguish a backoffice reset from initial
+        onboarding using fresh DB-backed data."""
+        reset_at = datetime(2026, 7, 28, 12, 0, tzinfo=UTC)
+        organization.status = OrganizationStatus.CREATED
+        organization.onboarding_resubmission_requested_at = reset_at
+
+        payment_status = organization_service.get_payment_status(organization)
+
+        assert payment_status.onboarding_resubmission_requested_at == reset_at
+
+    def test_resubmission_null_when_never_reset(
+        self,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.CREATED
+        organization.onboarding_resubmission_requested_at = None
+
+        payment_status = organization_service.get_payment_status(organization)
+
+        assert payment_status.onboarding_resubmission_requested_at is None
 
 
 @pytest.mark.asyncio
@@ -2764,6 +2901,41 @@ class TestGetReviewState:
         ]
         assert non_setup_failing  # other checks block, not this warning
 
+    async def test_setup_readiness_access_token_warns_despite_unfulfillable_link(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """A merchant who created a no-code link and then switched to the API
+        path is warned about the missing webhook, not gated by the link."""
+        product = await create_product(
+            save_fixture, organization=organization, recurring_interval=None
+        )
+        await create_checkout_link(save_fixture, products=[product])
+        await save_fixture(
+            OrganizationAccessToken(
+                comment="test",
+                token="hash",
+                organization=organization,
+                scope="openid",
+            )
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+        step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+
+        assert step.status == OrganizationReviewCheckStatus.WARNING
+        assert step.reasons == [
+            OrganizationReviewCheckReason.SETUP_READINESS_WEBHOOK_MISSING
+        ]
+        assert (
+            _sub(
+                step, OrganizationReviewSubCheckKey.SETUP_READINESS_CHECKOUT_LINK
+            ).status
+            == OrganizationReviewCheckStatus.FAILED
+        )
+
     async def test_all_checks_pass_can_submit(
         self,
         save_fixture: SaveFixture,
@@ -2813,6 +2985,32 @@ class TestGetReviewState:
         setup_step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
         assert setup_step.status == OrganizationReviewCheckStatus.PENDING
         assert state.can_submit is False
+
+    async def test_api_key_unblocks_submission_despite_unfulfillable_link(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        """The webhook is recommended, not required: an API key alone clears
+        setup readiness even when an abandoned no-code link can't fulfill."""
+        product = await _setup_passing_org(save_fixture, organization, user)
+        await set_product_benefits(save_fixture, product=product, benefits=[])
+        await save_fixture(
+            OrganizationAccessToken(
+                comment="test",
+                token="hash",
+                organization=organization,
+                scope="openid",
+            )
+        )
+
+        state = await organization_service.get_review_state(session, organization)
+
+        setup_step = _step(state, OrganizationReviewCheckKey.SETUP_READINESS)
+        assert setup_step.status == OrganizationReviewCheckStatus.WARNING
+        assert state.can_submit is True
 
     async def test_submitted_blocks_resubmission(
         self,

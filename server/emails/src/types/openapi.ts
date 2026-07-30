@@ -1628,6 +1628,11 @@ export interface components {
        */
       details_submitted_at: string | null
       /**
+       * Onboarding Resubmission Requested At
+       * @description When Polar requested that the organization review and resubmit its onboarding information, if applicable.
+       */
+      onboarding_resubmission_requested_at: string | null
+      /**
        * Sso Enforced
        * @description Whether members must access this organization through its SSO connection.
        */
@@ -1649,6 +1654,16 @@ export interface components {
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
+      /**
+       * Embed Hosts
+       * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
+       */
+      embed_hosts: string[]
+      /**
+       * Embed Hosts Enforced
+       * @description Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone.
+       */
+      embed_hosts_enforced: boolean
       /**
        * @description Two-letter country code (ISO 3166-1 alpha-2).
        * @default null
@@ -1977,6 +1992,8 @@ export interface components {
     OrganizationCustomerEmailSettings: {
       /** Order Confirmation */
       order_confirmation: boolean
+      /** Payment Method Expiration Reminder */
+      payment_method_expiration_reminder: boolean
       /** Subscription Cancellation */
       subscription_cancellation: boolean
       /** Subscription Confirmation */
@@ -2198,6 +2215,82 @@ export interface components {
       /** Allow Customer Updates */
       allow_customer_updates: boolean
     }
+    /** PaymentMethodCard */
+    PaymentMethodCard: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      processor: components['schemas']['PaymentProcessor']
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+      /**
+       * Type
+       * @constant
+       */
+      type: 'card'
+      method_metadata: components['schemas']['PaymentMethodCardMetadata']
+    }
+    /** PaymentMethodCardMetadata */
+    PaymentMethodCardMetadata: {
+      /** Brand */
+      brand: string
+      /** Last4 */
+      last4: string
+      /** Exp Month */
+      exp_month: number
+      /** Exp Year */
+      exp_year: number
+      /**
+       * Wallet
+       * @default null
+       */
+      wallet: string | null
+    }
+    /** PaymentMethodExpirationReminderEmail */
+    PaymentMethodExpirationReminderEmail: {
+      /**
+       * Template
+       * @default payment_method_expiration_reminder
+       * @constant
+       */
+      template: 'payment_method_expiration_reminder'
+      props: components['schemas']['PaymentMethodExpirationReminderProps']
+    }
+    /** PaymentMethodExpirationReminderProps */
+    PaymentMethodExpirationReminderProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
+      payment_method: components['schemas']['PaymentMethodCard']
+      /** Product Names */
+      product_names: string[]
+      /** Expiration Date */
+      expiration_date: string
+      /** Url */
+      url: string
+    }
+    /**
+     * PaymentProcessor
+     * @enum {string}
+     */
+    PaymentProcessor: 'stripe'
     /** PersonalAccessTokenLeakedEmail */
     PersonalAccessTokenLeakedEmail: {
       /**

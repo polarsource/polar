@@ -1,10 +1,11 @@
 import { usePostHog } from '@/hooks/posthog'
 import { AuthContext } from '@/providers/auth'
 import { api } from '@/utils/client'
+import { CONFIG } from '@/utils/config'
 import { schemas, unwrap } from '@polar-sh/client'
 import * as Sentry from '@sentry/nextjs'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { useContext, useEffect } from 'react'
+import { useCallback, useContext, useEffect } from 'react'
 
 export const useAuth = (): {
   authenticated: boolean
@@ -55,6 +56,15 @@ export const useAuth = (): {
     userOrganizations,
     setUserOrganizations,
   }
+}
+
+export const useLogout = (): (() => void) => {
+  const posthog = usePostHog()
+
+  return useCallback(() => {
+    posthog.reset()
+    window.location.href = `${CONFIG.BASE_URL}/v1/auth/logout`
+  }, [posthog])
 }
 
 export const useAuthSessionStart = () =>

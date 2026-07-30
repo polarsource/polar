@@ -23,14 +23,22 @@ const SubscriptionInvoicePreview = ({
   const isActive = subscription.status === 'active'
   const isPaused = subscription.status === 'paused'
 
+  const isCancelingAtPeriodEnd =
+    subscription.cancel_at_period_end && !subscription.ended_at
+
+  const isPausing = subscription.pause_at_period_end || isPaused
+  const isResumingCharge =
+    isPausing && subscription.resumes_at !== null && !isCancelingAtPeriodEnd
+  const isPausingIndefinitely = isPausing && !subscription.resumes_at
+
+  // The query and the render below share one gate: a narrower `enabled` leaves
+  // states that render the preview without ever fetching it.
+  const showsCharge =
+    (isActive || isTrialing || isResumingCharge) && !isPausingIndefinitely
+
   const { data: chargePreview } = useSubscriptionChargePreview(
     subscription.id,
-    {
-      enabled:
-        isActive ||
-        isTrialing ||
-        (isPaused && subscription.resumes_at !== null),
-    },
+    { enabled: showsCharge },
   )
 
   const productId = useMemo(
@@ -44,26 +52,11 @@ const SubscriptionInvoicePreview = ({
     [subscription],
   )
 
-  const isCancelingAtPeriodEnd =
-    subscription.cancel_at_period_end && !subscription.ended_at
-
   const isFreeProduct = subscription.prices.some(isFreePrice)
   const hasMeters = subscription.meters.length > 0
   const hasNextInvoice = !isFreeProduct || hasMeters
 
-  const isResumingCharge =
-    (subscription.pause_at_period_end || isPaused) &&
-    subscription.resumes_at !== null &&
-    !isCancelingAtPeriodEnd
-  const isPausingIndefinitely =
-    (subscription.pause_at_period_end || isPaused) && !subscription.resumes_at
-
-  if (
-    (!isActive && !isTrialing && !isResumingCharge) ||
-    isPausingIndefinitely ||
-    !hasNextInvoice ||
-    !chargePreview
-  ) {
+  if (!showsCharge || !hasNextInvoice || !chargePreview) {
     return null
   }
 

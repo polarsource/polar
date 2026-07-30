@@ -7,7 +7,7 @@ import {
   isRequiredStep,
 } from '@/components/Finance/Account/sections/stepLabels'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { toast } from '@/components/Toast/use-toast'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { usePostHog } from '@/hooks/posthog'
 import { useProducts } from '@/hooks/queries'
 import {
@@ -20,7 +20,13 @@ import {
   usePayoutAccounts,
 } from '@/hooks/queries/payout_accounts'
 import { schemas } from '@polar-sh/client'
-import { Text, Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
+import {
+  Alert,
+  Text,
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Button } from '@polar-sh/orbit'
 import { useRouter } from 'next/navigation'
@@ -49,6 +55,7 @@ export const AccountPageDetailsRequired = ({ organization }: Props) => {
   const posthog = usePostHog()
 
   const [isExiting, setIsExiting] = useState(false)
+  const [submitError, setSubmitError] = useState<string | null>(null)
 
   const steps = reviewState?.preliminary_steps ?? []
   const rowsExitMs =
@@ -62,6 +69,7 @@ export const AccountPageDetailsRequired = ({ organization }: Props) => {
       section: 'cta',
     })
 
+    setSubmitError(null)
     setIsExiting(true)
 
     const [{ error }] = await Promise.all([
@@ -70,11 +78,12 @@ export const AccountPageDetailsRequired = ({ organization }: Props) => {
     ])
 
     if (error) {
-      toast({
-        title: 'Submission failed',
-        description:
+      setSubmitError(
+        extractApiErrorMessage(
+          error,
           'We could not submit your organization for review. Please try again.',
-      })
+        ),
+      )
       setIsExiting(false)
       return
     }
@@ -97,36 +106,39 @@ export const AccountPageDetailsRequired = ({ organization }: Props) => {
       onClick={handleSubmit}
       disabled={!canSubmit || isExiting}
       loading={isExiting}
+      className="w-full sm:w-auto"
     >
       Submit for review
     </Button>
   )
 
+  const submitAction =
+    canSubmit || remainingSteps.length === 0 ? (
+      submitButton
+    ) : (
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Box display="block" width={{ base: '100%', sm: 'auto' }}>
+            {submitButton}
+          </Box>
+        </TooltipTrigger>
+        <TooltipContent>
+          <Box flexDirection="column" rowGap="xs">
+            <Text variant="caption">Still needed before you submit:</Text>
+            {remainingSteps.map((step) => (
+              <Text key={step.key} variant="caption" color="muted">
+                {STEP_LABELS[step.key]}
+              </Text>
+            ))}
+          </Box>
+        </TooltipContent>
+      </Tooltip>
+    )
+
   return (
     <DashboardBody
       wrapperClassName="max-w-(--breakpoint-sm)!"
       title="Account Review"
-      header={
-        canSubmit || remainingSteps.length === 0 ? (
-          submitButton
-        ) : (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Box display="block">{submitButton}</Box>
-            </TooltipTrigger>
-            <TooltipContent>
-              <Box flexDirection="column" rowGap="xs">
-                <Text variant="caption">Still needed before you submit:</Text>
-                {remainingSteps.map((step) => (
-                  <Text key={step.key} variant="caption" color="muted">
-                    {STEP_LABELS[step.key]}
-                  </Text>
-                ))}
-              </Box>
-            </TooltipContent>
-          </Tooltip>
-        )
-      }
     >
       <Box flexDirection="column" rowGap="xl" paddingBottom="3xl">
         <Text variant="body" color="muted">
@@ -140,6 +152,16 @@ export const AccountPageDetailsRequired = ({ organization }: Props) => {
           rowStagger={ROW_STAGGER}
           rowDuration={ROW_DURATION}
         />
+        {submitError && (
+          <Alert
+            variant="danger"
+            title="Submission failed"
+            description={submitError}
+          />
+        )}
+        <Box flexDirection="column" alignSelf={{ base: 'stretch', sm: 'end' }}>
+          {submitAction}
+        </Box>
       </Box>
     </DashboardBody>
   )

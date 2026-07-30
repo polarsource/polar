@@ -23,46 +23,39 @@ Two things make migrations risky during a deploy:
 ## Decision
 
 - Generate migrations with `alembic revision --autogenerate`. Every migration inherits
-  `SET LOCAL lock_timeout = '5s'` from the template.
+  `SET LOCAL lock_timeout = '5s'` from the template. Raise it for a busy table.
 - Add a NOT NULL column across separate PRs: add it nullable, backfill with a batched script
   (`run_batched_update`), then enforce NOT NULL.
-- The enforce migration's inline `UPDATE ... WHERE col IS NULL` is guarded by
-  `settings.is_development()`, so it runs only against a local database. Deployed environments
-  (testing, sandbox, production) run the batched backfill script first, verified before deploy,
-  so they skip the inline `UPDATE` and never rewrite a hot table under lock. The following
-  `SET NOT NULL` then doubles as a check that the backfill completed.
+- The enforce migration runs an unconditional `UPDATE ... WHERE col IS NULL` immediately before
+  `SET NOT NULL`. The batched script does the real work first, so by the time the migration runs
+  this `UPDATE` matches nothing and rewrites nothing.
 - Keep migration PRs isolated from application code.
 
-The local-only guard is a plain inline check. Import `settings` in the migration (from
-`polar.config`, the same module `migrations/env.py` already imports); `is_development()` is
-true only when `POLAR_ENV=development`, which is local:
-
 ```python
-from polar.config import settings
-
 def upgrade() -> None:
-    # Local dev only: deployed environments run the batched backfill first.
-    if settings.is_development():
-        op.execute("UPDATE organizations SET sso_enforced = false WHERE sso_enforced IS NULL")
+    op.execute("UPDATE organizations SET sso_enforced = false WHERE sso_enforced IS NULL")
     op.alter_column("organizations", "sso_enforced", nullable=False)
 ```
 
+The `UPDATE` stays because the script misses two things: environments where nobody ran it, and
+rows written NULL between the backfill and the deploy. Either one fails `SET NOT NULL` and
+strands the schema on the previous revision.
+
 ## Consequences
 
-- A lock-holding migration fails fast at the 5s timeout instead of taking the database down.
+- A lock-holding migration fails fast at the lock timeout instead of taking the database down.
 - Large backfills run outside the deploy path, in controlled batches.
 - Code never ships ahead of the schema it needs.
 - CI enforces this: a "Migration Isolation Check" gates which files travel together, and
   `alembic check` catches model-versus-migration drift.
-- `settings.is_development()` is the single decision for what counts as local. A deployed
-  enforce migration cannot rewrite the table; if the backfill was skipped, `SET NOT NULL` fails
-  the deploy instead.
+- The batched script stays mandatory. The migration's `UPDATE` is only cheap because the script
+  has already left it nothing to do.
 
 ## Alternatives considered
 
 - **Add NOT NULL in one step and let the migration's `UPDATE` backfill every row**: rewrites the
-  table under lock during deploy. The inline `UPDATE` runs in local development only; the batched
-  script does the real backfill everywhere else.
+  table under lock during deploy. The batched script runs first precisely so the migration's
+  `UPDATE` has nothing left to do.
 - **Ship a migration in the same PR as the code that depends on it**: breaks the
   API-before-workers ordering.
 

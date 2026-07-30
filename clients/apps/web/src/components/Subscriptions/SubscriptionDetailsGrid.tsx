@@ -56,6 +56,9 @@ export const SubscriptionDetailsGrid = ({
 }) => {
   const productName = product?.name ?? subscription.product.name
 
+  const trialEndDatetime =
+    subscription.status === 'trialing' ? subscription.trial_end : null
+
   let nextEventDatetime: string | undefined
   let cancellationDate: string | undefined
   if (subscription.ended_at) {
@@ -68,6 +71,12 @@ export const SubscriptionDetailsGrid = ({
     subscription.current_period_end
   ) {
     nextEventDatetime = subscription.current_period_end
+  }
+
+  // While trialing the API holds `trial_end` and the next event on the same
+  // date, so the cell below would repeat the trial cell under another label.
+  if (nextEventDatetime === trialEndDatetime) {
+    nextEventDatetime = undefined
   }
 
   const cancellationReason = subscription.customer_cancellation_reason
@@ -117,12 +126,12 @@ export const SubscriptionDetailsGrid = ({
             </Text>
           }
         />
-        {subscription.status === 'trialing' && subscription.trial_end && (
+        {trialEndDatetime && (
           <DetailCell
             label="Trial ends"
             value={
               <Text variant="body" as="span">
-                <FormattedDateTime datetime={subscription.trial_end} />
+                <FormattedDateTime datetime={trialEndDatetime} />
               </Text>
             }
           />

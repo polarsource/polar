@@ -88,6 +88,9 @@ export const CheckoutFormProvider = ({
             case 'RequestValidationError':
               setValidationErrors(error.detail, setError)
               break
+            case 'DiscountRedemptionLimitReached':
+              setError('discount_code', { message: error.detail })
+              break
             case 'AlreadyActiveSubscriptionError':
             case 'NotOpenCheckout':
             case 'PaymentNotReady':
@@ -125,6 +128,9 @@ export const CheckoutFormProvider = ({
           case 'NotOpenCheckout':
           case 'PaymentNotReady':
             setError('root', { message: error.detail })
+            break
+          case 'DiscountRedemptionLimitReached':
+            setError('discount_code', { message: error.detail })
             break
           case 'TrialAlreadyRedeemed':
             setTrialUnavailable(true)

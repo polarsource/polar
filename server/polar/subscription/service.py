@@ -55,6 +55,7 @@ from polar.exceptions import (
     ResourceUnavailable,
     ValidationError,
 )
+from polar.invoice.generator import format_date
 from polar.kit.db.postgres import AsyncReadSession, AsyncSession
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
@@ -371,6 +372,8 @@ class SubscriptionService:
         | None = None,
         canceled_at_after: datetime | None = None,
         canceled_at_before: datetime | None = None,
+        started_after: datetime | None = None,
+        started_before: datetime | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SubscriptionSortProperty]] = [
@@ -429,6 +432,12 @@ class SubscriptionService:
 
         if canceled_at_before is not None:
             statement = statement.where(Subscription.canceled_at <= canceled_at_before)
+
+        if started_after is not None:
+            statement = statement.where(Subscription.started_at > started_after)
+
+        if started_before is not None:
+            statement = statement.where(Subscription.started_at < started_before)
 
         if metadata is not None:
             statement = apply_metadata_clause(Subscription, statement, metadata)
@@ -927,6 +936,11 @@ class SubscriptionService:
         subscription = await repository.update(
             subscription, update_dict={"scheduler_locked_at": None}
         )
+
+        if not revoke:
+            await self._send_webhook(
+                session, subscription, WebhookEventType.subscription_cycled
+            )
 
         if revoke:
             billing_reason = OrderBillingReasonInternal.subscription_cancel
@@ -3048,6 +3062,7 @@ class SubscriptionService:
             WebhookEventType.subscription_active,
             WebhookEventType.subscription_canceled,
             WebhookEventType.subscription_uncanceled,
+            WebhookEventType.subscription_cycled,
             WebhookEventType.subscription_revoked,
             WebhookEventType.subscription_past_due,
             WebhookEventType.subscription_paused,
@@ -3299,7 +3314,7 @@ class SubscriptionService:
             return
         if subscription.current_period_end is None:
             return
-        renewal_date = subscription.current_period_end.strftime("%m/%d/%Y")
+        renewal_date = format_date(subscription.current_period_end)
         return await self._send_customer_email(
             session,
             subscription,
@@ -3318,7 +3333,7 @@ class SubscriptionService:
             return
         if subscription.trial_end is None:
             return
-        conversion_date = subscription.trial_end.strftime("%m/%d/%Y")
+        conversion_date = format_date(subscription.trial_end)
         return await self._send_customer_email(
             session,
             subscription,

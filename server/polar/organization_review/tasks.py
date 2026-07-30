@@ -151,7 +151,20 @@ async def run_review_agent(
         repository = OrganizationRepository.from_session(session)
         organization = await repository.get_by_id(organization_id, include_blocked=True)
         if organization is None:
-            raise OrganizationDoesNotExist(organization_id)
+            # The organization may have been deleted between enqueue and
+            # execution (e.g. debounce delay). Nothing to review — skip
+            # gracefully instead of raising and retrying a doomed task.
+            log.info(
+                "organization_review.run_agent.organization_missing",
+                organization_id=str(organization_id),
+                context=review_context.value,
+            )
+            return
+
+        submission_generation = (
+            organization.details_submitted_at,
+            organization.onboarding_resubmission_requested_at,
+        )
 
         # A product-change review only makes sense for active orgs: it exists
         # to pull them back into review. Status may have changed between enqueue
@@ -172,6 +185,20 @@ async def run_review_agent(
         result = await run_organization_review(
             session, organization, context=review_context
         )
+
+        if review_context == ReviewContext.SUBMISSION:
+            await session.refresh(organization, with_for_update=True)
+            current_submission_generation = (
+                organization.details_submitted_at,
+                organization.onboarding_resubmission_requested_at,
+            )
+            if current_submission_generation != submission_generation:
+                log.info(
+                    "organization_review.submission.skip_stale",
+                    organization_id=str(organization_id),
+                    slug=organization.slug,
+                )
+                return
 
         report = result.report
         agent_review_id = await _persist_agent_result(

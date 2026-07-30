@@ -452,7 +452,39 @@ const DiscountForm: React.FC<DiscountFormProps> = ({
                   </FormControl>
                   <FormMessage />
                   <FormDescription>
-                    Limit applies across all customers, not per customer.
+                    Counts every redemption, across all customers.
+                  </FormDescription>
+                </FormItem>
+              )}
+            />
+
+            <FormField
+              control={control}
+              name="max_redemptions_per_customer"
+              rules={{
+                min: { value: 1, message: 'This field must be at least 1' },
+              }}
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Maximum redemptions per customer</FormLabel>
+                  <FormControl>
+                    <Input
+                      {...field}
+                      type="number"
+                      value={field.value ?? ''}
+                      onChange={(e) => {
+                        const value = e.target.value
+                        field.onChange(
+                          value === '' ? null : parseInt(value, 10),
+                        )
+                      }}
+                      min={1}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                  <FormDescription>
+                    Polar identifies a customer by account, email address or
+                    payment card. One match is enough.
                   </FormDescription>
                 </FormItem>
               )}

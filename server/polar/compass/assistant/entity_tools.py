@@ -522,8 +522,8 @@ async def list_checkouts(
         deps.auth_subject,
         organization_id=[deps.organization_id],
         status=[CheckoutStatus(status)] if status else None,
-        created_at_after=created_after,
-        created_at_before=created_before,
+        created_after=created_after,
+        created_before=created_before,
         pagination=_clamp(limit),
     )
     rows: list[Row] = [

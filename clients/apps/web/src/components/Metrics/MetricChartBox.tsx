@@ -49,6 +49,7 @@ interface MetricChartBoxProps {
   loading?: boolean
   compact?: boolean
   shareable?: boolean
+  exportable?: boolean
   simple?: boolean
   chartType?: 'line' | 'bar'
   /** Override the list of metrics shown in the dropdown. If not provided, uses metrics from data. */
@@ -82,6 +83,7 @@ const MetricChartBox = ({
   loading,
   compact = false,
   shareable = true,
+  exportable = true,
   simple = false,
   chartType = 'line',
   availableMetrics,
@@ -196,14 +198,14 @@ const MetricChartBox = ({
       )}
       <div
         className={twMerge(
-          'flex flex-col gap-6 md:flex-row md:items-start md:justify-between',
+          'flex flex-row items-start justify-between gap-6',
           compact ? 'p-4' : 'px-6 py-4',
           loading && 'invisible',
         )}
       >
         <div
           className={twMerge(
-            'flex w-full',
+            'flex w-full min-w-0',
             compact
               ? 'flex-row items-center justify-between gap-x-4'
               : 'flex-col gap-y-4',
@@ -320,7 +322,7 @@ const MetricChartBox = ({
           )}
         </div>
 
-        <div className="flex flex-row items-center gap-x-4">
+        <div className="flex shrink-0 flex-row items-center gap-x-4">
           {trend !== 0 && !isNaN(trend) && trend !== Infinity && (
             <Status
               status={
@@ -344,20 +346,31 @@ const MetricChartBox = ({
               <TooltipContent>Share Chart</TooltipContent>
             </Tooltip>
           )}
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="hidden rounded-full opacity-0 transition-opacity group-hover:opacity-100 md:flex"
-              >
-                <MoreVertOutlined fontSize="small" />
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent align="end">
-              <DropdownMenuItem onClick={handleExport}>Export</DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
+          {(shareable || exportable) && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="flex rounded-full transition-opacity md:opacity-0 md:group-hover:opacity-100"
+                >
+                  <MoreVertOutlined fontSize="small" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                {shareable && (
+                  <DropdownMenuItem className="md:hidden" onClick={showModal}>
+                    Share Chart
+                  </DropdownMenuItem>
+                )}
+                {exportable && (
+                  <DropdownMenuItem onClick={handleExport}>
+                    Export
+                  </DropdownMenuItem>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
         </div>
       </div>
       <div

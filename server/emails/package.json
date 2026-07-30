@@ -17,22 +17,22 @@
   "packageManager": "pnpm@10.28.1",
   "dependencies": {
     "commander": "^15.0.0",
-    "react": "^19.2.7",
-    "react-dom": "^19.2.7",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
     "react-email": "^6.8.1"
   },
   "devDependencies": {
-    "@react-email/ui": "^6.8.1",
+    "@react-email/ui": "^6.9.0",
     "@types/node": "^24.13.3",
     "@types/react": "^19.2.17",
     "@types/react-dom": "^19.2.3",
     "@yao-pkg/pkg": "^6.21.0",
     "eslint": "^10.7.0",
     "openapi-typescript": "^7.13.0",
-    "oxfmt": "^0.59.0",
+    "oxfmt": "^0.60.0",
     "tsup": "^8.5.1",
     "typescript": "^5.9.3",
-    "typescript-eslint": "^8.64.0"
+    "typescript-eslint": "^8.65.0"
   },
   "pkg": {
     "targets": [

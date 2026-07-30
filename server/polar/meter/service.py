@@ -13,7 +13,6 @@ from sqlalchemy import (
     asc,
     cte,
     desc,
-    exists,
     func,
     or_,
     select,
@@ -45,7 +44,6 @@ from polar.models import (
     Customer,
     Event,
     Meter,
-    MeterEvent,
     Product,
     ProductPriceMeteredUnit,
     SubscriptionProductPrice,
@@ -59,9 +57,7 @@ from .repository import MeterRepository
 from .schemas import MeterCreate, MeterQuantities, MeterQuantity, MeterUpdate
 from .sorting import MeterSortProperty
 
-# Number of events processed per billing batch. Bounds the per-query cost of the
-# subscription price lookup so it stays proportional to the batch, not to the
-# meter's whole unprocessed backlog (which could be spiked and unbounded).
+# Maximum number of events processed by one billing task invocation.
 _BILLING_ENTRY_BATCH_SIZE = 500
 
 
@@ -511,162 +507,75 @@ class MeterService:
         self, session: AsyncSession, meter: Meter
     ) -> Sequence[BillingEntry]:
         event_repository = EventRepository.from_session(session)
-        statement = (
-            event_repository.get_base_statement()
-            .join(MeterEvent, MeterEvent.event_id == Event.id)
-            .where(
-                MeterEvent.meter_id == meter.id,
-                or_(
-                    MeterEvent.customer_id.is_not(None),
-                    and_(
-                        MeterEvent.external_customer_id.is_not(None),
-                        exists(
-                            select(1).where(
-                                Customer.external_id == MeterEvent.external_customer_id,
-                                Customer.organization_id == MeterEvent.organization_id,
-                            )
-                        ),
-                    ),
-                ),
-            )
-        )
         last_billed_event = meter.last_billed_event
-        if last_billed_event is not None:
-            statement = statement.where(
-                or_(
-                    MeterEvent.ingested_at > last_billed_event.ingested_at,
-                    and_(
-                        MeterEvent.ingested_at == last_billed_event.ingested_at,
-                        MeterEvent.event_id > last_billed_event.id,
-                    ),
-                )
-            )
+        page = await event_repository.get_meter_billing_page(
+            meter.id,
+            after_ingested_at=(
+                last_billed_event.ingested_at if last_billed_event is not None else None
+            ),
+            after_event_id=(
+                last_billed_event.id if last_billed_event is not None else None
+            ),
+            limit=_BILLING_ENTRY_BATCH_SIZE,
+        )
 
         subscription_product_price_repository = (
             SubscriptionProductPriceRepository.from_session(session)
         )
 
-        statement = statement.order_by(
-            MeterEvent.ingested_at.asc(), MeterEvent.event_id.asc()
-        ).options(joinedload(Event.customer))
-
         entries: list[BillingEntry] = []
         updated_subscriptions: set[uuid.UUID] = set()
-        last_event: Event | None = None
-
-        # Stream events in the billing order and process them in bounded batches.
-        # The subscription price lookup is done once per batch (from the batch's
-        # own customers), so its cost stays proportional to the batch size rather
-        # than to the meter's entire unprocessed backlog.
-        batch: list[Event] = []
-        async for event in event_repository.stream(statement):
-            batch.append(event)
-            if len(batch) >= _BILLING_ENTRY_BATCH_SIZE:
-                (
-                    last_event,
-                    batch_entries,
-                    batch_subscriptions,
-                ) = await self._process_billing_entries_batch(
-                    session,
-                    meter,
-                    subscription_product_price_repository,
-                    batch,
+        if page:
+            customer_ids = {customer.id for _, customer in page if customer is not None}
+            customer_price_map = (
+                await subscription_product_price_repository.get_by_customers_and_meter(
+                    list(customer_ids), meter.id
                 )
-                entries.extend(batch_entries)
-                updated_subscriptions.update(batch_subscriptions)
-                batch = []
-
-        if batch:
-            (
-                last_event,
-                batch_entries,
-                batch_subscriptions,
-            ) = await self._process_billing_entries_batch(
-                session,
-                meter,
-                subscription_product_price_repository,
-                batch,
             )
-            entries.extend(batch_entries)
-            updated_subscriptions.update(batch_subscriptions)
 
-        meter.last_billed_event = (
-            last_event if last_event is not None else last_billed_event
-        )
-        session.add(meter)
+            for event, customer in page:
+                if customer is None:
+                    continue
+
+                try:
+                    customer_price = customer_price_map[customer.id]
+                except KeyError:
+                    concurrent_customer_prices = await subscription_product_price_repository.get_by_customers_and_meter(
+                        [customer.id], meter.id
+                    )
+                    customer_price = concurrent_customer_prices[customer.id]
+                    customer_price_map[customer.id] = customer_price
+
+                if customer_price is None:
+                    continue
+
+                subscription = customer_price.subscription_product_price.subscription
+                if (
+                    subscription.trial_end is not None
+                    and event.ingested_at < subscription.trial_end
+                ):
+                    continue
+
+                entry = await self._create_subscription_holder_billing_entry(
+                    session,
+                    event,
+                    subscription.customer,
+                    customer_price.subscription_product_price,
+                )
+                entries.append(entry)
+                if entry.subscription is not None:
+                    updated_subscriptions.add(entry.subscription.id)
+
+            meter.last_billed_event = page[-1][0]
+            session.add(meter)
 
         for subscription_id in updated_subscriptions:
             enqueue_job("subscription.update_meters", subscription_id)
 
+        if len(page) == _BILLING_ENTRY_BATCH_SIZE:
+            enqueue_job("meter.billing_entries", meter.id)
+
         return entries
-
-    async def _process_billing_entries_batch(
-        self,
-        session: AsyncSession,
-        meter: Meter,
-        subscription_product_price_repository: SubscriptionProductPriceRepository,
-        batch: Sequence[Event],
-    ) -> tuple[Event, Sequence[BillingEntry], set[uuid.UUID]]:
-        # Collect the distinct paying customers appearing in this batch (in
-        # Python, from the already-fetched events) and look up their prices in a
-        # single call — no extra SQL round trip for the customer-id collection.
-        batch_customer_ids = {
-            customer.id for event in batch if (customer := event.customer) is not None
-        }
-        customer_price_map = (
-            await subscription_product_price_repository.get_by_customers_and_meter(
-                list(batch_customer_ids), meter.id
-            )
-        )
-
-        entries: list[BillingEntry] = []
-        updated_subscriptions: set[uuid.UUID] = set()
-        for event in batch:
-            customer = event.customer
-            assert customer is not None
-
-            # Retrieve the paying customer and subscription product price
-            try:
-                customer_price = customer_price_map[customer.id]
-            except KeyError:
-                # The customer may become visible after the batch lookup under
-                # READ COMMITTED.
-                concurrent_customer_prices = await subscription_product_price_repository.get_by_customers_and_meter(
-                    [customer.id], meter.id
-                )
-                customer_price = concurrent_customer_prices[customer.id]
-                customer_price_map[customer.id] = customer_price
-
-            if customer_price is None:
-                continue
-
-            # Polar never charges during a trial: skip trial events so no
-            # billable BillingEntry rows exist. The watermark still advances,
-            # so these events aren't retried once the trial converts.
-            subscription = customer_price.subscription_product_price.subscription
-            if (
-                subscription.trial_end is not None
-                and event.ingested_at < subscription.trial_end
-            ):
-                continue
-
-            # Get the paying customer (billing manager) from the subscription
-            paying_customer = subscription.customer
-
-            entry = await self._create_subscription_holder_billing_entry(
-                session,
-                event,
-                paying_customer,
-                customer_price.subscription_product_price,
-            )
-            entries.append(entry)
-            if entry.subscription is not None:
-                updated_subscriptions.add(entry.subscription.id)
-
-        # The watermark advances to the last event in billing order, regardless
-        # of whether it produced a billable entry (trial/no-subscription events
-        # must not be retried).
-        return batch[-1], entries, updated_subscriptions
 
     async def get_quantity(
         self,

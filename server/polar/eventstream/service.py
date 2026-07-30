@@ -6,11 +6,7 @@ from pydantic import BaseModel
 
 from polar.kit.utils import generate_uuid
 from polar.logging import Logger
-from polar.postgres import AsyncSession
 from polar.redis import Redis
-from polar.user_organization.service import (
-    user_organization as user_organization_service,
-)
 from polar.worker import enqueue_job
 
 log: Logger = structlog.get_logger()
@@ -80,22 +76,3 @@ async def publish(
     ).model_dump_json()
 
     enqueue_job("eventstream.publish", event, channels)
-
-
-async def publish_members(
-    session: AsyncSession, key: str, payload: dict[str, Any], organization_id: UUID
-) -> None:
-    members = await user_organization_service.list_by_org(
-        session, org_id=organization_id
-    )
-
-    for m in members:
-        receivers = Receivers(user_id=m.user_id)
-        channels = receivers.get_channels()
-        event = Event(
-            id=generate_uuid(),
-            key=key,
-            payload=payload,
-        ).model_dump_json()
-
-        enqueue_job("eventstream.publish", event, channels)

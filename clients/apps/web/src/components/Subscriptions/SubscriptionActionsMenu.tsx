@@ -124,7 +124,7 @@ const SubscriptionActionsMenu = ({
                 Cancel Subscription
               </DropdownMenuItem>
             ))}
-          {subscription.status === 'paused' ? (
+          {subscription.ended_at ? null : subscription.status === 'paused' ? (
             <DropdownMenuItem
               onClick={handleResume}
               disabled={resumeSubscription.isPending}

@@ -4,6 +4,40 @@ title: Product Updates
 description: Stay up to date with the latest changes and improvements to Polar.
 ---
 
+<Update label="2026-07-29">
+## Embed hosts
+
+Choose which hosts are allowed to embed your checkout, in Settings → Preferences → Embedding. As soon as you list a host, only the hosts on your list can embed.
+
+Organizations created from 4 August 2026 need a list before they can embed. Existing organizations carry on as before until they add their first host, and we will email you well ahead of the date this applies to everyone.
+
+[Read more](/features/checkout/embed#embed-hosts)
+</Update>
+
+<Update label="2026-07-28">
+## Per-customer discount limits
+
+Discount codes now take a per-customer redemption limit. Set it to one and you can share a code publicly (post it, put it in a newsletter, hand it to an affiliate) knowing each buyer only gets a single use.
+
+Polar identifies a customer by customer ID, email address (ignoring plus-aliases) or payment card, and a match on any one is enough — so a fresh address on the same card doesn't buy a second run.
+
+Set it under Products → Discounts, or send `max_redemptions_per_customer` when you create or update a discount through the API.
+
+[Read more](/features/discounts#per-customer-limits)
+</Update>
+
+<Update label="2026-07-23">
+## Pause and resume subscriptions
+
+You can now pause a subscription instead of canceling it. Pausing schedules the subscription to stop at the end of its current period: billing halts and benefits are revoked, but the subscription and its payment method stay on file. Resume whenever you're ready: a fresh billing period starts and the customer is charged immediately, with no new checkout.
+
+Set an optional resume date when you pause and the subscription comes back on its own. This fits seasonal plans and account "freezes", where a customer steps away and returns later.
+
+Drive it from the API through the [Update Subscription](/api-reference/subscriptions/update-subscription) endpoint, or let customers pause themselves from the Customer Portal by turning on **Enable subscription pause** under Settings → Customer portal. Two new webhook events, `subscription.paused` and `subscription.resumed`, tell you when the state changes.
+
+[Read more](/features/subscriptions/manage#pause-and-resume)
+</Update>
+
 <Update label="2026-07-22">
 ## Single Sign-On
 

@@ -1,6 +1,6 @@
 {
   "name": "@polar-sh/sdk",
-  "version": "1.0.0-alpha.15",
+  "version": "1.0.0-alpha.16",
   "description": "Polar SDK — A billing platform for the intelligence era",
   "keywords": [
     "api",
@@ -18,7 +18,8 @@
   "files": [
     "dist",
     "README.md",
-    "LICENSE"
+    "LICENSE",
+    ".agents"
   ],
   "type": "module",
   "sideEffects": false,

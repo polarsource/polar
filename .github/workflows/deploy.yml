@@ -59,7 +59,7 @@ jobs:
       # job is skipped entirely when this is false.
       test-enabled: ${{ steps.test-enabled.outputs.enabled }}
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
         with:
           # fetch-depth: 0 already fetches all tags, so no separate
           # fetch-tags is needed here.
@@ -199,10 +199,10 @@ jobs:
       contents: read
       packages: write
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
 
       - name: Set up Docker Buildx
-        uses: useblacksmith/setup-docker-builder@v1.10.0
+        uses: useblacksmith/setup-docker-builder@v2.0.0
 
       - name: Log in to the Container registry
         uses: docker/login-action@v4.4.0
@@ -254,17 +254,17 @@ jobs:
       contents: read
       id-token: write
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
 
       - name: Set up Docker Buildx
-        uses: useblacksmith/setup-docker-builder@v1.10.0
+        uses: useblacksmith/setup-docker-builder@v2.0.0
 
       - name: Sync AUP to server
         run: cp "clients/apps/web/src/app/(main)/(website)/(landing)/(mdx)/legal/acceptable-use-policy/page.mdx" "server/polar/organization_review/acceptable-use-policy.mdx"
 
       - name: Configure AWS credentials (test)
         if: needs.changes.outputs.test-enabled == 'true'
-        uses: aws-actions/configure-aws-credentials@6.2.2
+        uses: aws-actions/configure-aws-credentials@v6.2.3
         with:
           role-to-assume: ${{ secrets.TEST_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -275,7 +275,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Configure AWS credentials (sandbox)
-        uses: aws-actions/configure-aws-credentials@6.2.2
+        uses: aws-actions/configure-aws-credentials@v6.2.3
         with:
           role-to-assume: ${{ secrets.SANDBOX_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -285,7 +285,7 @@ jobs:
         uses: aws-actions/amazon-ecr-login@v2
 
       - name: Configure AWS credentials (production)
-        uses: aws-actions/configure-aws-credentials@6.2.2
+        uses: aws-actions/configure-aws-credentials@v6.2.3
         with:
           role-to-assume: ${{ secrets.PRODUCTION_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -325,7 +325,7 @@ jobs:
       id-token: write
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@6.2.2
+        uses: aws-actions/configure-aws-credentials@v6.2.3
         with:
           role-to-assume: ${{ secrets.TEST_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -349,7 +349,7 @@ jobs:
       id-token: write
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@6.2.2
+        uses: aws-actions/configure-aws-credentials@v6.2.3
         with:
           role-to-assume: ${{ secrets.SANDBOX_AWS_ROLE_ARN }}
           aws-region: us-east-2
@@ -373,7 +373,7 @@ jobs:
       id-token: write
     steps:
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@6.2.2
+        uses: aws-actions/configure-aws-credentials@v6.2.3
         with:
           role-to-assume: ${{ secrets.PRODUCTION_AWS_ROLE_ARN }}
           aws-region: us-east-2

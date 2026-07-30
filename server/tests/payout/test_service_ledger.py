@@ -19,6 +19,7 @@ from polar.models.organization import OrganizationStatus
 from polar.models.payout import PayoutStatus
 from polar.payout.service import payout as payout_service
 from polar.postgres import AsyncSession
+from polar.transaction.repository import TransactionRepository
 from polar.transaction.service.transaction import transaction as transaction_service
 from tests.fixtures import random_objects as ro
 from tests.fixtures.database import SaveFixture
@@ -144,3 +145,34 @@ class TestHeldPayoutLedger:
 
         summary_after = await transaction_service.get_summary(session, account)
         assert summary_after.available_balance.amount == 0
+
+    async def test_new_payout_paid_transactions_match_amount(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        locker: Locker,
+        organization: Organization,
+        account: Account,
+        user: User,
+    ) -> None:
+        # The payout it replaces released its funds through both a
+        # payout_reversal and a reset of the balance transactions. Only the
+        # balance transactions belong to the new payout: counting the reversal
+        # too would inflate the gross and break invoice generation.
+        await create_payout_account(save_fixture, organization, user)
+
+        payment_transaction = await create_payment_transaction(save_fixture)
+        await create_balance_transaction(
+            save_fixture, account=account, payment_transaction=payment_transaction
+        )
+
+        first_payout = await payout_service.create(session, locker, organization)
+        await payout_service.cancel(session, first_payout)
+
+        second_payout = await payout_service.create(session, locker, organization)
+
+        repository = TransactionRepository.from_session(session)
+        paid_transactions = await repository.get_all_paid_transactions_by_payout(
+            second_payout.transaction.id
+        )
+        assert second_payout.amount == sum(t.amount for t in paid_transactions)

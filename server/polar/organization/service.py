@@ -205,6 +205,12 @@ class PaymentStatusResponse(BaseModel):
     organization_status: OrganizationStatus = Field(
         description="Current organization status"
     )
+    onboarding_resubmission_requested_at: datetime | None = Field(
+        description=(
+            "When Polar requested that the organization review and resubmit "
+            "its onboarding information, if applicable."
+        ),
+    )
 
 
 class OrganizationDeletionCheckResult(BaseModel):
@@ -628,6 +634,7 @@ class OrganizationService:
 
         if organization.details_submitted_at is None:
             organization.details_submitted_at = datetime.now(UTC)
+            organization.onboarding_resubmission_requested_at = None
             enqueue_job(
                 "organization_review.run_agent",
                 organization_id=organization.id,
@@ -637,6 +644,63 @@ class OrganizationService:
         session.add(organization)
 
         await self._after_update(session, organization)
+        return organization
+
+    async def reset_onboarding_for_review(
+        self,
+        session: AsyncSession,
+        organization: Organization,
+        *,
+        reset_by: str,
+    ) -> Organization:
+        await session.refresh(organization, with_for_update=True)
+
+        if organization.status not in {
+            OrganizationStatus.ACTIVE,
+            OrganizationStatus.REVIEW,
+            OrganizationStatus.SNOOZED,
+        }:
+            raise OrganizationError(
+                "Only active, review, or snoozed organizations can be reset "
+                "for onboarding review.",
+                409,
+            )
+
+        previous_status = organization.status
+        organization.set_status(OrganizationStatus.CREATED)
+        organization.details_submitted_at = None
+        organization.snoozed_until = None
+        organization.snooze_type = None
+        organization.onboarding_resubmission_requested_at = datetime.now(UTC)
+
+        enqueue_job(
+            "payout.cancel_held_payouts",
+            account_id=organization.account_id,
+        )
+
+        review_repository = OrganizationReviewRepository.from_session(session)
+        review = await review_repository.get_by_organization(organization.id)
+        if review is not None:
+            await AgentReviewRepository.from_session(session).soft_delete(review)
+
+        await AgentReviewRepository.from_session(session).deactivate_current_decisions(
+            organization.id
+        )
+
+        _append_internal_note(
+            organization,
+            "Onboarding reset from "
+            f"{previous_status.get_display_name()} to Created by {reset_by}. "
+            "The organization must review and resubmit its information.",
+        )
+        session.add(organization)
+        log.info(
+            "organization.onboarding_reset",
+            organization_id=str(organization.id),
+            slug=organization.slug,
+            previous_status=previous_status.value,
+            reset_by=reset_by,
+        )
         return organization
 
     async def check_can_delete(
@@ -1735,6 +1799,7 @@ class OrganizationService:
         return PaymentStatusResponse(
             payment_ready=organization.can_accept_payments,
             organization_status=organization.status,
+            onboarding_resubmission_requested_at=organization.onboarding_resubmission_requested_at,
         )
 
     async def get_ai_review(
@@ -2044,9 +2109,12 @@ class OrganizationService:
         An access token without a webhook is a non-blocking warning rather
         than a failure: the merchant can still fulfill via success_url +
         API calls, we just can't observe state changes (refunds,
-        cancellations) without webhooks during review. Aggregate checks
-        expose per-component state via `sub_checks`; the parent `status`
-        remains the source of truth for gating.
+        cancellations) without webhooks during review. That warning wins
+        over an unfulfillable checkout link, so a merchant who started the
+        no-code path and then switched to the API isn't gated on a webhook
+        we only recommend. Aggregate checks expose per-component state via
+        `sub_checks`; the parent `status` remains the source of truth for
+        gating.
         """
         key = OrganizationReviewCheckKey.SETUP_READINESS
 
@@ -2134,15 +2202,18 @@ class OrganizationService:
             or api_path_passed
         ):
             parent_status = OrganizationReviewCheckStatus.PASSED
+        elif access_token_sub.status == OrganizationReviewCheckStatus.PASSED:
+            # API path partially configured — token present, webhook missing.
+            # Evaluated before the checkout-link failure so a leftover no-code
+            # link the merchant abandoned can't turn the recommended webhook
+            # into a hard gate on the API path.
+            parent_status = OrganizationReviewCheckStatus.WARNING
         elif checkout_link_sub.status == OrganizationReviewCheckStatus.FAILED:
             # No-code path attempted but the link can't fulfill yet. Treat as
             # in-progress: still blocks submission (PENDING gates like FAILED),
             # but the UI guides the merchant to finish setting up delivery
             # rather than surfacing it as an error.
             parent_status = OrganizationReviewCheckStatus.PENDING
-        elif access_token_sub.status == OrganizationReviewCheckStatus.PASSED:
-            # API path partially configured — token present, webhook missing.
-            parent_status = OrganizationReviewCheckStatus.WARNING
         else:
             parent_status = OrganizationReviewCheckStatus.PENDING
 

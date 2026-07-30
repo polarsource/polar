@@ -18,6 +18,7 @@ from polar.authz.dependencies import (
     AuthorizeOrgManageRead,
     AuthorizeOrgManageUser,
 )
+from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
 from polar.email.schemas import OrganizationInviteEmail, OrganizationInviteProps
 from polar.email.sender import enqueue_email_template
@@ -50,6 +51,7 @@ from polar.integrations.polar.schemas import (
 from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.http import check_url_reachable, get_ip_address
 from polar.kit.pagination import ListResource, Pagination, PaginationParamsQuery
+from polar.kit.utils import utc_now
 from polar.models import Account, Organization, UserOrganization
 from polar.models.support_case import (
     SupportCase,
@@ -105,12 +107,14 @@ from polar.user_organization.service import (
 )
 
 from . import auth, sorting
+from .embed_hosts import EMBED_ORIGIN_WINDOW, is_shared_host, uncovered_hosts
 from .schemas import Organization as OrganizationSchema
 from .schemas import (
     OrganizationAppealRequest,
     OrganizationAppealResponse,
     OrganizationCreate,
     OrganizationDeletionResponse,
+    OrganizationEmbedStatus,
     OrganizationID,
     OrganizationKYC,
     OrganizationPaymentStatus,
@@ -120,6 +124,7 @@ from .schemas import (
     OrganizationRoleDefinition,
     OrganizationSlugAvailability,
     OrganizationSlugCheck,
+    OrganizationUncoveredHost,
     OrganizationUpdate,
     OrganizationValidateWebsiteRequest,
     OrganizationValidateWebsiteResponse,
@@ -257,6 +262,37 @@ async def get_kyc(
 ) -> Organization:
     """Get an organization's KYC/compliance details."""
     return authz.organization
+
+
+@router.get(
+    "/{id}/embed-status",
+    summary="Get Organization Embed Status",
+    response_model=OrganizationEmbedStatus,
+    responses={404: OrganizationNotFound},
+    tags=[APITag.private],
+)
+async def get_embed_status(
+    authz: AuthorizeOrgManageRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> OrganizationEmbedStatus:
+    """Whether this organization needs to configure its embed hosts."""
+    organization = authz.organization
+    repository = CheckoutRepository.from_session(session)
+    observed = await repository.list_embed_origins(
+        organization.id, since=utc_now() - EMBED_ORIGIN_WINDOW
+    )
+    return OrganizationEmbedStatus(
+        has_embedded=await repository.has_embedded(organization.id),
+        embed_hosts=organization.embed_hosts,
+        embed_hosts_enforced=organization.embed_hosts_enforced,
+        shared_hosts=[
+            entry for entry in organization.embed_hosts if is_shared_host(entry)
+        ],
+        uncovered_hosts=[
+            OrganizationUncoveredHost.model_validate(host)
+            for host in uncovered_hosts(observed, organization.embed_hosts)
+        ],
+    )
 
 
 @router.post(
@@ -455,6 +491,7 @@ async def get_payment_status(
     return OrganizationPaymentStatus(
         payment_ready=payment_status.payment_ready,
         organization_status=payment_status.organization_status,
+        onboarding_resubmission_requested_at=payment_status.onboarding_resubmission_requested_at,
     )
 
 

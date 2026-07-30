@@ -69,6 +69,7 @@ dependencies = [
   "langcodes>=3.5.1",
   "pypdf>=6.14.2",
   "google-auth[requests]>=2.38.0",
+  "tld>=0.13.2",
 ]
 
 [dependency-groups]

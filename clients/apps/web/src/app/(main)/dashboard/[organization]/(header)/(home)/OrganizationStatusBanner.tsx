@@ -5,6 +5,7 @@ import { DeniedBanner } from './DeniedBanner'
 import { OffboardedBanner } from './OffboardedBanner'
 import { OffboardingBanner } from './OffboardingBanner'
 import { OnboardingChecklistCard } from './OnboardingChecklistCard/OnboardingChecklistCard'
+import { ResubmissionBanner } from './ResubmissionBanner'
 
 interface OrganizationStatusBannerProps {
   organization: schemas['Organization']
@@ -34,6 +35,10 @@ export const OrganizationStatusBanner = ({
   }
 
   if (paymentStatus?.organization_status === 'created') {
+    if (paymentStatus.onboarding_resubmission_requested_at) {
+      return <ResubmissionBanner organization={organization} />
+    }
+
     return <OnboardingChecklistCard organization={organization} />
   }
 

@@ -77,6 +77,16 @@ export const benefitsDisplayNames: {
   slack_shared_channel: 'Shared Slack Channel',
 }
 
+export const githubRepositoryPermissionDisplayNames: {
+  [key in schemas['BenefitGitHubRepositoryProperties']['permission']]: string
+} = {
+  pull: 'Read',
+  triage: 'Triage',
+  push: 'Write',
+  maintain: 'Maintain',
+  admin: 'Admin',
+}
+
 export const getCreatableBenefitTypes = (
   organization: schemas['Organization'],
 ): schemas['BenefitType'][] =>

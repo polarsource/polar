@@ -2,6 +2,8 @@
 
 import { BenefitPage } from '@/components/Benefit/BenefitPage'
 import { BenefitProducts } from '@/components/Benefit/BenefitProducts'
+import { BenefitDetails } from '@/components/Benefit/BenefitDetails'
+import { DownloadablesSection } from '@/components/Benefit/Downloadables/DownloadablesSection'
 import { LicenseKeysPage } from '@/components/Benefit/LicenseKeysPage'
 import UpdateBenefitModalContent from '@/components/Benefit/UpdateBenefitModalContent'
 import {
@@ -150,7 +152,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 alignItems={{ base: 'start', sm: 'center' }}
                 gap={{ base: 'xs', sm: 'l' }}
               >
-                <Text variant="heading-xxs" as="p" truncate>
+                <Text variant="heading-xxs" as="h2" truncate>
                   {(benefit.description?.length ?? 0) > 0
                     ? benefit.description
                     : '—'}
@@ -159,9 +161,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
                   <Status
                     color="gray"
                     status={
-                      benefit.visibility === 'public'
-                        ? 'Visible to customers'
-                        : 'Hidden from customers'
+                      benefit.visibility === 'public' ? 'Visible' : 'Hidden'
                     }
                   />
                 </Box>
@@ -200,7 +200,19 @@ const ClientPage: React.FC<ClientPageProps> = ({
       }
     >
       <Box flexDirection="column" width="100%" height="100%">
-        <Box flexDirection="column" width="100%" gap="2xl" paddingBottom="2xl">
+        <Box
+          flexDirection="column"
+          width="100%"
+          rowGap="4xl"
+          paddingBottom="2xl"
+        >
+          <BenefitDetails benefit={benefit} organization={organization} />
+          {benefit.type === 'downloadables' && (
+            <DownloadablesSection
+              benefit={benefit}
+              organization={organization}
+            />
+          )}
           <BenefitProducts benefit={benefit} organization={organization} />
           {benefit.type === 'license_keys' ? (
             <LicenseKeysPage organization={organization} benefit={benefit} />

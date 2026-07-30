@@ -71,7 +71,7 @@ async def notify_organization_of_new_message(message_id: UUID) -> None:
 
     Merchant participation is org-level, so all members are notified. Direct
     email (bypassing the legacy notification system); discoverable via
-    ``enqueue_email``. Runs after the request commits, so a rolled-back message
+    ``enqueue_email_template``. Runs after the request commits, so a rolled-back message
     never emails.
     """
     async with AsyncSessionMaker() as session:

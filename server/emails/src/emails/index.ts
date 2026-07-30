@@ -13,6 +13,7 @@ import { OrderConfirmation } from './order_confirmation'
 import { OrganizationAccessTokenLeaked } from './organization_access_token_leaked'
 import { OrganizationInvite } from './organization_invite'
 import { OrganizationOffboarded } from './organization_offboarded'
+import { PaymentMethodExpirationReminder } from './payment_method_expiration_reminder'
 import { PersonalAccessTokenLeaked } from './personal_access_token_leaked'
 import { PolarSelfStartupProgramWelcome } from './polar_self_startup_program_welcome'
 import { PolarSelfSubscriptionCancellation } from './polar_self_subscription_cancellation'
@@ -49,6 +50,7 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   organization_access_token_leaked: OrganizationAccessTokenLeaked,
   organization_invite: OrganizationInvite,
   organization_offboarded: OrganizationOffboarded,
+  payment_method_expiration_reminder: PaymentMethodExpirationReminder,
   personal_access_token_leaked: PersonalAccessTokenLeaked,
   seat_invitation: SeatInvitation,
   subscription_cancellation: SubscriptionCancellation,

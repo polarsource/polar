@@ -1,6 +1,6 @@
 'use client'
 
-import { InlineModal } from '@polar-sh/orbit'
+import { InlineModal, InlineModalHeader } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { useOrganizationSSE } from '@/hooks/sse'
 import { setValidationErrors } from '@/utils/api/errors'
@@ -32,13 +32,24 @@ import {
   FormMessage,
 } from '@polar-sh/ui/components/ui/form'
 import type EventEmitter from 'eventemitter3'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  type RefObject,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react'
 import { useForm } from 'react-hook-form'
 import { twMerge } from 'tailwind-merge'
 import { useCustomerPortalContext } from '../CustomerPortal/CustomerPortalProvider'
 
 type Variant = NonNullable<Parameters<typeof buttonVariants>[0]>['variant']
 type Size = NonNullable<Parameters<typeof buttonVariants>[0]>['size']
+
+export type EditInvoiceHandle = {
+  show: () => void
+}
 
 const INVOICE_GENERATED_EVENT = 'order.invoice_generated'
 const INVOICE_GENERATION_TIMEOUT_MS = 30_000
@@ -83,6 +94,8 @@ const DownloadInvoice = ({
   invoiceURL,
   orderURL,
   dropdown = false,
+  hideEditButton = false,
+  editInvoiceRef,
   variant,
   size,
   className,
@@ -99,10 +112,20 @@ const DownloadInvoice = ({
   size?: Size
   className?: string
   dropdown?: boolean
+  hideEditButton?: boolean
+  editInvoiceRef?: RefObject<EditInvoiceHandle | null>
 }) => {
   const [loading, setLoading] = useState(false)
   const inFlightRef = useRef(false)
   const { isShown, hide, show } = useModal()
+
+  useEffect(() => {
+    if (!editInvoiceRef) return
+    editInvoiceRef.current = { show }
+    return () => {
+      editInvoiceRef.current = null
+    }
+  }, [editInvoiceRef, show])
   const form = useForm<schemas['OrderUpdate'] | schemas['CustomerOrderUpdate']>(
     {
       defaultValues: {
@@ -283,7 +306,7 @@ const DownloadInvoice = ({
           >
             Download Invoice
           </Button>
-          {order.is_invoice_generated && (
+          {order.is_invoice_generated && !hideEditButton && (
             <Button
               type="button"
               loading={loading}
@@ -298,7 +321,17 @@ const DownloadInvoice = ({
           )}
         </div>
       ),
-    [dropdown, order, loading, size, className, variant, onDownload, show],
+    [
+      dropdown,
+      order,
+      loading,
+      size,
+      className,
+      variant,
+      onDownload,
+      show,
+      hideEditButton,
+    ],
   )
 
   return (
@@ -308,180 +341,193 @@ const DownloadInvoice = ({
         isShown={isShown}
         hide={hide}
         modalContent={
-          <Form {...form}>
-            <form
-              onSubmit={handleSubmit(onModalSubmit)}
-              className="flex flex-col gap-y-6 px-8 py-10"
-            >
-              <FormField
-                control={control}
-                name="billing_name"
-                rules={{
-                  required: 'This field is required',
-                }}
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Billing name</FormLabel>
-                    <FormControl>
-                      <Input {...field} value={field.value || ''} />
-                    </FormControl>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-              <FormItem>
-                <FormLabel>Billing address</FormLabel>
-                <FormControl>
-                  <FormField
-                    control={control}
-                    name="billing_address.line1"
-                    rules={{
-                      required: 'This field is required',
-                    }}
-                    render={({ field }) => (
-                      <>
-                        <Input
-                          type="text"
-                          autoComplete="billing address-line1"
-                          placeholder="Line 1"
-                          {...field}
-                          value={field.value || ''}
-                        />
-                        <FormMessage />
-                      </>
-                    )}
-                  />
-                </FormControl>
-                <FormControl>
-                  <FormField
-                    control={control}
-                    name="billing_address.line2"
-                    render={({ field }) => (
-                      <>
-                        <Input
-                          type="text"
-                          autoComplete="billing address-line2"
-                          placeholder="Line 2"
-                          {...field}
-                          value={field.value || ''}
-                        />
-                        <FormMessage />
-                      </>
-                    )}
-                  />
-                </FormControl>
-                <div className="grid grid-cols-2 gap-x-2">
-                  <FormControl>
-                    <FormField
-                      control={control}
-                      name="billing_address.postal_code"
-                      rules={{
-                        required: 'This field is required',
-                      }}
-                      render={({ field }) => (
-                        <div>
-                          <Input
-                            type="text"
-                            autoComplete="billing postal-code"
-                            placeholder="Postal code"
-                            {...field}
-                            value={field.value || ''}
-                          />
-                          <FormMessage />
-                        </div>
-                      )}
-                    />
-                  </FormControl>
-                  <FormControl>
-                    <FormField
-                      control={control}
-                      name="billing_address.city"
-                      rules={{
-                        required: 'This field is required',
-                      }}
-                      render={({ field }) => (
-                        <div>
-                          <Input
-                            type="text"
-                            autoComplete="billing address-level2"
-                            placeholder="City"
-                            {...field}
-                            value={field.value || ''}
-                          />
-                          <FormMessage />
-                        </div>
-                      )}
-                    />
-                  </FormControl>
-                </div>
-                <FormControl>
-                  <FormField
-                    control={control}
-                    name="billing_address.state"
-                    rules={{
-                      required:
-                        country === 'US' || country === 'CA'
-                          ? 'This field is required'
-                          : false,
-                    }}
-                    render={({ field }) => (
-                      <>
-                        <CountryStatePicker
-                          disabled={
-                            !!order.billing_address?.state ||
-                            order.is_invoice_generated
-                          }
-                          autoComplete="billing address-level1"
-                          country={country}
-                          value={field.value || ''}
-                          onChange={field.onChange}
-                          placeholder={country === 'US' ? 'State' : 'Province'}
-                        />
-                        <FormMessage />
-                      </>
-                    )}
-                  />
-                </FormControl>
-                <FormControl>
-                  <FormField
-                    control={control}
-                    name="billing_address.country"
-                    rules={{
-                      required: 'This field is required',
-                    }}
-                    render={({ field }) => (
-                      <>
-                        <CountryPicker
-                          disabled={
-                            !!order.billing_address?.country ||
-                            order.is_invoice_generated
-                          }
-                          autoComplete="billing country"
-                          value={field.value || undefined}
-                          onChange={field.onChange}
-                          allowedCountries={enums.addressInputCountryValues}
-                        />
-                        <FormMessage />
-                      </>
-                    )}
-                  />
-                </FormControl>
-              </FormItem>
-              <Button
-                type="submit"
-                loading={loading}
-                disabled={loading}
-                className={className}
+          <div className="flex h-full flex-col overflow-y-auto">
+            <InlineModalHeader hide={hide}>
+              <h2 className="text-xl">
+                {order.is_invoice_generated
+                  ? 'Edit Invoice'
+                  : 'Generate Invoice'}
+              </h2>
+            </InlineModalHeader>
+            <Form {...form}>
+              <form
+                onSubmit={handleSubmit(onModalSubmit)}
+                className="flex flex-col gap-y-6 px-8 pb-10"
               >
-                Generate invoice
-              </Button>
-              {errors.root && (
-                <p className="text-destructive-foreground text-sm">
-                  {errors.root.message}
-                </p>
-              )}
-            </form>
-          </Form>
+                <FormField
+                  control={control}
+                  name="billing_name"
+                  rules={{
+                    required: 'This field is required',
+                  }}
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Billing name</FormLabel>
+                      <FormControl>
+                        <Input {...field} value={field.value || ''} />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                <FormItem>
+                  <FormLabel>Billing address</FormLabel>
+                  <FormControl>
+                    <FormField
+                      control={control}
+                      name="billing_address.line1"
+                      rules={{
+                        required: 'This field is required',
+                      }}
+                      render={({ field }) => (
+                        <>
+                          <Input
+                            type="text"
+                            autoComplete="billing address-line1"
+                            placeholder="Line 1"
+                            {...field}
+                            value={field.value || ''}
+                          />
+                          <FormMessage />
+                        </>
+                      )}
+                    />
+                  </FormControl>
+                  <FormControl>
+                    <FormField
+                      control={control}
+                      name="billing_address.line2"
+                      render={({ field }) => (
+                        <>
+                          <Input
+                            type="text"
+                            autoComplete="billing address-line2"
+                            placeholder="Line 2"
+                            {...field}
+                            value={field.value || ''}
+                          />
+                          <FormMessage />
+                        </>
+                      )}
+                    />
+                  </FormControl>
+                  <div className="grid grid-cols-2 gap-x-2">
+                    <FormControl>
+                      <FormField
+                        control={control}
+                        name="billing_address.postal_code"
+                        rules={{
+                          required: 'This field is required',
+                        }}
+                        render={({ field }) => (
+                          <div>
+                            <Input
+                              type="text"
+                              autoComplete="billing postal-code"
+                              placeholder="Postal code"
+                              {...field}
+                              value={field.value || ''}
+                            />
+                            <FormMessage />
+                          </div>
+                        )}
+                      />
+                    </FormControl>
+                    <FormControl>
+                      <FormField
+                        control={control}
+                        name="billing_address.city"
+                        rules={{
+                          required: 'This field is required',
+                        }}
+                        render={({ field }) => (
+                          <div>
+                            <Input
+                              type="text"
+                              autoComplete="billing address-level2"
+                              placeholder="City"
+                              {...field}
+                              value={field.value || ''}
+                            />
+                            <FormMessage />
+                          </div>
+                        )}
+                      />
+                    </FormControl>
+                  </div>
+                  <FormControl>
+                    <FormField
+                      control={control}
+                      name="billing_address.state"
+                      rules={{
+                        required:
+                          country === 'US' || country === 'CA'
+                            ? 'This field is required'
+                            : false,
+                      }}
+                      render={({ field }) => (
+                        <>
+                          <CountryStatePicker
+                            disabled={
+                              !!order.billing_address?.state ||
+                              order.is_invoice_generated
+                            }
+                            autoComplete="billing address-level1"
+                            country={country}
+                            value={field.value || ''}
+                            onChange={field.onChange}
+                            placeholder={
+                              country === 'US' ? 'State' : 'Province'
+                            }
+                          />
+                          <FormMessage />
+                        </>
+                      )}
+                    />
+                  </FormControl>
+                  <FormControl>
+                    <FormField
+                      control={control}
+                      name="billing_address.country"
+                      rules={{
+                        required: 'This field is required',
+                      }}
+                      render={({ field }) => (
+                        <>
+                          <CountryPicker
+                            disabled={
+                              !!order.billing_address?.country ||
+                              order.is_invoice_generated
+                            }
+                            autoComplete="billing country"
+                            value={field.value || undefined}
+                            onChange={field.onChange}
+                            allowedCountries={enums.addressInputCountryValues}
+                          />
+                          <FormMessage />
+                        </>
+                      )}
+                    />
+                  </FormControl>
+                </FormItem>
+                <Button
+                  type="submit"
+                  loading={loading}
+                  disabled={loading}
+                  className={className}
+                >
+                  {order.is_invoice_generated
+                    ? 'Update invoice'
+                    : 'Generate invoice'}
+                </Button>
+                {errors.root && (
+                  <p className="text-destructive-foreground text-sm">
+                    {errors.root.message}
+                  </p>
+                )}
+              </form>
+            </Form>
+          </div>
         }
       />
     </>
@@ -496,6 +542,8 @@ export const DownloadInvoiceDashboard = ({
   size,
   className,
   dropdown = false,
+  hideEditButton = false,
+  editInvoiceRef,
 }: {
   organization: schemas['Organization']
   order: schemas['Order']
@@ -504,6 +552,8 @@ export const DownloadInvoiceDashboard = ({
   size?: Size
   className?: string
   dropdown?: boolean
+  hideEditButton?: boolean
+  editInvoiceRef?: RefObject<EditInvoiceHandle | null>
 }) => {
   const eventEmitter = useOrganizationSSE(organization.id)
   return (
@@ -518,6 +568,8 @@ export const DownloadInvoiceDashboard = ({
       size={size}
       className={className}
       dropdown={dropdown}
+      hideEditButton={hideEditButton}
+      editInvoiceRef={editInvoiceRef}
     />
   )
 }

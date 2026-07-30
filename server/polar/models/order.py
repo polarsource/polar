@@ -463,9 +463,12 @@ class Order(CustomFieldDataMixin, MetadataMixin, RecordModel):
         if refund_amount == self.refundable_amount:
             return self.refundable_tax_amount
 
+        if not self.taxed:
+            return 0
+
         ratio = self.tax_amount / self.net_amount
         tax_amount = round(refund_amount * ratio)
-        return tax_amount
+        return min(tax_amount, self.refundable_tax_amount)
 
 
 orders_search_vector_update_function = PGFunction(

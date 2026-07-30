@@ -916,7 +916,7 @@ export type PaymentTrigger =
   | "retry_payment_method_update"
   | "retry_admin";
 /**
- * Permission
+ * The permission level to grant. Read more about roles and their permissions on [GitHub documentation](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-repository-roles/repository-roles-for-an-organization#permissions-for-each-role).
  */
 export type Permission = "pull" | "triage" | "push" | "maintain" | "admin";
 /**
@@ -6061,6 +6061,10 @@ export interface Checkout {
    */
   locale?: string | null;
   /**
+   * Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
+   */
+  payment_method_type: string | null;
+  /**
    * payment_processor_metadata
    */
   payment_processor_metadata: Record<string, string>;
@@ -6205,6 +6209,10 @@ export interface CheckoutConfirmStripe {
    * locale
    */
   locale?: string | null;
+  /**
+   * Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
+   */
+  payment_method_type?: string | null;
   /**
    * Discount code to apply to the checkout.
    */
@@ -7319,6 +7327,10 @@ export interface CheckoutPublic {
    */
   locale?: string | null;
   /**
+   * Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
+   */
+  payment_method_type: string | null;
+  /**
    * payment_processor_metadata
    */
   payment_processor_metadata: Record<string, string>;
@@ -7554,6 +7566,10 @@ export interface CheckoutPublicConfirmed {
    */
   locale?: string | null;
   /**
+   * Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
+   */
+  payment_method_type: string | null;
+  /**
    * payment_processor_metadata
    */
   payment_processor_metadata: Record<string, string>;
@@ -7778,6 +7794,10 @@ export interface CheckoutUpdatePublic {
    * locale
    */
   locale?: string | null;
+  /**
+   * Payment method type selected by the customer in the checkout form, e.g. `card`, `apple_pay` or `upi`.
+   */
+  payment_method_type?: string | null;
   /**
    * Discount code to apply to the checkout.
    */
@@ -16803,6 +16823,84 @@ export interface OrderSubscription {
   customer_cancellation_comment: string | null;
 }
 /**
+ * An event created by Polar when an order is unvoided.
+ */
+export interface OrderUnvoidedEvent {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * The timestamp of the event.
+   */
+  timestamp: string;
+  /**
+   * The ID of the organization owning the event.
+   */
+  organization_id: string;
+  /**
+   * ID of the customer in your Polar organization associated with the event.
+   */
+  customer_id: string | null;
+  /**
+   * The customer associated with the event.
+   */
+  customer: Customer | null;
+  /**
+   * ID of the customer in your system associated with the event.
+   */
+  external_customer_id: string | null;
+  /**
+   * ID of the member within the customer's organization who performed the action inside B2B.
+   */
+  member_id?: string | null;
+  /**
+   * ID of the member in your system within the customer's organization who performed the action inside B2B.
+   */
+  external_member_id?: string | null;
+  /**
+   * Number of direct child events linked to this event.
+   */
+  child_count?: number;
+  /**
+   * The ID of the parent event.
+   */
+  parent_id?: string | null;
+  /**
+   * Human readable label of the event type.
+   */
+  label: string;
+  /**
+   * The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+   */
+  source: "system";
+  /**
+   * The name of the event.
+   */
+  name: "order.unvoided";
+  /**
+   * metadata
+   */
+  metadata: OrderUnvoidedMetadata;
+}
+/**
+ * OrderUnvoidedMetadata
+ */
+export interface OrderUnvoidedMetadata {
+  /**
+   * order_id
+   */
+  order_id: string;
+  /**
+   * amount
+   */
+  amount: number;
+  /**
+   * currency
+   */
+  currency: string;
+}
+/**
  * Schema to update an order.
  */
 export interface OrderUpdate {
@@ -20569,6 +20667,96 @@ export interface SubscriptionReactivatedMetadata {
   recurring_interval_count?: number;
 }
 /**
+ * An event created by Polar when a canceled subscription is reinstated.
+ */
+export interface SubscriptionReinstatedEvent {
+  /**
+   * The ID of the object.
+   */
+  id: string;
+  /**
+   * The timestamp of the event.
+   */
+  timestamp: string;
+  /**
+   * The ID of the organization owning the event.
+   */
+  organization_id: string;
+  /**
+   * ID of the customer in your Polar organization associated with the event.
+   */
+  customer_id: string | null;
+  /**
+   * The customer associated with the event.
+   */
+  customer: Customer | null;
+  /**
+   * ID of the customer in your system associated with the event.
+   */
+  external_customer_id: string | null;
+  /**
+   * ID of the member within the customer's organization who performed the action inside B2B.
+   */
+  member_id?: string | null;
+  /**
+   * ID of the member in your system within the customer's organization who performed the action inside B2B.
+   */
+  external_member_id?: string | null;
+  /**
+   * Number of direct child events linked to this event.
+   */
+  child_count?: number;
+  /**
+   * The ID of the parent event.
+   */
+  parent_id?: string | null;
+  /**
+   * Human readable label of the event type.
+   */
+  label: string;
+  /**
+   * The source of the event. `system` events are created by Polar. `user` events are the one you create through our ingestion API.
+   */
+  source: "system";
+  /**
+   * The name of the event.
+   */
+  name: "subscription.reinstated";
+  /**
+   * metadata
+   */
+  metadata: SubscriptionReinstatedMetadata;
+}
+/**
+ * SubscriptionReinstatedMetadata
+ */
+export interface SubscriptionReinstatedMetadata {
+  /**
+   * subscription_id
+   */
+  subscription_id: string;
+  /**
+   * product_id
+   */
+  product_id?: string;
+  /**
+   * amount
+   */
+  amount?: number;
+  /**
+   * currency
+   */
+  currency?: string;
+  /**
+   * recurring_interval
+   */
+  recurring_interval?: string;
+  /**
+   * recurring_interval_count
+   */
+  recurring_interval_count?: number;
+}
+/**
  * SubscriptionResume
  */
 export interface SubscriptionResume {
@@ -21959,6 +22147,7 @@ export type SystemEvent =
   | SubscriptionRevokedEvent
   | SubscriptionPastDueEvent
   | SubscriptionReactivatedEvent
+  | SubscriptionReinstatedEvent
   | SubscriptionPausedEvent
   | SubscriptionResumedEvent
   | SubscriptionUncanceledEvent
@@ -21969,6 +22158,7 @@ export type SystemEvent =
   | OrderPaidEvent
   | OrderRefundedEvent
   | OrderVoidedEvent
+  | OrderUnvoidedEvent
   | CheckoutCreatedEvent
   | CustomerCreatedEvent
   | CustomerUpdatedEvent

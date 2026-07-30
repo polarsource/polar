@@ -38,7 +38,7 @@ from polar.models.organization import (
     OrganizationCustomerPortalSettings,
     OrganizationStatus,
     OrganizationSubscriptionSettings,
-    _default_customer_email_settings,
+    resolve_default_customer_email_settings,
 )
 from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import ReviewAppealSupportCase
@@ -46,6 +46,7 @@ from polar.models.user_organization import (
     OrganizationNotificationSettings,
     OrganizationRole,
 )
+from polar.organization.embed_hosts import InvalidEmbedHost, validate_host_pattern
 
 OrganizationID = Annotated[
     UUID4,
@@ -70,6 +71,38 @@ NameInput = Annotated[
     str,
     StringConstraints(min_length=3),
     AfterValidator(validate_blocked_words),
+]
+
+
+def validate_embed_hosts(value: list[str]) -> list[str]:
+    hosts: list[str] = []
+    for entry in value:
+        try:
+            host = validate_host_pattern(entry)
+        except InvalidEmbedHost as e:
+            raise ValueError(str(e)) from e
+        if host not in hosts:
+            hosts.append(host)
+    return hosts
+
+
+_embed_hosts_description = (
+    "Hosts allowed to embed this organization's checkout. "
+    "An entry is a host and an optional port, without a scheme: HTTPS is always "
+    "allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or "
+    "`.local` name, and loopback or private addresses. "
+    "`*.example.com` matches any subdomain, but not `example.com` itself. "
+    "An app origin such as `chrome-extension://abcdef` carries its scheme, "
+    "having no host to match on."
+)
+
+EmbedHostsInput = Annotated[
+    list[str],
+    AfterValidator(validate_embed_hosts),
+    Field(
+        description=_embed_hosts_description,
+        examples=[["example.com", "*.example.com", "localhost:3000"]],
+    ),
 ]
 
 
@@ -383,10 +416,8 @@ class OrganizationSocialLink(Schema):
 
 
 def _merge_customer_email_settings_defaults(value: Any) -> Any:
-    """Complete stored settings with defaults so reads tolerate keys added after
-    an organization's settings were last written (lazy materialization)."""
     if isinstance(value, dict):
-        return {**_default_customer_email_settings(), **value}
+        return resolve_default_customer_email_settings(value)
     return value
 
 
@@ -496,6 +527,12 @@ class Organization(OrganizationBase):
     details_submitted_at: datetime | None = Field(
         description="When the business details were submitted for review.",
     )
+    onboarding_resubmission_requested_at: datetime | None = Field(
+        description=(
+            "When Polar requested that the organization review and resubmit "
+            "its onboarding information, if applicable."
+        ),
+    )
     sso_enforced: bool = Field(
         description=(
             "Whether members must access this organization through its SSO connection."
@@ -523,6 +560,14 @@ class Organization(OrganizationBase):
     )
     customer_portal_settings: OrganizationCustomerPortalSettings = Field(
         description="Settings related to the customer portal",
+    )
+    embed_hosts: list[str] = Field(description=_embed_hosts_description)
+    embed_hosts_enforced: bool = Field(
+        description=(
+            "Whether an embedding page's origin must match `embed_hosts`. "
+            "Organizations that have not configured a list yet embed unchecked "
+            "until the allowlist is enforced for everyone."
+        ),
     )
     country: CountryAlpha2 | None = Field(
         None, description="Two-letter country code (ISO 3166-1 alpha-2)."
@@ -578,6 +623,36 @@ class OrganizationRoleDefinition(Schema):
     id: OrganizationRole = Field(description="The role identifier.")
     permissions: list[OrganizationPermission] = Field(
         description="The permissions this role grants in the organization."
+    )
+
+
+class OrganizationUncoveredHost(Schema):
+    host: str = Field(description="The entry that would admit this origin.")
+    origin: str = Field(description="The origin seen embedding the checkout.")
+    checkouts: int = Field(description="Embedded checkouts opened from this origin.")
+    last_seen_at: datetime = Field(description="When it last opened one.")
+
+
+class OrganizationEmbedStatus(Schema):
+    has_embedded: bool = Field(
+        description="Whether this organization has ever opened an embedded checkout."
+    )
+    embed_hosts: list[str] = Field(description=_embed_hosts_description)
+    embed_hosts_enforced: bool = Field(
+        description="Whether an embedding page's origin must match `embed_hosts`."
+    )
+    shared_hosts: list[str] = Field(
+        description=(
+            "Entries of `embed_hosts` admitting every tenant of a platform, "
+            "such as `*.vercel.app`."
+        )
+    )
+    uncovered_hosts: list[OrganizationUncoveredHost] = Field(
+        description=(
+            "Hosts seen embedding this organization's checkout that `embed_hosts` "
+            "would refuse. Anyone can name an origin when they create a checkout, "
+            "so these are observations, not hosts we vouch for."
+        )
     )
 
 
@@ -711,6 +786,13 @@ class OrganizationPaymentStatus(Schema):
     )
     organization_status: OrganizationStatus = Field(
         description="Current organization status"
+    )
+    onboarding_resubmission_requested_at: datetime | None = Field(
+        description=(
+            "When Polar requested that the organization review and resubmit "
+            "its onboarding information, if applicable. Null for organizations "
+            "that have never been reset for review."
+        ),
     )
 
 

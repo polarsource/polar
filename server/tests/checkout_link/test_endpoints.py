@@ -17,7 +17,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
-from polar.models.organization import OrganizationStatus
+from polar.models.organization import EMBED_HOSTS_ENFORCED_FROM, OrganizationStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
@@ -365,6 +365,42 @@ class TestRedirect:
 
         assert response.status_code == 307
         assert CHECKOUT_CLIENT_SECRET_PREFIX in response.headers["location"]
+
+    async def test_wildcard_embed_origin(
+        self, session: AsyncSession, client: AsyncClient, checkout_link: CheckoutLink
+    ) -> None:
+        response = await client.get(
+            f"/v1/checkout-links/{checkout_link.client_secret}/redirect",
+            params={"embed_origin": "*"},
+        )
+
+        assert response.status_code == 307
+
+        checkout_repository = CheckoutRepository.from_session(session)
+        checkouts = await checkout_repository.get_all(
+            checkout_repository.get_base_statement().order_by(
+                Checkout.created_at.desc()
+            )
+        )
+        assert checkouts[0].embed_origin is None
+
+    async def test_refused_embed_origin(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        checkout_link: CheckoutLink,
+    ) -> None:
+        organization.created_at = EMBED_HOSTS_ENFORCED_FROM
+        organization.embed_hosts = ["example.com"]
+        await save_fixture(organization)
+
+        response = await client.get(
+            f"/v1/checkout-links/{checkout_link.client_secret}/redirect",
+            params={"embed_origin": "https://evil.com"},
+        )
+
+        assert response.status_code == 403
 
     async def test_allowed_metadata(
         self, session: AsyncSession, client: AsyncClient, checkout_link: CheckoutLink

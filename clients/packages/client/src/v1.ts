@@ -737,6 +737,28 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/organizations/{id}/embed-status': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Organization Embed Status
+     * @description Whether this organization needs to configure its embed hosts.
+     *
+     *     **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['organizations:get_embed_status']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/organizations/check-slug': {
     parameters: {
       query?: never
@@ -2931,6 +2953,28 @@ export interface paths {
      *     **Scopes**: `files:write`
      */
     post: operations['files:create']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/files/{id}/download': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get File Download
+     * @description Get a presigned URL to download a file.
+     *
+     *     **Scopes**: `files:read` `files:write`
+     */
+    get: operations['files:download']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -6366,7 +6410,7 @@ export interface webhooks {
      *
      *     If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.
      *
-     *     To listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.
+     *     To listen specifically for renewals, listen to `subscription.cycled`.
      *
      *     **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.
      */
@@ -6443,6 +6487,36 @@ export interface webhooks {
      *     **Discord & Slack support:** Full
      */
     post: operations['_endpointsubscription_uncanceled_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'subscription.cycled': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * subscription.cycled
+     * @description Sent when a subscription enters a new billing period.
+     *
+     *     The payload carries the new `current_period_start` and `current_period_end`.
+     *     It fires when the period rolls over, before the renewal order exists and
+     *     regardless of whether the renewal payment succeeds — listen to `order.paid`
+     *     if you need the payment.
+     *
+     *     A trial converting to a paid subscription starts a new period, so it fires
+     *     there too. Read `status` to tell the two apart.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointsubscription_cycled_post']
     delete?: never
     options?: never
     head?: never
@@ -6632,6 +6706,72 @@ export interface webhooks {
      *     **Discord & Slack support:** Basic
      */
     post: operations['_endpointproduct_updated_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'discount.created': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * discount.created
+     * @description Sent when a new discount is created.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointdiscount_created_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'discount.updated': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * discount.updated
+     * @description Sent when a discount is updated.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointdiscount_updated_post']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  'discount.deleted': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * discount.deleted
+     * @description Sent when a discount is deleted.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    post: operations['_endpointdiscount_deleted_post']
     delete?: never
     options?: never
     head?: never
@@ -12391,6 +12531,7 @@ export interface components {
       | components['schemas']['NotOpenCheckout']
       | components['schemas']['PaymentNotReady']
       | components['schemas']['TrialAlreadyRedeemed']
+      | components['schemas']['DiscountRedemptionLimitReached']
     /**
      * CheckoutLink
      * @description Checkout link data.
@@ -19295,6 +19436,11 @@ export interface components {
        * @description Optional maximum number of times the discount can be redeemed.
        */
       max_redemptions?: number | null
+      /**
+       * Max Redemptions Per Customer
+       * @description Optional maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer?: number | null
       /** Products */
       products?: string[] | null
       /**
@@ -19408,6 +19554,11 @@ export interface components {
        */
       max_redemptions: number | null
       /**
+       * Max Redemptions Per Customer
+       * @description Maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer: number | null
+      /**
        * Redemptions Count
        * @description Number of times the discount has been redeemed.
        */
@@ -19492,6 +19643,11 @@ export interface components {
        * @description Maximum number of times the discount can be redeemed.
        */
       max_redemptions: number | null
+      /**
+       * Max Redemptions Per Customer
+       * @description Maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer: number | null
       /**
        * Redemptions Count
        * @description Number of times the discount has been redeemed.
@@ -19582,6 +19738,11 @@ export interface components {
        */
       max_redemptions: number | null
       /**
+       * Max Redemptions Per Customer
+       * @description Maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer: number | null
+      /**
        * Redemptions Count
        * @description Number of times the discount has been redeemed.
        */
@@ -19669,6 +19830,11 @@ export interface components {
        */
       max_redemptions: number | null
       /**
+       * Max Redemptions Per Customer
+       * @description Maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer: number | null
+      /**
        * Redemptions Count
        * @description Number of times the discount has been redeemed.
        */
@@ -19728,6 +19894,11 @@ export interface components {
        * @description Optional maximum number of times the discount can be redeemed.
        */
       max_redemptions?: number | null
+      /**
+       * Max Redemptions Per Customer
+       * @description Optional maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer?: number | null
       /** Products */
       products?: string[] | null
       /**
@@ -19818,6 +19989,11 @@ export interface components {
        */
       max_redemptions: number | null
       /**
+       * Max Redemptions Per Customer
+       * @description Maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer: number | null
+      /**
        * Redemptions Count
        * @description Number of times the discount has been redeemed.
        */
@@ -19885,6 +20061,11 @@ export interface components {
        * @description Maximum number of times the discount can be redeemed.
        */
       max_redemptions: number | null
+      /**
+       * Max Redemptions Per Customer
+       * @description Maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer: number | null
       /**
        * Redemptions Count
        * @description Number of times the discount has been redeemed.
@@ -19958,6 +20139,11 @@ export interface components {
        */
       max_redemptions: number | null
       /**
+       * Max Redemptions Per Customer
+       * @description Maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer: number | null
+      /**
        * Redemptions Count
        * @description Number of times the discount has been redeemed.
        */
@@ -20027,6 +20213,11 @@ export interface components {
        * @description Maximum number of times the discount can be redeemed.
        */
       max_redemptions: number | null
+      /**
+       * Max Redemptions Per Customer
+       * @description Maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer: number | null
       /**
        * Redemptions Count
        * @description Number of times the discount has been redeemed.
@@ -20113,6 +20304,17 @@ export interface components {
        */
       organization_id: string
     }
+    /** DiscountRedemptionLimitReached */
+    DiscountRedemptionLimitReached: {
+      /**
+       * Error
+       * @example DiscountRedemptionLimitReached
+       * @constant
+       */
+      error: 'DiscountRedemptionLimitReached'
+      /** Detail */
+      detail: string
+    }
     /**
      * DiscountSortProperty
      * @enum {string}
@@ -20177,6 +20379,11 @@ export interface components {
        * @description Optional maximum number of times the discount can be redeemed.
        */
       max_redemptions?: number | null
+      /**
+       * Max Redemptions Per Customer
+       * @description Optional maximum number of times the discount can be redeemed by a single customer.
+       */
+      max_redemptions_per_customer?: number | null
       duration?: components['schemas']['DiscountDuration'] | null
       /** Duration In Months */
       duration_in_months?: number | null
@@ -25416,6 +25623,11 @@ export interface components {
        */
       details_submitted_at: string | null
       /**
+       * Onboarding Resubmission Requested At
+       * @description When Polar requested that the organization review and resubmit its onboarding information, if applicable.
+       */
+      onboarding_resubmission_requested_at: string | null
+      /**
        * Sso Enforced
        * @description Whether members must access this organization through its SSO connection.
        */
@@ -25437,6 +25649,16 @@ export interface components {
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
+      /**
+       * Embed Hosts
+       * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
+       */
+      embed_hosts: string[]
+      /**
+       * Embed Hosts Enforced
+       * @description Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone.
+       */
+      embed_hosts_enforced: boolean
       /** @description Two-letter country code (ISO 3166-1 alpha-2). */
       country?:
         | (
@@ -26328,6 +26550,8 @@ export interface components {
     OrganizationCustomerEmailSettings: {
       /** Order Confirmation */
       order_confirmation: boolean
+      /** Payment Method Expiration Reminder */
+      payment_method_expiration_reminder: boolean
       /** Subscription Cancellation */
       subscription_cancellation: boolean
       /** Subscription Confirmation */
@@ -26459,6 +26683,34 @@ export interface components {
        * @description Revenue from last year if applicable.
        */
       previous_annual_revenue?: number | null
+    }
+    /** OrganizationEmbedStatus */
+    OrganizationEmbedStatus: {
+      /**
+       * Has Embedded
+       * @description Whether this organization has ever opened an embedded checkout.
+       */
+      has_embedded: boolean
+      /**
+       * Embed Hosts
+       * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
+       */
+      embed_hosts: string[]
+      /**
+       * Embed Hosts Enforced
+       * @description Whether an embedding page's origin must match `embed_hosts`.
+       */
+      embed_hosts_enforced: boolean
+      /**
+       * Shared Hosts
+       * @description Entries of `embed_hosts` admitting every tenant of a platform, such as `*.vercel.app`.
+       */
+      shared_hosts: string[]
+      /**
+       * Uncovered Hosts
+       * @description Hosts seen embedding this organization's checkout that `embed_hosts` would refuse. Anyone can name an origin when they create a checkout, so these are observations, not hosts we vouch for.
+       */
+      uncovered_hosts: components['schemas']['OrganizationUncoveredHost'][]
     }
     /** OrganizationFeatureSettings */
     OrganizationFeatureSettings: {
@@ -26659,6 +26911,11 @@ export interface components {
        */
       details_submitted_at: string | null
       /**
+       * Onboarding Resubmission Requested At
+       * @description When Polar requested that the organization review and resubmit its onboarding information, if applicable.
+       */
+      onboarding_resubmission_requested_at: string | null
+      /**
        * Sso Enforced
        * @description Whether members must access this organization through its SSO connection.
        */
@@ -26680,6 +26937,16 @@ export interface components {
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
+      /**
+       * Embed Hosts
+       * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
+       */
+      embed_hosts: string[]
+      /**
+       * Embed Hosts Enforced
+       * @description Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone.
+       */
+      embed_hosts_enforced: boolean
       /** @description Two-letter country code (ISO 3166-1 alpha-2). */
       country?:
         | (
@@ -27090,6 +27357,11 @@ export interface components {
       payment_ready: boolean
       /** @description Current organization status */
       organization_status: components['schemas']['OrganizationStatus']
+      /**
+       * Onboarding Resubmission Requested At
+       * @description When Polar requested that the organization review and resubmit its onboarding information, if applicable. Null for organizations that have never been reset for review.
+       */
+      onboarding_resubmission_requested_at: string | null
     }
     /** OrganizationPayoutAccountSet */
     OrganizationPayoutAccountSet: {
@@ -27668,6 +27940,30 @@ export interface components {
        */
       product_id: string
     }
+    /** OrganizationUncoveredHost */
+    OrganizationUncoveredHost: {
+      /**
+       * Host
+       * @description The entry that would admit this origin.
+       */
+      host: string
+      /**
+       * Origin
+       * @description The origin seen embedding the checkout.
+       */
+      origin: string
+      /**
+       * Checkouts
+       * @description Embedded checkouts opened from this origin.
+       */
+      checkouts: number
+      /**
+       * Last Seen At
+       * Format: date-time
+       * @description When it last opened one.
+       */
+      last_seen_at: string
+    }
     /** OrganizationUpdate */
     OrganizationUpdate: {
       /** Name */
@@ -27952,6 +28248,8 @@ export interface components {
       customer_portal_settings?:
         | components['schemas']['OrganizationCustomerPortalSettings']
         | null
+      /** Embed Hosts */
+      embed_hosts?: string[] | null
       /** @description Default presentment currency for the organization */
       default_presentment_currency?:
         | components['schemas']['PresentmentCurrency']
@@ -28059,6 +28357,11 @@ export interface components {
        */
       details_submitted_at: string | null
       /**
+       * Onboarding Resubmission Requested At
+       * @description When Polar requested that the organization review and resubmit its onboarding information, if applicable.
+       */
+      onboarding_resubmission_requested_at: string | null
+      /**
        * Sso Enforced
        * @description Whether members must access this organization through its SSO connection.
        */
@@ -28080,6 +28383,16 @@ export interface components {
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
+      /**
+       * Embed Hosts
+       * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
+       */
+      embed_hosts: string[]
+      /**
+       * Embed Hosts Enforced
+       * @description Whether an embedding page's origin must match `embed_hosts`. Organizations that have not configured a list yet embed unchecked until the allowlist is enforced for everyone.
+       */
+      embed_hosts_enforced: boolean
       /** @description Two-letter country code (ISO 3166-1 alpha-2). */
       country?:
         | (
@@ -35650,6 +35963,69 @@ export interface components {
       webhook_event: components['schemas']['WebhookEvent']
     }
     /**
+     * WebhookDiscountCreatedPayload
+     * @description Sent when a new discount is created.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookDiscountCreatedPayload: {
+      /**
+       * Type
+       * @example discount.created
+       * @constant
+       */
+      type: 'discount.created'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      /** Discount */
+      data: components['schemas']['Discount']
+    }
+    /**
+     * WebhookDiscountDeletedPayload
+     * @description Sent when a discount is deleted.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookDiscountDeletedPayload: {
+      /**
+       * Type
+       * @example discount.deleted
+       * @constant
+       */
+      type: 'discount.deleted'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      /** Discount */
+      data: components['schemas']['Discount']
+    }
+    /**
+     * WebhookDiscountUpdatedPayload
+     * @description Sent when a discount is updated.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookDiscountUpdatedPayload: {
+      /**
+       * Type
+       * @example discount.updated
+       * @constant
+       */
+      type: 'discount.updated'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      /** Discount */
+      data: components['schemas']['Discount']
+    }
+    /**
      * WebhookEndpoint
      * @description A webhook endpoint.
      */
@@ -35841,6 +36217,7 @@ export interface components {
       | 'subscription.active'
       | 'subscription.canceled'
       | 'subscription.uncanceled'
+      | 'subscription.cycled'
       | 'subscription.revoked'
       | 'subscription.past_due'
       | 'subscription.paused'
@@ -35849,6 +36226,9 @@ export interface components {
       | 'refund.updated'
       | 'product.created'
       | 'product.updated'
+      | 'discount.created'
+      | 'discount.updated'
+      | 'discount.deleted'
       | 'benefit.created'
       | 'benefit.updated'
       | 'benefit_grant.created'
@@ -36194,6 +36574,34 @@ export interface components {
       data: components['schemas']['Subscription']
     }
     /**
+     * WebhookSubscriptionCycledPayload
+     * @description Sent when a subscription enters a new billing period.
+     *
+     *     The payload carries the new `current_period_start` and `current_period_end`.
+     *     It fires when the period rolls over, before the renewal order exists and
+     *     regardless of whether the renewal payment succeeds — listen to `order.paid`
+     *     if you need the payment.
+     *
+     *     A trial converting to a paid subscription starts a new period, so it fires
+     *     there too. Read `status` to tell the two apart.
+     *
+     *     **Discord & Slack support:** Basic
+     */
+    WebhookSubscriptionCycledPayload: {
+      /**
+       * Type
+       * @example subscription.cycled
+       * @constant
+       */
+      type: 'subscription.cycled'
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      data: components['schemas']['Subscription']
+    }
+    /**
      * WebhookSubscriptionPastDuePayload
      * @description Sent when a subscription payment fails and the subscription enters `past_due` status.
      *
@@ -36316,7 +36724,7 @@ export interface components {
      *
      *     If you want more specific events, you can listen to `subscription.active`, `subscription.canceled`, `subscription.past_due`, and `subscription.revoked`.
      *
-     *     To listen specifically for renewals, you can listen to `order.created` events and check the `billing_reason` field.
+     *     To listen specifically for renewals, listen to `subscription.cycled`.
      *
      *     **Discord & Slack support:** On cancellation, past due, and revocation. Renewals are skipped.
      */
@@ -37902,6 +38310,46 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['OrganizationKYC']
+        }
+      }
+      /** @description Organization not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'organizations:get_embed_status': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['OrganizationEmbedStatus']
         }
       }
       /** @description Organization not found. */
@@ -39636,6 +40084,10 @@ export interface operations {
         canceled_at_after?: string | null
         /** @description Filter by cancellation date (before or equal to). */
         canceled_at_before?: string | null
+        /** @description Only include subscriptions started after this date. */
+        started_after?: string | null
+        /** @description Only include subscriptions started before this date. */
+        started_before?: string | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -41910,6 +42362,15 @@ export interface operations {
         checkout_id?: string | string[] | null
         /** @description Filter by subscription ID. */
         subscription_id?: string | string[] | null
+        /** @description Filter by order status. */
+        status?:
+          | components['schemas']['OrderStatus']
+          | components['schemas']['OrderStatus'][]
+          | null
+        /** @description Only include orders created after this date */
+        created_after?: string | null
+        /** @description Only include orders created before this date */
+        created_before?: string | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -43189,6 +43650,56 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['FileUpload']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'files:download': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The file ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['FileDownload']
+        }
+      }
+      /** @description You don't have the permission to download this file. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description File not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -56313,6 +56824,39 @@ export interface operations {
       }
     }
   }
+  _endpointsubscription_cycled_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookSubscriptionCycledPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   _endpointsubscription_revoked_post: {
     parameters: {
       query?: never
@@ -56554,6 +57098,105 @@ export interface operations {
     requestBody: {
       content: {
         'application/json': components['schemas']['WebhookProductUpdatedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointdiscount_created_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookDiscountCreatedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointdiscount_updated_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookDiscountUpdatedPayload']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': unknown
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  _endpointdiscount_deleted_post: {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['WebhookDiscountDeletedPayload']
       }
     }
     responses: {
@@ -65858,6 +66501,7 @@ export const webhookEventTypeValues: ReadonlyArray<
   'subscription.active',
   'subscription.canceled',
   'subscription.uncanceled',
+  'subscription.cycled',
   'subscription.revoked',
   'subscription.past_due',
   'subscription.paused',
@@ -65866,6 +66510,9 @@ export const webhookEventTypeValues: ReadonlyArray<
   'refund.updated',
   'product.created',
   'product.updated',
+  'discount.created',
+  'discount.updated',
+  'discount.deleted',
   'benefit.created',
   'benefit.updated',
   'benefit_grant.created',

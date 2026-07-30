@@ -178,7 +178,7 @@ class SubscriptionJobStore(_SubscriptionScheduleJobStore):
                 Organization.is_deleted.is_(False),
                 Organization.can_renew_subscriptions.is_(True),
                 Subscription.scheduler_locked_at.is_(None),
-                Subscription.active.is_(True),
+                Subscription.active,
                 Subscription.current_period_end.is_not(None),
             )
             .order_by(Subscription.current_period_end.asc())

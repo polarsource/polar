@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import AsyncIterator, Iterable, Sequence
 from contextlib import asynccontextmanager
+from datetime import datetime
 from enum import StrEnum
 from typing import Any, Literal
 
@@ -30,7 +31,6 @@ from polar.enums import (
     PaymentMode,
     PaymentProcessor,
     TaxBehavior,
-    TaxProcessor,
 )
 from polar.event.repository import EventRepository
 from polar.event.service import event as event_service
@@ -339,17 +339,6 @@ class SubscriptionNotTrialing(OrderError):
         super().__init__(message)
 
 
-class TaxCalculationChangedAfterPayment(OrderError):
-    def __init__(self, order: Order, new_calculation_id: str | None) -> None:
-        self.order = order
-        self.new_calculation_id = new_calculation_id
-        message = (
-            "Tax calculation for order {order.id} has changed after payment was made. "
-            "New calculation ID: {new_calculation_id}."
-        )
-        super().__init__(message)
-
-
 class OrderService:
     @asynccontextmanager
     async def acquire_payment_lock(
@@ -388,6 +377,9 @@ class OrderService:
         external_customer_id: Sequence[str] | None = None,
         checkout_id: Sequence[uuid.UUID] | None = None,
         subscription_id: Sequence[uuid.UUID] | None = None,
+        status: Sequence[OrderStatus] | None = None,
+        created_after: datetime | None = None,
+        created_before: datetime | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[OrderSortProperty]] = [
@@ -445,6 +437,15 @@ class OrderService:
 
         if subscription_id is not None:
             statement = statement.where(Order.subscription_id.in_(subscription_id))
+
+        if status is not None:
+            statement = statement.where(Order.status.in_(status))
+
+        if created_after is not None:
+            statement = statement.where(Order.created_at > created_after)
+
+        if created_before is not None:
+            statement = statement.where(Order.created_at < created_before)
 
         if metadata is not None:
             statement = apply_metadata_clause(Order, statement, metadata)
@@ -1456,7 +1457,8 @@ class OrderService:
             payment_method = await payment_method_repository.get_by_id(
                 payment_method_id
             )
-            assert payment_method is not None
+            if payment_method is None:
+                raise PaymentFailed(PaymentFailedReason.missing_payment_method)
             await self.trigger_payment(
                 session,
                 order,
@@ -2088,91 +2090,11 @@ class OrderService:
                 "order.balance", order_id=order.id, charge_id=payment.processor_id
             )
 
-        # Record tax transaction
         if (
             order.tax_calculation_processor_id is not None
             and order.tax_transaction_processor_id is None
         ):
-            tax_processor: TaxProcessor | None = None
-            assert order.tax_processor is not None
-            assert order.tax_behavior is not None
-            assert order.billing_address is not None
-            assert order.product is not None
-            try:
-                transaction_id, tax_processor = await tax_calculation_service.record(
-                    order.tax_processor,
-                    order.tax_calculation_processor_id,
-                    amount=order.net_amount,
-                    tax_amount=order.tax_amount,
-                    currency=order.currency,
-                    address=order.billing_address,
-                    tax_code=order.product.tax_code,
-                    reference=str(order.id),
-                    transaction_date=order.created_at,
-                )
-                update_dict = {
-                    **update_dict,
-                    "tax_processor": tax_processor,
-                    "tax_transaction_processor_id": transaction_id,
-                }
-
-            except CalculationExpiredError as e:
-                # Recover by recalculating tax
-                # Happens if the order was created a long time ago and the tax calculation result expired before payment was completed
-                product = order.product
-                customer = order.customer
-                tax_exempted = (
-                    order.subscription.tax_exempted if order.subscription else False
-                )
-                assert product is not None
-                (
-                    tax_processor,
-                    tax_behavior,
-                    tax_calculation_processor_id,
-                    tax_amount,
-                    tax_breakdown,
-                ) = await calculate_tax(
-                    reference=str(order.id),
-                    taxable_amount=order.net_amount,
-                    currency=order.currency,
-                    customer=customer,
-                    product=product,
-                    tax_behavior_option=order.tax_behavior.to_option(),
-                    tax_exempted=tax_exempted,
-                )
-                update_dict = {
-                    **update_dict,
-                    "tax_calculation_processor_id": tax_calculation_processor_id,
-                    "tax_amount": tax_amount,
-                    "tax_behavior": tax_behavior,
-                    "tax_breakdown": tax_breakdown or None,
-                }
-
-                if tax_amount != order.tax_amount:
-                    raise TaxCalculationChangedAfterPayment(
-                        order, tax_calculation_processor_id
-                    )
-
-                if tax_processor and tax_calculation_processor_id:
-                    (
-                        transaction_id,
-                        tax_processor,
-                    ) = await tax_calculation_service.record(
-                        tax_processor,
-                        tax_calculation_processor_id,
-                        amount=order.net_amount,
-                        tax_amount=tax_amount,
-                        currency=order.currency,
-                        address=order.billing_address,
-                        tax_code=order.product.tax_code,
-                        reference=str(order.id),
-                        transaction_date=order.created_at,
-                    )
-                    update_dict = {
-                        **update_dict,
-                        "tax_processor": tax_processor,
-                        "tax_transaction_processor_id": transaction_id,
-                    }
+            update_dict = {**update_dict, **await self._record_tax_transaction(order)}
 
         repository = OrderRepository.from_session(session)
         order = await repository.update(order, update_dict=update_dict)
@@ -2189,6 +2111,120 @@ class OrderService:
             await self._on_order_updated(session, order, previous_status)
 
         return order
+
+    async def _record_tax_transaction(self, order: Order) -> dict[str, Any]:
+        """Book the order's tax with the recording processor.
+
+        Returns the order fields to update.
+        """
+        assert order.tax_calculation_processor_id is not None
+        assert order.tax_processor is not None
+        assert order.billing_address is not None
+        assert order.product is not None
+
+        try:
+            transaction_id, tax_processor = await tax_calculation_service.record(
+                order.tax_processor,
+                order.tax_calculation_processor_id,
+                amount=order.net_amount,
+                tax_amount=order.tax_amount,
+                currency=order.currency,
+                address=order.billing_address,
+                tax_code=order.product.tax_code,
+                reference=str(order.id),
+                transaction_date=order.created_at,
+            )
+        except CalculationExpiredError:
+            # Happens if the order was created a long time ago and the tax
+            # calculation expired before the payment was completed.
+            return await self._record_expired_tax_calculation(order)
+
+        return {
+            "tax_processor": tax_processor,
+            "tax_transaction_processor_id": transaction_id,
+        }
+
+    async def _record_expired_tax_calculation(self, order: Order) -> dict[str, Any]:
+        """Book the tax of an order whose calculation expired before payment.
+
+        Returns the order fields to update.
+        """
+        assert order.tax_behavior is not None
+        assert order.billing_address is not None
+        assert order.product is not None
+
+        (
+            tax_processor,
+            tax_behavior,
+            tax_calculation_processor_id,
+            tax_amount,
+            tax_breakdown,
+        ) = await calculate_tax(
+            reference=str(order.id),
+            taxable_amount=order.net_amount,
+            currency=order.currency,
+            customer=order.customer,
+            product=order.product,
+            tax_behavior_option=order.tax_behavior.to_option(),
+            tax_exempted=order.subscription.tax_exempted
+            if order.subscription
+            else False,
+        )
+
+        # The customer paid the tax we quoted them, so that's what we record and
+        # remit. A fresh calculation that disagrees can't be recorded: book the
+        # charged amounts as a manual transaction instead.
+        if tax_amount != order.tax_amount:
+            log.warning(
+                "Tax recalculation differs from the charged tax, "
+                "recording the charged amount",
+                order_id=order.id,
+                charged_tax_amount=order.tax_amount,
+                recalculated_tax_amount=tax_amount,
+                recalculated_calculation_id=tax_calculation_processor_id,
+            )
+            (
+                transaction_id,
+                tax_processor,
+            ) = await tax_calculation_service.record_amounts(
+                amount=order.net_amount,
+                tax_amount=order.tax_amount,
+                currency=order.currency,
+                address=order.billing_address,
+                tax_code=order.product.tax_code,
+                reference=str(order.id),
+                transaction_date=order.created_at,
+            )
+            return {
+                "tax_processor": tax_processor,
+                "tax_transaction_processor_id": transaction_id,
+            }
+
+        update_dict: dict[str, Any] = {
+            "tax_calculation_processor_id": tax_calculation_processor_id,
+            "tax_behavior": tax_behavior,
+            "tax_breakdown": tax_breakdown or None,
+        }
+
+        if tax_processor and tax_calculation_processor_id:
+            transaction_id, tax_processor = await tax_calculation_service.record(
+                tax_processor,
+                tax_calculation_processor_id,
+                amount=order.net_amount,
+                tax_amount=tax_amount,
+                currency=order.currency,
+                address=order.billing_address,
+                tax_code=order.product.tax_code,
+                reference=str(order.id),
+                transaction_date=order.created_at,
+            )
+            update_dict = {
+                **update_dict,
+                "tax_processor": tax_processor,
+                "tax_transaction_processor_id": transaction_id,
+            }
+
+        return update_dict
 
     async def send_admin_notification(
         self, session: AsyncSession, organization: Organization, order: Order

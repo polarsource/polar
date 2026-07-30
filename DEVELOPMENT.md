@@ -161,7 +161,7 @@ If you want to work on or test enterprise SSO login, you can point it at a local
 
 2. **Start the SSO login** by opening [http://127.0.0.1:3000/auth/sso/admin-org](http://127.0.0.1:3000/auth/sso/admin-org). You'll be redirected to the mock IdP's login page.
 
-3. **Assert the seeded member's identity.** The callback requires a *verified* email that belongs to a member of the organization, so in the mock login form submit these claims (the seeded admin is a member of `admin-org`):
+3. **Assert an identity.** The callback requires a *verified* email and will provision the user and organization membership on the fly, so in the mock login form submit these claims (the seeded admin is a member of `admin-org`):
 
     ```json
     {"email": "admin@polar.sh", "email_verified": true}
@@ -402,7 +402,22 @@ The tool:
 2. Checks out the base branch and screenshots again
 3. Generates a visual diff report with pixel-level comparison
 
-Results are saved to `dev/snap-runs/<timestamp>/result/` with an HTML report for side-by-side comparison.
+Results are saved to `screenshots/runs/<timestamp>/result/` with an HTML report for side-by-side comparison.
+
+### Snapping the customer portal
+
+`dev snap` logs into the dashboard, but the customer portal authenticates with a
+`?customer_session_token=` query parameter instead. `dev portal-urls` mints a session over
+the seeded data so a portal run needs no interaction:
+
+```sh
+dev portal-urls                     # Print every portal URL with a fresh token
+dev portal-urls --snap              # Print them as a ready-to-run `dev snap` command
+dev portal-urls --org my-org        # Pick a customer from another seeded org
+```
+
+The session lasts 24 hours by default (`--ttl-hours`), because `dev snap` captures both
+branches against one set of URLs and the token has to outlive the whole run.
 
 ## Login using email
 

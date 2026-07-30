@@ -109,6 +109,14 @@ async def list(
         None,
         description="Filter by cancellation date (before or equal to).",
     ),
+    started_after: datetime | None = Query(
+        None,
+        description="Only include subscriptions started after this date.",
+    ),
+    started_before: datetime | None = Query(
+        None,
+        description="Only include subscriptions started before this date.",
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[SubscriptionSchema]:
     """List subscriptions."""
@@ -126,6 +134,8 @@ async def list(
         customer_cancellation_reason=customer_cancellation_reason,
         canceled_at_after=canceled_at_after,
         canceled_at_before=canceled_at_before,
+        started_after=started_after,
+        started_before=started_before,
         metadata=metadata,
         pagination=pagination,
         sorting=sorting,

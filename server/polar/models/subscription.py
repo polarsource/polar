@@ -122,6 +122,24 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             "status",
             "current_period_end",
         ),
+        Index(
+            "ix_subscriptions_cycle_schedule",
+            "current_period_end",
+            postgresql_where=(
+                "scheduler_locked_at IS NULL "
+                "AND status IN ('trialing', 'active') "
+                "AND current_period_end IS NOT NULL"
+            ),
+        ),
+        Index(
+            "ix_subscriptions_resume_schedule",
+            "resumes_at",
+            postgresql_where=(
+                "scheduler_locked_at IS NULL "
+                "AND status = 'paused' "
+                "AND resumes_at IS NOT NULL"
+            ),
+        ),
     )
 
     amount: Mapped[int] = mapped_column("amount_v2", BigInteger, nullable=False)

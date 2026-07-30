@@ -169,6 +169,13 @@ def assert_webhook_sent_once(
     )
 
 
+def assert_webhook_not_sent(send_mock: MagicMock, event_type: WebhookEventType) -> None:
+    for mock_calls in send_mock.call_args_list:
+        assert mock_calls.args[2] != event_type, (
+            f"Expected webhook {event_type} not to be sent"
+        )
+
+
 def build_stripe_payment_intent(
     *,
     amount: int = 0,
@@ -1189,6 +1196,13 @@ class TestCycle:
             updated_subscription,
         )
 
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_cycled,
+            organization,
+            updated_subscription,
+        )
+
         enqueue_email_mock.assert_not_called()
 
     async def test_free_price(
@@ -1400,6 +1414,7 @@ class TestCycle:
         session: AsyncSession,
         enqueue_job_mock: MagicMock,
         enqueue_email_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
@@ -1472,6 +1487,10 @@ class TestCycle:
             OrderBillingReasonInternal.subscription_cancel,
         )
 
+        assert_webhook_not_sent(
+            webhook_service_send_mock, WebhookEventType.subscription_cycled
+        )
+
         enqueue_email_mock.assert_called_once()
         assert isinstance(enqueue_email_mock.call_args[0][0], SubscriptionRevokedEmail)
         subject = enqueue_email_mock.call_args.kwargs["subject"]
@@ -1520,9 +1539,11 @@ class TestCycle:
         session: AsyncSession,
         enqueue_job_mock: MagicMock,
         enqueue_email_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
         save_fixture: SaveFixture,
         product: Product,
         customer: Customer,
+        organization: Organization,
     ) -> None:
         subscription = await create_trialing_subscription(
             save_fixture,
@@ -1555,6 +1576,13 @@ class TestCycle:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
+        )
+
+        assert_webhook_sent_once(
+            webhook_service_send_mock,
+            WebhookEventType.subscription_cycled,
+            organization,
+            updated_subscription,
         )
 
         enqueue_email_mock.assert_not_called()
@@ -5585,6 +5613,58 @@ async def test_send_past_due_email(
     )
 
     await subscription_service.send_past_due_email(session, subscription)
+
+
+@pytest.mark.asyncio
+async def test_send_renewal_reminder_email_formats_long_date(
+    mocker: MockerFixture,
+    save_fixture: SaveFixture,
+    session: AsyncSession,
+    product: Product,
+    customer: Customer,
+) -> None:
+    subscription = await create_active_subscription(
+        save_fixture, product=product, customer=customer
+    )
+    subscription.current_period_end = datetime(2026, 11, 7, tzinfo=UTC)
+    await save_fixture(subscription)
+    send_customer_email_mock = mocker.patch.object(
+        subscription_service, "_send_customer_email"
+    )
+
+    await subscription_service.send_renewal_reminder_email(session, subscription)
+
+    send_customer_email_mock.assert_called_once()
+    assert send_customer_email_mock.call_args.kwargs["extra_context"] == {
+        "renewal_date": "November 7, 2026"
+    }
+
+
+@pytest.mark.asyncio
+async def test_send_trial_conversion_reminder_email_formats_long_date(
+    mocker: MockerFixture,
+    save_fixture: SaveFixture,
+    session: AsyncSession,
+    product: Product,
+    customer: Customer,
+) -> None:
+    subscription = await create_trialing_subscription(
+        save_fixture, product=product, customer=customer
+    )
+    subscription.trial_end = datetime(2026, 3, 17, tzinfo=UTC)
+    await save_fixture(subscription)
+    send_customer_email_mock = mocker.patch.object(
+        subscription_service, "_send_customer_email"
+    )
+
+    await subscription_service.send_trial_conversion_reminder_email(
+        session, subscription
+    )
+
+    send_customer_email_mock.assert_called_once()
+    assert send_customer_email_mock.call_args.kwargs["extra_context"] == {
+        "conversion_date": "March 17, 2026"
+    }
 
 
 @pytest.mark.asyncio

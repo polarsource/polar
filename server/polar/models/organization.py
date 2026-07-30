@@ -1,6 +1,16 @@
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from enum import IntEnum, StrEnum
-from typing import TYPE_CHECKING, Annotated, Any, Literal, NotRequired, Self, TypedDict
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Literal,
+    NotRequired,
+    Self,
+    TypedDict,
+    cast,
+)
 from urllib.parse import quote, urlencode, urlparse
 from uuid import UUID
 
@@ -113,6 +123,7 @@ def _default_order_settings() -> OrganizationOrderSettings:
 
 class OrganizationCustomerEmailSettings(TypedDict):
     order_confirmation: bool
+    payment_method_expiration_reminder: bool
     subscription_cancellation: bool
     subscription_confirmation: bool
     subscription_cycled: bool
@@ -130,6 +141,7 @@ class OrganizationCustomerEmailSettings(TypedDict):
 def _default_customer_email_settings() -> OrganizationCustomerEmailSettings:
     return {
         "order_confirmation": True,
+        "payment_method_expiration_reminder": True,
         "subscription_cancellation": True,
         "subscription_confirmation": True,
         "subscription_cycled": True,
@@ -143,6 +155,20 @@ def _default_customer_email_settings() -> OrganizationCustomerEmailSettings:
         "subscription_uncanceled": True,
         "subscription_updated": True,
     }
+
+
+def resolve_default_customer_email_settings(
+    stored: Mapping[str, Any],
+) -> OrganizationCustomerEmailSettings:
+    """Complete stored settings with defaults so reads tolerate keys added after
+    an organization's settings were last written (lazy materialization)."""
+    defaults = _default_customer_email_settings()
+    # Default payment_method_expiration_reminder to the value of
+    # subscription_cycled for graceful rollout
+    defaults["payment_method_expiration_reminder"] = bool(
+        stored.get("subscription_cycled", defaults["subscription_cycled"])
+    )
+    return cast(OrganizationCustomerEmailSettings, {**defaults, **stored})
 
 
 class CustomerPortalUsageSettings(TypedDict):
@@ -181,6 +207,10 @@ def _default_customer_portal_settings() -> OrganizationCustomerPortalSettings:
 
 class OrganizationCheckoutSettings(TypedDict):
     require_3ds: bool
+
+
+# Organizations created from this point must list their embed hosts.
+EMBED_HOSTS_ENFORCED_FROM = datetime(2026, 8, 4, tzinfo=UTC)
 
 
 def _default_checkout_settings() -> OrganizationCheckoutSettings:
@@ -412,6 +442,7 @@ ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatu
     ),
     OrganizationStatus.REVIEW: frozenset(
         {
+            OrganizationStatus.CREATED,
             OrganizationStatus.ACTIVE,
             OrganizationStatus.SNOOZED,
             OrganizationStatus.DENIED,
@@ -421,6 +452,7 @@ ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatu
     ),
     OrganizationStatus.SNOOZED: frozenset(
         {
+            OrganizationStatus.CREATED,
             OrganizationStatus.REVIEW,
             OrganizationStatus.ACTIVE,
             OrganizationStatus.DENIED,
@@ -429,6 +461,7 @@ ALLOWED_STATUS_TRANSITIONS: dict[OrganizationStatus, frozenset[OrganizationStatu
     ),
     OrganizationStatus.ACTIVE: frozenset(
         {
+            OrganizationStatus.CREATED,
             OrganizationStatus.REVIEW,
             OrganizationStatus.DENIED,
             OrganizationStatus.BLOCKED,
@@ -517,6 +550,9 @@ class Organization(RateLimitGroupMixin, RecordModel):
         JSONB, nullable=False, default=dict
     )
     details_submitted_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True)
+    )
+    onboarding_resubmission_requested_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True)
     )
 
@@ -622,6 +658,15 @@ class Organization(RateLimitGroupMixin, RecordModel):
     checkout_settings: Mapped[OrganizationCheckoutSettings] = mapped_column(
         JSONB, nullable=False, default=_default_checkout_settings
     )
+
+    embed_hosts: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
+
+    @property
+    def embed_hosts_enforced(self) -> bool:
+        """Configuring a list does not enforce it. Existing organizations keep
+        embedding unchecked until the allowlist is enforced for everyone, so a
+        list that misses a host they use costs them nothing until then."""
+        return self.created_at >= EMBED_HOSTS_ENFORCED_FROM
 
     legal_entity: Mapped[OrganizationLegalEntity | None] = mapped_column(
         JSONB, nullable=True, default=None

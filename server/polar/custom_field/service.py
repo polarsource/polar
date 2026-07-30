@@ -34,6 +34,7 @@ from polar.postgres import AsyncReadSession, AsyncSession
 
 from .attachment import attached_custom_fields_models
 from .data import custom_field_data_models
+from .repository import CustomFieldRepository
 from .schemas import CustomFieldCreate, CustomFieldUpdate
 
 
@@ -112,8 +113,9 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             OrganizationPermission.custom_fields_manage,
         )
 
-        existing_field = await self._get_by_organization_id_and_slug(
-            session, organization.id, custom_field_create.slug
+        repository = CustomFieldRepository.from_session(session)
+        existing_field = await repository.get_by_organization_and_slug(
+            organization.id, custom_field_create.slug
         )
         if existing_field is not None:
             raise PolarRequestValidationError(
@@ -167,8 +169,9 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             custom_field_update.slug is not None
             and custom_field.slug != custom_field_update.slug
         ):
-            existing_field = await self._get_by_organization_id_and_slug(
-                session, custom_field.organization_id, custom_field_update.slug
+            repository = CustomFieldRepository.from_session(session)
+            existing_field = await repository.get_by_organization_and_slug(
+                custom_field.organization_id, custom_field_update.slug
             )
             if existing_field is not None and existing_field.id != custom_field.id:
                 raise PolarRequestValidationError(
@@ -244,16 +247,6 @@ class CustomFieldService(ResourceServiceReader[CustomField]):
             CustomField.is_deleted.is_(False),
             CustomField.organization_id == organization_id,
             CustomField.id == id,
-        )
-        result = await session.execute(statement)
-        return result.scalar_one_or_none()
-
-    async def _get_by_organization_id_and_slug(
-        self, session: AsyncSession, organization_id: uuid.UUID, slug: str
-    ) -> CustomField | None:
-        statement = select(CustomField).where(
-            CustomField.organization_id == organization_id,
-            CustomField.slug == slug,
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()

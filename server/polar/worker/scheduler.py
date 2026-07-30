@@ -23,16 +23,25 @@ configure_logfire("worker")
 configure_logging(logfire=True)
 
 HEARTBEAT_STALENESS_SECONDS = 60
+# Cap the idle sleep below the staleness threshold so an idle scheduler keeps
+# refreshing its heartbeat instead of reading as unhealthy.
+HEARTBEAT_INTERVAL_SECONDS = 30
 _last_heartbeat: float = 0.0
+
+
+def _bounded_wait_seconds(wait_seconds: float | None) -> float:
+    if wait_seconds is None:
+        return HEARTBEAT_INTERVAL_SECONDS
+    return min(wait_seconds, HEARTBEAT_INTERVAL_SECONDS)
 
 
 class LogfireBlockingScheduler(BlockingScheduler):
     def _main_loop(self) -> None:
         global _last_heartbeat
-        wait_seconds = 1
+        wait_seconds: float | None = 1
         while self.state != STATE_STOPPED:
             with logfire.span("Scheduler wakeup"):
-                self._event.wait(wait_seconds)
+                self._event.wait(_bounded_wait_seconds(wait_seconds))
                 self._event.clear()
                 wait_seconds = self._process_jobs()
                 _last_heartbeat = time.monotonic()

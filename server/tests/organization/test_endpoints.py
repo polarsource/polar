@@ -1,5 +1,5 @@
 import uuid
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -11,6 +11,7 @@ from polar.integrations.polar.service import PolarSelfService
 from polar.models import OrganizationSSOConnection, Product, User
 from polar.models.account import Account
 from polar.models.organization import (
+    EMBED_HOSTS_ENFORCED_FROM,
     Organization,
     OrganizationStatus,
     _default_customer_portal_settings,
@@ -32,6 +33,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_account,
     create_appeal_case,
+    create_checkout,
     create_customer,
     create_order,
     create_organization_review,
@@ -39,6 +41,10 @@ from tests.fixtures.random_objects import (
     create_subscription,
     create_user,
 )
+
+# The organization fixture is created now, which is past the cutoff from
+# 4 August 2026 onwards. Tests that assert the unenforced behaviour pin it.
+BEFORE_EMBED_CUTOFF = EMBED_HOSTS_ENFORCED_FROM - timedelta(days=1)
 
 
 @pytest.mark.asyncio
@@ -1028,6 +1034,134 @@ async def test_list_members_not_member(
 
 
 @pytest.mark.asyncio
+class TestGetEmbedStatus:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_never_embedded(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.created_at = BEFORE_EMBED_CUTOFF
+        await save_fixture(organization)
+
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["has_embedded"] is False
+        assert json["embed_hosts"] == []
+        assert json["embed_hosts_enforced"] is False
+
+    @pytest.mark.auth
+    async def test_embedded_without_hosts(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.created_at = BEFORE_EMBED_CUTOFF
+        await save_fixture(organization)
+        checkout = await create_checkout(save_fixture, products=[product])
+        checkout.embed_origin = "https://example.com"
+        await save_fixture(checkout)
+
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["has_embedded"] is True
+        assert json["embed_hosts_enforced"] is False
+
+    @pytest.mark.auth
+    async def test_uncovered_host_reported(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        checkout = await create_checkout(save_fixture, products=[product])
+        checkout.embed_origin = "https://example.com/checkout"
+        await save_fixture(checkout)
+
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 200
+        (host,) = response.json()["uncovered_hosts"]
+        assert host["host"] == "example.com"
+        assert host["origin"] == "https://example.com"
+        assert host["checkouts"] == 1
+
+    @pytest.mark.auth
+    async def test_listed_host_not_reported(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.embed_hosts = ["example.com"]
+        await save_fixture(organization)
+        checkout = await create_checkout(save_fixture, products=[product])
+        checkout.embed_origin = "https://example.com"
+        await save_fixture(checkout)
+
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 200
+        assert response.json()["uncovered_hosts"] == []
+
+    @pytest.mark.auth
+    async def test_hosts_configured(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.created_at = BEFORE_EMBED_CUTOFF
+        organization.embed_hosts = ["example.com"]
+        await save_fixture(organization)
+
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["embed_hosts"] == ["example.com"]
+        assert json["embed_hosts_enforced"] is False
+
+    @pytest.mark.auth
+    async def test_organization_past_the_cutoff(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.created_at = EMBED_HOSTS_ENFORCED_FROM
+        await save_fixture(organization)
+
+        response = await client.get(f"/v1/organizations/{organization.id}/embed-status")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["embed_hosts_enforced"] is True
+
+
+@pytest.mark.asyncio
 class TestGetPaymentStatus:
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
@@ -1039,6 +1173,7 @@ class TestGetPaymentStatus:
         json = response.json()
         assert "payment_ready" in json
         assert "organization_status" in json
+        assert "onboarding_resubmission_requested_at" in json
 
     @pytest.mark.auth
     async def test_valid_grandfathered_organization(
@@ -1060,6 +1195,54 @@ class TestGetPaymentStatus:
         json = response.json()
         # Should be payment ready even without completing steps
         assert json["payment_ready"] is True
+
+    async def test_resubmission_null_for_initial_onboarding(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """A freshly created organization that was never reset has a null
+        resubmission timestamp — the dashboard should show the initial
+        onboarding checklist, not the resubmission banner."""
+        organization.status = OrganizationStatus.CREATED
+        organization.onboarding_resubmission_requested_at = None
+        await save_fixture(organization)
+
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/payment-status"
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["organization_status"] == "created"
+        assert json["onboarding_resubmission_requested_at"] is None
+
+    async def test_resubmission_set_after_backoffice_reset(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """After backoffice resets an organization for review, the fresh
+        payment-status response must surface the resubmission timestamp so
+        the dashboard can show ResubmissionBanner instead of the initial
+        onboarding checklist — even while the cached organization prop is
+        stale."""
+        reset_at = datetime(2026, 7, 28, 12, 0, tzinfo=UTC)
+        organization.status = OrganizationStatus.CREATED
+        organization.onboarding_resubmission_requested_at = reset_at
+        await save_fixture(organization)
+
+        response = await client.get(
+            f"/v1/organizations/{organization.id}/payment-status"
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["organization_status"] == "created"
+        assert json["onboarding_resubmission_requested_at"] is not None
+        assert json["onboarding_resubmission_requested_at"].startswith(
+            "2026-07-28T12:00:00"
+        )
 
 
 @pytest.mark.asyncio

@@ -33,6 +33,7 @@ path = "polar/__init__.py"
 
 [tool.hatch.build.targets.wheel]
 packages = ["polar"]
+artifacts = ["/polar/.agents/**"]
 
 [dependency-groups]
 dev = ["ty", "ruff", "pytest", "standardwebhooks>=1.0.0,<2.0.0"]

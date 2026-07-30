@@ -248,6 +248,63 @@ class TestBlockDialog:
 
 
 @pytest.mark.asyncio
+class TestResetOnboardingDialog:
+    async def test_warns_that_held_payouts_are_canceled(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        organization: Organization,
+    ) -> None:
+        response = await backoffice_client.get(
+            f"/organizations/{organization.id}/reset-onboarding-dialog"
+        )
+
+        assert response.status_code == 200
+        assert "Cancel pending-review payouts" in response.text
+        assert "return their reserved funds" in response.text
+
+    async def test_resets_organization(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+        user: User,
+    ) -> None:
+        organization.status = OrganizationStatus.ACTIVE
+        organization.details_submitted_at = datetime.now(UTC)
+        await session.flush()
+
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/reset-onboarding-dialog"
+        )
+
+        assert response.status_code == 303
+        assert organization.status == OrganizationStatus.CREATED
+        assert organization.details_submitted_at is None
+        assert organization.onboarding_resubmission_requested_at is not None
+        assert organization.internal_notes is not None
+        assert user.email in organization.internal_notes
+
+    async def test_shows_error_when_organization_was_already_reset(
+        self,
+        backoffice_client: httpx.AsyncClient,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.status = OrganizationStatus.CREATED
+        await session.flush()
+
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/reset-onboarding-dialog"
+        )
+
+        assert response.status_code == 200
+        assert (
+            "Only active, review, or snoozed organizations can be reset "
+            "for onboarding review."
+        ) in response.text
+
+
+@pytest.mark.asyncio
 class TestOffboardDialog:
     async def test_missing_aup_section_does_not_offboard(
         self,

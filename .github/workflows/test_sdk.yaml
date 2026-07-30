@@ -24,7 +24,7 @@ jobs:
     outputs:
       sdk: ${{ steps.filter.outputs.sdk }}
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
       - uses: dorny/paths-filter@v4.0.2
         id: filter
         with:
@@ -43,15 +43,15 @@ jobs:
       POLAR_EMAIL_RENDERER_BINARY_PATH: "/tmp/email-renderer"
       POLAR_PYDANTIC_AI_GATEWAY_API_KEY: "POLAR_PYDANTIC_AI_GATEWAY_API_KEY"
     steps:
-      - uses: actions/checkout@v7.0.0
+      - uses: actions/checkout@v7.0.1
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v8.3.2
+        uses: astral-sh/setup-uv@v9.0.0
         with:
           enable-cache: true
 
       - name: Set up Python
-        uses: actions/setup-python@v6.3.0
+        uses: actions/setup-python@v7.0.0
         with:
           python-version-file: "sdk/generator/pyproject.toml"
 
@@ -90,3 +90,24 @@ jobs:
         run: |
           just openapi
           just generate-all
+
+      - name: Verify bundled Python SDK skill
+        working-directory: ./sdk/python
+        run: |
+          uv build --no-sources
+          unzip -Z1 dist/*.whl | grep -Fx 'polar/.agents/skills/polar-python-sdk/SKILL.md'
+          unzip -Z1 dist/*.whl | grep -Fx 'polar/.agents/skills/polar-python-sdk/agents/openai.yaml'
+          unzip -Z1 dist/*.whl | grep -Fx 'polar/.agents/skills/polar-python-sdk/references/migration-from-v0.md'
+          unzip -Z1 dist/*.whl | grep -Fx 'polar/.agents/skills/polar-python-sdk/references/usage-events.md'
+          unzip -Z1 dist/*.whl | grep -Fx 'polar/.agents/skills/polar-python-sdk/references/webhooks.md'
+
+      - name: Verify bundled TypeScript SDK skill
+        working-directory: ./sdk/typescript
+        run: |
+          mkdir -p packed
+          pnpm pack --pack-destination packed
+          tar -tzf packed/*.tgz | grep -Fx 'package/.agents/skills/polar-typescript-sdk/SKILL.md'
+          tar -tzf packed/*.tgz | grep -Fx 'package/.agents/skills/polar-typescript-sdk/agents/openai.yaml'
+          tar -tzf packed/*.tgz | grep -Fx 'package/.agents/skills/polar-typescript-sdk/references/migration-from-v0.md'
+          tar -tzf packed/*.tgz | grep -Fx 'package/.agents/skills/polar-typescript-sdk/references/usage-events.md'
+          tar -tzf packed/*.tgz | grep -Fx 'package/.agents/skills/polar-typescript-sdk/references/webhooks.md'

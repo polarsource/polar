@@ -243,11 +243,11 @@ class TestUncoveredHosts:
             ("chrome-extension://abcdef", 1, SEEN),
         ]
 
-        assert [host.host for host in uncovered_hosts(observed, [])] == [
+        assert {host.host for host in uncovered_hosts(observed, [])} == {
             "myshop.framer.website",
             "localhost:3000",
             "chrome-extension://abcdef",
-        ]
+        }
 
     def test_public_http_host_cannot_be_listed(self) -> None:
         """Whatever we allowed, the token would still cross the network in clear."""
@@ -271,6 +271,23 @@ class TestUncoveredHosts:
             "busy.com",
             "quiet.com",
         ]
+
+    def test_equal_volume_ordered_by_host(self) -> None:
+        """The query groups without ordering, so ties must not follow the rows."""
+        observed = [
+            ("https://gamma.com", 2, SEEN),
+            ("https://alpha.com", 2, SEEN),
+            ("https://beta.com", 2, SEEN),
+        ]
+
+        assert [host.host for host in uncovered_hosts(observed, [])] == [
+            "alpha.com",
+            "beta.com",
+            "gamma.com",
+        ]
+        assert uncovered_hosts(observed, []) == uncovered_hosts(
+            list(reversed(observed)), []
+        )
 
     def test_origin_carrying_none_is_dropped(self) -> None:
         assert uncovered_hosts([("null", 4, SEEN)], []) == []

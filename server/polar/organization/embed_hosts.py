@@ -259,4 +259,4 @@ def uncovered_hosts(
             last_seen_at=max(last_seen_at, seen.last_seen_at) if seen else last_seen_at,
         )
 
-    return sorted(merged.values(), key=lambda o: o.checkouts, reverse=True)
+    return sorted(merged.values(), key=lambda o: (-o.checkouts, o.host))

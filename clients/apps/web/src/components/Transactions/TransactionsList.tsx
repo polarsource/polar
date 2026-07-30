@@ -60,18 +60,7 @@ const TransactionsList = ({
         if (isSameDayAsParent) {
           return null
         }
-        return (
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div className="truncate whitespace-nowrap">
-                <FormattedDateTime datetime={datetime} resolution="day" />
-              </div>
-            </TooltipTrigger>
-            <TooltipContent>
-              <FormattedDateTime datetime={datetime} resolution="time" />
-            </TooltipContent>
-          </Tooltip>
-        )
+        return <FormattedDateTime datetime={datetime} resolution="time" />
       },
     },
     {

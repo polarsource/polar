@@ -11,7 +11,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 from tagflow import attr, tag, text
 
 from polar.invoice.service import invoice as invoice_service
-from polar.kit.currency import format_currency
+from polar.kit.currency import format_currency, get_currency_decimal_factor
 from polar.kit.pagination import PaginationParamsQuery
 from polar.kit.schemas import empty_str_to_none
 from polar.models import Customer, Order, Organization, Product
@@ -784,7 +784,7 @@ async def refund(
             refund_create = RefundCreate(
                 order_id=order.id,
                 reason=form.reason,
-                amount=int(form.amount * 100),
+                amount=int(form.amount * get_currency_decimal_factor(order.currency)),
                 comment=form.comment,
                 revoke_benefits=form.revoke_benefits,
             )

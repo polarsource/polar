@@ -15,12 +15,12 @@ const PLACEHOLDERS = [
   },
   {
     name: '{ORDER_ID}',
-    description: 'The order the email concerns, empty when not applicable',
+    description: 'The order the link relates to, empty when not applicable',
   },
   {
     name: '{SUBSCRIPTION_ID}',
     description:
-      'The subscription the email concerns, empty when not applicable',
+      'The subscription the link relates to, empty when not applicable',
   },
 ] as const
 
@@ -145,7 +145,7 @@ export default function CustomerPortalUrlSetting({
               >
                 <Box flexDirection="column" rowGap="s" padding="m" width="100%">
                   <Text variant="caption" color="muted">
-                    Placeholders are replaced when each email is sent
+                    Placeholders are filled in when each link is generated
                   </Text>
                   <Grid
                     templateColumns="auto 1fr"

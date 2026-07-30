@@ -11,6 +11,7 @@ from polar.customer.schemas.customer import (
     CustomerUpdate,
 )
 from polar.customer.service import customer as customer_service
+from polar.event.system import SystemEvent
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.address import Address, AddressInput, CountryAlpha2, CountryAlpha2Input
 from polar.kit.pagination import PaginationParams
@@ -1077,6 +1078,33 @@ class TestDelete:
         assert recycled.deleted_at is None
         assert recycled.external_id == "will-be-recycled"
 
+    @pytest.mark.parametrize("anonymize", [False, True])
+    async def test_delete_enqueues_deleted_webhook_and_event(
+        self,
+        anonymize: bool,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Both delete paths should notify integrators that the customer is gone."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="deleted-webhook@example.com",
+            name="Deleted Webhook User",
+        )
+        enqueue_job_mock = mocker.patch("polar.customer.repository.enqueue_job")
+
+        await customer_service.delete(session, customer, anonymize=anonymize)
+
+        enqueue_job_mock.assert_any_call(
+            "customer.webhook", WebhookEventType.customer_deleted, customer.id
+        )
+        enqueue_job_mock.assert_any_call(
+            "customer.event", customer.id, SystemEvent.customer_deleted
+        )
+
     async def test_delete_soft_deletes_members(
         self,
         session: AsyncSession,
@@ -1250,8 +1278,8 @@ class TestAnonymize:
         # Original user metadata should be preserved
         assert anonymized.user_metadata["user_id"] == "ABC"
 
-        # Customer should be marked as deleted
-        assert anonymized.deleted_at is not None
+        # Anonymizing on its own does not delete the customer
+        assert anonymized.deleted_at is None
 
     async def test_business_customer(
         self,

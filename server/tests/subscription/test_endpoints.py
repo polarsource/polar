@@ -219,6 +219,38 @@ class TestListSubscriptions:
         assert json["pagination"]["total_count"] == 2
 
     @pytest.mark.auth
+    async def test_started_at_date_range(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        for started_at in (
+            datetime(2024, 3, 15, tzinfo=UTC),
+            datetime(2024, 6, 15, tzinfo=UTC),
+            datetime(2024, 9, 15, tzinfo=UTC),
+        ):
+            await create_active_subscription(
+                save_fixture,
+                product=product,
+                customer=customer,
+                started_at=started_at,
+            )
+
+        response = await client.get(
+            "/v1/subscriptions/",
+            params={
+                "started_at_after": "2024-03-01T00:00:00Z",
+                "started_at_before": "2024-07-01T00:00:00Z",
+            },
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 2
+
+    @pytest.mark.auth
     async def test_cancellation_reason_with_date_range(
         self,
         save_fixture: SaveFixture,

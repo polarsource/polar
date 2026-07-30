@@ -114,8 +114,8 @@ const TransactionsList = ({
 
         return (
           <div className="flex flex-row justify-end">
-            {paymentTransaction.presentment_currency !==
-            transaction.currency ? (
+            {amount !== 0 &&
+            paymentTransaction.presentment_currency !== transaction.currency ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="dark:decoration-polar-500 underline decoration-gray-400 decoration-dashed decoration-1 underline-offset-4">
@@ -210,8 +210,8 @@ const TransactionsList = ({
 
         return (
           <div className="flex justify-end">
-            {paymentTransaction.presentment_currency !==
-            transaction.currency ? (
+            {paymentTransaction.tax_amount !== 0 &&
+            paymentTransaction.presentment_currency !== transaction.currency ? (
               <Tooltip>
                 <TooltipTrigger asChild>
                   <span className="dark:decoration-polar-500 underline decoration-gray-400 decoration-dashed decoration-1 underline-offset-4">

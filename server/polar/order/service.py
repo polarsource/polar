@@ -2670,6 +2670,18 @@ class OrderService:
                 order=order,
             )
 
+        # Give back the balance the order consumed: it'll never be collected.
+        # Applied after the reduction above, which is computed on the balance as it
+        # stands while the order is still due.
+        if order.applied_balance_amount < 0:
+            await wallet_service.create_balance_transaction(
+                session,
+                order.customer,
+                -order.applied_balance_amount,
+                order.currency,
+                order=order,
+            )
+
         await event_service.create_event(
             session,
             build_system_event(
@@ -2702,6 +2714,17 @@ class OrderService:
                 "next_payment_attempt_at": None,
             },
         )
+
+        # Consume again the balance restored on void: the order is due once more,
+        # and `applied_balance_amount` still counts it against `due_amount`.
+        if order.applied_balance_amount < 0:
+            await wallet_service.create_balance_transaction(
+                session,
+                order.customer,
+                order.applied_balance_amount,
+                order.currency,
+                order=order,
+            )
 
         await event_service.create_event(
             session,

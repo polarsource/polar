@@ -19,6 +19,7 @@ from polar.payment_method.repository import (
 from polar.payment_method.service import (
     payment_method as payment_method_service,
 )
+from polar.payment_method.tasks import EXPIRATION_REMINDER_WINDOW
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -41,6 +42,16 @@ class TestExpiringPeriods:
     def test_rolls_over_to_the_next_year(self) -> None:
         now = datetime(2026, 12, 5, tzinfo=UTC)
         assert expiring_periods(now, now + timedelta(days=40)) == [(2026, 12)]
+
+    def test_does_not_remind_at_the_start_of_the_month(self) -> None:
+        start = datetime(2026, 4, 1, tzinfo=UTC)
+        assert (2026, 4) not in expiring_periods(
+            start, start + EXPIRATION_REMINDER_WINDOW
+        )
+
+    def test_reminds_well_before_the_card_expires(self) -> None:
+        later = datetime(2026, 4, 16, tzinfo=UTC)
+        assert (2026, 4) in expiring_periods(later, later + EXPIRATION_REMINDER_WINDOW)
 
     def test_spans_two_months(self) -> None:
         now = datetime(2026, 4, 1, tzinfo=UTC)

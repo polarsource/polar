@@ -17,6 +17,7 @@ from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.models import Checkout, Customer, Order, PaymentMethod, Subscription
+from polar.models.organization import resolve_default_customer_email_settings
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
 from polar.subscription.repository import SubscriptionRepository
@@ -178,9 +179,10 @@ class PaymentMethodService:
         )
         assert organization is not None
 
-        if not organization.customer_email_settings.get(
-            "payment_method_expiration_reminder", True
-        ):
+        email_settings = resolve_default_customer_email_settings(
+            organization.customer_email_settings
+        )
+        if not email_settings["payment_method_expiration_reminder"]:
             return
 
         recipients = await customer_service.get_email_recipients(session, customer)

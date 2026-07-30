@@ -1,6 +1,16 @@
+from collections.abc import Mapping
 from datetime import UTC, datetime
 from enum import IntEnum, StrEnum
-from typing import TYPE_CHECKING, Annotated, Any, Literal, NotRequired, Self, TypedDict
+from typing import (
+    TYPE_CHECKING,
+    Annotated,
+    Any,
+    Literal,
+    NotRequired,
+    Self,
+    TypedDict,
+    cast,
+)
 from urllib.parse import urlparse
 from uuid import UUID
 
@@ -144,6 +154,20 @@ def _default_customer_email_settings() -> OrganizationCustomerEmailSettings:
         "subscription_uncanceled": True,
         "subscription_updated": True,
     }
+
+
+def resolve_default_customer_email_settings(
+    stored: Mapping[str, Any],
+) -> OrganizationCustomerEmailSettings:
+    """Complete stored settings with defaults so reads tolerate keys added after
+    an organization's settings were last written (lazy materialization)."""
+    defaults = _default_customer_email_settings()
+    # Default payment_method_expiration_reminder to the value of
+    # subscription_cycled for graceful rollout
+    defaults["payment_method_expiration_reminder"] = bool(
+        stored.get("subscription_cycled", defaults["subscription_cycled"])
+    )
+    return cast(OrganizationCustomerEmailSettings, {**defaults, **stored})
 
 
 class CustomerPortalUsageSettings(TypedDict):

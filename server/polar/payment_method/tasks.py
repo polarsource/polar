@@ -14,7 +14,9 @@ from .repository import PaymentMethodRepository
 from .service import PaymentMethodDoesNotExist
 from .service import payment_method as payment_method_service
 
-EXPIRATION_REMINDER_WINDOW = timedelta(days=30)
+# Cards expire at the end of their month, so a 30 day window would always fire on
+# the 1st — where the reminder competes with everyone's monthly billing emails.
+EXPIRATION_REMINDER_WINDOW = timedelta(days=20)
 
 
 @actor(

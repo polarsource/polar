@@ -1,3 +1,4 @@
+from typing import cast
 from unittest.mock import MagicMock
 
 import pytest
@@ -6,6 +7,7 @@ from pytest_mock import MockerFixture
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.integrations.stripe.service import StripeService
 from polar.models import Customer, Organization, PaymentMethod, Product
+from polar.models.organization import OrganizationCustomerEmailSettings
 from polar.models.subscription import SubscriptionStatus
 from polar.payment_method.service import (
     PaymentMethodInUseByActiveSubscription,
@@ -434,6 +436,41 @@ class TestSendExpiringReminderEmail:
     ) -> None:
         payment_method = await create_payment_method(
             save_fixture, customer, type="link", method_metadata={}
+        )
+
+        await payment_method_service.send_expiration_reminder_email(
+            session, payment_method
+        )
+
+        enqueue_email_template_mock.assert_not_called()
+
+    async def test_skips_when_organization_disabled_the_cycle_email(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+        product: Product,
+        enqueue_email_template_mock: MagicMock,
+    ) -> None:
+        """An organization predating this template has no stored key, so the
+        setting is inherited from their subscription cycle preference."""
+        stored = {
+            key: value
+            for key, value in organization.customer_email_settings.items()
+            if key != "payment_method_expiration_reminder"
+        } | {"subscription_cycled": False}
+        organization.customer_email_settings = cast(
+            OrganizationCustomerEmailSettings, stored
+        )
+        await save_fixture(organization)
+
+        payment_method = await create_expiring_card(save_fixture, customer)
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
         )
 
         await payment_method_service.send_expiration_reminder_email(

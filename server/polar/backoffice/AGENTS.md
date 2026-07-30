@@ -119,6 +119,28 @@ with modal_content("modal-id", title="Confirm Action"):
             text("Confirm")
 ```
 
+**Never nest a `<form>` inside another `<form>`.** HTML5 forbids it: the parser drops
+the inner start tag and reparents its buttons onto the outer form, so a "Cancel" wrapped
+in `tag.form(method="dialog")` inside an `hx-post` form submits that form and performs the
+action it was meant to abort. Use `modal_close_button` for dismiss buttons — it is a
+`type="button"` that closes the surrounding `<dialog>`, so it is safe anywhere:
+
+```python
+from polar.backoffice.components import button, modal, modal_close_button
+
+with modal("Confirm Action", open=True):
+    with tag.form(method="post", hx_post=action_url, hx_target="#modal"):
+        with tag.textarea(name="reason", required=True):
+            pass
+        with tag.div(classes="modal-action"):
+            with modal_close_button(ghost=True):
+                text("Cancel")
+            with button(variant="error", type="submit"):
+                text("Confirm")
+```
+
+`uv run task lint_nested_form` (part of `uv run task lint`) fails on nested forms.
+
 ### Accordions
 
 ```python

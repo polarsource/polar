@@ -6,7 +6,7 @@ from collections.abc import Generator
 from pydantic import ValidationError
 from tagflow import tag, text
 
-from polar.backoffice.components import button, modal
+from polar.backoffice.components import button, modal, modal_close_button
 from polar.models import Organization
 from polar.models.organization import STATUS_CAPABILITIES, CapabilityName
 
@@ -102,9 +102,8 @@ class SetCapabilityModal:
                         "flex justify-end gap-2"
                     )
                 ):
-                    with tag.form(method="dialog"):
-                        with button(ghost=True, type="submit"):
-                            text("Cancel")
+                    with modal_close_button(ghost=True):
+                        text("Cancel")
 
                     with button(variant="primary", outline=True, type="submit"):
                         text(f"{action_word} capability")

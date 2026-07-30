@@ -110,7 +110,7 @@ from polar.support_case.schemas import ReviewAppealSupportCaseMessageCreate
 from polar.transaction.service.transaction import transaction as transaction_service
 from polar.worker import enqueue_job
 
-from ..components import button, input, modal
+from ..components import button, input, modal, modal_close_button
 from ..dependencies import get_admin
 from ..layout import layout
 from ..responses import HXRedirectResponse
@@ -1356,9 +1356,8 @@ async def approve_dialog(
                     pass
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(variant="primary", type="submit"):
                     text("Approve Organization")
 
@@ -1538,9 +1537,8 @@ async def deny_dialog(
             )
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(variant="error", type="submit"):
                     text("Deny Organization")
 
@@ -1697,9 +1695,8 @@ async def approve_denied_dialog(
                     pass
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(variant="primary", type="submit"):
                     text("Approve Organization")
 
@@ -1830,9 +1827,8 @@ async def deny_appeal_dialog(
                         pass
 
                 with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                    with tag.form(method="dialog"):
-                        with button(ghost=True):
-                            text("Cancel")
+                    with modal_close_button(ghost=True):
+                        text("Cancel")
                     with button(variant="error", type="submit"):
                         text("Deny Appeal")
 
@@ -1989,9 +1985,8 @@ async def appeal_case_approve_dialog(
                 ):
                     pass
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(variant="primary", type="submit"):
                     text("Approve Appeal")
 
@@ -2094,9 +2089,8 @@ async def appeal_case_deny_dialog(
                 ):
                     pass
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(variant="error", type="submit"):
                     text("Deny Appeal")
 
@@ -2239,9 +2233,8 @@ async def unblock_approve_dialog(
                     pass
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(variant="primary", type="submit"):
                     text("Unblock & Approve")
 
@@ -2317,9 +2310,8 @@ async def block_dialog(
             )
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(variant="error", type="submit"):
                     text("Block Organization")
 
@@ -2643,9 +2635,8 @@ async def snooze_dialog(
                     pass
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(variant="warning", type="submit"):
                     text("Snooze")
 
@@ -2887,9 +2878,8 @@ async def create_review_ticket(
                     pass
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(variant="primary", type="submit"):
                     text("Create")
 
@@ -2995,9 +2985,8 @@ async def offboard_dialog(
                     pass
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(variant="warning", type="submit"):
                     text("Set Offboarding")
 
@@ -3126,9 +3115,8 @@ async def offboarded_dialog(
                             )
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(variant="warning", type="submit"):
                     text("Complete Offboarding")
 
@@ -3222,9 +3210,8 @@ async def edit_organization(
         ):
             # Action buttons
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
@@ -3303,9 +3290,8 @@ async def edit_details(
         ):
             # Action buttons
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
@@ -3394,9 +3380,8 @@ async def edit_order_settings(
                                 text(desc)
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(type="submit", variant="primary"):
                     text("Save Changes")
 
@@ -3461,9 +3446,8 @@ async def edit_rate_limit_group(
             classes="flex flex-col",
         ):
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(type="submit", variant="primary"):
                     text("Save Changes")
 
@@ -3619,9 +3603,8 @@ async def edit_socials(
         ):
             # Action buttons
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
@@ -3749,9 +3732,8 @@ async def edit_features(
 
             # Action buttons
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
@@ -3841,9 +3823,8 @@ async def edit_checkout_settings(
 
             # Action buttons
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
@@ -3919,9 +3900,8 @@ async def edit_account_settings(
             classes="flex flex-col",
         ):
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(type="submit", variant="primary"):
                     text("Save Changes")
 
@@ -3986,9 +3966,8 @@ async def add_note(
         ):
             # Action buttons
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
@@ -4056,9 +4035,8 @@ async def edit_note(
         ):
             # Action buttons
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
@@ -4286,9 +4264,8 @@ async def setup_account(
                     pass
 
             with tag.div(classes="modal-action pt-6 border-t border-base-200"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(variant="primary", type="submit"):
                     text("Create Manual Account")
 
@@ -4588,9 +4565,8 @@ async def grant_credit(
 
             # Action buttons
             with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(variant="primary", type="submit"):
                     text("Grant Credit")
 
@@ -4736,9 +4712,8 @@ async def import_orders(
             with tag.div(id="import-progress"):
                 pass
             with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",
@@ -4809,9 +4784,8 @@ async def add_payment_method_domain(
             validation_error=validation_error,
         ):
             with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(
                     type="submit",
                     variant="primary",

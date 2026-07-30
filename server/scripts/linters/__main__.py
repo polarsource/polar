@@ -13,10 +13,15 @@ import ast
 import sys
 from pathlib import Path
 
-from . import frontend_url, org_scope, subquery
+from . import frontend_url, nested_form, org_scope, subquery
 from .base import Rule, line_has_skip
 
-RULES: tuple[Rule, ...] = (subquery.RULE, org_scope.RULE, frontend_url.RULE)
+RULES: tuple[Rule, ...] = (
+    subquery.RULE,
+    org_scope.RULE,
+    frontend_url.RULE,
+    nested_form.RULE,
+)
 
 
 def main() -> int:

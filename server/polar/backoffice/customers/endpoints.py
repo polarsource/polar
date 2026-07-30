@@ -53,7 +53,13 @@ from polar.wallet.repository import WalletRepository, WalletTransactionRepositor
 from polar.wallet.service import wallet as wallet_service
 from polar.worker import enqueue_job
 
-from ..components import button, datatable, description_list, modal
+from ..components import (
+    button,
+    datatable,
+    description_list,
+    modal,
+    modal_close_button,
+)
 from ..formatters import currency
 from ..layout import layout
 from ..responses import HXRedirectResponse
@@ -710,9 +716,8 @@ async def create_balance_transaction(
                     hx_target="#modal",
                 ):
                     with tag.div(classes="modal-action"):
-                        with tag.form(method="dialog"):
-                            with button(ghost=True):
-                                text("Cancel")
+                        with modal_close_button(ghost=True):
+                            text("Cancel")
                         with button(type="submit", variant="primary"):
                             text("Create Transaction")
 
@@ -1053,9 +1058,8 @@ async def edit_email(
                     hx_target="#modal",
                 ):
                     with tag.div(classes="modal-action"):
-                        with tag.form(method="dialog"):
-                            with button(ghost=True):
-                                text("Cancel")
+                        with modal_close_button(ghost=True):
+                            text("Cancel")
                         with button(type="submit", variant="primary"):
                             text("Update Email")
 

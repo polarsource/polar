@@ -225,9 +225,8 @@ async def delete_confirmation(
             text(f"Are you sure you want to delete '{entity.name}'? This action cannot be undone.")
 
         with tag.div(classes="modal-action"):
-            with tag.form(method="dialog"):
-                with button(variant="neutral"):
-                    text("Cancel")
+            with modal_close_button(variant="neutral"):
+                text("Cancel")
 
             with tag.form(
                 method="POST",
@@ -385,9 +384,8 @@ async def action_confirmation(request: Request, id: UUID4) -> None:
             text("Confirmation message")
 
         with tag.div(classes="modal-action"):
-            with tag.form(method="dialog"):
-                with button(variant="neutral"):
-                    text("Cancel")
+            with modal_close_button(variant="neutral"):
+                text("Cancel")
 
             with tag.form(method="POST", hx_post=confirm_url):
                 with button(variant="error", type="submit"):
@@ -400,6 +398,14 @@ async def action_confirm(request: Request, id: UUID4) -> Any:
     # Redirect
     pass
 ```
+
+Dismiss buttons must use `modal_close_button`, never a `tag.form(method="dialog")`
+wrapper. HTML5 forbids nested `<form>` elements: when the modal's action form wraps the
+whole body (reason textarea, inputs, action row), a nested dismiss form is dropped by the
+parser and its button is reparented onto the action form — clicking "Cancel" then submits
+the action. `modal_close_button` renders a `type="button"` that closes the surrounding
+`<dialog>`, so it is safe wherever it is placed. `uv run task lint_nested_form` enforces
+this.
 
 ## Components Reference
 
@@ -487,6 +493,17 @@ with modal("Dialog Title", open=True):
     with tag.div(classes="modal-action"):
         with button(variant="primary"):
             text("OK")
+```
+
+#### `modal_close_button()`
+
+Dismiss button for a modal. Takes the same styling arguments as `button()`, renders a
+`type="button"` and closes the enclosing `<dialog>`, so it never submits a form it happens
+to sit inside.
+
+```python
+with modal_close_button(ghost=True):
+    text("Cancel")
 ```
 
 ## Forms and Validation

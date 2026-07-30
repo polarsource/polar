@@ -2,6 +2,11 @@ import contextlib
 from collections.abc import Generator
 
 from tagflow import attr, tag, text
+from tagflow.tagflow import AttrValue
+
+from ._button import Size, Variant, button
+
+CLOSE_MODAL_SCRIPT = "on click call me.closest('dialog').close()"
 
 
 @contextlib.contextmanager
@@ -57,4 +62,56 @@ def modal(title: str, *, open: bool = False) -> Generator[None]:
                 pass
 
 
-__all__ = ["modal"]
+@contextlib.contextmanager
+def modal_close_button(
+    *,
+    variant: Variant | None = None,
+    size: Size | None = None,
+    ghost: bool = False,
+    link: bool = False,
+    soft: bool = False,
+    outline: bool = False,
+    **kwargs: AttrValue,
+) -> Generator[None]:
+    """Create a button that closes the enclosing modal without submitting anything.
+
+    Use this for "Cancel" and other dismiss actions instead of wrapping the
+    button in a `<form method="dialog">`. HTML5 forbids nested `<form>` elements:
+    when a dismiss form sits inside an action form, the parser drops it and the
+    button becomes a submit button of the action form, so clicking "Cancel"
+    performs the action it was meant to abort.
+
+    The button is a `type="button"`, so it never submits any form regardless of
+    where it is rendered, and closes the surrounding `<dialog>` via hyperscript.
+
+    Args:
+        variant: The button color variant, as in `button`.
+        size: The button size, as in `button`.
+        ghost: If True, applies ghost styling.
+        link: If True, styles the button to look like a link.
+        soft: If True, applies soft styling modifier.
+        outline: If True, applies outline styling.
+        **kwargs: Additional HTML attributes for the button element.
+
+    Yields:
+        None: Context manager yields control for button content.
+
+    Example:
+        >>> with modal_close_button(ghost=True):
+        ...     text("Cancel")
+    """
+    with button(
+        variant=variant,
+        size=size,
+        ghost=ghost,
+        link=link,
+        soft=soft,
+        outline=outline,
+        type="button",
+        _=CLOSE_MODAL_SCRIPT,
+        **kwargs,
+    ):
+        yield
+
+
+__all__ = ["CLOSE_MODAL_SCRIPT", "modal", "modal_close_button"]

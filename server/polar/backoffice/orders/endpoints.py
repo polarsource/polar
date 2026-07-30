@@ -28,7 +28,14 @@ from polar.tax.calculation.base import TaxabilityReason
 from polar.worker import enqueue_job
 
 from .. import formatters
-from ..components import button, datatable, description_list, input, modal
+from ..components import (
+    button,
+    datatable,
+    description_list,
+    input,
+    modal,
+    modal_close_button,
+)
 from ..layout import layout
 from ..responses import HXRedirectResponse
 from ..toast import add_toast
@@ -814,9 +821,8 @@ async def refund(
                 validation_error=validation_error,
             ):
                 with tag.div(classes="modal-action"):
-                    with tag.form(method="dialog"):
-                        with button(ghost=True):
-                            text("Cancel")
+                    with modal_close_button(ghost=True):
+                        text("Cancel")
                     with button(type="submit", variant="primary"):
                         text("Submit")
 

@@ -30,7 +30,14 @@ from polar.postgres import AsyncSession, get_db_session
 from polar.worker import enqueue_job
 
 from .. import formatters
-from ..components import button, datatable, description_list, input, modal
+from ..components import (
+    button,
+    datatable,
+    description_list,
+    input,
+    modal,
+    modal_close_button,
+)
 from ..layout import layout
 from ..toast import add_toast
 from .forms import RetryPayoutForm
@@ -525,9 +532,8 @@ async def retry(
                 data={"account_amount": remaining_amount},
             ):
                 with tag.div(classes="modal-action"):
-                    with tag.form(method="dialog"):
-                        with button(ghost=True):
-                            text("Cancel")
+                    with modal_close_button(ghost=True):
+                        text("Cancel")
                     with button(
                         type="submit",
                         variant="primary",

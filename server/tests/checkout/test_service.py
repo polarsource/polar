@@ -106,6 +106,7 @@ from polar.tax.tax_id import TaxIDFormat
 from polar.trial_redemption.repository import TrialRedemptionRepository
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.embed_hosts import BEFORE_EMBED_CUTOFF
 from tests.fixtures.events import get_all_by_name
 from tests.fixtures.random_objects import (
     create_active_subscription,
@@ -2587,12 +2588,13 @@ class TestCheckoutLinkCreate:
 
     async def test_normalized_embed_origin(
         self,
+        embed_hosts_not_enforced: None,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
         product_one_time: Product,
     ) -> None:
-        organization.created_at = EMBED_HOSTS_ENFORCED_FROM - timedelta(days=1)
+        organization.created_at = BEFORE_EMBED_CUTOFF
         await save_fixture(organization)
         checkout_link = await create_checkout_link(
             save_fixture, products=[product_one_time]
@@ -2645,6 +2647,7 @@ class TestCheckoutLinkCreate:
 
     async def test_unlisted_embed_origin_before_the_cutoff(
         self,
+        embed_hosts_not_enforced: None,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -2652,7 +2655,7 @@ class TestCheckoutLinkCreate:
     ) -> None:
         """Listing hosts doesn't enforce them: older organizations embed
         unchecked until the cutoff applies to everyone."""
-        organization.created_at = EMBED_HOSTS_ENFORCED_FROM - timedelta(days=1)
+        organization.created_at = BEFORE_EMBED_CUTOFF
         organization.embed_hosts = ["example.com"]
         await save_fixture(organization)
         checkout_link = await create_checkout_link(

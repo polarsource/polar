@@ -151,6 +151,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 Event.organization_id == parent_1a.c.organization_id,
                 Event.pending_parent_external_id == parent_1a.c.external_id,
                 Event.id.in_(inserted_ids),
+                Event.id != parent_1a.c.id,
             )
         )
 
@@ -177,6 +178,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                     Event.organization_id == parent_1b.c.organization_id,
                     cast(Event.pending_parent_external_id, SA_UUID) == parent_1b.c.id,
                     Event.id.in_(uuid_pending_in_batch),
+                    Event.id != parent_1b.c.id,
                 )
             )
 
@@ -189,6 +191,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 Event.pending_parent_external_id.is_not(None),
                 Event.pending_parent_external_id == parent_1c.c.external_id,
                 parent_1c.c.id.in_(inserted_ids),
+                Event.id != parent_1c.c.id,
             )
         )
 
@@ -204,6 +207,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 Event.pending_parent_external_id.is_not(None),
                 Event.pending_parent_external_id == cast(parent_1d.c.id, String),
                 parent_1d.c.id.in_(inserted_ids),
+                Event.id != parent_1d.c.id,
             )
         )
 
@@ -458,7 +462,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 (cte.c.depth + 1).label("depth"),
             )
             .select_from(cte.join(parent, cte.c.ancestor_id == parent.c.id))
-            .where(parent.c.parent_id.is_not(None))
+            .where(parent.c.parent_id.is_not(None), cte.c.depth < _MAX_RESOLVE_DEPTH)
         )
         cte = cte.union_all(recursive)
 

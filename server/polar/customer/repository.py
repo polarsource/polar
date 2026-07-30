@@ -89,9 +89,7 @@ class CustomerRepository(
 
         customer = await super().update(object, update_dict=update_dict, flush=flush)
 
-        # Don't announce a write to a deleted customer as an update: the delete
-        # itself is a write, and so is any cleanup that follows it. Integrators
-        # get `customer.deleted` for those instead.
+        # Only create an event if the customer is not being deleted
         if not customer.deleted_at:
             enqueue_job(
                 "customer.webhook", WebhookEventType.customer_updated, customer.id

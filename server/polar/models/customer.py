@@ -102,14 +102,7 @@ class CustomerType(StrEnum):
     team = "team"
 
 
-EXTERNAL_ID_METADATA_KEY = "__external_id"
-"""
-Metadata key holding the original external ID of a deleted customer.
-
-The unique constraint on `(organization_id, external_id)` doesn't take
-`deleted_at` into account, so a deleted customer would hold onto its external ID
-forever. We clear the column on deletion and keep the original value here.
-"""
+EXTERNAL_ID_METADATA_KEY = "__external_id"  # Metadata key holding the original external ID of a deleted customer
 
 
 def _avatar_url_for_email(email: str) -> str:

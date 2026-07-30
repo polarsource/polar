@@ -573,14 +573,11 @@ class CustomerService:
 
         await member_service.delete_by_customer(session, customer.id)
 
-        # Deletion always goes through `soft_delete`: it's the single place that
-        # frees the external ID and emits the `customer.deleted` webhook/event.
-        # It runs first so anonymization is a write on an already-deleted
-        # customer, which keeps `customer.deleted` the only event we emit.
         repository = CustomerRepository.from_session(session)
         customer = await repository.soft_delete(customer)
 
         if anonymize:
+            # Scrub PII from the deleted customer
             customer = await self.anonymize(session, customer)
 
         return customer
@@ -643,8 +640,7 @@ class CustomerService:
         user_metadata["__anonymized_at"] = utc_now().isoformat()
         update_dict["user_metadata"] = user_metadata
 
-        # NOTE: external_id and tax_id are RETAINED for legal reasons. Deletion
-        # frees the external ID — see `CustomerRepository.soft_delete()`.
+        # NOTE: external_id and tax_id are RETAINED for legal reasons
 
         # The repository.update() method automatically enqueues the webhook job
         customer = await repository.update(customer, update_dict=update_dict)

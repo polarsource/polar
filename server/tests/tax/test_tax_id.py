@@ -68,6 +68,14 @@ from polar.tax.tax_id import InvalidTaxID, TaxID, TaxIDFormat, validate_tax_id
         ("12345678901", "GE", ("12345678901", TaxIDFormat.ge_vat)),
         ("GE12345678901", "GE", ("12345678901", TaxIDFormat.ge_vat)),
         ("28392339", "MU", ("28392339", TaxIDFormat.mu_tan)),
+        # TW UBN: original rule, weighted digit sum divisible by 10
+        ("22099131", "TW", ("22099131", TaxIDFormat.tw_vat)),
+        ("04541302", "TW", ("04541302", TaxIDFormat.tw_vat)),
+        ("89398777", "TW", ("89398777", TaxIDFormat.tw_vat)),  # 7th digit "7"
+        # TW UBN: since April 2023, divisible by 5 is enough
+        ("62140097", "TW", ("62140097", TaxIDFormat.tw_vat)),
+        ("6214-0097", "TW", ("62140097", TaxIDFormat.tw_vat)),
+        ("90000075", "TW", ("90000075", TaxIDFormat.tw_vat)),  # 7th digit "7"
         # CR TIN: cédula jurídica (business)
         ("3-101-356876", "CR", ("3101356876", TaxIDFormat.cr_tin)),
         ("3101356876", "CR", ("3101356876", TaxIDFormat.cr_tin)),
@@ -104,6 +112,7 @@ def test_validate_tax_id_valid(number: str, country: str, expected: TaxID) -> No
         ("123456789012", "GE"),  # Too long
         ("12345678A", "GE"),  # Non-digit
         ("88392339", "MU"),  # Wrong leading digit
+        ("62140098", "TW"),  # Wrong check digit under both rules
         ("9999999999", "CR"),  # Invalid CR TIN
         ("1-1000-0001", "CR"),  # cédula física (individual), not accepted
     ],

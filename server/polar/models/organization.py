@@ -222,6 +222,18 @@ def _default_checkout_settings() -> OrganizationCheckoutSettings:
     }
 
 
+class OrganizationDisputeSettings(TypedDict):
+    auto_accept_below_amount: int | None
+    auto_accept_currency: str | None
+
+
+def _default_dispute_settings() -> OrganizationDisputeSettings:
+    return {
+        "auto_accept_below_amount": None,
+        "auto_accept_currency": None,
+    }
+
+
 class OrganizationIndividualLegalEntity(TypedDict):
     type: Literal["individual"]
 
@@ -660,6 +672,10 @@ class Organization(RateLimitGroupMixin, RecordModel):
 
     checkout_settings: Mapped[OrganizationCheckoutSettings] = mapped_column(
         JSONB, nullable=False, default=_default_checkout_settings
+    )
+
+    dispute_settings: Mapped[OrganizationDisputeSettings | None] = mapped_column(
+        JSONB, nullable=True, default=_default_dispute_settings
     )
 
     embed_hosts: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)

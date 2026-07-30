@@ -48,7 +48,9 @@ async def backfill(
     execute: bool = typer.Option(
         False, help="Actually run the backfill (default: dry-run)"
     ),
-    batch_size: int = typer.Option(5000, help="Number of rows to process per batch"),
+    batch_size: int = typer.Option(
+        5000, min=1, help="Number of rows to process per batch"
+    ),
     sleep_seconds: float = typer.Option(0.1, help="Seconds to sleep between batches"),
 ) -> None:
     engine = create_async_engine("script")

@@ -1586,6 +1586,111 @@ class TestCycle:
 
         enqueue_email_mock.assert_not_called()
 
+    async def test_trial_end_with_cancel_at_period_end_via_cancel_api(
+        self,
+        session: AsyncSession,
+        enqueue_job_mock: MagicMock,
+        enqueue_email_mock: MagicMock,
+        webhook_service_send_mock: AsyncMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """A trialing subscription scheduled for cancellation (via the real
+        ``cancel()`` API) must end up ``canceled`` — not ``active`` — when cycled.
+
+        Regression test: the trial-to-active conversion used to run
+        unconditionally after both the revoke and normal-cycle branches,
+        overwriting the ``canceled`` status set on the revoke path.
+        """
+        subscription = await create_trialing_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        assert subscription.status == SubscriptionStatus.trialing
+        assert subscription.cancel_at_period_end is False
+
+        previous_current_period_start = subscription.current_period_start
+        previous_current_period_end = subscription.current_period_end
+
+        # Schedule cancellation through the real cancel API (not manual attribute
+        # setting), mirroring the customer-facing flow.
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            subscription = await subscription_service.cancel(session, ctx, subscription)
+
+        assert subscription.cancel_at_period_end is True
+        # cancel() only schedules; status stays trialing until the period ends.
+        assert subscription.status == SubscriptionStatus.trialing
+
+        # Now cycle (trial period ending, cancellation takes effect).
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        # The revoke path must win: status is canceled, not active.
+        assert updated_subscription.status == SubscriptionStatus.canceled
+        assert updated_subscription.ended_at is not None
+        assert updated_subscription.cancel_at_period_end is True
+        # Revoke path does not advance cycle dates.
+        assert (
+            updated_subscription.current_period_start == previous_current_period_start
+        )
+        assert updated_subscription.current_period_end == previous_current_period_end
+        assert updated_subscription.scheduler_locked_at is None
+
+        # No billing entries should be created on the revoke path.
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        assert len(billing_entries) == 0
+
+        # Benefits revocation is enqueued.
+        enqueue_job_mock.assert_any_call(
+            "benefit.enqueue_benefits_grants",
+            task="revoke",
+            customer_id=customer.id,
+            product_id=product.id,
+            subscription_id=subscription.id,
+            delay=None,
+        )
+        # Order job uses the cancel billing reason, not the after-trial one.
+        enqueue_job_mock.assert_any_call(
+            "order.create_subscription_order",
+            subscription.id,
+            OrderBillingReasonInternal.subscription_cancel,
+        )
+        # The after-trial billing reason must NOT have been enqueued.
+        for mock_call in enqueue_job_mock.call_args_list:
+            assert mock_call.args[0] != "order.create_subscription_order" or (
+                mock_call.args[2]
+                != OrderBillingReasonInternal.subscription_cycle_after_trial
+            ), "after-trial order must not be enqueued when revoking at trial end"
+
+        # The cycled webhook is only sent on the non-revoke path.
+        assert_webhook_not_sent(
+            webhook_service_send_mock, WebhookEventType.subscription_cycled
+        )
+        # The revoked email is sent by the cycle (the cancellation email was
+        # already sent earlier by cancel(), so we check for the revoked one
+        # among the calls rather than asserting it was the only one).
+        revoked_email_calls = [
+            call
+            for call in enqueue_email_mock.call_args_list
+            if isinstance(call.args[0], SubscriptionRevokedEmail)
+        ]
+        assert len(revoked_email_calls) == 1, (
+            "expected exactly one SubscriptionRevokedEmail from cycle()"
+        )
+
     @freeze_time("2024-04-28 12:00:00")
     async def test_trial_end_rebases_anchor_to_trial_end_day(
         self,

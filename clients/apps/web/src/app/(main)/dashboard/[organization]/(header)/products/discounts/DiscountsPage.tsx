@@ -15,6 +15,7 @@ import {
   getAPIParams,
   serializeSearchParams,
 } from '@/utils/datatable'
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
 import AddOutlined from '@mui/icons-material/AddOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
@@ -153,6 +154,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
 
     const { error } = await deleteDiscount.mutateAsync(discountToDelete)
     if (error) {
+      toast({
+        title: 'Discount Deletion Failed',
+        description: `Error deleting discount ${discountToDelete.name}: ${extractApiErrorMessage(error)}`,
+      })
       return
     }
     toast({

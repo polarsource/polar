@@ -374,6 +374,8 @@ class SubscriptionService:
         | None = None,
         canceled_at_after: datetime | None = None,
         canceled_at_before: datetime | None = None,
+        started_after: datetime | None = None,
+        started_before: datetime | None = None,
         metadata: MetadataQuery | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[SubscriptionSortProperty]] = [
@@ -432,6 +434,12 @@ class SubscriptionService:
 
         if canceled_at_before is not None:
             statement = statement.where(Subscription.canceled_at <= canceled_at_before)
+
+        if started_after is not None:
+            statement = statement.where(Subscription.started_at > started_after)
+
+        if started_before is not None:
+            statement = statement.where(Subscription.started_at < started_before)
 
         if metadata is not None:
             statement = apply_metadata_clause(Subscription, statement, metadata)

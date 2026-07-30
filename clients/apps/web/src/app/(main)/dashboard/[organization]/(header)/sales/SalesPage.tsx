@@ -65,7 +65,7 @@ const formatOrderDate = (value: string) => {
     year: 'numeric',
     hour: '2-digit',
     minute: '2-digit',
-    hour12: false
+    hour12: false,
   })
 }
 
@@ -142,7 +142,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         const showBillingName =
           !!customer.billing_name &&
           customer.name?.toLocaleLowerCase() !==
-          customer.billing_name.toLocaleLowerCase()
+            customer.billing_name.toLocaleLowerCase()
         return (
           <div className="flex flex-row items-center gap-2">
             <Avatar
@@ -208,7 +208,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       ),
       cell: ({ row: { original: order } }) => (
         <OrderStatus status={order.status} />
-
       ),
     },
     {
@@ -224,7 +223,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       ),
       cell: ({ row: { original: order } }) => (
         <Box display="block" textAlign="right">
-          <Text variant='body' tabularNums>
+          <Text variant="body" tabularNums>
             {formatCurrency('accounting')(order.net_amount, order.currency)}
           </Text>
         </Box>
@@ -232,17 +231,17 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     },
     ...(metadata
       ? metadata.map<DataTableColumnDef<schemas['Order']>>((key) => ({
-        accessorKey: `metadata.${key}`,
-        enableSorting: false,
-        header: ({ column }) => (
-          <DataTableColumnHeader
-            column={column}
-            title={key}
-            className="text-black dark:text-white"
-          />
-        ),
-        cell: (props) => <Text monospace>{props.getValue() as string}</Text>,
-      }))
+          accessorKey: `metadata.${key}`,
+          enableSorting: false,
+          header: ({ column }) => (
+            <DataTableColumnHeader
+              column={column}
+              title={key}
+              className="text-black dark:text-white"
+            />
+          ),
+          cell: (props) => <Text monospace>{props.getValue() as string}</Text>,
+        }))
       : []),
   ]
 

@@ -43,7 +43,7 @@ from polar.models import (
     Subscription,
     User,
 )
-from polar.models.customer import CustomerType
+from polar.models.customer import EXTERNAL_ID_METADATA_KEY, CustomerType
 from polar.models.member import MemberRole
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.order.repository import OrderRepository
@@ -590,7 +590,8 @@ class CustomerService:
 
         This anonymizes personal data while:
         - Preserving the Stripe customer ID for payment history
-        - Preserving external_id and tax_id for legal/tax reasons
+        - Preserving tax_id for legal/tax reasons
+        - Preserving external_id in metadata, freeing the column for reuse
         - Preserving name for businesses (identified by having tax_id)
         - Keeping order and subscription records intact (invoices are immutable)
 
@@ -635,9 +636,17 @@ class CustomerService:
         # Record anonymization timestamp in metadata
         user_metadata = dict(customer.user_metadata) if customer.user_metadata else {}
         user_metadata["__anonymized_at"] = utc_now().isoformat()
+
+        # Clear external_id for future recycling, keeping the original value in
+        # metadata: the unique constraint doesn't account for `deleted_at`, so a
+        # deleted customer would hold onto its external ID forever.
+        if customer.external_id is not None:
+            user_metadata[EXTERNAL_ID_METADATA_KEY] = customer.external_id
+            update_dict["external_id"] = None
+
         update_dict["user_metadata"] = user_metadata
 
-        # NOTE: external_id and tax_id are RETAINED for legal reasons
+        # NOTE: tax_id is RETAINED for legal reasons
 
         # The repository.update() method automatically enqueues the webhook job
         customer = await repository.update(customer, update_dict=update_dict)

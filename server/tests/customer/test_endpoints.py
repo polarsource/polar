@@ -915,7 +915,7 @@ class TestDeleteCustomerWithAnonymize:
         organization: Organization,
         user_organization: UserOrganization,
     ) -> None:
-        """External ID should be preserved for legal reasons."""
+        """External ID should be preserved in metadata, freeing the column."""
         customer = await create_customer(
             save_fixture,
             organization=organization,
@@ -931,8 +931,23 @@ class TestDeleteCustomerWithAnonymize:
         deleted = await session.get(Customer, customer.id)
         assert deleted is not None
 
-        # External ID should be PRESERVED
-        assert deleted.external_id == "ext-123"
+        # The column is cleared so the external ID can be recycled...
+        assert deleted.external_id is None
+        # ...but the original value is PRESERVED for legal reasons
+        assert deleted.saved_external_id == "ext-123"
+
+        # The freed external ID can be reused by a new customer
+        response = await client.post(
+            "/v1/customers/",
+            json={
+                "email": "external-recycled@example.com",
+                "external_id": "ext-123",
+                "organization_id": str(organization.id),
+            },
+        )
+
+        assert response.status_code == 201
+        assert response.json()["external_id"] == "ext-123"
 
     @pytest.mark.auth
     async def test_delete_without_anonymize(
@@ -1004,5 +1019,6 @@ class TestDeleteCustomerExternalWithAnonymize:
         assert deleted.email is not None
         assert deleted.email.endswith("@anonymized.polar.sh")
 
-        # External ID should be preserved
-        assert deleted.external_id == "ext-anon-123"
+        # External ID should be cleared, but preserved in metadata
+        assert deleted.external_id is None
+        assert deleted.saved_external_id == "ext-anon-123"

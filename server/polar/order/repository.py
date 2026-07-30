@@ -66,14 +66,20 @@ class OrderRepository(
         order count, net revenue in cents), descending.
 
         Partially refunded orders count with the refunded portion subtracted,
-        so the ranking reflects money actually kept.
+        so the ranking reflects money actually kept. Wallet credit applied to
+        an order (``applied_balance_amount``) is also subtracted, since that
+        portion was already paid to the merchant as a prior balance top-up and
+        is not new revenue for this order.
 
         A repository aggregation (not the metrics layer) on purpose: ranking
         across all customers cannot be expressed as bounded per-entity metric
         queries the way products can.
         """
         net_revenue = func.coalesce(
-            func.sum(Order.net_amount - Order.refunded_amount), 0
+            func.sum(
+                Order.net_amount + Order.applied_balance_amount - Order.refunded_amount
+            ),
+            0,
         )
         statement = (
             select(
@@ -111,10 +117,15 @@ class OrderRepository(
     ) -> Sequence[tuple[str, int, int]]:
         """(country, order count, kept net revenue in cents) for paid orders
         since the cutoff, largest revenue first. Orders without a billing
-        country are excluded."""
+        country are excluded. Kept net revenue subtracts refunds and wallet
+        credit applied (``applied_balance_amount``), which is not new revenue
+        for this order."""
         country = Order.billing_address["country"].astext
         net_revenue = func.coalesce(
-            func.sum(Order.net_amount - Order.refunded_amount), 0
+            func.sum(
+                Order.net_amount + Order.applied_balance_amount - Order.refunded_amount
+            ),
+            0,
         )
         statement = (
             select(country, func.count(Order.id), net_revenue)
@@ -147,7 +158,10 @@ class OrderRepository(
         products are worth those per-product metric queries.
         """
         net_revenue = func.coalesce(
-            func.sum(Order.net_amount - Order.refunded_amount), 0
+            func.sum(
+                Order.net_amount + Order.applied_balance_amount - Order.refunded_amount
+            ),
+            0,
         )
         statement = (
             select(Order.product_id)

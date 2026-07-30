@@ -41,22 +41,6 @@ const filterParsers = {
   metadata: parseAsArrayOf(parseAsString),
 }
 
-/**
- * Invoice numbers are `{orgPrefix}-{seq}` or `{orgPrefix}-{customerShortId}-{seq}`.
- * Org prefix defaults to `slug.upper()` (may include hyphens, e.g. ACME-CORP).
- */
-const formatInvoiceNumber = (
-  invoiceNumber: string | null,
-  organizationSlug: string,
-) => {
-  if (!invoiceNumber) return null
-  const prefix = `${organizationSlug.toUpperCase()}-`
-  if (invoiceNumber.startsWith(prefix)) {
-    return invoiceNumber.slice(prefix.length)
-  }
-  return invoiceNumber
-}
-
 const formatOrderDate = (value: string) => {
   const date = new Date(value)
   return date.toLocaleDateString('en-US', {
@@ -118,14 +102,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       ),
       cell: ({ row: { original: order } }) => (
         <Box flexDirection="column" rowGap="xs" minWidth={0}>
-          <Text>
+          <Text tabularNums>
             <time dateTime={order.created_at}>
               {formatOrderDate(order.created_at)}
             </time>
           </Text>
           <Text color="muted" monospace tabularNums>
-            {formatInvoiceNumber(order.invoice_number, organization.slug) ??
-              '—'}
+            {order.invoice_number ?? '—'}
           </Text>
         </Box>
       ),

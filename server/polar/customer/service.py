@@ -573,13 +573,17 @@ class CustomerService:
 
         await member_service.delete_by_customer(session, customer.id)
 
+        # Deletion always goes through `soft_delete`: it's the single place that
+        # frees the external ID and emits the `customer.deleted` webhook/event.
+        # It runs first so anonymization is a write on an already-deleted
+        # customer, which keeps `customer.deleted` the only event we emit.
+        repository = CustomerRepository.from_session(session)
+        customer = await repository.soft_delete(customer)
+
         if anonymize:
             customer = await self.anonymize(session, customer)
 
-        # Deletion always goes through `soft_delete`: it's the single place that
-        # frees the external ID and emits the `customer.deleted` webhook/event.
-        repository = CustomerRepository.from_session(session)
-        return await repository.soft_delete(customer)
+        return customer
 
     async def anonymize(
         self,

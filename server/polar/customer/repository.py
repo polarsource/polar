@@ -88,10 +88,15 @@ class CustomerRepository(
         inspection = orm_inspect(object)
 
         customer = await super().update(object, update_dict=update_dict, flush=flush)
-        enqueue_job("customer.webhook", WebhookEventType.customer_updated, customer.id)
 
-        # Only create an event if the customer is not being deleted
+        # Don't announce a write to a deleted customer as an update: the delete
+        # itself is a write, and so is any cleanup that follows it. Integrators
+        # get `customer.deleted` for those instead.
         if not customer.deleted_at:
+            enqueue_job(
+                "customer.webhook", WebhookEventType.customer_updated, customer.id
+            )
+
             updated_fields: CustomerUpdatedFields = {}
 
             changed, value = _get_changed_value(inspection, "name")

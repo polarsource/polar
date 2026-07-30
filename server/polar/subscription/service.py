@@ -27,6 +27,10 @@ from polar.customer_meter.service import customer_meter as customer_meter_servic
 from polar.customer_seat.service import seat_service
 from polar.discount.repository import DiscountRedemptionRepository, DiscountRepository
 from polar.discount.service import discount as discount_service
+from polar.email.deduplication import (
+    subscription_renewal_reminder_key,
+    subscription_trial_conversion_reminder_key,
+)
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import enqueue_email_template
 from polar.enums import (
@@ -3315,6 +3319,9 @@ class SubscriptionService:
             subject_template="Your {product.name} subscription renews soon",
             template_name="subscription_renewal_reminder",
             extra_context={"renewal_date": renewal_date},
+            deduplication_key=subscription_renewal_reminder_key(
+                subscription.id, subscription.current_period_end.date()
+            ),
         )
 
     async def send_trial_conversion_reminder_email(
@@ -3334,6 +3341,9 @@ class SubscriptionService:
             subject_template="Your {product.name} trial is ending soon",
             template_name="subscription_trial_conversion_reminder",
             extra_context={"conversion_date": conversion_date},
+            deduplication_key=subscription_trial_conversion_reminder_key(
+                subscription.id, subscription.trial_end.date()
+            ),
         )
 
     async def _send_customer_email(
@@ -3354,6 +3364,7 @@ class SubscriptionService:
             "subscription_updated",
         ],
         extra_context: dict[str, Any] | None = None,
+        deduplication_key: str | None = None,
     ) -> None:
         product_repository = ProductRepository.from_session(session)
         product = await product_repository.get_by_id(
@@ -3424,6 +3435,7 @@ class SubscriptionService:
                     **organization.email_from_reply,
                     to_email_addr=recipient_email,
                     subject=subject,
+                    deduplication_key=deduplication_key,
                 )
 
         await send_to_recipients(recipients)

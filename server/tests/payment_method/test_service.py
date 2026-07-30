@@ -344,6 +344,31 @@ class TestSendExpiringReminderEmail:
             == "Your card ending in 4242 expires soon"
         )
 
+    async def test_passes_deduplication_key(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        enqueue_email_template_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_expiring_card(save_fixture, customer)
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+        )
+
+        await payment_method_service.send_expiration_reminder_email(
+            session, payment_method
+        )
+
+        assert (
+            enqueue_email_template_mock.call_args.kwargs["deduplication_key"]
+            == f"payment_method_expiration_reminder:{payment_method.id}:2026-4"
+        )
+
     async def test_names_every_billable_product_once(
         self,
         session: AsyncSession,

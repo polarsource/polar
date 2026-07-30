@@ -5637,6 +5637,10 @@ async def test_send_renewal_reminder_email_formats_long_date(
     assert send_customer_email_mock.call_args.kwargs["extra_context"] == {
         "renewal_date": "November 7, 2026"
     }
+    assert (
+        send_customer_email_mock.call_args.kwargs["deduplication_key"]
+        == f"subscription_renewal_reminder:{subscription.id}:2026-11-07"
+    )
 
 
 @pytest.mark.asyncio
@@ -5664,6 +5668,10 @@ async def test_send_trial_conversion_reminder_email_formats_long_date(
     assert send_customer_email_mock.call_args.kwargs["extra_context"] == {
         "conversion_date": "March 17, 2026"
     }
+    assert (
+        send_customer_email_mock.call_args.kwargs["deduplication_key"]
+        == f"subscription_trial_conversion_reminder:{subscription.id}:2026-03-17"
+    )
 
 
 @pytest.mark.asyncio

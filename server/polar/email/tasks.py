@@ -27,6 +27,7 @@ async def email_send(
     template: str | None = None,
     props_json: str | None = None,
     attachments: list[Attachment] | None = None,
+    deduplication_key: str | None = None,
 ) -> None:
     if html_content is None:
         assert template is not None
@@ -70,6 +71,7 @@ async def email_send(
                     email_template=template,
                     email_props=email_props,
                     error=error,
+                    deduplication_key=deduplication_key,
                 )
         except Exception:
             log.exception("Failed to write email log")

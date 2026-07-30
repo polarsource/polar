@@ -3,7 +3,10 @@ from pydantic import ValidationError
 
 from polar.enums import SubscriptionProrationBehavior
 from polar.kit.currency import PresentmentCurrency
-from polar.models.organization import OrganizationSubscriptionSettings
+from polar.models.organization import (
+    OrganizationSubscriptionSettings,
+    resolve_default_customer_email_settings,
+)
 from polar.organization.schemas import OrganizationCreate, OrganizationUpdate
 
 
@@ -101,3 +104,43 @@ class TestSlugMaxLength:
         slug = "a" * 65
         with pytest.raises(ValidationError, match="at most 64 characters"):
             OrganizationCreate(name="Clean Name", slug=slug)
+
+
+class TestResolveCustomerEmailSettings:
+    def test_new_email_inherits_a_disabled_subscription_cycle(self) -> None:
+        """Organizations predating the key have it absent; they shouldn't get a
+        new customer email switched on behind their back."""
+        resolved = resolve_default_customer_email_settings(
+            {"order_confirmation": False, "subscription_cycled": False}
+        )
+
+        assert resolved["payment_method_expiration_reminder"] is False
+
+    def test_new_email_inherits_an_enabled_subscription_cycle(self) -> None:
+        resolved = resolve_default_customer_email_settings(
+            {"subscription_cycled": True}
+        )
+
+        assert resolved["payment_method_expiration_reminder"] is True
+
+    def test_stored_value_wins_over_inheritance(self) -> None:
+        resolved = resolve_default_customer_email_settings(
+            {
+                "subscription_cycled": False,
+                "payment_method_expiration_reminder": True,
+            }
+        )
+
+        assert resolved["payment_method_expiration_reminder"] is True
+
+    def test_falls_back_to_enabled_when_nothing_is_stored(self) -> None:
+        resolved = resolve_default_customer_email_settings({})
+
+        assert resolved["payment_method_expiration_reminder"] is True
+
+    def test_other_missing_keys_still_default_to_enabled(self) -> None:
+        resolved = resolve_default_customer_email_settings(
+            {"subscription_cycled": False}
+        )
+
+        assert resolved["order_confirmation"] is True

@@ -1,17 +1,29 @@
 import uuid
+from datetime import date
+from urllib.parse import urlencode
 
 import stripe as stripe_lib
+from babel.dates import format_date
 from sqlalchemy import select
+from sqlalchemy.orm import joinedload
 
+from polar.config import settings
 from polar.customer.repository import CustomerRepository
+from polar.customer.service import customer as customer_service
+from polar.email.schemas import EmailAdapter
+from polar.email.sender import enqueue_email_template
 from polar.enums import PaymentProcessor
 from polar.exceptions import PolarError
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
 from polar.models import Checkout, Customer, Order, PaymentMethod, Subscription
+from polar.models.organization import resolve_default_customer_email_settings
+from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncSession
+from polar.subscription.repository import SubscriptionRepository
 
 from .repository import PaymentMethodRepository
+from .schemas import PaymentMethodCard
 
 
 class PaymentMethodError(PolarError): ...
@@ -21,6 +33,13 @@ class NoPaymentMethodOnIntent(PaymentMethodError):
     def __init__(self, intent_id: str) -> None:
         self.intent_id = intent_id
         message = f"No payment method found on Stripe intent with ID {intent_id}."
+        super().__init__(message)
+
+
+class PaymentMethodDoesNotExist(PaymentMethodError):
+    def __init__(self, payment_method_id: uuid.UUID) -> None:
+        self.payment_method_id = payment_method_id
+        message = f"Payment method with ID {payment_method_id} does not exist."
         super().__init__(message)
 
 
@@ -130,6 +149,79 @@ class PaymentMethodService:
             return payment_methods[0]
 
         return None
+
+    async def send_expiration_reminder_email(
+        self, session: AsyncSession, payment_method: PaymentMethod
+    ) -> None:
+        if payment_method.type != "card":
+            return
+
+        card = PaymentMethodCard.model_validate(payment_method, from_attributes=True)
+        expiration_date = format_date(
+            date(card.method_metadata.exp_year, card.method_metadata.exp_month, 1),
+            format="MMMM y",
+            locale="en_US",
+        )
+
+        subscription_repository = SubscriptionRepository.from_session(session)
+        subscriptions = await subscription_repository.list_billable_by_payment_method(
+            payment_method.id, options=(joinedload(Subscription.product),)
+        )
+        product_names = sorted({s.product.name for s in subscriptions})
+        # The card doesn't back anything billable, bail out
+        if not product_names:
+            return
+
+        customer = payment_method.customer
+        organization_repository = OrganizationRepository.from_session(session)
+        organization = await organization_repository.get_by_id(
+            customer.organization_id, include_deleted=True, include_blocked=True
+        )
+        assert organization is not None
+
+        email_settings = resolve_default_customer_email_settings(
+            organization.customer_email_settings
+        )
+        if not email_settings["payment_method_expiration_reminder"]:
+            return
+
+        recipients = await customer_service.get_email_recipients(session, customer)
+        subject = f"Your card ending in {card.method_metadata.last4} expires soon"
+
+        for recipient_email in recipients:
+            token = await customer_service.create_session_token_for_recipient(
+                session, customer, recipient_email
+            )
+            if token is None:
+                continue
+
+            query_string = urlencode(
+                {"customer_session_token": token, "email": recipient_email}
+            )
+            portal_url = settings.generate_frontend_url(
+                f"/{organization.slug}/portal/settings?{query_string}"
+            )
+
+            email = EmailAdapter.validate_python(
+                {
+                    "template": "payment_method_expiration_reminder",
+                    "props": {
+                        "email": recipient_email,
+                        "organization": organization,
+                        "payment_method": card,
+                        "product_names": product_names,
+                        "expiration_date": expiration_date,
+                        "url": portal_url,
+                    },
+                }
+            )
+
+            enqueue_email_template(
+                email,
+                **organization.email_from_reply,
+                to_email_addr=recipient_email,
+                subject=subject,
+            )
 
     async def _get_billable_subscription_ids(
         self, session: AsyncSession, payment_method: PaymentMethod

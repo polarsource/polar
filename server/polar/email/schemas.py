@@ -21,6 +21,7 @@ from polar.notifications.notification import (
 )
 from polar.order.schemas import OrderBase, OrderItemSchema
 from polar.organization.schemas import Organization
+from polar.payment_method.schemas import PaymentMethodCard
 from polar.product.schemas import BenefitList, ProductBase
 from polar.subscription.schemas import SubscriptionBase
 
@@ -38,6 +39,7 @@ class EmailTemplate(StrEnum):
     organization_invite = "organization_invite"
     organization_offboarded = "organization_offboarded"
     support_case_organization_new_message = "support_case_organization_new_message"
+    payment_method_expiration_reminder = "payment_method_expiration_reminder"
     personal_access_token_leaked = "personal_access_token_leaked"
     seat_invitation = "seat_invitation"
     subscription_cancellation = "subscription_cancellation"
@@ -258,6 +260,21 @@ class SeatInvitationProps(EmailProps):
 class SeatInvitationEmail(BaseModel):
     template: Literal[EmailTemplate.seat_invitation] = EmailTemplate.seat_invitation
     props: SeatInvitationProps
+
+
+class PaymentMethodExpirationReminderProps(EmailProps):
+    organization: Organization
+    payment_method: PaymentMethodCard
+    product_names: list[str]
+    expiration_date: str
+    url: str
+
+
+class PaymentMethodExpirationReminderEmail(BaseModel):
+    template: Literal[EmailTemplate.payment_method_expiration_reminder] = (
+        EmailTemplate.payment_method_expiration_reminder
+    )
+    props: PaymentMethodExpirationReminderProps
 
 
 class SubscriptionPropsBase(EmailProps):
@@ -553,6 +570,7 @@ Email = Annotated[
     | OrganizationInviteEmail
     | OrganizationOffboardedEmail
     | SupportCaseOrganizationNewMessageEmail
+    | PaymentMethodExpirationReminderEmail
     | PersonalAccessTokenLeakedEmail
     | SeatInvitationEmail
     | SubscriptionCancellationEmail

@@ -36,7 +36,7 @@ from polar.models.organization import (
     OrganizationCustomerPortalSettings,
     OrganizationStatus,
     OrganizationSubscriptionSettings,
-    _default_customer_email_settings,
+    resolve_default_customer_email_settings,
 )
 from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import ReviewAppealSupportCase
@@ -362,10 +362,8 @@ class OrganizationSocialLink(Schema):
 
 
 def _merge_customer_email_settings_defaults(value: Any) -> Any:
-    """Complete stored settings with defaults so reads tolerate keys added after
-    an organization's settings were last written (lazy materialization)."""
     if isinstance(value, dict):
-        return {**_default_customer_email_settings(), **value}
+        return resolve_default_customer_email_settings(value)
     return value
 
 

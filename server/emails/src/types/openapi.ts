@@ -1992,6 +1992,8 @@ export interface components {
     OrganizationCustomerEmailSettings: {
       /** Order Confirmation */
       order_confirmation: boolean
+      /** Payment Method Expiration Reminder */
+      payment_method_expiration_reminder: boolean
       /** Subscription Cancellation */
       subscription_cancellation: boolean
       /** Subscription Confirmation */
@@ -2205,6 +2207,82 @@ export interface components {
       /** Allow Customer Updates */
       allow_customer_updates: boolean
     }
+    /** PaymentMethodCard */
+    PaymentMethodCard: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      processor: components['schemas']['PaymentProcessor']
+      /**
+       * Customer Id
+       * Format: uuid4
+       */
+      customer_id: string
+      /**
+       * Type
+       * @constant
+       */
+      type: 'card'
+      method_metadata: components['schemas']['PaymentMethodCardMetadata']
+    }
+    /** PaymentMethodCardMetadata */
+    PaymentMethodCardMetadata: {
+      /** Brand */
+      brand: string
+      /** Last4 */
+      last4: string
+      /** Exp Month */
+      exp_month: number
+      /** Exp Year */
+      exp_year: number
+      /**
+       * Wallet
+       * @default null
+       */
+      wallet: string | null
+    }
+    /** PaymentMethodExpirationReminderEmail */
+    PaymentMethodExpirationReminderEmail: {
+      /**
+       * Template
+       * @default payment_method_expiration_reminder
+       * @constant
+       */
+      template: 'payment_method_expiration_reminder'
+      props: components['schemas']['PaymentMethodExpirationReminderProps']
+    }
+    /** PaymentMethodExpirationReminderProps */
+    PaymentMethodExpirationReminderProps: {
+      /** Email */
+      email: string
+      organization: components['schemas']['Organization']
+      payment_method: components['schemas']['PaymentMethodCard']
+      /** Product Names */
+      product_names: string[]
+      /** Expiration Date */
+      expiration_date: string
+      /** Url */
+      url: string
+    }
+    /**
+     * PaymentProcessor
+     * @enum {string}
+     */
+    PaymentProcessor: 'stripe'
     /** PersonalAccessTokenLeakedEmail */
     PersonalAccessTokenLeakedEmail: {
       /**

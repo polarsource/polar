@@ -26528,6 +26528,8 @@ export interface components {
     OrganizationCustomerEmailSettings: {
       /** Order Confirmation */
       order_confirmation: boolean
+      /** Payment Method Expiration Reminder */
+      payment_method_expiration_reminder: boolean
       /** Subscription Cancellation */
       subscription_cancellation: boolean
       /** Subscription Confirmation */

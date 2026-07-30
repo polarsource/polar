@@ -118,7 +118,7 @@ const TransactionsList = ({
             transaction.currency ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="underline decoration-dotted">
+                  <span className="dark:decoration-polar-500 underline decoration-gray-400 decoration-dashed decoration-1 underline-offset-4">
                     {formatCurrency('accounting')(amount, transaction.currency)}
                   </span>
                 </TooltipTrigger>
@@ -214,7 +214,7 @@ const TransactionsList = ({
             transaction.currency ? (
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <span className="underline decoration-dotted">
+                  <span className="dark:decoration-polar-500 underline decoration-gray-400 decoration-dashed decoration-1 underline-offset-4">
                     {formatCurrency('accounting')(
                       -paymentTransaction.tax_amount,
                       transaction.currency,

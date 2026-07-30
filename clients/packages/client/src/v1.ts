@@ -40018,10 +40018,10 @@ export interface operations {
         canceled_at_after?: string | null
         /** @description Filter by cancellation date (before or equal to). */
         canceled_at_before?: string | null
-        /** @description Filter by start date (after or equal to). */
-        started_at_after?: string | null
-        /** @description Filter by start date (before or equal to). */
-        started_at_before?: string | null
+        /** @description Only include subscriptions started after this date. */
+        started_after?: string | null
+        /** @description Only include subscriptions started before this date. */
+        started_before?: string | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

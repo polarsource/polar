@@ -219,7 +219,7 @@ class TestListSubscriptions:
         assert json["pagination"]["total_count"] == 2
 
     @pytest.mark.auth
-    async def test_started_at_date_range(
+    async def test_started_date_range(
         self,
         save_fixture: SaveFixture,
         client: AsyncClient,
@@ -242,8 +242,8 @@ class TestListSubscriptions:
         response = await client.get(
             "/v1/subscriptions/",
             params={
-                "started_at_after": "2024-03-01T00:00:00Z",
-                "started_at_before": "2024-07-01T00:00:00Z",
+                "started_after": "2024-03-01T00:00:00Z",
+                "started_before": "2024-07-01T00:00:00Z",
             },
         )
         assert response.status_code == 200

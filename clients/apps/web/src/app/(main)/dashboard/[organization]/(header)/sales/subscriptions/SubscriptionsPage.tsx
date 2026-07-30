@@ -142,8 +142,8 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     product_id: productId ?? undefined,
     status: status === 'any' ? undefined : [status],
     cancel_at_period_end: cancelAtPeriodEnd ?? undefined,
-    started_at_after: startDate.toISOString(),
-    started_at_before: endDate.toISOString(),
+    started_after: startDate.toISOString(),
+    started_before: endDate.toISOString(),
   })
 
   const subscriptions = subscriptionsHook.data?.items || []

@@ -27,7 +27,11 @@ const FormattedDateTime: React.FC<FormattedDateTimeProps> = ({
       }
 
       if (resolution === 'time') {
-        return parsedDate.toLocaleString(locale, { dateStyle, timeStyle })
+        return parsedDate.toLocaleString(locale, {
+          dateStyle,
+          timeStyle,
+          hourCycle: 'h23',
+        })
       }
 
       if (resolution === 'month') {

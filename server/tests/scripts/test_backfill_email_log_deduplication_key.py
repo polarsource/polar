@@ -67,7 +67,7 @@ class TestBackfillEmailLogDeduplicationKey:
             email_props=_card_props(payment_method_id),
         )
 
-        updated = await run_backfill(session=session)
+        updated = await run_backfill(dry_run=False, session=session)
 
         assert updated == 1
         assert (
@@ -96,7 +96,7 @@ class TestBackfillEmailLogDeduplicationKey:
             },
         )
 
-        await run_backfill(session=session)
+        await run_backfill(dry_run=False, session=session)
 
         assert (
             await _get_key(session, renewal)
@@ -128,7 +128,7 @@ class TestBackfillEmailLogDeduplicationKey:
             deduplication_key="preexisting",
         )
 
-        updated = await run_backfill(session=session)
+        updated = await run_backfill(dry_run=False, session=session)
 
         assert updated == 0
         assert await _get_key(session, failed) is None
@@ -159,7 +159,7 @@ class TestBackfillEmailLogDeduplicationKey:
             created_at=datetime(2026, 1, 3, tzinfo=UTC),
         )
 
-        await run_backfill(session=session)
+        await run_backfill(dry_run=False, session=session)
 
         expected = f"payment_method_expiration_reminder:{payment_method_id}:2026-4"
         assert await _get_key(session, earliest) == expected
@@ -190,11 +190,25 @@ class TestBackfillEmailLogDeduplicationKey:
             created_at=datetime(2026, 1, 2, tzinfo=UTC),
         )
 
-        updated = await run_backfill(session=session)
+        updated = await run_backfill(dry_run=False, session=session)
 
         assert updated == 0
         assert await _get_key(session, older_null) is None
         assert await _get_key(session, newer_keyed) == expected
+
+    async def test_dry_run_is_the_default_and_writes_nothing(
+        self, save_fixture: SaveFixture, session: AsyncSession
+    ) -> None:
+        email_log = await _create_email_log(
+            save_fixture,
+            template="payment_method_expiration_reminder",
+            email_props=_card_props(str(uuid4())),
+        )
+
+        would_update = await run_backfill(session=session)
+
+        assert would_update == 1
+        assert await _get_key(session, email_log) is None
 
     async def test_is_idempotent(
         self, save_fixture: SaveFixture, session: AsyncSession
@@ -205,8 +219,8 @@ class TestBackfillEmailLogDeduplicationKey:
             email_props=_card_props(str(uuid4())),
         )
 
-        first = await run_backfill(session=session)
-        second = await run_backfill(session=session)
+        first = await run_backfill(dry_run=False, session=session)
+        second = await run_backfill(dry_run=False, session=session)
 
         assert first == 1
         assert second == 0

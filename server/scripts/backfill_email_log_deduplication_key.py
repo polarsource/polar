@@ -6,8 +6,9 @@ from sqlalchemy import ColumnElement, and_, func, or_, select, update
 from sqlalchemy.orm import aliased
 
 from polar.email.schemas import EmailTemplate
-from polar.kit.db.postgres import AsyncSession
+from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.models.email_log import EmailLog, EmailLogStatus
+from polar.postgres import create_async_engine
 from scripts.helper import (
     configure_script_logging,
     limit_bindparam,
@@ -88,9 +89,10 @@ async def run_backfill(
     *,
     batch_size: int = 5000,
     sleep_seconds: float = 0.1,
+    dry_run: bool = True,
     session: AsyncSession | None = None,
 ) -> int:
-    updated = 0
+    total = 0
     for template, key, valid in CONFIGS:
         src = aliased(EmailLog)
         other = aliased(EmailLog)
@@ -120,36 +122,64 @@ async def run_backfill(
             .exists()
         )
 
-        id_subquery = (
-            select(src.id)
-            .where(
-                src.status == EmailLogStatus.sent,
-                src.email_template == template,
-                src.deduplication_key.is_(None),
-                valid(src),
-                is_canonical,
-            )
-            .limit(limit_bindparam())
+        candidate_statement = select(src.id).where(
+            src.status == EmailLogStatus.sent,
+            src.email_template == template,
+            src.deduplication_key.is_(None),
+            valid(src),
+            is_canonical,
         )
 
-        updated += await run_batched_update(
+        if dry_run:
+            count = await _count(
+                select(func.count()).select_from(candidate_statement.subquery()),
+                session,
+            )
+            typer.echo(f"[dry-run] {template}: {count} rows would be updated")
+            total += count
+            continue
+
+        total += await run_batched_update(
             update(EmailLog)
             .values(deduplication_key=key(EmailLog))
-            .where(EmailLog.id.in_(id_subquery)),
+            .where(EmailLog.id.in_(candidate_statement.limit(limit_bindparam()))),
             batch_size=batch_size,
             sleep_seconds=sleep_seconds,
             session=session,
         )
-    return updated
+
+    if dry_run:
+        typer.echo(
+            f"[dry-run] {total} rows would be updated in total. "
+            "Re-run with --execute to apply."
+        )
+    return total
+
+
+async def _count(statement: Any, session: AsyncSession | None) -> int:
+    if session is not None:
+        return (await session.execute(statement)).scalar_one()
+    engine = create_async_engine("script")
+    try:
+        sessionmaker = create_async_sessionmaker(engine)
+        async with sessionmaker() as read_session:
+            return (await read_session.execute(statement)).scalar_one()
+    finally:
+        await engine.dispose()
 
 
 @cli.command()
 @typer_async
 async def backfill_email_log_deduplication_key(
+    execute: bool = typer.Option(
+        False, "--execute", help="Apply changes. Without it, runs as a dry run."
+    ),
     batch_size: int = typer.Option(5000, help="Number of rows to process per batch"),
     sleep_seconds: float = typer.Option(0.1, help="Seconds to sleep between batches"),
 ) -> None:
-    await run_backfill(batch_size=batch_size, sleep_seconds=sleep_seconds)
+    await run_backfill(
+        batch_size=batch_size, sleep_seconds=sleep_seconds, dry_run=not execute
+    )
 
 
 if __name__ == "__main__":

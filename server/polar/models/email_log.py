@@ -33,3 +33,4 @@ class EmailLog(RecordModel):
         JSONB, nullable=False, default=dict
     )
     error: Mapped[str | None] = mapped_column(String, nullable=True)
+    deduplication_key: Mapped[str | None] = mapped_column(String, nullable=True)

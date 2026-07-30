@@ -70,6 +70,32 @@ class TestEmailSend:
         assert log.processor_id is None
         assert log.error == "connection refused"
 
+    async def test_persists_deduplication_key(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch(
+            "polar.email.tasks.email_sender.send",
+            return_value="resend_123",
+        )
+
+        await email_send(
+            to_email_addr="test@example.com",
+            subject="Test Subject",
+            html_content="<p>Hello</p>",
+            from_name="Polar",
+            from_email_addr="noreply@polar.sh",
+            email_headers=None,
+            reply_to_name=None,
+            reply_to_email_addr=None,
+            deduplication_key="some_reminder:abc:2026-4",
+        )
+
+        result = await session.execute(select(EmailLog))
+        log = result.scalar_one()
+        assert log.deduplication_key == "some_reminder:abc:2026-4"
+
     async def test_template_email_extracts_organization_id(
         self,
         session: AsyncSession,

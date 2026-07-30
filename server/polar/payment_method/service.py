@@ -10,6 +10,7 @@ from sqlalchemy.orm import joinedload
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
+from polar.email.deduplication import payment_method_expiration_reminder_key
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import enqueue_email_template
 from polar.enums import PaymentProcessor
@@ -187,6 +188,11 @@ class PaymentMethodService:
 
         recipients = await customer_service.get_email_recipients(session, customer)
         subject = f"Your card ending in {card.method_metadata.last4} expires soon"
+        deduplication_key = payment_method_expiration_reminder_key(
+            payment_method.id,
+            card.method_metadata.exp_year,
+            card.method_metadata.exp_month,
+        )
 
         for recipient_email in recipients:
             token = await customer_service.create_session_token_for_recipient(
@@ -221,6 +227,7 @@ class PaymentMethodService:
                 **organization.email_from_reply,
                 to_email_addr=recipient_email,
                 subject=subject,
+                deduplication_key=deduplication_key,
             )
 
     async def _get_billable_subscription_ids(

@@ -60,6 +60,7 @@ class EmailLogRepository(RepositoryBase[EmailLog], RepositoryIDMixin[EmailLog, U
         email_props: dict[str, Any] | None = None,
         processor_id: str | None = None,
         error: str | None = None,
+        deduplication_key: str | None = None,
     ) -> EmailLog:
         props = email_props or {}
         return await self.create(
@@ -74,6 +75,7 @@ class EmailLogRepository(RepositoryBase[EmailLog], RepositoryIDMixin[EmailLog, U
                 email_props=props,
                 processor_id=processor_id,
                 error=error,
+                deduplication_key=deduplication_key,
                 organization_id=_extract_organization_id(props),
             )
         )

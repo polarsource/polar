@@ -105,7 +105,7 @@ async def customer_event(
                         "customer_id": str(customer.id),
                         "customer_email": customer.email,
                         "customer_name": customer.name,
-                        "customer_external_id": customer.external_id,
+                        "customer_external_id": customer.saved_external_id,
                     },
                     timestamp=customer.created_at,
                 )
@@ -118,7 +118,7 @@ async def customer_event(
                         "customer_id": str(customer.id),
                         "customer_email": customer.email,
                         "customer_name": customer.name,
-                        "customer_external_id": customer.external_id,
+                        "customer_external_id": customer.saved_external_id,
                     },
                 )
             case SystemEvent.customer_updated:
@@ -130,7 +130,7 @@ async def customer_event(
                         "customer_id": str(customer.id),
                         "customer_email": customer.email,
                         "customer_name": customer.name,
-                        "customer_external_id": customer.external_id,
+                        "customer_external_id": customer.saved_external_id,
                         "updated_fields": updated_fields or {},
                     },
                 )

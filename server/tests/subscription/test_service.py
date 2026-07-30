@@ -4315,6 +4315,180 @@ class TestUpdateProduct:
         assert updated_subscription_meter.meter == meter
         assert updated_subscription_meter.subscription == updated_subscription
 
+    async def test_meters_remove_multiple(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """Removing 2+ meters at once must drop every removed SubscriptionMeter.
+
+        Regression test for a modify-list-while-iterating bug in
+        ``Subscription.update_meters``: the old loop removed items from the
+        list it was iterating, which shifts indices and skips every other
+        removed element, leaving orphaned ``SubscriptionMeter`` rows attached
+        to the subscription.
+        """
+        meter_a = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            name="Meter A",
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+        )
+        meter_b = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            name="Meter B",
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+        )
+        meter_c = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            name="Meter C",
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+        )
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[
+                (meter_a, Decimal(100), None, "usd"),
+                (meter_b, Decimal(50), None, "usd"),
+                (meter_c, Decimal(25), None, "usd"),
+            ],
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        assert {sm.meter for sm in subscription.meters} == {
+            meter_a,
+            meter_b,
+            meter_c,
+        }
+
+        # New product drops all three meters (fixed-only).
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(3000, "usd")],
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+        await session.flush()
+
+        assert updated_subscription.product == new_product
+        assert updated_subscription.meters == []
+
+    async def test_meters_remove_subset_of_multiple(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        """When only some meters are removed, every removed one is dropped and
+        every kept one is retained (no skipping from in-place removal).
+
+        Keeps only the *last* meter so the kept meter is preceded by removed
+        meters: with the old ``list.remove()``-while-iterating loop, the
+        element immediately after a removed one is skipped, leaving an
+        orphaned ``SubscriptionMeter`` for a meter that should have been
+        removed.
+        """
+        meter_a = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            name="Meter A",
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+        )
+        meter_b = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            name="Meter B",
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+        )
+        meter_c = await create_meter(
+            save_fixture,
+            organization=organization,
+            id=uuid.uuid4(),
+            name="Meter C",
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=PropertyAggregation(
+                func=AggregationFunction.sum, property="tokens"
+            ),
+        )
+
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[
+                (meter_a, Decimal(100), None, "usd"),
+                (meter_b, Decimal(50), None, "usd"),
+                (meter_c, Decimal(25), None, "usd"),
+            ],
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        assert len(subscription.meters) == 3
+
+        # New product keeps only meter_c; drops meter_a and meter_b.
+        new_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter_c, Decimal(25), None, "usd")],
+        )
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.update_product(
+                session,
+                ctx,
+                subscription,
+                product_id=new_product.id,
+                proration_behavior=SubscriptionProrationBehavior.prorate,
+            )
+        await session.flush()
+
+        assert updated_subscription.product == new_product
+        assert len(updated_subscription.meters) == 1
+        assert updated_subscription.meters[0].meter == meter_c
+
     async def test_update_to_metered_only_product(
         self,
         session: AsyncSession,

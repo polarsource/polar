@@ -84,6 +84,38 @@ async def test_update_tracks_billing_name(
 
 
 @pytest.mark.asyncio
+async def test_update_deleted_customer_is_silent(
+    mocker: MockerFixture,
+    customer: Customer,
+    repository: CustomerRepository,
+) -> None:
+    await repository.soft_delete(customer)
+    enqueue_job_mock = mocker.patch("polar.customer.repository.enqueue_job")
+
+    customer.name = "New Name"
+    await repository.update(customer)
+
+    # `customer.deleted` already told integrators the customer is gone
+    enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_update_restoring_customer_emits_updated(
+    mocker: MockerFixture,
+    customer: Customer,
+    repository: CustomerRepository,
+) -> None:
+    await repository.soft_delete(customer)
+    enqueue_job_mock = mocker.patch("polar.customer.repository.enqueue_job")
+
+    await repository.update(customer, update_dict={"deleted_at": None})
+
+    enqueue_job_mock.assert_any_call(
+        "customer.webhook", WebhookEventType.customer_updated, customer.id
+    )
+
+
+@pytest.mark.asyncio
 async def test_update_without_changes_emits_empty_updated_fields(
     mocker: MockerFixture,
     customer: Customer,

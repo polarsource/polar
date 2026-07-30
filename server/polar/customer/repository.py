@@ -17,6 +17,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.models import Customer, Subscription
+from polar.models.customer import EXTERNAL_ID_METADATA_KEY
 from polar.models.subscription import SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.worker import enqueue_job
@@ -87,10 +88,13 @@ class CustomerRepository(
         inspection = orm_inspect(object)
 
         customer = await super().update(object, update_dict=update_dict, flush=flush)
-        enqueue_job("customer.webhook", WebhookEventType.customer_updated, customer.id)
 
         # Only create an event if the customer is not being deleted
         if not customer.deleted_at:
+            enqueue_job(
+                "customer.webhook", WebhookEventType.customer_updated, customer.id
+            )
+
             updated_fields: CustomerUpdatedFields = {}
 
             changed, value = _get_changed_value(inspection, "name")
@@ -138,7 +142,7 @@ class CustomerRepository(
         # Clear external_id for future recycling
         if customer.external_id:
             user_metadata = customer.user_metadata
-            user_metadata["__external_id"] = customer.external_id
+            user_metadata[EXTERNAL_ID_METADATA_KEY] = customer.external_id
             # Store external_id in `user_metadata` for support debugging
             customer.user_metadata = user_metadata
             customer.external_id = None

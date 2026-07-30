@@ -102,6 +102,9 @@ class CustomerType(StrEnum):
     team = "team"
 
 
+EXTERNAL_ID_METADATA_KEY = "__external_id"  # Metadata key holding the original external ID of a deleted customer
+
+
 def _avatar_url_for_email(email: str) -> str:
     domain = email.split("@")[-1].lower()
 
@@ -422,7 +425,7 @@ class Customer(MetadataMixin, RecordModel):
             return self.external_id
         # We clear the external ID for soft-deleted customers,
         # but keep it in metadata
-        return self.user_metadata.get("__external_id")
+        return self.user_metadata.get(EXTERNAL_ID_METADATA_KEY)
 
 
 # ID generation algorithm based on https://instagram-engineering.com/sharding-ids-at-instagram-1cf5a71e5a5c

@@ -11,6 +11,7 @@ from polar.customer.schemas.customer import (
     CustomerUpdate,
 )
 from polar.customer.service import customer as customer_service
+from polar.event.system import SystemEvent
 from polar.exceptions import PolarRequestValidationError
 from polar.kit.address import Address, AddressInput, CountryAlpha2, CountryAlpha2Input
 from polar.kit.pagination import PaginationParams
@@ -1041,6 +1042,72 @@ class TestDelete:
                 user_metadata=recycled.user_metadata,
             )
 
+    async def test_delete_with_anonymize_recycled_external_id(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Delete with anonymize=True should free the external ID for reuse."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="delete-anon-external@example.com",
+            external_id="will-be-recycled",
+            user_metadata={"user_id": "ABC"},
+        )
+
+        deleted = await customer_service.delete(session, customer, anonymize=True)
+        assert deleted.deleted_at is not None
+        assert deleted.external_id is None
+        # Anonymization and deletion each write metadata; neither clobbers the
+        # other's key, nor the customer's own.
+        assert deleted.saved_external_id == "will-be-recycled"
+        assert "__anonymized_at" in deleted.user_metadata
+        assert deleted.user_metadata["user_id"] == "ABC"
+        await session.flush()
+
+        try:
+            recycled = await create_customer(
+                save_fixture,
+                organization=organization,
+                email="recycled-anon@example.com",
+                external_id="will-be-recycled",
+            )
+        except IntegrityError:
+            pytest.fail("Should not raise IntegrityError")
+
+        assert recycled.id != customer.id
+        assert recycled.deleted_at is None
+        assert recycled.external_id == "will-be-recycled"
+
+    @pytest.mark.parametrize("anonymize", [False, True])
+    async def test_delete_enqueues_deleted_webhook_and_event(
+        self,
+        anonymize: bool,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """Both delete paths should notify integrators that the customer is gone."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="deleted-webhook@example.com",
+            name="Deleted Webhook User",
+        )
+        enqueue_job_mock = mocker.patch("polar.customer.repository.enqueue_job")
+
+        await customer_service.delete(session, customer, anonymize=anonymize)
+
+        enqueue_job_mock.assert_any_call(
+            "customer.webhook", WebhookEventType.customer_deleted, customer.id
+        )
+        enqueue_job_mock.assert_any_call(
+            "customer.event", customer.id, SystemEvent.customer_deleted
+        )
+
     async def test_delete_soft_deletes_members(
         self,
         session: AsyncSession,
@@ -1214,8 +1281,8 @@ class TestAnonymize:
         # Original user metadata should be preserved
         assert anonymized.user_metadata["user_id"] == "ABC"
 
-        # Customer should be marked as deleted
-        assert anonymized.deleted_at is not None
+        # Anonymizing on its own does not delete the customer
+        assert anonymized.deleted_at is None
 
     async def test_business_customer(
         self,
@@ -1325,7 +1392,7 @@ class TestAnonymize:
         save_fixture: SaveFixture,
         organization: Organization,
     ) -> None:
-        """External ID should be preserved for legal reasons."""
+        """External ID should be preserved: only deletion frees it."""
         customer = await create_customer(
             save_fixture,
             organization=organization,

@@ -674,8 +674,8 @@ class Organization(RateLimitGroupMixin, RecordModel):
         JSONB, nullable=False, default=_default_checkout_settings
     )
 
-    dispute_settings: Mapped[OrganizationDisputeSettings | None] = mapped_column(
-        JSONB, nullable=True, default=_default_dispute_settings
+    dispute_settings: Mapped[OrganizationDisputeSettings] = mapped_column(
+        JSONB, nullable=False, default=_default_dispute_settings
     )
 
     embed_hosts: Mapped[list[str]] = mapped_column(JSONB, nullable=False, default=list)
@@ -903,6 +903,14 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @property
     def checkout_require_3ds(self) -> bool:
         return self.checkout_settings.get("require_3ds", False)
+
+    @property
+    def dispute_auto_accept_below_amount(self) -> int | None:
+        return self.dispute_settings["auto_accept_below_amount"]
+
+    @property
+    def dispute_auto_accept_currency(self) -> str | None:
+        return self.dispute_settings["auto_accept_currency"]
 
     @declared_attr
     def all_products(cls) -> Mapped[list["Product"]]:

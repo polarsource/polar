@@ -149,6 +149,7 @@ async def create_credit_billing_entry(
     meter: Meter,
     pending: bool = True,
     order: Order | None = None,
+    timestamp: datetime | None = None,
 ) -> BillingEntry:
     event = await create_event(
         save_fixture,
@@ -157,6 +158,7 @@ async def create_credit_billing_entry(
         name=SystemEvent.meter_credited,
         customer=customer,
         metadata={"meter_id": str(meter.id), "units": units},
+        timestamp=timestamp,
     )
     billing_entry = BillingEntry(
         start_timestamp=event.timestamp,
@@ -982,3 +984,89 @@ class TestCreateOrderItemsFromPending:
 
         await session.refresh(entry)
         assert entry.order_item_id == order_item.id
+
+    async def test_rollover_credit_applies_to_next_order(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        """
+        Meters are reset after the order's line items are computed, so a rollover
+        credit is always stamped past the cycle boundary. It must not discount the
+        order being created, and must discount the following one.
+        """
+        price = product_metered_unit.prices[0]
+        assert is_metered_price(price)
+        boundary = utc_now()
+
+        usage_before = await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_subscription,
+            tokens=30,
+            timestamp=boundary - timedelta(days=1),
+        )
+        credit = await create_credit_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_subscription,
+            meter=meter,
+            units=10,
+            timestamp=boundary + timedelta(hours=1),
+        )
+        usage_after = await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_subscription,
+            tokens=25,
+            timestamp=boundary + timedelta(hours=2),
+        )
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, metered_subscription, metered_usage_billed_until=boundary
+        ) as order_items:
+            assert len(order_items) == 1
+            cycle_item = order_items[0]
+            # The full 30 tokens: the credit is past the boundary.
+            assert cycle_item.amount == 30_00
+
+            await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+            )
+
+        await session.refresh(usage_before)
+        assert usage_before.order_item_id == cycle_item.id
+
+        await session.refresh(credit)
+        assert credit.order_item_id is None
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session,
+            metered_subscription,
+            metered_usage_billed_until=boundary + timedelta(days=1),
+        ) as order_items:
+            assert len(order_items) == 1
+            next_item = order_items[0]
+            # 25 tokens consumed, less the 10 rolled-over units.
+            assert next_item.amount == 15_00
+
+            await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+            )
+
+        await session.refresh(credit)
+        assert credit.order_item_id == next_item.id
+
+        await session.refresh(usage_after)
+        assert usage_after.order_item_id == next_item.id

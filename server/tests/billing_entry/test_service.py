@@ -361,6 +361,60 @@ class TestCreateOrderItemsFromPending:
             await session.refresh(entry)
             assert entry.order_item_id == order_item.id
 
+        await session.refresh(deleted_entry)
+        assert deleted_entry.order_item_id is None
+
+    async def test_entries_spanning_several_batches(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        """
+        Quantity aggregation and entry claiming both run in bounded batches;
+        entries spanning several batches are billed and linked exactly once.
+        """
+        monkeypatch.setattr("polar.billing_entry.repository.PENDING_BATCH_SIZE", 2)
+
+        price = product_metered_unit.prices[0]
+        assert is_metered_price(price)
+        entries = [
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price,
+                subscription=metered_subscription,
+                tokens=10,
+            )
+            for _ in range(5)
+        ]
+        credit_entry = await create_credit_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_subscription,
+            meter=meter,
+            units=10,
+        )
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, metered_subscription
+        ) as order_items:
+            assert len(order_items) == 1
+            order_item = order_items[0]
+            assert order_item.amount == 40_00
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
+
+        for entry in [*entries, credit_entry]:
+            await session.refresh(entry)
+            assert entry.order_item_id == order_item.id
+
     async def test_metered_entries_respect_cutoff(
         self,
         save_fixture: SaveFixture,

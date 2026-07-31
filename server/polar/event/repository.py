@@ -381,28 +381,6 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         result = await self.session.execute(statement)
         return [(event, customer) for event, customer in result.all()]
 
-    def get_by_pending_entries_statement(
-        self,
-        subscription: UUID,
-        price: UUID,
-        *,
-        cutoff: datetime,
-    ) -> Select[tuple[Event]]:
-        statement = (
-            self.get_base_statement()
-            .join(BillingEntry, Event.id == BillingEntry.event_id)
-            .where(
-                BillingEntry.subscription_id == subscription,
-                BillingEntry.deleted_at.is_(None),
-                BillingEntry.order_item_id.is_(None),
-                BillingEntry.product_price_id == price,
-                BillingEntry.start_timestamp < cutoff,
-                BillingEntry.created_at <= cutoff,
-            )
-            .order_by(Event.ingested_at.asc())
-        )
-        return statement
-
     def get_by_pending_entries_for_meter_statement(
         self,
         subscription: UUID,

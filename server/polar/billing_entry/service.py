@@ -76,7 +76,7 @@ class BillingEntryService:
     ) -> AsyncGenerator[Sequence[OrderItem]]:
         repository = BillingEntryRepository.from_session(session)
         cutoff = cutoff or utc_now()
-        await repository.lock_pending_by_subscription(subscription.id, cutoff=cutoff)
+        await repository.lock_pending_by_subscription(subscription.id)
 
         item_entries_map: dict[OrderItem, BillingEntrySelector] = {}
         async for line_item, selector in self.compute_pending_subscription_line_items(
@@ -149,12 +149,12 @@ class BillingEntryService:
         # must be computed across ALL events, not per-price
         processed_meters: set[uuid.UUID] = set()
 
-        async for (
+        for (
             product_price_id,
             meter_id,
             start_timestamp,
             end_timestamp,
-        ) in repository.get_pending_metered_by_subscription_tuples(
+        ) in await repository.get_pending_metered_by_subscription_tuples(
             subscription.id, cutoff=cutoff
         ):
             metered_price = cast(
@@ -298,25 +298,41 @@ class BillingEntryService:
         """
         Compute a metered line item for a specific price.
         Used for summable aggregations (sum, count) where we can group by price.
+
+        The quantity is aggregated over the pending entries' events in batches:
+        a single join over hundreds of thousands of pending entries exceeds the
+        database statement timeout, and summable aggregations combine across
+        batches by addition.
         """
+        repository = BillingEntryRepository.from_session(session)
         event_repository = EventRepository.from_session(session)
-        events_statement = event_repository.get_by_pending_entries_statement(
-            subscription.id, price.id, cutoff=cutoff
-        )
         meter = price.meter
-        units = await meter_service.get_quantity(
-            session,
-            meter,
-            events_statement.where(
-                # Combining these two WHERE clauses allows us to hit a composite index
-                Event.organization_id == meter.organization_id,
-                Event.source == EventSource.user,
-            ),
-        )
-        credit_events_statement = events_statement.where(
-            Event.is_meter_credit.is_(True)
-        )
-        credit_events = await event_repository.get_all(credit_events_statement)
+
+        units = 0.0
+        credit_events: list[Event] = []
+        async for (
+            event_ids
+        ) in repository.get_pending_event_ids_by_subscription_and_price(
+            subscription.id, price.id, cutoff=cutoff
+        ):
+            events_statement = event_repository.get_base_statement().where(
+                Event.id.in_(event_ids)
+            )
+            units += await meter_service.get_quantity(
+                session,
+                meter,
+                events_statement.where(
+                    Event.organization_id == meter.organization_id,
+                    Event.source == EventSource.user,
+                ),
+            )
+            credit_events.extend(
+                await event_repository.get_all(
+                    events_statement.where(Event.is_meter_credit.is_(True))
+                )
+            )
+
+        credit_events.sort(key=lambda event: event.ingested_at)
         credited_units = non_negative_running_sum(
             event.user_metadata["units"] for event in credit_events
         )

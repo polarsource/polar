@@ -1,12 +1,21 @@
 from collections.abc import AsyncGenerator, Sequence
 from datetime import datetime
 from itertools import batched
+from typing import cast
 from uuid import UUID
 
-from sqlalchemy import Select, and_, func, or_, select, update
+from sqlalchemy import (
+    ColumnExpressionArgument,
+    CursorResult,
+    Select,
+    and_,
+    func,
+    or_,
+    select,
+    update,
+)
 from sqlalchemy.orm.strategy_options import contains_eager, joinedload
 
-from polar.config import settings
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -16,6 +25,12 @@ from polar.kit.repository import (
 from polar.models import BillingEntry
 from polar.models.billing_entry import BillingEntryType
 from polar.models.product_price import ProductPrice, ProductPriceMeteredUnit
+
+# Upper bound on the rows touched by a single statement when claiming pending
+# entries or aggregating their events. Subscriptions can accumulate hundreds of
+# thousands of pending entries; unbounded statements over that set blow past
+# the database statement timeout.
+PENDING_BATCH_SIZE = 5_000
 
 
 class BillingEntryRepository(
@@ -80,11 +95,14 @@ class BillingEntryRepository(
 
     async def get_pending_metered_by_subscription_tuples(
         self, subscription_id: UUID, *, cutoff: datetime
-    ) -> AsyncGenerator[tuple[UUID, UUID, datetime, datetime]]:
+    ) -> Sequence[tuple[UUID, UUID, datetime, datetime]]:
         """
         Get pending metered billing entries grouped by (product_price_id, meter_id).
 
         Returns tuples of (product_price_id, meter_id, start_timestamp, end_timestamp).
+        The grouping keeps the result small even on subscriptions with hundreds of
+        thousands of entries, and materializing it lets callers run other
+        statements — including streams — while iterating.
 
         For summable aggregations (count, sum): Each tuple represents entries to bill separately.
         For non-summable aggregations (max, min, avg, unique): Multiple tuples for the same
@@ -109,15 +127,60 @@ class BillingEntryRepository(
             .order_by(None)  # Clear existing ORDER BY from base statement
             .order_by(ProductPriceMeteredUnit.meter_id.asc())
         )
-        results = await self.session.stream(
-            statement,
-            execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
+        result = await self.session.execute(statement)
+        return [row._tuple() for row in result.all()]
+
+    def _pending_metered_clauses(
+        self, subscription_id: UUID, *, cutoff: datetime
+    ) -> tuple[ColumnExpressionArgument[bool], ...]:
+        return (
+            BillingEntry.subscription_id == subscription_id,
+            BillingEntry.deleted_at.is_(None),
+            BillingEntry.order_item_id.is_(None),
+            BillingEntry.start_timestamp < cutoff,
+            BillingEntry.created_at <= cutoff,
+        )
+
+    async def get_pending_event_ids_by_subscription_and_price(
+        self, subscription_id: UUID, product_price_id: UUID, *, cutoff: datetime
+    ) -> AsyncGenerator[Sequence[UUID]]:
+        """
+        Yield the event ids of pending entries for a subscription and price, in
+        batches of at most PENDING_BATCH_SIZE, without loading them all at once.
+        """
+        statement = select(BillingEntry.event_id).where(
+            *self._pending_metered_clauses(subscription_id, cutoff=cutoff),
+            BillingEntry.product_price_id == product_price_id,
+        )
+        results = await self.session.stream_scalars(
+            statement, execution_options={"yield_per": PENDING_BATCH_SIZE}
         )
         try:
-            async for result in results:
-                yield result._tuple()
+            async for partition in results.partitions():
+                yield partition
         finally:
             await results.close()
+
+    async def _link_pending_batched(
+        self, statement: Select[tuple[UUID]], order_item_id: UUID
+    ) -> None:
+        """
+        Claim pending entries in bounded batches: a single UPDATE over hundreds
+        of thousands of entries exceeds the database statement timeout.
+        """
+        update_statement = (
+            update(BillingEntry)
+            .where(BillingEntry.id.in_(statement.limit(PENDING_BATCH_SIZE)))
+            .values(order_item_id=order_item_id)
+            .execution_options(synchronize_session=False)
+        )
+        while True:
+            # https://github.com/sqlalchemy/sqlalchemy/commit/67f62aac5b49b6d048ca39019e5bd123d3c9cfb2
+            result = cast(
+                CursorResult[BillingEntry], await self.session.execute(update_statement)
+            )
+            if result.rowcount < PENDING_BATCH_SIZE:
+                break
 
     async def link_pending_by_subscription_and_price(
         self,
@@ -127,17 +190,11 @@ class BillingEntryRepository(
         *,
         cutoff: datetime,
     ) -> None:
-        statement = update(BillingEntry).where(
-            BillingEntry.subscription_id == subscription_id,
-            BillingEntry.order_item_id.is_(None),
+        statement = select(BillingEntry.id).where(
+            *self._pending_metered_clauses(subscription_id, cutoff=cutoff),
             BillingEntry.product_price_id == product_price_id,
-            BillingEntry.start_timestamp < cutoff,
-            BillingEntry.created_at <= cutoff,
         )
-        statement = statement.values(order_item_id=order_item_id).execution_options(
-            synchronize_session=False
-        )
-        await self.session.execute(statement)
+        await self._link_pending_batched(statement, order_item_id)
 
     async def link_pending_by_subscription_and_meter(
         self,
@@ -147,37 +204,35 @@ class BillingEntryRepository(
         *,
         cutoff: datetime,
     ) -> None:
-        statement = update(BillingEntry).where(
-            BillingEntry.subscription_id == subscription_id,
-            BillingEntry.order_item_id.is_(None),
+        statement = select(BillingEntry.id).where(
+            *self._pending_metered_clauses(subscription_id, cutoff=cutoff),
             BillingEntry.product_price_id.in_(
                 select(ProductPriceMeteredUnit.id).where(
                     ProductPriceMeteredUnit.meter_id == meter_id
                 )
             ),
-            BillingEntry.start_timestamp < cutoff,
-            BillingEntry.created_at <= cutoff,
         )
-        statement = statement.values(order_item_id=order_item_id).execution_options(
-            synchronize_session=False
-        )
-        await self.session.execute(statement)
+        await self._link_pending_batched(statement, order_item_id)
 
-    async def lock_pending_by_subscription(
-        self, subscription_id: UUID, *, cutoff: datetime | None = None
-    ) -> None:
+    async def lock_pending_by_subscription(self, subscription_id: UUID) -> None:
         """
-        Acquire FOR UPDATE locks on all pending billing entries for a subscription.
+        Serialize order creation for a subscription with a transaction-scoped
+        advisory lock, released automatically at commit or rollback.
 
         This prevents concurrent order creation from reading the same pending
-        entries. With READ COMMITTED isolation, a blocked transaction will
-        re-evaluate the WHERE clause after acquiring the lock and see that
-        the entries are no longer pending.
+        entries: with READ COMMITTED isolation, a transaction blocked here
+        reads fresh rows once the lock holder commits and sees the entries
+        are no longer pending.
+
+        Previously implemented as SELECT ... FOR UPDATE over every pending
+        entry, but row locks scale with the row count and timed out on
+        subscriptions with hundreds of thousands of pending entries; the
+        advisory lock is O(1).
         """
-        statement = (
-            self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
-            .with_only_columns(BillingEntry.id)
-            .with_for_update()
+        statement = select(
+            func.pg_advisory_xact_lock(
+                func.hashtextextended(f"billing_entry:{subscription_id}", 0)
+            )
         )
         await self.session.execute(statement)
 

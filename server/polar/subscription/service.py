@@ -825,6 +825,7 @@ class SubscriptionService:
             )
             return subscription
 
+        cycle_at = subscription.current_period_end
         revoke = subscription.cancel_at_period_end
 
         # Subscription is due to pause: it enters the paused state at the end of
@@ -854,7 +855,7 @@ class SubscriptionService:
             # Apply any pending subscription update (product change, seats change)
             # scheduled for the beginning of this new cycle
             pending_update = subscription.pending_update
-            pending_update_changed_interval = False
+            pending_update_resets_cycle = False
             if pending_update is not None:
                 pending_update.subscription = subscription
                 if pending_update.product_id is not None:
@@ -876,7 +877,11 @@ class SubscriptionService:
                     SubscriptionUpdateRepository.from_session(session)
                 )
                 # Check before apply_update() changes subscription.product
-                pending_update_changed_interval = pending_update.is_interval_changed()
+                pending_update_resets_cycle = (
+                    pending_update.is_interval_changed()
+                    or pending_update.proration_behavior
+                    == SubscriptionProrationBehavior.reset
+                )
                 try:
                     pending_update.apply_update()
                 except NoPricesForCurrencies:
@@ -892,7 +897,7 @@ class SubscriptionService:
                         product_id=pending_update.product_id,
                         currency=subscription.currency,
                     )
-                    pending_update_changed_interval = False
+                    pending_update_resets_cycle = False
                     await subscription_update_repository.soft_delete(pending_update)
                 else:
                     await subscription_update_repository.update(pending_update)
@@ -901,7 +906,7 @@ class SubscriptionService:
                         await self.enqueue_benefits_grants(session, subscription)
                 subscription.pending_update = None
 
-            if update_cycle_dates and not pending_update_changed_interval:
+            if update_cycle_dates and not pending_update_resets_cycle:
                 current_period_end = subscription.current_period_end
                 subscription.current_period_start = current_period_end
                 if previous_status == SubscriptionStatus.trialing:
@@ -947,6 +952,9 @@ class SubscriptionService:
             subscription, update_dict={"scheduler_locked_at": None}
         )
 
+        reset_at = min(cycle_at, utc_now())
+        await self.reset_meters(session, subscription, reset_at=reset_at)
+
         if not revoke:
             await self._send_webhook(
                 session, subscription, WebhookEventType.subscription_cycled
@@ -963,6 +971,7 @@ class SubscriptionService:
             "order.create_subscription_order",
             subscription.id,
             billing_reason,
+            cutoff=cycle_at.isoformat(),
         )
 
         return subscription
@@ -1015,7 +1024,11 @@ class SubscriptionService:
                 )
 
     async def reset_meters(
-        self, session: AsyncSession, subscription: Subscription
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        reset_at: datetime | None = None,
     ) -> None:
         """
         Resets all the subscription meters to start fresh, optionally reporting
@@ -1025,17 +1038,21 @@ class SubscriptionService:
         existing one.
         """
         for subscription_meter in subscription.meters:
-            await self.reset_meter(session, subscription, subscription_meter)
+            await self.reset_meter(
+                session, subscription, subscription_meter, reset_at=reset_at
+            )
 
     async def reset_meter(
         self,
         session: AsyncSession,
         subscription: Subscription,
         subscription_meter: SubscriptionMeter,
+        *,
+        reset_at: datetime | None = None,
     ) -> None:
         customer = subscription.customer
         rollover_units = await customer_meter_service.get_rollover_units(
-            session, customer, subscription_meter.meter
+            session, customer, subscription_meter.meter, cutoff=reset_at
         )
         await event_service.create_event(
             session,
@@ -1044,6 +1061,7 @@ class SubscriptionService:
                 customer=customer,
                 organization=subscription.organization,
                 metadata={"meter_id": str(subscription_meter.meter_id)},
+                timestamp=reset_at,
             ),
         )
         if rollover_units > 0:
@@ -1058,6 +1076,7 @@ class SubscriptionService:
                         "units": rollover_units,
                         "rollover": True,
                     },
+                    timestamp=reset_at,
                 ),
             )
 
@@ -2080,6 +2099,7 @@ class SubscriptionService:
         )
         subscription.initialize_meter_period(now)
 
+        await self.reset_meters(session, subscription, reset_at=now)
         await self.enqueue_benefits_grants(session, subscription)
         await self._create_cycle_billing_entries(session, subscription)
 
@@ -2090,6 +2110,7 @@ class SubscriptionService:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
+            cutoff=now.isoformat(),
         )
 
         log.info(

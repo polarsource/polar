@@ -19,7 +19,7 @@ import {
   DataTableColumnHeader,
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { Input } from '@polar-sh/orbit'
+import { Input, Text } from '@polar-sh/orbit'
 import { useRouter } from 'next/navigation'
 import React from 'react'
 
@@ -173,10 +173,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
         <DataTableColumnHeader column={column} title="Date" />
       ),
       cell: (props) => (
-        <FormattedDateTime
-          datetime={props.getValue() as string}
-          resolution="time"
-        />
+        <Text as="span" tabularNums>
+          <FormattedDateTime
+            datetime={props.getValue() as string}
+            resolution="time"
+          />
+        </Text>
       ),
     },
     {

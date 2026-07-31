@@ -8,7 +8,11 @@ from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.event.system import SystemEvent
 from polar.kit.utils import utc_now
-from polar.meter.aggregation import AggregationFunction, PropertyAggregation
+from polar.meter.aggregation import (
+    AggregationFunction,
+    CountAggregation,
+    PropertyAggregation,
+)
 from polar.meter.filter import Filter, FilterConjunction
 from polar.models import (
     BillingEntry,
@@ -179,6 +183,37 @@ async def create_credit_billing_entry(
         await save_fixture(order)
         billing_entry.order_item = order_item
 
+    await save_fixture(billing_entry)
+    return billing_entry
+
+
+async def create_system_billing_entry(
+    save_fixture: SaveFixture,
+    *,
+    customer: Customer,
+    price: ProductPrice,
+    subscription: Subscription,
+    meter: Meter,
+    name: SystemEvent,
+) -> BillingEntry:
+    event = await create_event(
+        save_fixture,
+        organization=customer.organization,
+        source=EventSource.system,
+        name=name,
+        customer=customer,
+        metadata={"meter_id": str(meter.id)},
+    )
+    billing_entry = BillingEntry(
+        start_timestamp=event.timestamp,
+        end_timestamp=event.timestamp,
+        type=BillingEntryType.metered,
+        direction=BillingEntryDirection.debit,
+        customer=customer,
+        product_price=price,
+        subscription=subscription,
+        event=event,
+    )
     await save_fixture(billing_entry)
     return billing_entry
 
@@ -700,6 +735,81 @@ class TestCreateOrderItemsFromPending:
         for entry in entries[1:]:
             await session.refresh(entry)
             assert entry.order_item_id == order_item.id
+
+    async def test_count_meter_excludes_system_entries(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        count_meter = await create_meter(
+            save_fixture,
+            filter=Filter(conjunction=FilterConjunction.and_, clauses=[]),
+            aggregation=CountAggregation(),
+            organization=organization,
+        )
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(count_meter, Decimal(100), None, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture, customer=customer, product=product
+        )
+        price = product.prices[0]
+        assert is_metered_price(price)
+
+        # Three consumption events -> a count meter bills three units.
+        for _ in range(3):
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price,
+                subscription=subscription,
+                tokens=1,
+            )
+        # System events must not inflate the consumption count, though credited units
+        # are still subtracted separately.
+        await create_credit_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=subscription,
+            meter=count_meter,
+            units=1,
+        )
+        await create_system_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=subscription,
+            meter=count_meter,
+            name=SystemEvent.meter_reset,
+        )
+        await create_system_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=subscription,
+            meter=count_meter,
+            name=SystemEvent.subscription_created,
+        )
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            assert len(order_items) == 1
+
+            order_item = order_items[0]
+            assert count_meter.name in order_item.label
+            # 3 consumed units - 1 credited unit = 2 billable units
+            assert order_item.amount == 2_00
+
+            await create_order(
+                save_fixture, customer=customer, order_items=list(order_items)
+            )
 
     async def test_static_price(
         self,

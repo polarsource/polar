@@ -14,6 +14,7 @@ from polar.event.repository import EventRepository
 from polar.event.system import SystemEvent
 from polar.kit.math import non_negative_running_sum
 from polar.kit.utils import utc_now
+from polar.meter.aggregation import AggregationFunction
 from polar.meter.service import meter as meter_service
 from polar.models import BillingEntry, Event, OrderItem, Subscription
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
@@ -305,15 +306,33 @@ class BillingEntryService:
             subscription.id, price.id, cutoff=cutoff
         )
         meter = price.meter
-        units = await meter_service.get_quantity(
-            session,
-            meter,
-            events_statement.where(
-                # Combining these two WHERE clauses allows us to hit a composite index
-                Event.organization_id == meter.organization_id,
-                Event.source == EventSource.user,
-            ),
-        )
+        if meter.aggregation.func == AggregationFunction.cnt:
+            # A count meter's quantity is the number of consumption events, and there
+            # is exactly one billing entry per event. Counting the entries directly
+            # (total minus the few system-event entries) avoids fanning the pending
+            # scan out into a per-event lookup on `events`, which times out for
+            # high-volume subscriptions.
+            total_units = await event_repository.count_pending_entries(
+                subscription.id, price.id, cutoff=cutoff
+            )
+            system_units = await event_repository.count_pending_system_entries(
+                subscription.id,
+                price.id,
+                organization_id=meter.organization_id,
+                customer_id=subscription.customer_id,
+                cutoff=cutoff,
+            )
+            units: float = total_units - system_units
+        else:
+            units = await meter_service.get_quantity(
+                session,
+                meter,
+                events_statement.where(
+                    # Combining these two WHERE clauses allows us to hit a composite index
+                    Event.organization_id == meter.organization_id,
+                    Event.source == EventSource.user,
+                ),
+            )
         credit_events_statement = events_statement.where(
             # Filter on organization_id + customer_id and unpack `is_meter_credit`
             # so we hit the ix_events_org_source_name_customer_id_ingested_at index.

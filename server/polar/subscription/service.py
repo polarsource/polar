@@ -952,7 +952,8 @@ class SubscriptionService:
             subscription, update_dict={"scheduler_locked_at": None}
         )
 
-        await self.reset_meters(session, subscription, reset_at=cycle_at)
+        reset_at = min(cycle_at, utc_now())
+        await self.reset_meters(session, subscription, reset_at=reset_at)
 
         if not revoke:
             await self._send_webhook(

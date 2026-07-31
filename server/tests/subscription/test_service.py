@@ -1096,7 +1096,8 @@ class TestApplyUpdate:
 @pytest.mark.asyncio
 class TestCycle:
     @pytest.mark.parametrize("cancel_at_period_end", [False, True])
-    async def test_resets_meters_at_period_boundary(
+    @freeze_time("2024-01-15 12:00:00")
+    async def test_clamps_meter_reset_to_now_when_cycling_early(
         self,
         cancel_at_period_end: bool,
         mocker: MockerFixture,
@@ -1112,7 +1113,36 @@ class TestCycle:
             scheduler_locked_at=utc_now(),
             cancel_at_period_end=cancel_at_period_end,
         )
-        cycle_at = subscription.current_period_end
+        reset_meters_mock = mocker.patch.object(subscription_service, "reset_meters")
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        reset_meters_mock.assert_awaited_once_with(
+            session, updated_subscription, reset_at=utc_now()
+        )
+
+    @freeze_time("2024-01-15 12:00:00")
+    async def test_preserves_period_end_when_cycling_late(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        cycle_at = utc_now() - timedelta(hours=1)
+        subscription.current_period_end = cycle_at
         reset_meters_mock = mocker.patch.object(subscription_service, "reset_meters")
 
         async with SubscriptionUpdateContext(

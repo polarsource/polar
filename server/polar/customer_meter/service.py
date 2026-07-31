@@ -279,49 +279,6 @@ class CustomerMeterService:
             )
             return result.scalar_one_or_none()
 
-    async def _get_current_window_events_statement(
-        self, session: AsyncSession, customer: Customer, meter: Meter
-    ) -> Select[tuple[Event]]:
-        """
-        Get a chainable statement for all events in the current meter window.
-
-        Uses a subquery with UNION optimization to filter events. This avoids:
-        1. Slow BitmapOr scans from OR clauses on different indexed columns
-        2. Round-trips to fetch IDs into Python then back to PostgreSQL
-        3. The 32k parameter limit in asyncpg
-
-
-        Events are ordered by timestamp to ensure correct ordering for running
-        sum calculations (e.g., non_negative_running_sum for credits).
-        """
-        event_repository = EventRepository.from_session(session)
-        meter_reset_event = await event_repository.get_latest_meter_reset(
-            customer, meter.id
-        )
-
-        by_customer_id = self._build_events_statement(
-            event_repository, customer, meter, meter_reset_event, by_external_id=False
-        )
-
-        if customer.external_id is None:
-            return by_customer_id.order_by(Event.timestamp.asc())
-
-        by_external_id = self._build_events_statement(
-            event_repository, customer, meter, meter_reset_event, by_external_id=True
-        )
-
-        # UNION to avoid BitmapOr
-        event_ids_subquery = union_all(
-            by_customer_id.with_only_columns(Event.id),
-            by_external_id.with_only_columns(Event.id),
-        ).subquery()
-
-        return (
-            event_repository.get_base_statement()
-            .where(Event.id.in_(select(event_ids_subquery.c.id)))
-            .order_by(Event.timestamp.asc())
-        )
-
     def _build_events_statement(
         self,
         event_repository: EventRepository,

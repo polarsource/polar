@@ -20503,6 +20503,17 @@ export interface components {
        */
       case_id: string | null
     }
+    /** DisputeAutoAcceptNotEnabled */
+    DisputeAutoAcceptNotEnabled: {
+      /**
+       * Error
+       * @example DisputeAutoAcceptNotEnabled
+       * @constant
+       */
+      error: 'DisputeAutoAcceptNotEnabled'
+      /** Detail */
+      detail: string
+    }
     /** DisputeCustomer */
     DisputeCustomer: {
       /**
@@ -25649,6 +25660,8 @@ export interface components {
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
+      /** @description Settings related to disputes */
+      dispute_settings: components['schemas']['OrganizationDisputeSettings']
       /**
        * Embed Hosts
        * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
@@ -26682,6 +26695,24 @@ export interface components {
        */
       previous_annual_revenue?: number | null
     }
+    /**
+     * OrganizationDisputeSettings
+     * @description `auto_accept_below_amount` is in the account's settlement currency, the
+     *     one disputes are deducted in. Disputes charged in another currency convert
+     *     through the exchange rate their payment settled at.
+     */
+    OrganizationDisputeSettings: {
+      /** Auto Accept Below Amount */
+      auto_accept_below_amount: number | null
+    }
+    /** OrganizationDisputeSettingsUpdate */
+    OrganizationDisputeSettingsUpdate: {
+      /**
+       * Auto Accept Below Amount
+       * @description Concede disputes below this amount, in cents of the organization's payout currency, without asking it. A dispute charged in another currency converts at the rate its payment settled at. `null` turns it off. The disputed amount and the processor's dispute fee are still deducted.
+       */
+      auto_accept_below_amount?: number | null
+    }
     /** OrganizationEmbedStatus */
     OrganizationEmbedStatus: {
       /**
@@ -26783,6 +26814,12 @@ export interface components {
        * @default false
        */
       sso_enabled: boolean
+      /**
+       * Dispute Auto Accept Enabled
+       * @description If this organization can set a threshold below which Polar concedes disputes on its behalf. Requires `disputes_enabled`.
+       * @default false
+       */
+      dispute_auto_accept_enabled: boolean
       /**
        * Compass Enabled
        * @description If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard
@@ -26929,6 +26966,8 @@ export interface components {
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
+      /** @description Settings related to disputes */
+      dispute_settings: components['schemas']['OrganizationDisputeSettings']
       /**
        * Embed Hosts
        * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
@@ -28240,6 +28279,9 @@ export interface components {
       customer_portal_settings?:
         | components['schemas']['OrganizationCustomerPortalSettings']
         | null
+      dispute_settings?:
+        | components['schemas']['OrganizationDisputeSettingsUpdate']
+        | null
       /** Embed Hosts */
       embed_hosts?: string[] | null
       /** @description Default presentment currency for the organization */
@@ -28375,6 +28417,8 @@ export interface components {
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
+      /** @description Settings related to disputes */
+      dispute_settings: components['schemas']['OrganizationDisputeSettings']
       /**
        * Embed Hosts
        * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
@@ -38153,13 +38197,15 @@ export interface operations {
           'application/json': components['schemas']['Organization']
         }
       }
-      /** @description You don't have the permission to update this organization. */
+      /** @description You don't have the permission to update this organization, or dispute auto-accept isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['DisputeAutoAcceptNotEnabled']
         }
       }
       /** @description Organization not found. */

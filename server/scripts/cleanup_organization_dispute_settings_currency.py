@@ -1,23 +1,17 @@
 """
-Backfill organizations.dispute_settings to the default settings.
+Drop the `auto_accept_currency` key from organizations.dispute_settings.
 
-The column was added as nullable to avoid a locking migration on the hot
-`organizations` table. New rows get the defaults from the model, but rows that
-existed before the column was added are still NULL. This script fills them so a
-later migration can safely enforce NOT NULL.
-
-Every physical row must be filled — including soft-deleted ones — since the
-future NOT NULL constraint applies to the whole table, so we intentionally do
-not filter on `deleted_at`.
+The threshold is denominated in the account's settlement currency, so the key
+carries no meaning. It was written by the column's first backfill and never read.
 
 Usage:
     cd server
 
-    # Dry-run (default) — show how many rows would be backfilled:
-    uv run python -m scripts.backfill_organization_dispute_settings
+    # Dry-run (default) — show how many rows still carry the key:
+    uv run python -m scripts.cleanup_organization_dispute_settings_currency
 
-    # Execute the backfill (batched):
-    uv run python -m scripts.backfill_organization_dispute_settings --execute
+    # Execute (batched):
+    uv run python -m scripts.cleanup_organization_dispute_settings_currency --execute
 """
 
 import structlog
@@ -41,12 +35,14 @@ log = structlog.get_logger()
 
 configure_script_console_logging()
 
+HAS_CURRENCY_KEY = Organization.dispute_settings.has_key("auto_accept_currency")
+
 
 @cli.command()
 @typer_async
-async def backfill(
+async def cleanup(
     execute: bool = typer.Option(
-        False, help="Actually run the backfill (default: dry-run)"
+        False, help="Actually run the cleanup (default: dry-run)"
     ),
     batch_size: int = typer.Option(
         5000, min=1, help="Number of rows to process per batch"
@@ -58,26 +54,24 @@ async def backfill(
 
     try:
         async with sessionmaker() as session:
-            result = await session.execute(
-                select(func.count()).where(Organization.dispute_settings.is_(None))
-            )
+            result = await session.execute(select(func.count()).where(HAS_CURRENCY_KEY))
             total = result.scalar_one()
 
         if total == 0:
-            console.print("[green]No organizations with a NULL dispute_settings.")
+            console.print("[green]No organizations carry auto_accept_currency.")
             return
 
         if not execute:
             console.print(
-                f"[yellow]Dry-run — use --execute to backfill {total} "
-                "organization(s) to the default dispute settings."
+                f"[yellow]Dry-run — use --execute to drop the key from {total} "
+                "organization(s)."
             )
             return
 
-        console.rule("[bold]Executing backfill")
+        console.rule("[bold]Executing cleanup")
         subquery = (
             select(Organization.id)
-            .where(Organization.dispute_settings.is_(None))
+            .where(HAS_CURRENCY_KEY)
             .order_by(Organization.id)
             .limit(limit_bindparam())
             .scalar_subquery()
@@ -85,15 +79,17 @@ async def backfill(
         stmt = (
             update(Organization)
             .where(Organization.id.in_(subquery))
-            .values(dispute_settings={"auto_accept_below_amount": None})
+            .values(
+                dispute_settings=Organization.dispute_settings - "auto_accept_currency"
+            )
         )
         rows_updated = await run_batched_update(
             stmt, batch_size=batch_size, sleep_seconds=sleep_seconds
         )
-        log.info("backfill.complete", rowcount=rows_updated)
+        log.info("cleanup.complete", rowcount=rows_updated)
         console.print(
-            f"\n[green]Backfilled {rows_updated} organization(s) to the default "
-            "dispute settings."
+            f"\n[green]Dropped auto_accept_currency from {rows_updated} "
+            "organization(s)."
         )
 
     finally:

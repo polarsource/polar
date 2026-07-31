@@ -366,7 +366,7 @@ revoke_benefit(customer, benefit)
 | `payout.transfer` | After payout.created | Stripe transfer (skipped for held) |
 | `payout.release_held_payouts` | Org approved | Move held → pending, enqueue transfers |
 | `payout.cancel_account_payouts` | Org denied/blocked/offboarding | Cancel held+pending payouts |
-| `payout.cancel_held_payouts` | Payout account swap | Cancel only held payouts on old account |
+| `payout.cancel_held_payouts` | Onboarding reset, payout account swap | Cancel held payouts (scoped to old account on swap) |
 
 ### Refund Tasks
 **File:** `server/polar/refund/tasks.py`
@@ -716,6 +716,7 @@ Held payout lifecycle:
 - When org approved: payout.release_held_payouts → status=pending, enqueue transfer
 - When org denied/blocked/offboarding: payout.cancel_account_payouts → cancel + refund
 - When payout account swapped: payout.cancel_held_payouts (old account only)
+- When onboarding reset for re-review: payout.cancel_held_payouts (all held)
 ```
 
 ---

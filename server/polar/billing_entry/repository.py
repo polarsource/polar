@@ -64,10 +64,7 @@ class BillingEntryRepository(
         return await self.get_all(statement)
 
     async def get_static_pending_by_subscription(
-        self,
-        subscription_id: UUID,
-        *,
-        cutoff: datetime | None = None,
+        self, subscription_id: UUID, *, cutoff: datetime | None = None
     ) -> AsyncGenerator[BillingEntry]:
         statement = (
             self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
@@ -82,10 +79,7 @@ class BillingEntryRepository(
             yield result
 
     async def get_pending_metered_by_subscription_tuples(
-        self,
-        subscription_id: UUID,
-        *,
-        cutoff: datetime,
+        self, subscription_id: UUID, *, cutoff: datetime
     ) -> AsyncGenerator[tuple[UUID, UUID, datetime, datetime]]:
         """
         Get pending metered billing entries grouped by (product_price_id, meter_id).
@@ -125,7 +119,7 @@ class BillingEntryRepository(
         finally:
             await results.close()
 
-    async def link_pending_by_price(
+    async def link_pending_by_subscription_and_price(
         self,
         subscription_id: UUID,
         product_price_id: UUID,
@@ -145,7 +139,7 @@ class BillingEntryRepository(
         )
         await self.session.execute(statement)
 
-    async def link_pending_by_meter(
+    async def link_pending_by_subscription_and_meter(
         self,
         subscription_id: UUID,
         meter_id: UUID,
@@ -170,10 +164,7 @@ class BillingEntryRepository(
         await self.session.execute(statement)
 
     async def lock_pending_by_subscription(
-        self,
-        subscription_id: UUID,
-        *,
-        cutoff: datetime | None = None,
+        self, subscription_id: UUID, *, cutoff: datetime | None = None
     ) -> None:
         """
         Acquire FOR UPDATE locks on all pending billing entries for a subscription.

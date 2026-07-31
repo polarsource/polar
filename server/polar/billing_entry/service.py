@@ -100,14 +100,14 @@ class BillingEntryService:
         repository = BillingEntryRepository.from_session(session)
         for order_item, selector in item_entries_map.items():
             if isinstance(selector, PendingByPrice):
-                await repository.link_pending_by_price(
+                await repository.link_pending_by_subscription_and_price(
                     subscription.id,
                     selector.product_price_id,
                     order_item.id,
                     cutoff=cutoff,
                 )
             elif isinstance(selector, PendingByMeter):
-                await repository.link_pending_by_meter(
+                await repository.link_pending_by_subscription_and_meter(
                     subscription.id,
                     selector.meter_id,
                     order_item.id,

@@ -1217,6 +1217,7 @@ class TestCycle:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
+            cutoff=previous_current_period_end.isoformat(),
         )
 
         assert_webhook_sent_once(
@@ -1515,6 +1516,7 @@ class TestCycle:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cancel,
+            cutoff=previous_current_period_end.isoformat(),
         )
 
         assert_webhook_not_sent(
@@ -1606,6 +1608,7 @@ class TestCycle:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
+            cutoff=previous_current_period_end.isoformat(),
         )
 
         assert_webhook_sent_once(
@@ -1698,6 +1701,7 @@ class TestCycle:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cancel,
+            cutoff=previous_current_period_end.isoformat(),
         )
         # The after-trial billing reason must NOT have been enqueued.
         for mock_call in enqueue_job_mock.call_args_list:
@@ -1990,6 +1994,7 @@ class TestCycle:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
+            cutoff=previous_current_period_end.isoformat(),
         )
 
         enqueue_job_mock.assert_any_call(
@@ -2011,6 +2016,45 @@ class TestCycle:
         )
         assert updated_subscription_update is not None
         assert updated_subscription_update.applied_at is not None
+
+    async def test_pending_reset_update_with_unchanged_interval_keeps_cycle_boundary(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        cycle_at = subscription.current_period_end
+
+        with freeze_time(cycle_at):
+            subscription_update, _ = generate_subscription_update(
+                subscription,
+                SubscriptionProrationBehavior.reset,
+                product=product_second,
+            )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        assert not subscription_update.is_interval_changed()
+        expected_period_end = subscription_update.new_cycle_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.current_period_start == cycle_at
+        assert updated_subscription.current_period_end == expected_period_end
 
     async def test_pending_update_product_prices_archived(
         self,
@@ -2079,6 +2123,7 @@ class TestCycle:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
+            cutoff=previous_current_period_end.isoformat(),
         )
 
         assert not any(
@@ -3049,7 +3094,10 @@ class TestResume:
         )
         enqueue_benefits_grants_mock.assert_called_once_with(session, updated)
         enqueue_job_mock.assert_any_call(
-            "order.create_subscription_order", subscription.id, ANY
+            "order.create_subscription_order",
+            subscription.id,
+            ANY,
+            cutoff=frozen_time.isoformat(),
         )
         assert_hooks_called_once(subscription_hooks, {"updated", "resumed"})
 
@@ -3824,6 +3872,7 @@ class TestUpdate:
             "order.create_subscription_order",
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
+            cutoff=ANY,
         )
 
     async def test_seats_update(
@@ -4098,6 +4147,7 @@ class TestUpdate:
             "order.create_subscription_order",
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
+            cutoff=ANY,
         )
 
         assert_webhook_sent_once(
@@ -4327,6 +4377,7 @@ class TestUpdateProduct:
             "order.create_subscription_order",
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
+            cutoff=ANY,
         )
 
     async def test_trial_to_no_trial_product_ends_trial(
@@ -4365,6 +4416,7 @@ class TestUpdateProduct:
             "order.create_subscription_order",
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
+            cutoff=ANY,
         )
 
     async def test_trial_product_change_skips_proration_billing(

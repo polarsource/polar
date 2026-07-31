@@ -1284,6 +1284,7 @@ class OrderService:
         subscription: Subscription,
         billing_reason: OrderBillingReasonInternal,
         *,
+        cutoff: datetime | None = None,
         payment_mode: PaymentMode = PaymentMode.background,
     ) -> Order:
         """
@@ -1293,6 +1294,7 @@ class OrderService:
             session: Database session to use for the operation.
             subscription: The subscription for which to create the order.
             billing_reason: The reason for billing the subscription.
+            cutoff: The exclusive usage billing cutoff for the order.
             payment_mode: The mode of payment, either "sync" or "background".
                 In "background" mode, the order will be created with pending status
                 and payment will be triggered asynchronously.
@@ -1303,12 +1305,6 @@ class OrderService:
         Returns:
             The created Order object.
         """
-        cutoff = None
-        if billing_reason in {
-            OrderBillingReasonInternal.subscription_cycle,
-            OrderBillingReasonInternal.subscription_cycle_after_trial,
-        }:
-            cutoff = subscription.current_period_start
         async with billing_entry_service.create_order_items_from_pending(
             session, subscription, cutoff=cutoff
         ) as items:

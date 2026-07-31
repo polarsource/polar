@@ -1183,8 +1183,9 @@ class TestCreateSubscriptionOrder:
         organization: Organization,
         payment_method: PaymentMethod,
     ) -> None:
-        current_period_start = datetime(2025, 7, 1, tzinfo=UTC)
-        current_period_end = datetime(2025, 8, 1, tzinfo=UTC)
+        cycle_cutoff = datetime(2025, 7, 1, tzinfo=UTC)
+        next_period_start = datetime(2025, 8, 1, tzinfo=UTC)
+        next_period_end = datetime(2025, 9, 1, tzinfo=UTC)
         customer = await create_customer(
             save_fixture,
             organization=organization,
@@ -1195,16 +1196,16 @@ class TestCreateSubscriptionOrder:
             product=product,
             customer=customer,
             payment_method=payment_method,
-            current_period_start=current_period_start,
-            current_period_end=current_period_end,
+            current_period_start=next_period_start,
+            current_period_end=next_period_end,
         )
         price = product.prices[0]
         assert is_fixed_price(price)
         current_entry = await create_billing_entry(
             save_fixture,
             type=BillingEntryType.cycle,
-            start_timestamp=current_period_start,
-            end_timestamp=current_period_end,
+            start_timestamp=cycle_cutoff,
+            end_timestamp=next_period_start,
             customer=customer,
             product_price=price,
             amount=price.price_amount,
@@ -1214,8 +1215,8 @@ class TestCreateSubscriptionOrder:
         future_entry = await create_billing_entry(
             save_fixture,
             type=BillingEntryType.cycle,
-            start_timestamp=current_period_end,
-            end_timestamp=datetime(2025, 9, 1, tzinfo=UTC),
+            start_timestamp=next_period_start,
+            end_timestamp=next_period_end,
             customer=customer,
             product_price=price,
             amount=price.price_amount,
@@ -1224,7 +1225,7 @@ class TestCreateSubscriptionOrder:
         )
 
         order = await order_service.create_subscription_order(
-            session, subscription, billing_reason
+            session, subscription, billing_reason, cutoff=cycle_cutoff
         )
 
         assert len(order.items) == 1

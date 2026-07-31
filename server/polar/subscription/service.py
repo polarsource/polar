@@ -855,7 +855,7 @@ class SubscriptionService:
             # Apply any pending subscription update (product change, seats change)
             # scheduled for the beginning of this new cycle
             pending_update = subscription.pending_update
-            pending_update_changed_interval = False
+            pending_update_resets_cycle = False
             if pending_update is not None:
                 pending_update.subscription = subscription
                 if pending_update.product_id is not None:
@@ -877,7 +877,11 @@ class SubscriptionService:
                     SubscriptionUpdateRepository.from_session(session)
                 )
                 # Check before apply_update() changes subscription.product
-                pending_update_changed_interval = pending_update.is_interval_changed()
+                pending_update_resets_cycle = (
+                    pending_update.is_interval_changed()
+                    or pending_update.proration_behavior
+                    == SubscriptionProrationBehavior.reset
+                )
                 try:
                     pending_update.apply_update()
                 except NoPricesForCurrencies:
@@ -893,7 +897,7 @@ class SubscriptionService:
                         product_id=pending_update.product_id,
                         currency=subscription.currency,
                     )
-                    pending_update_changed_interval = False
+                    pending_update_resets_cycle = False
                     await subscription_update_repository.soft_delete(pending_update)
                 else:
                     await subscription_update_repository.update(pending_update)
@@ -902,7 +906,7 @@ class SubscriptionService:
                         await self.enqueue_benefits_grants(session, subscription)
                 subscription.pending_update = None
 
-            if update_cycle_dates and not pending_update_changed_interval:
+            if update_cycle_dates and not pending_update_resets_cycle:
                 current_period_end = subscription.current_period_end
                 subscription.current_period_start = current_period_end
                 if previous_status == SubscriptionStatus.trialing:
@@ -966,6 +970,7 @@ class SubscriptionService:
             "order.create_subscription_order",
             subscription.id,
             billing_reason,
+            cutoff=cycle_at.isoformat(),
         )
 
         return subscription
@@ -2104,6 +2109,7 @@ class SubscriptionService:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
+            cutoff=now.isoformat(),
         )
 
         log.info(

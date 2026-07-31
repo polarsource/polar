@@ -1,6 +1,6 @@
 import uuid
 from datetime import timedelta
-from unittest.mock import MagicMock
+from unittest.mock import ANY, AsyncMock, MagicMock
 
 import pytest
 import stripe as stripe_lib
@@ -18,6 +18,7 @@ from polar.order.repository import OrderRepository
 from polar.order.service import order as order_service
 from polar.order.tasks import (
     OrderDoesNotExist,
+    create_subscription_order,
     enqueue_stale_payment_locks,
     process_dunning,
     process_dunning_order,
@@ -33,6 +34,41 @@ from tests.fixtures.random_objects import (
     create_payment_method,
     create_subscription,
 )
+
+
+@pytest.mark.asyncio
+class TestCreateSubscriptionOrder:
+    async def test_uses_cutoff_from_job_payload(
+        self,
+        save_fixture: SaveFixture,
+        product: Product,
+        organization: Organization,
+        mocker: MockerFixture,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+        )
+        cutoff = subscription.current_period_start - timedelta(days=1)
+        create_order_mock = mocker.patch.object(
+            order_service, "create_subscription_order", new=AsyncMock()
+        )
+
+        await create_subscription_order(
+            subscription.id,
+            OrderBillingReasonInternal.subscription_cycle,
+            cutoff.isoformat(),
+        )
+
+        create_order_mock.assert_awaited_once_with(
+            ANY,
+            ANY,
+            OrderBillingReasonInternal.subscription_cycle,
+            cutoff=cutoff,
+        )
 
 
 @pytest.mark.asyncio

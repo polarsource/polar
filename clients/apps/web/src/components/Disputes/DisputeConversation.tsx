@@ -16,6 +16,9 @@ const EVENT_LABELS: Record<string, string> = {
   dispute_lost: 'Dispute lost',
   dispute_prevented: 'Dispute prevented',
   merchant_accepted: 'You accepted the dispute',
+  dispute_auto_accept_scheduled: 'Auto-accept scheduled',
+  dispute_auto_accept_canceled: 'Auto-accept canceled',
+  dispute_auto_accepted: 'Polar accepted the dispute',
 }
 
 const MerchantAvatar = ({
@@ -61,7 +64,7 @@ export const DisputeConversation = ({
       if (message.type !== 'chat') {
         return (
           <Text variant="caption" color="muted" align="center">
-            {EVENT_LABELS[message.type] ?? message.type}
+            {message.body || EVENT_LABELS[message.type] || message.type}
           </Text>
         )
       }

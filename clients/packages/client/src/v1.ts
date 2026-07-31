@@ -27210,9 +27210,7 @@ export interface components {
     }
     /**
      * OrganizationDisputeSettings
-     * @description `auto_accept_below_amount` is in the account's settlement currency, the
-     *     one disputes are deducted in. Disputes charged in another currency convert
-     *     through the exchange rate their payment settled at.
+     * @description `auto_accept_below_amount` is in Polar's settlement currency (USD).
      */
     OrganizationDisputeSettings: {
       /** Auto Accept Below Amount */
@@ -27222,7 +27220,7 @@ export interface components {
     OrganizationDisputeSettingsUpdate: {
       /**
        * Auto Accept Below Amount
-       * @description Concede disputes below this amount, in cents of the organization's payout currency, without asking it. A dispute charged in another currency converts at the rate its payment settled at. `null` turns it off. The disputed amount and the processor's dispute fee are still deducted.
+       * @description Concede disputes below this amount, in USD cents, without asking the organization. A dispute charged in another currency converts at the rate its payment settled at. `null` turns it off. The disputed amount and the processor's dispute fee are still deducted.
        */
       auto_accept_below_amount?: number | null
     }

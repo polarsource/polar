@@ -223,9 +223,7 @@ def _default_checkout_settings() -> OrganizationCheckoutSettings:
 
 
 class OrganizationDisputeSettings(TypedDict):
-    """`auto_accept_below_amount` is in the account's settlement currency, the
-    one disputes are deducted in. Disputes charged in another currency convert
-    through the exchange rate their payment settled at."""
+    """`auto_accept_below_amount` is in Polar's settlement currency (USD)."""
 
     auto_accept_below_amount: int | None
 

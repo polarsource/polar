@@ -17,7 +17,7 @@ Usage:
 import structlog
 import typer
 from rich.console import Console
-from sqlalchemy import func, select, update
+from sqlalchemy import Select, Update, func, select, update
 
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Organization
@@ -35,7 +35,27 @@ log = structlog.get_logger()
 
 configure_script_console_logging()
 
-HAS_CURRENCY_KEY = Organization.dispute_settings.has_key("auto_accept_currency")
+CURRENCY_KEY = "auto_accept_currency"
+HAS_CURRENCY_KEY = Organization.dispute_settings.has_key(CURRENCY_KEY)
+
+
+def pending_count_statement() -> Select[tuple[int]]:
+    return select(func.count()).select_from(Organization).where(HAS_CURRENCY_KEY)
+
+
+def drop_key_statement() -> Update:
+    subquery = (
+        select(Organization.id)
+        .where(HAS_CURRENCY_KEY)
+        .order_by(Organization.id)
+        .limit(limit_bindparam())
+        .scalar_subquery()
+    )
+    return (
+        update(Organization)
+        .where(Organization.id.in_(subquery))
+        .values(dispute_settings=Organization.dispute_settings - CURRENCY_KEY)
+    )
 
 
 @cli.command()
@@ -54,7 +74,7 @@ async def cleanup(
 
     try:
         async with sessionmaker() as session:
-            result = await session.execute(select(func.count()).where(HAS_CURRENCY_KEY))
+            result = await session.execute(pending_count_statement())
             total = result.scalar_one()
 
         if total == 0:
@@ -69,22 +89,8 @@ async def cleanup(
             return
 
         console.rule("[bold]Executing cleanup")
-        subquery = (
-            select(Organization.id)
-            .where(HAS_CURRENCY_KEY)
-            .order_by(Organization.id)
-            .limit(limit_bindparam())
-            .scalar_subquery()
-        )
-        stmt = (
-            update(Organization)
-            .where(Organization.id.in_(subquery))
-            .values(
-                dispute_settings=Organization.dispute_settings - "auto_accept_currency"
-            )
-        )
         rows_updated = await run_batched_update(
-            stmt, batch_size=batch_size, sleep_seconds=sleep_seconds
+            drop_key_statement(), batch_size=batch_size, sleep_seconds=sleep_seconds
         )
         log.info("cleanup.complete", rowcount=rows_updated)
         console.print(

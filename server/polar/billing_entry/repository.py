@@ -1,9 +1,9 @@
 from collections.abc import AsyncGenerator, Sequence
 from datetime import datetime
-from itertools import batched
 from uuid import UUID
 
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import Select, Uuid, any_, bindparam, func, select, update
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm.strategy_options import contains_eager, joinedload
 
 from polar.config import settings
@@ -27,16 +27,29 @@ class BillingEntryRepository(
     async def update_order_item_id(
         self, billing_entries: Sequence[UUID], order_item_id: UUID
     ) -> None:
-        for batch in batched(billing_entries, 1000):
-            statement = (
-                update(self.model)
-                .where(
-                    self.model.id.in_(batch),
-                    self.model.order_item_id.is_(None),
-                )
-                .values(order_item_id=order_item_id)
+        if not billing_entries:
+            return
+        # Bind the whole ID list as a single PostgreSQL array parameter and match
+        # with `id = ANY(:ids)`, so even hundreds of thousands of entries update in
+        # one round trip. A chunked `id IN (...)` loop issues one statement per
+        # batch, which is too slow for very large subscriptions and can blow the
+        # worker/DB timeout mid-order-creation.
+        statement = (
+            update(self.model)
+            .where(
+                self.model.id
+                == any_(
+                    bindparam(
+                        "billing_entry_ids",
+                        value=list(billing_entries),
+                        type_=ARRAY(Uuid),
+                    )
+                ),
+                self.model.order_item_id.is_(None),
             )
-            await self.session.execute(statement)
+            .values(order_item_id=order_item_id)
+        )
+        await self.session.execute(statement)
 
     async def get_all_by_subscription(
         self, subscription_id: UUID
@@ -118,7 +131,9 @@ class BillingEntryRepository(
             .where(BillingEntry.product_price_id == product_price_id)
         )
         results = await self.session.execute(statement)
-        return results.scalars().unique().all()
+        # No join here, so each row is already a distinct entry id: `.unique()`
+        # would only build a redundant in-memory set over potentially 200k+ ids.
+        return results.scalars().all()
 
     async def get_pending_ids_by_subscription_and_meter(
         self, subscription_id: UUID, meter_id: UUID
@@ -136,7 +151,10 @@ class BillingEntryRepository(
             .where(ProductPriceMeteredUnit.meter_id == meter_id)
         )
         results = await self.session.execute(statement)
-        return results.scalars().unique().all()
+        # The join is on ProductPriceMeteredUnit's primary key, so it matches at
+        # most one row per entry and can't duplicate ids: `.unique()` would only
+        # build a redundant in-memory set over potentially 200k+ ids.
+        return results.scalars().all()
 
     async def lock_pending_by_subscription(self, subscription_id: UUID) -> None:
         """

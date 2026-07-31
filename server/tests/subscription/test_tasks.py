@@ -14,6 +14,7 @@ from polar.subscription.tasks import (  # type: ignore[attr-defined]
     SubscriptionDoesNotExist,
     SubscriptionTierDoesNotExist,
     subscription_cancel_for_organization,
+    subscription_cycle,
     subscription_enqueue_benefits_grants,
     subscription_resume,
     subscription_service,
@@ -252,3 +253,72 @@ class TestSubscriptionResume:
         await subscription_resume(subscription.id)
 
         resume_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestSubscriptionCycle:
+    async def test_clears_scheduler_lock_on_permanent_failure(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=utc_now() - timedelta(days=1),
+            scheduler_locked_at=utc_now(),
+        )
+        mocker.patch.object(
+            subscription_service,
+            "cycle",
+            spec=SubscriptionService.cycle,
+            side_effect=RuntimeError("boom"),
+        )
+        mocker.patch("polar.subscription.tasks.can_retry", return_value=False)
+
+        session.expunge_all()
+
+        with pytest.raises(RuntimeError):
+            await subscription_cycle(subscription.id)
+
+        session.expunge_all()
+        refreshed = await session.get(Subscription, subscription.id)
+        assert refreshed is not None
+        assert refreshed.scheduler_locked_at is None
+
+    async def test_keeps_scheduler_lock_while_retries_remain(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            current_period_end=utc_now() - timedelta(days=1),
+            scheduler_locked_at=utc_now(),
+        )
+        mocker.patch.object(
+            subscription_service,
+            "cycle",
+            spec=SubscriptionService.cycle,
+            side_effect=RuntimeError("boom"),
+        )
+        mocker.patch("polar.subscription.tasks.can_retry", return_value=True)
+
+        session.expunge_all()
+
+        with pytest.raises(RuntimeError):
+            await subscription_cycle(subscription.id)
+
+        session.expunge_all()
+        refreshed = await session.get(Subscription, subscription.id)
+        assert refreshed is not None
+        assert refreshed.scheduler_locked_at is not None

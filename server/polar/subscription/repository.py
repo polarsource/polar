@@ -144,6 +144,20 @@ class SubscriptionRepository(
         )
         return await self.get_all(statement)
 
+    async def release_scheduler_lock(self, subscription_id: UUID) -> None:
+        """Clear ``scheduler_locked_at`` for a subscription.
+
+        Used to release the scheduler's claim on a subscription when its cycle
+        task fails permanently, so the scheduler can pick it up again instead of
+        excluding it forever (see ``SubscriptionJobStore.scheduling_statement``).
+        """
+        statement = (
+            sa.update(Subscription)
+            .where(Subscription.id == subscription_id)
+            .values(scheduler_locked_at=None)
+        )
+        await self.session.execute(statement)
+
     async def get_ids_by_product(self, product_id: UUID) -> Sequence[UUID]:
         statement = select(Subscription.id).where(
             Subscription.product_id == product_id,

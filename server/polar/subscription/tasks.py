@@ -15,6 +15,7 @@ from polar.worker import (
     CronTrigger,
     TaskPriority,
     actor,
+    can_retry,
     enqueue_job,
 )
 
@@ -45,34 +46,49 @@ class SubscriptionTierDoesNotExist(SubscriptionTaskError):
 
 @actor(actor_name="subscription.cycle", priority=TaskPriority.LOW)
 async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) -> None:
-    async with AsyncSessionMaker() as session:
-        repository = SubscriptionRepository.from_session(session)
-        subscription = await repository.get_by_id(
-            subscription_id,
-            options=repository.get_eager_options(),
-            for_update=True,
-        )
-        if subscription is None:
-            raise SubscriptionDoesNotExist(subscription_id)
-
-        if not subscription.active or (
-            not force
-            and subscription.current_period_end
-            and subscription.current_period_end > utc_now()
-        ):
-            log.info(
-                "Subscription has already been cycled",
-                subscription_id=subscription_id,
+    try:
+        async with AsyncSessionMaker() as session:
+            repository = SubscriptionRepository.from_session(session)
+            subscription = await repository.get_by_id(
+                subscription_id,
+                options=repository.get_eager_options(),
+                for_update=True,
             )
-            subscription = await repository.update(
-                subscription, update_dict={"scheduler_locked_at": None}
-            )
-            return
+            if subscription is None:
+                raise SubscriptionDoesNotExist(subscription_id)
 
-        async with SubscriptionUpdateContext(
-            session, subscription, subscription_service
-        ) as ctx:
-            await subscription_service.cycle(session, ctx, subscription)
+            if not subscription.active or (
+                not force
+                and subscription.current_period_end
+                and subscription.current_period_end > utc_now()
+            ):
+                log.info(
+                    "Subscription has already been cycled",
+                    subscription_id=subscription_id,
+                )
+                subscription = await repository.update(
+                    subscription, update_dict={"scheduler_locked_at": None}
+                )
+                return
+
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.cycle(session, ctx, subscription)
+    except Exception:
+        # The scheduler claims a subscription by setting `scheduler_locked_at`
+        # before dispatching this task, and the task only clears it on success.
+        # A permanent failure (all retries exhausted) would therefore leave the
+        # lock stuck non-null forever, silently excluding the subscription from
+        # every future scheduler scan (see `scheduling_statement`, which filters
+        # on `scheduler_locked_at IS NULL`). On the last attempt, release the
+        # claim in a fresh transaction — the failing task's own session is rolled
+        # back — so the scheduler can pick the subscription up again.
+        if not can_retry():
+            async with AsyncSessionMaker() as session:
+                repository = SubscriptionRepository.from_session(session)
+                await repository.release_scheduler_lock(subscription_id)
+        raise
 
 
 @actor(

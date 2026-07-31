@@ -133,7 +133,11 @@ loadtest_setup = { cmd = "python -m scripts.loadtest_setup", help = "setup load 
 pre_deploy = { cmd = "task db_migrate", help = "Pre-deploy command run by Render" }
 
 [tool.pytest.ini_options]
-markers = ["auth"]
+markers = [
+  "auth",
+  "benchmark: performance benchmark, deselected by default (run with -m benchmark)",
+]
+addopts = "-m 'not benchmark'"
 asyncio_mode = "strict"
 asyncio_default_fixture_loop_scope = "function"
 
@@ -171,6 +175,7 @@ ignore = [
   "F401", # remove unused import
 ]
 "scripts/*" = ["T20"]
+"tests/**/test_*_benchmark.py" = ["T20"] # benchmarks report their measurements
 
 [tool.mypy]
 ignore_missing_imports = true

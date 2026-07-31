@@ -36,6 +36,10 @@ class BillingEntryRepository(
                     self.model.order_item_id.is_(None),
                 )
                 .values(order_item_id=order_item_id)
+                # Without this, SQLAlchemy walks the whole identity map on every
+                # batch to sync in-session objects, making this loop quadratic on
+                # subscriptions with a lot of entries.
+                .execution_options(synchronize_session=False)
             )
             await self.session.execute(statement)
 

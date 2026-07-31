@@ -245,10 +245,15 @@ class CustomerMeterService:
         return await repository.update(customer_meter), True
 
     async def get_rollover_units(
-        self, session: AsyncSession, customer: Customer, meter: Meter
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        *,
+        cutoff: datetime | None = None,
     ) -> int:
         last_event = await self._get_latest_current_window_event(
-            session, customer, meter
+            session, customer, meter, cutoff=cutoff
         )
 
         if last_event is None:
@@ -256,9 +261,13 @@ class CustomerMeterService:
 
         event_repository = EventRepository.from_session(session)
 
-        usage_units = await self._get_usage_quantity(session, customer, meter)
+        usage_units = await self._get_usage_quantity(
+            session, customer, meter, cutoff=cutoff
+        )
 
-        credit_events = await self._get_credit_events(customer, meter, event_repository)
+        credit_events = await self._get_credit_events(
+            customer, meter, event_repository, cutoff=cutoff
+        )
         non_rollover_units = non_negative_running_sum(
             event.user_metadata["units"]
             for event in credit_events
@@ -279,13 +288,15 @@ class CustomerMeterService:
         customer: Customer,
         meter: Meter,
         ingested_at_lower_bound: datetime | None = None,
+        *,
+        cutoff: datetime | None = None,
     ) -> Event | None:
         """
         Get the most recent event in the current meter window.
         """
         event_repository = EventRepository.from_session(session)
         meter_reset_event = await event_repository.get_latest_meter_reset(
-            customer, meter.id
+            customer, meter.id, cutoff=cutoff
         )
 
         by_customer_id = self._build_latest_event_statement(
@@ -295,6 +306,7 @@ class CustomerMeterService:
             meter_reset_event,
             by_external_id=False,
             ingested_at_lower_bound=ingested_at_lower_bound,
+            cutoff=cutoff,
         )
 
         # No union required when no external_id
@@ -311,6 +323,7 @@ class CustomerMeterService:
             meter_reset_event,
             by_external_id=True,
             ingested_at_lower_bound=ingested_at_lower_bound,
+            cutoff=cutoff,
         )
         union_statement = union_all(by_customer_id, by_external_id)
         union_statement = union_statement.order_by(Event.ingested_at.desc()).limit(1)
@@ -322,8 +335,8 @@ class CustomerMeterService:
             external_customer_id=customer.external_id,
             meter_id=str(meter.id),
             meter_filter=meter.filter.model_dump_json() if meter.filter else None,
-            meter_reset_event_ingested_at=(
-                meter_reset_event.ingested_at.isoformat() if meter_reset_event else None
+            meter_reset_event_timestamp=(
+                meter_reset_event.timestamp.isoformat() if meter_reset_event else None
             ),
             ingested_at_lower_bound=ingested_at_lower_bound,
         ):
@@ -363,7 +376,7 @@ class CustomerMeterService:
 
         if meter_reset_event is not None:
             statement = statement.where(
-                MeterEvent.ingested_at >= meter_reset_event.ingested_at
+                MeterEvent.ingested_at >= meter_reset_event.timestamp
             )
 
         if ingested_at_lower_bound is not None:
@@ -424,6 +437,7 @@ class CustomerMeterService:
         meter: Meter,
         meter_reset_event: Event | None,
         by_external_id: bool = False,
+        cutoff: datetime | None = None,
     ) -> Select[tuple[Event]]:
         """Build statement for events by customer_id or external_id (no LIMIT)."""
         statement = event_repository.get_base_statement().where(
@@ -439,8 +453,11 @@ class CustomerMeterService:
 
         if meter_reset_event is not None:
             statement = statement.where(
-                Event.ingested_at >= meter_reset_event.ingested_at
+                Event.ingested_at >= meter_reset_event.timestamp
             )
+
+        if cutoff is not None:
+            statement = statement.where(Event.timestamp < cutoff)
 
         if by_external_id:
             statement = statement.where(event_repository.get_meter_clause(meter))
@@ -462,17 +479,28 @@ class CustomerMeterService:
         meter_reset_event: Event | None,
         by_external_id: bool = False,
         ingested_at_lower_bound: datetime | None = None,
+        cutoff: datetime | None = None,
     ) -> Select[tuple[Event]]:
         """Build a LIMIT 1 statement for getting the latest event."""
         statement = self._build_events_statement(
-            event_repository, customer, meter, meter_reset_event, by_external_id
+            event_repository,
+            customer,
+            meter,
+            meter_reset_event,
+            by_external_id,
+            cutoff,
         )
         if ingested_at_lower_bound is not None:
             statement = statement.where(Event.ingested_at >= ingested_at_lower_bound)
         return statement.order_by(Event.ingested_at.desc()).limit(1)
 
     async def _get_usage_quantity(
-        self, session: AsyncSession, customer: Customer, meter: Meter
+        self,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        *,
+        cutoff: datetime | None = None,
     ) -> float:
         """
         Get the aggregated usage quantity for a customer's meter.
@@ -485,13 +513,18 @@ class CustomerMeterService:
         """
         event_repository = EventRepository.from_session(session)
         meter_reset_event = await event_repository.get_latest_meter_reset(
-            customer, meter.id
+            customer, meter.id, cutoff=cutoff
         )
 
         agg_column = func.coalesce(meter.aggregation.get_sql_column(Event), 0)
 
         by_customer_id = self._build_events_statement(
-            event_repository, customer, meter, meter_reset_event, by_external_id=False
+            event_repository,
+            customer,
+            meter,
+            meter_reset_event,
+            by_external_id=False,
+            cutoff=cutoff,
         ).where(Event.source == EventSource.user)
 
         if customer.external_id is None:
@@ -499,7 +532,12 @@ class CustomerMeterService:
             return result or 0.0
 
         by_external_id = self._build_events_statement(
-            event_repository, customer, meter, meter_reset_event, by_external_id=True
+            event_repository,
+            customer,
+            meter,
+            meter_reset_event,
+            by_external_id=True,
+            cutoff=cutoff,
         ).where(Event.source == EventSource.user)
 
         if meter.aggregation.is_summable():
@@ -556,6 +594,8 @@ class CustomerMeterService:
         customer: Customer,
         meter: Meter,
         event_repository: EventRepository,
+        *,
+        cutoff: datetime | None = None,
     ) -> Sequence[Event]:
         """
         Get credit events for a customer's meter.
@@ -564,7 +604,7 @@ class CustomerMeterService:
         customer_id, never external_customer_id, so no UNION is needed.
         """
         meter_reset_event = await event_repository.get_latest_meter_reset(
-            customer, meter.id
+            customer, meter.id, cutoff=cutoff
         )
 
         statement = (
@@ -574,6 +614,7 @@ class CustomerMeterService:
                 meter,
                 meter_reset_event,
                 by_external_id=False,
+                cutoff=cutoff,
             )
             .where(Event.is_meter_credit.is_(True))
             .order_by(Event.timestamp.asc())
@@ -614,7 +655,7 @@ class CustomerMeterService:
 
         if meter_reset_event is not None:
             statement = statement.where(
-                MeterEvent.ingested_at >= meter_reset_event.ingested_at
+                MeterEvent.ingested_at >= meter_reset_event.timestamp
             )
 
         result = await session.scalar(statement)
@@ -644,7 +685,7 @@ class CustomerMeterService:
 
         if meter_reset_event is not None:
             statement = statement.where(
-                MeterEvent.ingested_at >= meter_reset_event.ingested_at
+                MeterEvent.ingested_at >= meter_reset_event.timestamp
             )
 
         statement = statement.order_by(Event.timestamp.asc())

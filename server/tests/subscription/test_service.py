@@ -1095,6 +1095,37 @@ class TestApplyUpdate:
 
 @pytest.mark.asyncio
 class TestCycle:
+    @pytest.mark.parametrize("cancel_at_period_end", [False, True])
+    async def test_resets_meters_at_period_boundary(
+        self,
+        cancel_at_period_end: bool,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+            cancel_at_period_end=cancel_at_period_end,
+        )
+        cycle_at = subscription.current_period_end
+        reset_meters_mock = mocker.patch.object(subscription_service, "reset_meters")
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        reset_meters_mock.assert_awaited_once_with(
+            session, updated_subscription, reset_at=cycle_at
+        )
+
     async def test_inactive(
         self,
         session: AsyncSession,
@@ -3105,7 +3136,7 @@ class TestResetMeter:
         )
 
         get_rollover_units_mock.assert_awaited_once_with(
-            session, customer, subscription_meter.meter
+            session, customer, subscription_meter.meter, cutoff=None
         )
         reset_events = await get_all_by_name(session, SystemEvent.meter_reset)
         assert len(reset_events) == 1
@@ -3127,17 +3158,25 @@ class TestResetMeter:
             save_fixture, product=product_recurring_metered, customer=customer
         )
         subscription_meter = subscription.meters[0]
-        mocker.patch(
+        reset_at = utc_now()
+        get_rollover_units_mock = mocker.patch(
             "polar.subscription.service.customer_meter_service.get_rollover_units",
             return_value=25,
         )
 
         await subscription_service.reset_meter(
-            session, subscription, subscription_meter
+            session, subscription, subscription_meter, reset_at=reset_at
         )
 
+        get_rollover_units_mock.assert_awaited_once_with(
+            session, customer, subscription_meter.meter, cutoff=reset_at
+        )
+        reset_events = await get_all_by_name(session, SystemEvent.meter_reset)
+        assert len(reset_events) == 1
+        assert reset_events[0].timestamp == reset_at
         credited_events = await get_all_by_name(session, SystemEvent.meter_credited)
         assert len(credited_events) == 1
+        assert credited_events[0].timestamp == reset_at
         assert credited_events[0].user_metadata == {
             "meter_id": str(subscription_meter.meter_id),
             "units": 25,

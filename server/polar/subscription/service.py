@@ -825,6 +825,7 @@ class SubscriptionService:
             )
             return subscription
 
+        cycle_at = subscription.current_period_end
         revoke = subscription.cancel_at_period_end
 
         # Subscription is due to pause: it enters the paused state at the end of
@@ -947,6 +948,8 @@ class SubscriptionService:
             subscription, update_dict={"scheduler_locked_at": None}
         )
 
+        await self.reset_meters(session, subscription, reset_at=cycle_at)
+
         if not revoke:
             await self._send_webhook(
                 session, subscription, WebhookEventType.subscription_cycled
@@ -1015,7 +1018,11 @@ class SubscriptionService:
                 )
 
     async def reset_meters(
-        self, session: AsyncSession, subscription: Subscription
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        *,
+        reset_at: datetime | None = None,
     ) -> None:
         """
         Resets all the subscription meters to start fresh, optionally reporting
@@ -1025,17 +1032,21 @@ class SubscriptionService:
         existing one.
         """
         for subscription_meter in subscription.meters:
-            await self.reset_meter(session, subscription, subscription_meter)
+            await self.reset_meter(
+                session, subscription, subscription_meter, reset_at=reset_at
+            )
 
     async def reset_meter(
         self,
         session: AsyncSession,
         subscription: Subscription,
         subscription_meter: SubscriptionMeter,
+        *,
+        reset_at: datetime | None = None,
     ) -> None:
         customer = subscription.customer
         rollover_units = await customer_meter_service.get_rollover_units(
-            session, customer, subscription_meter.meter
+            session, customer, subscription_meter.meter, cutoff=reset_at
         )
         await event_service.create_event(
             session,
@@ -1044,6 +1055,7 @@ class SubscriptionService:
                 customer=customer,
                 organization=subscription.organization,
                 metadata={"meter_id": str(subscription_meter.meter_id)},
+                timestamp=reset_at,
             ),
         )
         if rollover_units > 0:
@@ -1058,6 +1070,7 @@ class SubscriptionService:
                         "units": rollover_units,
                         "rollover": True,
                     },
+                    timestamp=reset_at,
                 ),
             )
 

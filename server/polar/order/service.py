@@ -1303,8 +1303,14 @@ class OrderService:
         Returns:
             The created Order object.
         """
+        cutoff = None
+        if billing_reason in {
+            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+        }:
+            cutoff = subscription.current_period_start
         async with billing_entry_service.create_order_items_from_pending(
-            session, subscription
+            session, subscription, cutoff=cutoff
         ) as items:
             if len(items) == 0:
                 raise NoPendingBillingEntries(subscription)
@@ -1420,17 +1426,6 @@ class OrderService:
                 subscription.currency,
                 order=order,
             )
-
-        # Reset the associated meters, if any
-        # Note: subscription_update is intentionally excluded - meter credits from
-        # benefit grants should persist within a billing cycle. Subscription updates
-        # are for prorations, not new billing periods.
-        if billing_reason in {
-            OrderBillingReasonInternal.subscription_cycle,
-            OrderBillingReasonInternal.subscription_cycle_after_trial,
-            OrderBillingReasonInternal.subscription_cancel,
-        }:
-            await subscription_service.reset_meters(session, subscription)
 
         # Emit creation events before settling payment, so `order.created` always
         # precedes `order.paid` and the settling branches below own the paid

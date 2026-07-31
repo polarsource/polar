@@ -1,3 +1,5 @@
+from unittest.mock import call
+
 import pytest
 from pytest_mock import MockerFixture
 
@@ -60,6 +62,62 @@ async def test_create_context(
             raise RuntimeError("Simulated error")
 
     enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_create_context_with_external_id_resolves_first_user_event_at(
+    mocker: MockerFixture,
+    session: AsyncSession,
+    repository: CustomerRepository,
+    organization: Organization,
+) -> None:
+    enqueue_job_mock = mocker.patch("polar.customer.repository.enqueue_job")
+
+    async with repository.create_context(
+        Customer(
+            email="customer@example.com",
+            organization=organization,
+            external_id="EXTERNAL_ID",
+        )
+    ) as customer:
+        await session.flush()
+
+    enqueue_job_mock.assert_any_call(
+        "customer.resolve_first_user_event_at", customer.id
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_setting_external_id_resolves_first_user_event_at(
+    mocker: MockerFixture,
+    customer: Customer,
+    repository: CustomerRepository,
+) -> None:
+    enqueue_job_mock = mocker.patch("polar.customer.repository.enqueue_job")
+
+    customer.external_id = "EXTERNAL_ID"
+    await repository.update(customer)
+
+    enqueue_job_mock.assert_any_call(
+        "customer.resolve_first_user_event_at", customer.id
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_without_external_id_change_does_not_resolve(
+    mocker: MockerFixture,
+    customer: Customer,
+    repository: CustomerRepository,
+) -> None:
+    enqueue_job_mock = mocker.patch("polar.customer.repository.enqueue_job")
+
+    customer.name = "New Name"
+    await repository.update(customer)
+
+    assert (
+        call("customer.resolve_first_user_event_at", customer.id)
+        not in enqueue_job_mock.call_args_list
+    )
 
 
 @pytest.mark.asyncio

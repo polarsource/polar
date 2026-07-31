@@ -84,10 +84,11 @@ class CustomerRepository(
         yield customer
         assert customer.id is not None, "Customer.id is None"
 
-        # If the customer has an external_id, enqueue a meter update job
-        # to create meters for any pre-existing events with that external_id.
+        # If the customer has an external_id, enqueue jobs to pick up any pre-existing
+        # events with that external_id.
         if customer.external_id is not None:
             enqueue_job("customer_meter.update_customer", customer.id)
+            enqueue_job("customer.resolve_first_user_event_at", customer.id)
 
         enqueue_job("customer.webhook", WebhookEventType.customer_created, customer.id)
         enqueue_job("customer.event", customer.id, SystemEvent.customer_created)
@@ -148,6 +149,12 @@ class CustomerRepository(
                 SystemEvent.customer_updated,
                 updated_fields,
             )
+
+            # Setting an external_id can attribute events ingested before the customer
+            # existed. It's write-once, so this fires at most once per customer.
+            changed, value = _get_changed_value(inspection, "external_id")
+            if changed and value is not None:
+                enqueue_job("customer.resolve_first_user_event_at", customer.id)
 
         return customer
 

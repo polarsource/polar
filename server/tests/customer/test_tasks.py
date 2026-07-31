@@ -1,12 +1,13 @@
 import contextlib
 from collections.abc import AsyncIterator
+from datetime import timedelta
 
 import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
 from polar.customer.service import customer as customer_service
-from polar.customer.tasks import customer_event
+from polar.customer.tasks import customer_event, customer_resolve_first_user_event_at
 from polar.event.system import SystemEvent
 from polar.models import Event, Organization
 from polar.postgres import AsyncSession
@@ -26,6 +27,64 @@ async def _get_event_metadata(
         select(Event.user_metadata).where(Event.name == name)
     )
     return result.scalar_one()
+
+
+@pytest.mark.asyncio
+class TestCustomerResolveFirstUserEventAt:
+    async def test_applies_the_earliest_event(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, external_id="EXTERNAL_ID"
+        )
+        first_user_event_at = customer.created_at - timedelta(days=30)
+        get_first_user_event_at_mock = mocker.patch(
+            "polar.customer.tasks.tinybird_service.get_first_user_event_at",
+            return_value=first_user_event_at,
+        )
+        mocker.patch(
+            "polar.customer.tasks.AsyncSessionMaker",
+            side_effect=lambda: _session_maker(session),
+        )
+
+        await customer_resolve_first_user_event_at(customer.id)
+
+        get_first_user_event_at_mock.assert_awaited_once_with(
+            organization_id=organization.id,
+            customer_id=customer.id,
+            external_customer_id="EXTERNAL_ID",
+        )
+        await session.refresh(customer)
+        assert customer.first_user_event_at == first_user_event_at
+
+    async def test_no_events(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, external_id="EXTERNAL_ID"
+        )
+        get_first_user_event_at_mock = mocker.patch(
+            "polar.customer.tasks.tinybird_service.get_first_user_event_at",
+            return_value=None,
+        )
+        mocker.patch(
+            "polar.customer.tasks.AsyncSessionMaker",
+            side_effect=lambda: _session_maker(session),
+        )
+
+        await customer_resolve_first_user_event_at(customer.id)
+
+        get_first_user_event_at_mock.assert_awaited_once()
+        await session.refresh(customer)
+        assert customer.first_user_event_at is None
 
 
 @pytest.mark.asyncio

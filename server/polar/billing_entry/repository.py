@@ -79,7 +79,7 @@ class BillingEntryRepository(
             yield result
 
     async def get_pending_metered_by_subscription_tuples(
-        self, subscription_id: UUID, *, cutoff: datetime | None = None
+        self, subscription_id: UUID, *, cutoff: datetime
     ) -> AsyncGenerator[tuple[UUID, UUID, datetime, datetime]]:
         """
         Get pending metered billing entries grouped by (product_price_id, meter_id).
@@ -98,6 +98,7 @@ class BillingEntryRepository(
                 ProductPriceMeteredUnit,
                 BillingEntry.product_price_id == ProductPriceMeteredUnit.id,
             )
+            .where(BillingEntry.created_at <= cutoff)
             .with_only_columns(
                 BillingEntry.product_price_id,
                 ProductPriceMeteredUnit.meter_id,
@@ -118,42 +119,49 @@ class BillingEntryRepository(
         finally:
             await results.close()
 
-    async def get_pending_ids_by_subscription_and_price(
+    async def link_pending_by_subscription_and_price(
         self,
         subscription_id: UUID,
         product_price_id: UUID,
+        order_item_id: UUID,
         *,
-        cutoff: datetime | None = None,
-    ) -> Sequence[UUID]:
-        statement = (
-            self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
-            .with_only_columns(BillingEntry.id)
-            .where(BillingEntry.product_price_id == product_price_id)
+        cutoff: datetime,
+    ) -> None:
+        statement = update(BillingEntry).where(
+            BillingEntry.subscription_id == subscription_id,
+            BillingEntry.order_item_id.is_(None),
+            BillingEntry.product_price_id == product_price_id,
+            BillingEntry.start_timestamp < cutoff,
+            BillingEntry.created_at <= cutoff,
         )
-        results = await self.session.execute(statement)
-        return results.scalars().unique().all()
+        statement = statement.values(order_item_id=order_item_id).execution_options(
+            synchronize_session=False
+        )
+        await self.session.execute(statement)
 
-    async def get_pending_ids_by_subscription_and_meter(
+    async def link_pending_by_subscription_and_meter(
         self,
         subscription_id: UUID,
         meter_id: UUID,
+        order_item_id: UUID,
         *,
-        cutoff: datetime | None = None,
-    ) -> Sequence[UUID]:
-        """
-        Get all pending billing entry IDs for a subscription and meter across all prices.
-        """
-        statement = (
-            self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
-            .join(
-                ProductPriceMeteredUnit,
-                BillingEntry.product_price_id == ProductPriceMeteredUnit.id,
-            )
-            .with_only_columns(BillingEntry.id)
-            .where(ProductPriceMeteredUnit.meter_id == meter_id)
+        cutoff: datetime,
+    ) -> None:
+        statement = update(BillingEntry).where(
+            BillingEntry.subscription_id == subscription_id,
+            BillingEntry.order_item_id.is_(None),
+            BillingEntry.product_price_id.in_(
+                select(ProductPriceMeteredUnit.id).where(
+                    ProductPriceMeteredUnit.meter_id == meter_id
+                )
+            ),
+            BillingEntry.start_timestamp < cutoff,
+            BillingEntry.created_at <= cutoff,
         )
-        results = await self.session.execute(statement)
-        return results.scalars().unique().all()
+        statement = statement.values(order_item_id=order_item_id).execution_options(
+            synchronize_session=False
+        )
+        await self.session.execute(statement)
 
     async def lock_pending_by_subscription(
         self, subscription_id: UUID, *, cutoff: datetime | None = None

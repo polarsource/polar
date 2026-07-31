@@ -1,0 +1,19 @@
+server/scripts/emit_meter_reset_events.py
+  s_8a39d133f46c78::t_9871b405462bfe 23-28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.19",
+  "base_commit_sha": "13e6043561e4457b7e23b2c847cfdb3455d2cc69",
+  "prompts": {},
+  "sessions": {
+    "s_8a39d133f46c78": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e94844dc-5671-4db5-a1fd-6d42c61ed62c",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

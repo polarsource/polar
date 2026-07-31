@@ -16561,6 +16561,11 @@ export interface components {
        */
       deleted_at: string | null
       /**
+       * First User Event At
+       * @description Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+       */
+      first_user_event_at: string | null
+      /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
@@ -18172,6 +18177,11 @@ export interface components {
        */
       deleted_at: string | null
       /**
+       * First User Event At
+       * @description Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+       */
+      first_user_event_at: string | null
+      /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
@@ -18494,6 +18504,11 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
+      /**
+       * First User Event At
+       * @description Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+       */
+      first_user_event_at: string | null
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -19058,6 +19073,11 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
+      /**
+       * First User Event At
+       * @description Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+       */
+      first_user_event_at: string | null
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -20581,6 +20601,11 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
+      /**
+       * First User Event At
+       * @description Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+       */
+      first_user_event_at: string | null
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -22131,6 +22156,11 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
+      /**
+       * First User Event At
+       * @description Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+       */
+      first_user_event_at: string | null
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -24790,6 +24820,11 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
+      /**
+       * First User Event At
+       * @description Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+       */
+      first_user_event_at: string | null
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -32674,6 +32709,11 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
+      /**
+       * First User Event At
+       * @description Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+       */
+      first_user_event_at: string | null
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404

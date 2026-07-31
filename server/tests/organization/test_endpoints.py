@@ -723,6 +723,26 @@ class TestUpdateDisputeSettings:
         assert response.json()["dispute_settings"]["auto_accept_below_amount"] is None
 
     @pytest.mark.auth
+    async def test_empty_object_keeps_threshold(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await self._enable(save_fixture, organization)
+        organization.dispute_settings = {"auto_accept_below_amount": 2500}
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"dispute_settings": {}},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["dispute_settings"]["auto_accept_below_amount"] == 2500
+
+    @pytest.mark.auth
     async def test_flag_not_self_grantable(
         self,
         client: AsyncClient,

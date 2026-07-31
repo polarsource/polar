@@ -270,11 +270,10 @@ class OrganizationDisputeSettingsUpdate(Schema):
         ge=1,
         le=DISPUTE_AUTO_ACCEPT_MAX_AMOUNT,
         description=(
-            "Concede disputes below this amount, in cents of the organization's "
-            "payout currency, without asking it. A dispute charged in another "
-            "currency converts at the rate its payment settled at. `null` turns "
-            "it off. The disputed amount and the processor's dispute fee are "
-            "still deducted."
+            "Concede disputes below this amount, in USD cents, without asking "
+            "the organization. A dispute charged in another currency converts "
+            "at the rate its payment settled at. `null` turns it off. The "
+            "disputed amount and the processor's dispute fee are still deducted."
         ),
     )
 

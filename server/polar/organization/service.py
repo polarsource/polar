@@ -578,7 +578,12 @@ class OrganizationService:
                 raise DisputeAutoAcceptNotEnabled()
             organization.dispute_settings = cast(
                 OrganizationDisputeSettings,
-                update_schema.dispute_settings.model_dump(mode="json"),
+                {
+                    **organization.dispute_settings,
+                    **update_schema.dispute_settings.model_dump(
+                        mode="json", exclude_unset=True
+                    ),
+                },
             )
 
         if update_schema.default_presentment_currency is not None:

@@ -393,6 +393,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             .join(BillingEntry, Event.id == BillingEntry.event_id)
             .where(
                 BillingEntry.subscription_id == subscription,
+                BillingEntry.deleted_at.is_(None),
                 BillingEntry.order_item_id.is_(None),
                 BillingEntry.product_price_id == price,
             )
@@ -423,6 +424,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             )
             .where(
                 BillingEntry.subscription_id == subscription,
+                BillingEntry.deleted_at.is_(None),
                 BillingEntry.order_item_id.is_(None),
                 ProductPriceMeteredUnit.meter_id == meter,
             )

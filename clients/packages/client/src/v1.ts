@@ -42464,9 +42464,9 @@ export interface operations {
           | components['schemas']['OrderStatus']
           | components['schemas']['OrderStatus'][]
           | null
-        /** @description Only include orders created after this date. */
+        /** @description Only include orders created after this date. Must include a UTC offset. */
         created_after?: string | null
-        /** @description Only include orders created before this date. */
+        /** @description Only include orders created before this date. Must include a UTC offset. */
         created_before?: string | null
         /** @description Time zone used to render dates in the CSV. */
         timezone?: string

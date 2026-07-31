@@ -4,7 +4,7 @@ from typing import Annotated
 from zoneinfo import ZoneInfo
 
 from fastapi import Depends, Query, Response
-from pydantic import UUID4
+from pydantic import UUID4, AwareDatetime
 
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import (
@@ -186,11 +186,17 @@ async def export(
     status: MultipleQueryFilter[OrderStatus] | None = Query(
         None, title="Status Filter", description="Filter by order status."
     ),
-    created_after: datetime | None = Query(
-        None, description="Only include orders created after this date."
+    created_after: AwareDatetime | None = Query(
+        None,
+        description=(
+            "Only include orders created after this date. Must include a UTC offset."
+        ),
     ),
-    created_before: datetime | None = Query(
-        None, description="Only include orders created before this date."
+    created_before: AwareDatetime | None = Query(
+        None,
+        description=(
+            "Only include orders created before this date. Must include a UTC offset."
+        ),
     ),
     timezone: Annotated[
         OrderExportTimezone,

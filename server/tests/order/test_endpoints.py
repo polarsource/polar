@@ -495,6 +495,19 @@ class TestExportOrders:
         assert old_order.invoice_number not in response.text
 
     @pytest.mark.auth
+    async def test_naive_date_bounds(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(
+            "/v1/orders/export",
+            params={"created_after": "2024-06-01T00:00:00"},
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
     async def test_custom_columns(
         self,
         client: AsyncClient,

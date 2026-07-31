@@ -3,7 +3,7 @@ from datetime import datetime
 from itertools import batched
 from uuid import UUID
 
-from sqlalchemy import Select, func, select, update
+from sqlalchemy import Select, and_, func, or_, select, update
 from sqlalchemy.orm.strategy_options import contains_eager, joinedload
 
 from polar.config import settings
@@ -14,6 +14,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionMixin,
 )
 from polar.models import BillingEntry
+from polar.models.billing_entry import BillingEntryType
 from polar.models.product_price import ProductPrice, ProductPriceMeteredUnit
 
 
@@ -35,6 +36,10 @@ class BillingEntryRepository(
                     self.model.order_item_id.is_(None),
                 )
                 .values(order_item_id=order_item_id)
+                # Without this, SQLAlchemy walks the whole identity map on every
+                # batch to sync in-session objects, making this loop quadratic on
+                # subscriptions with a lot of entries.
+                .execution_options(synchronize_session=False)
             )
             await self.session.execute(statement)
 
@@ -47,18 +52,22 @@ class BillingEntryRepository(
         return await self.get_all(statement)
 
     async def get_pending_by_subscription(
-        self, subscription_id: UUID, *, options: Options = ()
+        self,
+        subscription_id: UUID,
+        *,
+        cutoff: datetime | None = None,
+        options: Options = (),
     ) -> Sequence[BillingEntry]:
         statement = self.get_pending_by_subscription_statement(
-            subscription_id, options=options
+            subscription_id, cutoff=cutoff, options=options
         )
         return await self.get_all(statement)
 
     async def get_static_pending_by_subscription(
-        self, subscription_id: UUID
+        self, subscription_id: UUID, *, cutoff: datetime | None = None
     ) -> AsyncGenerator[BillingEntry]:
         statement = (
-            self.get_pending_by_subscription_statement(subscription_id)
+            self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
             .join(BillingEntry.product_price)
             .where(ProductPrice.is_static.is_(True))
             .options(
@@ -70,7 +79,7 @@ class BillingEntryRepository(
             yield result
 
     async def get_pending_metered_by_subscription_tuples(
-        self, subscription_id: UUID
+        self, subscription_id: UUID, *, cutoff: datetime | None = None
     ) -> AsyncGenerator[tuple[UUID, UUID, datetime, datetime]]:
         """
         Get pending metered billing entries grouped by (product_price_id, meter_id).
@@ -84,7 +93,7 @@ class BillingEntryRepository(
         subscription.subscription_product_prices, not from these tuples.
         """
         statement = (
-            self.get_pending_by_subscription_statement(subscription_id)
+            self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
             .join(
                 ProductPriceMeteredUnit,
                 BillingEntry.product_price_id == ProductPriceMeteredUnit.id,
@@ -110,10 +119,14 @@ class BillingEntryRepository(
             await results.close()
 
     async def get_pending_ids_by_subscription_and_price(
-        self, subscription_id: UUID, product_price_id: UUID
+        self,
+        subscription_id: UUID,
+        product_price_id: UUID,
+        *,
+        cutoff: datetime | None = None,
     ) -> Sequence[UUID]:
         statement = (
-            self.get_pending_by_subscription_statement(subscription_id)
+            self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
             .with_only_columns(BillingEntry.id)
             .where(BillingEntry.product_price_id == product_price_id)
         )
@@ -121,13 +134,17 @@ class BillingEntryRepository(
         return results.scalars().unique().all()
 
     async def get_pending_ids_by_subscription_and_meter(
-        self, subscription_id: UUID, meter_id: UUID
+        self,
+        subscription_id: UUID,
+        meter_id: UUID,
+        *,
+        cutoff: datetime | None = None,
     ) -> Sequence[UUID]:
         """
         Get all pending billing entry IDs for a subscription and meter across all prices.
         """
         statement = (
-            self.get_pending_by_subscription_statement(subscription_id)
+            self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
             .join(
                 ProductPriceMeteredUnit,
                 BillingEntry.product_price_id == ProductPriceMeteredUnit.id,
@@ -138,7 +155,9 @@ class BillingEntryRepository(
         results = await self.session.execute(statement)
         return results.scalars().unique().all()
 
-    async def lock_pending_by_subscription(self, subscription_id: UUID) -> None:
+    async def lock_pending_by_subscription(
+        self, subscription_id: UUID, *, cutoff: datetime | None = None
+    ) -> None:
         """
         Acquire FOR UPDATE locks on all pending billing entries for a subscription.
 
@@ -148,16 +167,20 @@ class BillingEntryRepository(
         the entries are no longer pending.
         """
         statement = (
-            self.get_pending_by_subscription_statement(subscription_id)
+            self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
             .with_only_columns(BillingEntry.id)
             .with_for_update()
         )
         await self.session.execute(statement)
 
     def get_pending_by_subscription_statement(
-        self, subscription_id: UUID, *, options: Options = ()
+        self,
+        subscription_id: UUID,
+        *,
+        cutoff: datetime | None = None,
+        options: Options = (),
     ) -> Select[tuple["BillingEntry"]]:
-        return (
+        statement = (
             self.get_base_statement()
             .where(
                 BillingEntry.order_item_id.is_(None),
@@ -166,3 +189,16 @@ class BillingEntryRepository(
             .order_by(BillingEntry.product_price_id.asc())
             .options(*options)
         )
+        if cutoff is not None:
+            # Usage at the boundary belongs to the next meter window, while
+            # static entries created there are the new period's recurring charge.
+            statement = statement.where(
+                or_(
+                    BillingEntry.start_timestamp < cutoff,
+                    and_(
+                        BillingEntry.start_timestamp == cutoff,
+                        BillingEntry.type != BillingEntryType.metered,
+                    ),
+                )
+            )
+        return statement

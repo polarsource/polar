@@ -1095,6 +1095,67 @@ class TestApplyUpdate:
 
 @pytest.mark.asyncio
 class TestCycle:
+    @pytest.mark.parametrize("cancel_at_period_end", [False, True])
+    @freeze_time("2024-01-15 12:00:00")
+    async def test_clamps_meter_reset_to_now_when_cycling_early(
+        self,
+        cancel_at_period_end: bool,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+            cancel_at_period_end=cancel_at_period_end,
+        )
+        reset_meters_mock = mocker.patch.object(subscription_service, "reset_meters")
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        reset_meters_mock.assert_awaited_once_with(
+            session, updated_subscription, reset_at=utc_now()
+        )
+
+    @freeze_time("2024-01-15 12:00:00")
+    async def test_preserves_period_end_when_cycling_late(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product_recurring_metered: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        cycle_at = utc_now() - timedelta(hours=1)
+        subscription.current_period_end = cycle_at
+        reset_meters_mock = mocker.patch.object(subscription_service, "reset_meters")
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        reset_meters_mock.assert_awaited_once_with(
+            session, updated_subscription, reset_at=cycle_at
+        )
+
     async def test_inactive(
         self,
         session: AsyncSession,
@@ -1186,6 +1247,7 @@ class TestCycle:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
+            cutoff=previous_current_period_end.isoformat(),
         )
 
         assert_webhook_sent_once(
@@ -1484,6 +1546,7 @@ class TestCycle:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cancel,
+            cutoff=previous_current_period_end.isoformat(),
         )
 
         assert_webhook_not_sent(
@@ -1575,6 +1638,7 @@ class TestCycle:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
+            cutoff=previous_current_period_end.isoformat(),
         )
 
         assert_webhook_sent_once(
@@ -1667,6 +1731,7 @@ class TestCycle:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cancel,
+            cutoff=previous_current_period_end.isoformat(),
         )
         # The after-trial billing reason must NOT have been enqueued.
         for mock_call in enqueue_job_mock.call_args_list:
@@ -1959,6 +2024,7 @@ class TestCycle:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
+            cutoff=previous_current_period_end.isoformat(),
         )
 
         enqueue_job_mock.assert_any_call(
@@ -1980,6 +2046,45 @@ class TestCycle:
         )
         assert updated_subscription_update is not None
         assert updated_subscription_update.applied_at is not None
+
+    async def test_pending_reset_update_with_unchanged_interval_keeps_cycle_boundary(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        cycle_at = subscription.current_period_end
+
+        with freeze_time(cycle_at):
+            subscription_update, _ = generate_subscription_update(
+                subscription,
+                SubscriptionProrationBehavior.reset,
+                product=product_second,
+            )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        assert not subscription_update.is_interval_changed()
+        expected_period_end = subscription_update.new_cycle_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated_subscription = await subscription_service.cycle(
+                session, ctx, subscription
+            )
+
+        assert updated_subscription.current_period_start == cycle_at
+        assert updated_subscription.current_period_end == expected_period_end
 
     async def test_pending_update_product_prices_archived(
         self,
@@ -2048,6 +2153,7 @@ class TestCycle:
             "order.create_subscription_order",
             subscription.id,
             OrderBillingReasonInternal.subscription_cycle,
+            cutoff=previous_current_period_end.isoformat(),
         )
 
         assert not any(
@@ -2980,6 +3086,7 @@ class TestResume:
     async def test_valid(
         self,
         frozen_time: datetime,
+        mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
         enqueue_job_mock: MagicMock,
@@ -2998,6 +3105,7 @@ class TestResume:
         subscription.resumes_at = frozen_time
         await save_fixture(subscription)
         reset_hooks(subscription_hooks)
+        reset_meters_mock = mocker.patch.object(subscription_service, "reset_meters")
 
         async with SubscriptionUpdateContext(
             session, subscription, subscription_service
@@ -3011,9 +3119,15 @@ class TestResume:
         assert updated.current_period_start == frozen_time
         assert updated.current_period_end is not None
         assert updated.current_period_end > frozen_time
+        reset_meters_mock.assert_awaited_once_with(
+            session, updated, reset_at=frozen_time
+        )
         enqueue_benefits_grants_mock.assert_called_once_with(session, updated)
         enqueue_job_mock.assert_any_call(
-            "order.create_subscription_order", subscription.id, ANY
+            "order.create_subscription_order",
+            subscription.id,
+            ANY,
+            cutoff=frozen_time.isoformat(),
         )
         assert_hooks_called_once(subscription_hooks, {"updated", "resumed"})
 
@@ -3105,7 +3219,7 @@ class TestResetMeter:
         )
 
         get_rollover_units_mock.assert_awaited_once_with(
-            session, customer, subscription_meter.meter
+            session, customer, subscription_meter.meter, cutoff=None
         )
         reset_events = await get_all_by_name(session, SystemEvent.meter_reset)
         assert len(reset_events) == 1
@@ -3127,17 +3241,25 @@ class TestResetMeter:
             save_fixture, product=product_recurring_metered, customer=customer
         )
         subscription_meter = subscription.meters[0]
-        mocker.patch(
+        reset_at = utc_now()
+        get_rollover_units_mock = mocker.patch(
             "polar.subscription.service.customer_meter_service.get_rollover_units",
             return_value=25,
         )
 
         await subscription_service.reset_meter(
-            session, subscription, subscription_meter
+            session, subscription, subscription_meter, reset_at=reset_at
         )
 
+        get_rollover_units_mock.assert_awaited_once_with(
+            session, customer, subscription_meter.meter, cutoff=reset_at
+        )
+        reset_events = await get_all_by_name(session, SystemEvent.meter_reset)
+        assert len(reset_events) == 1
+        assert reset_events[0].timestamp == reset_at
         credited_events = await get_all_by_name(session, SystemEvent.meter_credited)
         assert len(credited_events) == 1
+        assert credited_events[0].timestamp == reset_at
         assert credited_events[0].user_metadata == {
             "meter_id": str(subscription_meter.meter_id),
             "units": 25,
@@ -3780,6 +3902,7 @@ class TestUpdate:
             "order.create_subscription_order",
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
+            cutoff=ANY,
         )
 
     async def test_seats_update(
@@ -4054,6 +4177,7 @@ class TestUpdate:
             "order.create_subscription_order",
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
+            cutoff=ANY,
         )
 
         assert_webhook_sent_once(
@@ -4283,6 +4407,7 @@ class TestUpdateProduct:
             "order.create_subscription_order",
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
+            cutoff=ANY,
         )
 
     async def test_trial_to_no_trial_product_ends_trial(
@@ -4321,6 +4446,7 @@ class TestUpdateProduct:
             "order.create_subscription_order",
             updated.id,
             OrderBillingReasonInternal.subscription_cycle_after_trial,
+            cutoff=ANY,
         )
 
     async def test_trial_product_change_skips_proration_billing(

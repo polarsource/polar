@@ -1,7 +1,7 @@
 """drop redundant billing entry index
 
 Revision ID: 5a1b80eeae48
-Revises: 72c8a2d0ea56
+Revises: 5a95b59f156b
 Create Date: 2026-07-31 09:54:49.326543
 
 """
@@ -12,7 +12,7 @@ from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = "5a1b80eeae48"
-down_revision = "72c8a2d0ea56"
+down_revision = "5a95b59f156b"
 branch_labels: tuple[str] | None = None
 depends_on: tuple[str] | None = None
 

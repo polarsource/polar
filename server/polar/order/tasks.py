@@ -1,4 +1,5 @@
 import uuid
+from datetime import datetime
 
 import stripe as stripe_lib
 import structlog
@@ -73,7 +74,9 @@ async def order_created(order_id: uuid.UUID) -> None:
 
 @actor(actor_name="order.create_subscription_order", priority=TaskPriority.LOW)
 async def create_subscription_order(
-    subscription_id: uuid.UUID, order_reason: OrderBillingReasonInternal
+    subscription_id: uuid.UUID,
+    order_reason: OrderBillingReasonInternal,
+    cutoff: str | None = None,
 ) -> None:
     async with AsyncSessionMaker() as session:
         repository = SubscriptionRepository.from_session(session)
@@ -83,9 +86,20 @@ async def create_subscription_order(
         if subscription is None:
             raise SubscriptionDoesNotExist(subscription_id)
 
+        billing_cutoff = None
+        if order_reason in {
+            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+        }:
+            billing_cutoff = (
+                datetime.fromisoformat(cutoff)
+                if cutoff is not None
+                else subscription.current_period_start
+            )
+
         try:
             await order_service.create_subscription_order(
-                session, subscription, order_reason
+                session, subscription, order_reason, cutoff=billing_cutoff
             )
         except NoPendingBillingEntries:
             # Skip creating an order if there are no pending billing entries.

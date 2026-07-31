@@ -77,6 +77,7 @@ async def events(
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=1),
+            ingested_at=timestamp + timedelta(seconds=1),
             organization=customer.organization,
             customer=customer,
             metadata={"tokens": 20, "model": "lite"},
@@ -84,6 +85,7 @@ async def events(
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=2),
+            ingested_at=timestamp + timedelta(seconds=2),
             organization=customer.organization,
             customer=customer,
             source=EventSource.system,
@@ -93,6 +95,7 @@ async def events(
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=3),
+            ingested_at=timestamp + timedelta(seconds=3),
             organization=customer.organization,
             customer=customer,
             metadata={"tokens": 10, "model": "lite"},
@@ -100,6 +103,7 @@ async def events(
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=4),
+            ingested_at=timestamp + timedelta(seconds=4),
             organization=customer.organization,
             customer=customer,
             metadata={"tokens": 10, "model": "lite"},
@@ -107,6 +111,7 @@ async def events(
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=5),
+            ingested_at=timestamp + timedelta(seconds=5),
             organization=customer.organization,
             customer=customer,
             metadata={"tokens": 0, "model": "lite"},
@@ -114,6 +119,7 @@ async def events(
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=6),
+            ingested_at=timestamp + timedelta(seconds=6),
             organization=customer.organization,
             customer=customer,
             source=EventSource.system,
@@ -124,6 +130,7 @@ async def events(
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=7),
+            ingested_at=timestamp + timedelta(seconds=7),
             organization=customer.organization,
             customer=customer,
             metadata={"tokens": 100, "model": "pro"},
@@ -131,6 +138,7 @@ async def events(
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=8),
+            ingested_at=timestamp + timedelta(seconds=8),
             organization=customer.organization,
             customer=customer,
             source=EventSource.system,
@@ -240,6 +248,41 @@ class TestUpdateCustomerMeter:
 
         assert updated is True
 
+    async def test_historical_usage_ingested_after_reset_timestamp_is_included(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        reset_timestamp = utc_now()
+        await create_event(
+            save_fixture,
+            timestamp=reset_timestamp - timedelta(days=1),
+            ingested_at=reset_timestamp + timedelta(seconds=1),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 20, "model": "lite"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=reset_timestamp,
+            ingested_at=reset_timestamp + timedelta(seconds=2),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_reset,
+            metadata={"meter_id": str(meter.id)},
+        )
+
+        customer_meter, updated = await customer_meter_service.update_customer_meter(
+            session, customer, meter
+        )
+
+        assert customer_meter is not None
+        assert customer_meter.consumed_units == Decimal(20)
+        assert updated is True
+
     async def test_existing_customer_meter_new_event(
         self,
         save_fixture: SaveFixture,
@@ -315,6 +358,7 @@ class TestUpdateCustomerMeter:
             await create_event(
                 save_fixture,
                 timestamp=timestamp + timedelta(seconds=1),
+                ingested_at=timestamp + timedelta(seconds=1),
                 organization=customer.organization,
                 customer=customer,
                 metadata={"tokens": 20, "model": "lite"},
@@ -322,6 +366,7 @@ class TestUpdateCustomerMeter:
             await create_event(
                 save_fixture,
                 timestamp=timestamp + timedelta(seconds=2),
+                ingested_at=timestamp + timedelta(seconds=2),
                 organization=customer.organization,
                 customer=customer,
                 source=EventSource.system,
@@ -581,6 +626,7 @@ class TestUpdateCustomerMeter:
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=1),
+            ingested_at=timestamp + timedelta(seconds=1),
             organization=customer.organization,
             customer=customer,
             metadata={"tokens": 100, "model": "lite"},
@@ -588,6 +634,7 @@ class TestUpdateCustomerMeter:
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=2),
+            ingested_at=timestamp + timedelta(seconds=2),
             organization=customer.organization,
             customer=customer,
             source=EventSource.system,
@@ -598,6 +645,7 @@ class TestUpdateCustomerMeter:
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=3),
+            ingested_at=timestamp + timedelta(seconds=3),
             organization=customer.organization,
             customer=customer,
             metadata={"tokens": 50, "model": "lite"},
@@ -605,6 +653,7 @@ class TestUpdateCustomerMeter:
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=4),
+            ingested_at=timestamp + timedelta(seconds=4),
             organization=customer.organization,
             customer=customer,
             source=EventSource.system,
@@ -615,6 +664,7 @@ class TestUpdateCustomerMeter:
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=5),
+            ingested_at=timestamp + timedelta(seconds=5),
             organization=customer.organization,
             customer=customer,
             metadata={"tokens": 20, "model": "lite"},
@@ -622,6 +672,7 @@ class TestUpdateCustomerMeter:
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=6),
+            ingested_at=timestamp + timedelta(seconds=6),
             organization=customer.organization,
             customer=customer,
             source=EventSource.system,
@@ -770,6 +821,44 @@ class TestUpdateCustomerMeter:
 
 @pytest.mark.asyncio
 class TestGetRolloverUnits:
+    async def test_excludes_usage_at_or_after_cutoff(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+    ) -> None:
+        cutoff = utc_now()
+        await create_event(
+            save_fixture,
+            timestamp=cutoff - timedelta(seconds=2),
+            organization=customer.organization,
+            customer=customer,
+            source=EventSource.system,
+            name=SystemEvent.meter_credited,
+            metadata={"units": 100, "meter_id": str(meter.id), "rollover": True},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=cutoff - timedelta(seconds=1),
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 20, "model": "lite"},
+        )
+        await create_event(
+            save_fixture,
+            timestamp=cutoff,
+            organization=customer.organization,
+            customer=customer,
+            metadata={"tokens": 30, "model": "lite"},
+        )
+
+        rollover_units = await customer_meter_service.get_rollover_units(
+            session, customer, meter, cutoff=cutoff
+        )
+
+        assert rollover_units == 80
+
     @pytest.mark.parametrize(
         ("credits", "usage_tokens", "expected_rollover"),
         [
@@ -913,6 +1002,7 @@ class TestGetRolloverUnits:
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=1),
+            ingested_at=timestamp + timedelta(seconds=1),
             organization=customer.organization,
             customer=customer,
             source=EventSource.system,
@@ -923,6 +1013,7 @@ class TestGetRolloverUnits:
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=2),
+            ingested_at=timestamp + timedelta(seconds=2),
             organization=customer.organization,
             customer=customer,
             source=EventSource.system,
@@ -933,6 +1024,7 @@ class TestGetRolloverUnits:
         await create_event(
             save_fixture,
             timestamp=timestamp + timedelta(seconds=3),
+            ingested_at=timestamp + timedelta(seconds=3),
             organization=customer.organization,
             customer=customer,
             source=EventSource.system,

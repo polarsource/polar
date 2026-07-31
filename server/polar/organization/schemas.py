@@ -34,6 +34,7 @@ from polar.kit.schemas import (
 from polar.models.organization import (
     OrganizationCustomerEmailSettings,
     OrganizationCustomerPortalSettings,
+    OrganizationDisputeSettings,
     OrganizationStatus,
     OrganizationSubscriptionSettings,
     resolve_default_customer_email_settings,
@@ -214,6 +215,13 @@ class OrganizationFeatureSettings(Schema):
         False,
         description="If this organization has single sign-on configuration enabled",
     )
+    dispute_auto_accept_enabled: bool = Field(
+        False,
+        description=(
+            "If this organization can set a threshold below which Polar concedes "
+            "disputes on its behalf. Requires `disputes_enabled`."
+        ),
+    )
     compass_enabled: bool = Field(
         False,
         description=(
@@ -250,6 +258,24 @@ class OrganizationFeatureSettingsUpdate(Schema):
     overview_metrics: OverviewMetrics = Field(
         None,
         description="Ordered list of metric slugs shown on the dashboard overview.",
+    )
+
+
+DISPUTE_AUTO_ACCEPT_MAX_AMOUNT = 10_000
+
+
+class OrganizationDisputeSettingsUpdate(Schema):
+    auto_accept_below_amount: int | None = Field(
+        None,
+        ge=1,
+        le=DISPUTE_AUTO_ACCEPT_MAX_AMOUNT,
+        description=(
+            "Concede disputes below this amount, in cents of the organization's "
+            "payout currency, without asking it. A dispute charged in another "
+            "currency converts at the rate its payment settled at. `null` turns "
+            "it off. The disputed amount and the processor's dispute fee are "
+            "still deducted."
+        ),
     )
 
 
@@ -507,6 +533,9 @@ class Organization(OrganizationBase):
     customer_portal_settings: OrganizationCustomerPortalSettings = Field(
         description="Settings related to the customer portal",
     )
+    dispute_settings: OrganizationDisputeSettings = Field(
+        description="Settings related to disputes",
+    )
     embed_hosts: list[str] = Field(description=_embed_hosts_description)
     embed_hosts_enforced: bool = Field(
         description=(
@@ -683,6 +712,7 @@ class OrganizationUpdate(Schema):
     subscription_settings: OrganizationSubscriptionSettings | None = None
     customer_email_settings: OrganizationCustomerEmailSettings | None = None
     customer_portal_settings: OrganizationCustomerPortalSettings | None = None
+    dispute_settings: OrganizationDisputeSettingsUpdate | None = None
     embed_hosts: EmbedHostsInput | None = None
     default_presentment_currency: PresentmentCurrency | None = Field(
         None, description="Default presentment currency for the organization"

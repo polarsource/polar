@@ -129,7 +129,11 @@ from .schemas import (
     OrganizationValidateWebsiteRequest,
     OrganizationValidateWebsiteResponse,
 )
-from .service import CannotCreateOrganizationError, SSOEnforcementRequiresConnection
+from .service import (
+    CannotCreateOrganizationError,
+    DisputeAutoAcceptNotEnabled,
+    SSOEnforcementRequiresConnection,
+)
 from .service import organization as organization_service
 
 router = APIRouter(prefix="/organizations", tags=["organizations"])
@@ -337,8 +341,11 @@ async def check_slug(
     responses={
         200: {"description": "Organization updated."},
         403: {
-            "description": "You don't have the permission to update this organization.",
-            "model": NotPermitted.schema(),
+            "description": (
+                "You don't have the permission to update this organization, or "
+                "dispute auto-accept isn't enabled for it."
+            ),
+            "model": NotPermitted.schema() | DisputeAutoAcceptNotEnabled.schema(),
         },
         404: OrganizationNotFound,
         409: {

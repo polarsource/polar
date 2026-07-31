@@ -223,14 +223,16 @@ def _default_checkout_settings() -> OrganizationCheckoutSettings:
 
 
 class OrganizationDisputeSettings(TypedDict):
+    """`auto_accept_below_amount` is in the account's settlement currency, the
+    one disputes are deducted in. Disputes charged in another currency convert
+    through the exchange rate their payment settled at."""
+
     auto_accept_below_amount: int | None
-    auto_accept_currency: str | None
 
 
 def _default_dispute_settings() -> OrganizationDisputeSettings:
     return {
         "auto_accept_below_amount": None,
-        "auto_accept_currency": None,
     }
 
 
@@ -716,6 +718,14 @@ class Organization(RateLimitGroupMixin, RecordModel):
         return self.feature_settings.get("sso_enabled", False)
 
     @property
+    def is_dispute_auto_accept_enabled(self) -> bool:
+        """Auto-accept is useless without the dispute dashboard: the merchant
+        would have no thread to read and no way to respond to stop it."""
+        return self.feature_settings.get("disputes_enabled", False) and (
+            self.feature_settings.get("dispute_auto_accept_enabled", False)
+        )
+
+    @property
     def is_compass_enabled(self) -> bool:
         return self.feature_settings.get("compass_enabled", False)
 
@@ -907,10 +917,6 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @property
     def dispute_auto_accept_below_amount(self) -> int | None:
         return self.dispute_settings["auto_accept_below_amount"]
-
-    @property
-    def dispute_auto_accept_currency(self) -> str | None:
-        return self.dispute_settings["auto_accept_currency"]
 
     @declared_attr
     def all_products(cls) -> Mapped[list["Product"]]:

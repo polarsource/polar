@@ -37,6 +37,10 @@ from .assistant.schemas import (
 from .assistant.stream import sse_event, stream_assistant_run
 from .schemas import Insight, InsightCategory
 from .service import compass as compass_service
+from .thread_service import (
+    TurnModelMessages,
+    TurnParts,
+)
 from .thread_service import compass_thread as compass_thread_service
 
 router = APIRouter(prefix="/compass", tags=["compass", APITag.private])
@@ -202,17 +206,19 @@ async def assistant_chat(
             raise ResourceNotFound()
         history = await compass_thread_service.build_message_history(session, thread)
     else:
-        # Created (and committed) before streaming starts, so the thread —
+        # Created (and persisted) before streaming starts, so the thread —
         # and its title — survive an aborted stream and mid-stream refreshes.
+        # `begin()` scopes the transaction to this block: the SSE generator
+        # outlives the request scope, so the request-scoped machinery would
+        # never finalize a session opened here.
         write_sessionmaker = request.state.async_sessionmaker
-        async with write_sessionmaker() as write_session:
+        async with write_sessionmaker.begin() as write_session:
             thread = await compass_thread_service.create(
                 write_session,
                 auth_subject,
                 organization_id=organization.id,
                 prompt=body.prompt,
             )
-            await write_session.commit()
     thread_id = thread.id
     thread_title = thread.title
 
@@ -225,10 +231,9 @@ async def assistant_chat(
     write_sessionmaker = request.state.async_sessionmaker
 
     async def record_turn(
-        parts: list[dict],  # type: ignore[type-arg]
-        model_messages: list[dict],  # type: ignore[type-arg]
+        parts: TurnParts, model_messages: TurnModelMessages
     ) -> None:
-        async with write_sessionmaker() as write_session:
+        async with write_sessionmaker.begin() as write_session:
             await compass_thread_service.record_turn(
                 write_session,
                 thread_id,
@@ -236,7 +241,6 @@ async def assistant_chat(
                 parts=parts,
                 model_messages=model_messages,
             )
-            await write_session.commit()
 
     async def event_stream():  # type: ignore[no-untyped-def]
         if is_new_thread:
@@ -262,7 +266,7 @@ async def assistant_chat(
                 model_provider=model_provider,
                 model_name=model_name,
                 record_turn=record_turn,
-                done_data={"thread_id": str(thread_id)},
+                thread_id=str(thread_id),
             ):
                 yield event
 

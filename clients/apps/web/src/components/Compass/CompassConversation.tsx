@@ -120,14 +120,16 @@ export const CompassConversation = ({
     (insightsError || (insights ?? []).length > 0)
   const presets = presetsFromInsights(insights)
 
-  // Sending always re-follows the bottom, even if the user had scrolled up
-  // in the previous answer. Streamed growth is handled by the hook itself.
-  const lastMessage = messages[messages.length - 1]
+  // Re-follow the bottom whenever a new message lands — a send, or a stored
+  // thread being rehydrated (which should open at its latest turn). Keyed on
+  // the id so mid-stream growth doesn't force-scroll a user who scrolled up;
+  // streamed growth is handled by the stick-to-bottom hook itself.
+  const lastMessageId = messages[messages.length - 1]?.id
   useEffect(() => {
-    if (lastMessage?.role === 'user') {
+    if (lastMessageId !== undefined) {
       scrollToBottom()
     }
-  }, [lastMessage, scrollToBottom])
+  }, [lastMessageId, scrollToBottom])
 
   return (
     <motion.div

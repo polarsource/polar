@@ -17,6 +17,112 @@ interface CompassHistoryMenuProps {
   onDeleted: (threadId: string) => void
 }
 
+interface ThreadListProps {
+  organization: schemas['Organization']
+  activeThreadId: string | null
+  onSelect: (threadId: string) => void
+  onDeleted: (threadId: string) => void
+}
+
+/**
+ * The panel body. Mounted only while the panel is open, so every open
+ * refetches the list — a thread created since the last look shows up without
+ * a page refresh (cached data still renders instantly underneath).
+ */
+const ThreadList = ({
+  organization,
+  activeThreadId,
+  onSelect,
+  onDeleted,
+}: ThreadListProps) => {
+  const { data: threads, isLoading } = useCompassThreads(organization.id)
+  const deleteThread = useDeleteCompassThread(organization.id)
+  const items = threads?.items ?? []
+
+  const removeThread = (threadId: string) =>
+    deleteThread.mutate(threadId, { onSuccess: () => onDeleted(threadId) })
+
+  if (isLoading) {
+    return (
+      <Box alignItems="center" justifyContent="center" paddingVertical="xl">
+        <Spinner />
+      </Box>
+    )
+  }
+
+  if (items.length === 0) {
+    return (
+      <Box flexDirection="column" alignItems="center" paddingVertical="xl">
+        <Text variant="caption" color="muted">
+          No conversations yet
+        </Text>
+      </Box>
+    )
+  }
+
+  return (
+    <>
+      {items.map((thread) => (
+        <Box key={thread.id} position="relative">
+          <button
+            type="button"
+            className="w-full text-left"
+            onClick={() => onSelect(thread.id)}
+          >
+            <Box
+              flexDirection="column"
+              paddingLeft="m"
+              paddingRight="2xl"
+              paddingVertical="s"
+              borderRadius="m"
+              backgroundColor={
+                thread.id === activeThreadId
+                  ? { base: 'background-card', hover: 'background-card' }
+                  : { hover: 'background-secondary' }
+              }
+              transitionProperty="colors"
+              transitionDuration="fast"
+              cursor={{ hover: 'pointer' }}
+            >
+              <Text truncate>{thread.title}</Text>
+              <Text variant="caption" color="muted">
+                {relativeTime(thread.modified_at ?? thread.created_at)}
+              </Text>
+            </Box>
+          </button>
+          {/* Sibling, not child, of the row button: nesting interactive
+              elements is invalid markup and breaks keyboard navigation. */}
+          <Box
+            as="span"
+            position="absolute"
+            right={8}
+            top={0}
+            bottom={0}
+            alignItems="center"
+          >
+            <button
+              type="button"
+              aria-label="Delete conversation"
+              onClick={() => removeThread(thread.id)}
+            >
+              <Box
+                as="span"
+                color={{ base: 'text-tertiary', hover: 'text-danger' }}
+                transitionProperty="colors"
+                transitionDuration="fast"
+                cursor={{ hover: 'pointer' }}
+                alignItems="center"
+              >
+                <DeleteOutlineRounded style={{ fontSize: '1rem' }} />
+              </Box>
+            </button>
+          </Box>
+        </Box>
+      ))}
+    </>
+  )
+}
+
 /**
  * The conversation history toggle: a header button that opens a small
  * anchored panel of the caller's recent threads. Selecting one rehydrates it
@@ -30,8 +136,6 @@ export const CompassHistoryMenu = ({
 }: CompassHistoryMenuProps) => {
   const [open, setOpen] = useState(false)
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const { data: threads, isLoading } = useCompassThreads(organization.id, open)
-  const deleteThread = useDeleteCompassThread(organization.id)
 
   useEffect(() => {
     if (!open) return
@@ -55,8 +159,6 @@ export const CompassHistoryMenu = ({
       window.removeEventListener('keydown', onKeyDown, true)
     }
   }, [open])
-
-  const items = threads?.items ?? []
 
   return (
     <div ref={containerRef} className="relative">
@@ -99,84 +201,15 @@ export const CompassHistoryMenu = ({
               maxHeight={400}
               overflowY="auto"
             >
-              {isLoading ? (
-                <Box
-                  alignItems="center"
-                  justifyContent="center"
-                  paddingVertical="xl"
-                >
-                  <Spinner />
-                </Box>
-              ) : items.length === 0 ? (
-                <Box
-                  flexDirection="column"
-                  alignItems="center"
-                  paddingVertical="xl"
-                >
-                  <Text variant="caption" color="muted">
-                    No conversations yet
-                  </Text>
-                </Box>
-              ) : (
-                items.map((thread) => (
-                  <button
-                    key={thread.id}
-                    type="button"
-                    className="group w-full text-left"
-                    onClick={() => {
-                      setOpen(false)
-                      onSelect(thread.id)
-                    }}
-                  >
-                    <Box
-                      alignItems="center"
-                      columnGap="s"
-                      paddingHorizontal="m"
-                      paddingVertical="s"
-                      borderRadius="m"
-                      backgroundColor={
-                        thread.id === activeThreadId
-                          ? { base: 'background-card', hover: 'background-card' }
-                          : { hover: 'background-secondary' }
-                      }
-                      transitionProperty="colors"
-                      transitionDuration="fast"
-                      cursor={{ hover: 'pointer' }}
-                    >
-                      <Box flexDirection="column" flex={1} minWidth={0}>
-                        <Text truncate>{thread.title}</Text>
-                        <Text variant="caption" color="muted">
-                          {relativeTime(
-                            thread.modified_at ?? thread.created_at,
-                          )}
-                        </Text>
-                      </Box>
-                      <span
-                        role="button"
-                        tabIndex={0}
-                        aria-label="Delete conversation"
-                        className="text-gray-400 opacity-0 transition-opacity group-hover:opacity-100 hover:text-red-500 dark:text-polar-500"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          deleteThread.mutate(thread.id, {
-                            onSuccess: () => onDeleted(thread.id),
-                          })
-                        }}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter') {
-                            e.stopPropagation()
-                            deleteThread.mutate(thread.id, {
-                              onSuccess: () => onDeleted(thread.id),
-                            })
-                          }
-                        }}
-                      >
-                        <DeleteOutlineRounded style={{ fontSize: '1rem' }} />
-                      </span>
-                    </Box>
-                  </button>
-                ))
-              )}
+              <ThreadList
+                organization={organization}
+                activeThreadId={activeThreadId}
+                onSelect={(threadId) => {
+                  setOpen(false)
+                  onSelect(threadId)
+                }}
+                onDeleted={onDeleted}
+              />
             </Box>
           </motion.div>
         )}

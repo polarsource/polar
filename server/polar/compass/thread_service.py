@@ -129,8 +129,10 @@ class CompassThreadService:
             ),
             flush=True,
         )
-        # Recency for the thread list: a thread was "active" when its last
-        # turn completed, not when it was renamed or created.
+        # Bump the thread so the list orders by last activity. (Any update —
+        # including a rename — touches modified_at via the column's onupdate;
+        # this explicit touch is needed because appending a message row does
+        # not otherwise UPDATE the thread row.)
         await thread_repository.update(thread, update_dict={"modified_at": utc_now()})
         return message
 

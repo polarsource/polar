@@ -87,14 +87,17 @@ const appendDelta = (
 export const useCompassAssistant = (
   organizationId: string,
   onThreadCreated?: (threadId: string) => void,
+  initialThreadId: string | null = null,
 ) => {
   const [messages, setMessages] = useState<AssistantMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
   // The server-side thread the conversation belongs to. The ref is what the
   // next `send` posts (updated mid-stream without re-rendering); the state
-  // mirrors it for consumers that render against it.
-  const [threadId, setThreadId] = useState<string | null>(null)
-  const threadIdRef = useRef<string | null>(null)
+  // mirrors it for consumers that render against it. Seeding it from a deep
+  // link means a prompt sent before rehydration resolves still continues the
+  // linked thread instead of forking a new one.
+  const [threadId, setThreadId] = useState<string | null>(initialThreadId)
+  const threadIdRef = useRef<string | null>(initialThreadId)
   const idRef = useRef(0)
   const controllerRef = useRef<AbortController | null>(null)
   const onThreadCreatedRef = useRef(onThreadCreated)

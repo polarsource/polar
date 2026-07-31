@@ -143,7 +143,7 @@ async def stream_assistant_run(
     model_provider: str,
     model_name: str,
     record_turn: RecordTurn,
-    done_data: dict[str, Any],
+    thread_id: str,
 ) -> AsyncGenerator[dict[str, str]]:
     recorder = _PartsRecorder()
     placer = _BlockPlacer()
@@ -212,7 +212,7 @@ async def stream_assistant_run(
             # Persist only completed turns: a turn that errored mid-stream is
             # never recorded, so replay history can't be poisoned by it.
             await record_turn(recorder.parts, new_messages)
-            yield sse_event("done", done_data)
+            yield sse_event("done", {"thread_id": thread_id})
     except Exception:
         log.exception(
             "compass.assistant_error", organization_id=str(deps.organization_id)

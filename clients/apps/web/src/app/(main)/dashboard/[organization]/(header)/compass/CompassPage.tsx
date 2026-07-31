@@ -4,12 +4,13 @@ import { CompassConversation } from '@/components/Compass/CompassConversation'
 import { CompassHistoryMenu } from '@/components/Compass/CompassHistoryMenu'
 import { CompassTabs } from '@/components/Compass/CompassTabs'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import { useCompassThread } from '@/hooks/queries'
+import { fetchCompassThread } from '@/hooks/queries'
 import { useCompassAssistant } from '@/hooks/useCompassAssistant'
 import AddRounded from '@mui/icons-material/AddRounded'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { useQueryClient } from '@tanstack/react-query'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -22,39 +23,73 @@ export default function CompassPage({ organization }: CompassPageProps) {
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const queryClient = useQueryClient()
   const inputRef = useRef<HTMLTextAreaElement | null>(null)
   const askedRef = useRef(false)
 
-  // The `?thread=` param is the source of truth for deep links and
-  // refreshes; the hook's threadId tracks what is actually on screen, so a
-  // param change triggers exactly one rehydration and a freshly created
-  // thread doesn't re-fetch itself.
-  const threadParam = searchParams.get('thread')
-
-  const onThreadCreated = useCallback(
-    (threadId: string) => {
-      router.replace(`${pathname}?thread=${threadId}`, { scroll: false })
+  const showThreadUrl = useCallback(
+    (id: string | null) => {
+      router.replace(id ? `${pathname}?thread=${id}` : pathname, {
+        scroll: false,
+      })
     },
     [router, pathname],
   )
 
-  const { messages, send, isStreaming, reset, hydrate, threadId } =
-    useCompassAssistant(organization.id, onThreadCreated)
-
-  const { data: threadDetail } = useCompassThread(
-    threadParam && threadParam !== threadId ? threadParam : null,
+  const onThreadCreated = useCallback(
+    (threadId: string) => {
+      showThreadUrl(threadId)
+      // The history list is stale the moment a thread exists server-side.
+      void queryClient.invalidateQueries({ queryKey: ['compass_threads'] })
+    },
+    [showThreadUrl, queryClient],
   )
+
+  // Captured once on mount: the deep-linked thread this page opened with.
+  const [initialThreadId] = useState(() => searchParams.get('thread'))
+  const { messages, send, isStreaming, reset, hydrate, threadId } =
+    useCompassAssistant(organization.id, onThreadCreated, initialThreadId)
+
+  // Hydration is imperative — it happens exactly twice: once on mount for a
+  // `?thread=` deep link, and on an explicit history selection. Nothing
+  // reactively re-hydrates from the URL or the query cache: that path races
+  // router.replace and resurrects conversations the user just left.
+  const isStreamingRef = useRef(isStreaming)
   useEffect(() => {
-    if (threadDetail && threadDetail.id !== threadId) {
-      hydrate(threadDetail)
+    isStreamingRef.current = isStreaming
+  }, [isStreaming])
+  const loadThread = useCallback(
+    async (id: string, { ifIdle = false }: { ifIdle?: boolean } = {}) => {
+      try {
+        const detail = await fetchCompassThread(queryClient, id)
+        // A deep-link load must not clobber a conversation the user already
+        // started while it was in flight.
+        if (ifIdle && isStreamingRef.current) return
+        hydrate(detail)
+      } catch {
+        // Deleted or inaccessible thread: fall back to a fresh conversation
+        // (reset also drops the seeded thread id, so the next send doesn't
+        // post against the dead thread).
+        reset()
+        showThreadUrl(null)
+      }
+    },
+    [queryClient, hydrate, reset, showThreadUrl],
+  )
+
+  const initialLoadedRef = useRef(false)
+  useEffect(() => {
+    if (initialThreadId && !initialLoadedRef.current) {
+      initialLoadedRef.current = true
+      void loadThread(initialThreadId, { ifIdle: true })
     }
-  }, [threadDetail, threadId, hydrate])
+  }, [initialThreadId, loadThread])
 
   const startNewChat = useCallback(() => {
     reset()
-    router.replace(pathname, { scroll: false })
+    showThreadUrl(null)
     inputRef.current?.focus()
-  }, [reset, router, pathname])
+  }, [reset, showThreadUrl])
 
   // The overview's idle box hands its question over via `?ask=`. Send it
   // once, then strip the param so refresh and back don't re-ask.
@@ -109,9 +144,8 @@ export default function CompassPage({ organization }: CompassPageProps) {
             activeThreadId={threadId}
             onSelect={(selectedId) => {
               if (selectedId === threadId) return
-              router.replace(`${pathname}?thread=${selectedId}`, {
-                scroll: false,
-              })
+              void loadThread(selectedId)
+              showThreadUrl(selectedId)
             }}
             onDeleted={(deletedId) => {
               if (deletedId === threadId) {

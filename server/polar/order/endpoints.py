@@ -1,6 +1,7 @@
-from collections.abc import AsyncGenerator
 from datetime import datetime
 from textwrap import dedent
+from typing import Annotated
+from zoneinfo import ZoneInfo
 
 from fastapi import Depends, Query, Response
 from pydantic import UUID4
@@ -12,9 +13,9 @@ from polar.authz.service import (
 )
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import ResourceNotFound
-from polar.kit.csv import CSVStreamingResponse, IterableCSVWriter
+from polar.kit.csv import CSVStreamingResponse
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
-from polar.kit.pagination import ListResource, PaginationParams, PaginationParamsQuery
+from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import Order
 from polar.models.order import OrderStatus
@@ -33,6 +34,12 @@ from polar.routing import APIRouter
 from polar.subscription.schemas import SubscriptionID
 
 from . import auth, sorting
+from .export import (
+    OrderExportColumn,
+    OrderExportTimezone,
+    generate_csv,
+    get_filename,
+)
 from .schemas import Order as OrderSchema
 from .schemas import (
     OrderCreate,
@@ -176,47 +183,45 @@ async def export(
     product_id: MultipleQueryFilter[ProductID] | None = Query(
         None, title="ProductID Filter", description="Filter by product ID."
     ),
+    status: MultipleQueryFilter[OrderStatus] | None = Query(
+        None, title="Status Filter", description="Filter by order status."
+    ),
+    created_after: datetime | None = Query(
+        None, description="Only include orders created after this date."
+    ),
+    created_before: datetime | None = Query(
+        None, description="Only include orders created before this date."
+    ),
+    timezone: Annotated[
+        OrderExportTimezone,
+        Query(description="Time zone used to render dates in the CSV."),
+    ] = "UTC",
+    columns: MultipleQueryFilter[OrderExportColumn] | None = Query(
+        None,
+        description=(
+            "Columns to include in the CSV, in order. "
+            "Defaults to email, created_at, product, amount, "
+            "currency, status and invoice_number."
+        ),
+    ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> CSVStreamingResponse:
     """Export orders as a CSV file."""
-
-    async def create_csv() -> AsyncGenerator[str, None]:
-        csv_writer = IterableCSVWriter(dialect="excel")
-        # CSV header
-        yield csv_writer.getrow(
-            (
-                "Email",
-                "Created At",
-                "Product",
-                "Amount",
-                "Currency",
-                "Status",
-                "Invoice number",
-            )
-        )
-
-        (results, _) = await order_service.list(
+    tzinfo = ZoneInfo(timezone)
+    return CSVStreamingResponse(
+        generate_csv(
             session,
             auth_subject,
             organization_id=organization_id,
             product_id=product_id,
-            pagination=PaginationParams(limit=1000000, page=1),
-        )
-
-        for order in results:
-            yield csv_writer.getrow(
-                (
-                    order.customer.email,
-                    order.created_at.isoformat(),
-                    order.description,
-                    order.net_amount / 100,
-                    order.currency,
-                    order.status,
-                    order.invoice_number,
-                )
-            )
-
-    return CSVStreamingResponse(create_csv(), "polar-orders.csv")
+            status=status,
+            created_after=created_after,
+            created_before=created_before,
+            timezone=tzinfo,
+            columns=columns,
+        ),
+        get_filename(created_after, created_before, tzinfo),
+    )
 
 
 @router.get(

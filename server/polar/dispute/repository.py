@@ -1,3 +1,5 @@
+from collections.abc import AsyncGenerator
+from datetime import datetime
 from uuid import UUID
 
 from sqlalchemy import Select
@@ -14,7 +16,7 @@ from polar.kit.repository import (
     RepositorySortingMixin,
     SortingClause,
 )
-from polar.models import Dispute, Order, Payment
+from polar.models import Dispute, Order, Organization, Payment
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
 
 from .sorting import DisputeSortProperty
@@ -129,6 +131,29 @@ class DisputeRepository(
             .options(contains_eager(Dispute.payment))
             .where(Payment.organization_id.in_(org_ids))
         )
+
+    async def stream_auto_accept_candidates(
+        self, *, before: datetime
+    ) -> AsyncGenerator[Dispute, None]:
+        """Disputes past the delay on an organization that opted in."""
+        feature_settings = Organization.feature_settings
+        statement = (
+            self.get_base_statement()
+            .join(Order, Dispute.order_id == Order.id)
+            .join(Organization, Order.organization_id == Organization.id)
+            .where(
+                Dispute.status == DisputeStatus.needs_response,
+                Dispute.created_at < before,
+                feature_settings["disputes_enabled"].as_boolean().is_(True),
+                feature_settings["dispute_auto_accept_enabled"].as_boolean().is_(True),
+                Organization.dispute_settings["auto_accept_below_amount"]
+                .as_integer()
+                .isnot(None),
+            )
+            .order_by(Dispute.created_at.asc())
+        )
+        async for dispute in self.stream(statement):
+            yield dispute
 
     def get_eager_options(self) -> Options:
         return (

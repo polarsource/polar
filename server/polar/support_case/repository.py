@@ -105,6 +105,30 @@ class SupportCaseMessageRepository(
             )
         return await self.get_all(statement)
 
+    async def has_merchant_message(self, case_id: UUID) -> bool:
+        statement = (
+            self.get_base_statement()
+            .where(
+                SupportCaseMessage.case_id == case_id,
+                SupportCaseMessage.author_kind == SupportCaseMessageAuthorKind.merchant,
+            )
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement) is not None
+
+    async def has_message_type(
+        self, case_id: UUID, type: SupportCaseMessageType
+    ) -> bool:
+        statement = (
+            self.get_base_statement()
+            .where(
+                SupportCaseMessage.case_id == case_id,
+                SupportCaseMessage.type == type,
+            )
+            .limit(1)
+        )
+        return await self.get_one_or_none(statement) is not None
+
     async def get_latest_lifecycle_event(
         self, case_id: UUID
     ) -> SupportCaseMessage | None:

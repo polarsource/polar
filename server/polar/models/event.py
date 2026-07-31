@@ -231,6 +231,12 @@ class Event(Model, MetadataMixin):
             "pending_parent_external_id",
             postgresql_where="pending_parent_external_id IS NOT NULL",
         ),
+        Index(
+            "ix_events_meter_credited",
+            "organization_id",
+            "ingested_at",
+            postgresql_where="source = 'system' AND name = 'meter.credited'",
+        ),
     )
 
     id: Mapped[UUID] = mapped_column(Uuid, primary_key=True, default=generate_uuid)

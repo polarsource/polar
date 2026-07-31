@@ -11,6 +11,7 @@ from sqlalchemy.util.typing import Literal
 from typing_extensions import AsyncGenerator
 
 from polar.event.repository import EventRepository
+from polar.event.system import SystemEvent
 from polar.kit.math import non_negative_running_sum
 from polar.kit.utils import utc_now
 from polar.meter.service import meter as meter_service
@@ -314,7 +315,12 @@ class BillingEntryService:
             ),
         )
         credit_events_statement = events_statement.where(
-            Event.is_meter_credit.is_(True)
+            # Spelled out (rather than `Event.is_meter_credit`) and scoped to the
+            # organization so the planner can use the partial credit index instead
+            # of scanning every pending billing entry.
+            Event.organization_id == meter.organization_id,
+            Event.source == EventSource.system,
+            Event.name == SystemEvent.meter_credited,
         )
         credit_events = await event_repository.get_all(credit_events_statement)
         credited_units = non_negative_running_sum(
@@ -367,7 +373,12 @@ class BillingEntryService:
             ),
         )
         credit_events_statement = events_statement.where(
-            Event.is_meter_credit.is_(True)
+            # Spelled out (rather than `Event.is_meter_credit`) and scoped to the
+            # organization so the planner can use the partial credit index instead
+            # of scanning every pending billing entry.
+            Event.organization_id == meter.organization_id,
+            Event.source == EventSource.system,
+            Event.name == SystemEvent.meter_credited,
         )
         credit_events = await event_repository.get_all(credit_events_statement)
         credited_units = non_negative_running_sum(

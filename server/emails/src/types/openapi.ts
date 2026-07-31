@@ -1319,6 +1319,7 @@ export interface components {
       | 'subscription_create'
       | 'subscription_cycle'
       | 'subscription_update'
+      | 'subscription_meter_cycle'
     /**
      * OrderBillingReasonInternal
      * @description Internal billing reasons with additional granularity.
@@ -1331,6 +1332,7 @@ export interface components {
       | 'subscription_cycle_after_trial'
       | 'subscription_cancel'
       | 'subscription_update'
+      | 'subscription_meter_cycle'
     /** OrderConfirmationEmail */
     OrderConfirmationEmail: {
       /**

@@ -13,6 +13,7 @@ const BillingReasonDisplayName: Record<schemas['OrderBillingReason'], string> =
     subscription_create: 'Subscription Creation',
     subscription_cycle: 'Subscription Cycle',
     subscription_update: 'Subscription Update',
+    subscription_meter_cycle: 'Meter Cycle',
   }
 
 export interface OrderEventCardProps {

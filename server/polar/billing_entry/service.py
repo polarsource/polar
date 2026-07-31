@@ -1,7 +1,7 @@
 import contextlib
 import dataclasses
 import uuid
-from collections.abc import Sequence
+from collections.abc import AsyncIterable, Sequence
 from datetime import datetime
 from typing import cast
 
@@ -53,16 +53,19 @@ class MeteredLineItem:
 
 class BillingEntryService:
     @contextlib.asynccontextmanager
-    async def create_order_items_from_pending(
-        self, session: AsyncSession, subscription: Subscription
+    async def _create_order_items(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+        line_items: AsyncIterable[
+            tuple[StaticLineItem | MeteredLineItem, Sequence[uuid.UUID]]
+        ],
     ) -> AsyncGenerator[Sequence[OrderItem]]:
         repository = BillingEntryRepository.from_session(session)
         await repository.lock_pending_by_subscription(subscription.id)
 
         item_entries_map: dict[OrderItem, Sequence[uuid.UUID]] = {}
-        async for line_item, entries in self.compute_pending_subscription_line_items(
-            session, subscription
-        ):
+        async for line_item, entries in line_items:
             order_item = OrderItem(
                 id=uuid.uuid4(),
                 label=line_item.label,
@@ -76,9 +79,31 @@ class BillingEntryService:
 
         yield list(item_entries_map.keys())
 
-        repository = BillingEntryRepository.from_session(session)
         for order_item, entries in item_entries_map.items():
             await repository.update_order_item_id(entries, order_item.id)
+
+    def create_order_items_from_pending(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> contextlib.AbstractAsyncContextManager[Sequence[OrderItem]]:
+        return self._create_order_items(
+            session,
+            subscription,
+            self.compute_pending_subscription_line_items(session, subscription),
+        )
+
+    def create_metered_order_items_from_pending(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> contextlib.AbstractAsyncContextManager[Sequence[OrderItem]]:
+        """
+        Build order items from the subscription's pending *metered* billing entries
+        only, leaving static/proration entries pending. Used by the meter cycle,
+        which settles usage between billing renewals.
+        """
+        return self._create_order_items(
+            session,
+            subscription,
+            self.compute_pending_metered_line_items(session, subscription),
+        )
 
     async def compute_pending_subscription_line_items(
         self, session: AsyncSession, subscription: Subscription
@@ -93,6 +118,17 @@ class BillingEntryService:
                 session, static_price, entry, seats=subscription.seats
             )
             yield static_line_item, [entry.id]
+
+        async for (
+            metered_line_item,
+            metered_entries,
+        ) in self.compute_pending_metered_line_items(session, subscription):
+            yield metered_line_item, metered_entries
+
+    async def compute_pending_metered_line_items(
+        self, session: AsyncSession, subscription: Subscription
+    ) -> AsyncGenerator[tuple[MeteredLineItem, Sequence[uuid.UUID]]]:
+        repository = BillingEntryRepository.from_session(session)
 
         # 👋 Reading the code below, you might wonder:
         # "Why is this so complex?"

@@ -55,11 +55,17 @@ async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) ->
         if subscription is None:
             raise SubscriptionDoesNotExist(subscription_id)
 
-        if not subscription.active or (
-            not force
-            and subscription.current_period_end
-            and subscription.current_period_end > utc_now()
-        ):
+        now = utc_now()
+        billing_due = force or (
+            subscription.current_period_end is not None
+            and subscription.current_period_end <= now
+        )
+        meter_due = (
+            subscription.current_meter_period_end is not None
+            and subscription.current_meter_period_end <= now
+        )
+
+        if not subscription.active or not (billing_due or meter_due):
             log.info(
                 "Subscription has already been cycled",
                 subscription_id=subscription_id,
@@ -69,10 +75,16 @@ async def subscription_cycle(subscription_id: uuid.UUID, force: bool = False) ->
             )
             return
 
-        async with SubscriptionUpdateContext(
-            session, subscription, subscription_service
-        ) as ctx:
-            await subscription_service.cycle(session, ctx, subscription)
+        if billing_due:
+            # Billing boundary wins: the full cycle also settles the meter period.
+            async with SubscriptionUpdateContext(
+                session, subscription, subscription_service
+            ) as ctx:
+                await subscription_service.cycle(session, ctx, subscription)
+        else:
+            # cycle_meters raises SubscriptionMeterCycleLag on a multi-period lag; we
+            # let it propagate — the subscription stays halted (lock set) for a human.
+            await subscription_service.cycle_meters(session, subscription)
 
 
 @actor(

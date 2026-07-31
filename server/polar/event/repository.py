@@ -445,16 +445,14 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         cutoff: datetime,
     ) -> int:
         """
-        Count the pending billing entries backed by a system event (meter.credited,
-        meter.reset). These are the complement of the consumption events a `count`
-        meter bills; `count_pending_entries` minus this yields the `source='user'`
-        count without scanning every entry.
+        Count the pending billing entries backed by a system event. These are the
+        complement of the consumption events a `count` meter bills;
+        `count_pending_entries` minus this yields the `source='user'` count without
+        scanning every entry.
 
-        Matching on the two event names (rather than just source=system) keeps this on
-        the ix_events_org_source_name_customer_id_ingested_at index, pinning customer_id
-        instead of scanning every system event in the org. meter.credited/meter.reset are
-        the only system events that ever produce a metered billing entry
-        (see EventService._event_matches_meter) — extend this list if that changes.
+        Matching on all known system event names keeps this on the
+        ix_events_org_source_name_customer_id_ingested_at index, pinning customer_id
+        instead of scanning every system event in the org.
         """
         statement = (
             select(func.count())
@@ -465,7 +463,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 Event.organization_id == organization_id,
                 Event.customer_id == customer_id,
                 Event.source == EventSource.system,
-                Event.name.in_((SystemEvent.meter_credited, SystemEvent.meter_reset)),
+                Event.name.in_(tuple(SystemEvent)),
             )
         )
         return await self.session.scalar(statement) or 0

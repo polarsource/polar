@@ -187,19 +187,20 @@ async def create_credit_billing_entry(
     return billing_entry
 
 
-async def create_reset_billing_entry(
+async def create_system_billing_entry(
     save_fixture: SaveFixture,
     *,
     customer: Customer,
     price: ProductPrice,
     subscription: Subscription,
     meter: Meter,
+    name: SystemEvent,
 ) -> BillingEntry:
     event = await create_event(
         save_fixture,
         organization=customer.organization,
         source=EventSource.system,
-        name=SystemEvent.meter_reset,
+        name=name,
         customer=customer,
         metadata={"meter_id": str(meter.id)},
     )
@@ -769,9 +770,8 @@ class TestCreateOrderItemsFromPending:
                 subscription=subscription,
                 tokens=1,
             )
-        # A credit and a reset also produce metered entries. They must NOT inflate the
-        # consumption count (they're only distinguishable by event.source), though the
-        # credited units are still subtracted separately.
+        # System events must not inflate the consumption count, though credited units
+        # are still subtracted separately.
         await create_credit_billing_entry(
             save_fixture,
             customer=customer,
@@ -780,12 +780,21 @@ class TestCreateOrderItemsFromPending:
             meter=count_meter,
             units=1,
         )
-        await create_reset_billing_entry(
+        await create_system_billing_entry(
             save_fixture,
             customer=customer,
             price=price,
             subscription=subscription,
             meter=count_meter,
+            name=SystemEvent.meter_reset,
+        )
+        await create_system_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=subscription,
+            meter=count_meter,
+            name=SystemEvent.subscription_created,
         )
 
         async with billing_entry_service.create_order_items_from_pending(

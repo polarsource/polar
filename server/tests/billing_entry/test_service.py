@@ -401,6 +401,67 @@ class TestCreateOrderItemsFromPending:
         assert current_entry.order_item_id == order_item.id
         assert future_entry.order_item_id is None
 
+    async def test_metered_entries_use_one_watermark_for_amount_and_linking(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        price = product_metered_unit.prices[0]
+        assert is_metered_price(price)
+
+        included_entry = await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_subscription,
+            tokens=20,
+        )
+        watermark = included_entry.created_at + timedelta(seconds=1)
+        future_entry = await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_subscription,
+            tokens=100,
+        )
+        future_entry.created_at = watermark + timedelta(seconds=1)
+        await save_fixture(future_entry)
+        monkeypatch.setattr("polar.billing_entry.service.utc_now", lambda: watermark)
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, metered_subscription
+        ) as order_items:
+            assert len(order_items) == 1
+            order_item = order_items[0]
+            assert order_item.amount == 20_00
+
+            late_entry = await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price,
+                subscription=metered_subscription,
+                tokens=200,
+            )
+            late_entry.created_at = watermark + timedelta(seconds=2)
+            await save_fixture(late_entry)
+            await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+            )
+
+        await session.refresh(included_entry)
+        await session.refresh(future_entry)
+        await session.refresh(late_entry)
+        assert included_entry.order_item_id == order_item.id
+        assert future_entry.order_item_id is None
+        assert late_entry.order_item_id is None
+
     async def test_several_metered_prices(
         self,
         save_fixture: SaveFixture,
@@ -696,6 +757,7 @@ class TestCreateOrderItemsFromPending:
         session: AsyncSession,
         customer: Customer,
         organization: Organization,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """
         Test that MAX aggregation computes correctly across multiple product prices
@@ -787,6 +849,21 @@ class TestCreateOrderItemsFromPending:
                 ),
             ]
         )
+        watermark = entries[0].created_at
+        for entry in entries:
+            entry.created_at = watermark
+        await session.flush()
+        future_entry = await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price_b,
+            subscription=subscription,
+            tokens=100,
+            metadata_key="servers",
+        )
+        future_entry.created_at = watermark + timedelta(seconds=1)
+        await save_fixture(future_entry)
+        monkeypatch.setattr("polar.billing_entry.service.utc_now", lambda: watermark)
 
         # When computing order items, MAX should be 3 (not 3 + 2 = 5)
         async with billing_entry_service.create_order_items_from_pending(
@@ -812,6 +889,8 @@ class TestCreateOrderItemsFromPending:
         for entry in entries:
             await session.refresh(entry)
             assert entry.order_item_id == order_item.id
+        await session.refresh(future_entry)
+        assert future_entry.order_item_id is None
 
     async def test_inactive_price_skipped_after_product_switch(
         self,

@@ -385,6 +385,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         self,
         subscription: UUID,
         price: UUID,
+        watermark: datetime,
         *,
         cutoff: datetime | None = None,
     ) -> Select[tuple[Event]]:
@@ -395,6 +396,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 BillingEntry.subscription_id == subscription,
                 BillingEntry.order_item_id.is_(None),
                 BillingEntry.product_price_id == price,
+                BillingEntry.created_at <= watermark,
             )
             .order_by(Event.ingested_at.asc())
         )
@@ -406,6 +408,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         self,
         subscription: UUID,
         meter: UUID,
+        watermark: datetime,
         *,
         cutoff: datetime | None = None,
     ) -> Select[tuple[Event]]:
@@ -425,6 +428,7 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 BillingEntry.subscription_id == subscription,
                 BillingEntry.order_item_id.is_(None),
                 ProductPriceMeteredUnit.meter_id == meter,
+                BillingEntry.created_at <= watermark,
             )
             .order_by(Event.ingested_at.asc())
         )

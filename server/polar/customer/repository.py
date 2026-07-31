@@ -1,9 +1,23 @@
 import contextlib
-from collections.abc import AsyncGenerator, Sequence
+from collections.abc import AsyncGenerator, Mapping, Sequence
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Select, String, cast, func, or_, select, update
+from sqlalchemy import (
+    TIMESTAMP,
+    ColumnElement,
+    Select,
+    String,
+    Uuid,
+    cast,
+    column,
+    func,
+    or_,
+    select,
+    update,
+    values,
+)
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import InstanceState
 
@@ -330,6 +344,37 @@ class CustomerRepository(
         result = await self.session.execute(stmt)
         next_number = result.scalar_one()
         return next_number - 1
+
+    async def lower_first_user_event_at(
+        self, timestamps: Mapping[UUID, datetime]
+    ) -> None:
+        """
+        Move `first_user_event_at` earlier for each customer. Never later.
+        """
+        if not timestamps:
+            return
+
+        new_values = values(
+            column("customer_id", Uuid),
+            column("timestamp", TIMESTAMP(timezone=True)),
+            name="new_first_user_event_at",
+        ).data(list(timestamps.items()))
+
+        statement = (
+            update(Customer)
+            .where(
+                Customer.id == new_values.c.customer_id,
+                or_(
+                    Customer.first_user_event_at.is_(None),
+                    Customer.first_user_event_at > new_values.c.timestamp,
+                ),
+            )
+            .values(
+                first_user_event_at=new_values.c.timestamp,
+                modified_at=Customer.modified_at,
+            )
+        )
+        await self.session.execute(statement)
 
     async def increment_receipt_next_number(self, customer_id: UUID) -> int:
         """

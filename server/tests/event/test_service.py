@@ -2037,6 +2037,125 @@ class TestIngested:
 
 
 @pytest.mark.asyncio
+class TestIngestedFirstUserEventAt:
+    async def test_event_predating_the_customer(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, external_id="EXTERNAL_ID"
+        )
+        timestamp = customer.created_at - timedelta(days=30)
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            external_customer_id="EXTERNAL_ID",
+            source=EventSource.user,
+            timestamp=timestamp,
+        )
+
+        await event_service.ingested(session, [event.id])
+
+        await session.refresh(customer)
+        assert customer.first_user_event_at == timestamp
+
+    async def test_system_events_ignored(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+            timestamp=customer.created_at - timedelta(days=1),
+        )
+
+        await event_service.ingested(session, [event.id])
+
+        await session.refresh(customer)
+        assert customer.first_user_event_at is None
+
+    async def test_only_moves_earlier(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        earliest = customer.created_at - timedelta(days=10)
+        customer.first_user_event_at = earliest
+        await save_fixture(customer)
+
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.user,
+            timestamp=customer.created_at - timedelta(days=1),
+        )
+
+        await event_service.ingested(session, [event.id])
+
+        await session.refresh(customer)
+        assert customer.first_user_event_at == earliest
+
+    async def test_keeps_the_batch_minimum(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        earliest = customer.created_at - timedelta(days=10)
+        events = [
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer,
+                source=EventSource.user,
+                timestamp=timestamp,
+            )
+            for timestamp in (
+                customer.created_at - timedelta(days=1),
+                earliest,
+                customer.created_at - timedelta(days=5),
+            )
+        ]
+
+        await event_service.ingested(session, [event.id for event in events])
+
+        await session.refresh(customer)
+        assert customer.first_user_event_at == earliest
+
+    async def test_does_not_touch_modified_at(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        modified_at = customer.modified_at
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.user,
+            timestamp=customer.created_at - timedelta(days=1),
+        )
+
+        await event_service.ingested(session, [event.id])
+
+        await session.refresh(customer)
+        assert customer.modified_at == modified_at
+
+
+@pytest.mark.asyncio
 class TestSystemEvents:
     async def test_order_paid_one_time(
         self,

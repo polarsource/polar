@@ -2,11 +2,13 @@
 
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import FilterListOutlined from '@mui/icons-material/FilterListOutlined'
+import SearchOutlined from '@mui/icons-material/SearchOutlined'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
   Command,
   CommandGroup,
+  CommandInput,
   CommandItem,
   CommandList,
   CommandSeparator,
@@ -17,7 +19,7 @@ import {
   PopoverTrigger,
 } from '@polar-sh/ui/components/ui/popover'
 import { CheckIcon } from 'lucide-react'
-import React, { useState } from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 export interface FilterOption {
@@ -30,6 +32,9 @@ interface FilterBase {
   label: string
   icon?: React.ReactNode
   options: FilterOption[]
+  searchPlaceholder?: string
+  searchQuery?: string
+  onSearchQueryChange?: (query: string) => void
 }
 
 export interface SingleFilter extends FilterBase {
@@ -48,6 +53,12 @@ export type Filter = SingleFilter | MultiFilter
 
 const itemClassName =
   "gap-3 rounded-lg px-3 py-3 text-black data-[selected='true']:bg-transparent data-[selected=true]:text-black hover:bg-gray-100 active:bg-gray-100 dark:text-white dark:data-[selected=true]:text-white dark:hover:bg-polar-600 dark:active:bg-polar-600"
+
+const crossfadeClassName = (hidden: boolean): string =>
+  twMerge(
+    'w-full transition-[opacity,filter] duration-100 ease-out motion-reduce:transition-none',
+    hidden ? 'opacity-0 blur-[2px]' : 'opacity-100 blur-0',
+  )
 
 const isActive = (filter: Filter): boolean =>
   filter.type === 'single' ? filter.value !== null : filter.value.length > 0
@@ -108,16 +119,35 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
 }) => {
   const [open, setOpen] = useState(false)
   const [activeKey, setActiveKey] = useState<string | null>(null)
+  const [searchExpanded, setSearchExpanded] = useState(false)
+  const searchInputRef = useRef<HTMLInputElement>(null)
 
   const activeFilter = filters.find(({ key }) => key === activeKey)
   const activeCount = filters.filter(isActive).length
+  const isSearchable = !!activeFilter?.onSearchQueryChange
+
+  const collapseSearch = () => {
+    setSearchExpanded(false)
+    searchInputRef.current?.blur()
+    activeFilter?.onSearchQueryChange?.('')
+  }
+
+  useEffect(() => {
+    if (searchExpanded) {
+      searchInputRef.current?.focus()
+    }
+  }, [searchExpanded])
 
   const onOpenChange = (value: boolean) => {
     setOpen(value)
     setActiveKey(null)
+    collapseSearch()
   }
 
-  const goBack = () => setActiveKey(null)
+  const goBack = () => {
+    setActiveKey(null)
+    collapseSearch()
+  }
 
   const onSelectOption = (filter: Filter, option: FilterOption) => {
     toggleOption(filter, option)
@@ -173,7 +203,7 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
           className="rounded-2xl bg-transparent"
           shouldFilter={false}
           onKeyDown={(e) => {
-            if (activeFilter && e.key === 'Backspace') {
+            if (activeFilter && !searchExpanded && e.key === 'Backspace') {
               e.preventDefault()
               goBack()
             }
@@ -185,9 +215,58 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
                 <Button variant="ghost" size="sm" onClick={goBack}>
                   <ArrowBackOutlined fontSize="inherit" />
                 </Button>
-                <Text as="span" color="muted">
-                  {activeFilter.label}
-                </Text>
+                <Box position="relative" flex={1} height={32}>
+                  <Box
+                    position="absolute"
+                    inset={0}
+                    alignItems="center"
+                    pointerEvents={searchExpanded ? 'none' : 'auto'}
+                  >
+                    <div className={crossfadeClassName(searchExpanded)}>
+                      <Text as="span" color="muted" truncate>
+                        {activeFilter.label}
+                      </Text>
+                    </div>
+                  </Box>
+                  {isSearchable && (
+                    <Box
+                      position="absolute"
+                      inset={0}
+                      alignItems="center"
+                      pointerEvents={searchExpanded ? 'auto' : 'none'}
+                    >
+                      <CommandInput
+                        ref={searchInputRef}
+                        tabIndex={searchExpanded ? 0 : -1}
+                        aria-hidden={!searchExpanded}
+                        className="h-8 rounded-none border-none shadow-none ring-0 outline-none focus:ring-0 focus:outline-none"
+                        wrapperClassName={twMerge(
+                          'border-b-0 px-0 [&>svg]:hidden',
+                          crossfadeClassName(!searchExpanded),
+                        )}
+                        placeholder={
+                          activeFilter.searchPlaceholder ?? 'Search…'
+                        }
+                        value={activeFilter.searchQuery ?? ''}
+                        onValueChange={activeFilter.onSearchQueryChange}
+                      />
+                    </Box>
+                  )}
+                </Box>
+                {isSearchable && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label={searchExpanded ? 'Close search' : 'Search'}
+                    onClick={() =>
+                      searchExpanded
+                        ? collapseSearch()
+                        : setSearchExpanded(true)
+                    }
+                  >
+                    <SearchOutlined fontSize="inherit" />
+                  </Button>
+                )}
               </Box>
               <CommandSeparator
                 className="dark:bg-polar-600 mx-0"
@@ -198,6 +277,13 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
           <CommandList>
             {activeFilter ? (
               <CommandGroup>
+                {activeFilter.options.length === 0 && (
+                  <Box justifyContent="center" paddingVertical="l">
+                    <Text as="span" color="muted">
+                      No results found
+                    </Text>
+                  </Box>
+                )}
                 {activeFilter.options.map((option) => (
                   <CommandItem
                     key={option.value}

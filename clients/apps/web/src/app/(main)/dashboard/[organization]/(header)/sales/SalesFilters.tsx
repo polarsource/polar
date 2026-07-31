@@ -1,6 +1,9 @@
 'use client'
 
-import FilterPopover, { Filter } from '@/components/Shared/FilterPopover'
+import FilterPopover, {
+  Filter,
+  FilterOption,
+} from '@/components/Shared/FilterPopover'
 import DateRangePicker, {
   DateRange,
   dateRangeIntervals,
@@ -9,7 +12,7 @@ import DateRangePicker, {
 import { OrderStatusDisplayTitle } from '@/components/Orders/OrderStatus'
 import OrderStatusSelect from '@/components/Orders/OrderStatusSelect'
 import ProductSelect from '@/components/Products/ProductSelect'
-import { useProducts } from '@/hooks/queries'
+import { useProducts, useSelectedProducts } from '@/hooks/queries'
 import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
 import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
@@ -18,7 +21,7 @@ import { enums, schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { startOfDay } from 'date-fns'
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 
 const CUSTOM_DATE_RANGE = 'custom'
 
@@ -43,11 +46,30 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
   onDateChange,
   onExport,
 }) => {
+  const [productQuery, setProductQuery] = useState('')
+
   const { data: products } = useProducts(organization.id, {
     is_archived: null,
+    ...(productQuery ? { query: productQuery } : {}),
     sorting: ['name'],
-    limit: 100,
+    limit: 50,
   })
+  const { data: selectedProducts } = useSelectedProducts(productId ?? [], true)
+
+  const productOptions = useMemo<FilterOption[]>(() => {
+    let items = products?.items ?? []
+    if (!productQuery) {
+      for (const product of selectedProducts ?? []) {
+        if (!items.some(({ id }) => id === product.id)) {
+          items = [...items, product]
+        }
+      }
+    }
+    return items.map((product) => ({
+      value: product.id,
+      label: `${product.name}${product.is_archived ? ' (Archived)' : ''}`,
+    }))
+  }, [products, selectedProducts, productQuery])
 
   const mobileFilters = useMemo<Filter[]>(() => {
     const intervals = dateRangeIntervals(organization)
@@ -61,10 +83,10 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
         label: 'Product',
         icon: <HiveOutlined fontSize="inherit" />,
         type: 'multi',
-        options: (products?.items ?? []).map((product) => ({
-          value: product.id,
-          label: `${product.name}${product.is_archived ? ' (Archived)' : ''}`,
-        })),
+        options: productOptions,
+        searchPlaceholder: 'Search products…',
+        searchQuery: productQuery,
+        onSearchQueryChange: setProductQuery,
         value: productId ?? [],
         onChange: onProductSelect,
       },
@@ -103,7 +125,8 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
     ]
   }, [
     organization,
-    products,
+    productOptions,
+    productQuery,
     productId,
     onProductSelect,
     status,

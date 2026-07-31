@@ -1440,6 +1440,13 @@ class OrderService:
         # Note: subscription_update is intentionally excluded - meter credits from
         # benefit grants should persist within a billing cycle. Subscription updates
         # are for prorations, not new billing periods.
+        # Known limitation: resetting here, at order time, leaves the meter window
+        # (bounded by the latest reset event's `ingested_at`) drifting from the
+        # billing period whenever a cycle order is delayed or retried. Usage in that
+        # gap shrinks the closed period's rollover while still being billed in the
+        # next one, so it doesn't follow the `metered_usage_billed_until` bound set
+        # in `create_subscription_order`. Pinning the two together means resetting in
+        # the cycle transaction instead, which also has to cover the `resume` path.
         if billing_reason in {
             OrderBillingReasonInternal.subscription_cycle,
             OrderBillingReasonInternal.subscription_cycle_after_trial,

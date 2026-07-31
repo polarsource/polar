@@ -76,7 +76,7 @@ class BillingEntryService:
     ) -> AsyncGenerator[Sequence[OrderItem]]:
         repository = BillingEntryRepository.from_session(session)
         cutoff = cutoff or utc_now()
-        await repository.lock_pending_by_subscription(subscription.id, cutoff=cutoff)
+        await repository.lock_pending_by_subscription(subscription.id)
 
         item_entries_map: dict[OrderItem, BillingEntrySelector] = {}
         async for line_item, selector in self.compute_pending_subscription_line_items(

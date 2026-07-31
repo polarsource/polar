@@ -7,6 +7,7 @@ from sqlalchemy import Select, and_, func, or_, select, update
 from sqlalchemy.orm.strategy_options import contains_eager, joinedload
 
 from polar.config import settings
+from polar.kit.db.locking import pg_advisory_xact_lock
 from polar.kit.repository import (
     Options,
     RepositoryBase,
@@ -163,23 +164,21 @@ class BillingEntryRepository(
         )
         await self.session.execute(statement)
 
-    async def lock_pending_by_subscription(
-        self, subscription_id: UUID, *, cutoff: datetime | None = None
-    ) -> None:
+    async def lock_pending_by_subscription(self, subscription_id: UUID) -> None:
         """
-        Acquire FOR UPDATE locks on all pending billing entries for a subscription.
+        Serialize order creation for a subscription's pending billing entries
+        with a transaction-level advisory lock.
 
-        This prevents concurrent order creation from reading the same pending
-        entries. With READ COMMITTED isolation, a blocked transaction will
-        re-evaluate the WHERE clause after acquiring the lock and see that
-        the entries are no longer pending.
+        Unlike a ``FOR UPDATE`` on the pending rows, the advisory lock doesn't
+        depend on those rows existing, so it also blocks a concurrent
+        transaction that is about to insert new pending entries. With READ
+        COMMITTED isolation, a blocked transaction resumes once the holder
+        commits and sees the entries are no longer pending. The lock is
+        released automatically when the transaction ends.
         """
-        statement = (
-            self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
-            .with_only_columns(BillingEntry.id)
-            .with_for_update()
+        await pg_advisory_xact_lock(
+            self.session, "billing_entry.pending", subscription_id
         )
-        await self.session.execute(statement)
 
     def get_pending_by_subscription_statement(
         self,

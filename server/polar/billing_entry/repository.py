@@ -1,9 +1,10 @@
 from collections.abc import AsyncGenerator, Sequence
 from datetime import datetime
 from itertools import batched
+from typing import cast
 from uuid import UUID
 
-from sqlalchemy import Select, and_, func, or_, select, update
+from sqlalchemy import CursorResult, Select, and_, func, or_, select, update
 from sqlalchemy.orm.strategy_options import contains_eager, joinedload
 
 from polar.config import settings
@@ -16,6 +17,8 @@ from polar.kit.repository import (
 from polar.models import BillingEntry
 from polar.models.billing_entry import BillingEntryType
 from polar.models.product_price import ProductPrice, ProductPriceMeteredUnit
+
+_LINK_PENDING_BATCH_SIZE = 25_000
 
 
 class BillingEntryRepository(
@@ -127,7 +130,7 @@ class BillingEntryRepository(
         *,
         cutoff: datetime,
     ) -> None:
-        statement = update(BillingEntry).where(
+        pending_ids = select(BillingEntry.id).where(
             BillingEntry.subscription_id == subscription_id,
             BillingEntry.deleted_at.is_(None),
             BillingEntry.order_item_id.is_(None),
@@ -135,10 +138,7 @@ class BillingEntryRepository(
             BillingEntry.start_timestamp < cutoff,
             BillingEntry.created_at <= cutoff,
         )
-        statement = statement.values(order_item_id=order_item_id).execution_options(
-            synchronize_session=False
-        )
-        await self.session.execute(statement)
+        await self._link_pending(pending_ids, order_item_id)
 
     async def link_pending_by_subscription_and_meter(
         self,
@@ -148,7 +148,7 @@ class BillingEntryRepository(
         *,
         cutoff: datetime,
     ) -> None:
-        statement = update(BillingEntry).where(
+        pending_ids = select(BillingEntry.id).where(
             BillingEntry.subscription_id == subscription_id,
             BillingEntry.deleted_at.is_(None),
             BillingEntry.order_item_id.is_(None),
@@ -160,10 +160,24 @@ class BillingEntryRepository(
             BillingEntry.start_timestamp < cutoff,
             BillingEntry.created_at <= cutoff,
         )
-        statement = statement.values(order_item_id=order_item_id).execution_options(
-            synchronize_session=False
+        await self._link_pending(pending_ids, order_item_id)
+
+    async def _link_pending(
+        self, pending_ids: Select[tuple[UUID]], order_item_id: UUID
+    ) -> None:
+        batch_ids = pending_ids.limit(_LINK_PENDING_BATCH_SIZE)
+        statement = (
+            update(BillingEntry)
+            .where(BillingEntry.id.in_(batch_ids))
+            .values(order_item_id=order_item_id)
+            .execution_options(synchronize_session=False)
         )
-        await self.session.execute(statement)
+        while True:
+            result = cast(
+                CursorResult[BillingEntry], await self.session.execute(statement)
+            )
+            if result.rowcount < _LINK_PENDING_BATCH_SIZE:
+                break
 
     async def lock_pending_by_subscription(
         self, subscription_id: UUID, *, cutoff: datetime | None = None

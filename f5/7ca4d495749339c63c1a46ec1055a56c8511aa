@@ -1,0 +1,29 @@
+server/scripts/emit_meter_reset_events.py
+  s_8a39d133f46c78::t_b9796dc5d6d186 115
+  s_8a39d133f46c78::t_02ba11a0b1e405 20-22
+  s_8a39d133f46c78::t_d933fbfbc81525 37
+  s_8a39d133f46c78::t_681ae9feae0881 1-19,23-36,38-44,46-47,49-90,92-102,116-119,135,140-146,150-153,155-160
+  s_8a39d133f46c78::t_52144bf1f3e682 48
+  s_8a39d133f46c78::t_6347cfb839520d 91,103-105,107-114,120-134,136-139,147-149,154
+  s_8a39d133f46c78::t_c5d914d103b742 45
+  s_8a39d133f46c78::t_87ba00405c827a 106
+server/scripts/find_subscriptions_missing_reset_events.py
+  s_8a39d133f46c78::t_bbe58a5f4c0dfe 1-29,31-132
+  s_8a39d133f46c78::t_28b523383d8424 30
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.19",
+  "base_commit_sha": "f57ca4d495749339c63c1a46ec1055a56c8511aa",
+  "prompts": {},
+  "sessions": {
+    "s_8a39d133f46c78": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "e94844dc-5671-4db5-a1fd-6d42c61ed62c",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

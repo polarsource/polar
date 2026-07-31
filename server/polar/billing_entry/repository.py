@@ -56,25 +56,21 @@ class BillingEntryRepository(
         subscription_id: UUID,
         *,
         cutoff: datetime | None = None,
-        watermark: datetime | None = None,
         options: Options = (),
     ) -> Sequence[BillingEntry]:
         statement = self.get_pending_by_subscription_statement(
-            subscription_id, cutoff=cutoff, watermark=watermark, options=options
+            subscription_id, cutoff=cutoff, options=options
         )
         return await self.get_all(statement)
 
     async def get_static_pending_by_subscription(
         self,
         subscription_id: UUID,
-        watermark: datetime,
         *,
         cutoff: datetime | None = None,
     ) -> AsyncGenerator[BillingEntry]:
         statement = (
-            self.get_pending_by_subscription_statement(
-                subscription_id, cutoff=cutoff, watermark=watermark
-            )
+            self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
             .join(BillingEntry.product_price)
             .where(ProductPrice.is_static.is_(True))
             .options(
@@ -88,9 +84,8 @@ class BillingEntryRepository(
     async def get_pending_metered_by_subscription_tuples(
         self,
         subscription_id: UUID,
-        watermark: datetime,
         *,
-        cutoff: datetime | None = None,
+        cutoff: datetime,
     ) -> AsyncGenerator[tuple[UUID, UUID, datetime, datetime]]:
         """
         Get pending metered billing entries grouped by (product_price_id, meter_id).
@@ -104,13 +99,12 @@ class BillingEntryRepository(
         subscription.subscription_product_prices, not from these tuples.
         """
         statement = (
-            self.get_pending_by_subscription_statement(
-                subscription_id, cutoff=cutoff, watermark=watermark
-            )
+            self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
             .join(
                 ProductPriceMeteredUnit,
                 BillingEntry.product_price_id == ProductPriceMeteredUnit.id,
             )
+            .where(BillingEntry.created_at <= cutoff)
             .with_only_columns(
                 BillingEntry.product_price_id,
                 ProductPriceMeteredUnit.meter_id,
@@ -136,18 +130,16 @@ class BillingEntryRepository(
         subscription_id: UUID,
         product_price_id: UUID,
         order_item_id: UUID,
-        watermark: datetime,
         *,
-        cutoff: datetime | None = None,
+        cutoff: datetime,
     ) -> None:
         statement = update(BillingEntry).where(
             BillingEntry.subscription_id == subscription_id,
             BillingEntry.order_item_id.is_(None),
             BillingEntry.product_price_id == product_price_id,
-            BillingEntry.created_at <= watermark,
+            BillingEntry.start_timestamp < cutoff,
+            BillingEntry.created_at <= cutoff,
         )
-        if cutoff is not None:
-            statement = statement.where(BillingEntry.start_timestamp < cutoff)
         statement = statement.values(order_item_id=order_item_id).execution_options(
             synchronize_session=False
         )
@@ -158,9 +150,8 @@ class BillingEntryRepository(
         subscription_id: UUID,
         meter_id: UUID,
         order_item_id: UUID,
-        watermark: datetime,
         *,
-        cutoff: datetime | None = None,
+        cutoff: datetime,
     ) -> None:
         statement = update(BillingEntry).where(
             BillingEntry.subscription_id == subscription_id,
@@ -170,10 +161,9 @@ class BillingEntryRepository(
                     ProductPriceMeteredUnit.meter_id == meter_id
                 )
             ),
-            BillingEntry.created_at <= watermark,
+            BillingEntry.start_timestamp < cutoff,
+            BillingEntry.created_at <= cutoff,
         )
-        if cutoff is not None:
-            statement = statement.where(BillingEntry.start_timestamp < cutoff)
         statement = statement.values(order_item_id=order_item_id).execution_options(
             synchronize_session=False
         )
@@ -182,7 +172,6 @@ class BillingEntryRepository(
     async def lock_pending_by_subscription(
         self,
         subscription_id: UUID,
-        watermark: datetime,
         *,
         cutoff: datetime | None = None,
     ) -> None:
@@ -195,9 +184,7 @@ class BillingEntryRepository(
         the entries are no longer pending.
         """
         statement = (
-            self.get_pending_by_subscription_statement(
-                subscription_id, cutoff=cutoff, watermark=watermark
-            )
+            self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
             .with_only_columns(BillingEntry.id)
             .with_for_update()
         )
@@ -208,7 +195,6 @@ class BillingEntryRepository(
         subscription_id: UUID,
         *,
         cutoff: datetime | None = None,
-        watermark: datetime | None = None,
         options: Options = (),
     ) -> Select[tuple["BillingEntry"]]:
         statement = (
@@ -232,6 +218,4 @@ class BillingEntryRepository(
                     ),
                 )
             )
-        if watermark is not None:
-            statement = statement.where(BillingEntry.created_at <= watermark)
         return statement

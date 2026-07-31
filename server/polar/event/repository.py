@@ -385,9 +385,8 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         self,
         subscription: UUID,
         price: UUID,
-        watermark: datetime,
         *,
-        cutoff: datetime | None = None,
+        cutoff: datetime,
     ) -> Select[tuple[Event]]:
         statement = (
             self.get_base_statement()
@@ -396,21 +395,19 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 BillingEntry.subscription_id == subscription,
                 BillingEntry.order_item_id.is_(None),
                 BillingEntry.product_price_id == price,
-                BillingEntry.created_at <= watermark,
+                BillingEntry.start_timestamp < cutoff,
+                BillingEntry.created_at <= cutoff,
             )
             .order_by(Event.ingested_at.asc())
         )
-        if cutoff is not None:
-            statement = statement.where(BillingEntry.start_timestamp < cutoff)
         return statement
 
     def get_by_pending_entries_for_meter_statement(
         self,
         subscription: UUID,
         meter: UUID,
-        watermark: datetime,
         *,
-        cutoff: datetime | None = None,
+        cutoff: datetime,
     ) -> Select[tuple[Event]]:
         """
         Get events for pending billing entries grouped by meter.
@@ -428,12 +425,11 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
                 BillingEntry.subscription_id == subscription,
                 BillingEntry.order_item_id.is_(None),
                 ProductPriceMeteredUnit.meter_id == meter,
-                BillingEntry.created_at <= watermark,
+                BillingEntry.start_timestamp < cutoff,
+                BillingEntry.created_at <= cutoff,
             )
             .order_by(Event.ingested_at.asc())
         )
-        if cutoff is not None:
-            statement = statement.where(BillingEntry.start_timestamp < cutoff)
         return statement
 
     def get_eager_options(self) -> Options:

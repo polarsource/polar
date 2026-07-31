@@ -75,14 +75,14 @@ class BillingEntryService:
         cutoff: datetime | None = None,
     ) -> AsyncGenerator[Sequence[OrderItem]]:
         repository = BillingEntryRepository.from_session(session)
-        watermark = utc_now()
-        await repository.lock_pending_by_subscription(
-            subscription.id, watermark, cutoff=cutoff
-        )
+        cutoff = cutoff or utc_now()
+        await repository.lock_pending_by_subscription(subscription.id, cutoff=cutoff)
 
         item_entries_map: dict[OrderItem, BillingEntrySelector] = {}
         async for line_item, selector in self.compute_pending_subscription_line_items(
-            session, subscription, cutoff=cutoff, watermark=watermark
+            session,
+            subscription,
+            cutoff=cutoff,
         ):
             order_item = OrderItem(
                 id=uuid.uuid4(),
@@ -104,7 +104,6 @@ class BillingEntryService:
                     subscription.id,
                     selector.product_price_id,
                     order_item.id,
-                    watermark,
                     cutoff=cutoff,
                 )
             elif isinstance(selector, PendingByMeter):
@@ -112,7 +111,6 @@ class BillingEntryService:
                     subscription.id,
                     selector.meter_id,
                     order_item.id,
-                    watermark,
                     cutoff=cutoff,
                 )
             else:
@@ -124,13 +122,12 @@ class BillingEntryService:
         subscription: Subscription,
         *,
         cutoff: datetime | None = None,
-        watermark: datetime | None = None,
     ) -> AsyncGenerator[tuple[StaticLineItem | MeteredLineItem, BillingEntrySelector]]:
-        watermark = watermark or utc_now()
+        cutoff = cutoff or utc_now()
         repository = BillingEntryRepository.from_session(session)
 
         async for entry in repository.get_static_pending_by_subscription(
-            subscription.id, watermark, cutoff=cutoff
+            subscription.id, cutoff=cutoff
         ):
             static_price = cast(StaticPrice, entry.product_price)
             static_line_item = await self._get_static_price_line_item(
@@ -158,7 +155,7 @@ class BillingEntryService:
             start_timestamp,
             end_timestamp,
         ) in repository.get_pending_metered_by_subscription_tuples(
-            subscription.id, watermark, cutoff=cutoff
+            subscription.id, cutoff=cutoff
         ):
             metered_price = cast(
                 MeteredPrice, await product_price_repository.get_by_id(product_price_id)
@@ -198,7 +195,6 @@ class BillingEntryService:
                     subscription,
                     start_timestamp,
                     end_timestamp,
-                    watermark,
                     cutoff=cutoff,
                 )
                 selector: BillingEntrySelector = PendingByMeter(meter_id)
@@ -224,7 +220,6 @@ class BillingEntryService:
                     subscription,
                     start_timestamp,
                     end_timestamp,
-                    watermark,
                     cutoff=cutoff,
                 )
                 selector = PendingByPrice(product_price_id)
@@ -297,9 +292,8 @@ class BillingEntryService:
         subscription: Subscription,
         start_timestamp: datetime,
         end_timestamp: datetime,
-        watermark: datetime,
         *,
-        cutoff: datetime | None,
+        cutoff: datetime,
     ) -> MeteredLineItem:
         """
         Compute a metered line item for a specific price.
@@ -307,7 +301,7 @@ class BillingEntryService:
         """
         event_repository = EventRepository.from_session(session)
         events_statement = event_repository.get_by_pending_entries_statement(
-            subscription.id, price.id, watermark, cutoff=cutoff
+            subscription.id, price.id, cutoff=cutoff
         )
         meter = price.meter
         units = await meter_service.get_quantity(
@@ -347,9 +341,8 @@ class BillingEntryService:
         subscription: Subscription,
         start_timestamp: datetime,
         end_timestamp: datetime,
-        watermark: datetime,
         *,
-        cutoff: datetime | None,
+        cutoff: datetime,
     ) -> MeteredLineItem:
         """
         Compute a metered line item grouped by meter.
@@ -362,7 +355,7 @@ class BillingEntryService:
 
         # Get events across ALL prices for this meter
         events_statement = event_repository.get_by_pending_entries_for_meter_statement(
-            subscription.id, meter.id, watermark, cutoff=cutoff
+            subscription.id, meter.id, cutoff=cutoff
         )
         units = await meter_service.get_quantity(
             session,

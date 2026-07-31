@@ -6,6 +6,7 @@ import FeatureSettings from '@/components/Settings/FeatureSettings'
 import OrganizationAccessTokensSettings from '@/components/Settings/OrganizationAccessTokensSettings'
 import OrganizationCustomerEmailSettings from '@/components/Settings/OrganizationCustomerEmailSettings'
 import OrganizationCustomerPortalSettings from '@/components/Settings/OrganizationCustomerPortalSettings'
+import OrganizationDisputeSettings from '@/components/Settings/OrganizationDisputeSettings'
 import OrganizationEmbedSettings from '@/components/Settings/OrganizationEmbedSettings'
 import OrganizationDeleteSettings from '@/components/Settings/OrganizationDeleteSettings'
 import OrganizationNotificationSettings from '@/components/Settings/OrganizationNotificationSettings'
@@ -58,6 +59,17 @@ export default function ClientPage({
             readOnly={!canManageOrganization}
           />
         </Section>
+
+        {org.feature_settings?.disputes_enabled &&
+          org.feature_settings?.dispute_auto_accept_enabled && (
+            <Section id="disputes">
+              <SectionDescription title="Disputes" />
+              <OrganizationDisputeSettings
+                organization={org}
+                readOnly={!canManageOrganization}
+              />
+            </Section>
+          )}
 
         <Section id="customer_portal">
           <SectionDescription title="Customer portal" />

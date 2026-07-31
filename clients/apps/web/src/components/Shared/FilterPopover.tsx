@@ -205,9 +205,11 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
                     onSelect={() => onSelectOption(activeFilter, option)}
                     className={itemClassName}
                   >
-                    <Text as="span" className="flex-1 truncate">
-                      {option.label}
-                    </Text>
+                    <Box display="flex" flex={1}>
+                      <Text as="span" truncate>
+                        {option.label}
+                      </Text>
+                    </Box>
                     <CheckIcon
                       className={twMerge(
                         'h-4 w-4',
@@ -232,9 +234,11 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
                         className={itemClassName}
                       >
                         {filter.icon}
-                        <Text as="span" className="flex-1 truncate">
-                          {filter.label}
-                        </Text>
+                        <Box display="flex" flex={1}>
+                          <Text as="span" truncate>
+                            {filter.label}
+                          </Text>
+                        </Box>
                         {summary ? (
                           <Text as="span" variant="caption" color="muted">
                             {summary}

@@ -1,0 +1,20 @@
+server/tests/billing_entry/test_service.py
+  s_31e78b1ff36cfc::t_67bde3c14eb502 152,161
+  s_31e78b1ff36cfc::t_fde2a64b68222b 987-1072
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.18",
+  "base_commit_sha": "69af2ce6f3b53f6a84a9c429224c60fc7585fcf3",
+  "prompts": {},
+  "sessions": {
+    "s_31e78b1ff36cfc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "b13a6313-bfbc-452d-b64d-11c2f8bc79ed",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

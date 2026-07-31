@@ -631,6 +631,8 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: MeterCreditedMetadata,
+    *,
+    timestamp: datetime | None = None,
 ) -> Event: ...
 
 
@@ -640,6 +642,8 @@ def build_system_event(
     customer: Customer,
     organization: Organization,
     metadata: MeterResetMetadata,
+    *,
+    timestamp: datetime | None = None,
 ) -> Event: ...
 
 

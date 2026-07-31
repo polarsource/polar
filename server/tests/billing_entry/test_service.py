@@ -1,3 +1,4 @@
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -349,6 +350,56 @@ class TestCreateOrderItemsFromPending:
         for entry in entries[1:]:
             await session.refresh(entry)
             assert entry.order_item_id == order_item.id
+
+    async def test_metered_entries_respect_cutoff(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        price = product_metered_unit.prices[0]
+        assert is_metered_price(price)
+        cutoff = datetime(2025, 7, 1, tzinfo=UTC)
+        current_entry = await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_subscription,
+            tokens=20,
+        )
+        current_entry.start_timestamp = cutoff - timedelta(seconds=1)
+        current_entry.end_timestamp = cutoff - timedelta(seconds=1)
+        await save_fixture(current_entry)
+        future_entry = await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_subscription,
+            tokens=100,
+        )
+        future_entry.start_timestamp = cutoff
+        future_entry.end_timestamp = cutoff
+        await save_fixture(future_entry)
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, metered_subscription, cutoff=cutoff
+        ) as order_items:
+            assert len(order_items) == 1
+            order_item = order_items[0]
+            assert order_item.amount == 20_00
+            await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+            )
+
+        await session.refresh(current_entry)
+        await session.refresh(future_entry)
+        assert current_entry.order_item_id == order_item.id
+        assert future_entry.order_item_id is None
 
     async def test_several_metered_prices(
         self,

@@ -2367,6 +2367,7 @@ async def create_billing_entry(
     currency: str | None = None,
     subscription: Subscription | None = None,
     order_item: OrderItem | None = None,
+    created_at: datetime | None = None,
 ) -> BillingEntry:
     if event is None:
         event = await create_event(
@@ -2383,6 +2384,7 @@ async def create_billing_entry(
         end_timestamp = event.timestamp
 
     billing_entry = BillingEntry(
+        created_at=created_at or utc_now(),
         start_timestamp=start_timestamp,
         end_timestamp=end_timestamp,
         type=type,

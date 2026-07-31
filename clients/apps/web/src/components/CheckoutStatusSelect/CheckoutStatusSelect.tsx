@@ -1,18 +1,18 @@
 import { CheckoutStatusDisplayTitle } from '@/utils/checkout'
-import { enums } from '@polar-sh/client'
+import { enums, schemas } from '@polar-sh/client'
 import {
   Select,
   SelectContent,
-  SelectGroup,
   SelectItem,
+  SelectSeparator,
   SelectTrigger,
   SelectValue,
 } from '@polar-sh/orbit'
 import React from 'react'
 
 interface CheckoutStatusSelectProps {
-  value: string
-  onChange: (value: string) => void
+  value: schemas['CheckoutStatus'] | null
+  onChange: (value: schemas['CheckoutStatus'] | null) => void
 }
 
 const CheckoutStatusSelect: React.FC<CheckoutStatusSelectProps> = ({
@@ -20,21 +20,24 @@ const CheckoutStatusSelect: React.FC<CheckoutStatusSelectProps> = ({
   onChange,
 }) => {
   return (
-    <Select value={value} onValueChange={onChange}>
+    <Select
+      value={value ?? 'any'}
+      onValueChange={(value) =>
+        onChange(value === 'any' ? null : (value as schemas['CheckoutStatus']))
+      }
+    >
       <SelectTrigger>
         <SelectValue placeholder="Select a status" />
       </SelectTrigger>
       <SelectContent>
+        <SelectItem value="any">
+          <span className="whitespace-nowrap">Any status</span>
+        </SelectItem>
+        <SelectSeparator />
         {enums.checkoutStatusValues.map((status) => (
-          <React.Fragment key={status}>
-            <SelectGroup>
-              <SelectItem value={status} className="font-medium">
-                <div className="flex items-center gap-2 whitespace-normal">
-                  {CheckoutStatusDisplayTitle[status]}
-                </div>
-              </SelectItem>
-            </SelectGroup>
-          </React.Fragment>
+          <SelectItem key={status} value={status}>
+            {CheckoutStatusDisplayTitle[status]}
+          </SelectItem>
         ))}
       </SelectContent>
     </Select>

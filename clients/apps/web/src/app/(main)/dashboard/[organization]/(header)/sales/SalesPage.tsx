@@ -1,13 +1,9 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import DateRangePicker, {
-  DateRange,
-} from '@/components/Metrics/DateRangePicker'
+import { DateRange } from '@/components/Metrics/DateRangePicker'
 import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
-import OrderStatusSelect from '@/components/Orders/OrderStatusSelect'
-import ProductSelect from '@/components/Products/ProductSelect'
 import { useMetrics } from '@/hooks/queries/metrics'
 import { useOrders } from '@/hooks/queries/orders'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
@@ -15,14 +11,12 @@ import { getServerURL } from '@/utils/api'
 import { useDateRange } from '@/utils/date'
 import { getAPIParams } from '@/utils/datatable'
 import { dateRangeToInterval } from '@/utils/metrics'
-import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Text } from '@polar-sh/orbit'
 import { formatCurrency } from '@polar-sh/currency'
 import { Truncated } from '@polar-sh/orbit'
 import { Avatar } from '@polar-sh/orbit'
-import { Button } from '@polar-sh/orbit'
 import {
   DataTable,
   DataTableColumnDef,
@@ -31,7 +25,6 @@ import {
 import { Status } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { RowSelectionState } from '@tanstack/react-table'
-import { startOfDay } from 'date-fns'
 import { useRouter } from 'next/navigation'
 import {
   parseAsArrayOf,
@@ -40,6 +33,7 @@ import {
   useQueryStates,
 } from 'nuqs'
 import React, { useEffect, useState } from 'react'
+import SalesFilters from './SalesFilters'
 
 const filterParsers = {
   product_id: parseAsArrayOf(parseAsString),
@@ -260,53 +254,16 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   return (
     <DashboardBody wide>
       <div className="flex flex-col gap-8">
-        <Box
-          flexDirection={{ base: 'column', md: 'row' }}
-          alignItems={{ base: 'stretch', md: 'center' }}
-          justifyContent="between"
-          gap="l"
-        >
-          <Box
-            flexDirection={{ base: 'column', sm: 'row' }}
-            flexWrap="wrap"
-            alignItems={{ base: 'stretch', sm: 'center' }}
-            gap="m"
-            width={{ base: '100%', md: 'auto' }}
-          >
-            <Box width={{ base: '100%', md: 300 }} flexGrow={{ sm: 1, md: 0 }}>
-              <ProductSelect
-                organization={organization}
-                value={productId || []}
-                onChange={onProductSelect}
-                className="w-full"
-                includeArchived
-              />
-            </Box>
-            <Box
-              width={{ base: '100%', sm: 'auto' }}
-              minWidth={{ sm: 160 }}
-              maxWidth={{ md: 200 }}
-              flexGrow={{ sm: 1, md: 0 }}
-            >
-              <OrderStatusSelect value={status} onChange={onStatusSelect} />
-            </Box>
-            <DateRangePicker
-              className="w-full shrink-0 sm:w-52 [&>button:last-child]:text-left"
-              date={{ from: startDate, to: endDate }}
-              onDateChange={onDateChange}
-              minDate={startOfDay(new Date(organization.created_at))}
-            />
-          </Box>
-          <Button
-            onClick={onExport}
-            className="flex w-full flex-row items-center md:w-auto"
-            variant={'secondary'}
-            wrapperClassNames="gap-x-2"
-          >
-            <FileDownloadOutlined fontSize="inherit" />
-            <span>Export</span>
-          </Button>
-        </Box>
+        <SalesFilters
+          organization={organization}
+          productId={productId}
+          onProductSelect={onProductSelect}
+          status={status}
+          onStatusSelect={onStatusSelect}
+          dateRange={{ from: startDate, to: endDate }}
+          onDateChange={onDateChange}
+          onExport={onExport}
+        />
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <MiniMetricChartBox
             title="Orders"

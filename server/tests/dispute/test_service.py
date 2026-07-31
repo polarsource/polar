@@ -3,6 +3,7 @@ from typing import Literal
 from unittest.mock import AsyncMock, MagicMock
 
 import pytest
+import pytest_asyncio
 from pytest_mock import MockerFixture
 
 from polar.benefit.grant.service import BenefitGrantService
@@ -11,15 +12,18 @@ from polar.dispute.service import DisputeNotOpenError, DisputePaymentNotFoundErr
 from polar.dispute.service import dispute as dispute_service
 from polar.enums import PaymentProcessor, TaxProcessor
 from polar.integrations.chargeback_stop.types import ChargebackStopAlert
-from polar.models import Customer, Organization, Product
+from polar.models import Customer, Dispute, Organization, Product, User
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
 from polar.models.support_case import (
     DisputeSupportCase,
+    SupportCaseMessageAuthorKind,
     SupportCaseMessageType,
+    SupportCaseType,
 )
 from polar.postgres import AsyncSession
 from polar.refund.service import RefundService
 from polar.support_case.repository import SupportCaseMessageRepository
+from polar.support_case.schemas import DisputeSupportCaseMessageCreate
 from polar.tax.calculation.base import AlreadyRevertedError
 from polar.transaction.service.dispute import (
     DisputeTransactionAlreadyExistsError,
@@ -27,10 +31,12 @@ from polar.transaction.service.dispute import (
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
+    create_account,
     create_active_subscription,
     create_dispute,
     create_order,
     create_payment,
+    create_payment_transaction,
     create_refund,
 )
 from tests.fixtures.stripe import (
@@ -1334,3 +1340,409 @@ class TestAccept:
             await dispute_service.accept(session, dispute)
 
         close_mock.assert_not_awaited()
+
+
+async def _eligible_dispute(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    customer: Customer,
+    product: Product,
+    *,
+    threshold: int | None = 2500,
+    disputes_enabled: bool = True,
+    auto_accept_enabled: bool = True,
+    amount: int = 1000,
+    currency: str = "usd",
+    exchange_rate: float | None = 1.0,
+    status: DisputeStatus = DisputeStatus.needs_response,
+    alert_processor: DisputeAlertProcessor | None = None,
+) -> Dispute:
+    organization.feature_settings = {
+        "disputes_enabled": disputes_enabled,
+        "dispute_auto_accept_enabled": auto_accept_enabled,
+    }
+    organization.dispute_settings = {"auto_accept_below_amount": threshold}
+    await save_fixture(organization)
+
+    order = await create_order(save_fixture, customer=customer, product=product)
+    payment = await create_payment(
+        save_fixture, organization, order=order, processor_id="STRIPE_CHARGE_ID"
+    )
+    transaction = await create_payment_transaction(save_fixture, order=order)
+    transaction.exchange_rate = exchange_rate
+    await save_fixture(transaction)
+
+    return await create_dispute(
+        save_fixture,
+        order,
+        payment,
+        status=status,
+        amount=amount,
+        currency=currency,
+        alert_processor=alert_processor,
+        alert_processor_id="ALERT_ID" if alert_processor else None,
+    )
+
+
+@pytest.fixture
+def balance_mock(mocker: MockerFixture) -> MagicMock:
+    """Account balance the guard reads, in settlement currency."""
+    summary = MagicMock()
+    summary.balance.amount = 100_000
+    mock = mocker.patch("polar.dispute.service.transaction_service.get_summary")
+    mock.return_value = summary
+    return mock
+
+
+@pytest_asyncio.fixture
+async def organization_with_account(
+    save_fixture: SaveFixture, organization: Organization, user: User
+) -> Organization:
+    account = await create_account(save_fixture, user)
+    organization.account = account
+    await save_fixture(organization)
+    return organization
+
+
+@pytest.mark.asyncio
+class TestAutoAcceptApplies:
+    async def test_under_threshold(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization_with_account: Organization,
+        customer: Customer,
+        product: Product,
+        balance_mock: MagicMock,
+    ) -> None:
+        dispute = await _eligible_dispute(
+            save_fixture, organization_with_account, customer, product
+        )
+
+        assert await dispute_service.auto_accept_applies(session, dispute) is True
+
+    async def test_at_threshold(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization_with_account: Organization,
+        customer: Customer,
+        product: Product,
+        balance_mock: MagicMock,
+    ) -> None:
+        dispute = await _eligible_dispute(
+            save_fixture, organization_with_account, customer, product, amount=2500
+        )
+
+        assert await dispute_service.auto_accept_applies(session, dispute) is False
+
+    async def test_foreign_currency_converts_under_threshold(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization_with_account: Organization,
+        customer: Customer,
+        product: Product,
+        balance_mock: MagicMock,
+    ) -> None:
+        # ¥300,000 at 0.0065 settles near $19.50, under a $25 threshold.
+        dispute = await _eligible_dispute(
+            save_fixture,
+            organization_with_account,
+            customer,
+            product,
+            amount=300_000,
+            currency="jpy",
+            exchange_rate=0.0065,
+        )
+
+        assert await dispute_service.auto_accept_applies(session, dispute) is True
+
+    async def test_foreign_currency_converts_over_threshold(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization_with_account: Organization,
+        customer: Customer,
+        product: Product,
+        balance_mock: MagicMock,
+    ) -> None:
+        dispute = await _eligible_dispute(
+            save_fixture,
+            organization_with_account,
+            customer,
+            product,
+            amount=500_000,
+            currency="jpy",
+            exchange_rate=0.0065,
+        )
+
+        assert await dispute_service.auto_accept_applies(session, dispute) is False
+
+    async def test_no_exchange_rate(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization_with_account: Organization,
+        customer: Customer,
+        product: Product,
+        balance_mock: MagicMock,
+    ) -> None:
+        dispute = await _eligible_dispute(
+            save_fixture,
+            organization_with_account,
+            customer,
+            product,
+            exchange_rate=None,
+        )
+
+        assert await dispute_service.auto_accept_applies(session, dispute) is False
+
+    async def test_no_threshold(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization_with_account: Organization,
+        customer: Customer,
+        product: Product,
+        balance_mock: MagicMock,
+    ) -> None:
+        dispute = await _eligible_dispute(
+            save_fixture, organization_with_account, customer, product, threshold=None
+        )
+
+        assert await dispute_service.auto_accept_applies(session, dispute) is False
+
+    async def test_auto_accept_flag_off(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization_with_account: Organization,
+        customer: Customer,
+        product: Product,
+        balance_mock: MagicMock,
+    ) -> None:
+        dispute = await _eligible_dispute(
+            save_fixture,
+            organization_with_account,
+            customer,
+            product,
+            auto_accept_enabled=False,
+        )
+
+        assert await dispute_service.auto_accept_applies(session, dispute) is False
+
+    async def test_disputes_flag_off(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization_with_account: Organization,
+        customer: Customer,
+        product: Product,
+        balance_mock: MagicMock,
+    ) -> None:
+        dispute = await _eligible_dispute(
+            save_fixture,
+            organization_with_account,
+            customer,
+            product,
+            disputes_enabled=False,
+        )
+
+        assert await dispute_service.auto_accept_applies(session, dispute) is False
+
+    async def test_balance_below_dispute(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization_with_account: Organization,
+        customer: Customer,
+        product: Product,
+        balance_mock: MagicMock,
+    ) -> None:
+        balance_mock.return_value.balance.amount = 500
+        dispute = await _eligible_dispute(
+            save_fixture, organization_with_account, customer, product
+        )
+
+        assert await dispute_service.auto_accept_applies(session, dispute) is False
+
+    async def test_chargeback_stop_covered(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization_with_account: Organization,
+        customer: Customer,
+        product: Product,
+        balance_mock: MagicMock,
+    ) -> None:
+        dispute = await _eligible_dispute(
+            save_fixture,
+            organization_with_account,
+            customer,
+            product,
+            alert_processor=DisputeAlertProcessor.chargeback_stop,
+        )
+
+        assert await dispute_service.auto_accept_applies(session, dispute) is False
+
+    @pytest.mark.parametrize(
+        "status",
+        [
+            DisputeStatus.early_warning,
+            DisputeStatus.under_review,
+            DisputeStatus.prevented,
+            DisputeStatus.lost,
+            DisputeStatus.won,
+        ],
+    )
+    async def test_not_awaiting_response(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization_with_account: Organization,
+        customer: Customer,
+        product: Product,
+        balance_mock: MagicMock,
+        status: DisputeStatus,
+    ) -> None:
+        dispute = await _eligible_dispute(
+            save_fixture, organization_with_account, customer, product, status=status
+        )
+
+        assert await dispute_service.auto_accept_applies(session, dispute) is False
+
+
+@pytest.mark.asyncio
+class TestAnnounceAutoAccept:
+    async def test_announces_when_eligible(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization_with_account: Organization,
+        customer: Customer,
+        product: Product,
+        balance_mock: MagicMock,
+    ) -> None:
+        dispute = await _eligible_dispute(
+            save_fixture, organization_with_account, customer, product
+        )
+        stripe_dispute = build_stripe_dispute(
+            status="needs_response",
+            charge_id="STRIPE_CHARGE_ID",
+            balance_transactions=[],
+        )
+
+        await dispute_service.upsert_from_stripe(session, stripe_dispute)
+
+        case = await dispute_case_service.get_case(session, dispute)
+        assert case is not None
+        assert (
+            SupportCaseMessageType.dispute_auto_accept_scheduled
+            in await _message_types(session, case)
+        )
+
+    async def test_silent_when_ineligible(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization_with_account: Organization,
+        customer: Customer,
+        product: Product,
+        balance_mock: MagicMock,
+    ) -> None:
+        dispute = await _eligible_dispute(
+            save_fixture, organization_with_account, customer, product, threshold=None
+        )
+        stripe_dispute = build_stripe_dispute(
+            status="needs_response",
+            charge_id="STRIPE_CHARGE_ID",
+            balance_transactions=[],
+        )
+
+        await dispute_service.upsert_from_stripe(session, stripe_dispute)
+
+        case = await dispute_case_service.get_case(session, dispute)
+        assert case is not None
+        assert (
+            SupportCaseMessageType.dispute_auto_accept_scheduled
+            not in await _message_types(session, case)
+        )
+
+
+@pytest.mark.asyncio
+class TestAutoAcceptCancelledByReply:
+    async def test_merchant_reply_blocks_and_retracts(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization_with_account: Organization,
+        customer: Customer,
+        product: Product,
+        balance_mock: MagicMock,
+    ) -> None:
+        mocker.patch("polar.dispute.dispute_case.enqueue_job")
+        dispute = await _eligible_dispute(
+            save_fixture, organization_with_account, customer, product
+        )
+        stripe_dispute = build_stripe_dispute(
+            status="needs_response",
+            charge_id="STRIPE_CHARGE_ID",
+            balance_transactions=[],
+        )
+        await dispute_service.upsert_from_stripe(session, stripe_dispute)
+        case = await dispute_case_service.get_case(session, dispute)
+        assert case is not None
+
+        await dispute_case_service.add_reply(
+            session,
+            case,
+            DisputeSupportCaseMessageCreate(
+                type=SupportCaseType.dispute, body="We're fighting this one."
+            ),
+            author_kind=SupportCaseMessageAuthorKind.merchant,
+        )
+
+        assert (
+            SupportCaseMessageType.dispute_auto_accept_canceled
+            in await _message_types(session, case)
+        )
+        assert await dispute_service.auto_accept_applies(session, dispute) is False
+
+    async def test_no_retraction_without_announcement(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization_with_account: Organization,
+        customer: Customer,
+        product: Product,
+        balance_mock: MagicMock,
+    ) -> None:
+        mocker.patch("polar.dispute.dispute_case.enqueue_job")
+        dispute = await _eligible_dispute(
+            save_fixture, organization_with_account, customer, product, threshold=None
+        )
+        stripe_dispute = build_stripe_dispute(
+            status="needs_response",
+            charge_id="STRIPE_CHARGE_ID",
+            balance_transactions=[],
+        )
+        await dispute_service.upsert_from_stripe(session, stripe_dispute)
+        case = await dispute_case_service.get_case(session, dispute)
+        assert case is not None
+
+        await dispute_case_service.add_reply(
+            session,
+            case,
+            DisputeSupportCaseMessageCreate(
+                type=SupportCaseType.dispute, body="Any update?"
+            ),
+            author_kind=SupportCaseMessageAuthorKind.merchant,
+        )
+
+        assert (
+            SupportCaseMessageType.dispute_auto_accept_canceled
+            not in await _message_types(session, case)
+        )

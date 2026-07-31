@@ -34240,6 +34240,9 @@ export interface components {
       | 'dispute_lost'
       | 'dispute_prevented'
       | 'merchant_accepted'
+      | 'dispute_auto_accept_scheduled'
+      | 'dispute_auto_accept_canceled'
+      | 'dispute_auto_accepted'
     /**
      * SupportCaseSortProperty
      * @enum {string}
@@ -66115,6 +66118,9 @@ export const supportCaseMessageTypeValues: ReadonlyArray<
   'dispute_lost',
   'dispute_prevented',
   'merchant_accepted',
+  'dispute_auto_accept_scheduled',
+  'dispute_auto_accept_canceled',
+  'dispute_auto_accepted',
 ]
 export const supportCaseSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SupportCaseSortProperty']

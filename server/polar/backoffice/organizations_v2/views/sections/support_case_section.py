@@ -87,6 +87,9 @@ _EVENT_TITLES: dict[SupportCaseMessageType, str] = {
     SupportCaseMessageType.dispute_lost: "Dispute lost",
     SupportCaseMessageType.dispute_prevented: "Dispute prevented",
     SupportCaseMessageType.merchant_accepted: "Merchant accepted the dispute",
+    SupportCaseMessageType.dispute_auto_accept_scheduled: "Auto-accept scheduled",
+    SupportCaseMessageType.dispute_auto_accept_canceled: "Auto-accept canceled",
+    SupportCaseMessageType.dispute_auto_accepted: "Auto-accepted the dispute",
     SupportCaseMessageType.assigned: "Case assigned",
     SupportCaseMessageType.released: "Case unassigned",
 }
@@ -119,6 +122,9 @@ _EVENT_NODES: dict[SupportCaseMessageType, tuple[str, str]] = {
         "bg-success text-success-content",
     ),
     SupportCaseMessageType.merchant_accepted: ("icon-x", _MUTED_NODE),
+    SupportCaseMessageType.dispute_auto_accept_scheduled: ("icon-clock", _MUTED_NODE),
+    SupportCaseMessageType.dispute_auto_accept_canceled: ("icon-undo-2", _MUTED_NODE),
+    SupportCaseMessageType.dispute_auto_accepted: ("icon-x", _MUTED_NODE),
     SupportCaseMessageType.assigned: ("icon-user-check", _MUTED_NODE),
     SupportCaseMessageType.released: ("icon-user-x", _MUTED_NODE),
 }

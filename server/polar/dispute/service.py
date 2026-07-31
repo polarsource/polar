@@ -1,11 +1,12 @@
 import uuid
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from typing import assert_never
 
 import stripe as stripe_lib
 from sqlalchemy.orm import joinedload
 
+from polar.account.repository import AccountRepository
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
@@ -17,10 +18,12 @@ from polar.exceptions import PolarError
 from polar.integrations.chargeback_stop.types import ChargebackStopAlert
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.integrations.stripe.utils import get_expandable_id
+from polar.kit.math import polar_round
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
 from polar.models import Dispute, Order, Payment
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
+from polar.models.support_case import DisputeSupportCase
 from polar.payment.repository import PaymentRepository
 from polar.postgres import AsyncReadSession, AsyncSession
 from polar.product.repository import ProductRepository
@@ -28,16 +31,25 @@ from polar.refund.service import refund as refund_service
 from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
+from polar.support_case.repository import SupportCaseMessageRepository
+from polar.transaction.repository import PaymentTransactionRepository
 from polar.transaction.service.dispute import (
     DisputeTransactionAlreadyExistsError,
 )
 from polar.transaction.service.dispute import (
     dispute_transaction as dispute_transaction_service,
 )
+from polar.transaction.service.transaction import (
+    transaction as transaction_service,
+)
 
 from .repository import DisputeRepository
 from .sorting import DisputeSortProperty
 from .stripe import get_dispute_balance_transaction, is_rapid_resolution_dispute
+
+# Long enough for a late ChargebackStop alert, an RDR resolution or the
+# merchant's own reply to take the dispute out of scope.
+DISPUTE_AUTO_ACCEPT_DELAY = timedelta(hours=24)
 
 
 class DisputeError(PolarError):
@@ -115,12 +127,14 @@ class DisputeService:
         )
         return await repository.get_one_or_none(statement)
 
-    async def accept(self, session: AsyncSession, dispute: Dispute) -> Dispute:
-        """Merchant concedes the chargeback.
+    async def accept(
+        self, session: AsyncSession, dispute: Dispute, *, automatic: bool = False
+    ) -> Dispute:
+        """Concede the chargeback.
 
         Closes the dispute with the processor — which settles it as ``lost`` —
-        and records the merchant's decision on the support thread. The resulting
-        ``lost`` state is reconciled through the same path as the Stripe webhook.
+        and records the decision on the support thread. The resulting ``lost``
+        state is reconciled through the same path as the Stripe webhook.
         """
         if dispute.status != DisputeStatus.needs_response:
             raise DisputeNotOpenError(dispute.id)
@@ -129,7 +143,7 @@ class DisputeService:
 
         case = await dispute_case_service.get_case(session, dispute)
         if case is not None:
-            await dispute_case_service.accept(session, case)
+            await dispute_case_service.accept(session, case, automatic=automatic)
 
         stripe_dispute = await stripe_service.close_dispute(
             dispute.payment_processor_id
@@ -142,6 +156,77 @@ class DisputeService:
         )
         assert reloaded is not None
         return reloaded
+
+    async def _announce_auto_accept(
+        self, session: AsyncSession, dispute: Dispute, case: DisputeSupportCase
+    ) -> None:
+        if not await self.auto_accept_applies(session, dispute):
+            return
+        await dispute_case_service.announce_auto_accept(
+            session, case, deadline=dispute.created_at + DISPUTE_AUTO_ACCEPT_DELAY
+        )
+
+    async def auto_accept_applies(
+        self, session: AsyncSession, dispute: Dispute
+    ) -> bool:
+        """Judged at case open, to announce it, and again when the sweep runs."""
+        if dispute.status != DisputeStatus.needs_response:
+            return False
+
+        # ChargebackStop is already working this one, and may yet prevent it.
+        if dispute.dispute_alert_processor_id is not None:
+            return False
+
+        organization = dispute.order.organization
+        if not organization.is_dispute_auto_accept_enabled:
+            return False
+
+        threshold = organization.dispute_auto_accept_below_amount
+        if threshold is None:
+            return False
+
+        settlement_amount = await self._settlement_amount(session, dispute)
+        if settlement_amount is None or settlement_amount >= threshold:
+            return False
+
+        # Replying cancels it, as the announcement promises.
+        case = await dispute_case_service.get_case(session, dispute)
+        if case is not None:
+            message_repository = SupportCaseMessageRepository.from_session(session)
+            if await message_repository.has_merchant_message(case.id):
+                return False
+
+        return await self._balance_covers(session, organization, settlement_amount)
+
+    async def _settlement_amount(
+        self, session: AsyncSession, dispute: Dispute
+    ) -> int | None:
+        """The dispute in settlement currency, at the rate its charge settled at."""
+        payment_transaction_repository = PaymentTransactionRepository.from_session(
+            session
+        )
+        payment_transaction = await payment_transaction_repository.get_by_payment_id(
+            dispute.payment_id
+        )
+        if payment_transaction is None or payment_transaction.exchange_rate is None:
+            return None
+        return polar_round(
+            (dispute.amount + dispute.tax_amount) * payment_transaction.exchange_rate
+        )
+
+    async def _balance_covers(
+        self, session: AsyncSession, organization: Organization, amount: int
+    ) -> bool:
+        """``balance``, not ``available_balance``: the payout hold is about
+        payout timing, not whether the loss nets out."""
+        if organization.account_id is None:
+            return False
+        account_repository = AccountRepository.from_session(session)
+        account = await account_repository.get_by_id(organization.account_id)
+        if account is None:
+            return False
+        summary = await transaction_service.get_summary(session, account)
+        return summary.balance.amount >= amount
 
     async def upsert_from_stripe(
         self, session: AsyncSession, stripe_dispute: stripe_lib.Dispute
@@ -271,9 +356,10 @@ class DisputeService:
         # Open (or reopen) the case the first time the dispute needs a response.
         if dispute.status == DisputeStatus.needs_response:
             if case is None:
-                await dispute_case_service.open_case(
+                case = await dispute_case_service.open_case(
                     session, dispute, organization=dispute.order.organization
                 )
+                await self._announce_auto_accept(session, dispute, case)
             elif not await dispute_case_service.is_open(session, case):
                 # Dispute reopened after we'd closed the case (e.g. a prevented
                 # dispute that Stripe escalated back to needs_response).

@@ -387,10 +387,18 @@ class PolarSelfClient:
     async def get_member_by_external_id(
         self, *, external_customer_id: str, external_id: str
     ) -> Member | None:
-        return await self._sdk.customers.members.get_external(
-            external_customer_id,
-            external_id,
-        )
+        with logfire.span(
+            "polar.get_member_by_external_id",
+            external_customer_id=external_customer_id,
+            external_id=external_id,
+        ) as span:
+            try:
+                return await self._sdk.customers.members.get_external(
+                    external_customer_id,
+                    external_id,
+                )
+            except PolarNetworkError as e:
+                _raise_network_error(span, e, "get_member_by_external_id")
 
     async def list_billing_contacts(self, *, customer_id: str) -> list[Member]:
         contacts: list[Member] = []

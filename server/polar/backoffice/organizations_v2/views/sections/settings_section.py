@@ -10,6 +10,7 @@ from tagflow import tag, text
 from polar.models import Organization
 from polar.models.organization import CAPABILITY_METADATA, STATUS_CAPABILITIES
 
+from .... import formatters
 from ....components import button, card
 
 
@@ -127,6 +128,27 @@ class SettingsSection:
                             text("Require 3DS")
                         with tag.div(classes="text-xs text-base-content/60 ml-auto"):
                             text("Enabled" if require_3ds else "Disabled")
+
+            # Dispute settings card, for organizations working disputes
+            if self.org.feature_settings.get("disputes_enabled", False):
+                with card(bordered=True):
+                    with tag.div(classes="flex items-center justify-between mb-4"):
+                        with tag.h2(classes="text-lg font-bold"):
+                            text("Dispute Settings")
+
+                    threshold = self.org.dispute_auto_accept_below_amount
+                    with tag.div():
+                        with tag.div(classes="text-sm text-base-content/60 mb-1"):
+                            text("Auto-accept below")
+                        with tag.div(classes="text-sm"):
+                            if threshold is None:
+                                text("Off")
+                            elif not self.org.is_dispute_auto_accept_enabled:
+                                text(
+                                    f"{formatters.currency(threshold, 'usd')} (flag off)"
+                                )
+                            else:
+                                text(formatters.currency(threshold, "usd"))
 
             # Rate limit group card
             with card(bordered=True):

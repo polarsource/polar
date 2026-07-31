@@ -55,6 +55,18 @@ const EVENT_META: Partial<
     title: 'Dispute prevented',
     description: 'Refunded before it escalated, avoiding any fees.',
   },
+  dispute_auto_accept_scheduled: {
+    title: 'Auto-accept scheduled',
+    description: 'This dispute is below the threshold you set.',
+  },
+  dispute_auto_accept_canceled: {
+    title: 'Auto-accept canceled',
+    description: 'You replied, so this dispute stays with you.',
+  },
+  dispute_auto_accepted: {
+    title: 'Polar accepted the dispute',
+    description: 'Conceded under the threshold you set.',
+  },
 }
 
 const dueDescription = (dispute: schemas['Dispute'], now: Date): string => {
@@ -106,7 +118,8 @@ const buildSteps = (
       key: message.id,
       title: meta.title,
       date: message.created_at,
-      description: meta.description,
+      // The scheduled event names a deadline, so it carries its own copy.
+      description: message.body || meta.description,
       state: 'complete',
     })
   }

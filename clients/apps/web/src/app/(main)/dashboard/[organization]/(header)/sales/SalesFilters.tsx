@@ -20,6 +20,8 @@ import { Box } from '@polar-sh/orbit/Box'
 import { startOfDay } from 'date-fns'
 import React, { useMemo } from 'react'
 
+const CUSTOM_DATE_RANGE = 'custom'
+
 interface SalesFiltersProps {
   organization: schemas['Organization']
   productId: string[] | null
@@ -85,7 +87,10 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
         icon: <CalendarMonthOutlined fontSize="inherit" />,
         type: 'single',
         options: intervals.map(({ slug, label }) => ({ value: slug, label })),
-        value: intervalSlug === 'allTime' ? null : (intervalSlug ?? null),
+        value:
+          intervalSlug === 'allTime'
+            ? null
+            : (intervalSlug ?? CUSTOM_DATE_RANGE),
         onChange: (slug) => {
           const interval =
             intervals.find((interval) => interval.slug === slug) ??

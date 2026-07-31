@@ -376,9 +376,13 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         return [(event, customer) for event, customer in result.all()]
 
     def get_by_pending_entries_statement(
-        self, subscription: UUID, price: UUID
+        self,
+        subscription: UUID,
+        price: UUID,
+        *,
+        entries_started_before: datetime | None = None,
     ) -> Select[tuple[Event]]:
-        return (
+        statement = (
             self.get_base_statement()
             .join(BillingEntry, Event.id == BillingEntry.event_id)
             .where(
@@ -388,16 +392,25 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             )
             .order_by(Event.ingested_at.asc())
         )
+        if entries_started_before is not None:
+            statement = statement.where(
+                BillingEntry.start_timestamp < entries_started_before
+            )
+        return statement
 
     def get_by_pending_entries_for_meter_statement(
-        self, subscription: UUID, meter: UUID
+        self,
+        subscription: UUID,
+        meter: UUID,
+        *,
+        entries_started_before: datetime | None = None,
     ) -> Select[tuple[Event]]:
         """
         Get events for pending billing entries grouped by meter.
         Used for non-summable aggregations where we need to compute across all events
         in the period, regardless of which price was active when the event occurred.
         """
-        return (
+        statement = (
             self.get_base_statement()
             .join(BillingEntry, Event.id == BillingEntry.event_id)
             .join(
@@ -411,6 +424,11 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             )
             .order_by(Event.ingested_at.asc())
         )
+        if entries_started_before is not None:
+            statement = statement.where(
+                BillingEntry.start_timestamp < entries_started_before
+            )
+        return statement
 
     def get_eager_options(self) -> Options:
         return (joinedload(Event.customer), joinedload(Event.event_types))

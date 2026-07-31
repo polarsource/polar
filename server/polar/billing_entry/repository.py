@@ -70,7 +70,10 @@ class BillingEntryRepository(
             yield result
 
     async def get_pending_metered_by_subscription_tuples(
-        self, subscription_id: UUID
+        self,
+        subscription_id: UUID,
+        *,
+        entries_started_before: datetime | None = None,
     ) -> AsyncGenerator[tuple[UUID, UUID, datetime, datetime]]:
         """
         Get pending metered billing entries grouped by (product_price_id, meter_id).
@@ -99,6 +102,10 @@ class BillingEntryRepository(
             .order_by(None)  # Clear existing ORDER BY from base statement
             .order_by(ProductPriceMeteredUnit.meter_id.asc())
         )
+        if entries_started_before is not None:
+            statement = statement.where(
+                BillingEntry.start_timestamp < entries_started_before
+            )
         results = await self.session.stream(
             statement,
             execution_options={"yield_per": settings.DATABASE_STREAM_YIELD_PER},
@@ -110,18 +117,30 @@ class BillingEntryRepository(
             await results.close()
 
     async def get_pending_ids_by_subscription_and_price(
-        self, subscription_id: UUID, product_price_id: UUID
+        self,
+        subscription_id: UUID,
+        product_price_id: UUID,
+        *,
+        entries_started_before: datetime | None = None,
     ) -> Sequence[UUID]:
         statement = (
             self.get_pending_by_subscription_statement(subscription_id)
             .with_only_columns(BillingEntry.id)
             .where(BillingEntry.product_price_id == product_price_id)
         )
+        if entries_started_before is not None:
+            statement = statement.where(
+                BillingEntry.start_timestamp < entries_started_before
+            )
         results = await self.session.execute(statement)
         return results.scalars().unique().all()
 
     async def get_pending_ids_by_subscription_and_meter(
-        self, subscription_id: UUID, meter_id: UUID
+        self,
+        subscription_id: UUID,
+        meter_id: UUID,
+        *,
+        entries_started_before: datetime | None = None,
     ) -> Sequence[UUID]:
         """
         Get all pending billing entry IDs for a subscription and meter across all prices.
@@ -135,6 +154,10 @@ class BillingEntryRepository(
             .with_only_columns(BillingEntry.id)
             .where(ProductPriceMeteredUnit.meter_id == meter_id)
         )
+        if entries_started_before is not None:
+            statement = statement.where(
+                BillingEntry.start_timestamp < entries_started_before
+            )
         results = await self.session.execute(statement)
         return results.scalars().unique().all()
 

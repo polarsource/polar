@@ -1798,10 +1798,13 @@ class TestCreateSubscriptionOrder:
             save_fixture, product=product_recurring_metered, customer=customer
         )
 
+        # On a real cycle the period is advanced before the order is created, so
+        # the usage being billed occurred before ``current_period_start``.
         event = await create_event(
             save_fixture,
             organization=organization,
             customer=customer,
+            timestamp=subscription.current_period_start - timedelta(days=1),
         )
         await save_fixture(
             BillingEntry.from_metered_event(

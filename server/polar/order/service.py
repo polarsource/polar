@@ -1303,8 +1303,23 @@ class OrderService:
         Returns:
             The created Order object.
         """
+        # On a cycle, the billing period has already been advanced, so
+        # ``current_period_start`` marks the end of the period being billed. Bound
+        # metered usage to it so usage accrued in the new period isn't swept into
+        # this order — important when a delayed/retried cycle order runs well after
+        # the period boundary. Other billing reasons don't advance the period, so
+        # they keep billing all pending usage up to now.
+        metered_usage_billed_until = (
+            subscription.current_period_start
+            if billing_reason
+            in (
+                OrderBillingReasonInternal.subscription_cycle,
+                OrderBillingReasonInternal.subscription_cycle_after_trial,
+            )
+            else None
+        )
         async with billing_entry_service.create_order_items_from_pending(
-            session, subscription
+            session, subscription, metered_usage_billed_until=metered_usage_billed_until
         ) as items:
             if len(items) == 0:
                 raise NoPendingBillingEntries(subscription)

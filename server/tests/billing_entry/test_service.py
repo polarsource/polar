@@ -1,3 +1,4 @@
+from datetime import datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -6,6 +7,7 @@ import pytest_asyncio
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.event.system import SystemEvent
+from polar.kit.utils import utc_now
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.meter.filter import Filter, FilterConjunction
 from polar.models import (
@@ -101,12 +103,14 @@ async def create_metered_event_billing_entry(
     pending: bool = True,
     order: Order | None = None,
     metadata_key: str = "tokens",
+    timestamp: datetime | None = None,
 ) -> BillingEntry:
     event = await create_event(
         save_fixture,
         organization=customer.organization,
         customer=customer,
         metadata={metadata_key: tokens},
+        timestamp=timestamp,
     )
     billing_entry = BillingEntry(
         start_timestamp=event.timestamp,
@@ -867,3 +871,114 @@ class TestCreateOrderItemsFromPending:
         for entry in old_entries:
             await session.refresh(entry)
             assert entry.order_item_id is None
+
+    async def test_metered_usage_billed_until_excludes_later_usage(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        meter: Meter,
+        product_metered_unit: Product,
+        metered_subscription: Subscription,
+    ) -> None:
+        """
+        When ``metered_usage_billed_until`` is set, usage accrued at or after that
+        timestamp is left pending for the next order instead of being swept in.
+        """
+        price = product_metered_unit.prices[0]
+        assert is_metered_price(price)
+        boundary = utc_now()
+
+        before_entries = [
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price,
+                subscription=metered_subscription,
+                tokens=10,
+                timestamp=boundary - timedelta(days=2),
+            ),
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=price,
+                subscription=metered_subscription,
+                tokens=20,
+                timestamp=boundary - timedelta(days=1),
+            ),
+        ]
+        after_entry = await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_subscription,
+            tokens=30,
+            timestamp=boundary + timedelta(days=1),
+        )
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, metered_subscription, metered_usage_billed_until=boundary
+        ) as order_items:
+            assert len(order_items) == 1
+
+            order_item = order_items[0]
+            # Only the 10 + 20 tokens before the boundary are billed.
+            assert order_item.amount == 30_00
+
+            await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+            )
+
+        for entry in before_entries:
+            await session.refresh(entry)
+            assert entry.order_item_id == order_item.id
+
+        # Usage after the boundary stays pending for the next order.
+        await session.refresh(after_entry)
+        assert after_entry.order_item_id is None
+
+    async def test_metered_usage_billed_until_does_not_bound_static(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        """
+        The boundary only applies to metered usage. Static entries (e.g. the
+        advance recurring charge, stamped with the upcoming period) must still be
+        billed even when their timestamps fall on/after the boundary.
+        """
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+
+        entry = await create_static_price_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=subscription,
+            pending=True,
+        )
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session,
+            subscription,
+            metered_usage_billed_until=subscription.current_period_start,
+        ) as order_items:
+            assert len(order_items) == 1
+            order_item = order_items[0]
+            assert order_item.product_price == price
+
+            await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+            )
+
+        await session.refresh(entry)
+        assert entry.order_item_id == order_item.id

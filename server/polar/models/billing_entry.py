@@ -38,12 +38,6 @@ class BillingEntry(RecordModel):
     __tablename__ = "billing_entry"
     __table_args__ = (
         Index(
-            "ix_billing_entries_s_oi_pp",
-            "subscription_id",
-            "order_item_id",
-            "product_price_id",
-        ),
-        Index(
             "ix_billing_entries_s_d_oi_pp",
             "subscription_id",
             "deleted_at",

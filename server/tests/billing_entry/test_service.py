@@ -6,6 +6,7 @@ import pytest_asyncio
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
 from polar.event.system import SystemEvent
+from polar.kit.utils import utc_now
 from polar.meter.aggregation import AggregationFunction, PropertyAggregation
 from polar.meter.filter import Filter, FilterConjunction
 from polar.models import (
@@ -330,6 +331,15 @@ class TestCreateOrderItemsFromPending:
                 tokens=30,
             ),
         ]
+        deleted_entry = await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price,
+            subscription=metered_subscription,
+            tokens=40,
+        )
+        deleted_entry.deleted_at = utc_now()
+        await save_fixture(deleted_entry)
 
         async with billing_entry_service.create_order_items_from_pending(
             session, metered_subscription
@@ -700,6 +710,16 @@ class TestCreateOrderItemsFromPending:
                 metadata_key="servers",
             ),
         ]
+        deleted_entry = await create_metered_event_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=price_a,
+            subscription=subscription,
+            tokens=100,
+            metadata_key="servers",
+        )
+        deleted_entry.deleted_at = utc_now()
+        await save_fixture(deleted_entry)
 
         # Simulate product change: create new price for same meter but different product
         product_b = await create_product(

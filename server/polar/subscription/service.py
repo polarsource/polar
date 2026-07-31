@@ -2093,6 +2093,7 @@ class SubscriptionService:
         )
         subscription.initialize_meter_period(now)
 
+        await self.reset_meters(session, subscription, reset_at=now)
         await self.enqueue_benefits_grants(session, subscription)
         await self._create_cycle_billing_entries(session, subscription)
 

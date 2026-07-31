@@ -3011,6 +3011,7 @@ class TestResume:
     async def test_valid(
         self,
         frozen_time: datetime,
+        mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
         enqueue_job_mock: MagicMock,
@@ -3029,6 +3030,7 @@ class TestResume:
         subscription.resumes_at = frozen_time
         await save_fixture(subscription)
         reset_hooks(subscription_hooks)
+        reset_meters_mock = mocker.patch.object(subscription_service, "reset_meters")
 
         async with SubscriptionUpdateContext(
             session, subscription, subscription_service
@@ -3042,6 +3044,9 @@ class TestResume:
         assert updated.current_period_start == frozen_time
         assert updated.current_period_end is not None
         assert updated.current_period_end > frozen_time
+        reset_meters_mock.assert_awaited_once_with(
+            session, updated, reset_at=frozen_time
+        )
         enqueue_benefits_grants_mock.assert_called_once_with(session, updated)
         enqueue_job_mock.assert_any_call(
             "order.create_subscription_order", subscription.id, ANY

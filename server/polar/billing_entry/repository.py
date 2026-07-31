@@ -129,6 +129,7 @@ class BillingEntryRepository(
     ) -> None:
         statement = update(BillingEntry).where(
             BillingEntry.subscription_id == subscription_id,
+            BillingEntry.deleted_at.is_(None),
             BillingEntry.order_item_id.is_(None),
             BillingEntry.product_price_id == product_price_id,
             BillingEntry.start_timestamp < cutoff,
@@ -149,6 +150,7 @@ class BillingEntryRepository(
     ) -> None:
         statement = update(BillingEntry).where(
             BillingEntry.subscription_id == subscription_id,
+            BillingEntry.deleted_at.is_(None),
             BillingEntry.order_item_id.is_(None),
             BillingEntry.product_price_id.in_(
                 select(ProductPriceMeteredUnit.id).where(

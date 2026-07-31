@@ -361,6 +361,9 @@ class TestCreateOrderItemsFromPending:
             await session.refresh(entry)
             assert entry.order_item_id == order_item.id
 
+        await session.refresh(deleted_entry)
+        assert deleted_entry.order_item_id is None
+
     async def test_metered_entries_respect_cutoff(
         self,
         save_fixture: SaveFixture,
@@ -957,6 +960,8 @@ class TestCreateOrderItemsFromPending:
             assert entry.order_item_id == order_item.id
         await session.refresh(future_entry)
         assert future_entry.order_item_id is None
+        await session.refresh(deleted_entry)
+        assert deleted_entry.order_item_id is None
 
     async def test_inactive_price_skipped_after_product_switch(
         self,

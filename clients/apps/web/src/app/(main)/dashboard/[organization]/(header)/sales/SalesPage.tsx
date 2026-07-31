@@ -5,13 +5,14 @@ import DateRangePicker, {
   DateRange,
 } from '@/components/Metrics/DateRangePicker'
 import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
+import ExportOrdersModal from '@/components/Orders/ExportOrdersModal'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
 import OrderStatusSelect from '@/components/Orders/OrderStatusSelect'
 import ProductSelect from '@/components/Products/ProductSelect'
 import { useMetrics } from '@/hooks/queries/metrics'
 import { useOrders } from '@/hooks/queries/orders'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
-import { getServerURL } from '@/utils/api'
+import { useModal } from '@/components/Modal/useModal'
 import { useDateRange } from '@/utils/date'
 import { getAPIParams } from '@/utils/datatable'
 import { dateRangeToInterval } from '@/utils/metrics'
@@ -247,15 +248,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     metrics: ['orders', 'revenue', 'average_order_value'],
   })
 
-  const onExport = () => {
-    const productIds =
-      productId?.map((id) => `&product_id=${id}`).join('') || ''
-    const url = new URL(
-      `${getServerURL()}/v1/orders/export?organization_id=${organization.id}${productIds}`,
-    )
-
-    window.open(url, '_blank')
-  }
+  const {
+    isShown: isExportModalShown,
+    show: showExportModal,
+    hide: hideExportModal,
+  } = useModal()
 
   return (
     <DashboardBody wide>
@@ -298,7 +295,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             />
           </Box>
           <Button
-            onClick={onExport}
+            onClick={showExportModal}
             className="flex w-full flex-row items-center md:w-auto"
             variant={'secondary'}
             wrapperClassNames="gap-x-2"
@@ -344,6 +341,13 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           />
         )}
       </div>
+      <ExportOrdersModal
+        organization={organization}
+        productId={productId ?? undefined}
+        status={status}
+        isShown={isExportModalShown}
+        hide={hideExportModal}
+      />
     </DashboardBody>
   )
 }

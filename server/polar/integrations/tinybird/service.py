@@ -22,6 +22,7 @@ from sqlalchemy import (
     and_,
     false,
     func,
+    literal,
     literal_column,
     or_,
     select,
@@ -413,6 +414,80 @@ async def get_first_user_event_at(
         )
 
     return min(timestamps, default=None)
+
+
+FIRST_SEEN_PAGE_SIZE = 50_000
+
+
+async def _first_seen_by_key(
+    table: Table, key: str, organization_id: UUID, *, uuid_key: bool
+) -> dict[str, datetime]:
+    """
+    Page through one aggregating view, keyed on the column after `organization_id`.
+
+    Keyset rather than OFFSET: the key is the second column of the sorting key, so
+    each page scans the remaining range instead of re-aggregating from the start.
+    """
+    key_column = table.c[key]
+    results: dict[str, datetime] = {}
+    last: str | None = None
+
+    while True:
+        conditions = [
+            table.c.organization_id == str(organization_id),
+            table.c.source == EventSource.user,
+        ]
+        if last is not None:
+            conditions.append(
+                key_column > (func.toUUID(last) if uuid_key else literal(last))
+            )
+
+        statement = (
+            select(key_column, func.minMerge(table.c.first_seen).label("first_seen"))
+            .where(*conditions)
+            .group_by(key_column)
+            .order_by(key_column)
+            .limit(FIRST_SEEN_PAGE_SIZE)
+        )
+        sql, template = _compile(statement)
+        rows = await client.query(sql, db_statement=template)
+
+        if not rows:
+            break
+
+        for row in rows:
+            results[str(row[key])] = _parse_datetime(row["first_seen"])
+
+        if len(rows) < FIRST_SEEN_PAGE_SIZE:
+            break
+
+        last = str(rows[-1][key])
+
+    return results
+
+
+async def get_first_user_event_at_by_organization(
+    organization_id: UUID,
+) -> tuple[dict[UUID, datetime], dict[str, datetime]]:
+    """
+    Earliest `user` event timestamp for every customer of an organization.
+
+    Returns one mapping keyed by customer id and one keyed by external customer id.
+    """
+    by_customer_id = await _first_seen_by_key(
+        event_types_by_customer_id_table, "customer_id", organization_id, uuid_key=True
+    )
+    by_external_customer_id = await _first_seen_by_key(
+        event_types_by_external_customer_id_table,
+        "external_customer_id",
+        organization_id,
+        uuid_key=False,
+    )
+
+    return (
+        {_parse_uuid(key): value for key, value in by_customer_id.items()},
+        by_external_customer_id,
+    )
 
 
 def _finite(value: Any, default: float = 0.0) -> float:

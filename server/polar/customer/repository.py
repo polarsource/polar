@@ -352,6 +352,20 @@ class CustomerRepository(
         next_number = result.scalar_one()
         return next_number - 1
 
+    async def get_ids_by_external_ids_and_organization(
+        self, external_ids: Sequence[str], organization_id: UUID
+    ) -> dict[str, UUID]:
+        statement = (
+            self.get_base_statement()
+            .with_only_columns(Customer.external_id, Customer.id)
+            .where(
+                Customer.organization_id == organization_id,
+                Customer.external_id.in_(external_ids),
+            )
+        )
+        result = await self.session.execute(statement)
+        return {external_id: id for external_id, id in result.all()}
+
     async def lower_first_user_event_at(
         self, timestamps: Mapping[UUID, datetime]
     ) -> None:

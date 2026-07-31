@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from datetime import datetime
 from uuid import UUID
 
 from polar.exceptions import PolarError
@@ -115,9 +116,13 @@ class DisputeCaseService:
         )
 
     async def accept(
-        self, session: AsyncSession, case: DisputeSupportCase
+        self,
+        session: AsyncSession,
+        case: DisputeSupportCase,
+        *,
+        automatic: bool = False,
     ) -> SupportCaseMessage:
-        """Record the merchant's acceptance (concede) on the thread.
+        """Record the acceptance (concede) on the thread.
 
         A ``system`` lifecycle event, like the other ``dispute_*`` events —
         merchant/platform/customer author kinds are reserved for chat.
@@ -126,8 +131,58 @@ class DisputeCaseService:
         return await support_case_service.post_message(
             session,
             case,
-            type=SupportCaseMessageType.merchant_accepted,
+            type=SupportCaseMessageType.dispute_auto_accepted
+            if automatic
+            else SupportCaseMessageType.merchant_accepted,
             author_kind=SupportCaseMessageAuthorKind.system,
+            audience=[SupportCaseAudience.merchant],
+        )
+
+    async def announce_auto_accept(
+        self,
+        session: AsyncSession,
+        case: DisputeSupportCase,
+        *,
+        deadline: datetime,
+    ) -> SupportCaseMessage:
+        """Warn that Polar plans to concede this dispute, and when.
+
+        The deadline lives in the body, not in client-side copy: the wait is tunable.
+        """
+        await self._assert_open(session, case)
+        return await support_case_service.post_message(
+            session,
+            case,
+            type=SupportCaseMessageType.dispute_auto_accept_scheduled,
+            author_kind=SupportCaseMessageAuthorKind.system,
+            body=(
+                "This dispute is below the threshold you set, so we plan to "
+                f"accept it on your behalf on {deadline:%d %B %Y at %H:%M} UTC. "
+                "Reply here before then and we'll leave it to you."
+            ),
+            audience=[SupportCaseAudience.merchant],
+        )
+
+    async def cancel_auto_accept(
+        self, session: AsyncSession, case: DisputeSupportCase
+    ) -> SupportCaseMessage | None:
+        """Retract the announcement once the merchant answers."""
+        repository = SupportCaseMessageRepository.from_session(session)
+        if not await repository.has_message_type(
+            case.id, SupportCaseMessageType.dispute_auto_accept_scheduled
+        ) or await repository.has_message_type(
+            case.id, SupportCaseMessageType.dispute_auto_accept_canceled
+        ):
+            return None
+        return await support_case_service.post_message(
+            session,
+            case,
+            type=SupportCaseMessageType.dispute_auto_accept_canceled,
+            author_kind=SupportCaseMessageAuthorKind.system,
+            body=(
+                "You replied, so this dispute stays with you. We won't accept "
+                "it on your behalf."
+            ),
             audience=[SupportCaseAudience.merchant],
         )
 
@@ -156,9 +211,10 @@ class DisputeCaseService:
             case.win_reason = reply.win_reason
             case.win_reason_other = reply.win_reason_other
 
+        message_repository = SupportCaseMessageRepository.from_session(session)
         is_first_merchant_reply = (
             author_kind == SupportCaseMessageAuthorKind.merchant
-            and not await self._has_merchant_message(session, case)
+            and not await message_repository.has_merchant_message(case.id)
         )
 
         audience = [] if internal else [SupportCaseAudience.merchant]
@@ -180,6 +236,9 @@ class DisputeCaseService:
                 message_id=message.id,
             )
 
+        if author_kind == SupportCaseMessageAuthorKind.merchant:
+            await self.cancel_auto_accept(session, case)
+
         if is_first_merchant_reply:
             enqueue_job(
                 "dispute.post_dispute_greeting",
@@ -188,16 +247,6 @@ class DisputeCaseService:
             )
 
         return message
-
-    async def _has_merchant_message(
-        self, session: AsyncSession, case: DisputeSupportCase
-    ) -> bool:
-        repository = SupportCaseMessageRepository.from_session(session)
-        messages = await repository.list_by_case(case.id, visible_to=None)
-        return any(
-            message.author_kind == SupportCaseMessageAuthorKind.merchant
-            for message in messages
-        )
 
     async def resolve(
         self, session: AsyncSession, case: DisputeSupportCase, *, won: bool

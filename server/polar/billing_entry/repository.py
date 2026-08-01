@@ -71,6 +71,13 @@ class BillingEntryRepository(
     ) -> AsyncGenerator[BillingEntry]:
         statement = (
             self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
+            # Metered entries are the only ones created with `type=metered`, so
+            # the static ones are exactly the non-metered ones. Filtering on
+            # `type` lets the planner use the partial `ix_billing_entry_pending_static`
+            # index and skip the pending metered entries entirely, instead of
+            # scanning them all and joining `product_prices` just to discard them
+            # — which times out on high-volume subscriptions.
+            .where(BillingEntry.type != BillingEntryType.metered)
             .join(BillingEntry.product_price)
             .where(ProductPrice.is_static.is_(True))
             .options(

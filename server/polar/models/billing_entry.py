@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Self
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, Index, String, Uuid
+from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, Index, String, Uuid, text
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
@@ -43,6 +43,16 @@ class BillingEntry(RecordModel):
             "deleted_at",
             "order_item_id",
             "product_price_id",
+        ),
+        # Pending static (non-metered) entries are rare next to the pending
+        # metered ones, so a partial index keeps the static line-item lookup off
+        # the full pending scan for high-volume subscriptions.
+        Index(
+            "ix_billing_entry_pending_static",
+            "subscription_id",
+            postgresql_where=text(
+                "deleted_at IS NULL AND order_item_id IS NULL AND type != 'metered'"
+            ),
         ),
     )
 

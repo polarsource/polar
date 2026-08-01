@@ -936,6 +936,82 @@ class TestCreateOrderItemsFromPending:
         await session.refresh(entry)
         assert entry.order_item_id == order_item.id
 
+    async def test_static_entry_alongside_metered_entries(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        customer: Customer,
+        organization: Organization,
+        meter: Meter,
+    ) -> None:
+        # The static line-item query must find the (few) pending static entries
+        # even when they are outnumbered by pending metered entries — the
+        # high-volume shape that was timing out in production.
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(1000, "usd"), (meter, Decimal(100), None, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        static_price = product.prices[0]
+        metered_price = product.prices[1]
+        assert is_fixed_price(static_price)
+        assert is_metered_price(metered_price)
+
+        for tokens in (20, 30):
+            await create_metered_event_billing_entry(
+                save_fixture,
+                customer=customer,
+                price=metered_price,
+                subscription=subscription,
+                tokens=tokens,
+            )
+        static_entry = await create_static_price_billing_entry(
+            save_fixture,
+            customer=customer,
+            price=static_price,
+            subscription=subscription,
+            pending=True,
+        )
+
+        async with billing_entry_service.create_order_items_from_pending(
+            session, subscription
+        ) as order_items:
+            assert len(order_items) == 2
+
+            static_items = [
+                item
+                for item in order_items
+                if item.product_price is not None and is_fixed_price(item.product_price)
+            ]
+            metered_items = [
+                item
+                for item in order_items
+                if item.product_price is not None
+                and is_metered_price(item.product_price)
+            ]
+            assert len(static_items) == 1
+            assert len(metered_items) == 1
+
+            static_item = static_items[0]
+            assert static_item.amount == static_price.price_amount
+            assert static_item.proration is False
+            assert product.name in static_item.label
+
+            assert meter.name in metered_items[0].label
+
+            await create_order(
+                save_fixture,
+                customer=customer,
+                order_items=list(order_items),
+            )
+
+        await session.refresh(static_entry)
+        assert static_entry.order_item_id == static_item.id
+
     async def test_max_aggregation_across_product_prices(
         self,
         save_fixture: SaveFixture,

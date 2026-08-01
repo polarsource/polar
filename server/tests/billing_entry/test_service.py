@@ -623,7 +623,7 @@ class TestCreateOrderItemsFromPending:
             call.args[0]
             for call in execute_spy.call_args_list
             if isinstance(call.args[0], Update)
-            and call.args[0].table.name == BillingEntry.__tablename__
+            and getattr(call.args[0].table, "name", None) == BillingEntry.__tablename__
         ]
         assert len(billing_entry_updates) > len(order_items)
         assert all("LIMIT" in str(statement) for statement in billing_entry_updates)

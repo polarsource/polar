@@ -3,6 +3,8 @@ from decimal import Decimal
 
 import pytest
 import pytest_asyncio
+from pytest_mock import MockerFixture
+from sqlalchemy import Update
 
 from polar.billing_entry.service import billing_entry as billing_entry_service
 from polar.enums import SubscriptionProrationBehavior, SubscriptionRecurringInterval
@@ -521,6 +523,8 @@ class TestCreateOrderItemsFromPending:
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
+        mocker: MockerFixture,
+        monkeypatch: pytest.MonkeyPatch,
         customer: Customer,
         meter: Meter,
         product_metered_unit: Product,
@@ -578,6 +582,12 @@ class TestCreateOrderItemsFromPending:
             ),
         ]
 
+        monkeypatch.setattr(
+            "polar.billing_entry.repository._LINK_PENDING_BATCH_SIZE",
+            1,
+        )
+        execute_spy = mocker.spy(session, "execute")
+
         async with billing_entry_service.create_order_items_from_pending(
             session, metered_subscription
         ) as order_items:
@@ -608,6 +618,15 @@ class TestCreateOrderItemsFromPending:
         for entry in entries[2:]:
             await session.refresh(entry)
             assert entry.order_item_id == order_item_current_price.id
+
+        billing_entry_updates = [
+            call.args[0]
+            for call in execute_spy.call_args_list
+            if isinstance(call.args[0], Update)
+            and getattr(call.args[0].table, "name", None) == BillingEntry.__tablename__
+        ]
+        assert len(billing_entry_updates) > len(order_items)
+        assert all("LIMIT" in str(statement) for statement in billing_entry_updates)
 
     @pytest.mark.parametrize(
         ("entry_type", "new_seats", "expected_transition"),

@@ -3,6 +3,8 @@ import uuid
 import pytest
 from httpx import AsyncClient
 
+from polar.auth.scope import Scope
+from polar.compass.thread_service import scopes_digest
 from polar.models import (
     CompassThread,
     CompassThreadMessage,
@@ -25,6 +27,7 @@ async def _create_thread(
         organization_id=organization.id,
         user_id=user.id if user is not None else None,
         title=title,
+        scopes_digest=scopes_digest(set(Scope)),
     )
     await save_fixture(thread)
     return thread
@@ -240,6 +243,23 @@ class TestUpdateThread:
 
         assert response.status_code == 404
 
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.metrics_read}))
+    async def test_read_only_token_cannot_rename(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        thread = await _create_thread(save_fixture, organization, user=user)
+
+        response = await client.patch(
+            f"/v1/compass/threads/{thread.id}", json={"title": "Renamed"}
+        )
+
+        assert response.status_code == 403
+
 
 @pytest.mark.asyncio
 class TestDeleteThread:
@@ -274,3 +294,18 @@ class TestDeleteThread:
         response = await client.delete(f"/v1/compass/threads/{thread.id}")
 
         assert response.status_code == 404
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.metrics_read}))
+    async def test_read_only_token_cannot_delete(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        thread = await _create_thread(save_fixture, organization, user=user)
+
+        response = await client.delete(f"/v1/compass/threads/{thread.id}")
+
+        assert response.status_code == 403

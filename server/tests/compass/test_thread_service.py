@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import datetime, timedelta
 from typing import Any
 
 import pytest
@@ -9,11 +9,14 @@ from pydantic_ai.messages import (
     TextPart,
     UserPromptPart,
 )
+from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject, Organization, User
+from polar.auth.scope import Scope
 from polar.compass.thread_service import (
     HISTORY_TURNS,
     MESSAGES_LIMIT,
+    scopes_digest,
 )
 from polar.compass.thread_service import (
     compass_thread as compass_thread_service,
@@ -42,12 +45,17 @@ async def _create_thread(
     *,
     user: User | None = None,
     title: str = "Thread",
+    created_at: datetime | None = None,
+    scopes: set[Scope] | None = None,
 ) -> CompassThread:
     thread = CompassThread(
         organization_id=organization.id,
         user_id=user.id if user is not None else None,
         title=title,
+        scopes_digest=scopes_digest(set(Scope) if scopes is None else scopes),
     )
+    if created_at is not None:
+        thread.created_at = created_at
     await save_fixture(thread)
     return thread
 
@@ -72,6 +80,7 @@ class TestCreate:
         assert thread.user_id == user.id
         assert thread.organization_id == organization.id
         assert thread.title == "How is my MRR trending?"
+        assert thread.scopes_digest == scopes_digest(auth_subject.scopes)
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization_thread_has_no_user(
@@ -99,6 +108,40 @@ class TestCreate:
 
         assert len(thread.title) <= 80
         assert thread.title.endswith("…")
+
+    @pytest.mark.auth
+    async def test_prunes_least_recent_beyond_cap(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user: User,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        mocker.patch("polar.compass.thread_service.THREADS_CAP", 2)
+        now = utc_now()
+        oldest = await _create_thread(
+            save_fixture, organization, user=user, created_at=now - timedelta(hours=2)
+        )
+        kept = await _create_thread(
+            save_fixture, organization, user=user, created_at=now - timedelta(hours=1)
+        )
+
+        created = await compass_thread_service.create(
+            session, auth_subject, organization_id=organization.id, prompt="hi"
+        )
+
+        results, count = await compass_thread_service.list(
+            session,
+            auth_subject,
+            organization_id=organization.id,
+            pagination=PaginationParams(1, 10),
+        )
+        assert count == 2
+        assert {t.id for t in results} == {created.id, kept.id}
+        assert oldest.deleted_at is not None
 
 
 @pytest.mark.asyncio
@@ -286,13 +329,14 @@ class TestBuildMessageHistory:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
         user: User,
         organization: Organization,
     ) -> None:
         thread = await _create_thread(save_fixture, organization, user=user)
 
         history, last_at = await compass_thread_service.build_message_history(
-            session, thread
+            session, auth_subject, thread
         )
 
         assert history is None
@@ -303,6 +347,7 @@ class TestBuildMessageHistory:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
         user: User,
         organization: Organization,
     ) -> None:
@@ -322,7 +367,7 @@ class TestBuildMessageHistory:
             )
 
         history, last_at = await compass_thread_service.build_message_history(
-            session, thread
+            session, auth_subject, thread
         )
 
         assert history is not None
@@ -339,6 +384,7 @@ class TestBuildMessageHistory:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
         user: User,
         organization: Organization,
     ) -> None:
@@ -356,7 +402,9 @@ class TestBuildMessageHistory:
                 )
             )
 
-        history, _ = await compass_thread_service.build_message_history(session, thread)
+        history, _ = await compass_thread_service.build_message_history(
+            session, auth_subject, thread
+        )
 
         assert history is not None
         assert len(history) == HISTORY_TURNS * 2
@@ -371,6 +419,7 @@ class TestBuildMessageHistory:
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
         user: User,
         organization: Organization,
     ) -> None:
@@ -385,7 +434,37 @@ class TestBuildMessageHistory:
         )
 
         history, last_at = await compass_thread_service.build_message_history(
-            session, thread
+            session, auth_subject, thread
+        )
+
+        assert history is None
+        assert last_at is None
+
+    @pytest.mark.auth
+    async def test_different_scopes_degrade_to_fresh_context(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user: User,
+        organization: Organization,
+    ) -> None:
+        """Stored turns embed tool results fetched under the creating token's
+        scopes; a token with a different scope set must not inherit them."""
+        thread = await _create_thread(
+            save_fixture, organization, user=user, scopes={Scope.metrics_read}
+        )
+        await save_fixture(
+            CompassThreadMessage(
+                thread=thread,
+                prompt="hi",
+                parts=[],
+                model_messages=_turn_model_messages("hi", "hello"),
+            )
+        )
+
+        history, last_at = await compass_thread_service.build_message_history(
+            session, auth_subject, thread
         )
 
         assert history is None

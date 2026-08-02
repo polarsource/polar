@@ -13,3 +13,11 @@ _CompassRead = Authenticator(
     allowed_subjects={User, Organization},
 )
 CompassRead = Annotated[AuthSubject[User | Organization], Depends(_CompassRead)]
+
+# Renaming or deleting threads is destructive, so a read-only analytics token
+# must not be enough — org-token threads are shared across the whole org.
+_CompassWrite = Authenticator(
+    required_scopes={Scope.metrics_write},
+    allowed_subjects={User, Organization},
+)
+CompassWrite = Annotated[AuthSubject[User | Organization], Depends(_CompassWrite)]

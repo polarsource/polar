@@ -28,15 +28,15 @@ from polar.routing import APIRouter
 from . import auth
 from .assistant.agent import build_assistant_agent
 from .assistant.deps import AssistantDeps
-from .assistant.schemas import (
-    AssistantChatRequest,
+from .assistant.schemas import AssistantChatRequest
+from .assistant.stream import sse_event, stream_assistant_run
+from .schemas import Insight, InsightCategory
+from .service import compass as compass_service
+from .thread_schemas import (
     CompassThreadSchema,
     CompassThreadUpdate,
     CompassThreadWithMessages,
 )
-from .assistant.stream import sse_event, stream_assistant_run
-from .schemas import Insight, InsightCategory
-from .service import compass as compass_service
 from .thread_service import (
     TurnModelMessages,
     TurnParts,
@@ -134,7 +134,7 @@ async def get_thread(
     response_model=CompassThreadSchema,
 )
 async def update_thread(
-    auth_subject: auth.CompassRead,
+    auth_subject: auth.CompassWrite,
     id: CompassThreadID,
     body: CompassThreadUpdate,
     session: AsyncSession = Depends(get_db_session),
@@ -151,7 +151,7 @@ async def update_thread(
     status_code=204,
 )
 async def delete_thread(
-    auth_subject: auth.CompassRead,
+    auth_subject: auth.CompassWrite,
     id: CompassThreadID,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
@@ -203,7 +203,7 @@ async def assistant_chat(
         if thread is None or thread.organization_id != organization.id:
             raise ResourceNotFound()
         history, history_last_at = await compass_thread_service.build_message_history(
-            session, thread
+            session, auth_subject, thread
         )
     else:
         # Persist before streaming so aborted streams still leave a thread.

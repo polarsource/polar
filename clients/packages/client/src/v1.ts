@@ -3222,14 +3222,14 @@ export interface paths {
     post?: never
     /**
      * Delete Assistant Thread
-     * @description **Scopes**: `metrics:read`
+     * @description **Scopes**: `metrics:write`
      */
     delete: operations['compass:delete_thread']
     options?: never
     head?: never
     /**
      * Update Assistant Thread
-     * @description **Scopes**: `metrics:read`
+     * @description **Scopes**: `metrics:write`
      */
     patch: operations['compass:update_thread']
     trace?: never

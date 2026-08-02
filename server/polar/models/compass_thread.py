@@ -29,6 +29,9 @@ class CompassThread(RecordModel):
         index=True,
     )
     title: Mapped[str] = mapped_column(String, nullable=False)
+    scopes_digest: Mapped[str] = mapped_column(String, nullable=False)
+    """Digest of the creating token's scopes. History replay checks it so tool
+    results fetched under broader scopes never feed a narrower token's run."""
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:

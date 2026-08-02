@@ -1,3 +1,4 @@
+import hashlib
 import uuid
 from collections.abc import Sequence
 from datetime import datetime
@@ -9,14 +10,15 @@ from pydantic import ValidationError
 from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
 
 from polar.auth.models import AuthSubject, Organization, User, is_user
+from polar.auth.scope import Scope
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.logging import Logger
 from polar.models import CompassThread, CompassThreadMessage
 from polar.postgres import AsyncReadSession, AsyncSession
 
-from .assistant.schemas import CompassThreadUpdate
 from .repository import CompassThreadMessageRepository, CompassThreadRepository
+from .thread_schemas import CompassThreadUpdate
 
 log: Logger = structlog.get_logger()
 
@@ -27,6 +29,21 @@ MESSAGES_LIMIT = 50
 """Recent turns returned when rehydrating a thread. Older ones are dropped."""
 
 TITLE_MAX_LENGTH = 80
+
+THREADS_CAP = 500
+"""Live threads kept per owner and organization. Creating past the cap
+soft-deletes the least recent overflow, so a runaway client can't grow the
+table (or the history menu) without bound."""
+
+
+def scopes_digest(scopes: set[Scope]) -> str:
+    """Fingerprint of a token's scopes. Stored on the thread at creation and
+    compared on replay: stored history contains tool results fetched under
+    the creating token's scopes, so a token with a different scope set gets a
+    fresh model context instead of inheriting them."""
+    joined = ",".join(sorted(scope.value for scope in scopes))
+    return hashlib.sha256(joined.encode()).hexdigest()
+
 
 type TurnParts = list[dict[str, Any]]
 type TurnModelMessages = list[dict[str, Any]]
@@ -111,8 +128,17 @@ class CompassThreadService:
             organization_id=organization_id,
             user_id=auth_subject.subject.id if is_user(auth_subject) else None,
             title=_title_from_prompt(prompt),
+            scopes_digest=scopes_digest(auth_subject.scopes),
         )
-        return await repository.create(thread, flush=True)
+        thread = await repository.create(thread, flush=True)
+        overflow_statement = repository.apply_recency_order(
+            repository.get_readable_statement(auth_subject).where(
+                CompassThread.organization_id == organization_id
+            )
+        ).offset(THREADS_CAP)
+        for overflow in await repository.get_all(overflow_statement):
+            await repository.soft_delete(overflow)
+        return thread
 
     async def record_turn(
         self,
@@ -143,15 +169,27 @@ class CompassThreadService:
         return message
 
     async def build_message_history(
-        self, session: AsyncReadSession, thread: CompassThread
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        thread: CompassThread,
     ) -> tuple[ModelHistory | None, datetime | None]:
         """Concatenated model deltas from the last `HISTORY_TURNS` turns, and
         when the most recent of them ran — so the model can be told how old
         the replayed tool results are.
 
-        Invalid stored history (e.g. after a pydantic-ai upgrade) degrades to
-        a fresh context instead of breaking the thread.
+        A token whose scopes differ from the creating token's gets a fresh
+        context: the stored history embeds tool results the current scope set
+        may not be entitled to fetch. Invalid stored history (e.g. after a
+        pydantic-ai upgrade) also degrades to a fresh context instead of
+        breaking the thread.
         """
+        if thread.scopes_digest != scopes_digest(auth_subject.scopes):
+            log.info(
+                "compass.thread_history_scope_mismatch",
+                thread_id=str(thread.id),
+            )
+            return None, None
         repository = CompassThreadMessageRepository.from_session(session)
         recent = await repository.get_all(
             repository.get_replay_statement(thread.id, HISTORY_TURNS)

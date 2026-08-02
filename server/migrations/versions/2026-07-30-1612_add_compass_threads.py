@@ -28,6 +28,7 @@ def upgrade() -> None:
         sa.Column("organization_id", sa.Uuid(), nullable=False),
         sa.Column("user_id", sa.Uuid(), nullable=True),
         sa.Column("title", sa.String(), nullable=False),
+        sa.Column("scopes_digest", sa.String(), nullable=False),
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),

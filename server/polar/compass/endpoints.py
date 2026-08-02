@@ -114,7 +114,7 @@ async def get_thread(
     thread = await compass_thread_service.get(session, auth_subject, id)
     if thread is None:
         raise ResourceNotFound()
-    messages = await compass_thread_service.list_messages(session, thread)
+    messages, has_more = await compass_thread_service.list_messages(session, thread)
     return CompassThreadWithMessages.model_validate(
         {
             "id": thread.id,
@@ -123,6 +123,7 @@ async def get_thread(
             "organization_id": thread.organization_id,
             "title": thread.title,
             "messages": messages,
+            "has_more": has_more,
         }
     )
 

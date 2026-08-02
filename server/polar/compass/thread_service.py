@@ -22,6 +22,9 @@ log: Logger = structlog.get_logger()
 HISTORY_TURNS = 12
 """Recent turns kept as model context. Older turns stay in the UI only."""
 
+MESSAGES_LIMIT = 50
+"""Recent turns returned when rehydrating a thread. Older ones are dropped."""
+
 TITLE_MAX_LENGTH = 80
 
 type TurnParts = list[dict[str, Any]]
@@ -68,9 +71,16 @@ class CompassThreadService:
 
     async def list_messages(
         self, session: AsyncReadSession, thread: CompassThread
-    ) -> Sequence[CompassThreadMessage]:
+    ) -> tuple[Sequence[CompassThreadMessage], bool]:
+        """The most recent `MESSAGES_LIMIT` turns, oldest first, and whether
+        older turns were left out."""
         repository = CompassThreadMessageRepository.from_session(session)
-        return await repository.get_all(repository.get_statement_by_thread(thread.id))
+        statement = repository.get_statement_by_thread(thread.id).limit(
+            MESSAGES_LIMIT + 1
+        )
+        recent = await repository.get_all(statement)
+        has_more = len(recent) > MESSAGES_LIMIT
+        return list(reversed(recent[:MESSAGES_LIMIT])), has_more
 
     async def update(
         self,
@@ -140,13 +150,9 @@ class CompassThreadService:
         a fresh context instead of breaking the thread.
         """
         repository = CompassThreadMessageRepository.from_session(session)
-        statement = (
-            repository.get_base_statement()
-            .where(CompassThreadMessage.thread_id == thread.id)
-            .order_by(CompassThreadMessage.created_at.desc())
-            .limit(HISTORY_TURNS)
+        recent = await repository.get_all(
+            repository.get_replay_statement(thread.id, HISTORY_TURNS)
         )
-        recent = await repository.get_all(statement)
         combined = list(
             chain.from_iterable(message.model_messages for message in reversed(recent))
         )

@@ -198,6 +198,8 @@ class TestGetThread:
         message = json["messages"][0]
         assert message["prompt"] == "How is my MRR?"
         assert message["parts"] == [{"kind": "text", "text": "MRR is up 12%."}]
+        assert json["has_more"] is False
+        assert "model_messages" not in message
 
 
 @pytest.mark.asyncio

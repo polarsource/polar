@@ -48,7 +48,12 @@ class CompassThreadMessageSchema(IDSchema, TimestampedSchema):
 
 
 class CompassThreadWithMessages(CompassThreadSchema):
-    messages: list[CompassThreadMessageSchema]
+    messages: list[CompassThreadMessageSchema] = Field(
+        description="Most recent turns, oldest first."
+    )
+    has_more: bool = Field(
+        description="Whether older turns exist beyond the ones returned."
+    )
 
 
 class CompassThreadUpdate(Schema):

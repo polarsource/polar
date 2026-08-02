@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy import Select, func
+from sqlalchemy.orm import undefer
 
 from polar.auth.models import AuthSubject, Organization, User, is_user
 from polar.auth.permission import OrganizationPermission
@@ -59,8 +60,19 @@ class CompassThreadMessageRepository(
     def get_statement_by_thread(
         self, thread_id: UUID
     ) -> Select[tuple[CompassThreadMessage]]:
+        """Most recent turns first. `model_messages` stays deferred."""
         return (
             self.get_base_statement()
             .where(CompassThreadMessage.thread_id == thread_id)
-            .order_by(CompassThreadMessage.created_at.asc())
+            .order_by(CompassThreadMessage.created_at.desc())
+        )
+
+    def get_replay_statement(
+        self, thread_id: UUID, limit: int
+    ) -> Select[tuple[CompassThreadMessage]]:
+        """Recent turns with their model deltas loaded, for history replay."""
+        return (
+            self.get_statement_by_thread(thread_id)
+            .options(undefer(CompassThreadMessage.model_messages))
+            .limit(limit)
         )

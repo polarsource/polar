@@ -3195,9 +3195,7 @@ export interface paths {
     }
     /**
      * List Assistant Threads
-     * @description List the caller's assistant conversation threads, most recent first.
-     *
-     *     **Scopes**: `metrics:read`
+     * @description **Scopes**: `metrics:read`
      */
     get: operations['compass:list_threads']
     put?: never
@@ -3217,27 +3215,21 @@ export interface paths {
     }
     /**
      * Get Assistant Thread
-     * @description Get a thread with its rendered messages, for rehydrating the UI.
-     *
-     *     **Scopes**: `metrics:read`
+     * @description **Scopes**: `metrics:read`
      */
     get: operations['compass:get_thread']
     put?: never
     post?: never
     /**
      * Delete Assistant Thread
-     * @description Delete a thread and its conversation history.
-     *
-     *     **Scopes**: `metrics:read`
+     * @description **Scopes**: `metrics:read`
      */
     delete: operations['compass:delete_thread']
     options?: never
     head?: never
     /**
      * Update Assistant Thread
-     * @description Rename a thread.
-     *
-     *     **Scopes**: `metrics:read`
+     * @description **Scopes**: `metrics:read`
      */
     patch: operations['compass:update_thread']
     trace?: never
@@ -7754,10 +7746,7 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /**
-     * AssistantBlockPart
-     * @description A renderable block, at the position the model placed it.
-     */
+    /** AssistantBlockPart */
     AssistantBlockPart: {
       /**
        * @description discriminator enum property added by openapi-typescript
@@ -7773,10 +7762,7 @@ export interface components {
         | components['schemas']['DataTableBlock']
         | components['schemas']['CustomerCardBlock']
     }
-    /**
-     * AssistantTextPart
-     * @description A run of assistant prose, as it was streamed.
-     */
+    /** AssistantTextPart */
     AssistantTextPart: {
       /**
        * @description discriminator enum property added by openapi-typescript
@@ -14481,10 +14467,7 @@ export interface components {
      * @enum {string}
      */
     ColumnFormat: 'text' | 'currency' | 'datetime' | 'badge' | 'avatar'
-    /**
-     * CompassThreadMessageSchema
-     * @description One completed turn: the user's prompt and the rendered answer.
-     */
+    /** CompassThreadMessageSchema */
     CompassThreadMessageSchema: {
       /**
        * Created At
@@ -14511,10 +14494,7 @@ export interface components {
         | components['schemas']['AssistantBlockPart']
       )[]
     }
-    /**
-     * CompassThreadSchema
-     * @description An assistant conversation thread.
-     */
+    /** CompassThreadSchema */
     CompassThreadSchema: {
       /**
        * Created At
@@ -14572,8 +14552,16 @@ export interface components {
       organization_id: string
       /** Title */
       title: string
-      /** Messages */
+      /**
+       * Messages
+       * @description Most recent turns, oldest first.
+       */
       messages: components['schemas']['CompassThreadMessageSchema'][]
+      /**
+       * Has More
+       * @description Whether older turns exist beyond the ones returned.
+       */
+      has_more: boolean
     }
     /**
      * ConfidenceLevel

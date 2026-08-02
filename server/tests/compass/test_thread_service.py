@@ -13,6 +13,7 @@ from pydantic_ai.messages import (
 from polar.auth.models import AuthSubject, Organization, User
 from polar.compass.thread_service import (
     HISTORY_TURNS,
+    MESSAGES_LIMIT,
 )
 from polar.compass.thread_service import (
     compass_thread as compass_thread_service,
@@ -218,6 +219,64 @@ class TestRecordTurn:
         )
 
         assert message is None
+
+
+@pytest.mark.asyncio
+class TestListMessages:
+    @pytest.mark.auth
+    async def test_returns_turns_oldest_first(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+    ) -> None:
+        thread = await _create_thread(save_fixture, organization, user=user)
+        now = utc_now()
+        for turn, prompt in enumerate(["first?", "second?"]):
+            await save_fixture(
+                CompassThreadMessage(
+                    thread=thread,
+                    prompt=prompt,
+                    parts=[],
+                    model_messages=[],
+                    created_at=now + timedelta(seconds=turn),
+                )
+            )
+
+        messages, has_more = await compass_thread_service.list_messages(session, thread)
+
+        assert [message.prompt for message in messages] == ["first?", "second?"]
+        assert has_more is False
+
+    @pytest.mark.auth
+    async def test_caps_at_most_recent_turns(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+    ) -> None:
+        thread = await _create_thread(save_fixture, organization, user=user)
+        now = utc_now()
+        total = MESSAGES_LIMIT + 2
+        for turn in range(total):
+            await save_fixture(
+                CompassThreadMessage(
+                    thread=thread,
+                    prompt=f"q{turn}",
+                    parts=[],
+                    model_messages=[],
+                    created_at=now + timedelta(seconds=turn),
+                )
+            )
+
+        messages, has_more = await compass_thread_service.list_messages(session, thread)
+
+        assert len(messages) == MESSAGES_LIMIT
+        assert messages[0].prompt == "q2"
+        assert messages[-1].prompt == f"q{total - 1}"
+        assert has_more is True
 
 
 @pytest.mark.asyncio

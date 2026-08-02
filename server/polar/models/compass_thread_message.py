@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class CompassThreadMessage(RecordModel):
     """One completed turn.
 
-    `parts` rehydrates the UI. `model_messages` is the pydantic-ai delta
+    `parts` rehydrates the UI; `model_messages` is the pydantic-ai delta
     concatenated across turns for the next request's context.
     """
 
@@ -31,8 +31,10 @@ class CompassThreadMessage(RecordModel):
         JSONB, nullable=False, default=list
     )
     model_messages: Mapped[list[dict[str, Any]]] = mapped_column(
-        JSONB, nullable=False, default=list
+        JSONB, nullable=False, default=list, deferred=True
     )
+    """Deferred: only the replay path reads it, and it's the largest column on
+    the row. Loading it requires an explicit `undefer`."""
 
     @declared_attr
     def thread(cls) -> Mapped["CompassThread"]:

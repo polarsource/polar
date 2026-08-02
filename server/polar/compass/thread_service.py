@@ -1,5 +1,6 @@
 import uuid
 from collections.abc import Sequence
+from datetime import datetime
 from itertools import chain
 from typing import Any
 
@@ -143,8 +144,10 @@ class CompassThreadService:
 
     async def build_message_history(
         self, session: AsyncReadSession, thread: CompassThread
-    ) -> ModelHistory | None:
-        """Concatenated model deltas from the last `HISTORY_TURNS` turns.
+    ) -> tuple[ModelHistory | None, datetime | None]:
+        """Concatenated model deltas from the last `HISTORY_TURNS` turns, and
+        when the most recent of them ran — so the model can be told how old
+        the replayed tool results are.
 
         Invalid stored history (e.g. after a pydantic-ai upgrade) degrades to
         a fresh context instead of breaking the thread.
@@ -157,15 +160,16 @@ class CompassThreadService:
             chain.from_iterable(message.model_messages for message in reversed(recent))
         )
         if not combined:
-            return None
+            return None, None
         try:
-            return ModelMessagesTypeAdapter.validate_python(combined)
+            history = ModelMessagesTypeAdapter.validate_python(combined)
+            return history, recent[0].created_at
         except ValidationError:
             log.warning(
                 "compass.thread_history_invalid",
                 thread_id=str(thread.id),
             )
-            return None
+            return None, None
 
 
 compass_thread = CompassThreadService()

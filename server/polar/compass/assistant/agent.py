@@ -66,8 +66,11 @@ Follow-ups and judgment questions:
 - Never map words in the question onto tool or category names literally.
   "Risk" in a follow-up usually means the downside of the prior
   recommendation, not the risk insight category.
-- Tool results from earlier turns remain valid context; do not re-fetch to
-  re-answer.
+- Tool results from earlier turns show the data as it was when fetched, not
+  as it is now. For judgment and analysis follow-ups, reason from them
+  directly without re-fetching. But when the user asks about current numbers
+  and the relevant result came from an earlier day (compare its fetch time to
+  today's date), fetch fresh data instead of quoting remembered figures.
 - When your answer is analysis rather than measurement, frame it that way
   (e.g. "the main trade-off is..."), and say what data would confirm it.
 
@@ -134,19 +137,32 @@ def build_assistant_agent(
     agent: Agent[AssistantDeps, str] = Agent(
         model_instance,
         deps_type=AssistantDeps,
-        system_prompt=SYSTEM_PROMPT,
+        # `instructions`, not `system_prompt`: system prompts are only sent on
+        # a history-less first turn, so a resumed thread would replay the
+        # original turn's date forever. Instructions are rebuilt every turn.
+        instructions=SYSTEM_PROMPT,
         tools=tools,
         # gpt-5.5+ reasoning models reject any non-default temperature.
         model_settings=({} if model_name.startswith("gpt-5.5") else {"temperature": 0}),
     )
 
     # Relative dates ("yesterday", "last month") are resolvable only if the
-    # model knows what today is; the static prompt can't carry it.
-    @agent.system_prompt
-    async def _current_date(ctx: RunContext[AssistantDeps]) -> str:
-        return (
+    # model knows what today is; the static prompt can't carry it. On resumed
+    # threads, the fetch time of the replayed turns is what lets the model
+    # apply the staleness rule above.
+    @agent.instructions
+    async def _run_context(ctx: RunContext[AssistantDeps]) -> str:
+        lines = [
             f"Today's date is {ctx.deps.today.isoformat()} in the merchant's "
             f"timezone ({ctx.deps.timezone})."
-        )
+        ]
+        if ctx.deps.history_last_at is not None:
+            lines.append(
+                "This conversation is being continued: its most recent "
+                f"earlier turn ran at {ctx.deps.history_last_at.isoformat()}, "
+                "and tool results replayed from earlier turns show the data "
+                "as of when they ran."
+            )
+        return "\n".join(lines)
 
     return agent, model_provider, model_name

@@ -1,5 +1,6 @@
 'use client'
 
+import { relativeTime } from '@/components/Chat/time'
 import { ParsedMetricPeriod } from '@/hooks/queries'
 import { AssistantBlock, AssistantPart } from '@/hooks/useCompassAssistant'
 import { getFormattedMetricValue } from '@/utils/metrics'
@@ -94,7 +95,7 @@ const ParagraphsText = ({ text }: { text: string }) => {
  * reviewed component. The model can only pick block types from the closed
  * union — unknown types render nothing.
  */
-export const AssistantBlockView = ({
+const BlockBody = ({
   block,
   organization,
 }: {
@@ -140,15 +141,51 @@ export const AssistantBlockView = ({
   }
 }
 
+/**
+ * Every data block carries its fetch time — always, not only when old.
+ * "Fetched just now" reads as reassurance, "Fetched 6 days ago" as the
+ * warning it should be, and there's no magic staleness threshold to tune.
+ */
+export const AssistantBlockView = ({
+  block,
+  organization,
+  answeredAt,
+}: {
+  block: AssistantBlock
+  organization: schemas['Organization']
+  answeredAt?: string
+}) => {
+  const body = <BlockBody block={block} organization={organization} />
+  if (block.type === 'text' || !answeredAt) {
+    return body
+  }
+  return (
+    <Box display="flex" flexDirection="column" rowGap="xs">
+      {body}
+      <Text variant="caption" color="muted">
+        Fetched {relativeTime(answeredAt)}
+      </Text>
+    </Box>
+  )
+}
+
 export const AssistantPartView = ({
   part,
   organization,
+  answeredAt,
 }: {
   part: AssistantPart
   organization: schemas['Organization']
+  answeredAt?: string
 }) => {
   if (part.kind === 'text') {
     return <ParagraphsText text={part.text} />
   }
-  return <AssistantBlockView block={part.block} organization={organization} />
+  return (
+    <AssistantBlockView
+      block={part.block}
+      organization={organization}
+      answeredAt={answeredAt}
+    />
+  )
 }

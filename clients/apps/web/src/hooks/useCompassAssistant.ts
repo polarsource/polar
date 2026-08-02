@@ -64,6 +64,13 @@ export interface AssistantMessage {
   id: string
   role: 'user' | 'assistant'
   parts: AssistantPart[]
+  answeredAt: string
+  /** True when rehydrated from a stored thread — its data blocks are
+   * snapshots from `answeredAt`, not live queries. */
+  restored?: boolean
+  /** The user prompt that produced this assistant turn, for re-asking it
+   * against current data. */
+  prompt?: string
 }
 
 const appendDelta = (
@@ -126,10 +133,16 @@ export const useCompassAssistant = (
     async (prompt: string) => {
       const userId = `m${(idRef.current += 1)}`
       const assistantId = `m${(idRef.current += 1)}`
+      const answeredAt = new Date().toISOString()
       setMessages((prev) => [
         ...prev,
-        { id: userId, role: 'user', parts: [{ kind: 'text', text: prompt }] },
-        { id: assistantId, role: 'assistant', parts: [] },
+        {
+          id: userId,
+          role: 'user',
+          parts: [{ kind: 'text', text: prompt }],
+          answeredAt,
+        },
+        { id: assistantId, role: 'assistant', parts: [], answeredAt, prompt },
       ])
       setIsStreaming(true)
 
@@ -234,11 +247,16 @@ export const useCompassAssistant = (
             id: `${message.id}-prompt`,
             role: 'user' as const,
             parts: [{ kind: 'text' as const, text: message.prompt }],
+            answeredAt: message.created_at,
+            restored: true,
           },
           {
             id: message.id,
             role: 'assistant' as const,
             parts: message.parts as AssistantPart[],
+            answeredAt: message.created_at,
+            restored: true,
+            prompt: message.prompt,
           },
         ]),
       )

@@ -13,10 +13,10 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ChevronRight } from 'lucide-react'
 import Link from 'next/link'
-import { AnimatePresence, motion } from 'motion/react'
+import { motion } from 'motion/react'
 import { ComponentType, RefObject, useEffect } from 'react'
-import { AssistantPartView } from './AssistantBlocks'
 import { CompassInputBar } from './CompassInputBar'
+import { CompassMessageList } from './CompassMessageList'
 import { CompassWidget } from './CompassWidget'
 
 interface CompassConversationProps {
@@ -211,59 +211,12 @@ export const CompassConversation = ({
             )}
           </Box>
         ) : (
-          <Box display="flex" flexDirection="column" rowGap="2xl">
-            <AnimatePresence initial={false}>
-              {messages.map((message) => (
-                <motion.div
-                  key={message.id}
-                  initial={{ opacity: 0, y: 6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.2, ease: 'easeOut' }}
-                  className="flex"
-                >
-                  {message.role === 'user' ? (
-                    <Box
-                      marginLeft="auto"
-                      maxWidth="85%"
-                      paddingHorizontal="l"
-                      paddingVertical="m"
-                      borderRadius="l"
-                      backgroundColor="background-card"
-                    >
-                      {message.parts.map((part, i) => (
-                        <AssistantPartView
-                          key={i}
-                          part={part}
-                          organization={organization}
-                        />
-                      ))}
-                    </Box>
-                  ) : (
-                    <Box
-                      display="flex"
-                      flexDirection="column"
-                      rowGap="2xl"
-                      maxWidth="85%"
-                    >
-                      {message.parts.length === 0 && isStreaming ? (
-                        <span className="dark:from-polar-500 dark:via-polar-100 dark:to-polar-500 w-fit [animation:shimmer_2s_linear_infinite] bg-linear-to-r from-gray-400 via-gray-800 to-gray-400 bg-size-[200%_100%] bg-clip-text text-transparent">
-                          Thinking...
-                        </span>
-                      ) : (
-                        message.parts.map((part, i) => (
-                          <AssistantPartView
-                            key={i}
-                            part={part}
-                            organization={organization}
-                          />
-                        ))
-                      )}
-                    </Box>
-                  )}
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </Box>
+          <CompassMessageList
+            organization={organization}
+            messages={messages}
+            isStreaming={isStreaming}
+            onAsk={onAsk}
+          />
         )}
       </div>
 

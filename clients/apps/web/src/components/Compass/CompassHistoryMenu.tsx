@@ -176,7 +176,7 @@ export const CompassHistoryMenu = ({
             }}
             transition={{ duration: 0.18, ease: [0.23, 1, 0.32, 1] }}
             style={{ transformOrigin: 'top right' }}
-            className="absolute right-0 top-full z-40 mt-2 w-80"
+            className="absolute top-full right-0 z-40 mt-2 w-80"
           >
             <Box
               flexDirection="column"

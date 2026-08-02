@@ -196,12 +196,15 @@ async def assistant_chat(
         raise ResourceNotFound()
 
     history = None
+    history_last_at = None
     is_new_thread = body.thread_id is None
     if body.thread_id is not None:
         thread = await compass_thread_service.get(session, auth_subject, body.thread_id)
         if thread is None or thread.organization_id != organization.id:
             raise ResourceNotFound()
-        history = await compass_thread_service.build_message_history(session, thread)
+        history, history_last_at = await compass_thread_service.build_message_history(
+            session, thread
+        )
     else:
         # Persist before streaming so aborted streams still leave a thread.
         # `begin()` is required: the SSE generator outlives the request scope.
@@ -224,9 +227,7 @@ async def assistant_chat(
     read_sessionmaker = request.state.async_read_sessionmaker
     write_sessionmaker = request.state.async_sessionmaker
 
-    async def record_turn(
-        parts: TurnParts, model_messages: TurnModelMessages
-    ) -> None:
+    async def record_turn(parts: TurnParts, model_messages: TurnModelMessages) -> None:
         async with write_sessionmaker.begin() as write_session:
             await compass_thread_service.record_turn(
                 write_session,
@@ -249,6 +250,7 @@ async def assistant_chat(
                 timezone=tz,
                 today=datetime.now(tz=tz).date(),
                 redis=redis,
+                history_last_at=history_last_at,
             )
             async for event in stream_assistant_run(
                 agent,

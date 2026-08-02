@@ -291,9 +291,12 @@ class TestBuildMessageHistory:
     ) -> None:
         thread = await _create_thread(save_fixture, organization, user=user)
 
-        assert (
-            await compass_thread_service.build_message_history(session, thread) is None
+        history, last_at = await compass_thread_service.build_message_history(
+            session, thread
         )
+
+        assert history is None
+        assert last_at is None
 
     @pytest.mark.auth
     async def test_concatenates_turns_in_order(
@@ -318,10 +321,13 @@ class TestBuildMessageHistory:
                 )
             )
 
-        history = await compass_thread_service.build_message_history(session, thread)
+        history, last_at = await compass_thread_service.build_message_history(
+            session, thread
+        )
 
         assert history is not None
         assert len(history) == 4
+        assert last_at == now + timedelta(seconds=1)
         first_request = history[0]
         assert isinstance(first_request, ModelRequest)
         first_part = first_request.parts[0]
@@ -350,7 +356,7 @@ class TestBuildMessageHistory:
                 )
             )
 
-        history = await compass_thread_service.build_message_history(session, thread)
+        history, _ = await compass_thread_service.build_message_history(session, thread)
 
         assert history is not None
         assert len(history) == HISTORY_TURNS * 2
@@ -378,6 +384,9 @@ class TestBuildMessageHistory:
             )
         )
 
-        assert (
-            await compass_thread_service.build_message_history(session, thread) is None
+        history, last_at = await compass_thread_service.build_message_history(
+            session, thread
         )
+
+        assert history is None
+        assert last_at is None

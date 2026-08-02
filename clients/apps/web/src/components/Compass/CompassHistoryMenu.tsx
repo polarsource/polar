@@ -1,121 +1,18 @@
 'use client'
 
-import { relativeTime } from '@/components/Chat/time'
-import { useCompassThreads, useDeleteCompassThread } from '@/hooks/queries'
-import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded'
 import HistoryRounded from '@mui/icons-material/HistoryRounded'
 import { schemas } from '@polar-sh/client'
-import { Button, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { AnimatePresence, motion } from 'motion/react'
 import { useEffect, useRef, useState } from 'react'
+import { CompassIconAction } from './CompassIconAction'
+import { CompassThreadList } from './CompassThreadList'
 
 interface CompassHistoryMenuProps {
   organization: schemas['Organization']
   activeThreadId: string | null
   onSelect: (threadId: string) => void
   onDeleted: (threadId: string) => void
-}
-
-interface ThreadListProps {
-  organization: schemas['Organization']
-  activeThreadId: string | null
-  onSelect: (threadId: string) => void
-  onDeleted: (threadId: string) => void
-}
-
-// Mounted only while open so each open refetches (cache still paints instantly).
-const ThreadList = ({
-  organization,
-  activeThreadId,
-  onSelect,
-  onDeleted,
-}: ThreadListProps) => {
-  const { data: threads, isLoading } = useCompassThreads(organization.id)
-  const deleteThread = useDeleteCompassThread(organization.id)
-  const items = threads?.items ?? []
-
-  const removeThread = (threadId: string) =>
-    deleteThread.mutate(threadId, { onSuccess: () => onDeleted(threadId) })
-
-  if (isLoading) {
-    return (
-      <Box alignItems="center" justifyContent="center" paddingVertical="xl">
-        <Spinner />
-      </Box>
-    )
-  }
-
-  if (items.length === 0) {
-    return (
-      <Box flexDirection="column" alignItems="center" paddingVertical="xl">
-        <Text variant="caption" color="muted">
-          No conversations yet
-        </Text>
-      </Box>
-    )
-  }
-
-  return (
-    <>
-      {items.map((thread) => (
-        <Box key={thread.id} position="relative">
-          <button
-            type="button"
-            className="w-full text-left"
-            onClick={() => onSelect(thread.id)}
-          >
-            <Box
-              flexDirection="column"
-              paddingLeft="m"
-              paddingRight="2xl"
-              paddingVertical="s"
-              borderRadius="m"
-              backgroundColor={
-                thread.id === activeThreadId
-                  ? { base: 'background-card', hover: 'background-card' }
-                  : { hover: 'background-secondary' }
-              }
-              transitionProperty="colors"
-              transitionDuration="fast"
-              cursor={{ hover: 'pointer' }}
-            >
-              <Text truncate>{thread.title}</Text>
-              <Text variant="caption" color="muted">
-                {relativeTime(thread.modified_at ?? thread.created_at)}
-              </Text>
-            </Box>
-          </button>
-          {/* Sibling of the row button: nested interactive elements break a11y. */}
-          <Box
-            as="span"
-            position="absolute"
-            right={8}
-            top={0}
-            bottom={0}
-            alignItems="center"
-          >
-            <button
-              type="button"
-              aria-label="Delete conversation"
-              onClick={() => removeThread(thread.id)}
-            >
-              <Box
-                as="span"
-                color={{ base: 'text-tertiary', hover: 'text-danger' }}
-                transitionProperty="colors"
-                transitionDuration="fast"
-                cursor={{ hover: 'pointer' }}
-                alignItems="center"
-              >
-                <DeleteOutlineRounded style={{ fontSize: '1rem' }} />
-              </Box>
-            </button>
-          </Box>
-        </Box>
-      ))}
-    </>
-  )
 }
 
 export const CompassHistoryMenu = ({
@@ -151,18 +48,13 @@ export const CompassHistoryMenu = ({
 
   return (
     <div ref={containerRef} className="relative">
-      <Button
-        variant="secondary"
-        size="sm"
+      <CompassIconAction
+        label="History"
+        expanded={open}
         onClick={() => setOpen((prev) => !prev)}
-        aria-expanded={open}
-        aria-haspopup="menu"
       >
-        <Box alignItems="center" columnGap="xs">
-          <HistoryRounded style={{ fontSize: '1rem' }} />
-          History
-        </Box>
-      </Button>
+        <HistoryRounded style={{ fontSize: '1.125rem' }} />
+      </CompassIconAction>
       <AnimatePresence>
         {open && (
           <motion.div
@@ -186,19 +78,28 @@ export const CompassHistoryMenu = ({
               borderColor="border-primary"
               borderRadius="l"
               boxShadow="xl"
-              padding="s"
               maxHeight={400}
-              overflowY="auto"
+              overflow="hidden"
             >
-              <ThreadList
-                organization={organization}
-                activeThreadId={activeThreadId}
-                onSelect={(threadId) => {
-                  setOpen(false)
-                  onSelect(threadId)
-                }}
-                onDeleted={onDeleted}
-              />
+              {/* No top padding on the scroller: a sticky date heading pins to
+                  the padding edge, so any gap above it is a band the rows
+                  visibly scroll through. */}
+              <Box
+                flexDirection="column"
+                paddingHorizontal="s"
+                paddingBottom="s"
+                overflowY="auto"
+              >
+                <CompassThreadList
+                  organization={organization}
+                  activeThreadId={activeThreadId}
+                  onSelect={(threadId) => {
+                    setOpen(false)
+                    onSelect(threadId)
+                  }}
+                  onDeleted={onDeleted}
+                />
+              </Box>
             </Box>
           </motion.div>
         )}

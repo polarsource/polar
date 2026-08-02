@@ -2,13 +2,13 @@
 
 import { CompassConversation } from '@/components/Compass/CompassConversation'
 import { CompassHistoryMenu } from '@/components/Compass/CompassHistoryMenu'
+import { CompassIconAction } from '@/components/Compass/CompassIconAction'
 import { CompassTabs } from '@/components/Compass/CompassTabs'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { fetchCompassThread } from '@/hooks/queries'
 import { useCompassAssistant } from '@/hooks/useCompassAssistant'
 import AddRounded from '@mui/icons-material/AddRounded'
 import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useQueryClient } from '@tanstack/react-query'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
@@ -123,14 +123,11 @@ export default function CompassPage({ organization }: CompassPageProps) {
     <DashboardBody
       title="Compass"
       header={
-        <Box alignItems="center" columnGap="s">
+        <Box alignItems="center" columnGap="xs">
           {messages.length > 0 && (
-            <Button variant="secondary" size="sm" onClick={startNewChat}>
-              <Box alignItems="center" columnGap="xs">
-                <AddRounded style={{ fontSize: '1rem' }} />
-                New chat
-              </Box>
-            </Button>
+            <CompassIconAction label="New chat" onClick={startNewChat}>
+              <AddRounded style={{ fontSize: '1.125rem' }} />
+            </CompassIconAction>
           )}
           <CompassHistoryMenu
             organization={organization}
@@ -145,6 +142,16 @@ export default function CompassPage({ organization }: CompassPageProps) {
                 startNewChat()
               }
             }}
+          />
+          <Box
+            as="span"
+            display="block"
+            width={0}
+            height={20}
+            marginHorizontal="s"
+            borderLeftWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
           />
           <CompassTabs organization={organization} active="assistant" />
         </Box>

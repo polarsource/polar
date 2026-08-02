@@ -24,11 +24,7 @@ interface ThreadListProps {
   onDeleted: (threadId: string) => void
 }
 
-/**
- * The panel body. Mounted only while the panel is open, so every open
- * refetches the list — a thread created since the last look shows up without
- * a page refresh (cached data still renders instantly underneath).
- */
+// Mounted only while open so each open refetches (cache still paints instantly).
 const ThreadList = ({
   organization,
   activeThreadId,
@@ -90,8 +86,7 @@ const ThreadList = ({
               </Text>
             </Box>
           </button>
-          {/* Sibling, not child, of the row button: nesting interactive
-              elements is invalid markup and breaks keyboard navigation. */}
+          {/* Sibling of the row button: nested interactive elements break a11y. */}
           <Box
             as="span"
             position="absolute"
@@ -123,11 +118,6 @@ const ThreadList = ({
   )
 }
 
-/**
- * The conversation history toggle: a header button that opens a small
- * anchored panel of the caller's recent threads. Selecting one rehydrates it
- * into the conversation; there is deliberately no persistent sidebar.
- */
 export const CompassHistoryMenu = ({
   organization,
   activeThreadId,
@@ -144,8 +134,7 @@ export const CompassHistoryMenu = ({
         setOpen(false)
       }
     }
-    // Capture phase so closing the panel wins over the page-level Escape
-    // handler, which would otherwise navigate back.
+    // Capture so Escape closes the panel instead of navigating back.
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation()

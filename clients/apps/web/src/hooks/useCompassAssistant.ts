@@ -91,11 +91,8 @@ export const useCompassAssistant = (
 ) => {
   const [messages, setMessages] = useState<AssistantMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
-  // The server-side thread the conversation belongs to. The ref is what the
-  // next `send` posts (updated mid-stream without re-rendering); the state
-  // mirrors it for consumers that render against it. Seeding it from a deep
-  // link means a prompt sent before rehydration resolves still continues the
-  // linked thread instead of forking a new one.
+  // Ref is what `send` posts (updated mid-stream). State mirrors for render.
+  // Seeded from the deep link so a prompt before rehydration continues that thread.
   const [threadId, setThreadId] = useState<string | null>(initialThreadId)
   const threadIdRef = useRef<string | null>(initialThreadId)
   const idRef = useRef(0)
@@ -181,8 +178,6 @@ export const useCompassAssistant = (
               { kind: 'block', block: payload as AssistantBlock },
             ])
           } else if (event === 'thread') {
-            // A new thread was created server-side; adopt it immediately so
-            // a refresh mid-stream can find its way back.
             threadIdRef.current = payload.thread_id
             setThreadId(payload.thread_id)
             onThreadCreatedRef.current?.(payload.thread_id)
@@ -228,8 +223,6 @@ export const useCompassAssistant = (
 
   const hydrate = useCallback(
     (thread: schemas['CompassThreadWithMessages']) => {
-      // Replaying a stored thread supersedes whatever was on screen,
-      // including a live stream.
       controllerRef.current?.abort()
       controllerRef.current = null
       setIsStreaming(false)

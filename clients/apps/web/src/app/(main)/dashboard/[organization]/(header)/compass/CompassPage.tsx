@@ -39,21 +39,17 @@ export default function CompassPage({ organization }: CompassPageProps) {
   const onThreadCreated = useCallback(
     (threadId: string) => {
       showThreadUrl(threadId)
-      // The history list is stale the moment a thread exists server-side.
       void queryClient.invalidateQueries({ queryKey: ['compass_threads'] })
     },
     [showThreadUrl, queryClient],
   )
 
-  // Captured once on mount: the deep-linked thread this page opened with.
   const [initialThreadId] = useState(() => searchParams.get('thread'))
   const { messages, send, isStreaming, reset, hydrate, threadId } =
     useCompassAssistant(organization.id, onThreadCreated, initialThreadId)
 
-  // Hydration is imperative — it happens exactly twice: once on mount for a
-  // `?thread=` deep link, and on an explicit history selection. Nothing
-  // reactively re-hydrates from the URL or the query cache: that path races
-  // router.replace and resurrects conversations the user just left.
+  // Hydrate only on mount / history select: reactive URL/cache hydration
+  // races router.replace and resurrects conversations the user just left.
   const isStreamingRef = useRef(isStreaming)
   useEffect(() => {
     isStreamingRef.current = isStreaming
@@ -62,14 +58,11 @@ export default function CompassPage({ organization }: CompassPageProps) {
     async (id: string, { ifIdle = false }: { ifIdle?: boolean } = {}) => {
       try {
         const detail = await fetchCompassThread(queryClient, id)
-        // A deep-link load must not clobber a conversation the user already
-        // started while it was in flight.
+        // Don't clobber a conversation started while the deep-link load flew.
         if (ifIdle && isStreamingRef.current) return
         hydrate(detail)
       } catch {
-        // Deleted or inaccessible thread: fall back to a fresh conversation
-        // (reset also drops the seeded thread id, so the next send doesn't
-        // post against the dead thread).
+        // Deleted/inaccessible: reset also drops the seeded thread id.
         reset()
         showThreadUrl(null)
       }

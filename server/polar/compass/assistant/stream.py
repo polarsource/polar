@@ -34,7 +34,6 @@ from .deps import AssistantDeps
 log: Logger = structlog.get_logger()
 
 RecordTurn = Callable[[list[dict[str, Any]], list[dict[str, Any]]], Awaitable[None]]
-"""Persists a completed turn: (rendered parts, per-turn model message delta)."""
 
 
 def sse_event(event: str, data: Any) -> dict[str, str]:
@@ -117,9 +116,7 @@ class _BlockPlacer:
 
 
 class _PartsRecorder:
-    """Accumulates the streamed turn as renderable parts — the exact
-    interleaving of text and blocks the client displayed — so the turn can be
-    rehydrated later without re-running the model."""
+    """Renderable parts as streamed, for UI rehydration without re-running the model."""
 
     def __init__(self) -> None:
         self.parts: list[dict[str, Any]] = []
@@ -209,8 +206,7 @@ async def stream_assistant_run(
             new_messages = ModelMessagesTypeAdapter.dump_python(
                 result.new_messages(), mode="json"
             )
-            # Persist only completed turns: a turn that errored mid-stream is
-            # never recorded, so replay history can't be poisoned by it.
+            # Only completed turns: mid-stream errors must not poison history.
             await record_turn(recorder.parts, new_messages)
             yield sse_event("done", {"thread_id": thread_id})
     except Exception:

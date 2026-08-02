@@ -20,9 +20,7 @@ from .repository import CompassThreadMessageRepository, CompassThreadRepository
 log: Logger = structlog.get_logger()
 
 HISTORY_TURNS = 12
-"""How many recent turns are replayed as model context. Older turns stay
-readable in the UI but drop out of the model's context, keeping long threads
-from growing every request without bound."""
+"""Recent turns kept as model context. Older turns stay in the UI only."""
 
 TITLE_MAX_LENGTH = 80
 
@@ -129,21 +127,17 @@ class CompassThreadService:
             ),
             flush=True,
         )
-        # Bump the thread so the list orders by last activity. (Any update —
-        # including a rename — touches modified_at via the column's onupdate;
-        # this explicit touch is needed because appending a message row does
-        # not otherwise UPDATE the thread row.)
+        # Message insert doesn't UPDATE the thread. Bump for list recency.
         await thread_repository.update(thread, update_dict={"modified_at": utc_now()})
         return message
 
     async def build_message_history(
         self, session: AsyncReadSession, thread: CompassThread
     ) -> ModelHistory | None:
-        """The model context for the next turn: the concatenated per-turn
-        deltas of the last `HISTORY_TURNS` turns.
+        """Concatenated model deltas from the last `HISTORY_TURNS` turns.
 
-        Stored history that no longer validates (e.g. after a pydantic-ai
-        upgrade) degrades to a fresh context instead of breaking the thread.
+        Invalid stored history (e.g. after a pydantic-ai upgrade) degrades to
+        a fresh context instead of breaking the thread.
         """
         repository = CompassThreadMessageRepository.from_session(session)
         statement = (

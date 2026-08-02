@@ -93,7 +93,6 @@ async def list_threads(
     ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[CompassThreadSchema]:
-    """List the caller's assistant conversation threads, most recent first."""
     results, count = await compass_thread_service.list(
         session, auth_subject, organization_id=organization_id, pagination=pagination
     )
@@ -112,7 +111,6 @@ async def get_thread(
     id: CompassThreadID,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> CompassThreadWithMessages:
-    """Get a thread with its rendered messages, for rehydrating the UI."""
     thread = await compass_thread_service.get(session, auth_subject, id)
     if thread is None:
         raise ResourceNotFound()
@@ -140,7 +138,6 @@ async def update_thread(
     body: CompassThreadUpdate,
     session: AsyncSession = Depends(get_db_session),
 ) -> CompassThread:
-    """Rename a thread."""
     thread = await compass_thread_service.get(session, auth_subject, id)
     if thread is None:
         raise ResourceNotFound()
@@ -157,7 +154,6 @@ async def delete_thread(
     id: CompassThreadID,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
-    """Delete a thread and its conversation history."""
     thread = await compass_thread_service.get(session, auth_subject, id)
     if thread is None:
         raise ResourceNotFound()
@@ -206,11 +202,8 @@ async def assistant_chat(
             raise ResourceNotFound()
         history = await compass_thread_service.build_message_history(session, thread)
     else:
-        # Created (and persisted) before streaming starts, so the thread —
-        # and its title — survive an aborted stream and mid-stream refreshes.
-        # `begin()` scopes the transaction to this block: the SSE generator
-        # outlives the request scope, so the request-scoped machinery would
-        # never finalize a session opened here.
+        # Persist before streaming so aborted streams still leave a thread.
+        # `begin()` is required: the SSE generator outlives the request scope.
         write_sessionmaker = request.state.async_sessionmaker
         async with write_sessionmaker.begin() as write_session:
             thread = await compass_thread_service.create(
@@ -244,8 +237,6 @@ async def assistant_chat(
 
     async def event_stream():  # type: ignore[no-untyped-def]
         if is_new_thread:
-            # Announced up-front so the client can point its URL at the
-            # thread before the first token arrives.
             yield sse_event(
                 "thread", {"thread_id": str(thread_id), "title": thread_title}
             )

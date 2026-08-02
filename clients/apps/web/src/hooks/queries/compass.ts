@@ -51,12 +51,7 @@ export const useCompassThreads = (organizationId: string, enabled = true) => {
   })
 }
 
-/**
- * Imperative fetch of a thread's rendered messages. Hydration must be an
- * explicit action (deep link, history selection) — a mounted query would
- * re-hydrate reactively (cache updates, focus refetches) and clobber a live
- * conversation.
- */
+// Imperative: a mounted query would re-hydrate on cache/focus and clobber a live conversation.
 export const fetchCompassThread = (
   queryClient: QueryClient,
   threadId: string,

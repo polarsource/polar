@@ -12,12 +12,7 @@ if TYPE_CHECKING:
 
 
 class CompassThread(RecordModel):
-    """A Compass assistant conversation.
-
-    Threads created by a user session belong to that user; threads created
-    with an organization token have no user and are shared by the
-    organization's token holders.
-    """
+    """Assistant conversation. User-owned, or shared (user_id=None) for org tokens."""
 
     __tablename__ = "compass_threads"
 

@@ -3,9 +3,9 @@
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 
-import { ConcentricDraw } from './graphics/ConcentricDraw'
 import { GaugeSweep } from './graphics/GaugeSweep'
 import { RadialSpinner } from './graphics/RadialSpinner'
+import { SteppedRadial } from './graphics/SteppedRadial'
 import { SectionHeader } from './SectionHeader'
 
 const LAYERS = [
@@ -43,7 +43,7 @@ export const Usage = () => (
           <Box display="block" aspectRatio="1 / 1">
             {i === 0 && <RadialSpinner />}
             {i === 1 && <GaugeSweep />}
-            {i === 2 && <ConcentricDraw />}
+            {i === 2 && <SteppedRadial />}
           </Box>
           <Box flexDirection="column" rowGap="xl" padding="2xl">
             <Text variant="heading-xs" as="h3">

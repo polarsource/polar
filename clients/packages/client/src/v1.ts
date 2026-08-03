@@ -42470,7 +42470,7 @@ export interface operations {
         created_before?: string | null
         /** @description Time zone used to render dates in the CSV. */
         timezone?: string
-        /** @description Columns to include in the CSV, in order. Defaults to email, created_at, product, amount, currency, status and invoice_number. */
+        /** @description Columns to include in the CSV, in order. Defaults to email, created_at, product, net_amount, currency, status and invoice_number. */
         columns?:
           | components['schemas']['OrderExportColumn']
           | components['schemas']['OrderExportColumn'][]

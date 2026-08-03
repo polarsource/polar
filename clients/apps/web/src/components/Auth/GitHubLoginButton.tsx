@@ -49,15 +49,9 @@ const GitHubLoginButton = ({
 
   return (
     <a onClick={onClick}>
-      <Button
-        variant={variant}
-        wrapperClassNames="space-x-2 p-2.5 px-5"
-        fullWidth
-      >
+      <Button variant={variant} wrapperClassNames="space-x-2" fullWidth>
         <GitHub />
-        <div className="w-32 text-left">
-          {signup ? 'Sign up with GitHub' : 'Sign in with GitHub'}
-        </div>
+        <div>{signup ? 'Sign up with GitHub' : 'Sign in with GitHub'}</div>
       </Button>
     </a>
   )

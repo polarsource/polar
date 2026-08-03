@@ -194,7 +194,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             statement, limit=pagination.limit, page=pagination.page
         )
 
-    async def get_standalone(
+    async def get_manually_granted(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
@@ -206,14 +206,14 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             repository.get_statement_by_org_ids(org_ids)
             .where(
                 BenefitGrant.id == id,
-                BenefitGrant.standalone_grant_id.is_not(None),
+                BenefitGrant.manual_grant_id.is_not(None),
                 BenefitGrant.is_deleted.is_(False),
             )
             .options(
                 joinedload(BenefitGrant.customer),
                 joinedload(BenefitGrant.benefit).joinedload(Benefit.organization),
                 joinedload(BenefitGrant.member),
-                joinedload(BenefitGrant.standalone_grant),
+                joinedload(BenefitGrant.manual_grant),
             )
         )
         return await repository.get_one_or_none(statement)
@@ -241,7 +241,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             customer,
             benefit,
             member=member,
-            for_update=scope.get("standalone_grant") is not None,
+            for_update=scope.get("manual_grant") is not None,
             **scope,
         )
 
@@ -254,8 +254,8 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 **scope,
             )
             session.add(grant)
-        elif grant.is_revoked and scope.get("standalone_grant") is not None:
-            # Standalone revocation is terminal; don't let a racing grant job
+        elif grant.is_revoked and scope.get("manual_grant") is not None:
+            # Manual-grant revocation is terminal; don't let a racing grant job
             # re-apply after revoke won the race.
             return grant
         elif grant.is_granted:
@@ -338,7 +338,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
             customer,
             benefit,
             member=member,
-            for_update=scope.get("standalone_grant") is not None,
+            for_update=scope.get("manual_grant") is not None,
             **scope,
         )
 

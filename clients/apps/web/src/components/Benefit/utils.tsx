@@ -89,7 +89,7 @@ export const githubRepositoryPermissionDisplayNames: {
   admin: 'Admin',
 }
 
-export const STANDALONE_ASSIGNABLE_BENEFIT_TYPES = [
+export const MANUALLY_GRANTABLE_BENEFIT_TYPES = [
   'feature_flag',
   'custom',
   'license_keys',

@@ -19,36 +19,41 @@ from polar.models import (
     Benefit,
     BenefitGrant,
     Customer,
+    ManualGrant,
     Member,
     Organization,
-    StandaloneGrant,
     User,
 )
 from polar.models.benefit import BenefitType
 from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
 
-from .repository import StandaloneGrantRepository
-from .schemas import StandaloneGrantBenefitCreate
+from .repository import ManualGrantRepository
+from .schemas import ManualGrantBenefitCreate
 
-STANDALONE_GRANTABLE_BENEFIT_TYPES = {
+# Only benefit types whose grant/revoke side effects are per-grant-safe: they either
+# have no external side effects (feature_flag, custom) or side effects owned by the
+# individual grant (license_keys). Types with customer-keyed external side effects
+# (Discord roles, GitHub invites, downloadables) would collide when a manual grant
+# coexists with a subscription/order grant of the same benefit.
+MANUALLY_GRANTABLE_BENEFIT_TYPES = {
     BenefitType.feature_flag,
     BenefitType.custom,
     BenefitType.license_keys,
 }
 
 
-class StandaloneGrantService:
+class ManualGrantService:
     async def create(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         *,
         customer_id: UUID,
-        grants: Sequence[StandaloneGrantBenefitCreate],
+        grants: Sequence[ManualGrantBenefitCreate],
         expires_at: datetime | None = None,
         reason: str | None = None,
-    ) -> StandaloneGrant:
+    ) -> ManualGrant:
         org_ids = await get_accessible_org_ids(session, auth_subject)
 
         customer_repository = CustomerRepository.from_session(session)
@@ -99,11 +104,11 @@ class StandaloneGrantService:
                 )
                 continue
 
-            if benefit.type not in STANDALONE_GRANTABLE_BENEFIT_TYPES:
+            if benefit.type not in MANUALLY_GRANTABLE_BENEFIT_TYPES:
                 errors.append(
                     {
                         "loc": ("body", "grants", index, "benefit_id"),
-                        "msg": "This benefit type cannot be granted as a standalone grant.",
+                        "msg": "This benefit type cannot be granted manually.",
                         "type": "value_error",
                         "input": str(grant.benefit_id),
                         "ctx": {"benefit_type": str(benefit.type)},
@@ -125,7 +130,7 @@ class StandaloneGrantService:
                 errors.append(
                     {
                         "loc": ("body", "grants", index, "benefit_id"),
-                        "msg": "Duplicate benefit and member in the same standalone grant.",
+                        "msg": "Duplicate benefit and member in the same manual grant.",
                         "type": "value_error",
                         "input": str(grant.benefit_id),
                     }
@@ -137,20 +142,20 @@ class StandaloneGrantService:
         if errors:
             raise PolarRequestValidationError(errors)
 
-        repository = StandaloneGrantRepository.from_session(session)
-        standalone_grant = StandaloneGrant(
+        repository = ManualGrantRepository.from_session(session)
+        manual_grant = ManualGrant(
             customer=customer,
             expires_at=expires_at,
             reason=reason,
         )
-        await repository.create(standalone_grant, flush=True)
+        await repository.create(manual_grant, flush=True)
 
         benefit_grants = [
             BenefitGrant(
                 customer=customer,
                 benefit=benefit,
                 member=member,
-                standalone_grant=standalone_grant,
+                manual_grant=manual_grant,
                 properties={},
             )
             for benefit, member in resolved
@@ -164,18 +169,18 @@ class StandaloneGrantService:
                 customer_id=customer.id,
                 benefit_id=benefit_grant.benefit_id,
                 member_id=benefit_grant.member_id,
-                standalone_grant_id=standalone_grant.id,
+                manual_grant_id=manual_grant.id,
             )
 
-        await session.refresh(standalone_grant, {"grants"})
-        return standalone_grant
+        await session.refresh(manual_grant, {"grants"})
+        return manual_grant
 
     async def request_revoke(
         self,
         session: AsyncSession,
-        standalone_grant: StandaloneGrant,
+        manual_grant: ManualGrant,
         grant: BenefitGrant,
-    ) -> StandaloneGrant:
+    ) -> ManualGrant:
         grant_repository = BenefitGrantRepository.from_session(session)
         locked_grant = await grant_repository.get_by_id(
             grant.id,
@@ -190,16 +195,16 @@ class StandaloneGrantService:
         grant = locked_grant
 
         if grant.is_revoked:
-            return standalone_grant
+            return manual_grant
 
         enqueue_job(
             "benefit.revoke",
             customer_id=grant.customer_id,
             benefit_id=grant.benefit_id,
             member_id=grant.member_id,
-            standalone_grant_id=standalone_grant.id,
+            manual_grant_id=manual_grant.id,
         )
-        return standalone_grant
+        return manual_grant
 
     async def request_revoke_expired(
         self,
@@ -208,12 +213,12 @@ class StandaloneGrantService:
         limit: int,
     ) -> int:
         now = datetime.now(UTC)
-        repository = StandaloneGrantRepository.from_session(session)
-        standalone_grants = await repository.list_expired_for_update(now, limit=limit)
+        repository = ManualGrantRepository.from_session(session)
+        manual_grants = await repository.list_expired_for_update(now, limit=limit)
         grants_to_revoke: list[BenefitGrant] = []
 
-        for standalone_grant in standalone_grants:
-            for grant in standalone_grant.grants:
+        for manual_grant in manual_grants:
+            for grant in manual_grant.grants:
                 if grant.is_revoked:
                     continue
                 grants_to_revoke.append(grant)
@@ -224,10 +229,10 @@ class StandaloneGrantService:
                 customer_id=grant.customer_id,
                 benefit_id=grant.benefit_id,
                 member_id=grant.member_id,
-                standalone_grant_id=grant.standalone_grant_id,
+                manual_grant_id=grant.manual_grant_id,
             )
 
-        return len(standalone_grants)
+        return len(manual_grants)
 
 
-standalone_grant = StandaloneGrantService()
+manual_grant = ManualGrantService()

@@ -7,7 +7,7 @@ import { Text } from '@polar-sh/orbit'
 import { Combobox } from '@polar-sh/ui/components/atoms/Combobox'
 import { useMemo, useState } from 'react'
 import {
-  STANDALONE_ASSIGNABLE_BENEFIT_TYPES,
+  MANUALLY_GRANTABLE_BENEFIT_TYPES,
   benefitsDisplayNames,
   resolveBenefitIcon,
 } from './utils'
@@ -34,7 +34,7 @@ export default function BenefitSelector({
 
   const { data: benefits, isLoading } = useBenefits(organizationId, {
     query: query || undefined,
-    type: [...STANDALONE_ASSIGNABLE_BENEFIT_TYPES],
+    type: [...MANUALLY_GRANTABLE_BENEFIT_TYPES],
     sorting: ['description'],
     limit: 30,
   })

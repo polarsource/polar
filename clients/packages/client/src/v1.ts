@@ -2248,7 +2248,7 @@ export interface paths {
     put?: never
     /**
      * Create Benefit Grant
-     * @description Queue a standalone benefit grant and return its stable pending resource.
+     * @description Queue a manual benefit grant and return its stable pending resource.
      *
      *     **Scopes**: `benefits:write`
      */
@@ -2270,7 +2270,7 @@ export interface paths {
     put?: never
     /**
      * Create Benefit Grant Batch
-     * @description Queue standalone benefit grants with shared provenance and expiration.
+     * @description Queue manual benefit grants with shared provenance and expiration.
      *
      *     **Scopes**: `benefits:write`
      */
@@ -2293,7 +2293,7 @@ export interface paths {
     post?: never
     /**
      * Revoke Benefit Grant
-     * @description Queue revocation of a standalone benefit grant.
+     * @description Queue revocation of a manual benefit grant.
      *
      *     **Scopes**: `benefits:write`
      */
@@ -9943,10 +9943,10 @@ export interface components {
        */
       order_id: string | null
       /**
-       * Standalone Grant Id
-       * @description The ID of the standalone grant that granted this benefit, if it was granted as a standalone grant.
+       * Manual Grant Id
+       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
        */
-      standalone_grant_id?: string | null
+      manual_grant_id?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -10100,10 +10100,10 @@ export interface components {
        */
       order_id: string | null
       /**
-       * Standalone Grant Id
-       * @description The ID of the standalone grant that granted this benefit, if it was granted as a standalone grant.
+       * Manual Grant Id
+       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
        */
-      standalone_grant_id?: string | null
+      manual_grant_id?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -10192,10 +10192,10 @@ export interface components {
        */
       order_id: string | null
       /**
-       * Standalone Grant Id
-       * @description The ID of the standalone grant that granted this benefit, if it was granted as a standalone grant.
+       * Manual Grant Id
+       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
        */
-      standalone_grant_id?: string | null
+      manual_grant_id?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -10278,10 +10278,10 @@ export interface components {
        */
       order_id: string | null
       /**
-       * Standalone Grant Id
-       * @description The ID of the standalone grant that granted this benefit, if it was granted as a standalone grant.
+       * Manual Grant Id
+       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
        */
-      standalone_grant_id?: string | null
+      manual_grant_id?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -10370,10 +10370,10 @@ export interface components {
        */
       order_id: string | null
       /**
-       * Standalone Grant Id
-       * @description The ID of the standalone grant that granted this benefit, if it was granted as a standalone grant.
+       * Manual Grant Id
+       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
        */
-      standalone_grant_id?: string | null
+      manual_grant_id?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -10467,10 +10467,10 @@ export interface components {
        */
       order_id: string | null
       /**
-       * Standalone Grant Id
-       * @description The ID of the standalone grant that granted this benefit, if it was granted as a standalone grant.
+       * Manual Grant Id
+       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
        */
-      standalone_grant_id?: string | null
+      manual_grant_id?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -10557,10 +10557,10 @@ export interface components {
        */
       order_id: string | null
       /**
-       * Standalone Grant Id
-       * @description The ID of the standalone grant that granted this benefit, if it was granted as a standalone grant.
+       * Manual Grant Id
+       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
        */
-      standalone_grant_id?: string | null
+      manual_grant_id?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -10657,10 +10657,10 @@ export interface components {
        */
       order_id: string | null
       /**
-       * Standalone Grant Id
-       * @description The ID of the standalone grant that granted this benefit, if it was granted as a standalone grant.
+       * Manual Grant Id
+       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
        */
-      standalone_grant_id?: string | null
+      manual_grant_id?: string | null
       /**
        * Customer Id
        * Format: uuid4
@@ -10753,10 +10753,10 @@ export interface components {
        */
       order_id: string | null
       /**
-       * Standalone Grant Id
-       * @description The ID of the standalone grant that granted this benefit, if it was granted as a standalone grant.
+       * Manual Grant Id
+       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
        */
-      standalone_grant_id?: string | null
+      manual_grant_id?: string | null
       /**
        * Customer Id
        * Format: uuid4

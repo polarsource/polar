@@ -11,19 +11,19 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
-from polar.models import Benefit, BenefitGrant, StandaloneGrant
+from polar.models import Benefit, BenefitGrant, ManualGrant
 
 
-class StandaloneGrantRepository(
-    RepositorySoftDeletionIDMixin[StandaloneGrant, UUID],
-    RepositorySoftDeletionMixin[StandaloneGrant],
-    RepositoryBase[StandaloneGrant],
+class ManualGrantRepository(
+    RepositorySoftDeletionIDMixin[ManualGrant, UUID],
+    RepositorySoftDeletionMixin[ManualGrant],
+    RepositoryBase[ManualGrant],
 ):
-    model = StandaloneGrant
+    model = ManualGrant
 
     def get_eager_options(self) -> Options:
         return (
-            selectinload(StandaloneGrant.grants).options(
+            selectinload(ManualGrant.grants).options(
                 joinedload(BenefitGrant.customer),
                 joinedload(BenefitGrant.benefit).joinedload(Benefit.organization),
             ),
@@ -34,10 +34,10 @@ class StandaloneGrantRepository(
         now: datetime,
         *,
         limit: int,
-    ) -> Sequence[StandaloneGrant]:
+    ) -> Sequence[ManualGrant]:
         has_active_grant = exists(
             select(BenefitGrant.id).where(
-                BenefitGrant.standalone_grant_id == StandaloneGrant.id,
+                BenefitGrant.manual_grant_id == ManualGrant.id,
                 BenefitGrant.revoked_at.is_(None),
                 BenefitGrant.deleted_at.is_(None),
             )
@@ -45,12 +45,12 @@ class StandaloneGrantRepository(
         statement = (
             self.get_base_statement()
             .where(
-                StandaloneGrant.expires_at.is_not(None),
-                StandaloneGrant.expires_at <= now,
-                StandaloneGrant.deleted_at.is_(None),
+                ManualGrant.expires_at.is_not(None),
+                ManualGrant.expires_at <= now,
+                ManualGrant.deleted_at.is_(None),
                 has_active_grant,
             )
-            .order_by(StandaloneGrant.expires_at.asc())
+            .order_by(ManualGrant.expires_at.asc())
             .limit(limit)
             .with_for_update(skip_locked=True)
             .options(*self.get_eager_options())

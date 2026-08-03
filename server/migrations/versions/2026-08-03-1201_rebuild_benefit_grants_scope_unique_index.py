@@ -1,9 +1,9 @@
-"""rebuild benefit_grants scope unique index with standalone_grant_id
+"""rebuild benefit_grants scope unique index with manual_grant_id
 
-Appends ``standalone_grant_id`` to ``ix_benefit_grants_scope_unique`` so two
-standalone grants for the same (customer, benefit, member) stay distinct while
+Appends ``manual_grant_id`` to ``ix_benefit_grants_scope_unique`` so two
+manual grants for the same (customer, benefit, member) stay distinct while
 subscription/order behavior is preserved (every existing row has
-``standalone_grant_id IS NULL``, so under ``NULLS NOT DISTINCT`` the collision set is
+``manual_grant_id IS NULL``, so under ``NULLS NOT DISTINCT`` the collision set is
 unchanged).
 
 The index is rebuilt CONCURRENTLY in an autocommit block so the large
@@ -12,7 +12,7 @@ unique index is enforcing throughout the swap.
 
 Revision ID: f9cfabbc120a
 Revises: b15961219bd6
-Create Date: 2026-06-24 23:04:00.000000
+Create Date: 2026-08-03 12:01:00.000000
 
 """
 
@@ -43,7 +43,7 @@ def upgrade() -> None:
                 "member_id",
                 "subscription_id",
                 "order_id",
-                "standalone_grant_id",
+                "manual_grant_id",
             ],
             unique=True,
             postgresql_concurrently=True,

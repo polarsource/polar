@@ -120,11 +120,11 @@ class BenefitGrantBase(IDSchema, TimestampedSchema):
     order_id: UUID4 | None = Field(
         description="The ID of the order that granted this benefit."
     )
-    standalone_grant_id: UUID4 | None = Field(
+    manual_grant_id: UUID4 | None = Field(
         default=None,
         description=(
-            "The ID of the standalone grant that granted this benefit, "
-            "if it was granted as a standalone grant."
+            "The ID of the manual grant that granted this benefit, "
+            "if it was granted manually."
         ),
     )
     customer_id: UUID4 = Field(

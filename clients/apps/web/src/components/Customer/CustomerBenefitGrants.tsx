@@ -35,7 +35,7 @@ export const CustomerBenefitGrantsSection = ({
     (grants) =>
       grants.some(
         (grant) =>
-          !!grant.standalone_grant_id &&
+          !!grant.manual_grant_id &&
           !grant.is_granted &&
           grant.revoked_at === null &&
           grant.error === null,
@@ -56,7 +56,7 @@ export const CustomerBenefitGrantsSection = ({
         (other) =>
           other.id !== grant.id &&
           other.benefit_id === grant.benefit_id &&
-          !other.standalone_grant_id &&
+          !other.manual_grant_id &&
           other.is_granted &&
           other.revoked_at === null,
       ),
@@ -98,7 +98,7 @@ export const CustomerBenefitGrantsSection = ({
       },
       {
         header: 'Source',
-        accessorKey: 'standalone_grant_id',
+        accessorKey: 'manual_grant_id',
         cell: ({ row: { original } }) => (
           <BenefitGrantSource grant={original} organization={organization} />
         ),
@@ -125,7 +125,7 @@ export const CustomerBenefitGrantsSection = ({
         accessorKey: 'benefit_action',
         cell: ({ row: { original } }) => {
           const isRevocable =
-            !!original.standalone_grant_id && original.revoked_at === null
+            !!original.manual_grant_id && original.revoked_at === null
           const isConfirming = confirmingRevokeId === original.id
           const licenseKeyId =
             original.benefit.type === 'license_keys' &&

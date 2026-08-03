@@ -22,9 +22,9 @@ from polar.worker import (
     get_retries,
 )
 
+from .grant.manual.service import manual_grant as manual_grant_service
 from .grant.scope import resolve_member, resolve_scope
 from .grant.service import benefit_grant as benefit_grant_service
-from .standalone_grant.service import standalone_grant as standalone_grant_service
 from .strategies import BenefitRetriableError
 
 log: Logger = structlog.get_logger()
@@ -69,17 +69,15 @@ class OrganizationDoesNotExist(BenefitTaskError):
 
 
 @actor(
-    actor_name="standalone_grant.scan_expired",
+    actor_name="manual_grant.scan_expired",
     cron_trigger=CronTrigger.from_crontab("*/15 * * * *"),
     priority=TaskPriority.LOW,
     max_retries=0,
 )
-async def scan_expired_standalone_grants() -> None:
+async def scan_expired_manual_grants() -> None:
     async with AsyncSessionMaker() as session:
-        count = await standalone_grant_service.request_revoke_expired(
-            session, limit=500
-        )
-        log.info("Scanned expired standalone grants", count=count)
+        count = await manual_grant_service.request_revoke_expired(session, limit=500)
+        log.info("Scanned expired manual grants", count=count)
 
 
 @actor(actor_name="benefit.enqueue_benefits_grants", priority=TaskPriority.MEDIUM)

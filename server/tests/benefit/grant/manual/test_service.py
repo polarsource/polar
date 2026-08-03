@@ -5,11 +5,11 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
-from polar.benefit.grant.service import benefit_grant as benefit_grant_service
-from polar.benefit.standalone_grant.schemas import StandaloneGrantBenefitCreate
-from polar.benefit.standalone_grant.service import (
-    standalone_grant as standalone_grant_service,
+from polar.benefit.grant.manual.schemas import ManualGrantBenefitCreate
+from polar.benefit.grant.manual.service import (
+    manual_grant as manual_grant_service,
 )
+from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.exceptions import PolarRequestValidationError
 from polar.models import (
     Benefit,
@@ -27,16 +27,16 @@ from tests.fixtures.random_objects import (
     create_benefit,
     create_benefit_grant,
     create_customer,
-    create_standalone_grant,
+    create_manual_grant,
 )
 
 
 @pytest.mark.asyncio
-class TestStandaloneGrantScope:
+class TestManualGrantScope:
     """Verify the third scope key materializes ordinary BenefitGrant rows and
     coexists with subscription/order grants (AC 1, 2, 3, 7)."""
 
-    async def test_grant_materializes_standalone_grant_scoped_grant(
+    async def test_grant_materializes_manual_grant_scoped_grant(
         self,
         session: AsyncSession,
         redis: Redis,
@@ -45,18 +45,18 @@ class TestStandaloneGrantScope:
         benefit_organization: Benefit,
         benefit_strategy_mock: MagicMock,
     ) -> None:
-        standalone_grant = await create_standalone_grant(save_fixture, customer=customer)
+        manual_grant = await create_manual_grant(save_fixture, customer=customer)
 
         grant = await benefit_grant_service.grant_benefit(
-            session, redis, customer, benefit_organization, standalone_grant=standalone_grant
+            session, redis, customer, benefit_organization, manual_grant=manual_grant
         )
 
-        assert grant.standalone_grant_id == standalone_grant.id
+        assert grant.manual_grant_id == manual_grant.id
         assert grant.subscription_id is None
         assert grant.order_id is None
         assert grant.is_granted
 
-    async def test_coexistence_subscription_and_standalone_grant(
+    async def test_coexistence_subscription_and_manual_grant(
         self,
         session: AsyncSession,
         redis: Redis,
@@ -71,9 +71,9 @@ class TestStandaloneGrantScope:
         sub_grant = await benefit_grant_service.grant_benefit(
             session, redis, customer, benefit_organization, subscription=subscription
         )
-        standalone_grant = await create_standalone_grant(save_fixture, customer=customer)
+        manual_grant = await create_manual_grant(save_fixture, customer=customer)
         grant = await benefit_grant_service.grant_benefit(
-            session, redis, customer, benefit_organization, standalone_grant=standalone_grant
+            session, redis, customer, benefit_organization, manual_grant=manual_grant
         )
 
         assert sub_grant.id != grant.id
@@ -82,7 +82,7 @@ class TestStandaloneGrantScope:
 
         benefit_strategy_mock.revoke.reset_mock()
         await benefit_grant_service.revoke_benefit(
-            session, redis, customer, benefit_organization, standalone_grant=standalone_grant
+            session, redis, customer, benefit_organization, manual_grant=manual_grant
         )
 
         await session.refresh(sub_grant)
@@ -119,14 +119,14 @@ class TestStandaloneGrantScope:
         sub_grant = await benefit_grant_service.grant_benefit(
             session, redis, customer, benefit, subscription=subscription
         )
-        standalone_grant = await create_standalone_grant(save_fixture, customer=customer)
+        manual_grant = await create_manual_grant(save_fixture, customer=customer)
         grant = await benefit_grant_service.grant_benefit(
-            session, redis, customer, benefit, standalone_grant=standalone_grant
+            session, redis, customer, benefit, manual_grant=manual_grant
         )
 
         benefit_strategy_mock.revoke.reset_mock()
         await benefit_grant_service.revoke_benefit(
-            session, redis, customer, benefit, standalone_grant=standalone_grant
+            session, redis, customer, benefit, manual_grant=manual_grant
         )
 
         await session.refresh(sub_grant)
@@ -136,7 +136,7 @@ class TestStandaloneGrantScope:
         # Each grant owns its own key → individual revoke runs.
         benefit_strategy_mock.revoke.assert_called_once()
 
-    async def test_no_cycles_for_standalone_grants(
+    async def test_no_cycles_for_manual_grants(
         self,
         session: AsyncSession,
         redis: Redis,
@@ -150,9 +150,9 @@ class TestStandaloneGrantScope:
         sub_grant = await benefit_grant_service.grant_benefit(
             session, redis, customer, benefit_organization, subscription=subscription
         )
-        standalone_grant = await create_standalone_grant(save_fixture, customer=customer)
+        manual_grant = await create_manual_grant(save_fixture, customer=customer)
         grant = await benefit_grant_service.grant_benefit(
-            session, redis, customer, benefit_organization, standalone_grant=standalone_grant
+            session, redis, customer, benefit_organization, manual_grant=manual_grant
         )
 
         enqueue_mock = mocker.patch("polar.benefit.grant.service.enqueue_job")
@@ -164,7 +164,7 @@ class TestStandaloneGrantScope:
         assert sub_grant.id in cycled_ids
         assert grant.id not in cycled_ids
 
-    async def test_grant_worker_does_not_override_revoked_standalone_grant(
+    async def test_grant_worker_does_not_override_revoked_manual_grant(
         self,
         session: AsyncSession,
         redis: Redis,
@@ -173,13 +173,13 @@ class TestStandaloneGrantScope:
         benefit_organization: Benefit,
         benefit_strategy_mock: MagicMock,
     ) -> None:
-        standalone_grant = await create_standalone_grant(save_fixture, customer=customer)
+        manual_grant = await create_manual_grant(save_fixture, customer=customer)
         grant = await create_benefit_grant(
             save_fixture,
             customer,
             benefit_organization,
             granted=False,
-            standalone_grant=standalone_grant,
+            manual_grant=manual_grant,
         )
         benefit_strategy_mock.grant.reset_mock()
 
@@ -188,7 +188,7 @@ class TestStandaloneGrantScope:
             redis,
             customer,
             benefit_organization,
-            standalone_grant=standalone_grant,
+            manual_grant=manual_grant,
         )
 
         assert result.id == grant.id
@@ -196,7 +196,7 @@ class TestStandaloneGrantScope:
         assert result.is_granted is False
         benefit_strategy_mock.grant.assert_not_called()
 
-    async def test_successful_standalone_revoke_clears_previous_error(
+    async def test_successful_manual_revoke_clears_previous_error(
         self,
         session: AsyncSession,
         redis: Redis,
@@ -205,13 +205,13 @@ class TestStandaloneGrantScope:
         benefit_organization: Benefit,
         benefit_strategy_mock: MagicMock,
     ) -> None:
-        standalone_grant = await create_standalone_grant(save_fixture, customer=customer)
+        manual_grant = await create_manual_grant(save_fixture, customer=customer)
         grant = await create_benefit_grant(
             save_fixture,
             customer,
             benefit_organization,
             granted=True,
-            standalone_grant=standalone_grant,
+            manual_grant=manual_grant,
         )
         grant.set_revoke_failed(RuntimeError("Revocation failed"))
         await save_fixture(grant)
@@ -221,7 +221,7 @@ class TestStandaloneGrantScope:
             redis,
             customer,
             benefit_organization,
-            standalone_grant=standalone_grant,
+            manual_grant=manual_grant,
         )
 
         assert result.is_revoked is True
@@ -240,27 +240,27 @@ class TestCreate:
         customer: Customer,
         benefit_organization: Benefit,
     ) -> None:
-        enqueue_mock = mocker.patch("polar.benefit.standalone_grant.service.enqueue_job")
+        enqueue_mock = mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
 
-        standalone_grant = await standalone_grant_service.create(
+        manual_grant = await manual_grant_service.create(
             session,
             auth_subject,
             customer_id=customer.id,
-            grants=[StandaloneGrantBenefitCreate(benefit_id=benefit_organization.id)],
+            grants=[ManualGrantBenefitCreate(benefit_id=benefit_organization.id)],
             reason="Customer success exception",
         )
 
-        assert standalone_grant.customer_id == customer.id
-        assert standalone_grant.reason == "Customer success exception"
-        assert len(standalone_grant.grants) == 1
-        assert standalone_grant.grants[0].is_granted is False
-        assert standalone_grant.grants[0].is_revoked is False
+        assert manual_grant.customer_id == customer.id
+        assert manual_grant.reason == "Customer success exception"
+        assert len(manual_grant.grants) == 1
+        assert manual_grant.grants[0].is_granted is False
+        assert manual_grant.grants[0].is_revoked is False
         enqueue_mock.assert_called_once_with(
             "benefit.grant",
             customer_id=customer.id,
             benefit_id=benefit_organization.id,
-            member_id=standalone_grant.grants[0].member_id,
-            standalone_grant_id=standalone_grant.id,
+            member_id=manual_grant.grants[0].member_id,
+            manual_grant_id=manual_grant.id,
         )
 
     @pytest.mark.auth
@@ -275,7 +275,7 @@ class TestCreate:
         customer: Customer,
         benefit_organization: Benefit,
     ) -> None:
-        enqueue_mock = mocker.patch("polar.benefit.standalone_grant.service.enqueue_job")
+        enqueue_mock = mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
         other_benefit = await create_benefit(
             save_fixture,
             organization=organization,
@@ -283,30 +283,31 @@ class TestCreate:
             properties={"flag": "my-flag"},
         )
 
-        standalone_grant = await standalone_grant_service.create(
+        manual_grant = await manual_grant_service.create(
             session,
             auth_subject,
             customer_id=customer.id,
             grants=[
-                StandaloneGrantBenefitCreate(benefit_id=benefit_organization.id),
-                StandaloneGrantBenefitCreate(benefit_id=other_benefit.id),
+                ManualGrantBenefitCreate(benefit_id=benefit_organization.id),
+                ManualGrantBenefitCreate(benefit_id=other_benefit.id),
             ],
         )
 
-        assert standalone_grant.customer_id == customer.id
-        assert {grant.benefit_id for grant in standalone_grant.grants} == {
+        assert manual_grant.customer_id == customer.id
+        assert {grant.benefit_id for grant in manual_grant.grants} == {
             benefit_organization.id,
             other_benefit.id,
         }
-        assert {grant.standalone_grant_id for grant in standalone_grant.grants} == {
-            standalone_grant.id
+        assert {grant.manual_grant_id for grant in manual_grant.grants} == {
+            manual_grant.id
         }
         assert {
-            call.kwargs["standalone_grant_id"] for call in enqueue_mock.call_args_list
-        } == {standalone_grant.id}
-        assert {
-            call.kwargs["benefit_id"] for call in enqueue_mock.call_args_list
-        } == {benefit_organization.id, other_benefit.id}
+            call.kwargs["manual_grant_id"] for call in enqueue_mock.call_args_list
+        } == {manual_grant.id}
+        assert {call.kwargs["benefit_id"] for call in enqueue_mock.call_args_list} == {
+            benefit_organization.id,
+            other_benefit.id,
+        }
 
     @pytest.mark.auth
     async def test_coexists_with_subscription_grant(
@@ -320,9 +321,9 @@ class TestCreate:
         benefit_organization: Benefit,
         subscription: Subscription,
     ) -> None:
-        """A subscription-scoped grant of the same benefit doesn't block a standalone
+        """A subscription-scoped grant of the same benefit doesn't block a manual
         grant: they coexist as distinct scopes."""
-        mocker.patch("polar.benefit.standalone_grant.service.enqueue_job")
+        mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
         await create_benefit_grant(
             save_fixture,
             customer,
@@ -331,14 +332,14 @@ class TestCreate:
             subscription=subscription,
         )
 
-        standalone_grant = await standalone_grant_service.create(
+        manual_grant = await manual_grant_service.create(
             session,
             auth_subject,
             customer_id=customer.id,
-            grants=[StandaloneGrantBenefitCreate(benefit_id=benefit_organization.id)],
+            grants=[ManualGrantBenefitCreate(benefit_id=benefit_organization.id)],
         )
 
-        assert standalone_grant.customer_id == customer.id
+        assert manual_grant.customer_id == customer.id
 
     @pytest.mark.auth
     async def test_duplicate_benefit_in_request(
@@ -350,13 +351,13 @@ class TestCreate:
         benefit_organization: Benefit,
     ) -> None:
         with pytest.raises(PolarRequestValidationError):
-            await standalone_grant_service.create(
+            await manual_grant_service.create(
                 session,
                 auth_subject,
                 customer_id=customer.id,
                 grants=[
-                    StandaloneGrantBenefitCreate(benefit_id=benefit_organization.id),
-                    StandaloneGrantBenefitCreate(benefit_id=benefit_organization.id),
+                    ManualGrantBenefitCreate(benefit_id=benefit_organization.id),
+                    ManualGrantBenefitCreate(benefit_id=benefit_organization.id),
                 ],
             )
 
@@ -377,11 +378,11 @@ class TestCreate:
         )
 
         with pytest.raises(PolarRequestValidationError):
-            await standalone_grant_service.create(
+            await manual_grant_service.create(
                 session,
                 auth_subject,
                 customer_id=customer.id,
-                grants=[StandaloneGrantBenefitCreate(benefit_id=benefit.id)],
+                grants=[ManualGrantBenefitCreate(benefit_id=benefit.id)],
             )
 
     @pytest.mark.auth
@@ -397,11 +398,11 @@ class TestCreate:
         benefit = await create_benefit(save_fixture, organization=organization_second)
 
         with pytest.raises(PolarRequestValidationError):
-            await standalone_grant_service.create(
+            await manual_grant_service.create(
                 session,
                 auth_subject,
                 customer_id=customer.id,
-                grants=[StandaloneGrantBenefitCreate(benefit_id=benefit.id)],
+                grants=[ManualGrantBenefitCreate(benefit_id=benefit.id)],
             )
 
     @pytest.mark.auth
@@ -423,11 +424,11 @@ class TestCreate:
         )
 
         with pytest.raises(PolarRequestValidationError):
-            await standalone_grant_service.create(
+            await manual_grant_service.create(
                 session,
                 auth_subject,
                 customer_id=other_customer.id,
-                grants=[StandaloneGrantBenefitCreate(benefit_id=benefit_organization.id)],
+                grants=[ManualGrantBenefitCreate(benefit_id=benefit_organization.id)],
             )
 
 
@@ -442,24 +443,24 @@ class TestRequestRevoke:
         customer: Customer,
         benefit_organization: Benefit,
     ) -> None:
-        standalone_grant = await create_standalone_grant(save_fixture, customer=customer)
+        manual_grant = await create_manual_grant(save_fixture, customer=customer)
         grant = await create_benefit_grant(
             save_fixture,
             customer,
             benefit_organization,
             granted=True,
-            standalone_grant=standalone_grant,
+            manual_grant=manual_grant,
         )
 
-        enqueue_mock = mocker.patch("polar.benefit.standalone_grant.service.enqueue_job")
-        await standalone_grant_service.request_revoke(session, standalone_grant, grant)
+        enqueue_mock = mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
+        await manual_grant_service.request_revoke(session, manual_grant, grant)
 
         enqueue_mock.assert_called_once_with(
             "benefit.revoke",
             customer_id=grant.customer_id,
             benefit_id=grant.benefit_id,
             member_id=grant.member_id,
-            standalone_grant_id=standalone_grant.id,
+            manual_grant_id=manual_grant.id,
         )
 
     @pytest.mark.auth
@@ -471,19 +472,19 @@ class TestRequestRevoke:
         customer: Customer,
         benefit_organization: Benefit,
     ) -> None:
-        standalone_grant = await create_standalone_grant(save_fixture, customer=customer)
+        manual_grant = await create_manual_grant(save_fixture, customer=customer)
         grant = await create_benefit_grant(
             save_fixture,
             customer,
             benefit_organization,
             granted=True,
-            standalone_grant=standalone_grant,
+            manual_grant=manual_grant,
         )
         grant.set_revoked()
         await save_fixture(grant)
-        enqueue_mock = mocker.patch("polar.benefit.standalone_grant.service.enqueue_job")
+        enqueue_mock = mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
 
-        await standalone_grant_service.request_revoke(session, standalone_grant, grant)
+        await manual_grant_service.request_revoke(session, manual_grant, grant)
 
         enqueue_mock.assert_not_called()
 
@@ -496,26 +497,26 @@ class TestRequestRevoke:
         customer: Customer,
         benefit_organization: Benefit,
     ) -> None:
-        standalone_grant = await create_standalone_grant(save_fixture, customer=customer)
+        manual_grant = await create_manual_grant(save_fixture, customer=customer)
         grant = await create_benefit_grant(
             save_fixture,
             customer,
             benefit_organization,
             granted=True,
-            standalone_grant=standalone_grant,
+            manual_grant=manual_grant,
         )
         grant.set_revoke_failed(RuntimeError("Revocation failed"))
         await save_fixture(grant)
-        enqueue_mock = mocker.patch("polar.benefit.standalone_grant.service.enqueue_job")
+        enqueue_mock = mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
 
-        await standalone_grant_service.request_revoke(session, standalone_grant, grant)
+        await manual_grant_service.request_revoke(session, manual_grant, grant)
 
         enqueue_mock.assert_called_once_with(
             "benefit.revoke",
             customer_id=grant.customer_id,
             benefit_id=grant.benefit_id,
             member_id=grant.member_id,
-            standalone_grant_id=standalone_grant.id,
+            manual_grant_id=manual_grant.id,
         )
 
 
@@ -529,7 +530,7 @@ class TestRequestRevokeExpired:
         customer: Customer,
         benefit_organization: Benefit,
     ) -> None:
-        standalone_grant = await create_standalone_grant(
+        manual_grant = await create_manual_grant(
             save_fixture,
             customer=customer,
             expires_at=datetime.now(UTC) - timedelta(minutes=1),
@@ -539,24 +540,22 @@ class TestRequestRevokeExpired:
             customer,
             benefit_organization,
             granted=True,
-            standalone_grant=standalone_grant,
+            manual_grant=manual_grant,
         )
-        enqueue_mock = mocker.patch("polar.benefit.standalone_grant.service.enqueue_job")
+        enqueue_mock = mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
 
-        count = await standalone_grant_service.request_revoke_expired(
-            session, limit=100
-        )
+        count = await manual_grant_service.request_revoke_expired(session, limit=100)
         assert count == 1
         enqueue_mock.assert_called_once_with(
             "benefit.revoke",
             customer_id=grant.customer_id,
             benefit_id=grant.benefit_id,
             member_id=grant.member_id,
-            standalone_grant_id=standalone_grant.id,
+            manual_grant_id=manual_grant.id,
         )
 
         # Still active until the revoke worker runs — cron may see it again.
-        second_count = await standalone_grant_service.request_revoke_expired(
+        second_count = await manual_grant_service.request_revoke_expired(
             session, limit=100
         )
         assert second_count == 1
@@ -565,7 +564,7 @@ class TestRequestRevokeExpired:
         await save_fixture(grant)
         enqueue_mock.reset_mock()
 
-        third_count = await standalone_grant_service.request_revoke_expired(
+        third_count = await manual_grant_service.request_revoke_expired(
             session, limit=100
         )
         assert third_count == 0
@@ -586,7 +585,7 @@ class TestRequestRevokeExpired:
             type=BenefitType.feature_flag,
             properties={"flag": "other-flag"},
         )
-        standalone_grant = await create_standalone_grant(
+        manual_grant = await create_manual_grant(
             save_fixture,
             customer=customer,
             expires_at=datetime.now(UTC) - timedelta(minutes=1),
@@ -596,7 +595,7 @@ class TestRequestRevokeExpired:
             customer,
             benefit_organization,
             granted=True,
-            standalone_grant=standalone_grant,
+            manual_grant=manual_grant,
         )
         revoked_grant.set_revoked()
         await save_fixture(revoked_grant)
@@ -605,13 +604,11 @@ class TestRequestRevokeExpired:
             customer,
             other_benefit,
             granted=True,
-            standalone_grant=standalone_grant,
+            manual_grant=manual_grant,
         )
-        enqueue_mock = mocker.patch("polar.benefit.standalone_grant.service.enqueue_job")
+        enqueue_mock = mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
 
-        count = await standalone_grant_service.request_revoke_expired(
-            session, limit=100
-        )
+        count = await manual_grant_service.request_revoke_expired(session, limit=100)
 
         assert count == 1
         enqueue_mock.assert_called_once_with(
@@ -619,5 +616,5 @@ class TestRequestRevokeExpired:
             customer_id=active_grant.customer_id,
             benefit_id=active_grant.benefit_id,
             member_id=active_grant.member_id,
-            standalone_grant_id=standalone_grant.id,
+            manual_grant_id=manual_grant.id,
         )

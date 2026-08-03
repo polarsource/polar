@@ -20,7 +20,7 @@ from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
     create_benefit,
     create_benefit_grant,
-    create_standalone_grant,
+    create_manual_grant,
 )
 
 
@@ -208,7 +208,7 @@ class TestCreateBenefitGrant:
         customer: Customer,
         benefit_organization: Benefit,
     ) -> None:
-        enqueue_mock = mocker.patch("polar.benefit.standalone_grant.service.enqueue_job")
+        enqueue_mock = mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
         expires_at = datetime.now(UTC) + timedelta(days=7)
 
         response = await client.post(
@@ -225,7 +225,7 @@ class TestCreateBenefitGrant:
         json = response.json()
         assert json["customer_id"] == str(customer.id)
         assert json["benefit_id"] == str(benefit_organization.id)
-        assert json["standalone_grant_id"] is not None
+        assert json["manual_grant_id"] is not None
         assert json["is_granted"] is False
         assert json["is_revoked"] is False
         enqueue_mock.assert_called_once_with(
@@ -233,7 +233,7 @@ class TestCreateBenefitGrant:
             customer_id=customer.id,
             benefit_id=benefit_organization.id,
             member_id=mocker.ANY,
-            standalone_grant_id=mocker.ANY,
+            manual_grant_id=mocker.ANY,
         )
 
     @pytest.mark.auth
@@ -248,7 +248,7 @@ class TestCreateBenefitGrant:
         customer: Customer,
         benefit_organization: Benefit,
     ) -> None:
-        enqueue_mock = mocker.patch("polar.benefit.standalone_grant.service.enqueue_job")
+        enqueue_mock = mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
         other_benefit = await create_benefit(save_fixture, organization=organization)
 
         response = await client.post(
@@ -280,8 +280,8 @@ class TestCreateBenefitGrant:
             .scalars()
             .all()
         )
-        assert {grant.standalone_grant_id for grant in grants} == {
-            grants[0].standalone_grant_id
+        assert {grant.manual_grant_id for grant in grants} == {
+            grants[0].manual_grant_id
         }
         assert enqueue_mock.call_count == 2
 
@@ -298,15 +298,15 @@ class TestRevokeBenefitGrant:
         customer: Customer,
         benefit_organization: Benefit,
     ) -> None:
-        standalone_grant = await create_standalone_grant(save_fixture, customer=customer)
+        manual_grant = await create_manual_grant(save_fixture, customer=customer)
         grant = await create_benefit_grant(
             save_fixture,
             customer,
             benefit_organization,
             granted=True,
-            standalone_grant=standalone_grant,
+            manual_grant=manual_grant,
         )
-        enqueue_mock = mocker.patch("polar.benefit.standalone_grant.service.enqueue_job")
+        enqueue_mock = mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
 
         response = await client.delete(f"/v1/benefit-grants/{grant.id}")
         duplicate_response = await client.delete(f"/v1/benefit-grants/{grant.id}")
@@ -323,7 +323,7 @@ class TestRevokeBenefitGrant:
             customer_id=grant.customer_id,
             benefit_id=grant.benefit_id,
             member_id=grant.member_id,
-            standalone_grant_id=standalone_grant.id,
+            manual_grant_id=manual_grant.id,
         )
 
     @pytest.mark.auth

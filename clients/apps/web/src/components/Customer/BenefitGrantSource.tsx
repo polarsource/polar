@@ -17,7 +17,7 @@ export const BenefitGrantSource = ({
   grant: schemas['BenefitGrant']
   organization: schemas['Organization']
 }) => {
-  if (grant.standalone_grant_id) {
+  if (grant.manual_grant_id) {
     return (
       <Tooltip>
         <TooltipTrigger>

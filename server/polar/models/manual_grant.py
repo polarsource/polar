@@ -12,17 +12,21 @@ if TYPE_CHECKING:
     from polar.models.benefit_grant import BenefitGrant
 
 
-class StandaloneGrant(RecordModel):
+class ManualGrant(RecordModel):
     """
-    A standalone grant of benefits to a customer, independent of any subscription
-    or order. Mirrors how `subscription_id`/`order_id` scopes fan out to many
-    grants. Can be used to batch-add grants to a customer.
+    One act of manually granting benefits to a customer, independent of any
+    subscription or order. It is the third owner scope of `BenefitGrant`,
+    fanning out to many grants the same way `subscription_id`/`order_id` do.
+
+    A manual grant is the unit of intent: all grants created by it share one
+    `reason` and one `expires_at`. Per-benefit expiration means separate
+    manual grants. Revocation, in contrast, is per child grant.
     """
 
-    __tablename__ = "standalone_grants"
+    __tablename__ = "manual_grants"
     __table_args__ = (
         Index(
-            "ix_standalone_grants_pending_expiration",
+            "ix_manual_grants_pending_expiration",
             "expires_at",
             postgresql_where=text("deleted_at IS NULL"),
         ),
@@ -54,9 +58,9 @@ class StandaloneGrant(RecordModel):
             order_by="BenefitGrant.created_at.asc()",
             primaryjoin=(
                 "and_("
-                "StandaloneGrant.id == BenefitGrant.standalone_grant_id, "
+                "ManualGrant.id == BenefitGrant.manual_grant_id, "
                 "BenefitGrant.deleted_at.is_(None)"
                 ")"
             ),
-            foreign_keys="BenefitGrant.standalone_grant_id",
+            foreign_keys="BenefitGrant.manual_grant_id",
         )

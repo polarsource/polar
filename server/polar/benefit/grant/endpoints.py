@@ -4,9 +4,9 @@ from uuid import UUID
 
 from fastapi import Depends, Query
 
-from polar.benefit.standalone_grant.schemas import StandaloneGrantBenefitCreate
-from polar.benefit.standalone_grant.service import (
-    standalone_grant as standalone_grant_service,
+from polar.benefit.grant.manual.schemas import ManualGrantBenefitCreate
+from polar.benefit.grant.manual.service import (
+    manual_grant as manual_grant_service,
 )
 from polar.customer.schemas.customer import CustomerID, ExternalCustomerID
 from polar.exceptions import ResourceNotFound
@@ -94,13 +94,13 @@ async def create(
     auth_subject: BenefitsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> BenefitGrantModel:
-    """Queue a standalone benefit grant and return its stable pending resource."""
-    standalone_grant = await standalone_grant_service.create(
+    """Queue a manual benefit grant and return its stable pending resource."""
+    manual_grant = await manual_grant_service.create(
         session,
         auth_subject,
         customer_id=benefit_grant_create.customer_id,
         grants=[
-            StandaloneGrantBenefitCreate(
+            ManualGrantBenefitCreate(
                 benefit_id=benefit_grant_create.benefit_id,
                 member_id=benefit_grant_create.member_id,
             )
@@ -108,7 +108,7 @@ async def create(
         expires_at=benefit_grant_create.expires_at,
         reason=benefit_grant_create.reason,
     )
-    return standalone_grant.grants[0]
+    return manual_grant.grants[0]
 
 
 @router.post(
@@ -129,13 +129,13 @@ async def create_batch(
     auth_subject: BenefitsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> Sequence[BenefitGrantModel]:
-    """Queue standalone benefit grants with shared provenance and expiration."""
-    standalone_grant = await standalone_grant_service.create(
+    """Queue manual benefit grants with shared provenance and expiration."""
+    manual_grant = await manual_grant_service.create(
         session,
         auth_subject,
         customer_id=benefit_grant_create.customer_id,
         grants=[
-            StandaloneGrantBenefitCreate(
+            ManualGrantBenefitCreate(
                 benefit_id=grant.benefit_id,
                 member_id=grant.member_id,
             )
@@ -144,7 +144,7 @@ async def create_batch(
         expires_at=benefit_grant_create.expires_at,
         reason=benefit_grant_create.reason,
     )
-    return standalone_grant.grants
+    return manual_grant.grants
 
 
 @router.delete(
@@ -165,12 +165,12 @@ async def revoke(
     auth_subject: BenefitsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> BenefitGrantModel:
-    """Queue revocation of a standalone benefit grant."""
-    grant = await benefit_grant_service.get_standalone(session, auth_subject, id)
+    """Queue revocation of a manual benefit grant."""
+    grant = await benefit_grant_service.get_manually_granted(session, auth_subject, id)
     if grant is None:
         raise ResourceNotFound("Benefit grant not found")
 
-    standalone_grant = grant.standalone_grant
-    assert standalone_grant is not None
-    await standalone_grant_service.request_revoke(session, standalone_grant, grant)
+    manual_grant = grant.manual_grant
+    assert manual_grant is not None
+    await manual_grant_service.request_revoke(session, manual_grant, grant)
     return grant

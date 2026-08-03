@@ -3,7 +3,7 @@ from uuid import UUID
 import structlog
 from sqlalchemy.orm import joinedload
 
-from polar.benefit.standalone_grant.repository import StandaloneGrantRepository
+from polar.benefit.grant.manual.repository import ManualGrantRepository
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarError
 from polar.logging import Logger
@@ -75,12 +75,12 @@ async def resolve_scope(
         if order is None:
             raise InvalidScopeError(scope)
         resolved_scope["order"] = order
-    if standalone_grant_id := scope.get("standalone_grant_id"):
-        standalone_grant_repository = StandaloneGrantRepository.from_session(session)
-        standalone_grant = await standalone_grant_repository.get_by_id(standalone_grant_id)
-        if standalone_grant is None:
+    if manual_grant_id := scope.get("manual_grant_id"):
+        manual_grant_repository = ManualGrantRepository.from_session(session)
+        manual_grant = await manual_grant_repository.get_by_id(manual_grant_id)
+        if manual_grant is None:
             raise InvalidScopeError(scope)
-        resolved_scope["standalone_grant"] = standalone_grant
+        resolved_scope["manual_grant"] = manual_grant
     return resolved_scope
 
 
@@ -90,8 +90,8 @@ def scope_to_args(scope: BenefitGrantScope) -> BenefitGrantScopeArgs:
         args["subscription_id"] = subscription.id
     if order := scope.get("order"):
         args["order_id"] = order.id
-    if standalone_grant := scope.get("standalone_grant"):
-        args["standalone_grant_id"] = standalone_grant.id
+    if manual_grant := scope.get("manual_grant"):
+        args["manual_grant_id"] = manual_grant.id
     return args
 
 

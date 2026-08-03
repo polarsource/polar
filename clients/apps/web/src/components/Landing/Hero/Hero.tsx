@@ -1,6 +1,7 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
+import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'motion/react'
@@ -29,7 +30,13 @@ export const Hero = () => {
       whileInView="visible"
       viewport={{ once: true }}
     >
-      <Box maxWidth="64rem">
+      <Box
+        maxWidth="64rem"
+        alignItems="center"
+        rowGap="3xl"
+        flexDirection="column"
+      >
+        <PolarLogotype size={60} />
         <Text variant="heading-xl">
           The finance layer for intelligent software
         </Text>

@@ -4,7 +4,6 @@ import { JSX } from 'react'
 import {
   Confidence,
   FastAPICloud,
-  Midday,
   MiddayWordmark,
   // Goals,
   StillaAIWordmark,

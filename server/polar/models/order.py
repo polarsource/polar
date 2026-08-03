@@ -48,6 +48,13 @@ if TYPE_CHECKING:
     )
 
 
+class OrderBillingReason(StrEnum):
+    purchase = "purchase"
+    subscription_create = "subscription_create"
+    subscription_cycle = "subscription_cycle"
+    subscription_update = "subscription_update"
+
+
 class OrderBillingReasonInternal(StrEnum):
     """
     Internal billing reasons with additional granularity.
@@ -60,12 +67,13 @@ class OrderBillingReasonInternal(StrEnum):
     subscription_cancel = "subscription_cancel"
     subscription_update = "subscription_update"
 
-
-class OrderBillingReason(StrEnum):
-    purchase = "purchase"
-    subscription_create = "subscription_create"
-    subscription_cycle = "subscription_cycle"
-    subscription_update = "subscription_update"
+    def to_public(self) -> OrderBillingReason:
+        if self in (
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+            OrderBillingReasonInternal.subscription_cancel,
+        ):
+            return OrderBillingReason.subscription_cycle
+        return OrderBillingReason(self)
 
 
 class OrderStatus(StrEnum):

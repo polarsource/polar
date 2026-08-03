@@ -64041,7 +64041,7 @@ export const orderExportColumnValues: ReadonlyArray<
   'email',
   'created_at',
   'product',
-  'amount',
+  'net_amount',
   'currency',
   'status',
   'invoice_number',

@@ -48,12 +48,15 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
 }) => {
   const [productQuery, setProductQuery] = useState('')
 
-  const { data: products } = useProducts(organization.id, {
-    is_archived: null,
-    ...(productQuery ? { query: productQuery } : {}),
-    sorting: ['name'],
-    limit: 50,
-  })
+  const { data: products, isPending: productsPending } = useProducts(
+    organization.id,
+    {
+      is_archived: null,
+      ...(productQuery ? { query: productQuery } : {}),
+      sorting: ['name'],
+      limit: 50,
+    },
+  )
   const { data: selectedProducts } = useSelectedProducts(productId ?? [], true)
 
   const productOptions = useMemo<FilterOption[]>(() => {
@@ -84,6 +87,7 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
         icon: <HiveOutlined fontSize="inherit" />,
         type: 'multi',
         options: productOptions,
+        loading: productsPending,
         searchPlaceholder: 'Search products…',
         searchQuery: productQuery,
         onSearchQueryChange: setProductQuery,
@@ -126,6 +130,7 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
   }, [
     organization,
     productOptions,
+    productsPending,
     productQuery,
     productId,
     onProductSelect,

@@ -35,6 +35,7 @@ interface FilterBase {
   searchPlaceholder?: string
   searchQuery?: string
   onSearchQueryChange?: (query: string) => void
+  loading?: boolean
 }
 
 export interface SingleFilter extends FilterBase {
@@ -214,7 +215,7 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
               <Box alignItems="center" columnGap="xs" padding="s">
                 <Button
                   variant="ghost"
-                  size="sm"
+                  size="icon"
                   onClick={goBack}
                   aria-label="Back to filters"
                 >
@@ -260,8 +261,8 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
                 </Box>
                 {isSearchable && (
                   <Button
-                    variant="ghost"
-                    size="sm"
+                    variant="secondary"
+                    size="icon"
                     aria-label={searchExpanded ? 'Close search' : 'Search'}
                     onClick={() =>
                       searchExpanded
@@ -285,7 +286,7 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
                 {activeFilter.options.length === 0 && (
                   <Box justifyContent="center" paddingVertical="l">
                     <Text as="span" color="muted">
-                      No results found
+                      {activeFilter.loading ? 'Loading…' : 'No results found'}
                     </Text>
                   </Box>
                 )}

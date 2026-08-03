@@ -23,7 +23,7 @@ export function TeamCarousel() {
   return (
     <section className="w-full overflow-hidden">
       <div
-        className="flex w-max gap-2"
+        className="flex w-max gap-4"
         style={{ animation: 'marquee 230s linear infinite' }}
       >
         {order.map((n, i) => (

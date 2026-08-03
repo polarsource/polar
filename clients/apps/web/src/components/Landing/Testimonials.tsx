@@ -149,7 +149,7 @@ export const Testimonials = () => (
               borderColor="border-primary"
               width="1.5rem"
             />
-            <Box flexDirection="column" rowGap="xxs">
+            <Box flexDirection="column">
               <Text variant="heading-xxs" as="span">
                 {t.name}
               </Text>

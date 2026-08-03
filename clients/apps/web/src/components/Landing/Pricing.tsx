@@ -69,9 +69,9 @@ export const Pricing = () => (
   <>
     <span id="pricing" className="block scroll-mt-12 md:scroll-mt-28" />
     <Box as="section" flexDirection="column" rowGap="5xl">
-      <Box flexDirection="column" rowGap="xl">
+      <Box flexDirection="column" rowGap="xl" alignItems="center">
         <Text variant="heading-xl" as="h2" wrap="balance">
-          Built to scale with you.
+          Built to scale with you
         </Text>
         <Box display="block" maxWidth="56rem">
           <Text variant="heading-xs" wrap="balance" color="muted">

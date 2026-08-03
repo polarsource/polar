@@ -71,7 +71,7 @@ export const CostInsights = () => {
     >
       <SectionHeader
         title="Your power users cost you money"
-        description="Polar breaks down LLM spend customer by customer, so you catch the ones bleeding your margins before they bleed your runway."
+        description="Polar breaks down spend customer by customer, so you catch the ones bleeding your margins before they bleed your runway."
       />
 
       <Box

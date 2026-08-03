@@ -27,6 +27,7 @@ def upgrade() -> None:
         sa.Column("customer_id", sa.Uuid(), nullable=False),
         sa.Column("reason", sa.String(), nullable=True),
         sa.Column("expires_at", sa.TIMESTAMP(timezone=True), nullable=True),
+        sa.Column("scheduler_locked_at", sa.TIMESTAMP(timezone=True), nullable=True),
         sa.Column("id", sa.Uuid(), nullable=False),
         sa.Column("created_at", sa.TIMESTAMP(timezone=True), nullable=False),
         sa.Column("modified_at", sa.TIMESTAMP(timezone=True), nullable=True),
@@ -62,7 +63,10 @@ def upgrade() -> None:
         "manual_grants",
         ["expires_at"],
         unique=False,
-        postgresql_where=sa.text("deleted_at IS NULL"),
+        postgresql_where=sa.text(
+            "expires_at IS NOT NULL "
+            "AND scheduler_locked_at IS NULL AND deleted_at IS NULL"
+        ),
     )
     op.add_column(
         "benefit_grants", sa.Column("manual_grant_id", sa.Uuid(), nullable=True)

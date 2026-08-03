@@ -1,8 +1,8 @@
 from collections.abc import Sequence
-from datetime import UTC, datetime
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 
 from polar.auth.models import AuthSubject
 from polar.authz.service import get_accessible_org_ids
@@ -224,33 +224,36 @@ class ManualGrantService:
         )
         return grant
 
-    async def request_revoke_expired(
+    async def revoke_expired(
         self,
         session: AsyncSession,
-        *,
-        limit: int,
+        manual_grant_id: UUID,
     ) -> int:
-        now = datetime.now(UTC)
+        """Enqueue revocation of an expired manual grant's remaining children.
+
+        Dispatched exactly once per manual grant by ``ManualGrantExpiryJobStore``
+        at ``expires_at``; retries beyond this point are the revoke jobs' own.
+        """
         repository = ManualGrantRepository.from_session(session)
-        manual_grants = await repository.list_expired_for_update(now, limit=limit)
-        grants_to_revoke: list[BenefitGrant] = []
+        manual_grant = await repository.get_by_id(
+            manual_grant_id, options=(selectinload(ManualGrant.grants),)
+        )
+        if manual_grant is None or manual_grant.expires_at is None:
+            return 0
 
-        for manual_grant in manual_grants:
-            for grant in manual_grant.grants:
-                if grant.is_revoked:
-                    continue
-                grants_to_revoke.append(grant)
-
-        for grant in grants_to_revoke:
+        count = 0
+        for grant in manual_grant.grants:
+            if grant.is_revoked:
+                continue
             enqueue_job(
                 "benefit.revoke",
                 customer_id=grant.customer_id,
                 benefit_id=grant.benefit_id,
                 member_id=grant.member_id,
-                manual_grant_id=grant.manual_grant_id,
+                manual_grant_id=manual_grant.id,
             )
-
-        return len(manual_grants)
+            count += 1
+        return count
 
 
 manual_grant = ManualGrantService()

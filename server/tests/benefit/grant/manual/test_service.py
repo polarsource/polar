@@ -1,3 +1,4 @@
+import uuid
 from datetime import UTC, datetime, timedelta
 from unittest.mock import MagicMock
 
@@ -573,8 +574,8 @@ class TestRequestRevoke:
 
 
 @pytest.mark.asyncio
-class TestRequestRevokeExpired:
-    async def test_enqueues_expired_grants_until_revoked(
+class TestRevokeExpired:
+    async def test_enqueues_active_children(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -596,7 +597,8 @@ class TestRequestRevokeExpired:
         )
         enqueue_mock = mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
 
-        count = await manual_grant_service.request_revoke_expired(session, limit=100)
+        count = await manual_grant_service.revoke_expired(session, manual_grant.id)
+
         assert count == 1
         enqueue_mock.assert_called_once_with(
             "benefit.revoke",
@@ -605,22 +607,6 @@ class TestRequestRevokeExpired:
             member_id=grant.member_id,
             manual_grant_id=manual_grant.id,
         )
-
-        # Still active until the revoke worker runs — cron may see it again.
-        second_count = await manual_grant_service.request_revoke_expired(
-            session, limit=100
-        )
-        assert second_count == 1
-
-        grant.set_revoked()
-        await save_fixture(grant)
-        enqueue_mock.reset_mock()
-
-        third_count = await manual_grant_service.request_revoke_expired(
-            session, limit=100
-        )
-        assert third_count == 0
-        enqueue_mock.assert_not_called()
 
     async def test_skips_already_revoked_siblings(
         self,
@@ -660,7 +646,7 @@ class TestRequestRevokeExpired:
         )
         enqueue_mock = mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
 
-        count = await manual_grant_service.request_revoke_expired(session, limit=100)
+        count = await manual_grant_service.revoke_expired(session, manual_grant.id)
 
         assert count == 1
         enqueue_mock.assert_called_once_with(
@@ -670,3 +656,38 @@ class TestRequestRevokeExpired:
             member_id=active_grant.member_id,
             manual_grant_id=manual_grant.id,
         )
+
+    async def test_returns_zero_without_expiry(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        benefit_organization: Benefit,
+    ) -> None:
+        manual_grant = await create_manual_grant(save_fixture, customer=customer)
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            manual_grant=manual_grant,
+        )
+        enqueue_mock = mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
+
+        count = await manual_grant_service.revoke_expired(session, manual_grant.id)
+
+        assert count == 0
+        enqueue_mock.assert_not_called()
+
+    async def test_returns_zero_when_missing(
+        self,
+        session: AsyncSession,
+        mocker: MockerFixture,
+    ) -> None:
+        enqueue_mock = mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
+
+        count = await manual_grant_service.revoke_expired(session, uuid.uuid4())
+
+        assert count == 0
+        enqueue_mock.assert_not_called()

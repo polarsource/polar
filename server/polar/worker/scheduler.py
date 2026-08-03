@@ -7,6 +7,7 @@ from apscheduler.schedulers.base import STATE_STOPPED
 from apscheduler.schedulers.blocking import BlockingScheduler
 
 from polar import tasks
+from polar.benefit.grant.manual.scheduler import ManualGrantExpiryJobStore
 from polar.logfire import configure_logfire
 from polar.logging import configure as configure_logging
 from polar.sentry import configure_sentry
@@ -63,6 +64,7 @@ def start() -> None:
     scheduler.add_jobstore(MemoryJobStore(), "memory")
     scheduler.add_jobstore(SubscriptionJobStore(), "subscription")
     scheduler.add_jobstore(SubscriptionResumeJobStore(), "subscription_resume")
+    scheduler.add_jobstore(ManualGrantExpiryJobStore(), "manual_grant_expiry")
 
     for func, cron_trigger in scheduler_middleware.cron_triggers:
         scheduler.add_job(func, cron_trigger, jobstore="memory")

@@ -28,7 +28,10 @@ class ManualGrant(RecordModel):
         Index(
             "ix_manual_grants_pending_expiration",
             "expires_at",
-            postgresql_where=text("deleted_at IS NULL"),
+            postgresql_where=text(
+                "expires_at IS NOT NULL "
+                "AND scheduler_locked_at IS NULL AND deleted_at IS NULL"
+            ),
         ),
     )
 
@@ -47,6 +50,14 @@ class ManualGrant(RecordModel):
 
     expires_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True
+    )
+
+    # Claimed by the expiry scheduler when it dispatches
+    # `manual_grant.revoke_expired`. Expiry is one-shot, so unlike
+    # subscriptions the claim is never cleared: a non-NULL value means
+    # "expiry dispatched".
+    scheduler_locked_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
 
     @declared_attr

@@ -13,7 +13,6 @@ from polar.models.benefit_grant import BenefitGrantScopeArgs
 from polar.product.repository import ProductRepository
 from polar.worker import (
     AsyncSessionMaker,
-    CronTrigger,
     RedisMiddleware,
     TaskPriority,
     actor,
@@ -68,16 +67,15 @@ class OrganizationDoesNotExist(BenefitTaskError):
         super().__init__(message)
 
 
-@actor(
-    actor_name="manual_grant.scan_expired",
-    cron_trigger=CronTrigger.from_crontab("*/15 * * * *"),
-    priority=TaskPriority.LOW,
-    max_retries=0,
-)
-async def scan_expired_manual_grants() -> None:
+@actor(actor_name="manual_grant.revoke_expired", priority=TaskPriority.MEDIUM)
+async def manual_grant_revoke_expired(manual_grant_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
-        count = await manual_grant_service.request_revoke_expired(session, limit=500)
-        log.info("Scanned expired manual grants", count=count)
+        count = await manual_grant_service.revoke_expired(session, manual_grant_id)
+        log.info(
+            "Expired manual grant revocations enqueued",
+            manual_grant_id=str(manual_grant_id),
+            count=count,
+        )
 
 
 @actor(actor_name="benefit.enqueue_benefits_grants", priority=TaskPriority.MEDIUM)

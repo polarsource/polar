@@ -87,6 +87,7 @@ from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
     MaintainerNewProductSaleNotificationPayload,
+    MaintainerSubscriptionRenewalNotificationPayload,
     NotificationType,
 )
 from polar.notifications.service import PartialNotification
@@ -2218,6 +2219,15 @@ class OrderService:
 
         return update_dict
 
+    def _get_product_image_url(self, product: Product) -> str | None:
+        try:
+            if product.product_medias and len(product.product_medias) > 0:
+                first_media = product.product_medias[0].file
+                return S3_SERVICES[first_media.service].get_public_url(first_media.path)
+        except Exception:
+            pass
+        return None
+
     async def send_admin_notification(
         self, session: AsyncSession, organization: Organization, order: Order
     ) -> None:
@@ -2226,15 +2236,7 @@ class OrderService:
         if product is None:
             return
 
-        product_image_url: str | None = None
-        try:
-            if product.product_medias and len(product.product_medias) > 0:
-                first_media = product.product_medias[0].file
-                product_image_url = S3_SERVICES[first_media.service].get_public_url(
-                    first_media.path
-                )
-        except Exception:
-            pass
+        product_image_url = self._get_product_image_url(product)
 
         billing_address = order.billing_address
         customer = order.customer
@@ -2264,6 +2266,41 @@ class OrderService:
                     organization_name=organization.name,
                     organization_slug=organization.slug,
                     billing_reason=order.billing_reason,
+                    currency=order.currency,
+                ),
+            ),
+        )
+
+    async def send_subscription_renewal_notification(
+        self, session: AsyncSession, order: Order
+    ) -> None:
+        product = order.product
+        subscription = order.subscription
+
+        if product is None or subscription is None:
+            return
+
+        organization = order.organization
+        customer = order.customer
+
+        await notifications_service.send_to_org_members(
+            session,
+            org_id=organization.id,
+            notif=PartialNotification(
+                type=NotificationType.maintainer_subscription_renewal,
+                payload=MaintainerSubscriptionRenewalNotificationPayload(
+                    customer_email=customer.email,
+                    customer_name=customer.display_name,
+                    product_name=product.name,
+                    product_price_amount=order.net_amount,
+                    product_image_url=self._get_product_image_url(product),
+                    order_id=str(order.id),
+                    order_date=order.created_at.isoformat(),
+                    organization_name=organization.name,
+                    organization_slug=organization.slug,
+                    subscription_id=str(subscription.id),
+                    recurring_interval=subscription.recurring_interval,
+                    recurring_interval_count=subscription.recurring_interval_count,
                     currency=order.currency,
                 ),
             ),
@@ -2807,6 +2844,7 @@ class OrderService:
                 "benefit.enqueue_benefit_grant_cycles",
                 subscription_id=order.subscription_id,
             )
+            enqueue_job("order.subscription_renewal_notification", order.id)
 
     async def _emit_balance_credit_order_event(
         self,

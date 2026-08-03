@@ -67,6 +67,21 @@ const OrganizationNotificationSettings: React.FC<
         />
       </SettingsGroupItem>
 
+      <SettingsGroupItem
+        title="Subscription Renewals"
+        description="Receive a notification each time a subscription renewal payment is collected"
+      >
+        <Switch
+          checked={settings.subscription_renewal ?? false}
+          onCheckedChange={(checked) =>
+            update((previous) => ({
+              ...previous,
+              subscription_renewal: checked,
+            }))
+          }
+        />
+      </SettingsGroupItem>
+
       {canManage === true && (
         <SettingsGroupItem
           title="Prevented Chargebacks"

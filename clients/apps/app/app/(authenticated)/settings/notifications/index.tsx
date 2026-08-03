@@ -107,6 +107,18 @@ export default function NotificationsPage() {
             onValueChange={createNotificationSettingHandler('new_subscription')}
           />
         </SettingsItem>
+        <SettingsItem
+          title="Subscription Renewals"
+          description="Send a notification each time a subscription renewal payment is collected"
+          variant="static"
+        >
+          <Switch
+            value={notificationSettings?.subscription_renewal ?? false}
+            onValueChange={createNotificationSettingHandler(
+              'subscription_renewal',
+            )}
+          />
+        </SettingsItem>
         <Box
           flexDirection="column"
           gap="spacing-4"

@@ -29,11 +29,9 @@ export const Hero = () => {
       whileInView="visible"
       viewport={{ once: true }}
     >
-      <Box>
+      <Box maxWidth="64rem">
         <Text variant="heading-2xl">
-          Turn Usage
-          <br />
-          Into Revenue
+          Finance layer for software that thinks
         </Text>
       </Box>
       <motion.p

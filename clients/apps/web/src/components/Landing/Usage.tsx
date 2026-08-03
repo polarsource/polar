@@ -1,52 +1,58 @@
 'use client'
 
-import { RadialSpinner } from './graphics/RadialSpinner'
-import { GaugeSweep } from './graphics/GaugeSweep'
+import { Grid, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+
 import { ConcentricDraw } from './graphics/ConcentricDraw'
+import { GaugeSweep } from './graphics/GaugeSweep'
+import { RadialSpinner } from './graphics/RadialSpinner'
 
 const LAYERS = [
   {
     id: '01',
-    name: 'Ingest',
-    desc: 'Ingest usage & inference on behalf of your users.',
+    name: 'We measure the usage',
+    desc: 'Every call, token, and second your users consume, recorded the moment it happens. No pipeline to run, nothing to reconcile.',
   },
   {
     id: '02',
-    name: 'Aggregate',
-    desc: 'Transform raw signals into aggregated units.',
+    name: 'We calculate the charge',
+    desc: 'Raw events roll into priced units. Per seat, per token, tiered, hybrid. The math follows when you change your mind mid-cycle.',
   },
   {
     id: '03',
-    name: 'Charge',
-    desc: 'Generate charges & collect payments automatically.',
+    name: 'We take on the liability',
+    desc: "We're the merchant of record. Sales tax, VAT, and chargebacks land on our name, not yours.",
   },
 ]
 
 export const Usage = () => (
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+  <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap="l">
     {LAYERS.map((l, i) => (
-      <div
+      <Box
         key={l.id}
-        className="dark:bg-polar-900 flex flex-col bg-gray-50 p-2"
+        flexDirection="column"
+        backgroundColor="background-secondary"
+        padding="s"
       >
-        {/* Graphic */}
-        <div className="aspect-square">
+        <Box flexDirection="column" rowGap="s" padding="2xl">
+          <Text variant="label" as="h3" color="muted" monospace>
+            FIG. {l.id}
+          </Text>
+        </Box>
+        <Box display="block" aspectRatio="1 / 1">
           {i === 0 && <RadialSpinner />}
           {i === 1 && <GaugeSweep />}
           {i === 2 && <ConcentricDraw />}
-        </div>
-        {/* Label */}
-        <div className="flex flex-col px-8 py-8">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <span className="font-display text-2xl text-gray-900 dark:text-white">
-              {l.name}
-            </span>
-            <span className="dark:text-polar-500 text-xl text-pretty text-gray-500">
-              {l.desc}
-            </span>
-          </div>
-        </div>
-      </div>
+        </Box>
+        <Box flexDirection="column" rowGap="s" padding="2xl">
+          <Text variant="heading-xs" as="h3">
+            {l.name}
+          </Text>
+          <Text variant="body" color="muted">
+            {l.desc}
+          </Text>
+        </Box>
+      </Box>
     ))}
-  </div>
+  </Grid>
 )

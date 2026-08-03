@@ -72,7 +72,11 @@ async def order_created(order_id: uuid.UUID) -> None:
             raise OrderDoesNotExist(order_id)
 
 
-@actor(actor_name="order.create_subscription_order", priority=TaskPriority.LOW)
+@actor(
+    actor_name="order.create_subscription_order",
+    priority=TaskPriority.LOW,
+    time_limit=1_800_000,  # 30 min: linking large billing entry backlogs exceeds the 60s default
+)
 async def create_subscription_order(
     subscription_id: uuid.UUID,
     order_reason: OrderBillingReasonInternal,

@@ -29,7 +29,7 @@ export const Hero = () => {
       whileInView="visible"
       viewport={{ once: true }}
     >
-      <Box maxWidth="64rem">
+      <Box>
         <Text variant="heading-2xl">
           Finance layer for software that thinks
         </Text>

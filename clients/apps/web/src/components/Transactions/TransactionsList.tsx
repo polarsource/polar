@@ -8,6 +8,7 @@ import { ISODuration } from '@/utils/duration'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import {
+  Text,
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
@@ -60,7 +61,11 @@ const TransactionsList = ({
         if (isSameDayAsParent) {
           return null
         }
-        return <FormattedDateTime datetime={datetime} resolution="time" />
+        return (
+          <Text as="span" tabularNums>
+            <FormattedDateTime datetime={datetime} resolution="time" />
+          </Text>
+        )
       },
     },
     {

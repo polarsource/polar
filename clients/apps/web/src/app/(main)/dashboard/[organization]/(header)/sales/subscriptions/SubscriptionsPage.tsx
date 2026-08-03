@@ -213,7 +213,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
         <DataTableColumnHeader column={column} title="Subscription Date" />
       ),
       cell: (props) => (
-        <FormattedDateTime datetime={props.getValue() as string} />
+        <Text as="span" tabularNums>
+          <FormattedDateTime datetime={props.getValue() as string} />
+        </Text>
       ),
     },
     {
@@ -233,7 +235,9 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           (status === 'active' || status === 'trialing') &&
           !cancel_at_period_end
         return datetime && willRenew ? (
-          <FormattedDateTime datetime={datetime} />
+          <Text as="span" tabularNums>
+            <FormattedDateTime datetime={datetime} />
+          </Text>
         ) : (
           '—'
         )

@@ -208,7 +208,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       ),
       cell: ({ row: { original: order } }) => (
         <Box display="block" textAlign="right">
-          <Text variant="body" tabularNums>
+          <Text tabularNums>
             {formatCurrency('accounting')(order.net_amount, order.currency)}
           </Text>
         </Box>

@@ -19,14 +19,31 @@ const JOBS = [
       {
         role: 'Senior Platform Engineer',
         location: 'Remote, Europe',
-        experience: '5-8+ Years',
+        experience: '5-8+ Years Experience',
         link: 'https://jobs.ashbyhq.com/polar/8a82633e-e7b9-42f4-92e1-33032a56097a',
       },
       {
         role: 'Senior Product Engineer',
         location: 'Remote, Europe',
-        experience: '7+ Years',
+        experience: '7+ Years Experience',
         link: 'https://jobs.ashbyhq.com/polar/955c6935-6d03-46e5-b649-a8b958a52962',
+      },
+    ],
+  },
+  {
+    category: 'Merchant Operations',
+    roles: [
+      {
+        role: 'Risk & Compliance Specialist',
+        link: 'https://jobs.ashbyhq.com/polar/64aa23ec-38c2-4d8e-8510-cdda2197042d',
+        location: 'Remote, United States',
+        experience: '2+ Years Experience',
+      },
+      {
+        role: 'Merchant Support Specialist',
+        link: 'https://jobs.ashbyhq.com/polar/2f3744b5-f33b-4611-bdfa-d99700dfa0e7',
+        location: 'Remote, United States',
+        experience: '2+ Years Experience',
       },
     ],
   },
@@ -157,7 +174,7 @@ export default function CompanyPage() {
             title="Open Roles"
             description="We're a small, senior team working remotely across the world. High ownership, high pace and a direct line to the people using what you build."
           />
-          <Box flexDirection="column" rowGap="5xl">
+          <Box flexDirection="column" rowGap="2xl">
             {JOBS.map(({ category, roles }) => (
               <Box key={category} flexDirection="column" rowGap="xl">
                 <Text variant="heading-xxs" as="h3">

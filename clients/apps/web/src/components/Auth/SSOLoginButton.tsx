@@ -49,7 +49,7 @@ const SSOLoginButton = ({
 
   return (
     <a onClick={onClick}>
-      <Button variant={variant} wrapperClassNames="space-x-2 " fullWidth>
+      <Button variant={variant} wrapperClassNames="space-x-2" fullWidth>
         <Key fontSize="small" />
         <div>{connection.name ?? 'Sign in with SSO'}</div>
       </Button>

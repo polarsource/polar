@@ -12,14 +12,7 @@ import {
   resolveBenefitIcon,
 } from './utils'
 
-export default function BenefitSelector({
-  organizationId,
-  value,
-  onChange,
-  excludeIds,
-  className,
-  placeholder = 'Select a benefit',
-}: {
+interface BenefitSelectorProps {
   organizationId: string
   value: string | null
   onChange: (
@@ -29,7 +22,16 @@ export default function BenefitSelector({
   excludeIds?: string[]
   className?: string
   placeholder?: string
-}) {
+}
+
+export default function BenefitSelector({
+  organizationId,
+  value,
+  onChange,
+  excludeIds,
+  className,
+  placeholder = 'Select a benefit',
+}: BenefitSelectorProps) {
   const [query, setQuery] = useState('')
 
   const { data: benefits, isLoading } = useBenefits(organizationId, {

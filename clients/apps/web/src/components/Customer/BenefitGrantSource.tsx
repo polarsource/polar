@@ -21,16 +21,15 @@ export const BenefitGrantSource = ({
 }) => {
   if (grant.manual_grant) {
     const { reason, expires_at } = grant.manual_grant
+    const status = <Status color="blue" status="Manual" />
+    if (!reason && !expires_at) {
+      return status
+    }
     return (
       <Tooltip>
-        <TooltipTrigger>
-          <Status color="blue" status="Manual" />
-        </TooltipTrigger>
+        <TooltipTrigger>{status}</TooltipTrigger>
         <TooltipContent>
           <Box flexDirection="column" rowGap="xs">
-            <Text variant="caption" color="inherit">
-              Granted manually, outside any subscription or purchase
-            </Text>
             {reason && (
               <Text variant="caption" color="inherit">
                 Reason: {reason}

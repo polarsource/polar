@@ -52,10 +52,7 @@ class ManualGrant(RecordModel):
         TIMESTAMP(timezone=True), nullable=True
     )
 
-    # Claimed by the expiry scheduler when it dispatches
-    # `manual_grant.revoke_expired`. Expiry is one-shot, so unlike
-    # subscriptions the claim is never cleared: a non-NULL value means
-    # "expiry dispatched".
+    # Set when expiry is dispatched; never cleared (one-shot).
     scheduler_locked_at: Mapped[datetime | None] = mapped_column(
         TIMESTAMP(timezone=True), nullable=True, default=None
     )

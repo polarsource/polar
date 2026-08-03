@@ -128,8 +128,6 @@ class BenefitGrant(RecordModel):
             postgresql_nulls_not_distinct=True,
             postgresql_where=text("deleted_at IS NULL"),
         ),
-        # At most one active manual grant per (customer, benefit, member) across
-        # all manual grants; race-proof backstop for the create-time check.
         Index(
             "ix_benefit_grants_active_manual_unique",
             "customer_id",

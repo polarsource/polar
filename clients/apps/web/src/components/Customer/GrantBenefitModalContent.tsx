@@ -6,6 +6,7 @@ import { useCreateBenefitGrants } from '@/hooks/queries/benefits'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Button, Input, Switch, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
+import { format } from 'date-fns'
 import { useMemo, useState } from 'react'
 import { useToast } from '../Toast/use-toast'
 
@@ -96,11 +97,10 @@ const GrantBenefitModalContent = ({
     [selected, excludeBenefitIds],
   )
 
-  const minExpiresAt = useMemo(() => {
-    const now = new Date()
-    const pad = (n: number) => String(n).padStart(2, '0')
-    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`
-  }, [])
+  const minExpiresAt = useMemo(
+    () => format(new Date(), "yyyy-MM-dd'T'HH:mm"),
+    [],
+  )
 
   const canSubmit =
     selected.length > 0 &&

@@ -30,7 +30,7 @@ const EXPORT_COLUMN_GROUPS = [
   {
     label: 'Amounts',
     columns: [
-      { value: 'amount', label: 'Net Amount' },
+      { value: 'net_amount', label: 'Net Amount' },
       { value: 'currency', label: 'Currency' },
       { value: 'subtotal_amount', label: 'Subtotal' },
       { value: 'discount_amount', label: 'Discount' },
@@ -58,7 +58,7 @@ export const DEFAULT_EXPORT_COLUMNS: ExportColumn[] = [
   'email',
   'created_at',
   'product',
-  'amount',
+  'net_amount',
   'currency',
   'status',
   'invoice_number',

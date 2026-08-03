@@ -24804,7 +24804,7 @@ export interface components {
       | 'email'
       | 'created_at'
       | 'product'
-      | 'amount'
+      | 'net_amount'
       | 'currency'
       | 'status'
       | 'invoice_number'

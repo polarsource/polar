@@ -26,7 +26,7 @@ class OrderExportColumn(StrEnum):
     email = "email"
     created_at = "created_at"
     product = "product"
-    amount = "amount"
+    net_amount = "net_amount"
     currency = "currency"
     status = "status"
     invoice_number = "invoice_number"
@@ -45,7 +45,7 @@ ORDER_EXPORT_HEADERS: dict[OrderExportColumn, str] = {
     OrderExportColumn.email: "Email",
     OrderExportColumn.created_at: "Created At",
     OrderExportColumn.product: "Product",
-    OrderExportColumn.amount: "Net Amount",
+    OrderExportColumn.net_amount: "Net Amount",
     OrderExportColumn.currency: "Currency",
     OrderExportColumn.status: "Status",
     OrderExportColumn.invoice_number: "Invoice number",
@@ -64,7 +64,7 @@ ORDER_EXPORT_DEFAULT_COLUMNS: list[OrderExportColumn] = [
     OrderExportColumn.email,
     OrderExportColumn.created_at,
     OrderExportColumn.product,
-    OrderExportColumn.amount,
+    OrderExportColumn.net_amount,
     OrderExportColumn.currency,
     OrderExportColumn.status,
     OrderExportColumn.invoice_number,
@@ -98,7 +98,7 @@ def _row(order: Order, tz: ZoneInfo) -> dict[OrderExportColumn, str | float | No
         OrderExportColumn.email: order.customer.email,
         OrderExportColumn.created_at: order.created_at.astimezone(tz).isoformat(),
         OrderExportColumn.product: order.description,
-        OrderExportColumn.amount: order.net_amount / 100,
+        OrderExportColumn.net_amount: order.net_amount / 100,
         OrderExportColumn.currency: order.currency,
         OrderExportColumn.status: order.status,
         OrderExportColumn.invoice_number: order.invoice_number,

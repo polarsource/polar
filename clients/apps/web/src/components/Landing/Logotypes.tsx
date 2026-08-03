@@ -2,9 +2,9 @@ import { motion } from 'motion/react'
 import Link from 'next/link'
 import { JSX } from 'react'
 import {
+  Confidence,
   FastAPICloud,
-  MiddayWordmark,
-  Speakeasy,
+  // Goals,
   StillaAIWordmark,
   Tailwind,
 } from './Logos'
@@ -27,16 +27,12 @@ const items = [
     link: 'https://playgoals.com',
   }, */
   {
-    icon: <Speakeasy />,
-    link: 'https://speakeasy.com',
-  },
-  {
     icon: <StillaAIWordmark size={28} />,
     link: 'https://stilla.ai',
   },
   {
-    icon: <MiddayWordmark size={32} />,
-    link: 'https://midday.ai',
+    icon: <Confidence size={32} />,
+    link: 'https://confidence.spotify.com',
   },
 ]
 
@@ -93,7 +89,7 @@ export const Logotypes = () => {
       </div>
 
       {/* Desktop: static row */}
-      <div className="hidden items-center gap-x-12 xl:flex">
+      <div className="hidden items-center gap-x-16 xl:flex">
         {items.map((item) => (
           <Logotype key={item.link} icon={item.icon} link={item.link} />
         ))}

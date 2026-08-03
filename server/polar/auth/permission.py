@@ -13,6 +13,11 @@ maps each `OrganizationRole` to the set of permissions it grants. `owner` and
 invariants (singularity per org, member-removal exemption), not by additional
 permissions. The `organizations:transfer_ownership` permission is reserved
 for a future self-serve transfer flow and will be owner-only when introduced.
+
+`finance` is a scoped role: read + write on sales, read-only on the data
+models sales depend on (finance, customers, products, custom fields,
+analytics), and nothing else — no member, organization, or write access
+beyond sales.
 """
 
 from enum import StrEnum
@@ -80,10 +85,24 @@ _MEMBER_PERMISSIONS: set[OrganizationPermission] = {
     OrganizationPermission.events_ingest,
 }
 
+# `finance` role: read + write on sales, read-only on the data models sales
+# relate to, and no other permissions (no member/org management, no writes
+# outside sales, no event ingestion).
+_FINANCE_PERMISSIONS: set[OrganizationPermission] = {
+    OrganizationPermission.sales_read,
+    OrganizationPermission.sales_manage,
+    OrganizationPermission.finance_read,
+    OrganizationPermission.customers_read,
+    OrganizationPermission.products_read,
+    OrganizationPermission.custom_fields_read,
+    OrganizationPermission.analytics_read,
+}
+
 ROLE_PERMISSIONS: dict[OrganizationRole, set[OrganizationPermission]] = {
     OrganizationRole.member: _MEMBER_PERMISSIONS,
     OrganizationRole.admin: _MEMBER_PERMISSIONS | _ADMIN_ONLY,
     OrganizationRole.owner: _MEMBER_PERMISSIONS | _ADMIN_ONLY,
+    OrganizationRole.finance: _FINANCE_PERMISSIONS,
 }
 
 

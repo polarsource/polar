@@ -23,25 +23,26 @@ const itemVariants = {
 export const Hero = () => {
   return (
     <motion.div
-      className="relative mx-auto flex max-w-7xl flex-col items-center justify-center gap-8 px-4 pt-8 text-center md:pt-12"
+      className="relative mx-auto flex max-w-7xl flex-col items-center justify-center gap-8 px-4 py-8 text-center md:py-12"
       variants={containerVariants}
       initial="hidden"
       whileInView="visible"
       viewport={{ once: true }}
     >
-      <Box>
-        <Text variant="heading-2xl">
-          Finance layer for software that thinks
+      <Box maxWidth="64rem">
+        <Text variant="heading-xl">
+          The finance layer for intelligent software
         </Text>
       </Box>
       <motion.p
-        className="dark:text-polar-500 max-w-2xl text-center text-2xl leading-relaxed! text-balance text-gray-500"
+        className="dark:text-polar-500 max-w-2xl text-center text-2xl leading-snug! text-balance text-gray-500"
         variants={itemVariants}
       >
-        The financial substrate for the intelligence era
+        A financial substrate for modern software, from first inference call to
+        net revenue.
       </motion.p>
       <motion.div
-        className="mt-6 flex flex-col items-center gap-4 md:flex-row md:gap-6"
+        className="mt-2 flex flex-col items-center gap-4 md:flex-row md:gap-6"
         variants={itemVariants}
       >
         <GetStartedButton size="lg" text="Get Started" />

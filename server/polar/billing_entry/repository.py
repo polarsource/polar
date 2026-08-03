@@ -18,7 +18,7 @@ from polar.models import BillingEntry
 from polar.models.billing_entry import BillingEntryType
 from polar.models.product_price import ProductPrice, ProductPriceMeteredUnit
 
-_LINK_PENDING_BATCH_SIZE = 25_000
+_LINK_PENDING_BATCH_SIZE = 5_000
 
 
 class BillingEntryRepository(

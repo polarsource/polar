@@ -11,7 +11,7 @@ from polar.kit.csv import IterableCSVWriter
 from polar.kit.db.postgres import AsyncReadSession
 from polar.kit.pagination import PaginationParams
 from polar.models import Order
-from polar.models.order import OrderStatus
+from polar.models.order import OrderBillingReasonInternal, OrderStatus
 from polar.organization.schemas import OrganizationID
 from polar.product.schemas import ProductID
 
@@ -99,7 +99,9 @@ def _row(order: Order, tz: ZoneInfo) -> dict[OrderExportColumn, str | float | No
         OrderExportColumn.tax_amount: order.tax_amount / 100,
         OrderExportColumn.total_amount: order.total_amount / 100,
         OrderExportColumn.refunded_amount: order.refunded_amount / 100,
-        OrderExportColumn.billing_reason: order.billing_reason.to_public(),
+        OrderExportColumn.billing_reason: OrderBillingReasonInternal.to_public(
+            order.billing_reason
+        ),
     }
 
 

@@ -95,7 +95,7 @@ class OrderBase(TimestampedSchema, IDSchema):
     def serialize_billing_reason(
         self, value: OrderBillingReasonInternal
     ) -> OrderBillingReason:
-        return value.to_public()
+        return OrderBillingReasonInternal.to_public(value)
 
     invoice_number: str | None = Field(
         description=(

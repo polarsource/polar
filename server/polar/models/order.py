@@ -67,13 +67,11 @@ class OrderBillingReasonInternal(StrEnum):
     subscription_cancel = "subscription_cancel"
     subscription_update = "subscription_update"
 
-    def to_public(self) -> OrderBillingReason:
-        if self in (
-            OrderBillingReasonInternal.subscription_cycle_after_trial,
-            OrderBillingReasonInternal.subscription_cancel,
-        ):
+    @classmethod
+    def to_public(cls, value: "OrderBillingReasonInternal") -> OrderBillingReason:
+        if value in (cls.subscription_cycle_after_trial, cls.subscription_cancel):
             return OrderBillingReason.subscription_cycle
-        return OrderBillingReason(self)
+        return OrderBillingReason(value)
 
 
 class OrderStatus(StrEnum):

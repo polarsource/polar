@@ -212,7 +212,12 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
           {activeFilter && (
             <>
               <Box alignItems="center" columnGap="xs" padding="s">
-                <Button variant="ghost" size="sm" onClick={goBack}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={goBack}
+                  aria-label="Back to filters"
+                >
                   <ArrowBackOutlined fontSize="inherit" />
                 </Button>
                 <Box position="relative" flex={1} height={32}>

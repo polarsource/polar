@@ -16,6 +16,7 @@ resource "render_background_worker" "tailscale_router" {
   env_vars = {
     TAILSCALE_AUTHKEY   = { value = var.tailscale_authkey }
     ADVERTISE_ROUTES    = { value = var.advertise_routes }
+    ADVERTISE_EXIT_NODE = { value = var.advertise_exit_node ? "true" : "false" }
     TAILSCALE_VERSION   = { value = var.tailscale_version }
     RENDER_SERVICE_NAME = { value = "tailscale-router-${var.environment}" }
   }

@@ -5,7 +5,6 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
-from polar.benefit.grant.manual.schemas import ManualGrantBenefitCreate
 from polar.benefit.grant.manual.service import (
     manual_grant as manual_grant_service,
 )
@@ -246,7 +245,7 @@ class TestCreate:
             session,
             auth_subject,
             customer_id=customer.id,
-            grants=[ManualGrantBenefitCreate(benefit_id=benefit_organization.id)],
+            benefit_ids=[benefit_organization.id],
             reason="Customer success exception",
         )
 
@@ -287,10 +286,7 @@ class TestCreate:
             session,
             auth_subject,
             customer_id=customer.id,
-            grants=[
-                ManualGrantBenefitCreate(benefit_id=benefit_organization.id),
-                ManualGrantBenefitCreate(benefit_id=other_benefit.id),
-            ],
+            benefit_ids=[benefit_organization.id, other_benefit.id],
         )
 
         assert manual_grant.customer_id == customer.id
@@ -336,7 +332,7 @@ class TestCreate:
             session,
             auth_subject,
             customer_id=customer.id,
-            grants=[ManualGrantBenefitCreate(benefit_id=benefit_organization.id)],
+            benefit_ids=[benefit_organization.id],
         )
 
         assert manual_grant.customer_id == customer.id
@@ -355,11 +351,67 @@ class TestCreate:
                 session,
                 auth_subject,
                 customer_id=customer.id,
-                grants=[
-                    ManualGrantBenefitCreate(benefit_id=benefit_organization.id),
-                    ManualGrantBenefitCreate(benefit_id=benefit_organization.id),
-                ],
+                benefit_ids=[benefit_organization.id, benefit_organization.id],
             )
+
+    @pytest.mark.auth
+    async def test_already_manually_granted(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        customer: Customer,
+        benefit_organization: Benefit,
+    ) -> None:
+        existing = await create_manual_grant(save_fixture, customer=customer)
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            manual_grant=existing,
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await manual_grant_service.create(
+                session,
+                auth_subject,
+                customer_id=customer.id,
+                benefit_ids=[benefit_organization.id],
+            )
+
+    @pytest.mark.auth
+    async def test_revoked_manual_grant_allows_regrant(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        customer: Customer,
+        benefit_organization: Benefit,
+    ) -> None:
+        mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
+        existing = await create_manual_grant(save_fixture, customer=customer)
+        revoked = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            manual_grant=existing,
+        )
+        revoked.set_revoked()
+        await save_fixture(revoked)
+
+        manual_grant = await manual_grant_service.create(
+            session,
+            auth_subject,
+            customer_id=customer.id,
+            benefit_ids=[benefit_organization.id],
+        )
+
+        assert len(manual_grant.grants) == 1
 
     @pytest.mark.auth
     async def test_ineligible_benefit_type(
@@ -382,7 +434,7 @@ class TestCreate:
                 session,
                 auth_subject,
                 customer_id=customer.id,
-                grants=[ManualGrantBenefitCreate(benefit_id=benefit.id)],
+                benefit_ids=[benefit.id],
             )
 
     @pytest.mark.auth
@@ -402,7 +454,7 @@ class TestCreate:
                 session,
                 auth_subject,
                 customer_id=customer.id,
-                grants=[ManualGrantBenefitCreate(benefit_id=benefit.id)],
+                benefit_ids=[benefit.id],
             )
 
     @pytest.mark.auth
@@ -428,7 +480,7 @@ class TestCreate:
                 session,
                 auth_subject,
                 customer_id=other_customer.id,
-                grants=[ManualGrantBenefitCreate(benefit_id=benefit_organization.id)],
+                benefit_ids=[benefit_organization.id],
             )
 
 
@@ -453,7 +505,7 @@ class TestRequestRevoke:
         )
 
         enqueue_mock = mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
-        await manual_grant_service.request_revoke(session, manual_grant, grant)
+        await manual_grant_service.request_revoke(session, grant)
 
         enqueue_mock.assert_called_once_with(
             "benefit.revoke",
@@ -484,7 +536,7 @@ class TestRequestRevoke:
         await save_fixture(grant)
         enqueue_mock = mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
 
-        await manual_grant_service.request_revoke(session, manual_grant, grant)
+        await manual_grant_service.request_revoke(session, grant)
 
         enqueue_mock.assert_not_called()
 
@@ -509,7 +561,7 @@ class TestRequestRevoke:
         await save_fixture(grant)
         enqueue_mock = mocker.patch("polar.benefit.grant.manual.service.enqueue_job")
 
-        await manual_grant_service.request_revoke(session, manual_grant, grant)
+        await manual_grant_service.request_revoke(session, grant)
 
         enqueue_mock.assert_called_once_with(
             "benefit.revoke",

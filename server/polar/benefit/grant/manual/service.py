@@ -20,7 +20,6 @@ from polar.models import (
     BenefitGrant,
     Customer,
     ManualGrant,
-    Member,
     Organization,
     User,
 )
@@ -29,7 +28,6 @@ from polar.postgres import AsyncSession
 from polar.worker import enqueue_job
 
 from .repository import ManualGrantRepository
-from .schemas import ManualGrantBenefitCreate
 
 # Only benefit types whose grant/revoke side effects are per-grant-safe: they either
 # have no external side effects (feature_flag, custom) or side effects owned by the
@@ -50,7 +48,7 @@ class ManualGrantService:
         auth_subject: AuthSubject[User | Organization],
         *,
         customer_id: UUID,
-        grants: Sequence[ManualGrantBenefitCreate],
+        benefit_ids: Sequence[UUID],
         expires_at: datetime | None = None,
         reason: str | None = None,
     ) -> ManualGrant:
@@ -63,10 +61,21 @@ class ManualGrantService:
         if customer is None:
             raise ResourceNotFound("Customer not found")
 
+        # Manual grants are customer-level: like a non-seat purchase, the grant
+        # targets the customer and the owner member is resolved automatically.
+        member = await resolve_member(
+            session,
+            customer_id=customer.id,
+            organization=customer.organization,
+            member_id=None,
+            is_seat_based=False,
+        )
+        member_id = member.id if member is not None else None
+
         benefit_repository = BenefitRepository.from_session(session)
         benefit_statement = (
             benefit_repository.get_base_statement()
-            .where(Benefit.id.in_({grant.benefit_id for grant in grants}))
+            .where(Benefit.id.in_(set(benefit_ids)))
             .options(*benefit_repository.get_eager_options())
         )
         benefits = {
@@ -74,18 +83,25 @@ class ManualGrantService:
             for benefit in await benefit_repository.get_all(benefit_statement)
         }
 
-        resolved: list[tuple[Benefit, Member | None]] = []
-        seen: set[tuple[UUID, UUID | None]] = set()
+        grant_repository = BenefitGrantRepository.from_session(session)
+        already_granted_ids = (
+            await grant_repository.list_active_manual_grant_benefit_ids(
+                customer.id, benefit_ids, member_id=member_id
+            )
+        )
+
+        resolved: list[Benefit] = []
+        seen: set[UUID] = set()
         errors: list[ValidationError] = []
-        for index, grant in enumerate(grants):
-            benefit = benefits.get(grant.benefit_id)
+        for index, benefit_id in enumerate(benefit_ids):
+            benefit = benefits.get(benefit_id)
             if benefit is None or benefit.organization_id not in org_ids:
                 errors.append(
                     {
-                        "loc": ("body", "grants", index, "benefit_id"),
+                        "loc": ("body", "benefit_ids", index),
                         "msg": "Benefit not found.",
                         "type": "value_error",
-                        "input": str(grant.benefit_id),
+                        "input": str(benefit_id),
                     }
                 )
                 continue
@@ -93,13 +109,13 @@ class ManualGrantService:
             if benefit.organization_id != customer.organization_id:
                 errors.append(
                     {
-                        "loc": ("body", "grants", index, "benefit_id"),
+                        "loc": ("body", "benefit_ids", index),
                         "msg": (
                             "The customer and the benefit must belong to the same "
                             "organization."
                         ),
                         "type": "value_error",
-                        "input": str(grant.benefit_id),
+                        "input": str(benefit_id),
                     }
                 )
                 continue
@@ -107,37 +123,41 @@ class ManualGrantService:
             if benefit.type not in MANUALLY_GRANTABLE_BENEFIT_TYPES:
                 errors.append(
                     {
-                        "loc": ("body", "grants", index, "benefit_id"),
+                        "loc": ("body", "benefit_ids", index),
                         "msg": "This benefit type cannot be granted manually.",
                         "type": "value_error",
-                        "input": str(grant.benefit_id),
+                        "input": str(benefit_id),
                         "ctx": {"benefit_type": str(benefit.type)},
                     }
                 )
                 continue
 
-            member = await resolve_member(
-                session,
-                customer_id=customer.id,
-                organization=customer.organization,
-                member_id=grant.member_id,
-                is_seat_based=False,
-            )
-            member_id = member.id if member is not None else None
-
-            key = (grant.benefit_id, member_id)
-            if key in seen:
+            if benefit_id in seen:
                 errors.append(
                     {
-                        "loc": ("body", "grants", index, "benefit_id"),
-                        "msg": "Duplicate benefit and member in the same manual grant.",
+                        "loc": ("body", "benefit_ids", index),
+                        "msg": "Duplicate benefit in the same request.",
                         "type": "value_error",
-                        "input": str(grant.benefit_id),
+                        "input": str(benefit_id),
                     }
                 )
                 continue
-            seen.add(key)
-            resolved.append((benefit, member))
+
+            if benefit_id in already_granted_ids:
+                errors.append(
+                    {
+                        "loc": ("body", "benefit_ids", index),
+                        "msg": (
+                            "This benefit is already manually granted to this customer."
+                        ),
+                        "type": "value_error",
+                        "input": str(benefit_id),
+                    }
+                )
+                continue
+
+            seen.add(benefit_id)
+            resolved.append(benefit)
 
         if errors:
             raise PolarRequestValidationError(errors)
@@ -158,7 +178,7 @@ class ManualGrantService:
                 manual_grant=manual_grant,
                 properties={},
             )
-            for benefit, member in resolved
+            for benefit in resolved
         ]
         session.add_all(benefit_grants)
         await session.flush()
@@ -178,9 +198,8 @@ class ManualGrantService:
     async def request_revoke(
         self,
         session: AsyncSession,
-        manual_grant: ManualGrant,
         grant: BenefitGrant,
-    ) -> ManualGrant:
+    ) -> BenefitGrant:
         grant_repository = BenefitGrantRepository.from_session(session)
         locked_grant = await grant_repository.get_by_id(
             grant.id,
@@ -192,19 +211,18 @@ class ManualGrantService:
         )
         if locked_grant is None:
             raise ResourceNotFound("Benefit grant not found")
-        grant = locked_grant
 
-        if grant.is_revoked:
-            return manual_grant
+        if locked_grant.is_revoked:
+            return grant
 
         enqueue_job(
             "benefit.revoke",
-            customer_id=grant.customer_id,
-            benefit_id=grant.benefit_id,
-            member_id=grant.member_id,
-            manual_grant_id=manual_grant.id,
+            customer_id=locked_grant.customer_id,
+            benefit_id=locked_grant.benefit_id,
+            member_id=locked_grant.member_id,
+            manual_grant_id=locked_grant.manual_grant_id,
         )
-        return manual_grant
+        return grant
 
     async def request_revoke_expired(
         self,

@@ -128,6 +128,20 @@ class BenefitGrant(RecordModel):
             postgresql_nulls_not_distinct=True,
             postgresql_where=text("deleted_at IS NULL"),
         ),
+        # At most one active manual grant per (customer, benefit, member) across
+        # all manual grants; race-proof backstop for the create-time check.
+        Index(
+            "ix_benefit_grants_active_manual_unique",
+            "customer_id",
+            "benefit_id",
+            "member_id",
+            unique=True,
+            postgresql_nulls_not_distinct=True,
+            postgresql_where=text(
+                "manual_grant_id IS NOT NULL "
+                "AND revoked_at IS NULL AND deleted_at IS NULL"
+            ),
+        ),
     )
 
     granted_at: Mapped[datetime | None] = mapped_column(

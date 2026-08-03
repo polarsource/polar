@@ -201,6 +201,28 @@ class BenefitGrantRepository(
         )
         return await self.get_all(statement)
 
+    async def list_active_manual_grant_benefit_ids(
+        self,
+        customer_id: UUID,
+        benefit_ids: Sequence[UUID],
+        *,
+        member_id: UUID | None,
+    ) -> set[UUID]:
+        statement = (
+            self.get_base_statement()
+            .with_only_columns(BenefitGrant.benefit_id)
+            .where(
+                BenefitGrant.customer_id == customer_id,
+                BenefitGrant.benefit_id.in_(set(benefit_ids)),
+                BenefitGrant.member_id == member_id,
+                BenefitGrant.manual_grant_id.is_not(None),
+                BenefitGrant.is_revoked.is_(False),
+                BenefitGrant.is_deleted.is_(False),
+            )
+        )
+        result = await self.session.execute(statement)
+        return set(result.scalars().all())
+
     async def list_by_customer_and_scope(
         self,
         customer: Customer,

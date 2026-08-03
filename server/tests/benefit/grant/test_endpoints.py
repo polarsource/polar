@@ -193,7 +193,7 @@ class TestCreateBenefitGrant:
             "/v1/benefit-grants/",
             json={
                 "customer_id": str(customer.id),
-                "benefit_id": str(benefit_organization.id),
+                "benefit_ids": [str(benefit_organization.id)],
             },
         )
 
@@ -215,7 +215,7 @@ class TestCreateBenefitGrant:
             "/v1/benefit-grants/",
             json={
                 "customer_id": str(customer.id),
-                "benefit_id": str(benefit_organization.id),
+                "benefit_ids": [str(benefit_organization.id)],
                 "expires_at": expires_at.isoformat(),
                 "reason": "Customer success exception",
             },
@@ -223,11 +223,15 @@ class TestCreateBenefitGrant:
 
         assert response.status_code == 201
         json = response.json()
-        assert json["customer_id"] == str(customer.id)
-        assert json["benefit_id"] == str(benefit_organization.id)
-        assert json["manual_grant_id"] is not None
-        assert json["is_granted"] is False
-        assert json["is_revoked"] is False
+        assert len(json["items"]) == 1
+        grant = json["items"][0]
+        assert grant["customer_id"] == str(customer.id)
+        assert grant["benefit_id"] == str(benefit_organization.id)
+        assert grant["manual_grant"] is not None
+        assert grant["manual_grant"]["reason"] == "Customer success exception"
+        assert grant["manual_grant"]["expires_at"] is not None
+        assert grant["is_granted"] is False
+        assert grant["is_revoked"] is False
         enqueue_mock.assert_called_once_with(
             "benefit.grant",
             customer_id=customer.id,
@@ -237,7 +241,7 @@ class TestCreateBenefitGrant:
         )
 
     @pytest.mark.auth
-    async def test_batch_returns_grants_with_shared_scope(
+    async def test_multiple_benefits_share_manual_grant(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -252,28 +256,31 @@ class TestCreateBenefitGrant:
         other_benefit = await create_benefit(save_fixture, organization=organization)
 
         response = await client.post(
-            "/v1/benefit-grants/batch",
+            "/v1/benefit-grants/",
             json={
                 "customer_id": str(customer.id),
-                "grants": [
-                    {"benefit_id": str(benefit_organization.id)},
-                    {"benefit_id": str(other_benefit.id)},
+                "benefit_ids": [
+                    str(benefit_organization.id),
+                    str(other_benefit.id),
                 ],
                 "reason": "Customer success exception",
             },
         )
 
         assert response.status_code == 201
-        json = response.json()
-        assert {grant["benefit_id"] for grant in json} == {
+        items = response.json()["items"]
+        assert {grant["benefit_id"] for grant in items} == {
             str(benefit_organization.id),
             str(other_benefit.id),
+        }
+        assert {grant["manual_grant"]["id"] for grant in items} == {
+            items[0]["manual_grant"]["id"]
         }
         grants = (
             (
                 await session.execute(
                     select(BenefitGrant).where(
-                        BenefitGrant.id.in_([UUID(grant["id"]) for grant in json])
+                        BenefitGrant.id.in_([UUID(grant["id"]) for grant in items])
                     )
                 )
             )
@@ -284,6 +291,34 @@ class TestCreateBenefitGrant:
             grants[0].manual_grant_id
         }
         assert enqueue_mock.call_count == 2
+
+    @pytest.mark.auth
+    async def test_already_manually_granted(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        customer: Customer,
+        benefit_organization: Benefit,
+    ) -> None:
+        existing = await create_manual_grant(save_fixture, customer=customer)
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit_organization,
+            granted=True,
+            manual_grant=existing,
+        )
+
+        response = await client.post(
+            "/v1/benefit-grants/",
+            json={
+                "customer_id": str(customer.id),
+                "benefit_ids": [str(benefit_organization.id)],
+            },
+        )
+
+        assert response.status_code == 422
 
 
 @pytest.mark.asyncio

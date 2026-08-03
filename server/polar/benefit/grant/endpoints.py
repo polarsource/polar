@@ -1,10 +1,7 @@
-import builtins
-from collections.abc import Sequence
 from uuid import UUID
 
 from fastapi import Depends, Query
 
-from polar.benefit.grant.manual.schemas import ManualGrantBenefitCreate
 from polar.benefit.grant.manual.service import (
     manual_grant as manual_grant_service,
 )
@@ -20,7 +17,7 @@ from polar.routing import APIRouter
 
 from ..auth import BenefitsRead, BenefitsWrite
 from ..schemas import BenefitGrant
-from .schemas import BenefitGrantBatchCreate, BenefitGrantCreate
+from .schemas import BenefitGrantCreate, BenefitGrantsCreated
 from .service import benefit_grant as benefit_grant_service
 from .sorting import ListSorting
 
@@ -78,11 +75,11 @@ async def list(
 
 @router.post(
     "/",
-    response_model=BenefitGrant,
+    response_model=BenefitGrantsCreated,
     status_code=201,
-    summary="Create Benefit Grant",
+    summary="Create Benefit Grants",
     responses={
-        201: {"description": "Benefit grant queued."},
+        201: {"description": "Benefit grants queued."},
         404: {
             "description": "Customer not found.",
             "model": ResourceNotFound.schema(),
@@ -93,58 +90,24 @@ async def create(
     benefit_grant_create: BenefitGrantCreate,
     auth_subject: BenefitsWrite,
     session: AsyncSession = Depends(get_db_session),
-) -> BenefitGrantModel:
-    """Queue a manual benefit grant and return its stable pending resource."""
+) -> BenefitGrantsCreated:
+    """
+    Manually grant one or more benefits to a customer, with a shared optional
+    expiration and reason.
+
+    The created grants are queued and returned in a pending state.
+    """
     manual_grant = await manual_grant_service.create(
         session,
         auth_subject,
         customer_id=benefit_grant_create.customer_id,
-        grants=[
-            ManualGrantBenefitCreate(
-                benefit_id=benefit_grant_create.benefit_id,
-                member_id=benefit_grant_create.member_id,
-            )
-        ],
+        benefit_ids=benefit_grant_create.benefit_ids,
         expires_at=benefit_grant_create.expires_at,
         reason=benefit_grant_create.reason,
     )
-    return manual_grant.grants[0]
-
-
-@router.post(
-    "/batch",
-    response_model=builtins.list[BenefitGrant],
-    status_code=201,
-    summary="Create Benefit Grant Batch",
-    responses={
-        201: {"description": "Benefit grant batch queued."},
-        404: {
-            "description": "Customer not found.",
-            "model": ResourceNotFound.schema(),
-        },
-    },
-)
-async def create_batch(
-    benefit_grant_create: BenefitGrantBatchCreate,
-    auth_subject: BenefitsWrite,
-    session: AsyncSession = Depends(get_db_session),
-) -> Sequence[BenefitGrantModel]:
-    """Queue manual benefit grants with shared provenance and expiration."""
-    manual_grant = await manual_grant_service.create(
-        session,
-        auth_subject,
-        customer_id=benefit_grant_create.customer_id,
-        grants=[
-            ManualGrantBenefitCreate(
-                benefit_id=grant.benefit_id,
-                member_id=grant.member_id,
-            )
-            for grant in benefit_grant_create.grants
-        ],
-        expires_at=benefit_grant_create.expires_at,
-        reason=benefit_grant_create.reason,
+    return BenefitGrantsCreated(
+        items=[BenefitGrant.model_validate(grant) for grant in manual_grant.grants]
     )
-    return manual_grant.grants
 
 
 @router.delete(
@@ -165,12 +128,9 @@ async def revoke(
     auth_subject: BenefitsWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> BenefitGrantModel:
-    """Queue revocation of a manual benefit grant."""
+    """Queue revocation of a manually granted benefit."""
     grant = await benefit_grant_service.get_manually_granted(session, auth_subject, id)
     if grant is None:
         raise ResourceNotFound("Benefit grant not found")
 
-    manual_grant = grant.manual_grant
-    assert manual_grant is not None
-    await manual_grant_service.request_revoke(session, manual_grant, grant)
-    return grant
+    return await manual_grant_service.request_revoke(session, grant)

@@ -104,6 +104,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 joinedload(BenefitGrant.customer),
                 joinedload(BenefitGrant.benefit).joinedload(Benefit.organization),
                 joinedload(BenefitGrant.member),
+                joinedload(BenefitGrant.manual_grant),
             )
 
         if options is not None:
@@ -133,6 +134,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 joinedload(BenefitGrant.customer),
                 joinedload(BenefitGrant.benefit),
                 joinedload(BenefitGrant.member),
+                joinedload(BenefitGrant.manual_grant),
             )
         )
 
@@ -173,6 +175,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
                 joinedload(BenefitGrant.customer),
                 joinedload(BenefitGrant.benefit).joinedload(Benefit.organization),
                 joinedload(BenefitGrant.member),
+                joinedload(BenefitGrant.manual_grant),
             )
         )
 

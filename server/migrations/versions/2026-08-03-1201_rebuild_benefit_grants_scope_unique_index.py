@@ -10,6 +10,11 @@ The index is rebuilt CONCURRENTLY in an autocommit block so the large
 ``benefit_grants`` table is never locked. A temporary index name is used so a
 unique index is enforcing throughout the swap.
 
+Also creates ``ix_benefit_grants_active_manual_unique``, a partial unique index
+enforcing at most one active manual grant per (customer, benefit, member) —
+the race-proof backstop for the create-time duplicate check. Trivially valid on
+existing data since every existing row has ``manual_grant_id IS NULL``.
+
 Revision ID: f9cfabbc120a
 Revises: b15961219bd6
 Create Date: 2026-08-03 12:01:00.000000
@@ -30,6 +35,10 @@ depends_on: tuple[str] | None = None
 INDEX_NAME = "ix_benefit_grants_scope_unique"
 TMP_INDEX_NAME = "ix_benefit_grants_scope_unique_tmp"
 WHERE = sa.text("deleted_at IS NULL")
+ACTIVE_MANUAL_INDEX_NAME = "ix_benefit_grants_active_manual_unique"
+ACTIVE_MANUAL_WHERE = sa.text(
+    "manual_grant_id IS NOT NULL AND revoked_at IS NULL AND deleted_at IS NULL"
+)
 
 
 def upgrade() -> None:
@@ -58,10 +67,26 @@ def upgrade() -> None:
             if_exists=True,
         )
         op.execute(f"ALTER INDEX {TMP_INDEX_NAME} RENAME TO {INDEX_NAME}")
+        op.create_index(
+            ACTIVE_MANUAL_INDEX_NAME,
+            "benefit_grants",
+            ["customer_id", "benefit_id", "member_id"],
+            unique=True,
+            postgresql_concurrently=True,
+            postgresql_nulls_not_distinct=True,
+            postgresql_where=ACTIVE_MANUAL_WHERE,
+            if_not_exists=True,
+        )
 
 
 def downgrade() -> None:
     with op.get_context().autocommit_block():
+        op.drop_index(
+            ACTIVE_MANUAL_INDEX_NAME,
+            table_name="benefit_grants",
+            postgresql_concurrently=True,
+            if_exists=True,
+        )
         op.create_index(
             TMP_INDEX_NAME,
             "benefit_grants",

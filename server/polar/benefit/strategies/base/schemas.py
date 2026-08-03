@@ -92,6 +92,20 @@ class BenefitBase(MetadataOutputMixin, BenefitPublicBase):
         return self.type.is_visibility_configurable()
 
 
+class BenefitGrantManualGrant(IDSchema):
+    """
+    Provenance of a manually granted benefit: the act of granting it shares
+    one reason and one expiration across every benefit granted together.
+    """
+
+    reason: str | None = Field(
+        description="The reason the benefit was granted manually."
+    )
+    expires_at: datetime | None = Field(
+        description="When set, the benefit grant is revoked at this time."
+    )
+
+
 class BenefitGrantBase(IDSchema, TimestampedSchema):
     """
     A grant of a benefit to a customer.
@@ -120,10 +134,10 @@ class BenefitGrantBase(IDSchema, TimestampedSchema):
     order_id: UUID4 | None = Field(
         description="The ID of the order that granted this benefit."
     )
-    manual_grant_id: UUID4 | None = Field(
+    manual_grant: BenefitGrantManualGrant | None = Field(
         default=None,
         description=(
-            "The ID of the manual grant that granted this benefit, "
+            "The manual grant that created this benefit grant, "
             "if it was granted manually."
         ),
     )

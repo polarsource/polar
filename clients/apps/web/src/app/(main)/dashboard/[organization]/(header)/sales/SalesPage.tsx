@@ -94,7 +94,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     {
       accessorKey: 'created_at',
       enableSorting: true,
-      size: 120,
+      size: 160,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Date" />
       ),

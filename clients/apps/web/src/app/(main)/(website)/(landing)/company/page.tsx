@@ -136,7 +136,7 @@ export default function CompanyPage() {
               <Box backgroundColor="background-secondary">
                 <TextRings />
               </Box>
-              <Box position="relative" overflow="hidden">
+              <Box position="relative" overflow="hidden" aspectRatio="1 / 1">
                 <StaticImage
                   src="/assets/brand/marketing/billboard_01.jpg"
                   alt="Polar billboard reading 'Your customers 10x'd their usage overnight. Polar already invoiced for it.'"

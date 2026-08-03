@@ -38,7 +38,7 @@ export const Hero = () => {
         className="dark:text-polar-500 max-w-2xl text-center text-2xl leading-relaxed! text-balance text-gray-500"
         variants={itemVariants}
       >
-        A billing platform for the intelligence era
+        The financial substrate for the intelligence era
       </motion.p>
       <motion.div
         className="mt-6 flex flex-col items-center gap-4 md:flex-row md:gap-6"

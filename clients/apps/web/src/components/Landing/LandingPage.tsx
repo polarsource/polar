@@ -29,12 +29,12 @@ const PageContent = () => {
       <Section className="flex flex-col pt-0 md:pt-0">
         <Hero />
         <Logotypes />
-        <Usage />
+        <Features />
       </Section>
 
       {/* Pricing models */}
       <Section>
-        <Features />
+        <Usage />
       </Section>
 
       {/* Financial overview */}

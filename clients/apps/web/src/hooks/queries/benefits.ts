@@ -244,8 +244,8 @@ export const useBenefitGrants = (
 
 export const useCreateBenefitGrants = () =>
   useMutation({
-    mutationFn: (body: schemas['BenefitGrantBatchCreate']) =>
-      api.POST('/v1/benefit-grants/batch', { body }),
+    mutationFn: (body: schemas['BenefitGrantCreate']) =>
+      api.POST('/v1/benefit-grants/', { body }),
     onSuccess: (result) => {
       if (!result.data) {
         return

@@ -35,7 +35,7 @@ export const CustomerBenefitGrantsSection = ({
     (grants) =>
       grants.some(
         (grant) =>
-          !!grant.manual_grant_id &&
+          !!grant.manual_grant &&
           !grant.is_granted &&
           grant.revoked_at === null &&
           grant.error === null,
@@ -50,13 +50,21 @@ export const CustomerBenefitGrantsSection = ({
 
   const grants = useMemo(() => benefitGrants?.items ?? [], [benefitGrants])
 
+  const activeManualBenefitIds = useMemo(
+    () =>
+      grants
+        .filter((grant) => grant.manual_grant && grant.revoked_at === null)
+        .map((grant) => grant.benefit_id),
+    [grants],
+  )
+
   const keepsAccessThroughProduct = useCallback(
     (grant: schemas['BenefitGrant']) =>
       grants.some(
         (other) =>
           other.id !== grant.id &&
           other.benefit_id === grant.benefit_id &&
-          !other.manual_grant_id &&
+          !other.manual_grant &&
           other.is_granted &&
           other.revoked_at === null,
       ),
@@ -98,7 +106,7 @@ export const CustomerBenefitGrantsSection = ({
       },
       {
         header: 'Source',
-        accessorKey: 'manual_grant_id',
+        accessorKey: 'manual_grant',
         cell: ({ row: { original } }) => (
           <BenefitGrantSource grant={original} organization={organization} />
         ),
@@ -125,7 +133,7 @@ export const CustomerBenefitGrantsSection = ({
         accessorKey: 'benefit_action',
         cell: ({ row: { original } }) => {
           const isRevocable =
-            !!original.manual_grant_id && original.revoked_at === null
+            !!original.manual_grant && original.revoked_at === null
           const isConfirming = confirmingRevokeId === original.id
           const licenseKeyId =
             original.benefit.type === 'license_keys' &&
@@ -219,6 +227,7 @@ export const CustomerBenefitGrantsSection = ({
           <GrantBenefitModalContent
             organization={organization}
             customer={customer}
+            excludeBenefitIds={activeManualBenefitIds}
             hideModal={hideGrant}
           />
         }

@@ -2247,34 +2247,15 @@ export interface paths {
     get: operations['benefit-grants:list']
     put?: never
     /**
-     * Create Benefit Grant
-     * @description Queue a manual benefit grant and return its stable pending resource.
+     * Create Benefit Grants
+     * @description Manually grant one or more benefits to a customer, with a shared optional
+     *     expiration and reason.
+     *
+     *     The created grants are queued and returned in a pending state.
      *
      *     **Scopes**: `benefits:write`
      */
     post: operations['benefit-grants:create']
-    delete?: never
-    options?: never
-    head?: never
-    patch?: never
-    trace?: never
-  }
-  '/v1/benefit-grants/batch': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    get?: never
-    put?: never
-    /**
-     * Create Benefit Grant Batch
-     * @description Queue manual benefit grants with shared provenance and expiration.
-     *
-     *     **Scopes**: `benefits:write`
-     */
-    post: operations['benefit-grants:create_batch']
     delete?: never
     options?: never
     head?: never
@@ -2293,7 +2274,7 @@ export interface paths {
     post?: never
     /**
      * Revoke Benefit Grant
-     * @description Queue revocation of a manual benefit grant.
+     * @description Queue revocation of a manually granted benefit.
      *
      *     **Scopes**: `benefits:write`
      */
@@ -9942,11 +9923,8 @@ export interface components {
        * @description The ID of the order that granted this benefit.
        */
       order_id: string | null
-      /**
-       * Manual Grant Id
-       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
-       */
-      manual_grant_id?: string | null
+      /** @description The manual grant that created this benefit grant, if it was granted manually. */
+      manual_grant?: components['schemas']['BenefitGrantManualGrant'] | null
       /**
        * Customer Id
        * Format: uuid4
@@ -9980,8 +9958,8 @@ export interface components {
         | components['schemas']['BenefitGrantFeatureFlagProperties']
         | components['schemas']['BenefitGrantSlackSharedChannelProperties']
     }
-    /** BenefitGrantBatchCreate */
-    BenefitGrantBatchCreate: {
+    /** BenefitGrantCreate */
+    BenefitGrantCreate: {
       /**
        * Customer Id
        * Format: uuid4
@@ -9989,62 +9967,18 @@ export interface components {
        */
       customer_id: string
       /**
-       * Grants
-       * @description The benefits to grant as one batch.
+       * Benefit Ids
+       * @description The IDs of the benefits to grant.
        */
-      grants: components['schemas']['BenefitGrantBatchItemCreate'][]
+      benefit_ids: string[]
       /**
        * Expires At
-       * @description When set, all grants in the batch are revoked at this time.
+       * @description When set, all created benefit grants are revoked at this time.
        */
       expires_at?: string | null
       /**
        * Reason
        * @description An optional reason for granting the benefits.
-       */
-      reason?: string | null
-    }
-    /** BenefitGrantBatchItemCreate */
-    BenefitGrantBatchItemCreate: {
-      /**
-       * Benefit Id
-       * Format: uuid4
-       * @description The ID of the benefit to grant.
-       */
-      benefit_id: string
-      /**
-       * Member Id
-       * @description The ID of the member to grant the benefit to. If not set, the customer's owner member is used when applicable.
-       */
-      member_id?: string | null
-    }
-    /** BenefitGrantCreate */
-    BenefitGrantCreate: {
-      /**
-       * Customer Id
-       * Format: uuid4
-       * @description The ID of the customer to grant the benefit to.
-       */
-      customer_id: string
-      /**
-       * Benefit Id
-       * Format: uuid4
-       * @description The ID of the benefit to grant.
-       */
-      benefit_id: string
-      /**
-       * Member Id
-       * @description The ID of the member to grant the benefit to. If not set, the customer's owner member is used when applicable.
-       */
-      member_id?: string | null
-      /**
-       * Expires At
-       * @description When set, the benefit grant is revoked at this time.
-       */
-      expires_at?: string | null
-      /**
-       * Reason
-       * @description An optional reason for granting the benefit.
        */
       reason?: string | null
     }
@@ -10099,11 +10033,8 @@ export interface components {
        * @description The ID of the order that granted this benefit.
        */
       order_id: string | null
-      /**
-       * Manual Grant Id
-       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
-       */
-      manual_grant_id?: string | null
+      /** @description The manual grant that created this benefit grant, if it was granted manually. */
+      manual_grant?: components['schemas']['BenefitGrantManualGrant'] | null
       /**
        * Customer Id
        * Format: uuid4
@@ -10191,11 +10122,8 @@ export interface components {
        * @description The ID of the order that granted this benefit.
        */
       order_id: string | null
-      /**
-       * Manual Grant Id
-       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
-       */
-      manual_grant_id?: string | null
+      /** @description The manual grant that created this benefit grant, if it was granted manually. */
+      manual_grant?: components['schemas']['BenefitGrantManualGrant'] | null
       /**
        * Customer Id
        * Format: uuid4
@@ -10277,11 +10205,8 @@ export interface components {
        * @description The ID of the order that granted this benefit.
        */
       order_id: string | null
-      /**
-       * Manual Grant Id
-       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
-       */
-      manual_grant_id?: string | null
+      /** @description The manual grant that created this benefit grant, if it was granted manually. */
+      manual_grant?: components['schemas']['BenefitGrantManualGrant'] | null
       /**
        * Customer Id
        * Format: uuid4
@@ -10369,11 +10294,8 @@ export interface components {
        * @description The ID of the order that granted this benefit.
        */
       order_id: string | null
-      /**
-       * Manual Grant Id
-       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
-       */
-      manual_grant_id?: string | null
+      /** @description The manual grant that created this benefit grant, if it was granted manually. */
+      manual_grant?: components['schemas']['BenefitGrantManualGrant'] | null
       /**
        * Customer Id
        * Format: uuid4
@@ -10466,11 +10388,8 @@ export interface components {
        * @description The ID of the order that granted this benefit.
        */
       order_id: string | null
-      /**
-       * Manual Grant Id
-       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
-       */
-      manual_grant_id?: string | null
+      /** @description The manual grant that created this benefit grant, if it was granted manually. */
+      manual_grant?: components['schemas']['BenefitGrantManualGrant'] | null
       /**
        * Customer Id
        * Format: uuid4
@@ -10556,11 +10475,8 @@ export interface components {
        * @description The ID of the order that granted this benefit.
        */
       order_id: string | null
-      /**
-       * Manual Grant Id
-       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
-       */
-      manual_grant_id?: string | null
+      /** @description The manual grant that created this benefit grant, if it was granted manually. */
+      manual_grant?: components['schemas']['BenefitGrantManualGrant'] | null
       /**
        * Customer Id
        * Format: uuid4
@@ -10587,6 +10503,29 @@ export interface components {
       previous_properties?:
         | components['schemas']['BenefitGrantLicenseKeysProperties']
         | null
+    }
+    /**
+     * BenefitGrantManualGrant
+     * @description Provenance of a manually granted benefit: the act of granting it shares
+     *     one reason and one expiration across every benefit granted together.
+     */
+    BenefitGrantManualGrant: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Reason
+       * @description The reason the benefit was granted manually.
+       */
+      reason: string | null
+      /**
+       * Expires At
+       * @description When set, the benefit grant is revoked at this time.
+       */
+      expires_at: string | null
     }
     /** BenefitGrantMetadata */
     BenefitGrantMetadata: {
@@ -10656,11 +10595,8 @@ export interface components {
        * @description The ID of the order that granted this benefit.
        */
       order_id: string | null
-      /**
-       * Manual Grant Id
-       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
-       */
-      manual_grant_id?: string | null
+      /** @description The manual grant that created this benefit grant, if it was granted manually. */
+      manual_grant?: components['schemas']['BenefitGrantManualGrant'] | null
       /**
        * Customer Id
        * Format: uuid4
@@ -10752,11 +10688,8 @@ export interface components {
        * @description The ID of the order that granted this benefit.
        */
       order_id: string | null
-      /**
-       * Manual Grant Id
-       * @description The ID of the manual grant that granted this benefit, if it was granted manually.
-       */
-      manual_grant_id?: string | null
+      /** @description The manual grant that created this benefit grant, if it was granted manually. */
+      manual_grant?: components['schemas']['BenefitGrantManualGrant'] | null
       /**
        * Customer Id
        * Format: uuid4
@@ -10878,6 +10811,14 @@ export interface components {
        */
       name: 'benefit.granted'
       metadata: components['schemas']['BenefitGrantMetadata']
+    }
+    /** BenefitGrantsCreated */
+    BenefitGrantsCreated: {
+      /**
+       * Items
+       * @description The created benefit grants.
+       */
+      items: components['schemas']['BenefitGrant'][]
     }
     /** BenefitLicenseKeyActivationCreateProperties */
     BenefitLicenseKeyActivationCreateProperties: {
@@ -41950,55 +41891,13 @@ export interface operations {
       }
     }
     responses: {
-      /** @description Benefit grant queued. */
+      /** @description Benefit grants queued. */
       201: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['BenefitGrant']
-        }
-      }
-      /** @description Customer not found. */
-      404: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['ResourceNotFound']
-        }
-      }
-      /** @description Validation Error */
-      422: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['HTTPValidationError']
-        }
-      }
-    }
-  }
-  'benefit-grants:create_batch': {
-    parameters: {
-      query?: never
-      header?: never
-      path?: never
-      cookie?: never
-    }
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['BenefitGrantBatchCreate']
-      }
-    }
-    responses: {
-      /** @description Benefit grant batch queued. */
-      201: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json': components['schemas']['BenefitGrant'][]
+          'application/json': components['schemas']['BenefitGrantsCreated']
         }
       }
       /** @description Customer not found. */

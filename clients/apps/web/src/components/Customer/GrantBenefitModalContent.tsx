@@ -12,6 +12,7 @@ import { useToast } from '../Toast/use-toast'
 interface GrantBenefitModalContentProps {
   organization: schemas['Organization']
   customer: schemas['Customer']
+  excludeBenefitIds?: string[]
   hideModal: () => void
 }
 
@@ -28,6 +29,7 @@ function getErrorMessage(detail: unknown): string {
 const GrantBenefitModalContent = ({
   organization,
   customer,
+  excludeBenefitIds,
   hideModal,
 }: GrantBenefitModalContentProps) => {
   const { toast } = useToast()
@@ -63,9 +65,7 @@ const GrantBenefitModalContent = ({
 
     const result = await createBenefitGrants.mutateAsync({
       customer_id: customer.id,
-      grants: selected.map((benefit) => ({
-        benefit_id: benefit.id,
-      })),
+      benefit_ids: selected.map((benefit) => benefit.id),
       expires_at:
         hasExpiration && expiresAt
           ? new Date(expiresAt).toISOString()
@@ -89,9 +89,18 @@ const GrantBenefitModalContent = ({
   }
 
   const excludeIds = useMemo(
-    () => selected.map((benefit) => benefit.id),
-    [selected],
+    () => [
+      ...selected.map((benefit) => benefit.id),
+      ...(excludeBenefitIds ?? []),
+    ],
+    [selected, excludeBenefitIds],
   )
+
+  const minExpiresAt = useMemo(() => {
+    const now = new Date()
+    const pad = (n: number) => String(n).padStart(2, '0')
+    return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}T${pad(now.getHours())}:${pad(now.getMinutes())}`
+  }, [])
 
   const canSubmit =
     selected.length > 0 &&
@@ -200,6 +209,7 @@ const GrantBenefitModalContent = ({
             <Input
               type="datetime-local"
               value={expiresAt}
+              min={minExpiresAt}
               onChange={(e) => setExpiresAt(e.target.value)}
               required
             />

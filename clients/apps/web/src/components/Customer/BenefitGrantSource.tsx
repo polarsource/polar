@@ -8,6 +8,8 @@ import {
   TooltipContent,
   TooltipTrigger,
 } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
 
 export const BenefitGrantSource = ({
@@ -17,14 +19,29 @@ export const BenefitGrantSource = ({
   grant: schemas['BenefitGrant']
   organization: schemas['Organization']
 }) => {
-  if (grant.manual_grant_id) {
+  if (grant.manual_grant) {
+    const { reason, expires_at } = grant.manual_grant
     return (
       <Tooltip>
         <TooltipTrigger>
           <Status color="blue" status="Manual" />
         </TooltipTrigger>
         <TooltipContent>
-          Granted manually, outside any subscription or purchase
+          <Box flexDirection="column" rowGap="xs">
+            <Text variant="caption" color="inherit">
+              Granted manually, outside any subscription or purchase
+            </Text>
+            {reason && (
+              <Text variant="caption" color="inherit">
+                Reason: {reason}
+              </Text>
+            )}
+            {expires_at && (
+              <Text variant="caption" color="inherit">
+                Expires <FormattedDateTime datetime={expires_at} />
+              </Text>
+            )}
+          </Box>
         </TooltipContent>
       </Tooltip>
     )

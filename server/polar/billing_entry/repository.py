@@ -72,7 +72,15 @@ class BillingEntryRepository(
         statement = (
             self.get_pending_by_subscription_statement(subscription_id, cutoff=cutoff)
             .join(BillingEntry.product_price)
-            .where(ProductPrice.is_static.is_(True))
+            # Metered entries always carry a metered price: `from_metered_event`
+            # is the only writer of this type, and it takes the price from a
+            # meter-scoped lookup. So this predicate selects the same rows as
+            # `is_static` alone, but lets the `billing_entry` scan drop them
+            # before the join to `events` rather than after it.
+            .where(
+                BillingEntry.type != BillingEntryType.metered,
+                ProductPrice.is_static.is_(True),
+            )
             .options(
                 contains_eager(BillingEntry.product_price),
                 joinedload(BillingEntry.event),

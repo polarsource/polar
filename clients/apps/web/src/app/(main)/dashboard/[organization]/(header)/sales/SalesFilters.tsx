@@ -22,6 +22,7 @@ import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { startOfDay } from 'date-fns'
 import React, { useMemo, useState } from 'react'
+import { formatCustomDateRange } from './formatCustomDateRange'
 
 const CUSTOM_DATE_RANGE = 'custom'
 
@@ -80,6 +81,18 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
       dateRange,
       organization,
     )?.slug
+    const isCustomRange = !intervalSlug && dateRange.from && dateRange.to
+    const dateOptions: FilterOption[] = [
+      ...intervals.map(({ slug, label }) => ({ value: slug, label })),
+      ...(isCustomRange
+        ? [
+            {
+              value: CUSTOM_DATE_RANGE,
+              label: formatCustomDateRange(dateRange),
+            },
+          ]
+        : []),
+    ]
     return [
       {
         key: 'product',
@@ -112,7 +125,7 @@ const SalesFilters: React.FC<SalesFiltersProps> = ({
         label: 'Date',
         icon: <CalendarMonthOutlined fontSize="inherit" />,
         type: 'single',
-        options: intervals.map(({ slug, label }) => ({ value: slug, label })),
+        options: dateOptions,
         value:
           intervalSlug === 'allTime'
             ? null

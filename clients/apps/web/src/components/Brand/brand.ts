@@ -9,16 +9,16 @@ export interface BrandColor {
 export const brandColors: BrandColor[] = [
   {
     name: 'Night',
-    hex: '#171717',
-    oklch: '20.5% 0 0',
+    hex: '#090909',
+    oklch: '14% 0 0',
     role: 'Surface',
     flex: 3,
   },
   {
     name: 'Ash',
     role: 'Raised',
-    hex: '#1D1D1D',
-    oklch: '23% 0 0',
+    hex: '#141414',
+    oklch: '19.1% 0 0',
     flex: 1,
   },
   {
@@ -30,8 +30,8 @@ export const brandColors: BrandColor[] = [
   },
   {
     name: 'Snow',
-    hex: '#BDBDBD',
-    oklch: '79.8% 0 0',
+    hex: '#d8d8d8',
+    oklch: '88.2% 0 0',
     role: 'Foreground',
     flex: 3,
   },

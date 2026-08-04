@@ -10,7 +10,7 @@ import { useInView } from '@/hooks/useInView'
  */
 
 const BAND_COUNT = 4
-const RAY_COUNT = 10
+const RAY_COUNT = 8
 const ANG_SPEED = 0.15
 
 export const GaugeSweep = () => {

@@ -15,15 +15,14 @@ const navColumns: NavLink[][] = [
   [
     { label: 'Logo', href: '#logo' },
     { label: 'Color', href: '#color' },
-    { label: 'Typography', href: '#typography' },
+    { label: 'Illustration', href: '#illustration' },
   ],
   [
-    { label: 'Illustration', href: '#illustration' },
+    { label: 'Typography', href: '#typography' },
     { label: 'Voice', href: '#voice' },
     { label: 'Marketing', href: '#marketing' },
   ],
   [
-    { label: 'Design', href: '#design' },
     {
       label: 'Assets',
       href: '/assets/brand/polar_brand.zip',
@@ -106,7 +105,7 @@ export function BrandNav() {
         <div className="flex items-start justify-between">
           <Link href="/" className="flex flex-col text-xl">
             <span className="text-brand-foreground">— Polar</span>
-            <span className="text-brand-muted">The Billing Company</span>
+            <span className="text-brand-muted">Brand Identity</span>
           </Link>
         </div>
         <nav className="hidden grid-cols-3 gap-x-12 md:grid md:gap-x-24">

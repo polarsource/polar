@@ -106,11 +106,11 @@
 
   /* Brand microsite palette (dark-only /brand page). Single source of truth
      for the otherwise hard-coded hex values used across Brand components. */
-  --color-brand-surface: #171717;
-  --color-brand-raised: #1d1d1d;
+  --color-brand-surface: #090909;
+  --color-brand-raised: #141414;
   --color-brand-line: #7b7b7b;
   --color-brand-muted: #7b7b7b;
-  --color-brand-foreground: #bdbdbd;
+  --color-brand-foreground: #d8d8d8;
   --color-brand-bright: #f5f6fa;
   --color-brand-accent: #625fff;
 

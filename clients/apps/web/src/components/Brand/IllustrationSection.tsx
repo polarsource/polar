@@ -7,14 +7,20 @@ import { OrbitingSpheres } from '../Landing/graphics/OrbitingSpheres'
 import { VennCluster } from '../Landing/graphics/VennCluster'
 import { BrandSection } from './BrandSection'
 import { brandSections } from './brand'
+import { SteppedRadial } from '../Landing/graphics/SteppedRadial'
+import { Compass } from '../Landing/graphics/Compass'
+import { RadialSpinner } from '../Landing/graphics/RadialSpinner'
 
 const illustrations: { name: string; Graphic: React.ComponentType }[] = [
-  { name: 'Concentric', Graphic: ConcentricDraw },
+  { name: 'Radial Spinner', Graphic: RadialSpinner },
+  { name: 'Stepped Radial', Graphic: SteppedRadial },
+  { name: 'Compass', Graphic: Compass },
+  { name: 'Cycle', Graphic: CycleArrow },
   { name: 'Linked Rings', Graphic: LinkedRings },
   { name: 'Orbit', Graphic: OrbitingSpheres },
   { name: 'Cluster', Graphic: VennCluster },
   { name: 'Gauge', Graphic: GaugeSweep },
-  { name: 'Cycle', Graphic: CycleArrow },
+  { name: 'Concentric', Graphic: ConcentricDraw },
 ]
 
 // Recolor the shared landing graphics for the dark brand surface. The canvas

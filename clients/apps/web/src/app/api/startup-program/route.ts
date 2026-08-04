@@ -22,6 +22,7 @@ const requestSchema = z.object({
   lastName: z.string().min(1).max(100),
   role: z.string().max(100).optional().default(''),
   email: z.email().max(200),
+  linkedin: z.string().max(500).optional().default(''),
 })
 
 // Attio's select-type attributes expect `[{ option: '<title>' }]` — the
@@ -131,6 +132,7 @@ export async function POST(req: Request) {
       lastName: data.lastName,
       email: data.email,
       jobTitle: data.role,
+      linkedinUrl: data.linkedin,
       companyRecordId: company.id.record_id,
     })
     console.log(

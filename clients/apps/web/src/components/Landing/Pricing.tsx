@@ -6,6 +6,7 @@ import { Button, Grid } from '@polar-sh/orbit'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
 import { VolumetricSlices } from './graphics/VolumetricSlices'
+import CheckOutlined from '@mui/icons-material/CheckOutlined'
 
 type Tier = {
   name: string
@@ -17,7 +18,7 @@ type Tier = {
   features: string[]
 }
 
-const TIERS: Tier[] = [
+export const TIERS: Tier[] = [
   {
     name: 'Starter',
     free: true,
@@ -31,11 +32,7 @@ const TIERS: Tier[] = [
     period: '/month',
     desc: 'For builders & early teams.',
     fees: ['3.80% + 40¢ per transaction'],
-    features: [
-      'All features on Starter',
-      'Preview access to new features',
-      'Prioritized support',
-    ],
+    features: ['Preview access to new features', 'Prioritized support'],
   },
   {
     name: 'Growth',
@@ -43,11 +40,7 @@ const TIERS: Tier[] = [
     period: '/month',
     desc: 'For scaling startups.',
     fees: ['3.60% + 35¢ per transaction'],
-    features: [
-      'All features on Pro',
-      'Preview access to new features',
-      'Prioritized support',
-    ],
+    features: ['Preview access to new features', 'Prioritized support'],
   },
   {
     name: 'Scale',
@@ -56,14 +49,13 @@ const TIERS: Tier[] = [
     desc: 'For fast growing businesses.',
     fees: ['3.40% + 30¢ per transaction'],
     features: [
-      'All features on Growth',
       'Preview access to new features',
       'Shared Slack channel',
       'P1 Support',
       'Single Sign-On',
     ],
   },
-]
+] as const
 
 export const Pricing = () => (
   <>
@@ -78,7 +70,7 @@ export const Pricing = () => (
             Start free. Upgrade as you grow. Enterprise needs? Let&apos;s talk.
           </Text>
         </Box>
-        <Box alignItems="center" columnGap="m" paddingTop="m">
+        <Box alignItems="center" columnGap="l" paddingTop="m">
           <GetStartedButton size="default" />
           <Link href="mailto:support@polar.sh">
             <Button variant="secondary">Contact Sales</Button>
@@ -90,28 +82,30 @@ export const Pricing = () => (
         templateColumns={{
           base: '1fr',
           sm: 'repeat(2, 1fr)',
-          xl: 'repeat(3, 1fr)',
+          xl: 'repeat(4, 1fr)',
         }}
-        gap="l"
+        gap="s"
       >
         {TIERS.map((tier) => (
           <TierCard key={tier.name} tier={tier} />
         ))}
-        <StartupProgramCard />
       </Grid>
+      <StartupProgramCard />
     </Box>
   </>
 )
 
 const StartupProgramCard = () => (
   <Grid
-    column={{ base: 'auto', sm: 'span 2' }}
-    templateColumns={{ base: '1fr', sm: 'subgrid' }}
+    templateColumns={{
+      base: '1fr',
+      sm: 'repeat(2, 1fr)',
+    }}
     backgroundColor="background-secondary"
     overflow="hidden"
   >
     <Box alignItems="center" justifyContent="center" padding="2xl">
-      <Box width="100%" aspectRatio="1 / 1">
+      <Box width={{ base: '100%', sm: '80%' }} aspectRatio="1 / 1">
         <VolumetricSlices />
       </Box>
     </Box>
@@ -146,8 +140,11 @@ const StartupProgramCard = () => (
           </Text>
         </Box>
       </Box>
-      <CardSection label="Fees" items={['3.40% + 30¢ per transaction']} />
-      <CardSection label="Features" items={['Everything on Scale']} />
+      <CardSection items={['3.40% + 30¢ per transaction']} />
+      <CardSection
+        check
+        items={TIERS.find((tier) => tier.name === 'Scale')?.features ?? []}
+      />
       <Box display="block" paddingTop="m">
         <Link href="/startup-program" prefetch>
           <Button>Apply now</Button>
@@ -163,7 +160,7 @@ const TierCard = ({ tier }: { tier: Tier }) => (
     justifyContent="between"
     backgroundColor="background-secondary"
   >
-    <Box flexDirection="column" rowGap="xl" padding="3xl">
+    <Box flexDirection="column" rowGap="xl" padding="2xl">
       <Box flexDirection="column" rowGap="xl">
         <Box flexDirection="column" rowGap="m">
           <Text variant="heading-s" as="h3">
@@ -186,13 +183,21 @@ const TierCard = ({ tier }: { tier: Tier }) => (
           )}
         </Box>
       </Box>
-      <CardSection label="Fees" items={tier.fees} />
-      <CardSection label="Features" items={tier.features} />
+      <CardSection items={tier.fees} />
+      <CardSection items={tier.features} check />
     </Box>
   </Box>
 )
 
-const CardSection = ({ label, items }: { label: string; items: string[] }) => (
+const CardSection = ({
+  label,
+  items,
+  check,
+}: {
+  label?: string
+  items: string[]
+  check?: boolean
+}) => (
   <Box
     flexDirection="column"
     rowGap="s"
@@ -201,12 +206,21 @@ const CardSection = ({ label, items }: { label: string; items: string[] }) => (
     borderStyle="solid"
     borderColor="border-primary"
   >
-    <Text variant="body" color="muted">
-      {label}
-    </Text>
+    {label ? (
+      <Text variant="body" color="muted">
+        {label}
+      </Text>
+    ) : null}
     <Box as="ul" flexDirection="column" rowGap="s">
       {items.map((item) => (
-        <Box as="li" display="flex" key={item}>
+        <Box
+          as="li"
+          display="flex"
+          key={item}
+          alignItems="center"
+          columnGap="s"
+        >
+          {check ? <CheckOutlined fontSize="inherit" /> : null}
           <Text variant="body">{item}</Text>
         </Box>
       ))}

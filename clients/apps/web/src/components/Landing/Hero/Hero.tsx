@@ -1,7 +1,6 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
-import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'motion/react'
@@ -36,10 +35,7 @@ export const Hero = () => {
         rowGap="3xl"
         flexDirection="column"
       >
-        <PolarLogotype size={60} />
-        <Text variant="heading-xl">
-          The finance layer for intelligent software
-        </Text>
+        <Text variant="heading-2xl">Turn Usage Into Revenue</Text>
       </Box>
       <motion.p
         className="dark:text-polar-500 max-w-2xl text-center text-2xl leading-snug! text-balance text-gray-500"

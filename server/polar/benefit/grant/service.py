@@ -323,12 +323,27 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         benefit_strategy = get_benefit_strategy(benefit.type, session, redis)
         # Call the revoke logic in two cases:
         # * If the service requires grants to be revoked individually
-        # * If there is only one grant remaining for this benefit,
-        #   so the benefit remains if other grants exist via other purchases
+        # * If no other active grant retains access through the same external
+        #   account (e.g. Discord ID, GitHub username). Member-specific grants
+        #   can map to different external accounts, so a remaining grant for a
+        #   different account must not skip the external revoke.
+        # Grants not tied to an external account share the same `None` identity,
+        # preserving the behavior where the benefit remains if the customer
+        # holds it through other purchases.
         other_grants = await repository.list_granted_by_benefit_and_customer(
             benefit, customer
         )
-        if benefit_strategy.should_revoke_individually or len(other_grants) < 2:
+        granted_account_id = grant.properties.get("granted_account_id")
+        other_granted_account_ids = {
+            other_grant.properties.get("granted_account_id")
+            for other_grant in other_grants
+            if other_grant.id != grant.id
+        }
+        should_revoke_externally = (
+            benefit_strategy.should_revoke_individually
+            or granted_account_id not in other_granted_account_ids
+        )
+        if should_revoke_externally:
             try:
                 properties = await benefit_strategy.revoke(
                     benefit,

@@ -87,7 +87,11 @@ const clearFilter = (filter: Filter): void => {
 
 const toggleOption = (filter: Filter, option: FilterOption): void => {
   if (filter.type === 'single') {
-    filter.onChange(filter.value === option.value ? null : option.value)
+    filter.onChange(
+      filter.value === option.value
+        ? (filter.defaultValue ?? null)
+        : option.value,
+    )
   } else {
     filter.onChange(
       filter.value.includes(option.value)

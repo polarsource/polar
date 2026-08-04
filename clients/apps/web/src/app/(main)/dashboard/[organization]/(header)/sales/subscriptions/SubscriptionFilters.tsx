@@ -101,16 +101,14 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
         label: 'Status',
         icon: <DonutLargeOutlined fontSize="inherit" />,
         type: 'single',
-        options: subscriptionStatusFilterValues
-          .filter((value) => value !== 'any')
-          .map((value) => ({
-            value,
-            label:
-              subscriptionStatusDisplayNames[
-                value as schemas['SubscriptionStatus']
-              ],
-          })),
-        value: status === 'any' ? null : status,
+        options: subscriptionStatusFilterValues.map((value) => ({
+          value,
+          label:
+            value === 'any'
+              ? 'Any status'
+              : subscriptionStatusDisplayNames[value],
+        })),
+        value: status,
         defaultValue: DEFAULT_SUBSCRIPTION_STATUS,
         onChange: (value) =>
           onStatusSelect((value ?? 'any') as SubscriptionStatusFilter),

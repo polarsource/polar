@@ -89,7 +89,7 @@ export default function NotificationsPage() {
         <Box height={1} backgroundColor="border" marginVertical="spacing-8" />
         <SettingsItem
           title="New One-Time Purchases"
-          description="Send a notification when a one-time purchase is made. Subscription renewals aren't included."
+          description="Send a notification when a one-time purchase is made"
           variant="static"
         >
           <Switch

@@ -45,7 +45,7 @@ const OrganizationNotificationSettings: React.FC<
     <SettingsGroup>
       <SettingsGroupItem
         title="New One-Time Purchases"
-        description="Receive a notification when a one-time purchase is made. Subscription renewals aren't included."
+        description="Receive a notification when a one-time purchase is made"
       >
         <Switch
           checked={settings.new_order}

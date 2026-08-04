@@ -297,14 +297,14 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
                     onSelect={() => onSelectOption(activeFilter, option)}
                     className={itemClassName}
                   >
-                    <Box display="flex" flex={1}>
+                    <Box display="flex" flex={1} minWidth={0}>
                       <Text as="span" truncate>
                         {option.label}
                       </Text>
                     </Box>
                     <CheckIcon
                       className={twMerge(
-                        'h-4 w-4',
+                        'h-4 w-4 shrink-0',
                         isSelected(activeFilter, option)
                           ? 'visible'
                           : 'invisible',
@@ -326,15 +326,27 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
                         className={itemClassName}
                       >
                         {filter.icon}
-                        <Box display="flex" flex={1}>
+                        <Box display="flex" flexShrink={0}>
                           <Text as="span" truncate>
                             {filter.label}
                           </Text>
                         </Box>
                         {summary ? (
-                          <Text as="span" variant="caption" color="muted">
-                            {summary}
-                          </Text>
+                          <Box
+                            display="flex"
+                            flex={1}
+                            minWidth={0}
+                            justifyContent="end"
+                          >
+                            <Text
+                              as="span"
+                              variant="caption"
+                              color="muted"
+                              truncate
+                            >
+                              {summary}
+                            </Text>
+                          </Box>
                         ) : null}
                       </CommandItem>
                     )

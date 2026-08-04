@@ -153,7 +153,7 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
   const onSelectOption = (filter: Filter, option: FilterOption) => {
     toggleOption(filter, option)
     if (filter.type === 'single') {
-      onOpenChange(false)
+      goBack()
     }
   }
 

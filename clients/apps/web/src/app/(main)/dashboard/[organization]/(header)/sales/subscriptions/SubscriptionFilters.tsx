@@ -162,18 +162,24 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
         gap="l"
         width={{ base: '100%', md: 'auto' }}
       >
-        <SubscriptionStatusSelect value={status} onChange={onStatusSelect} />
+        <Box display="block">
+          <SubscriptionStatusSelect value={status} onChange={onStatusSelect} />
+        </Box>
         {status === 'active' && (
-          <SubscriptionCancellationSelect
-            value={cancelAtPeriodEnd}
-            onChange={onCancelAtPeriodEndSelect}
-          />
+          <Box display="block">
+            <SubscriptionCancellationSelect
+              value={cancelAtPeriodEnd}
+              onChange={onCancelAtPeriodEndSelect}
+            />
+          </Box>
         )}
-        <SubscriptionTiersSelect
-          products={products}
-          value={productId}
-          onChange={onProductSelect}
-        />
+        <Box display="block">
+          <SubscriptionTiersSelect
+            products={products}
+            value={productId}
+            onChange={onProductSelect}
+          />
+        </Box>
         <DateRangePicker
           date={dateRange}
           onDateChange={onDateChange}

@@ -1,6 +1,6 @@
 ---
 name: verifier-web
-description: Evidence-capture protocol for verifying web/dashboard/backoffice/checkout changes in the Polar local stack by driving the real UI with Playwright. Auto-discovered by the built-in /verify skill; can also be invoked directly. Brings up the Docker stack, logs in via the real email-OTP flow, and exercises flows end-to-end (including a live Stripe checkout) capturing screenshots as evidence.
+description: Two-phase verify for web/dashboard/backoffice/checkout changes in the Polar local stack. Phase 1 proves the change works by driving the real UI with Playwright (login via email-OTP, live Stripe checkout, screenshots as evidence). Phase 2, gated on phase 1 passing, adds a minimal E2E spec when the change warrants a lasting guard (deduping against existing specs) and runs the whole Playwright suite as a regression check. Auto-discovered by the built-in /verify skill; can also be invoked directly.
 license: MIT
 metadata:
   author: polar
@@ -17,6 +17,18 @@ the checkout, or the backoffice.
 Use the [`local-environment`](../local-environment/SKILL.md) skill for all stack
 mechanics (start/stop/logs/instances). This skill adds the browser-driving and
 auth/payment recipe on top.
+
+## Two phases
+
+`/verify` runs in two gated phases. Do them in order:
+
+1. **Functionality** — prove *this change* works, by driving it in the real UI
+   (the rest of this skill). Capture evidence.
+   **Gate:** if the change fails or is BLOCKED, stop here and report. Do not run
+   the regression phase on a change that doesn't work.
+2. **E2E regression** — only if phase 1 PASSed: plan + author E2E tests for the
+   change, then run the whole suite so we know nothing else broke. See
+   [Phase 2](#phase-2--e2e-regression) below.
 
 ## When to use
 
@@ -244,6 +256,39 @@ dev docker exec db psql -U polar -d polar_dev_<N> -tc \
 
 Expect `paid | 2000 | …`. Also confirm it renders in backoffice **Orders**
 (`/backoffice/orders/`). Screenshot the confirmation page and the backoffice row.
+
+## Phase 2 — E2E regression
+
+Run this **only after phase 1 PASSed.** The goal: keep the suite an honest
+regression guard for the flows that matter, then confirm it's still green.
+
+The suite lives in `clients/apps/web/e2e/` (Playwright) and runs against this
+worktree's dev-docker stack. See `clients/apps/web/e2e/README.md` for its layout.
+**Keep it minimal** — a small suite of high-value flows, not a spec per change.
+
+1. **Add a spec only when the change warrants a lasting guard** — a new
+   user-facing feature, or a bug fix whose regression you want caught next time.
+   Refactors, copy tweaks, and internal changes usually need **no new spec**.
+   - **Dedup first.** If a spec already covers this flow, extend or adjust it
+     rather than adding a near-duplicate. Do not add a second spec for a flow the
+     suite already exercises.
+   - Author it yourself following the repo conventions: import `{ test, expect }`
+     from `e2e/fixtures.ts`, reuse the `support/` helpers, use role-based locators,
+     and assert real content (a product row by href, a rendered value — not just a
+     nav link or the URL). Drive the change once in the live UI to get stable
+     selectors before writing them.
+2. **Run the whole suite:**
+   ```bash
+   dev e2e
+   ```
+   `dev e2e` bootstraps what it needs (browser, stack, seed), then runs all specs
+   in parallel.
+3. **Triage failures:**
+   - **Selector drift** in an existing spec (the app changed, the test is stale)
+     → reproduce it in the live UI, repair the spec (scope edits to `e2e/`), re-run.
+   - **A real regression** (your change broke another flow) → this is the signal
+     the phase exists for. Stop and report it; don't paper over it.
+4. The phase PASSes when any new/changed spec and the full suite are green.
 
 ## Report
 

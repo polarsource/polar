@@ -1362,12 +1362,303 @@ class TestSubscriptionUpdateBillingPeriod:
         assert response.status_code == 403
 
 
+EXPORT_DEFAULT_HEADER = (
+    "Email,Started At,Product,Amount,Currency,Status,Billing Interval"
+)
+
+
 @pytest.mark.asyncio
 class TestExportSubscriptions:
     async def test_anonymous(self, client: AsyncClient) -> None:
         response = await client.get("/v1/subscriptions/export")
 
         assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_user_not_organization_member(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.get("/v1/subscriptions/export")
+
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "text/csv; charset=utf-8"
+        assert (
+            response.headers["content-disposition"]
+            == 'attachment; filename="polar-subscriptions.csv"'
+        )
+
+        csv_lines = response.text.strip().split("\r\n")
+        assert len(csv_lines) == 1
+        assert csv_lines[0] == EXPORT_DEFAULT_HEADER
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.subscriptions_read}),
+    )
+    async def test_user_valid(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.get("/v1/subscriptions/export")
+
+        assert response.status_code == 200
+        assert response.headers["content-type"] == "text/csv; charset=utf-8"
+
+        csv_lines = response.text.strip().split("\r\n")
+        assert len(csv_lines) == 2
+        assert csv_lines[0] == EXPORT_DEFAULT_HEADER
+
+        data_row = csv_lines[1]
+        assert customer.email in data_row
+        assert product.name in data_row
+        assert subscription.currency in data_row
+        assert subscription.status.value in data_row
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.subscriptions_read}),
+    )
+    async def test_organization(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.get("/v1/subscriptions/export")
+
+        assert response.status_code == 200
+        csv_lines = response.text.strip().split("\r\n")
+        assert len(csv_lines) == 2
+
+    @pytest.mark.auth
+    async def test_filter_by_product(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        await create_active_subscription(
+            save_fixture, product=product_second, customer=customer
+        )
+
+        response = await client.get(
+            "/v1/subscriptions/export",
+            params={"product_id": str(product.id), "columns": ["product"]},
+        )
+
+        assert response.status_code == 200
+        csv_lines = response.text.strip().split("\r\n")
+        assert csv_lines == ["Product", product.name]
+
+    @pytest.mark.auth
+    async def test_filter_by_status(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+            started_at=utc_now(),
+        )
+
+        response = await client.get(
+            "/v1/subscriptions/export", params={"status": "canceled"}
+        )
+
+        assert response.status_code == 200
+        csv_lines = response.text.strip().split("\r\n")
+        assert len(csv_lines) == 2
+        assert SubscriptionStatus.canceled.value in csv_lines[1]
+
+    @pytest.mark.auth
+    async def test_filter_by_cancel_at_period_end(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            cancel_at_period_end=True,
+        )
+
+        response = await client.get(
+            "/v1/subscriptions/export",
+            params={
+                "cancel_at_period_end": "true",
+                "columns": ["cancel_at_period_end"],
+            },
+        )
+
+        assert response.status_code == 200
+        csv_lines = response.text.strip().split("\r\n")
+        assert csv_lines == ["Cancels At Period End", "true"]
+
+    @pytest.mark.auth
+    async def test_filter_by_date_range(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        product_second: Product,
+        customer: Customer,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=datetime(2024, 1, 15, tzinfo=UTC),
+        )
+        await create_active_subscription(
+            save_fixture,
+            product=product_second,
+            customer=customer,
+            started_at=datetime(2024, 6, 15, tzinfo=UTC),
+        )
+
+        response = await client.get(
+            "/v1/subscriptions/export",
+            params={
+                "started_after": "2024-06-01T00:00:00Z",
+                "started_before": "2024-06-30T23:59:59Z",
+                "columns": ["product"],
+            },
+        )
+
+        assert response.status_code == 200
+        assert (
+            response.headers["content-disposition"]
+            == 'attachment; filename="polar-subscriptions-2024-06-01-2024-06-30.csv"'
+        )
+        csv_lines = response.text.strip().split("\r\n")
+        assert csv_lines == ["Product", product_second.name]
+
+    @pytest.mark.auth
+    async def test_naive_date_bounds(
+        self, client: AsyncClient, user_organization: UserOrganization
+    ) -> None:
+        response = await client.get(
+            "/v1/subscriptions/export",
+            params={"started_after": "2024-06-01T00:00:00"},
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_custom_columns(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        response = await client.get(
+            "/v1/subscriptions/export",
+            params={
+                "columns": [
+                    "email",
+                    "net_amount",
+                    "current_period_end",
+                    "cancellation_reason",
+                ]
+            },
+        )
+
+        assert response.status_code == 200
+        csv_lines = response.text.strip().split("\r\n")
+        assert csv_lines[0] == "Email,Net Amount,Current Period End,Cancellation Reason"
+        assert csv_lines[1].startswith(f"{customer.email},")
+
+    @pytest.mark.auth
+    async def test_invalid_column(
+        self, client: AsyncClient, user_organization: UserOrganization
+    ) -> None:
+        response = await client.get(
+            "/v1/subscriptions/export", params={"columns": ["not_a_column"]}
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_timezone(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=datetime(2024, 6, 15, 23, 0, tzinfo=UTC),
+        )
+
+        response = await client.get(
+            "/v1/subscriptions/export", params={"timezone": "Europe/Stockholm"}
+        )
+
+        assert response.status_code == 200
+        csv_lines = response.text.strip().split("\r\n")
+        assert "2024-06-16T01:00:00+02:00" in csv_lines[1]
+
+    @pytest.mark.auth
+    async def test_invalid_timezone(
+        self, client: AsyncClient, user_organization: UserOrganization
+    ) -> None:
+        response = await client.get(
+            "/v1/subscriptions/export", params={"timezone": "Not/AZone"}
+        )
+
+        assert response.status_code == 422
 
 
 @pytest.mark.asyncio

@@ -32791,6 +32791,33 @@ export interface components {
       /** Recurring Interval Count */
       recurring_interval_count?: number
     }
+    /**
+     * SubscriptionExportColumn
+     * @enum {string}
+     */
+    SubscriptionExportColumn:
+      | 'email'
+      | 'started_at'
+      | 'product'
+      | 'amount'
+      | 'currency'
+      | 'status'
+      | 'recurring_interval'
+      | 'customer_name'
+      | 'billing_name'
+      | 'billing_country'
+      | 'net_amount'
+      | 'discount'
+      | 'seats'
+      | 'current_period_start'
+      | 'current_period_end'
+      | 'cancel_at_period_end'
+      | 'canceled_at'
+      | 'ends_at'
+      | 'ended_at'
+      | 'cancellation_reason'
+      | 'trial_start'
+      | 'trial_end'
     /** SubscriptionLocked */
     SubscriptionLocked: {
       /**
@@ -40176,6 +40203,26 @@ export interface operations {
       query?: {
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
+        /** @description Filter by product ID. */
+        product_id?: string | string[] | null
+        /** @description Filter by subscription status. */
+        status?:
+          | components['schemas']['SubscriptionStatus']
+          | components['schemas']['SubscriptionStatus'][]
+          | null
+        /** @description Filter by subscriptions that are set to cancel at period end. */
+        cancel_at_period_end?: boolean | null
+        /** @description Only include subscriptions started after this date. Must include a UTC offset. */
+        started_after?: string | null
+        /** @description Only include subscriptions started before this date. Must include a UTC offset. */
+        started_before?: string | null
+        /** @description Time zone used to render dates in the CSV. */
+        timezone?: string
+        /** @description Columns to include in the CSV, in order. Defaults to email, started_at, product, amount, currency, status and recurring_interval. */
+        columns?:
+          | components['schemas']['SubscriptionExportColumn']
+          | components['schemas']['SubscriptionExportColumn'][]
+          | null
       }
       header?: never
       path?: never
@@ -66033,6 +66080,32 @@ export const subscriptionCreatedEventNameValues: ReadonlyArray<
 export const subscriptionCycledEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionCycledEvent']['name']
 > = ['subscription.cycled']
+export const subscriptionExportColumnValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SubscriptionExportColumn']
+> = [
+  'email',
+  'started_at',
+  'product',
+  'amount',
+  'currency',
+  'status',
+  'recurring_interval',
+  'customer_name',
+  'billing_name',
+  'billing_country',
+  'net_amount',
+  'discount',
+  'seats',
+  'current_period_start',
+  'current_period_end',
+  'cancel_at_period_end',
+  'canceled_at',
+  'ends_at',
+  'ended_at',
+  'cancellation_reason',
+  'trial_start',
+  'trial_end',
+]
 export const subscriptionPastDueEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionPastDueEvent']['name']
 > = ['subscription.past_due']

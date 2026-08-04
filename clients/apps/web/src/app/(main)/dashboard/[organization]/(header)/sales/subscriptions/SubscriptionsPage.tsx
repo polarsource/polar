@@ -4,6 +4,8 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import DateRangePicker, {
   DateRange,
 } from '@/components/Metrics/DateRangePicker'
+import { useModal } from '@/components/Modal/useModal'
+import ExportSubscriptionsModal from '@/components/Subscriptions/ExportSubscriptionsModal'
 import SubscriptionCancellationSelect from '@/components/Subscriptions/SubscriptionCancellationSelect'
 import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
 import SubscriptionStatusSelect, {
@@ -13,7 +15,6 @@ import SubscriptionStatusSelect, {
 import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
 import { useProducts, useSubscriptions } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
-import { getServerURL } from '@/utils/api'
 import { DataTableSortingState, getAPIParams } from '@/utils/datatable'
 import { useDateRange } from '@/utils/date'
 import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
@@ -106,6 +107,12 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   ] = useQueryStates(filterParsers)
 
   const { startDate, endDate, setStartDate, setEndDate } = useDateRange()
+
+  const {
+    isShown: isExportModalShown,
+    show: showExportModal,
+    hide: hideExportModal,
+  } = useModal()
 
   const setSorting: OnChangeFn<DataTableSortingState> = (updater) => {
     setSortingState((old) =>
@@ -278,14 +285,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       : []),
   ]
 
-  const onExport = () => {
-    const url = new URL(
-      `${getServerURL()}/v1/subscriptions/export?organization_id=${organization.id}`,
-    )
-
-    window.open(url, '_blank')
-  }
-
   return (
     <DashboardBody wide>
       <div className="flex flex-col gap-8">
@@ -320,7 +319,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             />
           </div>
           <Button
-            onClick={onExport}
+            onClick={showExportModal}
             className="flex shrink-0 flex-row items-center"
             variant={'secondary'}
             wrapperClassNames="gap-x-2"
@@ -349,6 +348,14 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           />
         ) : null}
       </div>
+      <ExportSubscriptionsModal
+        organization={organization}
+        productId={productId}
+        status={status}
+        cancelAtPeriodEnd={cancelAtPeriodEnd}
+        isShown={isExportModalShown}
+        hide={hideExportModal}
+      />
     </DashboardBody>
   )
 }

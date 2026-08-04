@@ -18,6 +18,7 @@ from .schemas import (
     MerchantMigrationCreate,
     MerchantMigrationRecordItem,
     PrecheckEntity,
+    PrecheckReasonLevel,
     PrecheckRecordStatus,
     PrecheckReport,
 )
@@ -167,7 +168,7 @@ async def records(
     pagination: PaginationParamsQuery,
     entity: Annotated[PrecheckEntity | None, Query()] = None,
     status: Annotated[PrecheckRecordStatus | None, Query()] = None,
-    needs_attention: Annotated[bool, Query()] = False,
+    reason_level: Annotated[PrecheckReasonLevel | None, Query()] = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[MerchantMigrationRecordItem]:
     items, count = await merchant_migration_service.list_records(
@@ -176,7 +177,7 @@ async def records(
         id,
         entity=entity,
         status=status,
-        needs_attention=needs_attention,
+        reason_level=reason_level,
         pagination=pagination,
     )
     return ListResource.from_paginated_results(items, count, pagination)

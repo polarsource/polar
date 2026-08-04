@@ -4,6 +4,8 @@ records for the review drawer.
 
 The per-record classification reuses the same `_check_*` predicates as the
 report, so a record's importable/skipped status always matches the summary.
+Each reason also carries a level: `action_required` when the merchant has to fix
+something, `info` when there is nothing to fix.
 """
 
 from collections import Counter
@@ -37,6 +39,7 @@ from .schemas import (
     PrecheckEntitySummary,
     PrecheckIssue,
     PrecheckIssueLevel,
+    PrecheckReasonLevel,
     PrecheckRecordStatus,
     PrecheckReport,
 )
@@ -67,11 +70,24 @@ SUBSCRIPTION_DROP_CODES = {
     "subscription_paused_collection",
     "subscription_has_discount",
 }
+# Reasons the merchant has to act on. Every other code is informational: the
+# record either imports as-is, or Polar can't take it and there is nothing to do.
+ACTION_REQUIRED_CODES = {
+    "customer_missing_country",
+    "customer_missing_email",
+    "duplicate_customer_email",
+    "subscription_has_discount",
+    "send_invoice_collection",
+}
 _DUPLICATE_PRODUCT_NAME_REASON = (
-    "Another product already uses this name; the duplicate stays on the source."
+    "Another source product uses this name. Both import and share it in Polar."
+)
+_EXISTING_PRODUCT_NAME_REASON = (
+    "A Polar product already uses this name. Importing adds a second one."
 )
 _DUPLICATE_CUSTOMER_EMAIL_REASON = (
-    "Another customer already uses this email; the duplicate stays on the source."
+    "Another source customer uses this email, and a Polar customer can only carry "
+    "one source id. Merge them at the source, then run the pre-check again."
 )
 _MISSING_EMAIL_REASON = (
     "The source customer has no email, so it can't be imported into Polar."
@@ -90,6 +106,10 @@ _MISSING_COUNTRY_REASON = (
     "No billing country. Confirm it before the first renewal so tax is correct."
 )
 _TRIALING_REASON = "On trial. Billing resumes on Polar when the trial ends."
+_PAYMENT_REENTRY_REASON = (
+    "The payment method can't be copied. Ask the customer to re-enter their "
+    "billing details."
+)
 
 
 def _humanize_subscription_status(status: CanonicalSubscriptionStatus) -> str:
@@ -280,8 +300,8 @@ class PrecheckEngine:
                     level=PrecheckIssueLevel.warning,
                     code="duplicate_product_name",
                     message=(
-                        f"Multiple products share the name '{name}'; the duplicates "
-                        "won't be imported."
+                        f"Multiple products share the name '{name}'; they all "
+                        "import and keep the shared name."
                     ),
                     source_id=None,
                 )
@@ -439,18 +459,33 @@ def _drop_reason(
     return None, None
 
 
+Reason = tuple[str, str]
+
+
+def _pick_note(*notes: Reason | None) -> Reason | None:
+    """The one note to show on an importable row, worth-acting-on first."""
+    present = [note for note in notes if note is not None]
+    for note in present:
+        if note[0] in ACTION_REQUIRED_CODES:
+            return note
+    return present[0] if present else None
+
+
 def _item(
     entity: PrecheckEntity,
     source_id: str,
     title: str,
     subtitle: str | None,
     *,
-    reason_code: str | None,
-    reason: str | None,
+    skip: Reason | None,
+    note: Reason | None = None,
     amount: int | None = None,
     currency: str | None = None,
     recurring_interval: str | None = None,
 ) -> MerchantMigrationRecordItem:
+    """One review row. ``skip`` means it won't import; ``note`` only annotates a
+    row that will."""
+    code, reason = skip or note or (None, None)
     return MerchantMigrationRecordItem(
         # record_id and import_status come from the ledger via
         # `_attach_record_ids`; the classifier itself has none.
@@ -464,13 +499,20 @@ def _item(
         currency=currency,
         recurring_interval=recurring_interval,
         status=(
-            PrecheckRecordStatus.skipped
-            if reason_code
-            else PrecheckRecordStatus.importable
+            PrecheckRecordStatus.skipped if skip else PrecheckRecordStatus.importable
         ),
         reason=reason,
-        reason_code=reason_code,
+        reason_code=code,
+        reason_level=_reason_level(code),
     )
+
+
+def _reason_level(code: str | None) -> PrecheckReasonLevel | None:
+    if code is None:
+        return None
+    if code in ACTION_REQUIRED_CODES:
+        return PrecheckReasonLevel.action_required
+    return PrecheckReasonLevel.info
 
 
 # The price shown on a priced row: (amount, currency, interval). A product is
@@ -498,39 +540,24 @@ def _representative_price(
     return price.amount, price.currency, product.recurring_interval
 
 
-def _duplicate_product_names(
-    products: Sequence[CanonicalProduct],
-) -> tuple[dict[str, str], set[str]]:
+def _duplicate_product_names(products: Sequence[CanonicalProduct]) -> set[str]:
     """A name is a duplicate only when two *distinct* source products share it;
     one product split into several interval rows keeps the same source id and is
     not a duplicate.
     """
-    first_source_id_by_name: dict[str, str] = {}
-    duplicate_names: set[str] = set()
+    source_ids_by_name: dict[str, set[str]] = {}
     for product in products:
-        first = first_source_id_by_name.setdefault(
-            product.name, product.product_source_id
+        source_ids_by_name.setdefault(product.name, set()).add(
+            product.product_source_id
         )
-        if first != product.product_source_id:
-            duplicate_names.add(product.name)
-    return first_source_id_by_name, duplicate_names
+    return {name for name, ids in source_ids_by_name.items() if len(ids) > 1}
 
 
-def _product_drop(
-    product: CanonicalProduct,
-    first_source_id_by_name: dict[str, str],
-    duplicate_names: set[str],
-) -> tuple[str | None, str | None]:
+def _product_drop(product: CanonicalProduct) -> Reason | None:
     code, reason = _drop_reason(
         precheck_engine._check_product(product), PRODUCT_DROP_CODES
     )
-    if (
-        code is None
-        and product.name in duplicate_names
-        and product.product_source_id != first_source_id_by_name[product.name]
-    ):
-        return "duplicate_product_name", _DUPLICATE_PRODUCT_NAME_REASON
-    return code, reason
+    return (code, reason) if code is not None and reason is not None else None
 
 
 def _duplicate_customer_source_ids(
@@ -550,21 +577,32 @@ def _duplicate_customer_source_ids(
 
 def _product_items(
     products: Sequence[CanonicalProduct],
+    existing_product_names: set[str],
 ) -> list[MerchantMigrationRecordItem]:
     # Use the importer's plan, so the report can't promise a product it will skip.
     plans = plan_product_imports(products)
+    duplicate_names = _duplicate_product_names(products)
     items: list[MerchantMigrationRecordItem] = []
     for product in products:
         plan = plans[product.source_id]
         amount, currency, interval = _representative_price(product)
+        # Sharing a name is allowed in Polar, so it only earns a note.
+        note = _pick_note(
+            ("duplicate_product_name", _DUPLICATE_PRODUCT_NAME_REASON)
+            if product.name in duplicate_names
+            else None,
+            ("product_exists_in_polar", _EXISTING_PRODUCT_NAME_REASON)
+            if product.name.lower() in existing_product_names
+            else None,
+        )
         items.append(
             _item(
                 PrecheckEntity.products,
                 product.product_source_id,
                 product.name,
                 _interval_label(product),
-                reason_code=plan.skip_code,
-                reason=plan.skip_reason,
+                skip=plan.skip,
+                note=note,
                 amount=amount,
                 currency=currency,
                 recurring_interval=interval,
@@ -576,22 +614,17 @@ def _product_items(
 def _price_items(
     products: Sequence[CanonicalProduct],
 ) -> list[MerchantMigrationRecordItem]:
-    first_source_id_by_name, duplicate_names = _duplicate_product_names(products)
     items: list[MerchantMigrationRecordItem] = []
     for product in products:
         # A price under a product that won't import can't import either.
-        product_code, product_reason = _product_drop(
-            product, first_source_id_by_name, duplicate_names
-        )
+        product_skip = _product_drop(product)
         for price in product.prices:
-            code: str | None
-            reason: str | None
-            if product_code is not None:
-                code, reason = product_code, product_reason
-            else:
+            skip = product_skip
+            if skip is None:
                 code, reason = _drop_reason(
                     precheck_engine._check_price(product, price), PRICE_DROP_CODES
                 )
+                skip = (code, reason) if code and reason else None
             subtitle = (
                 "No amount"
                 if price.amount is None
@@ -603,8 +636,7 @@ def _price_items(
                     price.source_id,
                     product.name,
                     subtitle,
-                    reason_code=code,
-                    reason=reason,
+                    skip=skip,
                 )
             )
     return items
@@ -617,19 +649,20 @@ def _customer_items(
     plans = plan_customer_imports(customers)
     items: list[MerchantMigrationRecordItem] = []
     for customer in customers:
-        code, reason = plans[customer.source_id]
-        if code is None and not customer.country:
-            # A warning, not a skip: it still imports, but a missing country means
-            # tax can't be computed until the merchant confirms it.
-            reason = _MISSING_COUNTRY_REASON
+        # It imports either way, but without a country tax can't be computed.
+        note = (
+            ("customer_missing_country", _MISSING_COUNTRY_REASON)
+            if not customer.country
+            else None
+        )
         items.append(
             _item(
                 PrecheckEntity.customers,
                 customer.source_id,
                 customer.email or customer.name or customer.source_id,
                 customer.country or "No billing country",
-                reason_code=code,
-                reason=reason,
+                skip=plans[customer.source_id],
+                note=note,
             )
         )
     return items
@@ -640,17 +673,21 @@ def _subscription_items(
     products: Sequence[CanonicalProduct],
     customers: Sequence[CanonicalCustomer],
 ) -> list[MerchantMigrationRecordItem]:
-    # Use the importer's plan; add the display-only trialing warning on top.
+    # Use the importer's plan; the notes on top are display-only.
     plans = plan_subscription_imports(subscriptions, products, customers)
     email_by_source = {c.source_id: c.email for c in customers if c.email}
     price_info = _price_info(products)
     items: list[MerchantMigrationRecordItem] = []
     for subscription in subscriptions:
-        code, reason = plans[subscription.source_id]
-        if code is None and subscription.trialing:
-            # A warning, not a skip: the trial carries over, but it's worth the
-            # merchant's eye since billing resumes when it ends.
-            reason = _TRIALING_REASON
+        payment_method = subscription.payment_method
+        note = _pick_note(
+            ("payment_method_requires_reentry", _PAYMENT_REENTRY_REASON)
+            if payment_method is not None and payment_method.type.requires_reentry
+            else None,
+            ("subscription_trialing", _TRIALING_REASON)
+            if subscription.trialing
+            else None,
+        )
         title = email_by_source.get(
             subscription.customer_source_id, subscription.customer_source_id
         )
@@ -664,8 +701,8 @@ def _subscription_items(
                 subscription.source_id,
                 title,
                 subtitle,
-                reason_code=code,
-                reason=reason,
+                skip=plans[subscription.source_id],
+                note=note,
                 amount=amount,
                 currency=currency,
                 recurring_interval=interval,
@@ -695,13 +732,15 @@ def _split_records(
 
 
 def classify_records(
-    records: Sequence[CanonicalRecord], entity: PrecheckEntity
+    records: Sequence[CanonicalRecord],
+    entity: PrecheckEntity,
+    existing_product_names: set[str] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     """Classify the source catalog into per-record rows of one entity type,
     each marked importable or skipped with a reason."""
     products, customers, subscriptions = _split_records(records)
     if entity == PrecheckEntity.products:
-        return _product_items(products)
+        return _product_items(products, existing_product_names or set())
     if entity == PrecheckEntity.prices:
         return _price_items(products)
     if entity == PrecheckEntity.customers:
@@ -716,13 +755,12 @@ class ProductImportPlan:
     reason, or the set of price ``source_id``s to create under the Polar product.
     """
 
-    skip_code: str | None
-    skip_reason: str | None
+    skip: Reason | None
     importable_price_ids: set[str]
 
     @property
     def importable(self) -> bool:
-        return self.skip_code is None
+        return self.skip is None
 
 
 def plan_product_imports(
@@ -731,16 +769,16 @@ def plan_product_imports(
     """What the catalog importer should do with each canonical product, using the
     exact same predicates as the precheck report so imported == report-importable.
 
-    A product is skipped when its own checks fail (one-time, unsupported interval,
-    duplicate name) or when none of its prices can be imported (a product with no
-    price is unsellable). Otherwise it imports with the prices that pass.
+    A product is skipped when its own checks fail (one-time, unsupported interval)
+    or when none of its prices can be imported (a product with no price is
+    unsellable). Otherwise it imports with the prices that pass. Sharing a name
+    with another product is fine: Polar doesn't require unique names.
     """
-    first_source_id_by_name, duplicate_names = _duplicate_product_names(products)
     plans: dict[str, ProductImportPlan] = {}
     for product in products:
-        code, reason = _product_drop(product, first_source_id_by_name, duplicate_names)
-        if code is not None:
-            plans[product.source_id] = ProductImportPlan(code, reason, set())
+        skip = _product_drop(product)
+        if skip is not None:
+            plans[product.source_id] = ProductImportPlan(skip, set())
             continue
         price_ids = {
             price.source_id
@@ -752,22 +790,22 @@ def plan_product_imports(
         }
         if not price_ids:
             plans[product.source_id] = ProductImportPlan(
-                "no_importable_price", _NO_IMPORTABLE_PRICE_REASON, set()
+                ("no_importable_price", _NO_IMPORTABLE_PRICE_REASON), set()
             )
         else:
-            plans[product.source_id] = ProductImportPlan(None, None, price_ids)
+            plans[product.source_id] = ProductImportPlan(None, price_ids)
     return plans
 
 
 def plan_customer_imports(
     customers: Sequence[CanonicalCustomer],
-) -> dict[str, tuple[str | None, str | None]]:
-    """Per customer ``source_id``, the skip ``(code, reason)`` or ``(None, None)``
-    when importable. Duplicate emails are reused, not re-imported (design
-    Appendix A), so only the later duplicate is skipped; a customer with no email
-    can't be imported at all."""
+) -> dict[str, Reason | None]:
+    """Per customer ``source_id``, the skip reason or ``None`` when importable.
+    A Polar customer is unique by email and carries a single source id, so of
+    several customers sharing an email only the first can be imported; a customer
+    with no email can't be imported at all."""
     duplicates = _duplicate_customer_source_ids(customers)
-    plans: dict[str, tuple[str | None, str | None]] = {}
+    plans: dict[str, Reason | None] = {}
     for customer in customers:
         if customer.source_id in duplicates:
             plans[customer.source_id] = (
@@ -780,7 +818,7 @@ def plan_customer_imports(
                 _MISSING_EMAIL_REASON,
             )
         else:
-            plans[customer.source_id] = (None, None)
+            plans[customer.source_id] = None
     return plans
 
 
@@ -788,33 +826,31 @@ def plan_subscription_imports(
     subscriptions: Sequence[CanonicalSubscription],
     products: Sequence[CanonicalProduct],
     customers: Sequence[CanonicalCustomer],
-) -> dict[str, tuple[str | None, str | None]]:
-    """Per subscription ``source_id``, the skip ``(code, reason)`` or
-    ``(None, None)`` when importable. Mirrors the review drawer's per-subscription
-    classification: a subscription can't import if its own checks fail or the
-    product/price or customer it depends on won't import."""
+) -> dict[str, Reason | None]:
+    """Per subscription ``source_id``, the skip reason or ``None`` when
+    importable. Mirrors the review drawer's per-subscription classification: a
+    subscription can't import if its own checks fail or the product/price or
+    customer it depends on won't import."""
     importable_prices = {
         price_id
         for plan in plan_product_imports(products).values()
         for price_id in plan.importable_price_ids
     }
-    skipped_customers = _duplicate_customer_source_ids(customers)
-    plans: dict[str, tuple[str | None, str | None]] = {}
+    customer_plans = plan_customer_imports(customers)
+    plans: dict[str, Reason | None] = {}
     for subscription in subscriptions:
         code, reason = _drop_reason(
             precheck_engine._check_subscription(subscription), SUBSCRIPTION_DROP_CODES
         )
-        if code is None and subscription.price_source_id not in importable_prices:
-            code, reason = (
-                "subscription_product_not_importable",
-                _SUBSCRIPTION_PRODUCT_REASON,
-            )
-        elif code is None and subscription.customer_source_id in skipped_customers:
-            code, reason = (
+        skip: Reason | None = (code, reason) if code and reason else None
+        if skip is None and subscription.price_source_id not in importable_prices:
+            skip = ("subscription_product_not_importable", _SUBSCRIPTION_PRODUCT_REASON)
+        elif skip is None and customer_plans.get(subscription.customer_source_id):
+            skip = (
                 "subscription_customer_not_importable",
                 _SUBSCRIPTION_CUSTOMER_REASON,
             )
-        plans[subscription.source_id] = (code, reason)
+        plans[subscription.source_id] = skip
     return plans
 
 

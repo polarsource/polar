@@ -33,6 +33,7 @@ from .schemas import (
     MerchantMigrationCreate,
     MerchantMigrationRecordItem,
     PrecheckEntity,
+    PrecheckReasonLevel,
     PrecheckRecordStatus,
     PrecheckReport,
 )
@@ -282,35 +283,37 @@ class MerchantMigrationService:
         *,
         entity: PrecheckEntity | None,
         status: PrecheckRecordStatus | None,
-        needs_attention: bool = False,
+        reason_level: PrecheckReasonLevel | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[MerchantMigrationRecordItem], int]:
         """Return staged records classified importable/skipped and paginated in
         memory. ``entity`` scopes to one type; ``None`` returns products, customers
         and subscriptions together. ``status`` filters to importable or skipped;
-        ``needs_attention`` filters to importable rows carrying a warning. Reads
-        what ``run_precheck`` persisted."""
+        ``reason_level`` filters to rows the merchant has to act on
+        (`action_required`) or only needs to know about (`info`). Reads what
+        ``run_precheck`` persisted."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
 
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         staged = await record_repository.list_by_migration(migration.id)
         records = [deserialize(record.type, record.canonical) for record in staged]
+        existing_product_names = await ProductRepository.from_session(
+            session
+        ).get_active_names_by_organization(migration.organization_id)
 
         entities = [entity] if entity is not None else list(_ENTITY_RECORD_TYPE)
         items: list[MerchantMigrationRecordItem] = []
         for entity_type in entities:
-            entity_items = classify_records(records, entity_type)
+            entity_items = classify_records(
+                records, entity_type, existing_product_names
+            )
             self._attach_record_ids(entity_items, staged, entity_type)
             items.extend(entity_items)
 
         if status is not None:
             items = [item for item in items if item.status == status]
-        if needs_attention:
-            items = [
-                item
-                for item in items
-                if item.status == PrecheckRecordStatus.importable and item.reason
-            ]
+        if reason_level is not None:
+            items = [item for item in items if item.reason_level == reason_level]
 
         start = (pagination.page - 1) * pagination.limit
         return items[start : start + pagination.limit], len(items)

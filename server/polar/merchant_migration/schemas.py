@@ -53,6 +53,11 @@ class PrecheckRecordStatus(StrEnum):
     skipped = "skipped"
 
 
+class PrecheckReasonLevel(StrEnum):
+    action_required = "action_required"
+    info = "info"
+
+
 class PrecheckEntitySummary(Schema):
     entity: PrecheckEntity = Field(description="The source entity type.")
     total: int = Field(description="How many were read from the source.")
@@ -100,9 +105,16 @@ class MerchantMigrationRecordItem(Schema):
             "with their product."
         ),
     )
-    reason: str | None = Field(description="Why the record is skipped, if it is.")
-    reason_code: str | None = Field(
-        description="Stable code for the skip reason, if any."
+    reason: str | None = Field(
+        description="Why the record is skipped, or what to know about it if it isn't."
+    )
+    reason_code: str | None = Field(description="Stable code for `reason`, if any.")
+    reason_level: PrecheckReasonLevel | None = Field(
+        description=(
+            "How urgent `reason` is: `action_required` when the merchant has to "
+            "fix something, `info` when there is nothing to fix. Null without a "
+            "reason."
+        )
     )
 
 

@@ -1,6 +1,7 @@
 import { PolarError } from "./base";
 
 const webhookToleranceSeconds = 5 * 60;
+const webhookSecretPrefix = "whsec_";
 
 export class PolarWebhookError extends PolarError {
   constructor(message: string, options?: ErrorOptions) {
@@ -88,14 +89,17 @@ const verifySignature = async (
   }
 
   const signedContent = `${webhookId}.${Math.floor(timestamp)}.${body}`;
-  const textEncoder = new TextEncoder();
-  const signedContentBytes = textEncoder.encode(signedContent);
-  const signingKey = await globalThis.crypto.subtle.importKey(
-    "raw",
-    textEncoder.encode(secret),
-    { name: "HMAC", hash: "SHA-256" },
-    false,
-    ["verify"],
+  const signedContentBytes = new TextEncoder().encode(signedContent);
+  const signingKeys = await Promise.all(
+    signingKeyMaterials(secret).map((keyMaterial) =>
+      globalThis.crypto.subtle.importKey(
+        "raw",
+        keyMaterial,
+        { name: "HMAC", hash: "SHA-256" },
+        false,
+        ["verify"],
+      ),
+    ),
   );
 
   for (const versionedSignature of webhookSignature.split(" ")) {
@@ -104,20 +108,36 @@ const verifySignature = async (
       continue;
     }
     const decodedSignature = decodeBase64(signature);
-    if (
-      decodedSignature !== null &&
-      (await globalThis.crypto.subtle.verify(
-        "HMAC",
-        signingKey,
-        decodedSignature,
-        signedContentBytes,
-      ))
-    ) {
-      return;
+    if (decodedSignature === null) {
+      continue;
+    }
+    for (const signingKey of signingKeys) {
+      if (
+        await globalThis.crypto.subtle.verify(
+          "HMAC",
+          signingKey,
+          decodedSignature,
+          signedContentBytes,
+        )
+      ) {
+        return;
+      }
     }
   }
 
   throw new PolarWebhookVerificationError("No matching signature found");
+};
+
+const signingKeyMaterials = (secret: string): Uint8Array<ArrayBuffer>[] => {
+  const keyMaterials: Uint8Array<ArrayBuffer>[] = [new TextEncoder().encode(secret)];
+  if (secret.startsWith(webhookSecretPrefix)) {
+    const encodedKey = secret.slice(webhookSecretPrefix.length);
+    const decodedKey = encodedKey.length % 4 === 0 ? decodeBase64(encodedKey) : null;
+    if (decodedKey !== null) {
+      keyMaterials.unshift(decodedKey);
+    }
+  }
+  return keyMaterials;
 };
 
 const decodeBase64 = (value: string): Uint8Array<ArrayBuffer> | null => {

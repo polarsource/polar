@@ -10,6 +10,7 @@ import typing
 from polar.base import PolarError
 
 _WEBHOOK_TOLERANCE_SECONDS = 5 * 60
+_WEBHOOK_SECRET_PREFIX = "whsec_"
 _PayloadT = typing.TypeVar("_PayloadT")
 
 
@@ -87,9 +88,10 @@ def _verify_signature(body: str, headers: dict[str, str], secret: str) -> None:
         raise PolarWebhookVerificationError("Message timestamp too new")
 
     signed_content = f"{webhook_id}.{math.floor(timestamp)}.{body}".encode()
-    expected_signature = hmac.new(
-        secret.encode(), signed_content, hashlib.sha256
-    ).digest()
+    expected_signatures = [
+        hmac.new(key, signed_content, hashlib.sha256).digest()
+        for key in _signing_keys(secret)
+    ]
 
     for versioned_signature in webhook_signature.split():
         version, separator, signature = versioned_signature.partition(",")
@@ -99,7 +101,25 @@ def _verify_signature(body: str, headers: dict[str, str], secret: str) -> None:
             decoded_signature = base64.b64decode(signature, validate=True)
         except (binascii.Error, ValueError):
             continue
-        if hmac.compare_digest(expected_signature, decoded_signature):
+        if any(
+            hmac.compare_digest(expected_signature, decoded_signature)
+            for expected_signature in expected_signatures
+        ):
             return
 
     raise PolarWebhookVerificationError("No matching signature found")
+
+
+def _signing_keys(secret: str) -> list[bytes]:
+    keys = [secret.encode()]
+    if secret.startswith(_WEBHOOK_SECRET_PREFIX):
+        try:
+            keys.insert(
+                0,
+                base64.b64decode(
+                    secret[len(_WEBHOOK_SECRET_PREFIX) :], validate=True
+                ),
+            )
+        except binascii.Error:
+            pass
+    return keys

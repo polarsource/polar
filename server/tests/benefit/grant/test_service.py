@@ -1203,6 +1203,70 @@ class TestDeleteBenefitGrant:
         assert updated_grant.is_revoked
         benefit_strategy_mock.revoke.assert_called_once()
 
+    async def test_granted_grant_with_deleted_member_passes_member_to_revoke(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        organization: Organization,
+        benefit_strategy_mock: MagicMock,
+    ) -> None:
+        """``delete_benefit_grant`` resolves soft-deleted members so the benefit
+        strategy (e.g. GitHub repository) can still access the member's stored
+        OAuth account when cleaning up after a member deletion.
+
+        Regression test: previously ``delete_benefit_grant`` used
+        ``get_by_id`` without ``include_deleted=True``, so a soft-deleted
+        member resolved to ``None`` and the strategy's ``revoke`` fell back to
+        the customer's (different) OAuth account, raising
+        ``BenefitActionRequiredError``. That error was swallowed and the grant
+        was marked revoked while external access persisted.
+        """
+        from polar.member.repository import MemberRepository
+
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Test Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        grant = BenefitGrant(
+            subscription=subscription,
+            customer=customer,
+            benefit=benefit_organization,
+            member_id=member.id,
+        )
+        grant.set_granted()
+        await save_fixture(grant)
+
+        # Soft-delete the member, mirroring what MemberService.delete() does
+        member_repository = MemberRepository.from_session(session)
+        await member_repository.soft_delete(member)
+        await session.flush()
+
+        # load the grant as the task does
+        grant_loaded = await benefit_grant_service.get(session, grant.id)
+        assert grant_loaded
+
+        updated_grant = await benefit_grant_service.delete_benefit_grant(
+            session, redis, grant_loaded
+        )
+
+        assert updated_grant.id == grant.id
+        assert updated_grant.is_revoked
+        benefit_strategy_mock.revoke.assert_called_once()
+        # The resolved (soft-deleted) member must be passed to revoke so the
+        # strategy can look up the member's stored OAuth account.
+        revoke_kwargs = benefit_strategy_mock.revoke.call_args.kwargs
+        assert revoke_kwargs["member"] is not None
+        assert revoke_kwargs["member"].id == member.id
+
 
 @pytest.mark.asyncio
 class TestGetByBenefitAndScope:

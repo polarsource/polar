@@ -97,7 +97,7 @@ def _datetime(value: datetime | None, tz: ZoneInfo) -> str | None:
 def _interval(subscription: Subscription) -> str:
     if subscription.recurring_interval_count == 1:
         return subscription.recurring_interval
-    return f"{subscription.recurring_interval_count} {subscription.recurring_interval}"
+    return f"{subscription.recurring_interval_count} {subscription.recurring_interval}s"
 
 
 def _row(

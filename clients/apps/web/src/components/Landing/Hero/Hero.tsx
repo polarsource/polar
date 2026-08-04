@@ -1,7 +1,6 @@
 'use client'
 
 import GetStartedButton from '@/components/Auth/GetStartedButton'
-import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'motion/react'

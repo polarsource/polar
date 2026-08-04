@@ -89,7 +89,10 @@ class MerchantMigrationRecordItem(Schema):
         description="Secondary detail (lifecycle status, country)."
     )
     amount: int | None = Field(
-        description="Recurring price in minor units (cents), for priced rows.",
+        description=(
+            "Recurring price in the currency's smallest unit (cents for USD), for "
+            "priced rows."
+        ),
     )
     currency: str | None = Field(description="ISO currency for `amount`.")
     recurring_interval: str | None = Field(

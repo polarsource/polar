@@ -23141,7 +23141,7 @@ export interface components {
       subtitle: string | null
       /**
        * Amount
-       * @description Recurring price in minor units (cents), for priced rows.
+       * @description Recurring price in the currency's smallest unit (cents for USD), for priced rows.
        */
       amount: number | null
       /**

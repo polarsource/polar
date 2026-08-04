@@ -299,6 +299,15 @@ class TestPrecheckEngine:
         )
         assert "customer_missing_country" in codes(report, PrecheckIssueLevel.warning)
 
+    async def test_missing_email_warns(self) -> None:
+        report = await run(
+            [
+                build_customer(source_id="cus_1", email=""),
+                build_customer(source_id="cus_2", email="a@example.com"),
+            ]
+        )
+        assert "customer_missing_email" in codes(report, PrecheckIssueLevel.warning)
+
     async def test_subscription_warnings_do_not_block(self) -> None:
         report = await run(
             [
@@ -478,6 +487,42 @@ class TestClassifyRecords:
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_level == PrecheckReasonLevel.action_required
+
+    def test_product_row_shows_a_price_that_will_import(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                prices=[
+                    build_price(
+                        source_id="price_tiered",
+                        amount=99,
+                        pricing_scheme=CanonicalPricingScheme.tiered,
+                    ),
+                    build_price(source_id="price_ok", amount=1000),
+                ],
+            )
+        ]
+
+        items = classify_records(records, PrecheckEntity.products)
+
+        assert items[0].status == PrecheckRecordStatus.importable
+        assert items[0].amount == 1000
+
+    def test_subscription_skipped_when_its_customer_was_not_extracted(self) -> None:
+        subscription = replace(
+            build_subscription(source_id="sub_1"), customer_source_id="cus_gone"
+        )
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1", prices=[build_price(source_id="price_1")]
+            ),
+            subscription,
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions)
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "subscription_customer_not_importable"
 
     def test_product_matching_an_existing_polar_name_gets_a_note(self) -> None:
         records: list[CanonicalRecord] = [

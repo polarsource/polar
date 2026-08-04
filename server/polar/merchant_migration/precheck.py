@@ -140,6 +140,7 @@ class PrecheckEngine:
         products_by_name: dict[str, set[str]] = {}
         email_counts: Counter[str] = Counter()
         customers_without_country = 0
+        customers_without_email = 0
 
         for record in record_list:
             if isinstance(record, CanonicalProduct):
@@ -150,6 +151,8 @@ class PrecheckEngine:
             elif isinstance(record, CanonicalCustomer):
                 if record.email:
                     email_counts[record.email.lower()] += 1
+                else:
+                    customers_without_email += 1
                 if not record.country:
                     customers_without_country += 1
             elif isinstance(record, CanonicalSubscription):
@@ -162,6 +165,7 @@ class PrecheckEngine:
             )
         )
         issues.extend(self._check_duplicate_emails(email_counts))
+        issues.extend(self._check_missing_email(customers_without_email))
         issues.extend(self._check_missing_country(customers_without_country))
 
         return PrecheckReport(
@@ -339,6 +343,18 @@ class PrecheckEngine:
                     ),
                     source_id=None,
                 )
+
+    def _check_missing_email(self, count: int) -> Iterable[PrecheckIssue]:
+        if count > 0:
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="customer_missing_email",
+                message=(
+                    f"{count} customers have no email; they and their subscriptions "
+                    "won't be imported."
+                ),
+                source_id=None,
+            )
 
     def _check_missing_country(self, count: int) -> Iterable[PrecheckIssue]:
         if count > 0:
@@ -532,11 +548,16 @@ def _price_info(
 
 
 def _representative_price(
-    product: CanonicalProduct,
+    product: CanonicalProduct, importable_price_ids: set[str]
 ) -> tuple[int | None, str | None, str | None]:
-    if not product.prices:
+    """The price to show on a product row: one that will actually be imported,
+    falling back to the first when the product is skipped."""
+    price = next(
+        (price for price in product.prices if price.source_id in importable_price_ids),
+        product.prices[0] if product.prices else None,
+    )
+    if price is None:
         return None, None, None
-    price = product.prices[0]
     return price.amount, price.currency, product.recurring_interval
 
 
@@ -585,7 +606,9 @@ def _product_items(
     items: list[MerchantMigrationRecordItem] = []
     for product in products:
         plan = plans[product.source_id]
-        amount, currency, interval = _representative_price(product)
+        amount, currency, interval = _representative_price(
+            product, plan.importable_price_ids
+        )
         # Sharing a name is allowed in Polar, so it only earns a note.
         note = _pick_note(
             ("duplicate_product_name", _DUPLICATE_PRODUCT_NAME_REASON)
@@ -637,6 +660,9 @@ def _price_items(
                     product.name,
                     subtitle,
                     skip=skip,
+                    amount=price.amount,
+                    currency=price.currency,
+                    recurring_interval=product.recurring_interval,
                 )
             )
     return items
@@ -836,7 +862,11 @@ def plan_subscription_imports(
         for plan in plan_product_imports(products).values()
         for price_id in plan.importable_price_ids
     }
-    customer_plans = plan_customer_imports(customers)
+    importable_customers = {
+        source_id
+        for source_id, skip in plan_customer_imports(customers).items()
+        if skip is None
+    }
     plans: dict[str, Reason | None] = {}
     for subscription in subscriptions:
         code, reason = _drop_reason(
@@ -845,7 +875,9 @@ def plan_subscription_imports(
         skip: Reason | None = (code, reason) if code and reason else None
         if skip is None and subscription.price_source_id not in importable_prices:
             skip = ("subscription_product_not_importable", _SUBSCRIPTION_PRODUCT_REASON)
-        elif skip is None and customer_plans.get(subscription.customer_source_id):
+        elif (
+            skip is None and subscription.customer_source_id not in importable_customers
+        ):
             skip = (
                 "subscription_customer_not_importable",
                 _SUBSCRIPTION_CUSTOMER_REASON,

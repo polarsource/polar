@@ -4,10 +4,11 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { DateRange } from '@/components/Metrics/DateRangePicker'
 import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
 import {
+  DEFAULT_SUBSCRIPTION_STATUS,
   subscriptionStatusFilterValues,
   type SubscriptionStatusFilter,
 } from '@/components/Subscriptions/SubscriptionStatusSelect'
-import { useProducts, useSubscriptions } from '@/hooks/queries'
+import { useSubscriptions } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { getServerURL } from '@/utils/api'
 import { DataTableSortingState, getAPIParams } from '@/utils/datatable'
@@ -42,7 +43,7 @@ import SubscriptionFilters from './SubscriptionFilters'
 const filterParsers = {
   product_id: parseAsString,
   status: parseAsStringLiteral(subscriptionStatusFilterValues).withDefault(
-    'active',
+    DEFAULT_SUBSCRIPTION_STATUS,
   ),
   cancel_at_period_end: parseAsBoolean,
   metadata: parseAsArrayOf(parseAsString),
@@ -72,11 +73,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     useState<RowSelectionState>({})
 
   const router = useRouter()
-
-  const subscriptionTiers = useProducts(organization.id, {
-    is_recurring: true,
-    limit: 100,
-  })
 
   const {
     pagination,
@@ -285,7 +281,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       <div className="flex flex-col gap-8">
         <SubscriptionFilters
           organization={organization}
-          products={subscriptionTiers.data?.items || []}
           productId={productId}
           onProductSelect={onProductSelect}
           status={status}

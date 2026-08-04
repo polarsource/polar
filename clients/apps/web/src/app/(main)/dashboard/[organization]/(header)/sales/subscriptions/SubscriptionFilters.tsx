@@ -11,11 +11,13 @@ import FilterPopover, {
 } from '@/components/Shared/FilterPopover'
 import SubscriptionCancellationSelect from '@/components/Subscriptions/SubscriptionCancellationSelect'
 import SubscriptionStatusSelect, {
+  DEFAULT_SUBSCRIPTION_STATUS,
   subscriptionStatusFilterValues,
   type SubscriptionStatusFilter,
 } from '@/components/Subscriptions/SubscriptionStatusSelect'
 import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
 import { subscriptionStatusDisplayNames } from '@/components/Subscriptions/utils'
+import { useProducts, useSelectedProducts } from '@/hooks/queries'
 import AutorenewOutlined from '@mui/icons-material/AutorenewOutlined'
 import CalendarMonthOutlined from '@mui/icons-material/CalendarMonthOutlined'
 import DonutLargeOutlined from '@mui/icons-material/DonutLargeOutlined'
@@ -25,7 +27,7 @@ import { schemas } from '@polar-sh/client'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { startOfDay } from 'date-fns'
-import React, { useMemo } from 'react'
+import React, { useMemo, useState } from 'react'
 
 const CUSTOM_DATE_RANGE = 'custom'
 
@@ -36,7 +38,6 @@ const cancellationOptions: FilterOption[] = [
 
 interface SubscriptionFiltersProps {
   organization: schemas['Organization']
-  products: schemas['Product'][]
   productId: string | null
   onProductSelect: (value: string | null) => void
   status: SubscriptionStatusFilter
@@ -50,7 +51,6 @@ interface SubscriptionFiltersProps {
 
 const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
   organization,
-  products,
   productId,
   onProductSelect,
   status,
@@ -61,6 +61,34 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
   onDateChange,
   onExport,
 }) => {
+  const [productQuery, setProductQuery] = useState('')
+
+  const { data: queriedProducts, isPending: productsPending } = useProducts(
+    organization.id,
+    {
+      is_recurring: true,
+      ...(productQuery ? { query: productQuery } : {}),
+      sorting: ['name'],
+      limit: 100,
+    },
+  )
+  const { data: selectedProducts } = useSelectedProducts(
+    productId ? [productId] : [],
+    true,
+  )
+
+  const products = useMemo<schemas['Product'][]>(() => {
+    let items = queriedProducts?.items ?? []
+    if (!productQuery) {
+      for (const product of selectedProducts ?? []) {
+        if (!items.some(({ id }) => id === product.id)) {
+          items = [...items, product]
+        }
+      }
+    }
+    return items
+  }, [queriedProducts, selectedProducts, productQuery])
+
   const mobileFilters = useMemo<Filter[]>(() => {
     const intervals = dateRangeIntervals(organization)
     const intervalSlug = dateRangeToMatchingInterval(
@@ -83,6 +111,7 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
               ],
           })),
         value: status === 'any' ? null : status,
+        defaultValue: DEFAULT_SUBSCRIPTION_STATUS,
         onChange: (value) =>
           onStatusSelect((value ?? 'any') as SubscriptionStatusFilter),
       },
@@ -110,8 +139,12 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
         type: 'single',
         options: products.map((product) => ({
           value: product.id,
-          label: product.name,
+          label: `${product.name}${product.is_archived ? ' (Archived)' : ''}`,
         })),
+        loading: productsPending,
+        searchPlaceholder: 'Search products…',
+        searchQuery: productQuery,
+        onSearchQueryChange: setProductQuery,
         value: productId,
         onChange: onProductSelect,
       },
@@ -138,6 +171,8 @@ const SubscriptionFilters: React.FC<SubscriptionFiltersProps> = ({
   }, [
     organization,
     products,
+    productsPending,
+    productQuery,
     productId,
     onProductSelect,
     status,

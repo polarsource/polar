@@ -41,6 +41,7 @@ interface FilterBase {
 export interface SingleFilter extends FilterBase {
   type: 'single'
   value: string | null
+  defaultValue?: string | null
   onChange: (value: string | null) => void
 }
 
@@ -64,6 +65,13 @@ const crossfadeClassName = (hidden: boolean): string =>
 const isActive = (filter: Filter): boolean =>
   filter.type === 'single' ? filter.value !== null : filter.value.length > 0
 
+// A filter sitting on the value the page loads with isn't a user-applied
+// filter, so it shouldn't count towards the badge — it still shows a summary.
+const isDefaulted = (filter: Filter): boolean =>
+  filter.type === 'single' &&
+  filter.defaultValue !== undefined &&
+  filter.value === filter.defaultValue
+
 const isSelected = (filter: Filter, option: FilterOption): boolean =>
   filter.type === 'single'
     ? filter.value === option.value
@@ -71,7 +79,7 @@ const isSelected = (filter: Filter, option: FilterOption): boolean =>
 
 const clearFilter = (filter: Filter): void => {
   if (filter.type === 'single') {
-    filter.onChange(null)
+    filter.onChange(filter.defaultValue ?? null)
   } else {
     filter.onChange([])
   }
@@ -124,7 +132,9 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   const activeFilter = filters.find(({ key }) => key === activeKey)
-  const activeCount = filters.filter(isActive).length
+  const activeCount = filters.filter(
+    (filter) => isActive(filter) && !isDefaulted(filter),
+  ).length
   const isSearchable = !!activeFilter?.onSearchQueryChange
 
   const collapseSearch = () => {

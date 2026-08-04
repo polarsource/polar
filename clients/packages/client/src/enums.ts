@@ -13,6 +13,7 @@ export {
   propertyAggregationFuncValues,
   refundReasonValues,
   stripeAccountCountryValues,
+  subscriptionExportColumnValues,
   taxBehaviorOptionValues,
   timeIntervalValues,
   trialIntervalValues,

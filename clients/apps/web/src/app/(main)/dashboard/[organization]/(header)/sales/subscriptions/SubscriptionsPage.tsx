@@ -2,6 +2,8 @@
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { DateRange } from '@/components/Metrics/DateRangePicker'
+import { useModal } from '@/components/Modal/useModal'
+import ExportSubscriptionsModal from '@/components/Subscriptions/ExportSubscriptionsModal'
 import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
 import {
   DEFAULT_SUBSCRIPTION_STATUS,
@@ -10,7 +12,6 @@ import {
 } from '@/components/Subscriptions/SubscriptionStatusSelect'
 import { useSubscriptions } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
-import { getServerURL } from '@/utils/api'
 import { DataTableSortingState, getAPIParams } from '@/utils/datatable'
 import { useDateRange } from '@/utils/date'
 import { schemas } from '@polar-sh/client'
@@ -96,6 +97,12 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   ] = useQueryStates(filterParsers)
 
   const { startDate, endDate, setStartDate, setEndDate } = useDateRange()
+
+  const {
+    isShown: isExportModalShown,
+    show: showExportModal,
+    hide: hideExportModal,
+  } = useModal()
 
   const setSorting: OnChangeFn<DataTableSortingState> = (updater) => {
     setSortingState((old) =>
@@ -268,14 +275,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       : []),
   ]
 
-  const onExport = () => {
-    const url = new URL(
-      `${getServerURL()}/v1/subscriptions/export?organization_id=${organization.id}`,
-    )
-
-    window.open(url, '_blank')
-  }
-
   return (
     <DashboardBody wide>
       <div className="flex flex-col gap-8">
@@ -289,7 +288,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           onCancelAtPeriodEndSelect={onCancelAtPeriodEndSelect}
           dateRange={{ from: startDate, to: endDate }}
           onDateChange={onDateChange}
-          onExport={onExport}
+          onExport={showExportModal}
         />
         {subscriptions && pageCount !== undefined ? (
           <DataTable
@@ -311,6 +310,14 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           />
         ) : null}
       </div>
+      <ExportSubscriptionsModal
+        organization={organization}
+        productId={productId}
+        status={status}
+        cancelAtPeriodEnd={cancelAtPeriodEnd}
+        isShown={isExportModalShown}
+        hide={hideExportModal}
+      />
     </DashboardBody>
   )
 }

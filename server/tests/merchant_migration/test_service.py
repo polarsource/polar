@@ -11,6 +11,7 @@ from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
+    CanonicalCustomer,
     CanonicalPrice,
     CanonicalPricingScheme,
     CanonicalProduct,
@@ -37,6 +38,7 @@ from polar.merchant_migration.service import merchant_migration as service
 from polar.models import (
     MerchantMigration,
     Organization,
+    Product,
     User,
     UserOrganization,
 )
@@ -44,6 +46,11 @@ from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
+from polar.models.merchant_migration_record import (
+    MerchantMigrationRecordStatus,
+    MerchantMigrationRecordType,
+)
+from polar.models.product_price import ProductPriceFixed
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.merchant_migration._helpers import build_connected_migration
@@ -331,6 +338,40 @@ class TestRunPrecheck:
         assert records[0].canonical["name"] == "Pro"
 
     @pytest.mark.auth
+    async def test_warns_when_a_polar_product_already_exists(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        existing = Product(
+            organization=organization,
+            name="Pro",
+            recurring_interval="month",
+            recurring_interval_count=1,
+            prices=[ProductPriceFixed(price_amount=1000, price_currency="usd")],
+            all_prices=[ProductPriceFixed(price_amount=1000, price_currency="usd")],
+            product_benefits=[],
+            product_medias=[],
+            attached_custom_fields=[],
+        )
+        await save_fixture(existing)
+
+        migration = await build_connected_migration(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(_catalog()),
+        )
+
+        report = await service.run_precheck(session, auth_subject, migration.id)
+
+        codes = {issue.code for issue in report.issues}
+        assert "product_exists_in_polar" in codes
+
+    @pytest.mark.auth
     async def test_source_not_connected(
         self,
         session: AsyncSession,
@@ -464,3 +505,75 @@ class TestListRecords:
         assert count == 1
         assert items[0].source_id == "prod_2"
         assert items[0].reason_code == "one_time_product"
+
+    @pytest.mark.auth
+    async def test_items_carry_ledger_record_id(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(_catalog()),
+        )
+
+        await service.run_precheck(session, auth_subject, migration.id)
+        items, _ = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.products,
+            status=None,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        # every product row exposes the ledger id + status of its staged record
+        for item in items:
+            assert item.record_id is not None
+            assert item.import_status == MerchantMigrationRecordStatus.pending
+        prod_1 = await record_repository.get_by_source(
+            organization_id=organization.id,
+            type=MerchantMigrationRecordType.product,
+            source_id="prod_1:month:1",
+        )
+        assert prod_1 is not None
+        assert prod_1.id in {item.record_id for item in items}
+
+
+def _importable_catalog() -> list[CanonicalRecord]:
+    """An importable recurring product, a one-time product that's skipped, and
+    a customer."""
+    return [
+        *_catalog(),
+        CanonicalCustomer(
+            source_id="cus_1",
+            email="alice@example.com",
+            name="Alice",
+            country="US",
+        ),
+    ]
+
+
+async def _staged_migration(
+    mocker: MockerFixture,
+    session: AsyncSession,
+    save_fixture: SaveFixture,
+    auth_subject: AuthSubject[User],
+    organization: Organization,
+    records: list[CanonicalRecord] | None = None,
+) -> MerchantMigration:
+    migration = await build_connected_migration(save_fixture, organization)
+    mocker.patch(
+        "polar.merchant_migration.service.StripeAdapter",
+        return_value=_FakeAdapter(
+            records if records is not None else _importable_catalog()
+        ),
+    )
+    await service.run_precheck(session, auth_subject, migration.id)
+    return migration

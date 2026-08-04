@@ -23117,6 +23117,11 @@ export interface components {
     }
     /** MerchantMigrationRecordItem */
     MerchantMigrationRecordItem: {
+      /**
+       * Record Id
+       * @description The ledger record id, used to select this row for import. Null for price rows, which are imported together with their product.
+       */
+      record_id: string | null
       /** @description The source entity type. */
       entity: components['schemas']['PrecheckEntity']
       /**
@@ -23131,22 +23136,48 @@ export interface components {
       title: string
       /**
        * Subtitle
-       * @description Secondary detail (interval, amount, country, status).
+       * @description Secondary detail (lifecycle status, country).
        */
       subtitle: string | null
+      /**
+       * Amount
+       * @description Recurring price in the currency's smallest unit (cents for USD), for priced rows.
+       */
+      amount: number | null
+      /**
+       * Currency
+       * @description ISO currency for `amount`.
+       */
+      currency: string | null
+      /**
+       * Recurring Interval
+       * @description Billing interval for `amount` (e.g. `month`, `year`).
+       */
+      recurring_interval: string | null
       /** @description Whether this record will be imported or stays on the source. */
       status: components['schemas']['PrecheckRecordStatus']
+      /** @description The ledger status of this record: `pending` (not imported yet), `imported`, `skipped` or `failed`. Null for price rows, which import with their product. */
+      import_status:
+        | components['schemas']['MerchantMigrationRecordStatus']
+        | null
       /**
        * Reason
-       * @description Why the record is skipped, if it is.
+       * @description Why the record is skipped, or what to know about it if it isn't.
        */
       reason: string | null
       /**
        * Reason Code
-       * @description Stable code for the skip reason, if any.
+       * @description Stable code for `reason`, if any.
        */
       reason_code: string | null
+      /** @description How urgent `reason` is: `action_required` when the merchant has to fix something, `info` when there is nothing to fix. Null without a reason. */
+      reason_level: components['schemas']['PrecheckReasonLevel'] | null
     }
+    /**
+     * MerchantMigrationRecordStatus
+     * @enum {string}
+     */
+    MerchantMigrationRecordStatus: 'pending' | 'imported' | 'skipped' | 'failed'
     /**
      * MerchantMigrationSourcePlatform
      * @enum {string}
@@ -29344,6 +29375,11 @@ export interface components {
      * @enum {string}
      */
     PrecheckIssueLevel: 'blocker' | 'warning'
+    /**
+     * PrecheckReasonLevel
+     * @enum {string}
+     */
+    PrecheckReasonLevel: 'action_required' | 'info'
     /**
      * PrecheckRecordStatus
      * @enum {string}
@@ -51268,9 +51304,10 @@ export interface operations {
   }
   'merchant-migrations:records': {
     parameters: {
-      query: {
-        entity: components['schemas']['PrecheckEntity']
+      query?: {
+        entity?: components['schemas']['PrecheckEntity'] | null
         status?: components['schemas']['PrecheckRecordStatus'] | null
+        reason_level?: components['schemas']['PrecheckReasonLevel'] | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -63955,6 +63992,9 @@ export const memberRoleValues: ReadonlyArray<
 export const memberSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberSortProperty']
 > = ['created_at', '-created_at']
+export const merchantMigrationRecordStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationRecordStatus']
+> = ['pending', 'imported', 'skipped', 'failed']
 export const merchantMigrationSourcePlatformValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationSourcePlatform']
 > = ['stripe', 'lemon_squeezy', 'paddle']
@@ -65578,6 +65618,9 @@ export const precheckEntityValues: ReadonlyArray<
 export const precheckIssueLevelValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckIssueLevel']
 > = ['blocker', 'warning']
+export const precheckReasonLevelValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PrecheckReasonLevel']
+> = ['action_required', 'info']
 export const precheckRecordStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckRecordStatus']
 > = ['importable', 'skipped']

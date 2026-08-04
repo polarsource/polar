@@ -488,6 +488,57 @@ class TestClassifyRecords:
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_level == PrecheckReasonLevel.action_required
 
+    def test_two_prices_in_one_currency_skip_the_product(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                prices=[
+                    build_price(source_id="price_old", amount=1000),
+                    build_price(source_id="price_new", amount=1200),
+                ],
+            )
+        ]
+
+        items = classify_records(records, PrecheckEntity.products)
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "multiple_prices_same_currency"
+        assert items[0].reason_level == PrecheckReasonLevel.action_required
+
+    def test_one_price_per_currency_imports(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                prices=[
+                    build_price(source_id="price_usd", currency="usd"),
+                    build_price(source_id="price_eur", currency="eur"),
+                ],
+            )
+        ]
+
+        items = classify_records(records, PrecheckEntity.products)
+
+        assert items[0].status == PrecheckRecordStatus.importable
+
+    def test_a_dropped_price_does_not_count_as_a_collision(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                prices=[
+                    build_price(source_id="price_ok", amount=1000),
+                    build_price(
+                        source_id="price_tiered",
+                        amount=1200,
+                        pricing_scheme=CanonicalPricingScheme.tiered,
+                    ),
+                ],
+            )
+        ]
+
+        items = classify_records(records, PrecheckEntity.products)
+
+        assert items[0].status == PrecheckRecordStatus.importable
+
     def test_product_row_shows_a_price_that_will_import(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(

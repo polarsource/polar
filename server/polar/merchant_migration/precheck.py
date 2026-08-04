@@ -55,7 +55,11 @@ NON_IMPORTABLE_STATUSES = {
 
 # Codes whose warning means a record won't import, by entity. Keep in sync with
 # the `_check_*` methods so classification matches the report.
-PRODUCT_DROP_CODES = {"one_time_product", "unsupported_recurring_interval"}
+PRODUCT_DROP_CODES = {
+    "one_time_product",
+    "unsupported_recurring_interval",
+    "multiple_prices_same_currency",
+}
 PRICE_DROP_CODES = {
     "unsupported_pricing_scheme",
     "unsupported_price_amount",
@@ -76,6 +80,7 @@ ACTION_REQUIRED_CODES = {
     "customer_missing_country",
     "customer_missing_email",
     "duplicate_customer_email",
+    "multiple_prices_same_currency",
     "subscription_has_discount",
     "send_invoice_collection",
 }
@@ -240,8 +245,24 @@ class PrecheckEngine:
                 ),
                 source_id=product.source_id,
             )
+        importable_currencies: Counter[str] = Counter()
         for price in product.prices:
-            yield from self._check_price(product, price)
+            price_issues = list(self._check_price(product, price))
+            yield from price_issues
+            if not any(issue.code in PRICE_DROP_CODES for issue in price_issues):
+                importable_currencies[price.currency.lower()] += 1
+        for currency, count in importable_currencies.items():
+            if count > 1:
+                yield PrecheckIssue(
+                    level=PrecheckIssueLevel.warning,
+                    code="multiple_prices_same_currency",
+                    message=(
+                        f"Product '{product.name}' has {count} prices in "
+                        f"{currency.upper()}; Polar allows one per currency, so it "
+                        "and its subscriptions won't be imported."
+                    ),
+                    source_id=product.source_id,
+                )
 
     def _check_price(
         self, product: CanonicalProduct, price: CanonicalPrice

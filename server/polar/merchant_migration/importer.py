@@ -6,14 +6,15 @@ from collections.abc import Sequence
 from typing import TypeVar
 from uuid import UUID
 
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import joinedload, selectinload
 
+from polar.auth.models import AuthSubject
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
 from polar.enums import SubscriptionRecurringInterval
 from polar.kit.address import Address, CountryAlpha2
+from polar.kit.currency import PresentmentCurrency
 from polar.kit.db.postgres import AsyncSession
-from polar.kit.utils import utc_now
 from polar.models import (
     Customer,
     MerchantMigration,
@@ -21,17 +22,23 @@ from polar.models import (
     Organization,
     Product,
     Subscription,
-    SubscriptionProductPrice,
+    User,
 )
 from polar.models.merchant_migration import MerchantMigrationSourcePlatform
 from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
-from polar.models.product_price import ProductPriceFixed
-from polar.models.subscription import SubscriptionStatus
+from polar.models.product_price import ProductPriceAmountType, ProductPriceFixed
 from polar.product.repository import ProductRepository
+from polar.product.schemas import (
+    ProductCreateRecurring,
+    ProductPriceCreate,
+    ProductPriceFixedCreate,
+)
+from polar.product.service import product as product_service
 from polar.subscription.repository import SubscriptionRepository
+from polar.subscription.service import subscription as subscription_service
 
 from .canonical import (
     CanonicalCustomer,
@@ -76,6 +83,7 @@ class CatalogImporter:
         session: AsyncSession,
         migration: MerchantMigration,
         organization: Organization,
+        auth_subject: AuthSubject[User | Organization],
         *,
         record_ids: set[UUID] | None = None,
         exclude_record_ids: set[UUID] | None = None,
@@ -83,6 +91,7 @@ class CatalogImporter:
         self.session = session
         self.migration = migration
         self.organization = organization
+        self.auth_subject = auth_subject
         # Selection: include only `record_ids`, or exclude `exclude_record_ids`
         # (the opt-out default for large catalogs), or neither to import all.
         self.record_ids = record_ids
@@ -201,34 +210,33 @@ class CatalogImporter:
         self, product: CanonicalProduct, plan: ProductImportPlan
     ) -> Product:
         assert product.recurring_interval is not None
-        prices: list[ProductPriceFixed] = []
+        prices: list[ProductPriceCreate] = []
         for price in product.prices:
             if price.source_id not in plan.importable_price_ids:
                 continue
             assert price.amount is not None
             prices.append(
-                ProductPriceFixed(
+                ProductPriceFixedCreate(
+                    amount_type=ProductPriceAmountType.fixed,
                     price_amount=price.amount,
-                    price_currency=price.currency.lower(),
+                    price_currency=PresentmentCurrency(price.currency.lower()),
                 )
             )
-        # Repository, not ProductService.create: a bulk import must not fire a
-        # product_created webhook or re-run org review for every product.
-        return await self.product_repository.create(
-            Product(
-                organization=self.organization,
+        # `notify=False`: a bulk import must not fire a product_created webhook or
+        # re-run the organization review for every product.
+        return await product_service.create(
+            self.session,
+            ProductCreateRecurring(
                 name=product.name,
+                organization_id=self.organization.id,
                 recurring_interval=SubscriptionRecurringInterval(
                     product.recurring_interval
                 ),
                 recurring_interval_count=product.recurring_interval_count,
                 prices=prices,
-                all_prices=list(prices),
-                product_benefits=[],
-                product_medias=[],
-                attached_custom_fields=[],
             ),
-            flush=True,
+            self.auth_subject,
+            notify=False,
         )
 
     async def _create_or_reuse_customer(
@@ -394,37 +402,15 @@ class CatalogImporter:
         price: ProductPriceFixed,
         customer: Customer,
     ) -> Subscription:
-        assert product.recurring_interval is not None
-        interval = product.recurring_interval
-        count = product.recurring_interval_count or 1
-        start = subscription.current_period_start or utc_now()
-        end = subscription.current_period_end or interval.get_next_period(
-            start, start.day, count
-        )
-        polar_subscription = Subscription(
-            # Paused isn't active or billable, so the renewal scheduler skips it
-            # and the customer isn't charged until cutover resumes it.
-            status=SubscriptionStatus.paused,
-            paused_at=utc_now(),
-            started_at=start,
-            anchor_day=start.day,
-            current_period_start=start,
-            current_period_end=end,
-            cancel_at_period_end=False,
-            recurring_interval=interval,
-            recurring_interval_count=count,
-            meter_interval=product.meter_interval,
-            meter_interval_count=product.meter_interval_count,
-            organization=self.organization,
+        return await subscription_service.create_imported(
+            self.session,
             product=product,
+            price=price,
             customer=customer,
-            subscription_product_prices=[SubscriptionProductPrice.from_price(price)],
-            currency=price.price_currency,
+            current_period_start=subscription.current_period_start,
+            current_period_end=subscription.current_period_end,
             user_metadata={"stripe_subscription_id": subscription.source_id},
-            pending_update=None,
         )
-        polar_subscription.initialize_meter_period(start)
-        return await self.subscription_repository.create(polar_subscription, flush=True)
 
     def _imported_targets(
         self, records: Sequence[MerchantMigrationRecord]
@@ -445,7 +431,10 @@ class CatalogImporter:
         product = await self.product_repository.get_by_id_and_organization(
             product_id,
             self.organization.id,
-            options=(selectinload(Product.prices),),
+            options=(
+                selectinload(Product.prices),
+                joinedload(Product.organization),
+            ),
         )
         if product is not None:
             self._product_cache[product_id] = product
@@ -457,23 +446,24 @@ class CatalogImporter:
         canonical_product: CanonicalProduct,
         price_source_id: str,
     ) -> ProductPriceFixed | None:
-        # Prices carry no durable source id, so match the source price to a Polar
-        # one by the currency and amount the product importer created it with.
+        # Prices carry no durable source id, so match on currency. A product that
+        # got this far holds one fixed price per currency, so that's unambiguous.
         canonical_price = next(
             (p for p in canonical_product.prices if p.source_id == price_source_id),
             None,
         )
-        if canonical_price is None or canonical_price.amount is None:
+        if canonical_price is None:
             return None
         currency = canonical_price.currency.lower()
-        for price in product.prices:
-            if (
-                isinstance(price, ProductPriceFixed)
+        return next(
+            (
+                price
+                for price in product.prices
+                if isinstance(price, ProductPriceFixed)
                 and price.price_currency == currency
-                and price.price_amount == canonical_price.amount
-            ):
-                return price
-        return None
+            ),
+            None,
+        )
 
     async def _mark_imported(
         self, record: MerchantMigrationRecord, target_id: UUID

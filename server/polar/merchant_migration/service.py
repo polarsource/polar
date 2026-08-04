@@ -305,6 +305,7 @@ class MerchantMigrationService:
             session,
             migration,
             organization,
+            auth_subject,
             record_ids=set(record_ids) if record_ids is not None else None,
             exclude_record_ids=(
                 set(exclude_record_ids) if exclude_record_ids is not None else None

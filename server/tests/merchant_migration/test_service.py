@@ -63,6 +63,7 @@ from polar.models.merchant_migration_record import (
 from polar.models.product_price import ProductPriceFixed
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
+from polar.product.service import product as product_service
 from tests.fixtures.database import SaveFixture
 from tests.merchant_migration._helpers import build_connected_migration
 
@@ -669,6 +670,25 @@ class TestImportCatalog:
         updated = await migration_repository.get_by_id(migration.id)
         assert updated is not None
         assert updated.step == MerchantMigrationStep.create_catalog
+
+    @pytest.mark.auth
+    async def test_import_does_not_notify_for_each_product(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        after_created = mocker.spy(product_service, "_after_product_created")
+
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        after_created.assert_not_called()
 
     @pytest.mark.auth
     async def test_listing_reflects_import_status_after_import(

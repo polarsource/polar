@@ -18,7 +18,7 @@ type Tier = {
   features: string[]
 }
 
-export const TIERS = [
+export const TIERS: Tier[] = [
   {
     name: 'Starter',
     free: true,

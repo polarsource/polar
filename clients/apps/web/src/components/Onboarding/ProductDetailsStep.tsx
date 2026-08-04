@@ -5,7 +5,7 @@ import { useCreateOrganization } from '@/hooks/queries'
 import { AupVerdict, useAupValidation } from '@/hooks/useAupValidation'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import { Button, Text } from '@polar-sh/orbit'
+import { Alert, Button, Text } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import { TextArea } from '@polar-sh/orbit'
 import {
@@ -291,25 +291,15 @@ export function ProductDetailsStep() {
           />
 
           {aup.verdict && (
-            <Box
-              flexDirection="column"
-              rowGap="m"
-              borderRadius="m"
-              borderWidth={1}
-              borderStyle="solid"
-              borderColor="border-warning"
-              backgroundColor="background-warning"
-              padding="l"
-            >
-              <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                {aup.verdict === 'CLARIFY'
+            <Alert
+              variant="warning"
+              title={
+                aup.verdict === 'CLARIFY'
                   ? 'Please clarify your use case'
-                  : 'Use case not supported'}
-              </p>
-              <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                {aup.message}
-              </p>
-            </Box>
+                  : 'Use case not supported'
+              }
+              description={aup.message}
+            />
           )}
 
           <Box flexDirection="column" rowGap="m">
@@ -391,47 +381,52 @@ export function ProductDetailsStep() {
           </Box>
 
           <Box flexDirection="column" rowGap="s">
-            <Button
-              type="submit"
-              onClick={() => form.clearErrors()}
-              loading={aup.isValidating || loading === 'submitting'}
-              disabled={
-                loading === 'submitting-anyway' ||
-                blockedSelected.length > 0 ||
-                sellingCategories.length === 0 ||
-                pricingModel.length === 0 ||
-                productDescription.trim().length < MIN_LENGTH
-              }
-              fullWidth
-            >
-              {aup.verdict ? 'Review again' : 'Launch Dashboard'}
-            </Button>
+            <Box alignSelf="start">
+              <Button
+                type="submit"
+                onClick={() => form.clearErrors()}
+                loading={aup.isValidating || loading === 'submitting'}
+                disabled={
+                  loading === 'submitting-anyway' ||
+                  blockedSelected.length > 0 ||
+                  sellingCategories.length === 0 ||
+                  pricingModel.length === 0 ||
+                  productDescription.trim().length < MIN_LENGTH
+                }
+              >
+                {aup.verdict ? 'Review again' : 'Launch Dashboard'}
+              </Button>
+            </Box>
 
             {aup.verdict &&
               aup.history.length >= 2 &&
               productDescription.trim().length >= MIN_LENGTH &&
               !aup.isValidating && (
                 <>
-                  <Button
-                    variant="ghost"
-                    type="button"
-                    fullWidth
-                    onClick={onContinueAnyway}
-                    disabled={loading === 'submitting'}
-                    loading={loading === 'submitting-anyway'}
-                  >
-                    Continue anyway
-                  </Button>
-                  <Text variant="caption" color="muted" align="center">
+                  <Box alignSelf="start">
+                    <Button
+                      variant="ghost"
+                      type="button"
+                      onClick={onContinueAnyway}
+                      disabled={loading === 'submitting'}
+                      loading={loading === 'submitting-anyway'}
+                    >
+                      Continue anyway
+                    </Button>
+                  </Box>
+                  <Text variant="caption" color="muted">
                     You can continue setting up your account, but it may require
                     manual review before you can accept payments.
                   </Text>
                 </>
               )}
             {form.formState.errors.root && (
-              <p className="text-sm text-red-500 dark:text-red-500">
-                {form.formState.errors.root.message}
-              </p>
+              <Alert
+                variant="danger"
+                title={
+                  form.formState.errors.root.message ?? 'Something went wrong'
+                }
+              />
             )}
           </Box>
         </Box>

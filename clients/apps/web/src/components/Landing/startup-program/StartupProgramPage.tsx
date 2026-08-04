@@ -10,20 +10,20 @@ import { VolumetricSlices } from '../graphics/VolumetricSlices'
 
 export const StartupProgramPage = () => {
   return (
-    <Box flexDirection="column" alignItems="center">
+    <Box flexDirection="column">
       <Box
         alignItems="center"
         flexDirection="column"
         paddingVertical="2xl"
-        rowGap="2xl"
+        rowGap="xl"
       >
         <Box width="16rem" aspectRatio="1 / 1">
           <VolumetricSlices />
         </Box>
-        <Text as="h1" variant="heading-xl">
+        <Text as="h1" variant="heading-l">
           Startup Program
         </Text>
-        <Text as="p" variant="heading-xxs" align="center">
+        <Text as="p" variant="heading-xxs" align="center" color="muted">
           An entire year on our most generous plan. For free.
         </Text>
       </Box>

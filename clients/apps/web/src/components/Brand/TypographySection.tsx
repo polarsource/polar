@@ -20,20 +20,20 @@ export function TypographySection() {
         <div className="bg-brand-raised flex flex-col gap-8 overflow-hidden p-8 md:p-16">
           <Label>PP Neue Montreal</Label>
           <Specimen>Usage billing</Specimen>
-          <span className="text-brand-muted text-3xl md:text-4xl">
+          <span className="text-brand-muted text-2xl md:text-3xl">
             Meter every token. Invoice every cent.
           </span>
         </div>
         <div className="bg-brand-raised flex flex-col gap-8 overflow-hidden p-8 md:p-16">
           <Label>Geist Mono</Label>
           <Specimen>Usage</Specimen>
-          <div className="flex flex-col gap-2 font-mono text-xl tabular-nums md:text-2xl">
+          <div className="flex flex-col gap-2 font-mono text-lg tabular-nums md:text-xl">
             {invoice.map((row) => (
               <div
                 key={row.label}
                 className={`flex items-baseline justify-between gap-6 ${row.total ? 'border-brand-line text-brand-foreground border-t pt-3' : 'text-brand-muted'}`}
               >
-                <span>{row.label}</span>
+                <span className="text-brand-foreground">{row.label}</span>
                 <span className="text-brand-foreground">{row.value}</span>
               </div>
             ))}

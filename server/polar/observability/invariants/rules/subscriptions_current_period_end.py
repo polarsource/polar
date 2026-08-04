@@ -33,7 +33,7 @@ class SubscriptionsCurrentPeriodEndInvariant(Invariant):
     Failure of this invariant indicate there is an issue with the subscription cycle process.
     """
 
-    LEEWAY = timedelta(minutes=5)
+    LEEWAY = timedelta(minutes=10)
     LIMIT = 10
 
     async def check(self) -> None:

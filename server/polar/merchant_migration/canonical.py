@@ -106,6 +106,9 @@ class CanonicalSubscription:
     line_item_count: int
     quantity: int
     payment_method: CanonicalPaymentMethod | None
+    # A discount/coupon on the source. Its amount isn't migrated yet, so importing
+    # at list price would overcharge; such subscriptions are skipped for now.
+    has_discount: bool = False
 
     type = MerchantMigrationRecordType.subscription
 
@@ -182,6 +185,7 @@ def deserialize(
                 )
                 if payment_method is not None
                 else None,
+                has_discount=data.get("has_discount", False),
             )
         case _:
             raise ValueError(f"Cannot deserialize record of type {type}")

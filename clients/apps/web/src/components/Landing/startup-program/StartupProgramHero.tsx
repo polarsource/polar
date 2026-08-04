@@ -5,6 +5,7 @@ import CheckOutlined from '@mui/icons-material/CheckOutlined'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
+import { TIERS } from '../Pricing'
 
 const STATS = [
   { value: 'Free', label: 'Scale tier' },
@@ -12,15 +13,12 @@ const STATS = [
   { value: '12 months', label: 'Program length' },
 ]
 
-const SCALE_FEATURES = ['Slack Channel', 'Prioritized Ticket support']
+const SCALE_FEATURES = TIERS[3].features
 
 export const StartupProgramHero = () => {
   return (
     <Box flexDirection="column" rowGap="3xl">
       <Box flexDirection="column" rowGap="2xl">
-        <Text as="h3" variant="heading-l" wrap="pretty">
-          Polar for Startups
-        </Text>
         <Text variant="heading-xs" wrap="balance">
           Handle usage-based billing, global tax compliance and real-time cost
           analytics in one platform, so you can scale your business without the
@@ -73,23 +71,30 @@ export const StartupProgramHero = () => {
           </Box>
         </Box>
 
-        <Box flexDirection="column" rowGap="xs">
+        <Box flexDirection="column" rowGap="m">
           <Text variant="body" color="muted">
             Transaction Fee
           </Text>
-          <Text variant="body">3.40% + $0.30</Text>
+          <Text variant="body">3.40% + 30¢ per transaction</Text>
         </Box>
 
-        <Box flexDirection="column" rowGap="s">
+        <Box flexDirection="column" rowGap="m">
           <Text variant="body" color="muted">
             Features
           </Text>
-          {SCALE_FEATURES.map((f) => (
-            <Box key={f} flexDirection="row" alignItems="center" columnGap="s">
-              <CheckOutlined fontSize="inherit" />
-              <Text variant="body">{f}</Text>
-            </Box>
-          ))}
+          <Box flexDirection="column" rowGap="xs">
+            {SCALE_FEATURES.map((f) => (
+              <Box
+                key={f}
+                flexDirection="row"
+                alignItems="center"
+                columnGap="s"
+              >
+                <CheckOutlined fontSize="inherit" />
+                <Text variant="body">{f}</Text>
+              </Box>
+            ))}
+          </Box>
         </Box>
       </Box>
 

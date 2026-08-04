@@ -41,6 +41,7 @@ interface FilterBase {
 export interface SingleFilter extends FilterBase {
   type: 'single'
   value: string | null
+  defaultValue?: string | null
   onChange: (value: string | null) => void
 }
 
@@ -64,6 +65,13 @@ const crossfadeClassName = (hidden: boolean): string =>
 const isActive = (filter: Filter): boolean =>
   filter.type === 'single' ? filter.value !== null : filter.value.length > 0
 
+// A filter sitting on the value the page loads with isn't a user-applied
+// filter, so it shouldn't count towards the badge — it still shows a summary.
+const isDefaulted = (filter: Filter): boolean =>
+  filter.type === 'single' &&
+  filter.defaultValue !== undefined &&
+  filter.value === filter.defaultValue
+
 const isSelected = (filter: Filter, option: FilterOption): boolean =>
   filter.type === 'single'
     ? filter.value === option.value
@@ -71,7 +79,7 @@ const isSelected = (filter: Filter, option: FilterOption): boolean =>
 
 const clearFilter = (filter: Filter): void => {
   if (filter.type === 'single') {
-    filter.onChange(null)
+    filter.onChange(filter.defaultValue ?? null)
   } else {
     filter.onChange([])
   }
@@ -79,7 +87,11 @@ const clearFilter = (filter: Filter): void => {
 
 const toggleOption = (filter: Filter, option: FilterOption): void => {
   if (filter.type === 'single') {
-    filter.onChange(filter.value === option.value ? null : option.value)
+    filter.onChange(
+      filter.value === option.value
+        ? (filter.defaultValue ?? null)
+        : option.value,
+    )
   } else {
     filter.onChange(
       filter.value.includes(option.value)
@@ -124,7 +136,9 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
   const searchInputRef = useRef<HTMLInputElement>(null)
 
   const activeFilter = filters.find(({ key }) => key === activeKey)
-  const activeCount = filters.filter(isActive).length
+  const activeCount = filters.filter(
+    (filter) => isActive(filter) && !isDefaulted(filter),
+  ).length
   const isSearchable = !!activeFilter?.onSearchQueryChange
 
   const collapseSearch = () => {
@@ -153,7 +167,7 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
   const onSelectOption = (filter: Filter, option: FilterOption) => {
     toggleOption(filter, option)
     if (filter.type === 'single') {
-      onOpenChange(false)
+      goBack()
     }
   }
 
@@ -297,14 +311,14 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
                     onSelect={() => onSelectOption(activeFilter, option)}
                     className={itemClassName}
                   >
-                    <Box display="flex" flex={1}>
+                    <Box display="flex" flex={1} minWidth={0}>
                       <Text as="span" truncate>
                         {option.label}
                       </Text>
                     </Box>
                     <CheckIcon
                       className={twMerge(
-                        'h-4 w-4',
+                        'h-4 w-4 shrink-0',
                         isSelected(activeFilter, option)
                           ? 'visible'
                           : 'invisible',
@@ -326,15 +340,27 @@ const FilterPopover: React.FC<FilterPopoverProps> = ({
                         className={itemClassName}
                       >
                         {filter.icon}
-                        <Box display="flex" flex={1}>
+                        <Box display="flex" flexShrink={0}>
                           <Text as="span" truncate>
                             {filter.label}
                           </Text>
                         </Box>
                         {summary ? (
-                          <Text as="span" variant="caption" color="muted">
-                            {summary}
-                          </Text>
+                          <Box
+                            display="flex"
+                            flex={1}
+                            minWidth={0}
+                            justifyContent="end"
+                          >
+                            <Text
+                              as="span"
+                              variant="caption"
+                              color="muted"
+                              truncate
+                            >
+                              {summary}
+                            </Text>
+                          </Box>
                         ) : null}
                       </CommandItem>
                     )

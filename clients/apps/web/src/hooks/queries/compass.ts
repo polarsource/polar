@@ -51,7 +51,7 @@ export const useCompassThreads = (organizationId: string, enabled = true) => {
   })
 }
 
-// Imperative: a mounted query would re-hydrate on cache/focus and clobber a live conversation.
+// Imperative: a mounted query would re-hydrate on focus and clobber a live conversation.
 export const fetchCompassThread = (
   queryClient: QueryClient,
   threadId: string,

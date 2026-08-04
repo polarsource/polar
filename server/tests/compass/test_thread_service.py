@@ -205,7 +205,6 @@ class TestList:
     ) -> None:
         older = await _create_thread(save_fixture, organization, user=user)
         newer = await _create_thread(save_fixture, organization, user=user)
-        # A turn completing on the older thread bumps it above the newer one.
         older.modified_at = utc_now() + timedelta(minutes=5)
         await save_fixture(older)
 
@@ -449,8 +448,7 @@ class TestBuildMessageHistory:
         user: User,
         organization: Organization,
     ) -> None:
-        """Stored turns embed tool results fetched under the creating token's
-        scopes; a token with a different scope set must not inherit them."""
+        """History is gated on scopes_digest so a different scope set starts fresh."""
         thread = await _create_thread(
             save_fixture, organization, user=user, scopes={Scope.metrics_read}
         )

@@ -11,9 +11,6 @@ import { Fragment } from 'react'
 import { AssistantPartView } from './AssistantBlocks'
 
 const STALE_AFTER_MS = 60 * 60 * 1000
-/** Reopening a thread minutes later isn't a "stale data" moment — the
- * divider and re-run affordance only appear once an answer is old enough
- * that its numbers may plausibly have moved. */
 const isStale = (iso: string) =>
   Date.now() - new Date(iso).getTime() > STALE_AFTER_MS
 
@@ -24,10 +21,6 @@ interface CompassMessageListProps {
   onAsk: (question: string) => void
 }
 
-/** Revealed by hovering the message row (`group` class on the row). Always
- * in the layout at opacity 0, so nothing shifts on hover. Parent-hover isn't
- * expressible with Box pseudo-state props, hence a raw div with the tailwind
- * group-hover escape hatch. */
 const MessageTimestamp = ({ at }: { at: string }) => (
   <div className="opacity-0 transition-opacity duration-150 group-hover:opacity-100">
     <Text variant="caption" color="muted">
@@ -36,10 +29,6 @@ const MessageTimestamp = ({ at }: { at: string }) => (
   </div>
 )
 
-/** Marks every seam in the thread where time passed and the data above may
- * be outdated. Derived from the gap between message timestamps — not from
- * the rehydration boundary — so it survives reloads and a thread revisited
- * on several occasions shows one divider per gap. */
 const ResumeDivider = ({ answeredAt }: { answeredAt: string }) => (
   <Box role="separator" alignItems="center" columnGap="m">
     <Box
@@ -60,8 +49,6 @@ const ResumeDivider = ({ answeredAt }: { answeredAt: string }) => (
   </Box>
 )
 
-/** A real button, left-aligned under its answer — visually owned by the
- * message, unlike the centered full-width divider marking the resume seam. */
 const RerunAction = ({
   prompt,
   disabled,
@@ -100,8 +87,6 @@ export const CompassMessageList = ({
         new Date(message.answeredAt).getTime()
       return gap > STALE_AFTER_MS
     }
-    // Trailing seam: a freshly reopened stale thread shows the divider ahead
-    // of the composer, before any new question turns it into a real gap.
     return Boolean(message.restored) && isStale(message.answeredAt)
   }
 

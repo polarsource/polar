@@ -31,7 +31,7 @@ export const CompassHistoryMenu = ({
         setOpen(false)
       }
     }
-    // Capture so Escape closes the panel instead of navigating back.
+    // Capture phase so Escape closes the panel instead of navigating back.
     const onKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
         e.stopPropagation()
@@ -81,9 +81,6 @@ export const CompassHistoryMenu = ({
               maxHeight={400}
               overflow="hidden"
             >
-              {/* No top padding on the scroller: a sticky date heading pins to
-                  the padding edge, so any gap above it is a band the rows
-                  visibly scroll through. */}
               <Box
                 flexDirection="column"
                 paddingHorizontal="s"

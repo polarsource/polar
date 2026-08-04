@@ -24,7 +24,6 @@ class CompassThreadRepository(
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[CompassThread]]:
-        """User: own threads in orgs with analytics_read. Org token: user-less threads."""
         statement = self.get_base_statement()
         if is_user(auth_subject):
             statement = statement.where(
@@ -60,7 +59,6 @@ class CompassThreadMessageRepository(
     def get_statement_by_thread(
         self, thread_id: UUID
     ) -> Select[tuple[CompassThreadMessage]]:
-        """Most recent turns first. `model_messages` stays deferred."""
         return (
             self.get_base_statement()
             .where(CompassThreadMessage.thread_id == thread_id)
@@ -70,7 +68,6 @@ class CompassThreadMessageRepository(
     def get_replay_statement(
         self, thread_id: UUID, limit: int
     ) -> Select[tuple[CompassThreadMessage]]:
-        """Recent turns with their model deltas loaded, for history replay."""
         return (
             self.get_statement_by_thread(thread_id)
             .options(undefer(CompassThreadMessage.model_messages))

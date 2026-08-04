@@ -141,11 +141,6 @@ const BlockBody = ({
   }
 }
 
-/**
- * Every data block carries its fetch time — always, not only when old.
- * "Fetched just now" reads as reassurance, "Fetched 6 days ago" as the
- * warning it should be, and there's no magic staleness threshold to tune.
- */
 export const AssistantBlockView = ({
   block,
   organization,

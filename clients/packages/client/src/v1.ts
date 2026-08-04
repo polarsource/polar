@@ -14524,7 +14524,7 @@ export interface components {
     /** CompassThreadUpdate */
     CompassThreadUpdate: {
       /** Title */
-      title: string
+      title?: string | null
     }
     /** CompassThreadWithMessages */
     CompassThreadWithMessages: {

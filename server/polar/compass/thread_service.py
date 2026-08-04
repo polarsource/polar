@@ -1,6 +1,7 @@
 import hashlib
 import uuid
-from collections.abc import Sequence
+from collections.abc import Awaitable, Callable, Sequence
+from dataclasses import dataclass
 from datetime import datetime
 from itertools import chain
 from typing import Any
@@ -11,6 +12,7 @@ from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
 
 from polar.auth.models import AuthSubject, Organization, User, is_user
 from polar.auth.scope import Scope
+from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.logging import Logger
@@ -18,29 +20,17 @@ from polar.models import CompassThread, CompassThreadMessage
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import CompassThreadMessageRepository, CompassThreadRepository
-from .thread_schemas import CompassThreadUpdate
+from .thread_schemas import TITLE_MAX_LENGTH, CompassThreadUpdate
 
 log: Logger = structlog.get_logger()
 
 HISTORY_TURNS = 12
-"""Recent turns kept as model context. Older turns stay in the UI only."""
-
 MESSAGES_LIMIT = 50
-"""Recent turns returned when rehydrating a thread. Older ones are dropped."""
-
-TITLE_MAX_LENGTH = 80
-
 THREADS_CAP = 500
-"""Live threads kept per owner and organization. Creating past the cap
-soft-deletes the least recent overflow, so a runaway client can't grow the
-table (or the history menu) without bound."""
 
 
 def scopes_digest(scopes: set[Scope]) -> str:
-    """Fingerprint of a token's scopes. Stored on the thread at creation and
-    compared on replay: stored history contains tool results fetched under
-    the creating token's scopes, so a token with a different scope set gets a
-    fresh model context instead of inheriting them."""
+    """Fingerprint of a token's scopes for history replay gating."""
     joined = ",".join(sorted(scope.value for scope in scopes))
     return hashlib.sha256(joined.encode()).hexdigest()
 
@@ -48,6 +38,20 @@ def scopes_digest(scopes: set[Scope]) -> str:
 type TurnParts = list[dict[str, Any]]
 type TurnModelMessages = list[dict[str, Any]]
 type ModelHistory = list[ModelMessage]
+
+RecordTurn = Callable[[TurnParts, TurnModelMessages], Awaitable[None]]
+"""Callback handing a completed turn's renderable parts and model deltas
+over for persistence. The single spelling of the stream → threads contract."""
+
+
+@dataclass
+class TurnStart:
+    """The resolved thread for one assistant turn."""
+
+    thread: CompassThread
+    history: ModelHistory | None
+    history_last_at: datetime | None
+    is_new: bool
 
 
 def _title_from_prompt(prompt: str) -> str:
@@ -90,8 +94,6 @@ class CompassThreadService:
     async def list_messages(
         self, session: AsyncReadSession, thread: CompassThread
     ) -> tuple[Sequence[CompassThreadMessage], bool]:
-        """The most recent `MESSAGES_LIMIT` turns, oldest first, and whether
-        older turns were left out."""
         repository = CompassThreadMessageRepository.from_session(session)
         statement = repository.get_statement_by_thread(thread.id).limit(
             MESSAGES_LIMIT + 1
@@ -108,7 +110,8 @@ class CompassThreadService:
     ) -> CompassThread:
         repository = CompassThreadRepository.from_session(session)
         return await repository.update(
-            thread, update_dict=update_schema.model_dump(exclude_unset=True)
+            thread,
+            update_dict=update_schema.model_dump(exclude_unset=True, exclude_none=True),
         )
 
     async def delete(self, session: AsyncSession, thread: CompassThread) -> None:
@@ -140,6 +143,61 @@ class CompassThreadService:
             await repository.soft_delete(overflow)
         return thread
 
+    async def begin_turn(
+        self,
+        session: AsyncReadSession,
+        write_sessionmaker: AsyncSessionMaker,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: uuid.UUID,
+        prompt: str,
+        thread_id: uuid.UUID | None,
+    ) -> TurnStart | None:
+        """Resolve the thread one assistant turn runs on.
+
+        Continuing a thread loads it and replays recent history. Starting one
+        creates and commits it in its own transaction, before any streaming,
+        so an aborted stream still leaves the thread behind. Returns None when
+        the thread doesn't exist or belongs to another organization.
+        """
+        if thread_id is not None:
+            thread = await self.get(session, auth_subject, thread_id)
+            if thread is None or thread.organization_id != organization_id:
+                return None
+            history, history_last_at = await self.build_message_history(
+                session, auth_subject, thread
+            )
+            return TurnStart(thread, history, history_last_at, is_new=False)
+        async with write_sessionmaker.begin() as write_session:
+            thread = await self.create(
+                write_session,
+                auth_subject,
+                organization_id=organization_id,
+                prompt=prompt,
+            )
+        return TurnStart(thread, None, None, is_new=True)
+
+    def turn_recorder(
+        self,
+        write_sessionmaker: AsyncSessionMaker,
+        thread_id: uuid.UUID,
+        prompt: str,
+    ) -> RecordTurn:
+        """A `RecordTurn` that persists in its own transaction, for callers
+        (the SSE stream) that outlive the request-scoped session."""
+
+        async def record(parts: TurnParts, model_messages: TurnModelMessages) -> None:
+            async with write_sessionmaker.begin() as session:
+                await self.record_turn(
+                    session,
+                    thread_id,
+                    prompt=prompt,
+                    parts=parts,
+                    model_messages=model_messages,
+                )
+
+        return record
+
     async def record_turn(
         self,
         session: AsyncSession,
@@ -149,7 +207,6 @@ class CompassThreadService:
         parts: TurnParts,
         model_messages: TurnModelMessages,
     ) -> CompassThreadMessage | None:
-        """Append a completed turn; None if the thread vanished mid-stream."""
         thread_repository = CompassThreadRepository.from_session(session)
         thread = await thread_repository.get_by_id(thread_id)
         if thread is None:
@@ -164,7 +221,7 @@ class CompassThreadService:
             ),
             flush=True,
         )
-        # Message insert doesn't UPDATE the thread. Bump for list recency.
+        # Message insert does not UPDATE the thread. Bump for list recency.
         await thread_repository.update(thread, update_dict={"modified_at": utc_now()})
         return message
 
@@ -174,16 +231,7 @@ class CompassThreadService:
         auth_subject: AuthSubject[User | Organization],
         thread: CompassThread,
     ) -> tuple[ModelHistory | None, datetime | None]:
-        """Concatenated model deltas from the last `HISTORY_TURNS` turns, and
-        when the most recent of them ran — so the model can be told how old
-        the replayed tool results are.
-
-        A token whose scopes differ from the creating token's gets a fresh
-        context: the stored history embeds tool results the current scope set
-        may not be entitled to fetch. Invalid stored history (e.g. after a
-        pydantic-ai upgrade) also degrades to a fresh context instead of
-        breaking the thread.
-        """
+        """Replay recent model deltas. Scope mismatch or invalid history yields None."""
         if thread.scopes_digest != scopes_digest(auth_subject.scopes):
             log.info(
                 "compass.thread_history_scope_mismatch",

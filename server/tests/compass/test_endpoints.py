@@ -1,6 +1,8 @@
 import uuid
+from collections.abc import Iterator
 
 import pytest
+from fastapi import FastAPI
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
@@ -12,6 +14,7 @@ from polar.models import (
     User,
     UserOrganization,
 )
+from polar.postgres import get_db_read_sessionmaker, get_db_sessionmaker
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 
@@ -35,6 +38,20 @@ async def _create_thread(
 
 @pytest.mark.asyncio
 class TestAssistantChat:
+    @pytest.fixture(autouse=True)
+    def stub_sessionmakers(self, app: FastAPI) -> Iterator[None]:
+        # The chat endpoint depends on the sessionmakers, which the test
+        # harness doesn't provide. Every scenario here 4xxs before they are
+        # used, so stub overrides are sufficient to let the dependencies
+        # resolve.
+        app.dependency_overrides[get_db_sessionmaker] = lambda: None
+        app.dependency_overrides[get_db_read_sessionmaker] = lambda: None
+        try:
+            yield
+        finally:
+            app.dependency_overrides.pop(get_db_sessionmaker)
+            app.dependency_overrides.pop(get_db_read_sessionmaker)
+
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
     ) -> None:

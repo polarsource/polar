@@ -1,75 +1,25 @@
 'use client'
 
+import { fetchCompassThread } from '@/hooks/queries'
 import { getServerURL } from '@/utils/api'
 import { schemas } from '@polar-sh/client'
+import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
-export interface MetricChartPoint {
-  timestamp: string
-  value: number
-}
-
-/**
- * The closed set of renderable blocks the assistant can produce. Mirrors the
- * backend `AssistantBlock` union; anything outside it is ignored by the
- * registry rather than rendered.
- */
-export interface DataTableColumn {
-  key: string
-  label: string
-  format: 'text' | 'currency' | 'datetime' | 'badge' | 'avatar'
-}
-
-export type DataTableRow = Record<string, string | number | null>
-
-export type AssistantBlock =
-  | { type: 'text'; text: string }
-  | {
-      type: 'metric_chart'
-      metric: string
-      label: string
-      unit: string
-      points: MetricChartPoint[]
-    }
-  | { type: 'insight_cards'; insights: schemas['Insight'][] }
-  | {
-      type: 'entity_list'
-      entity: string
-      title: string | null
-      columns: DataTableColumn[]
-      rows: DataTableRow[]
-      total_count: number
-    }
-  | {
-      type: 'data_table'
-      entity: string
-      title: string | null
-      columns: DataTableColumn[]
-      rows: DataTableRow[]
-      total_count: number
-    }
-  | {
-      type: 'customer_card'
-      email: string
-      name: string | null
-      avatar_url: string | null
-      created_at: string
-    }
-
 export type AssistantPart =
-  | { kind: 'text'; text: string }
-  | { kind: 'block'; block: AssistantBlock }
+  | schemas['AssistantTextPart']
+  | schemas['AssistantBlockPart']
+export type AssistantBlock = schemas['AssistantBlockPart']['block']
+export type MetricChartPoint = schemas['MetricChartPoint']
+export type DataTableColumn = schemas['DataTableColumn']
+export type DataTableRow = schemas['DataTableBlock']['rows'][number]
 
 export interface AssistantMessage {
   id: string
   role: 'user' | 'assistant'
   parts: AssistantPart[]
   answeredAt: string
-  /** True when rehydrated from a stored thread — its data blocks are
-   * snapshots from `answeredAt`, not live queries. */
   restored?: boolean
-  /** The user prompt that produced this assistant turn, for re-asking it
-   * against current data. */
   prompt?: string
 }
 
@@ -84,33 +34,36 @@ const appendDelta = (
   return [...parts, { kind: 'text', text: delta }]
 }
 
-/**
- * Client for the Compass assistant SSE endpoint. Streams one turn at a time:
- * `text` deltas and `block` events append to the pending assistant message.
- * Conversation state lives server-side on a thread: `thread` / `done` carry
- * the thread id we send back on the next turn, and `hydrate` replays a
- * stored thread into the message list.
- */
-export const useCompassAssistant = (
-  organizationId: string,
-  onThreadCreated?: (threadId: string) => void,
-  initialThreadId: string | null = null,
-) => {
+interface UseCompassAssistantOptions {
+  organizationId: string
+  initialThreadId?: string | null
+  onThreadChange?: (threadId: string | null) => void
+}
+
+export const useCompassAssistant = ({
+  organizationId,
+  initialThreadId = null,
+  onThreadChange,
+}: UseCompassAssistantOptions) => {
+  const queryClient = useQueryClient()
   const [messages, setMessages] = useState<AssistantMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
-  // Ref is what `send` posts (updated mid-stream). State mirrors for render.
-  // Seeded from the deep link so a prompt before rehydration continues that thread.
   const [threadId, setThreadId] = useState<string | null>(initialThreadId)
   const threadIdRef = useRef<string | null>(initialThreadId)
   const idRef = useRef(0)
   const controllerRef = useRef<AbortController | null>(null)
-  const onThreadCreatedRef = useRef(onThreadCreated)
-  onThreadCreatedRef.current = onThreadCreated
+  const onThreadChangeRef = useRef(onThreadChange)
+  onThreadChangeRef.current = onThreadChange
 
   useEffect(() => {
     // Abort the in-flight stream on unmount so the SSE connection closes and
     // no further state updates fire.
     return () => controllerRef.current?.abort()
+  }, [])
+
+  const setThread = useCallback((id: string | null) => {
+    threadIdRef.current = id
+    setThreadId(id)
   }, [])
 
   const appendToAssistant = useCallback(
@@ -191,12 +144,13 @@ export const useCompassAssistant = (
               { kind: 'block', block: payload as AssistantBlock },
             ])
           } else if (event === 'thread') {
-            threadIdRef.current = payload.thread_id
-            setThreadId(payload.thread_id)
-            onThreadCreatedRef.current?.(payload.thread_id)
+            setThread(payload.thread_id)
+            onThreadChangeRef.current?.(payload.thread_id)
+            void queryClient.invalidateQueries({
+              queryKey: ['compass_threads'],
+            })
           } else if (event === 'done') {
-            threadIdRef.current = payload.thread_id
-            setThreadId(payload.thread_id)
+            setThread(payload.thread_id)
           } else if (event === 'error') {
             appendToAssistant(assistantId, (parts) =>
               appendDelta(parts, payload.message),
@@ -223,6 +177,7 @@ export const useCompassAssistant = (
           )
         }
       } finally {
+        // Only the current stream may clear isStreaming.
         // A superseding send owns isStreaming now; only the current stream
         // may clear it.
         if (controllerRef.current === controller) {
@@ -231,7 +186,7 @@ export const useCompassAssistant = (
         }
       }
     },
-    [appendToAssistant, organizationId],
+    [appendToAssistant, organizationId, queryClient, setThread],
   )
 
   const hydrate = useCallback(
@@ -239,8 +194,7 @@ export const useCompassAssistant = (
       controllerRef.current?.abort()
       controllerRef.current = null
       setIsStreaming(false)
-      threadIdRef.current = thread.id
-      setThreadId(thread.id)
+      setThread(thread.id)
       setMessages(
         thread.messages.flatMap((message) => [
           {
@@ -253,7 +207,7 @@ export const useCompassAssistant = (
           {
             id: message.id,
             role: 'assistant' as const,
-            parts: message.parts as AssistantPart[],
+            parts: message.parts,
             answeredAt: message.created_at,
             restored: true,
             prompt: message.prompt,
@@ -261,17 +215,49 @@ export const useCompassAssistant = (
         ]),
       )
     },
-    [],
+    [setThread],
   )
 
-  const reset = useCallback(() => {
+  const newChat = useCallback(() => {
     controllerRef.current?.abort()
     controllerRef.current = null
     setIsStreaming(false)
     setMessages([])
-    threadIdRef.current = null
-    setThreadId(null)
-  }, [])
+    setThread(null)
+    onThreadChangeRef.current?.(null)
+  }, [setThread])
 
-  return { messages, send, isStreaming, reset, hydrate, threadId }
+  const loadThread = useCallback(
+    async (id: string, { ifIdle = false }: { ifIdle?: boolean } = {}) => {
+      try {
+        const detail = await fetchCompassThread(queryClient, id)
+        // A stream that began while fetching wins over background hydration.
+        if (ifIdle && controllerRef.current) return
+        hydrate(detail)
+      } catch {
+        newChat()
+      }
+    },
+    [queryClient, hydrate, newChat],
+  )
+
+  const selectThread = useCallback(
+    (id: string) => {
+      if (id === threadIdRef.current) return
+      onThreadChangeRef.current?.(id)
+      void loadThread(id)
+    },
+    [loadThread],
+  )
+
+  // Hydrate the initial thread only once, on mount. Reactive URL hydration
+  // races router.replace and can resurrect conversations the user just left.
+  const initialLoadedRef = useRef(false)
+  useEffect(() => {
+    if (!initialThreadId || initialLoadedRef.current) return
+    initialLoadedRef.current = true
+    void loadThread(initialThreadId, { ifIdle: true })
+  }, [initialThreadId, loadThread])
+
+  return { messages, send, isStreaming, threadId, selectThread, newChat }
 }

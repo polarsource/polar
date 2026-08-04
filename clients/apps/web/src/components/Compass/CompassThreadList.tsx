@@ -30,8 +30,6 @@ interface ThreadRowProps {
 }
 
 const ThreadRow = ({ thread, active, onSelect, onDelete }: ThreadRowProps) => (
-  // Plain wrappers: revealing the delete button is driven by the row's hover
-  // state, which Box's own pseudo-state props can't reach across elements.
   <div className="group relative">
     <button
       type="button"
@@ -56,9 +54,6 @@ const ThreadRow = ({ thread, active, onSelect, onDelete }: ThreadRowProps) => (
         <Text truncate>{thread.title}</Text>
       </Box>
     </button>
-    {/* Sibling of the row button: nested interactive elements break a11y.
-        Revealed on hover or keyboard focus so the list isn't a column of
-        trash icons. */}
     <span className="absolute inset-y-0 right-2 flex items-center opacity-0 transition-opacity duration-150 ease-out group-focus-within:opacity-100 group-hover:opacity-100">
       <button
         type="button"
@@ -88,13 +83,6 @@ interface CompassThreadListProps {
   onDeleted: (threadId: string) => void
 }
 
-/**
- * Stored conversations, grouped by age. The date headings carry the time so
- * no row has to, which buys the titles the full width of the panel.
- *
- * Mounted only while the menu is open, so each open refetches (the cache
- * still paints instantly).
- */
 export const CompassThreadList = ({
   organization,
   activeThreadId,

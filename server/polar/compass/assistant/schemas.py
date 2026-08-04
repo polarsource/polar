@@ -8,7 +8,7 @@ class AssistantChatRequest(Schema):
 
     organization_id: UUID4 = Field(
         description="Organization the conversation is about. Must be accessible "
-        "to the caller; tools are always scoped to it."
+        "to the caller. Tools are always scoped to it."
     )
     prompt: str = Field(min_length=1, max_length=4000)
     thread_id: UUID4 | None = Field(

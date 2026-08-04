@@ -1,8 +1,9 @@
+from collections.abc import AsyncGenerator
 from datetime import datetime
 from typing import Annotated
 from zoneinfo import ZoneInfo
 
-from fastapi import Depends, Path, Query, Request
+from fastapi import Depends, Path, Query
 from pydantic import UUID4
 from pydantic_extra_types.timezone_name import TimeZoneName
 from sse_starlette.sse import EventSourceResponse
@@ -10,6 +11,7 @@ from sse_starlette.sse import EventSourceResponse
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.exceptions import ResourceNotFound
+from polar.kit.db.postgres import AsyncReadSessionMaker, AsyncSessionMaker
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import CompassThread
@@ -20,7 +22,9 @@ from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
     get_db_read_session,
+    get_db_read_sessionmaker,
     get_db_session,
+    get_db_sessionmaker,
 )
 from polar.redis import Redis, get_redis
 from polar.routing import APIRouter
@@ -36,10 +40,6 @@ from .thread_schemas import (
     CompassThreadSchema,
     CompassThreadUpdate,
     CompassThreadWithMessages,
-)
-from .thread_service import (
-    TurnModelMessages,
-    TurnParts,
 )
 from .thread_service import compass_thread as compass_thread_service
 
@@ -167,7 +167,6 @@ async def delete_thread(
     include_in_schema=False,
 )
 async def assistant_chat(
-    request: Request,
     body: AssistantChatRequest,
     auth_subject: auth.CompassRead,
     timezone: TimeZoneName = Query(
@@ -175,16 +174,13 @@ async def assistant_chat(
         description="Timezone used to resolve metric windows. Default is UTC.",
     ),
     session: AsyncReadSession = Depends(get_db_read_session),
+    # The SSE generator outlives the request-scoped session; it opens its own
+    # sessions for tool calls and turn persistence through these.
+    write_sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
+    read_sessionmaker: AsyncReadSessionMaker = Depends(get_db_read_sessionmaker),
     redis: Redis | None = Depends(get_redis),
 ) -> EventSourceResponse:
-    """Stream one assistant turn as SSE: `text` deltas, renderable `block`
-    events, then `done` with the thread id to continue on the next turn.
-
-    The agent runs under the caller's auth subject: its toolset is derived
-    from the token's granted scopes, so a restricted token can only reach the
-    data those scopes allow. Turns are persisted server-side on the thread;
-    the client never carries conversation state.
-    """
+    """Stream one assistant turn as SSE."""
     org_ids = await get_accessible_org_ids(
         session, auth_subject, permission=OrganizationPermission.analytics_read
     )
@@ -195,49 +191,29 @@ async def assistant_chat(
     if organization is None or not organization.is_compass_enabled:
         raise ResourceNotFound()
 
-    history = None
-    history_last_at = None
-    is_new_thread = body.thread_id is None
-    if body.thread_id is not None:
-        thread = await compass_thread_service.get(session, auth_subject, body.thread_id)
-        if thread is None or thread.organization_id != organization.id:
-            raise ResourceNotFound()
-        history, history_last_at = await compass_thread_service.build_message_history(
-            session, auth_subject, thread
-        )
-    else:
-        # Persist before streaming so aborted streams still leave a thread.
-        # `begin()` is required: the SSE generator outlives the request scope.
-        write_sessionmaker = request.state.async_sessionmaker
-        async with write_sessionmaker.begin() as write_session:
-            thread = await compass_thread_service.create(
-                write_session,
-                auth_subject,
-                organization_id=organization.id,
-                prompt=body.prompt,
-            )
-    thread_id = thread.id
-    thread_title = thread.title
+    turn = await compass_thread_service.begin_turn(
+        session,
+        write_sessionmaker,
+        auth_subject,
+        organization_id=organization.id,
+        prompt=body.prompt,
+        thread_id=body.thread_id,
+    )
+    if turn is None:
+        raise ResourceNotFound()
+    thread_id = turn.thread.id
+    thread_title = turn.thread.title
+    history = turn.history
+    history_last_at = turn.history_last_at
+    is_new_thread = turn.is_new
 
     tz = ZoneInfo(timezone)
     agent, model_provider, model_name = build_assistant_agent(auth_subject.scopes)
-    # The request-scoped session closes when this handler returns, before the
-    # response streams — the generator opens its own sessions for tool calls
-    # (read) and turn persistence (write).
-    read_sessionmaker = request.state.async_read_sessionmaker
-    write_sessionmaker = request.state.async_sessionmaker
+    record_turn = compass_thread_service.turn_recorder(
+        write_sessionmaker, thread_id, body.prompt
+    )
 
-    async def record_turn(parts: TurnParts, model_messages: TurnModelMessages) -> None:
-        async with write_sessionmaker.begin() as write_session:
-            await compass_thread_service.record_turn(
-                write_session,
-                thread_id,
-                prompt=body.prompt,
-                parts=parts,
-                model_messages=model_messages,
-            )
-
-    async def event_stream():  # type: ignore[no-untyped-def]
+    async def event_stream() -> AsyncGenerator[dict[str, str]]:
         if is_new_thread:
             yield sse_event(
                 "thread", {"thread_id": str(thread_id), "title": thread_title}

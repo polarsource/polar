@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class CompassThread(RecordModel):
-    """Assistant conversation. User-owned, or shared (user_id=None) for org tokens."""
+    """User-owned conversation, or shared (`user_id=None`) for org tokens."""
 
     __tablename__ = "compass_threads"
 
@@ -30,8 +30,6 @@ class CompassThread(RecordModel):
     )
     title: Mapped[str] = mapped_column(String, nullable=False)
     scopes_digest: Mapped[str] = mapped_column(String, nullable=False)
-    """Digest of the creating token's scopes. History replay checks it so tool
-    results fetched under broader scopes never feed a narrower token's run."""
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:

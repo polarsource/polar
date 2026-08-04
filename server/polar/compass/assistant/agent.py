@@ -137,19 +137,17 @@ def build_assistant_agent(
     agent: Agent[AssistantDeps, str] = Agent(
         model_instance,
         deps_type=AssistantDeps,
-        # `instructions`, not `system_prompt`: system prompts are only sent on
-        # a history-less first turn, so a resumed thread would replay the
-        # original turn's date forever. Instructions are rebuilt every turn.
+        # Use `instructions`, not `system_prompt`. System prompts only go out
+        # on a history-less first turn, so a resumed thread would keep the
+        # original date forever. Instructions rebuild every turn.
         instructions=SYSTEM_PROMPT,
         tools=tools,
         # gpt-5.5+ reasoning models reject any non-default temperature.
         model_settings=({} if model_name.startswith("gpt-5.5") else {"temperature": 0}),
     )
 
-    # Relative dates ("yesterday", "last month") are resolvable only if the
-    # model knows what today is; the static prompt can't carry it. On resumed
-    # threads, the fetch time of the replayed turns is what lets the model
-    # apply the staleness rule above.
+    # Relative dates need today's date. On resumed threads, history_last_at
+    # lets the model apply the staleness rule.
     @agent.instructions
     async def _run_context(ctx: RunContext[AssistantDeps]) -> str:
         lines = [

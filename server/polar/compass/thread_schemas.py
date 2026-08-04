@@ -6,6 +6,9 @@ from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 
 from .assistant.blocks import AssistantBlock
 
+TITLE_MAX_LENGTH = 80
+"""Cap for both generated and user-supplied thread titles."""
+
 
 class AssistantTextPart(Schema):
     kind: Literal["text"] = "text"
@@ -40,4 +43,4 @@ class CompassThreadWithMessages(CompassThreadSchema):
 
 
 class CompassThreadUpdate(Schema):
-    title: str = Field(min_length=1, max_length=200)
+    title: str | None = Field(default=None, min_length=1, max_length=TITLE_MAX_LENGTH)

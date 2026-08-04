@@ -10,11 +10,6 @@ interface CompassIconActionProps {
   children: ReactNode
 }
 
-/**
- * Icon-only header action for Compass. It stays recessive next to the routed
- * tabs, which are the page's actual navigation, and takes its label from the
- * accessible name rather than visible text.
- */
 export const CompassIconAction = ({
   label,
   onClick,

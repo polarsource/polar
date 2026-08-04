@@ -2,16 +2,16 @@
 Run the assistant agent and turn it into an SSE event stream.
 
 Events, in order of appearance:
-- `text`   {"delta": str}         — model output, streamed as it generates
-- `block`  {<AssistantBlock>}     — a renderable block, placed by the model
-- `done`   {"thread_id": str}     — the thread to continue on the next turn
+- `text`   {"delta": str}         model output, streamed as it generates
+- `block`  {<AssistantBlock>}     a renderable block, placed by the model
+- `done`   {"thread_id": str}     the thread to continue on the next turn
 - `error`  {"message": str}
 """
 
 import json
 import re
 import uuid
-from collections.abc import AsyncGenerator, Awaitable, Callable
+from collections.abc import AsyncGenerator
 from typing import Any
 
 import structlog
@@ -29,11 +29,10 @@ from polar.integrations.polar.service import polar_self
 from polar.logging import Logger
 from polar.organization_review.schemas import UsageInfo
 
+from ..thread_service import RecordTurn
 from .deps import AssistantDeps
 
 log: Logger = structlog.get_logger()
-
-RecordTurn = Callable[[list[dict[str, Any]], list[dict[str, Any]]], Awaitable[None]]
 
 
 def sse_event(event: str, data: Any) -> dict[str, str]:
@@ -43,9 +42,7 @@ def sse_event(event: str, data: Any) -> dict[str, str]:
 def _track_usage(
     deps: AssistantDeps, usage: Any, model_provider: str, model_name: str
 ) -> None:
-    """Polar-for-Polar dogfooding: ingest this run's inference cost as a span
-    on the Polar organization, mirroring organization reviews. Best-effort —
-    tracking must never break the conversation."""
+    """Best-effort cost tracking. Must never break the conversation."""
     try:
         info = UsageInfo.from_agent_usage(usage, model_provider, model_name)
         polar_self.enqueue_track_compass_assistant_usage(
@@ -55,8 +52,6 @@ def _track_usage(
             input_tokens=info.input_tokens,
             output_tokens=info.output_tokens,
             cost_usd=info.estimated_cost_usd,
-            # Idempotency key: a task retry after a lost response re-ingests
-            # the same child event instead of double-counting the cost.
             usage_id=str(uuid.uuid4()),
         )
     except Exception:
@@ -72,12 +67,7 @@ _MAX_MARKER_LEN = 12
 
 
 class _BlockPlacer:
-    """Splits streamed text around `[block:N]` placement markers.
-
-    Text before a marker flows through as-is; the marker itself becomes a
-    block reference. A possible partial marker at the end of a delta is held
-    back until the next delta resolves it.
-    """
+    """Splits streamed text around `[block:N]` markers. Holds partial markers."""
 
     def __init__(self) -> None:
         self._buffer = ""
@@ -116,8 +106,6 @@ class _BlockPlacer:
 
 
 class _PartsRecorder:
-    """Renderable parts as streamed, for UI rehydration without re-running the model."""
-
     def __init__(self) -> None:
         self.parts: list[dict[str, Any]] = []
 
@@ -151,7 +139,6 @@ async def stream_assistant_run(
         return sse_event("text", {"delta": delta})
 
     def block_event(index: int) -> dict[str, str] | None:
-        # Markers are 1-based indexes into the run's prepared blocks.
         if index in placed or not (1 <= index <= len(deps.blocks)):
             return None
         placed.add(index)
@@ -193,8 +180,6 @@ async def stream_assistant_run(
                     if tail := placer.flush():
                         yield text_event(tail)
 
-            # Fallback: blocks the model never placed still reach the user,
-            # after the text.
             for index in range(1, len(deps.blocks) + 1):
                 unplaced = block_event(index)
                 if unplaced is not None:
@@ -206,7 +191,7 @@ async def stream_assistant_run(
             new_messages = ModelMessagesTypeAdapter.dump_python(
                 result.new_messages(), mode="json"
             )
-            # Only completed turns: mid-stream errors must not poison history.
+            # Only completed turns. Mid-stream errors must not poison history.
             await record_turn(recorder.parts, new_messages)
             yield sse_event("done", {"thread_id": thread_id})
     except Exception:

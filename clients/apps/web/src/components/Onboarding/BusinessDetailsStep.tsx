@@ -5,7 +5,7 @@ import { api } from '@/utils/client'
 import { formatCountry } from '@/utils/formatters'
 import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import { Button } from '@polar-sh/orbit'
+import { Alert, Button } from '@polar-sh/orbit'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import { Input } from '@polar-sh/orbit'
 
@@ -193,21 +193,11 @@ function CurrencyAndCountryFields() {
       </Box>
 
       {organizationType === 'company' && isUnsupportedCountry && (
-        <Box
-          flexDirection="column"
-          rowGap="m"
-          borderRadius="m"
-          borderWidth={1}
-          borderStyle="solid"
-          borderColor="border-warning"
-          backgroundColor="background-warning"
-          padding="l"
-        >
-          <p className="text-sm text-yellow-700 dark:text-yellow-300">
-            Payouts are not available in {countryDisplayName}&nbsp;yet. You can
-            still continue and we&rsquo;ll notify you when support is added.
-          </p>
-        </Box>
+        <Alert
+          variant="warning"
+          title={`Payouts are not available in ${countryDisplayName} yet`}
+          description="You can still continue and we'll notify you when support is added."
+        />
       )}
     </Box>
   )
@@ -217,14 +207,15 @@ function SubmitButton({ loading }: { loading: boolean }) {
   const name = useWatch<FormSchema, 'name'>({ name: 'name' })
   const slug = useWatch<FormSchema, 'slug'>({ name: 'slug' })
   return (
-    <Button
-      type="submit"
-      loading={loading}
-      disabled={name.length === 0 || slug.length === 0}
-      fullWidth
-    >
-      Continue
-    </Button>
+    <Box alignSelf="start">
+      <Button
+        type="submit"
+        loading={loading}
+        disabled={name.length === 0 || slug.length === 0}
+      >
+        Continue
+      </Button>
+    </Box>
   )
 }
 
@@ -308,7 +299,7 @@ export function BusinessDetailsStep() {
                       }
                     }}
                   >
-                    <TabsList className="dark:bg-polar-950 w-full flex-row items-center rounded-full bg-gray-100">
+                    <TabsList className="dark:bg-polar-900 w-full flex-row items-center rounded-full bg-gray-100">
                       <TabsTrigger
                         value="individual"
                         className="dark:data-[state=active]:bg-polar-800 grow rounded-full! data-[state=active]:bg-white"
@@ -409,9 +400,12 @@ export function BusinessDetailsStep() {
           <CurrencyAndCountryFields />
 
           {form.formState.errors.root && (
-            <p className="text-sm text-red-500 dark:text-red-500">
-              {form.formState.errors.root.message}
-            </p>
+            <Alert
+              variant="danger"
+              title={
+                form.formState.errors.root.message ?? 'Something went wrong'
+              }
+            />
           )}
 
           <SubmitButton

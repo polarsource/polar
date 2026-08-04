@@ -2219,15 +2219,6 @@ class OrderService:
 
         return update_dict
 
-    def _get_product_image_url(self, product: Product) -> str | None:
-        try:
-            if product.product_medias and len(product.product_medias) > 0:
-                first_media = product.product_medias[0].file
-                return S3_SERVICES[first_media.service].get_public_url(first_media.path)
-        except Exception:
-            pass
-        return None
-
     async def send_admin_notification(
         self, session: AsyncSession, organization: Organization, order: Order
     ) -> None:
@@ -2236,7 +2227,15 @@ class OrderService:
         if product is None:
             return
 
-        product_image_url = self._get_product_image_url(product)
+        product_image_url: str | None = None
+        try:
+            if product.product_medias and len(product.product_medias) > 0:
+                first_media = product.product_medias[0].file
+                product_image_url = S3_SERVICES[first_media.service].get_public_url(
+                    first_media.path
+                )
+        except Exception:
+            pass
 
         billing_address = order.billing_address
         customer = order.customer
@@ -2293,10 +2292,6 @@ class OrderService:
                     customer_name=customer.display_name,
                     product_name=product.name,
                     product_price_amount=order.net_amount,
-                    product_image_url=self._get_product_image_url(product),
-                    order_id=str(order.id),
-                    order_date=order.created_at.isoformat(),
-                    organization_name=organization.name,
                     organization_slug=organization.slug,
                     subscription_id=str(subscription.id),
                     recurring_interval=subscription.recurring_interval,

@@ -1245,30 +1245,10 @@ export interface components {
        */
       customer_name: string
       /**
-       * Organization Name
-       * @default
-       */
-      organization_name: string
-      /**
        * Customer Email
        * @default null
        */
       customer_email: string | null
-      /**
-       * Product Image Url
-       * @default null
-       */
-      product_image_url: string | null
-      /**
-       * Order Id
-       * @default null
-       */
-      order_id: string | null
-      /**
-       * Order Date
-       * @default null
-       */
-      order_date: string | null
       /**
        * Organization Slug
        * @default null
@@ -1295,10 +1275,6 @@ export interface components {
       readonly formatted_price_amount: string
       /** Formatted Recurring Interval */
       readonly formatted_recurring_interval: string
-      /** Order Url */
-      readonly order_url: string | null
-      /** Subscription Url */
-      readonly subscription_url: string | null
     }
     MetadataOutputType: {
       [key: string]: string | number | boolean

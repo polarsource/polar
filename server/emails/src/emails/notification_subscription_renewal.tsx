@@ -26,12 +26,12 @@ export function NotificationSubscriptionRenewal({
 
   return (
     <WrapperPolar preview={`${displayName} renewed ${product_name}`}>
-      <Intro headline="You've been paid!">
+      <Intro headline="A subscription has been renewed!">
         {formattedName} renewed{' '}
         <Text as="span" weight="bold">
           {product_name}
         </Text>{' '}
-        — {formatted_price_amount} {formatted_recurring_interval}.
+        for {formatted_price_amount} {formatted_recurring_interval}.
       </Intro>
       <Footer email={null} />
     </WrapperPolar>
@@ -45,7 +45,6 @@ NotificationSubscriptionRenewal.PreviewProps = {
   formatted_recurring_interval: 'every month',
   product_name: 'Painting Pro',
   product_price_amount: 1000,
-  organization_name: 'Acme Inc.',
   recurring_interval: 'month',
   recurring_interval_count: 1,
 }

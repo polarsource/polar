@@ -174,12 +174,8 @@ class MaintainerSubscriptionRenewalNotificationPayload(NotificationPayloadBase):
     product_name: str
     product_price_amount: int
     customer_name: str = ""
-    organization_name: str = ""
 
     customer_email: str | None = None
-    product_image_url: str | None = None
-    order_id: str | None = None
-    order_date: str | None = None
     organization_slug: str | None = None
     subscription_id: str | None = None
     recurring_interval: str
@@ -195,18 +191,6 @@ class MaintainerSubscriptionRenewalNotificationPayload(NotificationPayloadBase):
         if self.recurring_interval_count > 1:
             return f"every {self.recurring_interval_count} {self.recurring_interval}s"
         return f"every {self.recurring_interval}"
-
-    @computed_field
-    def order_url(self) -> str | None:
-        if not self.organization_slug or not self.order_id:
-            return None
-        return f"{settings.FRONTEND_BASE_URL}/dashboard/{self.organization_slug}/sales/{self.order_id}"
-
-    @computed_field
-    def subscription_url(self) -> str | None:
-        if not self.organization_slug or not self.subscription_id:
-            return None
-        return f"{settings.FRONTEND_BASE_URL}/dashboard/{self.organization_slug}/sales/subscriptions/{self.subscription_id}"
 
     def subject(self) -> str:
         return f"You've been paid {self.formatted_price_amount} for a renewal!"

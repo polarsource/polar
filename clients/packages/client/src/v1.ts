@@ -22872,19 +22872,8 @@ export interface components {
        * @default
        */
       customer_name: string
-      /**
-       * Organization Name
-       * @default
-       */
-      organization_name: string
       /** Customer Email */
       customer_email?: string | null
-      /** Product Image Url */
-      product_image_url?: string | null
-      /** Order Id */
-      order_id?: string | null
-      /** Order Date */
-      order_date?: string | null
       /** Organization Slug */
       organization_slug?: string | null
       /** Subscription Id */
@@ -22905,10 +22894,6 @@ export interface components {
       readonly formatted_price_amount: string
       /** Formatted Recurring Interval */
       readonly formatted_recurring_interval: string
-      /** Order Url */
-      readonly order_url: string | null
-      /** Subscription Url */
-      readonly subscription_url: string | null
     }
     /** ManualRetryLimitExceeded */
     ManualRetryLimitExceeded: {

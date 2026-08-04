@@ -11,6 +11,7 @@ import pytest
 from sqlalchemy import update
 
 from polar.models.organization import (
+    FIRST_REVIEW_THRESHOLD_CENTS,
     STATUS_CAPABILITIES,
     Organization,
     OrganizationStatus,
@@ -690,16 +691,20 @@ class TestReviewAppeal:
 
 @pytest.mark.asyncio
 class TestRunReviewAgentProductChanged:
-    """PRODUCT_CHANGED re-reviews an active org when it creates or edits a
-    product. A bad verdict pulls it back into REVIEW for a human; a clean
-    APPROVE is a no-op. It never auto-denies."""
+    """PRODUCT_CHANGED re-reviews an active org with enough revenue when it
+    creates or edits a product. A bad verdict pulls it back into REVIEW for a
+    human; a clean APPROVE is a no-op. It never auto-denies."""
 
     async def test_deny_pulls_active_org_into_review(
         self,
+        save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
         # The `organization` fixture is ACTIVE by default.
+        organization.total_balance = FIRST_REVIEW_THRESHOLD_CENTS
+        await save_fixture(organization)
+
         agent_result = _make_agent_result(
             verdict=ReviewVerdict.DENY,
             risk_level=RiskLevel.HIGH,
@@ -736,10 +741,13 @@ class TestRunReviewAgentProductChanged:
 
     async def test_approve_keeps_org_active(
         self,
+        save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
     ) -> None:
         assert organization.status == OrganizationStatus.ACTIVE
+        organization.total_balance = FIRST_REVIEW_THRESHOLD_CENTS
+        await save_fixture(organization)
 
         agent_result = _make_agent_result(verdict=ReviewVerdict.APPROVE)
 
@@ -798,6 +806,35 @@ class TestRunReviewAgentProductChanged:
         run_review_mock.assert_not_awaited()
         await session.refresh(organization)
         assert organization.status == OrganizationStatus.REVIEW
+
+    async def test_low_balance_org_is_skipped(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        organization.total_balance = FIRST_REVIEW_THRESHOLD_CENTS - 1
+        await save_fixture(organization)
+
+        run_review_mock = AsyncMock()
+        with (
+            patch(
+                "polar.organization_review.tasks.AsyncSessionMaker",
+                return_value=_mock_session_maker(session),
+            ),
+            patch(
+                "polar.organization_review.tasks.run_organization_review",
+                run_review_mock,
+            ),
+        ):
+            await _run_review_agent(
+                organization.id,
+                context=ReviewContext.PRODUCT_CHANGED,
+            )
+
+        run_review_mock.assert_not_awaited()
+        await session.refresh(organization)
+        assert organization.status == OrganizationStatus.ACTIVE
 
 
 class TestRunAgentDebounceKey:

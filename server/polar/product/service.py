@@ -794,6 +794,8 @@ class ProductService:
         per-organization and only pulls the org back into review on a bad
         verdict (see organization_review.tasks). Non-active orgs (e.g. still
         onboarding) are skipped — there is nothing to pull back into review.
+        The task also skips orgs below the first-review revenue bar, so
+        merchants still experimenting with products don't generate review noise.
         """
         if product.organization.status == OrganizationStatus.ACTIVE:
             enqueue_job(

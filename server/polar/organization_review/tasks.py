@@ -6,7 +6,11 @@ import structlog
 from polar.config import Environment, settings
 from polar.exceptions import PolarTaskError
 from polar.integrations.polar.service import polar_self
-from polar.models.organization import Organization, OrganizationStatus
+from polar.models.organization import (
+    FIRST_REVIEW_THRESHOLD_CENTS,
+    Organization,
+    OrganizationStatus,
+)
 from polar.models.organization_review import OrganizationReview
 from polar.models.support_case import (
     SupportCaseAudience,
@@ -140,7 +144,8 @@ async def run_review_agent(
 
     For SUBMISSION context: creates an OrganizationReview record and auto-denies on DENY.
     For THRESHOLD context: log-only, persists to OrganizationAgentReview table.
-    For PRODUCT_CHANGED context: pulls an active org back into REVIEW on a bad verdict.
+    For PRODUCT_CHANGED context: pulls an active org with enough revenue back
+    into REVIEW on a bad verdict.
     """
     if settings.ENV == Environment.sandbox:
         return
@@ -170,17 +175,27 @@ async def run_review_agent(
         # to pull them back into review. Status may have changed between enqueue
         # and execution (debounce delay), so re-check here before spending an
         # agent run.
-        if (
-            review_context == ReviewContext.PRODUCT_CHANGED
-            and organization.status != OrganizationStatus.ACTIVE
-        ):
-            log.info(
-                "organization_review.product_changed.skip_non_active",
-                organization_id=str(organization_id),
-                slug=organization.slug,
-                status=organization.status,
-            )
-            return
+        if review_context == ReviewContext.PRODUCT_CHANGED:
+            if organization.status != OrganizationStatus.ACTIVE:
+                log.info(
+                    "organization_review.product_changed.skip_non_active",
+                    organization_id=str(organization_id),
+                    slug=organization.slug,
+                    status=organization.status,
+                )
+                return
+
+            # Most product changes come from merchants still experimenting, who
+            # have made close to no money. Reviewing them is noise, so we use
+            # the same revenue bar as the first threshold review.
+            if (organization.total_balance or 0) < FIRST_REVIEW_THRESHOLD_CENTS:
+                log.info(
+                    "organization_review.product_changed.skip_low_balance",
+                    organization_id=str(organization_id),
+                    slug=organization.slug,
+                    total_balance=organization.total_balance,
+                )
+                return
 
         result = await run_organization_review(
             session, organization, context=review_context

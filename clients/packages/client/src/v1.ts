@@ -24797,6 +24797,27 @@ export interface components {
       avatar_url: string | null
     }
     /**
+     * OrderExportColumn
+     * @enum {string}
+     */
+    OrderExportColumn:
+      | 'email'
+      | 'created_at'
+      | 'product'
+      | 'net_amount'
+      | 'currency'
+      | 'status'
+      | 'invoice_number'
+      | 'customer_name'
+      | 'billing_name'
+      | 'billing_country'
+      | 'subtotal_amount'
+      | 'discount_amount'
+      | 'tax_amount'
+      | 'total_amount'
+      | 'refunded_amount'
+      | 'billing_reason'
+    /**
      * OrderFinalize
      * @description Schema to finalize a draft order and trigger an off-session charge.
      */
@@ -42438,6 +42459,22 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by order status. */
+        status?:
+          | components['schemas']['OrderStatus']
+          | components['schemas']['OrderStatus'][]
+          | null
+        /** @description Only include orders created after this date. Must include a UTC offset. */
+        created_after?: string | null
+        /** @description Only include orders created before this date. Must include a UTC offset. */
+        created_before?: string | null
+        /** @description Time zone used to render dates in the CSV. */
+        timezone?: string
+        /** @description Columns to include in the CSV, in order. Defaults to email, created_at, product, net_amount, currency, status and invoice_number. */
+        columns?:
+          | components['schemas']['OrderExportColumn']
+          | components['schemas']['OrderExportColumn'][]
+          | null
       }
       header?: never
       path?: never
@@ -63997,6 +64034,26 @@ export const orderBillingReasonInternalValues: ReadonlyArray<
   'subscription_cycle_after_trial',
   'subscription_cancel',
   'subscription_update',
+]
+export const orderExportColumnValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrderExportColumn']
+> = [
+  'email',
+  'created_at',
+  'product',
+  'net_amount',
+  'currency',
+  'status',
+  'invoice_number',
+  'customer_name',
+  'billing_name',
+  'billing_country',
+  'subtotal_amount',
+  'discount_amount',
+  'tax_amount',
+  'total_amount',
+  'refunded_amount',
+  'billing_reason',
 ]
 export const orderPaidEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderPaidEvent']['name']

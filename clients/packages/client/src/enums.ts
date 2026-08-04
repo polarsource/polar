@@ -7,6 +7,7 @@ export {
   countAggregationFuncValues,
   customFieldTypeValues,
   meterUnitValues,
+  orderExportColumnValues,
   orderStatusValues,
   presentmentCurrencyValues,
   propertyAggregationFuncValues,

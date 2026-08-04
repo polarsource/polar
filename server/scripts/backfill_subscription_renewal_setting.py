@@ -43,6 +43,10 @@ async def backfill(
                             "subscription_renewal"
                         ),
                     )
+                    .order_by(
+                        UserOrganization.user_id,
+                        UserOrganization.organization_id,
+                    )
                     .limit(limit_bindparam())
                 )
             )

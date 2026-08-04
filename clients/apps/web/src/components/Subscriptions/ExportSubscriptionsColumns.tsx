@@ -44,10 +44,10 @@ const EXPORT_COLUMN_GROUPS = [
     label: 'Product & Amounts',
     columns: [
       { value: 'product', label: 'Product' },
-      { value: 'discount', label: 'Discount' },
       { value: 'amount', label: 'Amount' },
-      { value: 'net_amount', label: 'Net Amount' },
       { value: 'currency', label: 'Currency' },
+      { value: 'discount', label: 'Discount' },
+      { value: 'net_amount', label: 'Net Amount' },
     ],
   },
 ] as const satisfies {

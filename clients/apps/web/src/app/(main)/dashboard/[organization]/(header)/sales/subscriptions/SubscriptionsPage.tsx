@@ -1,26 +1,21 @@
 'use client'
 
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
-import DateRangePicker, {
-  DateRange,
-} from '@/components/Metrics/DateRangePicker'
-import SubscriptionCancellationSelect from '@/components/Subscriptions/SubscriptionCancellationSelect'
+import { DateRange } from '@/components/Metrics/DateRangePicker'
 import { SubscriptionStatus as SubscriptionStatusComponent } from '@/components/Subscriptions/SubscriptionStatus'
-import SubscriptionStatusSelect, {
+import {
+  DEFAULT_SUBSCRIPTION_STATUS,
   subscriptionStatusFilterValues,
   type SubscriptionStatusFilter,
 } from '@/components/Subscriptions/SubscriptionStatusSelect'
-import SubscriptionTiersSelect from '@/components/Subscriptions/SubscriptionTiersSelect'
-import { useProducts, useSubscriptions } from '@/hooks/queries'
+import { useSubscriptions } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { getServerURL } from '@/utils/api'
 import { DataTableSortingState, getAPIParams } from '@/utils/datatable'
 import { useDateRange } from '@/utils/date'
-import FileDownloadOutlined from '@mui/icons-material/FileDownloadOutlined'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
 import { Avatar } from '@polar-sh/orbit'
-import { Button } from '@polar-sh/orbit'
 import {
   DataTable,
   DataTableColumnDef,
@@ -43,12 +38,12 @@ import {
   useQueryStates,
 } from 'nuqs'
 import React, { useEffect, useState } from 'react'
-import { startOfDay } from 'date-fns'
+import SubscriptionFilters from './SubscriptionFilters'
 
 const filterParsers = {
   product_id: parseAsString,
   status: parseAsStringLiteral(subscriptionStatusFilterValues).withDefault(
-    'active',
+    DEFAULT_SUBSCRIPTION_STATUS,
   ),
   cancel_at_period_end: parseAsBoolean,
   metadata: parseAsArrayOf(parseAsString),
@@ -78,11 +73,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     useState<RowSelectionState>({})
 
   const router = useRouter()
-
-  const subscriptionTiers = useProducts(organization.id, {
-    is_recurring: true,
-    limit: 100,
-  })
 
   const {
     pagination,
@@ -289,46 +279,18 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   return (
     <DashboardBody wide>
       <div className="flex flex-col gap-8">
-        <div className="flex w-full flex-row items-center justify-between gap-2 overflow-x-auto">
-          <div className="flex shrink-0 items-center gap-4">
-            <div className="w-auto">
-              <SubscriptionStatusSelect
-                value={status}
-                onChange={onStatusSelect}
-              />
-            </div>
-            {status === 'active' && (
-              <div className="w-auto">
-                <SubscriptionCancellationSelect
-                  value={cancelAtPeriodEnd}
-                  onChange={onCancelAtPeriodEndSelect}
-                />
-              </div>
-            )}
-            <div className="w-auto">
-              <SubscriptionTiersSelect
-                products={subscriptionTiers.data?.items || []}
-                value={productId}
-                onChange={onProductSelect}
-              />
-            </div>
-            <DateRangePicker
-              date={{ from: startDate, to: endDate }}
-              onDateChange={onDateChange}
-              className="[&>button:last-child]:text-left"
-              minDate={startOfDay(new Date(organization.created_at))}
-            />
-          </div>
-          <Button
-            onClick={onExport}
-            className="flex shrink-0 flex-row items-center"
-            variant={'secondary'}
-            wrapperClassNames="gap-x-2"
-          >
-            <FileDownloadOutlined fontSize="inherit" />
-            <span>Export</span>
-          </Button>
-        </div>
+        <SubscriptionFilters
+          organization={organization}
+          productId={productId}
+          onProductSelect={onProductSelect}
+          status={status}
+          onStatusSelect={onStatusSelect}
+          cancelAtPeriodEnd={cancelAtPeriodEnd}
+          onCancelAtPeriodEndSelect={onCancelAtPeriodEndSelect}
+          dateRange={{ from: startDate, to: endDate }}
+          onDateChange={onDateChange}
+          onExport={onExport}
+        />
         {subscriptions && pageCount !== undefined ? (
           <DataTable
             columns={columns}

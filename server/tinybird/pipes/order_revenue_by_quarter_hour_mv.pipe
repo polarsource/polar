@@ -1,0 +1,39 @@
+NODE materialize
+SQL >
+    SELECT
+        organization_id,
+        toStartOfFifteenMinutes(COALESCE(order_created_at, timestamp)) AS quarter_hour,
+        COALESCE(product_id, toUUID('00000000-0000-0000-0000-000000000000')) AS product_id,
+        name AS event_name,
+        sumState(
+            toInt64(
+                round(
+                    COALESCE(net_amount, amount, 0) * COALESCE(
+                        multiIf(
+                            exchange_rate IS NOT NULL AND exchange_rate != 0,
+                            toFloat64(exchange_rate),
+                            presentment_amount IS NOT NULL AND presentment_amount != 0,
+                            toFloat64(amount) / toFloat64(presentment_amount),
+                            NULL
+                        ),
+                        1.0
+                    )
+                )
+            )
+        ) AS settlement_revenue,
+        sumState(toInt64(COALESCE(fee, 0))) AS settlement_fee
+    FROM events_by_ingested_at
+    WHERE
+        source = 'system'
+        AND name IN ('balance.order', 'balance.credit_order')
+        AND order_id IS NOT NULL
+        AND NOT (
+            name = 'balance.credit_order'
+            AND (exchange_rate IS NULL OR exchange_rate = 0)
+            AND (presentment_amount IS NULL OR presentment_amount = 0)
+            AND COALESCE(net_amount, amount, 0) != 0
+        )
+    GROUP BY organization_id, quarter_hour, product_id, event_name
+
+TYPE MATERIALIZED
+DATASOURCE order_revenue_by_quarter_hour

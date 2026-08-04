@@ -49,6 +49,7 @@ class DisputeRepository(
                 tax_amount=tax_amount,
                 currency=currency,
                 order_id=order.id,
+                organization_id=order.organization_id,
                 payment_id=payment.id,
             )
             .on_conflict_do_nothing(

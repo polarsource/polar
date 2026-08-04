@@ -1,0 +1,12 @@
+{
+  "$schema": "https://v2-9-4.turborepo.dev/schema.json",
+  "extends": ["//"],
+  "tasks": {
+    "build": {
+      "dependsOn": ["^build"],
+      "outputs": [".next/**", "!.next/cache/**", "dist/**"],
+      "inputs": ["$TURBO_DEFAULT$", ".env", ".env.*"],
+      "env": ["VERCEL_GIT_PULL_REQUEST_ID", "VERCEL_GIT_COMMIT_SHA"]
+    }
+  }
+}

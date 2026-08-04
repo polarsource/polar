@@ -1,4 +1,5 @@
 import base64
+import binascii
 from collections.abc import Mapping
 from ssl import SSLError
 from uuid import UUID
@@ -26,9 +27,19 @@ from polar.worker import (
     enqueue_job,
 )
 
+from .constants import WEBHOOK_SECRET_PREFIX
 from .service import webhook as webhook_service
 
 log: Logger = structlog.get_logger()
+
+
+def standard_webhooks_key(secret: str) -> bytes | None:
+    if not secret.startswith(WEBHOOK_SECRET_PREFIX):
+        return None
+    try:
+        return base64.b64decode(secret[len(WEBHOOK_SECRET_PREFIX) :], validate=True)
+    except binascii.Error:
+        return None
 
 
 # Safety-guard max_retries: enough for all ordering retries within the age
@@ -107,13 +118,16 @@ async def _webhook_event_send(
 
     ts = utc_now()
 
-    b64secret = base64.b64encode(event.webhook_endpoint.secret.encode("utf-8")).decode(
-        "utf-8"
-    )
-
-    # Sign the payload
-    wh = StandardWebhook(b64secret)
-    signature = wh.sign(str(event.id), ts, event.payload)
+    # Dual-signed: legacy raw-string-key verifiers must keep working
+    secret = event.webhook_endpoint.secret
+    b64secret = base64.b64encode(secret.encode("utf-8")).decode("utf-8")
+    signature = StandardWebhook(b64secret).sign(str(event.id), ts, event.payload)
+    standard_key = standard_webhooks_key(secret)
+    if standard_key is not None:
+        standard_signature = StandardWebhook(standard_key).sign(
+            str(event.id), ts, event.payload
+        )
+        signature = f"{standard_signature} {signature}"
 
     headers: Mapping[str, str] = {
         "user-agent": "polar.sh webhooks",

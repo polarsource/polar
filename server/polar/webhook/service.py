@@ -1,5 +1,7 @@
+import base64
 import datetime
 import json
+import secrets
 from collections.abc import Sequence
 from typing import Literal, cast, overload
 from uuid import UUID
@@ -24,7 +26,6 @@ from polar.customer.schemas.state import CustomerState
 from polar.email.schemas import EmailAdapter
 from polar.email.sender import enqueue_email_template
 from polar.exceptions import PolarError, PolarRequestValidationError, ResourceNotFound
-from polar.kit.crypto import generate_token
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
@@ -72,6 +73,10 @@ from .schemas import (
 from .webhooks import SkipEvent, UnsupportedTarget, WebhookPayloadTypeAdapter
 
 log: Logger = structlog.get_logger()
+
+
+def generate_standard_secret() -> str:
+    return WEBHOOK_SECRET_PREFIX + base64.b64encode(secrets.token_bytes(32)).decode()
 
 
 class WebhookError(PolarError): ...
@@ -151,7 +156,7 @@ class WebhookService:
         if create_schema.secret is not None:
             secret = create_schema.secret
         else:
-            secret = generate_token(prefix=WEBHOOK_SECRET_PREFIX)
+            secret = generate_standard_secret()
 
         endpoint = await repository.create(
             WebhookEndpoint(
@@ -211,7 +216,7 @@ class WebhookService:
         return await repository.update(
             endpoint,
             update_dict={
-                "secret": generate_token(prefix=WEBHOOK_SECRET_PREFIX),
+                "secret": generate_standard_secret(),
             },
         )
 

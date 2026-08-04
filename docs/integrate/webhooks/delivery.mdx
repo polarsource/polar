@@ -102,11 +102,11 @@ easily validate signatures. Or you can follow their
 in case you want to roll your own.
 
 <Info>
-  **Note: Secret needs to be base64 encoded**
+  **Note: secrets created before 2026-08-05 need to be base64 encoded**
 
-One common gotcha with the specification is that the webhook secret is expected to be
-base64 encoded. You don't have to do this with our SDK as it takes care of the
-implementation details with better developer ergonomics.
+One common gotcha with the specification is that webhook secrets created before
+2026-08-05 are expected to be base64 encoded. You don't have to do this with our
+SDK as it takes care of the implementation details with better developer ergonomics.
 
 </Info>
 
@@ -216,6 +216,6 @@ A common cause is hosting providers like Vercel that redirect between `www` and 
 
 ### Invalid signature exceptions
 
-Rolling your own webhook validation logic? Make sure to base64 encode the secret
-you configured on Polar in your code before generating the signature to validate
-against.
+Rolling your own webhook validation logic? If your secret was created before
+2026-08-05, make sure to base64 encode the secret you configured on Polar in
+your code before generating the signature to validate against.

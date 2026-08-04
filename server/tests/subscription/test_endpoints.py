@@ -1424,6 +1424,7 @@ class TestExportSubscriptions:
         assert csv_lines[0] == EXPORT_DEFAULT_HEADER
 
         data_row = csv_lines[1]
+        assert customer.email is not None
         assert customer.email in data_row
         assert product.name in data_row
         assert subscription.currency in data_row

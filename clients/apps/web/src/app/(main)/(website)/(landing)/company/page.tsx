@@ -35,7 +35,7 @@ const JOBS = [
     roles: [
       {
         role: 'Risk & Compliance Specialist',
-        link: 'https://jobs.ashbyhq.com/polar/64aa23ec-38c2-4d8e-8510-cdda2197042d',
+        link: 'https://jobs.ashbyhq.com/polar/87773c6c-4cd4-4948-9779-20fdc8f8ea7b',
         location: 'Remote, United States',
         experience: '2+ Years Experience',
       },

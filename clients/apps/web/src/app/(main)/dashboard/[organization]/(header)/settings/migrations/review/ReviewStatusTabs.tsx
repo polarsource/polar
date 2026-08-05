@@ -31,6 +31,7 @@ interface Props {
 export function ReviewStatusTabs({ value, onChange }: Props) {
   return (
     <Box
+      role="tablist"
       alignItems="center"
       columnGap="xs"
       padding="xs"

@@ -55,7 +55,11 @@ NON_IMPORTABLE_STATUSES = {
 
 # Codes whose warning means a record won't import, by entity. Keep in sync with
 # the `_check_*` methods so classification matches the report.
-PRODUCT_DROP_CODES = {"one_time_product", "unsupported_recurring_interval"}
+PRODUCT_DROP_CODES = {
+    "one_time_product",
+    "unsupported_recurring_interval",
+    "multiple_prices_same_currency",
+}
 PRICE_DROP_CODES = {
     "unsupported_pricing_scheme",
     "unsupported_price_amount",
@@ -76,6 +80,7 @@ ACTION_REQUIRED_CODES = {
     "customer_missing_country",
     "customer_missing_email",
     "duplicate_customer_email",
+    "multiple_prices_same_currency",
     "subscription_has_discount",
     "send_invoice_collection",
 }
@@ -215,6 +220,7 @@ class PrecheckEngine:
     def _check_product(self, product: CanonicalProduct) -> Iterable[PrecheckIssue]:
         # A product Polar can't represent is skipped along with its subscriptions,
         # rather than blocking the whole migration.
+        dropped = False
         if product.recurring_interval is None:
             yield PrecheckIssue(
                 level=PrecheckIssueLevel.warning,
@@ -225,6 +231,7 @@ class PrecheckEngine:
                 ),
                 source_id=product.source_id,
             )
+            dropped = True
         elif (
             product.recurring_interval not in SUPPORTED_INTERVALS
             or not 1 <= product.recurring_interval_count <= MAX_INTERVAL_COUNT
@@ -240,8 +247,28 @@ class PrecheckEngine:
                 ),
                 source_id=product.source_id,
             )
+            dropped = True
+        importable_currencies: Counter[str] = Counter()
         for price in product.prices:
-            yield from self._check_price(product, price)
+            price_issues = list(self._check_price(product, price))
+            yield from price_issues
+            if not any(issue.code in PRICE_DROP_CODES for issue in price_issues):
+                importable_currencies[price.currency.lower()] += 1
+        # Only worth reporting on a product that would otherwise import.
+        if dropped:
+            return
+        for currency, count in importable_currencies.items():
+            if count > 1:
+                yield PrecheckIssue(
+                    level=PrecheckIssueLevel.warning,
+                    code="multiple_prices_same_currency",
+                    message=(
+                        f"Product '{product.name}' has {count} prices in "
+                        f"{currency.upper()}; Polar allows one per currency, so it "
+                        "and its subscriptions won't be imported."
+                    ),
+                    source_id=product.source_id,
+                )
 
     def _check_price(
         self, product: CanonicalProduct, price: CanonicalPrice
@@ -466,23 +493,45 @@ def _interval_label(product: CanonicalProduct) -> str:
     return f"Every {count} {product.recurring_interval}s"
 
 
-def _drop_reason(
-    issues: Iterable[PrecheckIssue], codes: set[str]
-) -> tuple[str | None, str | None]:
+@dataclass(frozen=True)
+class Reason:
+    """Why a record is skipped, or what to know about one that isn't."""
+
+    code: str
+    message: str
+
+    @property
+    def level(self) -> PrecheckReasonLevel:
+        if self.code in ACTION_REQUIRED_CODES:
+            return PrecheckReasonLevel.action_required
+        return PrecheckReasonLevel.info
+
+
+@dataclass(frozen=True)
+class PriceDisplay:
+    """The price shown on a priced review row."""
+
+    amount: int | None = None
+    currency: str | None = None
+    recurring_interval: str | None = None
+
+    @classmethod
+    def of(cls, product: CanonicalProduct, price: CanonicalPrice) -> "PriceDisplay":
+        return cls(price.amount, price.currency, product.recurring_interval)
+
+
+def _drop_reason(issues: Iterable[PrecheckIssue], codes: set[str]) -> Reason | None:
     for issue in issues:
         if issue.code in codes:
-            return issue.code, issue.message
-    return None, None
-
-
-Reason = tuple[str, str]
+            return Reason(issue.code, issue.message)
+    return None
 
 
 def _pick_note(*notes: Reason | None) -> Reason | None:
     """The one note to show on an importable row, worth-acting-on first."""
     present = [note for note in notes if note is not None]
     for note in present:
-        if note[0] in ACTION_REQUIRED_CODES:
+        if note.level == PrecheckReasonLevel.action_required:
             return note
     return present[0] if present else None
 
@@ -495,13 +544,12 @@ def _item(
     *,
     skip: Reason | None,
     note: Reason | None = None,
-    amount: int | None = None,
-    currency: str | None = None,
-    recurring_interval: str | None = None,
+    price: PriceDisplay | None = None,
 ) -> MerchantMigrationRecordItem:
     """One review row. ``skip`` means it won't import; ``note`` only annotates a
     row that will."""
-    code, reason = skip or note or (None, None)
+    reason = skip or note
+    price = price or PriceDisplay()
     return MerchantMigrationRecordItem(
         # record_id and import_status come from the ledger via
         # `_attach_record_ids`; the classifier itself has none.
@@ -511,54 +559,38 @@ def _item(
         source_id=source_id,
         title=title,
         subtitle=subtitle,
-        amount=amount,
-        currency=currency,
-        recurring_interval=recurring_interval,
+        amount=price.amount,
+        currency=price.currency,
+        recurring_interval=price.recurring_interval,
         status=(
             PrecheckRecordStatus.skipped if skip else PrecheckRecordStatus.importable
         ),
-        reason=reason,
-        reason_code=code,
-        reason_level=_reason_level(code),
+        reason=reason.message if reason else None,
+        reason_code=reason.code if reason else None,
+        reason_level=reason.level if reason else None,
     )
 
 
-def _reason_level(code: str | None) -> PrecheckReasonLevel | None:
-    if code is None:
-        return None
-    if code in ACTION_REQUIRED_CODES:
-        return PrecheckReasonLevel.action_required
-    return PrecheckReasonLevel.info
-
-
-# The price shown on a priced row: (amount, currency, interval). A product is
-# represented by its first price; a subscription by the price it runs on.
-def _price_info(
+def _price_display_by_source_id(
     products: Sequence[CanonicalProduct],
-) -> dict[str, tuple[int | None, str, str | None]]:
-    info: dict[str, tuple[int | None, str, str | None]] = {}
-    for product in products:
-        for price in product.prices:
-            info[price.source_id] = (
-                price.amount,
-                price.currency,
-                product.recurring_interval,
-            )
-    return info
+) -> dict[str, PriceDisplay]:
+    return {
+        price.source_id: PriceDisplay.of(product, price)
+        for product in products
+        for price in product.prices
+    }
 
 
 def _representative_price(
     product: CanonicalProduct, importable_price_ids: set[str]
-) -> tuple[int | None, str | None, str | None]:
+) -> PriceDisplay:
     """The price to show on a product row: one that will actually be imported,
     falling back to the first when the product is skipped."""
     price = next(
         (price for price in product.prices if price.source_id in importable_price_ids),
         product.prices[0] if product.prices else None,
     )
-    if price is None:
-        return None, None, None
-    return price.amount, price.currency, product.recurring_interval
+    return PriceDisplay.of(product, price) if price else PriceDisplay()
 
 
 def _duplicate_product_names(products: Sequence[CanonicalProduct]) -> set[str]:
@@ -572,13 +604,6 @@ def _duplicate_product_names(products: Sequence[CanonicalProduct]) -> set[str]:
             product.product_source_id
         )
     return {name for name, ids in source_ids_by_name.items() if len(ids) > 1}
-
-
-def _product_drop(product: CanonicalProduct) -> Reason | None:
-    code, reason = _drop_reason(
-        precheck_engine._check_product(product), PRODUCT_DROP_CODES
-    )
-    return (code, reason) if code is not None and reason is not None else None
 
 
 def _duplicate_customer_source_ids(
@@ -606,15 +631,12 @@ def _product_items(
     items: list[MerchantMigrationRecordItem] = []
     for product in products:
         plan = plans[product.source_id]
-        amount, currency, interval = _representative_price(
-            product, plan.importable_price_ids
-        )
         # Sharing a name is allowed in Polar, so it only earns a note.
         note = _pick_note(
-            ("duplicate_product_name", _DUPLICATE_PRODUCT_NAME_REASON)
+            Reason("duplicate_product_name", _DUPLICATE_PRODUCT_NAME_REASON)
             if product.name in duplicate_names
             else None,
-            ("product_exists_in_polar", _EXISTING_PRODUCT_NAME_REASON)
+            Reason("product_exists_in_polar", _EXISTING_PRODUCT_NAME_REASON)
             if product.name.lower() in existing_product_names
             else None,
         )
@@ -626,9 +648,7 @@ def _product_items(
                 _interval_label(product),
                 skip=plan.skip,
                 note=note,
-                amount=amount,
-                currency=currency,
-                recurring_interval=interval,
+                price=_representative_price(product, plan.importable_price_ids),
             )
         )
     return items
@@ -640,14 +660,13 @@ def _price_items(
     items: list[MerchantMigrationRecordItem] = []
     for product in products:
         # A price under a product that won't import can't import either.
-        product_skip = _product_drop(product)
+        product_skip = _drop_reason(
+            precheck_engine._check_product(product), PRODUCT_DROP_CODES
+        )
         for price in product.prices:
-            skip = product_skip
-            if skip is None:
-                code, reason = _drop_reason(
-                    precheck_engine._check_price(product, price), PRICE_DROP_CODES
-                )
-                skip = (code, reason) if code and reason else None
+            skip = product_skip or _drop_reason(
+                precheck_engine._check_price(product, price), PRICE_DROP_CODES
+            )
             subtitle = (
                 "No amount"
                 if price.amount is None
@@ -660,9 +679,7 @@ def _price_items(
                     product.name,
                     subtitle,
                     skip=skip,
-                    amount=price.amount,
-                    currency=price.currency,
-                    recurring_interval=product.recurring_interval,
+                    price=PriceDisplay.of(product, price),
                 )
             )
     return items
@@ -677,7 +694,7 @@ def _customer_items(
     for customer in customers:
         # It imports either way, but without a country tax can't be computed.
         note = (
-            ("customer_missing_country", _MISSING_COUNTRY_REASON)
+            Reason("customer_missing_country", _MISSING_COUNTRY_REASON)
             if not customer.country
             else None
         )
@@ -702,59 +719,66 @@ def _subscription_items(
     # Use the importer's plan; the notes on top are display-only.
     plans = plan_subscription_imports(subscriptions, products, customers)
     email_by_source = {c.source_id: c.email for c in customers if c.email}
-    price_info = _price_info(products)
+    price_by_source = _price_display_by_source_id(products)
     items: list[MerchantMigrationRecordItem] = []
     for subscription in subscriptions:
         payment_method = subscription.payment_method
         note = _pick_note(
-            ("payment_method_requires_reentry", _PAYMENT_REENTRY_REASON)
+            Reason("payment_method_requires_reentry", _PAYMENT_REENTRY_REASON)
             if payment_method is not None and payment_method.type.requires_reentry
             else None,
-            ("subscription_trialing", _TRIALING_REASON)
+            Reason("subscription_trialing", _TRIALING_REASON)
             if subscription.trialing
             else None,
         )
         title = email_by_source.get(
             subscription.customer_source_id, subscription.customer_source_id
         )
-        subtitle = _humanize_subscription_status(subscription.status)
-        amount, currency, interval = price_info.get(
-            subscription.price_source_id, (None, None, None)
-        )
         items.append(
             _item(
                 PrecheckEntity.subscriptions,
                 subscription.source_id,
                 title,
-                subtitle,
+                _humanize_subscription_status(subscription.status),
                 skip=plans[subscription.source_id],
                 note=note,
-                amount=amount,
-                currency=currency,
-                recurring_interval=interval,
+                price=price_by_source.get(subscription.price_source_id),
             )
         )
     return items
 
 
-def _split_records(
-    records: Sequence[CanonicalRecord],
-) -> tuple[
-    list[CanonicalProduct],
-    list[CanonicalCustomer],
-    list[CanonicalSubscription],
-]:
-    products: list[CanonicalProduct] = []
-    customers: list[CanonicalCustomer] = []
-    subscriptions: list[CanonicalSubscription] = []
-    for record in records:
-        if isinstance(record, CanonicalProduct):
-            products.append(record)
-        elif isinstance(record, CanonicalCustomer):
-            customers.append(record)
-        elif isinstance(record, CanonicalSubscription):
-            subscriptions.append(record)
-    return products, customers, subscriptions
+@dataclass(frozen=True)
+class SplitRecords:
+    """The staged catalog grouped by entity."""
+
+    products: list[CanonicalProduct]
+    customers: list[CanonicalCustomer]
+    subscriptions: list[CanonicalSubscription]
+
+    @classmethod
+    def of(cls, records: Sequence[CanonicalRecord]) -> "SplitRecords":
+        split = cls([], [], [])
+        for record in records:
+            if isinstance(record, CanonicalProduct):
+                split.products.append(record)
+            elif isinstance(record, CanonicalCustomer):
+                split.customers.append(record)
+            elif isinstance(record, CanonicalSubscription):
+                split.subscriptions.append(record)
+        return split
+
+
+def import_blockers(
+    organization: Organization, source_account: CanonicalAccount
+) -> list[PrecheckIssue]:
+    """Blockers that don't depend on the catalog, so the import can re-check them
+    without re-reading the whole source."""
+    issues = [
+        *precheck_engine._check_organization(organization),
+        *precheck_engine._check_account(source_account),
+    ]
+    return [issue for issue in issues if issue.level == PrecheckIssueLevel.blocker]
 
 
 def classify_records(
@@ -764,14 +788,14 @@ def classify_records(
 ) -> list[MerchantMigrationRecordItem]:
     """Classify the source catalog into per-record rows of one entity type,
     each marked importable or skipped with a reason."""
-    products, customers, subscriptions = _split_records(records)
+    split = SplitRecords.of(records)
     if entity == PrecheckEntity.products:
-        return _product_items(products, existing_product_names or set())
+        return _product_items(split.products, existing_product_names or set())
     if entity == PrecheckEntity.prices:
-        return _price_items(products)
+        return _price_items(split.products)
     if entity == PrecheckEntity.customers:
-        return _customer_items(customers)
-    return _subscription_items(subscriptions, products, customers)
+        return _customer_items(split.customers)
+    return _subscription_items(split.subscriptions, split.products, split.customers)
 
 
 @dataclass
@@ -802,7 +826,7 @@ def plan_product_imports(
     """
     plans: dict[str, ProductImportPlan] = {}
     for product in products:
-        skip = _product_drop(product)
+        skip = _drop_reason(precheck_engine._check_product(product), PRODUCT_DROP_CODES)
         if skip is not None:
             plans[product.source_id] = ProductImportPlan(skip, set())
             continue
@@ -811,12 +835,12 @@ def plan_product_imports(
             for price in product.prices
             if _drop_reason(
                 precheck_engine._check_price(product, price), PRICE_DROP_CODES
-            )[0]
+            )
             is None
         }
         if not price_ids:
             plans[product.source_id] = ProductImportPlan(
-                ("no_importable_price", _NO_IMPORTABLE_PRICE_REASON), set()
+                Reason("no_importable_price", _NO_IMPORTABLE_PRICE_REASON), set()
             )
         else:
             plans[product.source_id] = ProductImportPlan(None, price_ids)
@@ -834,14 +858,12 @@ def plan_customer_imports(
     plans: dict[str, Reason | None] = {}
     for customer in customers:
         if customer.source_id in duplicates:
-            plans[customer.source_id] = (
-                "duplicate_customer_email",
-                _DUPLICATE_CUSTOMER_EMAIL_REASON,
+            plans[customer.source_id] = Reason(
+                "duplicate_customer_email", _DUPLICATE_CUSTOMER_EMAIL_REASON
             )
         elif not customer.email:
-            plans[customer.source_id] = (
-                "customer_missing_email",
-                _MISSING_EMAIL_REASON,
+            plans[customer.source_id] = Reason(
+                "customer_missing_email", _MISSING_EMAIL_REASON
             )
         else:
             plans[customer.source_id] = None
@@ -869,18 +891,18 @@ def plan_subscription_imports(
     }
     plans: dict[str, Reason | None] = {}
     for subscription in subscriptions:
-        code, reason = _drop_reason(
+        skip = _drop_reason(
             precheck_engine._check_subscription(subscription), SUBSCRIPTION_DROP_CODES
         )
-        skip: Reason | None = (code, reason) if code and reason else None
         if skip is None and subscription.price_source_id not in importable_prices:
-            skip = ("subscription_product_not_importable", _SUBSCRIPTION_PRODUCT_REASON)
+            skip = Reason(
+                "subscription_product_not_importable", _SUBSCRIPTION_PRODUCT_REASON
+            )
         elif (
             skip is None and subscription.customer_source_id not in importable_customers
         ):
-            skip = (
-                "subscription_customer_not_importable",
-                _SUBSCRIPTION_CUSTOMER_REASON,
+            skip = Reason(
+                "subscription_customer_not_importable", _SUBSCRIPTION_CUSTOMER_REASON
             )
         plans[subscription.source_id] = skip
     return plans

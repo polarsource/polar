@@ -24,19 +24,27 @@ from polar.product.repository import ProductRepository
 
 from .adapters import SourceAdapter, StripeAdapter
 from .canonical import CanonicalRecord, deserialize
-from .precheck import classify_records, precheck_engine
+from .importer import CatalogImporter
+from .precheck import classify_records, import_blockers, precheck_engine
 from .repository import (
     MerchantMigrationRecordRepository,
     MerchantMigrationRepository,
 )
 from .schemas import (
     MerchantMigrationCreate,
+    MerchantMigrationImportReport,
     MerchantMigrationRecordItem,
     PrecheckEntity,
+    PrecheckIssue,
     PrecheckReasonLevel,
     PrecheckRecordStatus,
     PrecheckReport,
 )
+
+IMPORTABLE_STEPS = {
+    MerchantMigrationStep.pre_check,
+    MerchantMigrationStep.create_catalog,
+}
 
 # Entities whose records map 1:1 to a ledger row, so a listing item can carry its
 # record id for selection. Prices live inside a product record and are excluded.
@@ -114,6 +122,23 @@ class SourceVerificationUnavailable(MerchantMigrationError):
         super().__init__(
             "We couldn't verify the Stripe key right now. Please try again.",
             502,
+        )
+
+
+class CatalogImportNotReady(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Run the pre-check before importing the catalog.",
+            409,
+        )
+
+
+class CatalogImportBlocked(MerchantMigrationError):
+    def __init__(self, blockers: list[PrecheckIssue]) -> None:
+        self.blockers = [issue.code for issue in blockers]
+        super().__init__(
+            "The migration can't be imported: " + " ".join(i.message for i in blockers),
+            409,
         )
 
 
@@ -225,7 +250,9 @@ class MerchantMigrationService:
         """Read the connected source, normalize it, and report whether it can be
         imported. Advances the migration from source setup to the precheck step.
         """
-        migration = await self._get_manageable(session, auth_subject, migration_id)
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
 
         organization = await OrganizationRepository.from_session(session).get_by_id(
             migration.organization_id
@@ -248,10 +275,62 @@ class MerchantMigrationService:
             existing_product_names,
         )
 
+        # Re-running the precheck to refresh the ledger must not regress a
+        # migration that has already moved on.
+        if migration.step == MerchantMigrationStep.source_setup:
+            repository = MerchantMigrationRepository.from_session(session)
+            await repository.update(
+                migration, update_dict={"step": MerchantMigrationStep.pre_check}
+            )
+        return report
+
+    async def import_catalog(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+        *,
+        record_ids: Sequence[UUID] | None = None,
+        exclude_record_ids: Sequence[UUID] | None = None,
+    ) -> MerchantMigrationImportReport:
+        """Create the Polar catalog from the staged importable records, then
+        advance the migration to the create-catalog step. Idempotent: re-running
+        only imports records still pending in the ledger."""
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
+        if migration.step not in IMPORTABLE_STEPS:
+            raise CatalogImportNotReady()
+
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            migration.organization_id
+        )
+        if organization is None:
+            raise MerchantMigrationNotFound()
+
+        # The pre-check reports blockers but doesn't stop the import, and both the
+        # org and the source account can change after it ran.
+        adapter = await self._build_adapter(migration)
+        blockers = import_blockers(organization, await adapter.get_source_account())
+        if blockers:
+            raise CatalogImportBlocked(blockers)
+
+        report = await CatalogImporter(
+            session,
+            migration,
+            organization,
+            auth_subject,
+            record_ids=set(record_ids) if record_ids is not None else None,
+            exclude_record_ids=(
+                set(exclude_record_ids) if exclude_record_ids is not None else None
+            ),
+        ).run()
+
         repository = MerchantMigrationRepository.from_session(session)
         await repository.update(
-            migration, update_dict={"step": MerchantMigrationStep.pre_check}
+            migration, update_dict={"step": MerchantMigrationStep.create_catalog}
         )
+        report.step = MerchantMigrationStep.create_catalog
         return report
 
     async def _get_manageable(
@@ -259,11 +338,16 @@ class MerchantMigrationService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
+        *,
+        for_update: bool = False,
     ) -> MerchantMigration:
         repository = MerchantMigrationRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).where(
             MerchantMigration.id == migration_id
         )
+        if for_update:
+            # Serialized so a double-click or retry can't create duplicates.
+            statement = statement.with_for_update(of=MerchantMigration)
         migration = await repository.get_one_or_none(statement)
         if migration is None:
             raise MerchantMigrationNotFound()

@@ -5148,6 +5148,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/import': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Import Merchant Migration Catalog
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:import_catalog']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/merchant-migrations/{id}/records': {
     parameters: {
       query?: never
@@ -11903,6 +11923,28 @@ export interface components {
        * @constant
        */
       error: 'CaseRepliesNotSupportedError'
+      /** Detail */
+      detail: string
+    }
+    /** CatalogImportBlocked */
+    CatalogImportBlocked: {
+      /**
+       * Error
+       * @example CatalogImportBlocked
+       * @constant
+       */
+      error: 'CatalogImportBlocked'
+      /** Detail */
+      detail: string
+    }
+    /** CatalogImportNotReady */
+    CatalogImportNotReady: {
+      /**
+       * Error
+       * @example CatalogImportNotReady
+       * @constant
+       */
+      error: 'CatalogImportNotReady'
       /** Detail */
       detail: string
     }
@@ -23092,6 +23134,44 @@ export interface components {
        * @description A Stripe API key for the source account (a restricted `rk_...` key is recommended). It is validated for all required permissions before the migration is saved.
        */
       api_key: string
+    }
+    /** MerchantMigrationImportReport */
+    MerchantMigrationImportReport: {
+      /** @description The migration step after the import. */
+      step: components['schemas']['MerchantMigrationStep']
+      /**
+       * Results
+       * @description Per-entity counts of what was imported vs skipped.
+       */
+      results: components['schemas']['MerchantMigrationImportResult'][]
+    }
+    /** MerchantMigrationImportRequest */
+    MerchantMigrationImportRequest: {
+      /**
+       * Record Ids
+       * @description The ledger record ids to import (from the records listing). When omitted, every importable record is imported (subject to `exclude_record_ids`). Records not selected stay pending.
+       */
+      record_ids?: string[] | null
+      /**
+       * Exclude Record Ids
+       * @description Import every importable record except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
+       */
+      exclude_record_ids?: string[] | null
+    }
+    /** MerchantMigrationImportResult */
+    MerchantMigrationImportResult: {
+      /** @description The source entity type. */
+      entity: components['schemas']['PrecheckEntity']
+      /**
+       * Imported
+       * @description How many were created or reused in Polar.
+       */
+      imported: number
+      /**
+       * Skipped
+       * @description How many were left on the source (not importable).
+       */
+      skipped: number
     }
     /** MerchantMigrationNotEnabled */
     MerchantMigrationNotEnabled: {
@@ -51336,6 +51416,83 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:import_catalog': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'application/json':
+          | components['schemas']['MerchantMigrationImportRequest']
+          | null
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationImportReport']
+        }
+      }
+      /** @description The source is not connected or isn't supported. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['SourceNotConnected']
+            | components['schemas']['UnsupportedMigrationSource']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description The pre-check hasn't run yet, or it reports a blocker. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['CatalogImportNotReady']
+            | components['schemas']['CatalogImportBlocked']
         }
       }
       /** @description Validation Error */

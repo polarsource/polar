@@ -171,7 +171,11 @@ class ProductService:
         session: AsyncSession,
         create_schema: ProductCreate,
         auth_subject: AuthSubject[User | Organization],
+        *,
+        notify: bool = True,
     ) -> Product:
+        """``notify=False`` skips the webhook and the organization re-review, for
+        bulk internal writes such as a catalog import."""
         repository = ProductRepository.from_session(session)
         organization = await get_payload_organization(
             session, auth_subject, create_schema
@@ -262,7 +266,8 @@ class ProductService:
 
         await session.flush()
 
-        await self._after_product_created(session, auth_subject, product)
+        if notify:
+            await self._after_product_created(session, auth_subject, product)
 
         return product
 

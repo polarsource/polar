@@ -488,6 +488,57 @@ class TestClassifyRecords:
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_level == PrecheckReasonLevel.action_required
 
+    def test_two_prices_in_one_currency_skip_the_product(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                prices=[
+                    build_price(source_id="price_old", amount=1000),
+                    build_price(source_id="price_new", amount=1200),
+                ],
+            )
+        ]
+
+        items = classify_records(records, PrecheckEntity.products)
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "multiple_prices_same_currency"
+        assert items[0].reason_level == PrecheckReasonLevel.action_required
+
+    def test_one_price_per_currency_imports(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                prices=[
+                    build_price(source_id="price_usd", currency="usd"),
+                    build_price(source_id="price_eur", currency="eur"),
+                ],
+            )
+        ]
+
+        items = classify_records(records, PrecheckEntity.products)
+
+        assert items[0].status == PrecheckRecordStatus.importable
+
+    def test_a_dropped_price_does_not_count_as_a_collision(self) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                prices=[
+                    build_price(source_id="price_ok", amount=1000),
+                    build_price(
+                        source_id="price_tiered",
+                        amount=1200,
+                        pricing_scheme=CanonicalPricingScheme.tiered,
+                    ),
+                ],
+            )
+        ]
+
+        items = classify_records(records, PrecheckEntity.products)
+
+        assert items[0].status == PrecheckRecordStatus.importable
+
     def test_product_row_shows_a_price_that_will_import(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(
@@ -759,7 +810,7 @@ class TestPlanProductImports:
 
         assert plan.importable is False
         assert plan.skip is not None
-        assert plan.skip[0] == "one_time_product"
+        assert plan.skip.code == "one_time_product"
 
     def test_drops_unsupported_prices_but_keeps_the_rest(self) -> None:
         product = build_product(
@@ -791,7 +842,7 @@ class TestPlanProductImports:
 
         assert plan.importable is False
         assert plan.skip is not None
-        assert plan.skip[0] == "no_importable_price"
+        assert plan.skip.code == "no_importable_price"
 
     def test_products_sharing_a_name_both_import(self) -> None:
         first = build_product(source_id="prod_1:month:1", product_source_id="prod_1")
@@ -818,7 +869,7 @@ class TestPlanCustomerImports:
 
         assert plans["cus_1"] is None
         assert skip is not None
-        assert skip[0] == "duplicate_customer_email"
+        assert skip.code == "duplicate_customer_email"
 
     def test_customer_without_email_is_skipped(self) -> None:
         customer = build_customer(source_id="cus_1", email="")
@@ -826,4 +877,4 @@ class TestPlanCustomerImports:
         skip = plan_customer_imports([customer])["cus_1"]
 
         assert skip is not None
-        assert skip[0] == "customer_missing_email"
+        assert skip.code == "customer_missing_email"

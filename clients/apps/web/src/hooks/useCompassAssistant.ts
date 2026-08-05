@@ -60,11 +60,8 @@ export const useCompassAssistant = ({
   const queryClient = useQueryClient()
   const [messages, setMessages] = useState<AssistantMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
-  // The server-side thread the conversation belongs to. The ref is what the
-  // next `send` posts (updated mid-stream without re-rendering); the state
-  // mirrors it for consumers that render against it. Seeding it from a deep
-  // link means a prompt sent before rehydration resolves still continues the
-  // linked thread instead of forking a new one.
+  // Ref for send (updated mid-stream), state for consumers. Seeded from
+  // initialThreadId so early prompts continue a deep-linked thread.
   const [threadId, setThreadId] = useState<string | null>(initialThreadId)
   const threadIdRef = useRef<string | null>(initialThreadId)
   const idRef = useRef(0)
@@ -161,9 +158,7 @@ export const useCompassAssistant = ({
               { kind: 'block', block: payload as AssistantBlock },
             ])
           } else if (event === 'thread') {
-            // A new thread was created server-side; adopt it immediately so
-            // a refresh mid-stream can find its way back. The history list is
-            // stale the moment a thread exists server-side.
+            // Adopt the new thread so a mid-stream refresh can recover it
             setThread(payload.thread_id)
             onThreadChangeRef.current?.(payload.thread_id)
             void queryClient.invalidateQueries({

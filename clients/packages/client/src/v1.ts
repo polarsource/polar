@@ -3195,7 +3195,9 @@ export interface paths {
     }
     /**
      * List Assistant Threads
-     * @description **Scopes**: `metrics:read`
+     * @description List the caller's assistant conversation threads, most recent first.
+     *
+     *     **Scopes**: `metrics:read`
      */
     get: operations['compass:list_threads']
     put?: never
@@ -3215,21 +3217,27 @@ export interface paths {
     }
     /**
      * Get Assistant Thread
-     * @description **Scopes**: `metrics:read`
+     * @description Get a thread with its rendered messages, for rehydrating the UI.
+     *
+     *     **Scopes**: `metrics:read`
      */
     get: operations['compass:get_thread']
     put?: never
     post?: never
     /**
      * Delete Assistant Thread
-     * @description **Scopes**: `metrics:write`
+     * @description Delete a thread and its conversation history.
+     *
+     *     **Scopes**: `metrics:write`
      */
     delete: operations['compass:delete_thread']
     options?: never
     head?: never
     /**
      * Update Assistant Thread
-     * @description **Scopes**: `metrics:write`
+     * @description Rename a thread.
+     *
+     *     **Scopes**: `metrics:write`
      */
     patch: operations['compass:update_thread']
     trace?: never
@@ -7766,7 +7774,10 @@ export interface components {
       /** Detail */
       detail: string
     }
-    /** AssistantBlockPart */
+    /**
+     * AssistantBlockPart
+     * @description A renderable block, at the position the model placed it.
+     */
     AssistantBlockPart: {
       /**
        * @description discriminator enum property added by openapi-typescript
@@ -7782,7 +7793,10 @@ export interface components {
         | components['schemas']['DataTableBlock']
         | components['schemas']['CustomerCardBlock']
     }
-    /** AssistantTextPart */
+    /**
+     * AssistantTextPart
+     * @description A run of assistant prose, as it was streamed.
+     */
     AssistantTextPart: {
       /**
        * @description discriminator enum property added by openapi-typescript
@@ -14509,7 +14523,10 @@ export interface components {
      * @enum {string}
      */
     ColumnFormat: 'text' | 'currency' | 'datetime' | 'badge' | 'avatar'
-    /** CompassThreadMessageSchema */
+    /**
+     * CompassThreadMessageSchema
+     * @description One completed turn: the user's prompt and the rendered answer.
+     */
     CompassThreadMessageSchema: {
       /**
        * Created At
@@ -14536,7 +14553,10 @@ export interface components {
         | components['schemas']['AssistantBlockPart']
       )[]
     }
-    /** CompassThreadSchema */
+    /**
+     * CompassThreadSchema
+     * @description An assistant conversation thread.
+     */
     CompassThreadSchema: {
       /**
        * Created At

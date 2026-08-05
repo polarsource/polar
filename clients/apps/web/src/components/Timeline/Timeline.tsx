@@ -35,7 +35,11 @@ const buildSegments = (events: schemas['Event'][]): TimelineSegment[] => {
   }
 
   for (const event of events) {
-    const item = { event, entry: resolveTimelineEntry(event) }
+    const entry = resolveTimelineEntry(event)
+    if (!entry) {
+      continue
+    }
+    const item = { event, entry }
     if (item.entry.importance === 'low') {
       buffer.push(item)
     } else {

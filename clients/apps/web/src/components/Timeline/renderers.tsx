@@ -36,7 +36,7 @@ interface TimelineRenderer<N extends SystemEventName> {
 }
 
 type TimelineRendererMap = {
-  [N in SystemEventName]: TimelineRenderer<N>
+  [N in SystemEventName]: TimelineRenderer<N> | null
 }
 
 const currency = formatCurrency('standard')
@@ -156,20 +156,12 @@ const timelineRenderers: TimelineRendererMap = {
     importance: 'low',
     summary: ({ metadata }) => benefitsDisplayNames[metadata.benefit_type],
   },
-  'balance.order': { importance: 'low' },
-  'balance.credit_order': { importance: 'low' },
-  'balance.refund': {
-    importance: 'high',
-    sentiment: 'negative',
-    summary: ({ metadata }) => currency(metadata.amount, metadata.currency),
-  },
-  'balance.refund_reversal': { importance: 'medium' },
-  'balance.dispute': {
-    importance: 'high',
-    sentiment: 'negative',
-    summary: ({ metadata }) => currency(metadata.amount, metadata.currency),
-  },
-  'balance.dispute_reversal': { importance: 'medium' },
+  'balance.order': null,
+  'balance.credit_order': null,
+  'balance.refund': null,
+  'balance.refund_reversal': null,
+  'balance.dispute': null,
+  'balance.dispute_reversal': null,
   'meter.credited': {
     importance: 'low',
     summary: ({ metadata }) =>
@@ -199,7 +191,7 @@ const resolveTimelineIcon = (event: schemas['Event']): ReactNode => {
 
 export const resolveTimelineEntry = (
   event: schemas['Event'],
-): TimelineEntry => {
+): TimelineEntry | null => {
   const icon = resolveTimelineIcon(event)
 
   if (event.source === 'user') {
@@ -212,7 +204,12 @@ export const resolveTimelineEntry = (
 
   const renderer = timelineRenderers[event.name] as
     | TimelineRenderer<SystemEventName>
+    | null
     | undefined
+
+  if (renderer === null) {
+    return null
+  }
 
   if (!renderer) {
     return { importance: 'low', title: event.label, icon }

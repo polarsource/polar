@@ -100,7 +100,7 @@ const OrganizationEmbedSettings: React.FC<OrganizationEmbedSettingsProps> = ({
             ? 'Only these hosts can embed your checkout.'
             : 'Only these hosts will be able to embed your checkout once we enforce the list. Nothing changes until then.'
         }
-        vertical
+        layout="stacked"
       >
         <Box flexDirection="column" gap="m" width="100%">
           {hosts.length > 0 ? (

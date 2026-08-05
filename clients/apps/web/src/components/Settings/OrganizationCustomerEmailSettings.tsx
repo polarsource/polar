@@ -121,7 +121,12 @@ const OrganizationCustomerEmailSettings: React.FC<
   return (
     <SettingsGroup>
       {customerEmails.map(({ key, title, description }) => (
-        <SettingsGroupItem key={key} title={title} description={description}>
+        <SettingsGroupItem
+          key={key}
+          layout="inline"
+          title={title}
+          description={description}
+        >
           <Switch
             checked={settings[key]}
             disabled={readOnly}

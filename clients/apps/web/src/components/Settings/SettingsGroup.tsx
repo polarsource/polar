@@ -8,40 +8,50 @@ export const SettingsGroup: React.FC<React.PropsWithChildren> = ({
   </div>
 )
 
+const layouts = {
+  split: {
+    row: 'flex-col gap-x-12 md:flex-row md:items-start md:justify-between',
+    label: 'w-full md:max-w-1/2',
+    control: 'w-full md:justify-end',
+  },
+  stacked: {
+    row: 'flex-col gap-x-12',
+    label: 'w-full md:max-w-1/2',
+    control: 'w-full',
+  },
+  inline: {
+    row: 'flex-row items-start justify-between gap-x-4 md:gap-x-12',
+    label: 'min-w-0 flex-1 md:max-w-1/2',
+    control: 'shrink-0 justify-end',
+  },
+} as const
+
 export interface SettingsGroupItemProps {
   title: React.ReactNode
   description?: React.ReactNode
-  vertical?: boolean
+  layout?: keyof typeof layouts
 }
 
 export const SettingsGroupItem: React.FC<
   React.PropsWithChildren<SettingsGroupItemProps>
-> = ({ children, title, description, vertical }) => (
-  <div
-    className={twMerge(
-      'flex gap-x-12 gap-y-4 p-4',
-      vertical
-        ? 'flex-col'
-        : 'flex-col md:flex-row md:items-start md:justify-between',
-    )}
-  >
-    <div className="flex w-full flex-col md:max-w-1/2">
-      <h3 className="text-sm font-medium">{title}</h3>
-      {description && (
-        <p className="dark:text-polar-500 text-xs text-gray-500">
-          {description}
-        </p>
+> = ({ children, title, description, layout = 'split' }) => {
+  const { row, label, control } = layouts[layout]
+
+  return (
+    <div className={twMerge('flex gap-y-4 p-4', row)}>
+      <div className={twMerge('flex flex-col', label)}>
+        <h3 className="text-sm font-medium">{title}</h3>
+        {description && (
+          <p className="dark:text-polar-500 text-xs text-gray-500">
+            {description}
+          </p>
+        )}
+      </div>
+      {children && (
+        <div className={twMerge('flex flex-row gap-y-2', control)}>
+          {children}
+        </div>
       )}
     </div>
-    {children && (
-      <div
-        className={twMerge(
-          'flex w-full flex-row gap-y-2 md:w-full',
-          vertical ? '' : 'md:justify-end',
-        )}
-      >
-        {children}
-      </div>
-    )}
-  </div>
-)
+  )
+}

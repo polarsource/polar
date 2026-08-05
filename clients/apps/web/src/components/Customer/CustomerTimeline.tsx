@@ -22,7 +22,7 @@ export const CustomerTimeline = ({
   customer,
 }: CustomerTimelineProps) => {
   const allowed = useHasPermission(organization.id, 'analytics:read')
-  const [source, setSource] = useState<SourceFilter>('all')
+  const [source, setSource] = useState<SourceFilter>('system')
 
   if (!allowed) {
     return null

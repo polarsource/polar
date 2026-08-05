@@ -155,6 +155,29 @@ export const Timeline = ({
   return (
     <div className="-mx-3">
       <Box flexDirection="column" rowGap="xs">
+        {events.isError && (
+          <Box
+            alignItems="center"
+            justifyContent="between"
+            columnGap="m"
+            paddingVertical="s"
+            paddingHorizontal="m"
+            borderRadius="s"
+            backgroundColor="background-warning"
+          >
+            <Text variant="caption" color="warning">
+              Couldn&apos;t refresh events. Showing older data.
+            </Text>
+            <Button
+              size="sm"
+              variant="ghost"
+              loading={events.isRefetching}
+              onClick={() => events.refetch()}
+            >
+              Retry
+            </Button>
+          </Box>
+        )}
         {segments.map((segment) => {
           if (segment.type === 'event') {
             return (

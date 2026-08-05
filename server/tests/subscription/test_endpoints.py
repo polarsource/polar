@@ -1,5 +1,6 @@
 import uuid
 from datetime import UTC, datetime, timedelta
+from zoneinfo import ZoneInfo
 
 import pytest
 import pytest_asyncio
@@ -1650,6 +1651,72 @@ class TestExportSubscriptions:
         assert response.status_code == 200
         csv_lines = response.text.strip().split("\r\n")
         assert "2024-06-16T01:00:00+02:00" in csv_lines[1]
+
+    @pytest.mark.auth
+    async def test_timezone_does_not_change_which_subscriptions_are_exported(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Subscription started at 2024-01-15T04:00:00Z.
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=datetime(2024, 1, 15, 4, 0, tzinfo=UTC),
+        )
+        # Subscription started at 2024-01-15T20:00:00Z.
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=datetime(2024, 1, 15, 20, 0, tzinfo=UTC),
+        )
+        # Subscription started at 2024-01-16T04:00:00Z.
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            started_at=datetime(2024, 1, 16, 4, 0, tzinfo=UTC),
+        )
+
+        # Same absolute filter boundaries for both requests — only the
+        # rendering timezone differs. This mirrors what the modal sends once
+        # the boundary-shift bug is fixed.
+        params = {
+            "started_after": "2024-01-15T00:00:00Z",
+            "started_before": "2024-01-16T23:59:59Z",
+            "columns": ["started_at"],
+        }
+
+        response_utc = await client.get(
+            "/v1/subscriptions/export", params={**params, "timezone": "UTC"}
+        )
+        response_local = await client.get(
+            "/v1/subscriptions/export",
+            params={**params, "timezone": "America/Los_Angeles"},
+        )
+
+        assert response_utc.status_code == 200
+        assert response_local.status_code == 200
+
+        # All three subscriptions must be present in both exports: the
+        # rendering timezone must not change which subscriptions are included.
+        for started_at_iso in (
+            "2024-01-15T04:00:00+00:00",
+            "2024-01-15T20:00:00+00:00",
+            "2024-01-16T04:00:00+00:00",
+        ):
+            assert started_at_iso in response_utc.text
+            # The local rendering shifts the timestamps, so verify by
+            # re-rendering the same instants in America/Los_Angeles and
+            # checking those strings appear in the local response.
+            utc_dt = datetime.fromisoformat(started_at_iso)
+            local_iso = utc_dt.astimezone(ZoneInfo("America/Los_Angeles")).isoformat()
+            assert local_iso in response_local.text
 
     @pytest.mark.auth
     async def test_invalid_timezone(

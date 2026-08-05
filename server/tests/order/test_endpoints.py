@@ -573,6 +573,78 @@ class TestExportOrders:
         assert "2024-06-16T01:00:00+02:00" in csv_lines[1]
 
     @pytest.mark.auth
+    async def test_timezone_does_not_change_which_orders_are_exported(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # Order at 2024-01-15T04:00:00Z (Jan 14 20:00 PST / Jan 15 05:00 CET).
+        # With a UTC-day filter (00:00–23:59 UTC) this would be included, but
+        # the user selected "Jan 15" in their local zone, so it must NOT be.
+        order_before = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            created_at=datetime(2024, 1, 15, 4, 0, tzinfo=UTC),
+        )
+        # Order at 2024-01-15T20:00:00Z: clearly inside Jan 15 in any zone.
+        order_inside = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            created_at=datetime(2024, 1, 15, 20, 0, tzinfo=UTC),
+        )
+        # Order at 2024-01-16T04:00:00Z (Jan 15 20:00 PST / Jan 16 05:00 CET).
+        # Local-zone filter for "Jan 15" includes it; a naive UTC-day filter
+        # would drop it. It must always be present.
+        order_after = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            created_at=datetime(2024, 1, 16, 4, 0, tzinfo=UTC),
+        )
+
+        # Same absolute filter boundaries for both requests — only the
+        # rendering timezone differs. This mirrors what the modal sends once
+        # the boundary-shift bug is fixed.
+        params = {
+            "created_after": "2024-01-15T00:00:00Z",
+            "created_before": "2024-01-16T23:59:59Z",
+            "columns": ["invoice_number"],
+        }
+
+        response_utc = await client.get(
+            "/v1/orders/export", params={**params, "timezone": "UTC"}
+        )
+        response_local = await client.get(
+            "/v1/orders/export",
+            params={**params, "timezone": "America/Los_Angeles"},
+        )
+
+        assert response_utc.status_code == 200
+        assert response_local.status_code == 200
+
+        csv_utc = response_utc.text
+        csv_local = response_local.text
+
+        assert order_before.invoice_number is not None
+        assert order_inside.invoice_number is not None
+        assert order_after.invoice_number is not None
+
+        # The set of exported orders must be identical regardless of the
+        # rendering timezone: timezone affects rendering only, not filtering.
+        for invoice_number in (
+            order_before.invoice_number,
+            order_inside.invoice_number,
+            order_after.invoice_number,
+        ):
+            assert invoice_number in csv_utc
+            assert invoice_number in csv_local
+
+    @pytest.mark.auth
     async def test_invalid_timezone(
         self,
         client: AsyncClient,

@@ -1,0 +1,57 @@
+dev/cli/stripe_config.py
+  s_e92c10b92a1a9d::t_13bc1c755dbe6d 12
+  s_e92c10b92a1a9d::t_c2bcccac0a28d1 173,175-180,182-184
+  s_e92c10b92a1a9d::t_467bdb3f8a975e 21
+  s_e92c10b92a1a9d::t_07dc5416201f61 1-11,13,15-20,22-35,38-81,83-172,174,181,185-227
+  s_e92c10b92a1a9d::t_1a275e26f1a9a1 36-37
+  s_e92c10b92a1a9d::t_86564123d40346 14
+  s_e92c10b92a1a9d::t_1680677bf354b3 82
+.agents/skills/verifier-web/SKILL.md
+  s_e92c10b92a1a9d::t_d3011506b612de 132-134
+  s_e92c10b92a1a9d::t_3f59692f0dd0d4 151-152
+  s_e92c10b92a1a9d::t_09828a24c5a595 261-268
+.agents/skills/local-environment/rules/payment-testing.md
+  s_e92c10b92a1a9d::t_fbbe146a2212ac 35,43-52,54-59,61-65,75-85
+  s_e92c10b92a1a9d::t_ab00dd82ec909a 86
+dev/cli/commands/stripe.py
+  s_e92c10b92a1a9d::t_c0cab588b65cf3 5-6,13,21,24,26,29-32,35-38,41-44,50,52,55,58-64,67,69,71-74,93
+  s_e92c10b92a1a9d::t_a398758e91288d 56-57
+  s_e92c10b92a1a9d::t_587f6e386f2f3b 46-47,49,53-54,65-66,68,70
+dev/cli/up_steps/09_configure_integrations.py
+  s_e92c10b92a1a9d::t_a6f24824246e2f 127,132
+  s_e92c10b92a1a9d::t_e7f3a04a10172b 99
+  s_e92c10b92a1a9d::t_1a3f828c8c08b9 23,28,34,41,47
+  s_e92c10b92a1a9d::t_c520f7446377ac 6,29,35-36,42,48-49,53,56,58,60,63-66,68,70-73,75,79-80,86-88,100-112,114-126,128-131,133-171
+  s_e92c10b92a1a9d::t_7b975d8a8b00c1 11,15
+  s_e92c10b92a1a9d::t_a84c2d59698e4d 113
+  s_e92c10b92a1a9d::t_fca81158de066e 181-182
+DEVELOPMENT.md
+  s_e92c10b92a1a9d::t_db4ceb6f6ac4cc 106-132,140-148,150-152,159-160,179-182
+  s_e92c10b92a1a9d::t_13140e1dcfea77 183
+dev/secrets.env.template
+  s_e92c10b92a1a9d::t_685bd5dd2b1fcb 23-25
+dev/cli/shared.py
+  s_e92c10b92a1a9d::t_7e0c018d7c84a1 10
+  s_e92c10b92a1a9d::t_7d00e4679997cf 41-69
+dev/cli/commands/seed.py
+  s_e92c10b92a1a9d::t_08bb6fcf6bcd1d 15,29,33-34
+dev/cli/up_steps/05_wait_for_services.py
+  s_e92c10b92a1a9d::t_cd9657a9721ead 14
+  s_e92c10b92a1a9d::t_db5ee2e41c756f 104-110
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "b4b2011edd6272b6b54eb74d72fa47b045f9e44c",
+  "prompts": {},
+  "sessions": {
+    "s_e92c10b92a1a9d": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "74f2da85-babf-4537-983e-9db3057751aa",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

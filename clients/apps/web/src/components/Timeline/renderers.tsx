@@ -204,7 +204,7 @@ export const resolveTimelineEntry = (
 
   if (event.source === 'user') {
     return {
-      importance: 'low',
+      importance: 'medium',
       title: event.label,
       icon,
     }

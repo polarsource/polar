@@ -1,7 +1,12 @@
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueries,
+  useQuery,
+} from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useCustomers = (
@@ -55,6 +60,22 @@ export const useCustomer = (id: string | null) =>
     },
     retry: defaultRetry,
     enabled: !!id,
+  })
+
+export const useCustomersByIds = (ids: string[]) =>
+  useQueries({
+    queries: ids.map((id) => ({
+      queryKey: ['customers', 'id', id],
+      queryFn: () =>
+        unwrap(
+          api.GET('/v1/customers/{id}', {
+            params: {
+              path: { id },
+            },
+          }),
+        ),
+      retry: defaultRetry,
+    })),
   })
 
 export const useCreateCustomer = (organizationId: string) =>

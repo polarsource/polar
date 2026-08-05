@@ -243,7 +243,11 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         return result.scalar_one_or_none()
 
     async def get_latest_meter_reset(
-        self, customer: Customer, meter_id: UUID
+        self,
+        customer: Customer,
+        meter_id: UUID,
+        *,
+        cutoff: datetime | None = None,
     ) -> Event | None:
         statement = (
             self.get_base_statement()
@@ -256,6 +260,8 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             .order_by(Event.timestamp.desc())
             .limit(1)
         )
+        if cutoff is not None:
+            statement = statement.where(Event.timestamp < cutoff)
         return await self.get_one_or_none(statement)
 
     def get_customer_id_filter_clause(
@@ -375,29 +381,106 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         result = await self.session.execute(statement)
         return [(event, customer) for event, customer in result.all()]
 
-    def get_by_pending_entries_statement(
-        self, subscription: UUID, price: UUID
-    ) -> Select[tuple[Event]]:
+    def _pending_entries_clauses(
+        self,
+        subscription: UUID,
+        price: UUID,
+        *,
+        cutoff: datetime,
+    ) -> tuple[ColumnExpressionArgument[bool], ...]:
         return (
-            self.get_base_statement()
-            .join(BillingEntry, Event.id == BillingEntry.event_id)
-            .where(
-                BillingEntry.subscription_id == subscription,
-                BillingEntry.order_item_id.is_(None),
-                BillingEntry.product_price_id == price,
-            )
-            .order_by(Event.ingested_at.asc())
+            BillingEntry.subscription_id == subscription,
+            BillingEntry.deleted_at.is_(None),
+            BillingEntry.order_item_id.is_(None),
+            BillingEntry.product_price_id == price,
+            BillingEntry.start_timestamp < cutoff,
+            BillingEntry.created_at <= cutoff,
         )
 
+    def get_by_pending_entries_statement(
+        self,
+        subscription: UUID,
+        price: UUID,
+        *,
+        cutoff: datetime,
+    ) -> Select[tuple[Event]]:
+        statement = (
+            self.get_base_statement()
+            .join(BillingEntry, Event.id == BillingEntry.event_id)
+            .where(*self._pending_entries_clauses(subscription, price, cutoff=cutoff))
+            .order_by(Event.ingested_at.asc())
+        )
+        return statement
+
+    async def count_pending_entries(
+        self,
+        subscription: UUID,
+        price: UUID,
+        *,
+        cutoff: datetime,
+    ) -> int:
+        """
+        Count the pending billing entries for a price without joining `events`.
+
+        There is exactly one billing entry per event, so for a `count` meter this is
+        the consumed quantity. Counting the entries directly avoids fanning the scan
+        out into a per-event primary-key lookup on `events`, which times out for
+        high-volume subscriptions. System events (meter.credited, meter.reset) also
+        produce entries and must be excluded via `count_pending_system_entries`.
+        """
+        statement = (
+            select(func.count())
+            .select_from(BillingEntry)
+            .where(*self._pending_entries_clauses(subscription, price, cutoff=cutoff))
+        )
+        return await self.session.scalar(statement) or 0
+
+    async def count_pending_system_entries(
+        self,
+        subscription: UUID,
+        price: UUID,
+        *,
+        organization_id: UUID,
+        customer_id: UUID,
+        cutoff: datetime,
+    ) -> int:
+        """
+        Count the pending billing entries backed by a system event. These are the
+        complement of the consumption events a `count` meter bills;
+        `count_pending_entries` minus this yields the `source='user'` count without
+        scanning every entry.
+
+        Matching on all known system event names keeps this on the
+        ix_events_org_source_name_customer_id_ingested_at index, pinning customer_id
+        instead of scanning every system event in the org.
+        """
+        statement = (
+            select(func.count())
+            .select_from(BillingEntry)
+            .join(Event, Event.id == BillingEntry.event_id)
+            .where(
+                *self._pending_entries_clauses(subscription, price, cutoff=cutoff),
+                Event.organization_id == organization_id,
+                Event.customer_id == customer_id,
+                Event.source == EventSource.system,
+                Event.name.in_(tuple(SystemEvent)),
+            )
+        )
+        return await self.session.scalar(statement) or 0
+
     def get_by_pending_entries_for_meter_statement(
-        self, subscription: UUID, meter: UUID
+        self,
+        subscription: UUID,
+        meter: UUID,
+        *,
+        cutoff: datetime,
     ) -> Select[tuple[Event]]:
         """
         Get events for pending billing entries grouped by meter.
         Used for non-summable aggregations where we need to compute across all events
         in the period, regardless of which price was active when the event occurred.
         """
-        return (
+        statement = (
             self.get_base_statement()
             .join(BillingEntry, Event.id == BillingEntry.event_id)
             .join(
@@ -406,11 +489,15 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             )
             .where(
                 BillingEntry.subscription_id == subscription,
+                BillingEntry.deleted_at.is_(None),
                 BillingEntry.order_item_id.is_(None),
                 ProductPriceMeteredUnit.meter_id == meter,
+                BillingEntry.start_timestamp < cutoff,
+                BillingEntry.created_at <= cutoff,
             )
             .order_by(Event.ingested_at.asc())
         )
+        return statement
 
     def get_eager_options(self) -> Options:
         return (joinedload(Event.customer), joinedload(Event.event_types))

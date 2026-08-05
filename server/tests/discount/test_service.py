@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock
 
 import pytest
 from pytest_mock import MockerFixture
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 
 from polar.auth.models import AuthSubject, User
 from polar.checkout.schemas import CheckoutUpdatePublic
@@ -115,6 +115,83 @@ class TestCreate:
         webhook_service_send_mock.assert_called_once_with(
             session, organization, WebhookEventType.discount_created, discount
         )
+
+    @pytest.mark.auth
+    async def test_concurrent_duplicate_code(
+        self,
+        mocker: MockerFixture,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        existing_discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            code="RACE",
+        )
+        mocker.patch.object(
+            DiscountRepository,
+            "get_by_code_and_organization_for_update",
+            side_effect=[None, existing_discount],
+        )
+
+        with pytest.raises(PolarRequestValidationError):
+            await discount_service.create(
+                session,
+                DiscountFixedCreate(
+                    duration=DiscountDuration.once,
+                    type=DiscountType.fixed,
+                    amount=1000,
+                    currency=PresentmentCurrency.usd,
+                    name="Discount",
+                    code="RACE",
+                    starts_at=None,
+                    ends_at=None,
+                    max_redemptions=None,
+                    products=None,
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
+
+    @pytest.mark.auth
+    async def test_unrelated_integrity_error(
+        self,
+        mocker: MockerFixture,
+        auth_subject: AuthSubject[User],
+        session: AsyncSession,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        mocker.patch.object(
+            DiscountRepository,
+            "create",
+            side_effect=IntegrityError("INSERT", None, Exception("violation")),
+        )
+
+        with pytest.raises(IntegrityError):
+            await discount_service.create(
+                session,
+                DiscountFixedCreate(
+                    duration=DiscountDuration.once,
+                    type=DiscountType.fixed,
+                    amount=1000,
+                    currency=PresentmentCurrency.usd,
+                    name="Discount",
+                    code="NEW",
+                    starts_at=None,
+                    ends_at=None,
+                    max_redemptions=None,
+                    products=None,
+                    organization_id=organization.id,
+                ),
+                auth_subject,
+            )
 
 
 @pytest.mark.asyncio

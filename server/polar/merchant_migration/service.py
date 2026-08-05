@@ -12,28 +12,47 @@ from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
 from polar.kit.pagination import PaginationParams
-from polar.models import MerchantMigration
+from polar.models import MerchantMigration, MerchantMigrationRecord
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
+from polar.models.merchant_migration_record import MerchantMigrationRecordType
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
+from polar.product.repository import ProductRepository
 
 from .adapters import SourceAdapter, StripeAdapter
 from .canonical import CanonicalRecord, deserialize
-from .precheck import classify_records, precheck_engine
+from .importer import CatalogImporter
+from .precheck import classify_records, import_blockers, precheck_engine
 from .repository import (
     MerchantMigrationRecordRepository,
     MerchantMigrationRepository,
 )
 from .schemas import (
     MerchantMigrationCreate,
+    MerchantMigrationImportReport,
     MerchantMigrationRecordItem,
     PrecheckEntity,
+    PrecheckIssue,
+    PrecheckReasonLevel,
     PrecheckRecordStatus,
     PrecheckReport,
 )
+
+IMPORTABLE_STEPS = {
+    MerchantMigrationStep.pre_check,
+    MerchantMigrationStep.create_catalog,
+}
+
+# Entities whose records map 1:1 to a ledger row, so a listing item can carry its
+# record id for selection. Prices live inside a product record and are excluded.
+_ENTITY_RECORD_TYPE = {
+    PrecheckEntity.products: MerchantMigrationRecordType.product,
+    PrecheckEntity.customers: MerchantMigrationRecordType.customer,
+    PrecheckEntity.subscriptions: MerchantMigrationRecordType.subscription,
+}
 
 SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT = {
     "table": "merchant_migrations",
@@ -103,6 +122,23 @@ class SourceVerificationUnavailable(MerchantMigrationError):
         super().__init__(
             "We couldn't verify the Stripe key right now. Please try again.",
             502,
+        )
+
+
+class CatalogImportNotReady(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Run the pre-check before importing the catalog.",
+            409,
+        )
+
+
+class CatalogImportBlocked(MerchantMigrationError):
+    def __init__(self, blockers: list[PrecheckIssue]) -> None:
+        self.blockers = [issue.code for issue in blockers]
+        super().__init__(
+            "The migration can't be imported: " + " ".join(i.message for i in blockers),
+            409,
         )
 
 
@@ -214,7 +250,9 @@ class MerchantMigrationService:
         """Read the connected source, normalize it, and report whether it can be
         imported. Advances the migration from source setup to the precheck step.
         """
-        migration = await self._get_manageable(session, auth_subject, migration_id)
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
 
         organization = await OrganizationRepository.from_session(session).get_by_id(
             migration.organization_id
@@ -224,6 +262,9 @@ class MerchantMigrationService:
 
         adapter = await self._build_adapter(migration)
         source_account = await adapter.get_source_account()
+        existing_product_names = await ProductRepository.from_session(
+            session
+        ).get_active_names_by_organization(organization.id)
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         report = await precheck_engine.run(
             self._stage_records(
@@ -231,12 +272,65 @@ class MerchantMigrationService:
             ),
             organization,
             source_account,
+            existing_product_names,
         )
+
+        # Re-running the precheck to refresh the ledger must not regress a
+        # migration that has already moved on.
+        if migration.step == MerchantMigrationStep.source_setup:
+            repository = MerchantMigrationRepository.from_session(session)
+            await repository.update(
+                migration, update_dict={"step": MerchantMigrationStep.pre_check}
+            )
+        return report
+
+    async def import_catalog(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+        *,
+        record_ids: Sequence[UUID] | None = None,
+        exclude_record_ids: Sequence[UUID] | None = None,
+    ) -> MerchantMigrationImportReport:
+        """Create the Polar catalog from the staged importable records, then
+        advance the migration to the create-catalog step. Idempotent: re-running
+        only imports records still pending in the ledger."""
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
+        if migration.step not in IMPORTABLE_STEPS:
+            raise CatalogImportNotReady()
+
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            migration.organization_id
+        )
+        if organization is None:
+            raise MerchantMigrationNotFound()
+
+        # The pre-check reports blockers but doesn't stop the import, and both the
+        # org and the source account can change after it ran.
+        adapter = await self._build_adapter(migration)
+        blockers = import_blockers(organization, await adapter.get_source_account())
+        if blockers:
+            raise CatalogImportBlocked(blockers)
+
+        report = await CatalogImporter(
+            session,
+            migration,
+            organization,
+            auth_subject,
+            record_ids=set(record_ids) if record_ids is not None else None,
+            exclude_record_ids=(
+                set(exclude_record_ids) if exclude_record_ids is not None else None
+            ),
+        ).run()
 
         repository = MerchantMigrationRepository.from_session(session)
         await repository.update(
-            migration, update_dict={"step": MerchantMigrationStep.pre_check}
+            migration, update_dict={"step": MerchantMigrationStep.create_catalog}
         )
+        report.step = MerchantMigrationStep.create_catalog
         return report
 
     async def _get_manageable(
@@ -244,11 +338,16 @@ class MerchantMigrationService:
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
+        *,
+        for_update: bool = False,
     ) -> MerchantMigration:
         repository = MerchantMigrationRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).where(
             MerchantMigration.id == migration_id
         )
+        if for_update:
+            # Serialized so a double-click or retry can't create duplicates.
+            statement = statement.with_for_update(of=MerchantMigration)
         migration = await repository.get_one_or_none(statement)
         if migration is None:
             raise MerchantMigrationNotFound()
@@ -266,24 +365,63 @@ class MerchantMigrationService:
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
         *,
-        entity: PrecheckEntity,
+        entity: PrecheckEntity | None,
         status: PrecheckRecordStatus | None,
+        reason_level: PrecheckReasonLevel | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[MerchantMigrationRecordItem], int]:
-        """Return the records of one entity type from the staged ledger,
-        classified importable/skipped and paginated in memory. Reads what
-        ``run_precheck`` persisted, so it never re-reads the source."""
+        """Return staged records classified importable/skipped and paginated in
+        memory. ``entity`` scopes to one type; ``None`` returns products, customers
+        and subscriptions together. ``status`` filters to importable or skipped;
+        ``reason_level`` filters to rows the merchant has to act on
+        (`action_required`) or only needs to know about (`info`). Reads what
+        ``run_precheck`` persisted."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
 
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         staged = await record_repository.list_by_migration(migration.id)
         records = [deserialize(record.type, record.canonical) for record in staged]
-        items = classify_records(records, entity)
+        existing_product_names = await ProductRepository.from_session(
+            session
+        ).get_active_names_by_organization(migration.organization_id)
+
+        entities = [entity] if entity is not None else list(_ENTITY_RECORD_TYPE)
+        items: list[MerchantMigrationRecordItem] = []
+        for entity_type in entities:
+            entity_items = classify_records(
+                records, entity_type, existing_product_names
+            )
+            self._attach_record_ids(entity_items, staged, entity_type)
+            items.extend(entity_items)
+
         if status is not None:
             items = [item for item in items if item.status == status]
+        if reason_level is not None:
+            items = [item for item in items if item.reason_level == reason_level]
 
         start = (pagination.page - 1) * pagination.limit
         return items[start : start + pagination.limit], len(items)
+
+    def _attach_record_ids(
+        self,
+        items: Sequence[MerchantMigrationRecordItem],
+        staged: Sequence[MerchantMigrationRecord],
+        entity: PrecheckEntity,
+    ) -> None:
+        """Give each item its ledger record id, so a row can be selected for
+        import. The 1:1 entities (products/customers/subscriptions) map to their
+        staged records in order — both derive from the same `staged` fetch. Prices
+        aren't their own record (they live in a product), so they keep a null id.
+        """
+        record_type = _ENTITY_RECORD_TYPE.get(entity)
+        if record_type is None:
+            return
+        staged_of_type = [record for record in staged if record.type == record_type]
+        if len(staged_of_type) != len(items):
+            return
+        for item, record in zip(items, staged_of_type, strict=True):
+            item.record_id = record.id
+            item.import_status = record.status
 
     async def _stage_records(
         self,

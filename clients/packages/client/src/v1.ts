@@ -5196,6 +5196,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/import': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Import Merchant Migration Catalog
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:import_catalog']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/merchant-migrations/{id}/records': {
     parameters: {
       query?: never
@@ -11977,6 +11997,28 @@ export interface components {
        * @constant
        */
       error: 'CaseRepliesNotSupportedError'
+      /** Detail */
+      detail: string
+    }
+    /** CatalogImportBlocked */
+    CatalogImportBlocked: {
+      /**
+       * Error
+       * @example CatalogImportBlocked
+       * @constant
+       */
+      error: 'CatalogImportBlocked'
+      /** Detail */
+      detail: string
+    }
+    /** CatalogImportNotReady */
+    CatalogImportNotReady: {
+      /**
+       * Error
+       * @example CatalogImportNotReady
+       * @constant
+       */
+      error: 'CatalogImportNotReady'
       /** Detail */
       detail: string
     }
@@ -23377,6 +23419,44 @@ export interface components {
        */
       api_key: string
     }
+    /** MerchantMigrationImportReport */
+    MerchantMigrationImportReport: {
+      /** @description The migration step after the import. */
+      step: components['schemas']['MerchantMigrationStep']
+      /**
+       * Results
+       * @description Per-entity counts of what was imported vs skipped.
+       */
+      results: components['schemas']['MerchantMigrationImportResult'][]
+    }
+    /** MerchantMigrationImportRequest */
+    MerchantMigrationImportRequest: {
+      /**
+       * Record Ids
+       * @description The ledger record ids to import (from the records listing). When omitted, every importable record is imported (subject to `exclude_record_ids`). Records not selected stay pending.
+       */
+      record_ids?: string[] | null
+      /**
+       * Exclude Record Ids
+       * @description Import every importable record except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
+       */
+      exclude_record_ids?: string[] | null
+    }
+    /** MerchantMigrationImportResult */
+    MerchantMigrationImportResult: {
+      /** @description The source entity type. */
+      entity: components['schemas']['PrecheckEntity']
+      /**
+       * Imported
+       * @description How many were created or reused in Polar.
+       */
+      imported: number
+      /**
+       * Skipped
+       * @description How many were left on the source (not importable).
+       */
+      skipped: number
+    }
     /** MerchantMigrationNotEnabled */
     MerchantMigrationNotEnabled: {
       /**
@@ -23401,6 +23481,11 @@ export interface components {
     }
     /** MerchantMigrationRecordItem */
     MerchantMigrationRecordItem: {
+      /**
+       * Record Id
+       * @description The ledger record id, used to select this row for import. Null for price rows, which are imported together with their product.
+       */
+      record_id: string | null
       /** @description The source entity type. */
       entity: components['schemas']['PrecheckEntity']
       /**
@@ -23415,22 +23500,48 @@ export interface components {
       title: string
       /**
        * Subtitle
-       * @description Secondary detail (interval, amount, country, status).
+       * @description Secondary detail (lifecycle status, country).
        */
       subtitle: string | null
+      /**
+       * Amount
+       * @description Recurring price in the currency's smallest unit (cents for USD), for priced rows.
+       */
+      amount: number | null
+      /**
+       * Currency
+       * @description ISO currency for `amount`.
+       */
+      currency: string | null
+      /**
+       * Recurring Interval
+       * @description Billing interval for `amount` (e.g. `month`, `year`).
+       */
+      recurring_interval: string | null
       /** @description Whether this record will be imported or stays on the source. */
       status: components['schemas']['PrecheckRecordStatus']
+      /** @description The ledger status of this record: `pending` (not imported yet), `imported`, `skipped` or `failed`. Null for price rows, which import with their product. */
+      import_status:
+        | components['schemas']['MerchantMigrationRecordStatus']
+        | null
       /**
        * Reason
-       * @description Why the record is skipped, if it is.
+       * @description Why the record is skipped, or what to know about it if it isn't.
        */
       reason: string | null
       /**
        * Reason Code
-       * @description Stable code for the skip reason, if any.
+       * @description Stable code for `reason`, if any.
        */
       reason_code: string | null
+      /** @description How urgent `reason` is: `action_required` when the merchant has to fix something, `info` when there is nothing to fix. Null without a reason. */
+      reason_level: components['schemas']['PrecheckReasonLevel'] | null
     }
+    /**
+     * MerchantMigrationRecordStatus
+     * @enum {string}
+     */
+    MerchantMigrationRecordStatus: 'pending' | 'imported' | 'skipped' | 'failed'
     /**
      * MerchantMigrationSourcePlatform
      * @enum {string}
@@ -25118,6 +25229,27 @@ export interface components {
        */
       avatar_url: string | null
     }
+    /**
+     * OrderExportColumn
+     * @enum {string}
+     */
+    OrderExportColumn:
+      | 'email'
+      | 'created_at'
+      | 'product'
+      | 'net_amount'
+      | 'currency'
+      | 'status'
+      | 'invoice_number'
+      | 'customer_name'
+      | 'billing_name'
+      | 'billing_country'
+      | 'subtotal_amount'
+      | 'discount_amount'
+      | 'tax_amount'
+      | 'total_amount'
+      | 'refunded_amount'
+      | 'billing_reason'
     /**
      * OrderFinalize
      * @description Schema to finalize a draft order and trigger an off-session charge.
@@ -29646,6 +29778,11 @@ export interface components {
      */
     PrecheckIssueLevel: 'blocker' | 'warning'
     /**
+     * PrecheckReasonLevel
+     * @enum {string}
+     */
+    PrecheckReasonLevel: 'action_required' | 'info'
+    /**
      * PrecheckRecordStatus
      * @enum {string}
      */
@@ -33092,6 +33229,33 @@ export interface components {
       /** Recurring Interval Count */
       recurring_interval_count?: number
     }
+    /**
+     * SubscriptionExportColumn
+     * @enum {string}
+     */
+    SubscriptionExportColumn:
+      | 'email'
+      | 'started_at'
+      | 'product'
+      | 'amount'
+      | 'currency'
+      | 'status'
+      | 'recurring_interval'
+      | 'customer_name'
+      | 'billing_name'
+      | 'billing_country'
+      | 'net_amount'
+      | 'discount'
+      | 'seats'
+      | 'current_period_start'
+      | 'current_period_end'
+      | 'cancel_at_period_end'
+      | 'canceled_at'
+      | 'ends_at'
+      | 'ended_at'
+      | 'cancellation_reason'
+      | 'trial_start'
+      | 'trial_end'
     /** SubscriptionLocked */
     SubscriptionLocked: {
       /**
@@ -40490,6 +40654,26 @@ export interface operations {
       query?: {
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
+        /** @description Filter by product ID. */
+        product_id?: string | string[] | null
+        /** @description Filter by subscription status. */
+        status?:
+          | components['schemas']['SubscriptionStatus']
+          | components['schemas']['SubscriptionStatus'][]
+          | null
+        /** @description Filter by subscriptions that are set to cancel at period end. */
+        cancel_at_period_end?: boolean | null
+        /** @description Only include subscriptions started after this date. Must include a UTC offset. */
+        started_after?: string | null
+        /** @description Only include subscriptions started before this date. Must include a UTC offset. */
+        started_before?: string | null
+        /** @description Time zone used to render dates in the CSV. */
+        timezone?: string
+        /** @description Columns to include in the CSV, in order. Defaults to email, started_at, product, amount, currency, status and recurring_interval. */
+        columns?:
+          | components['schemas']['SubscriptionExportColumn']
+          | components['schemas']['SubscriptionExportColumn'][]
+          | null
       }
       header?: never
       path?: never
@@ -42773,6 +42957,22 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by order status. */
+        status?:
+          | components['schemas']['OrderStatus']
+          | components['schemas']['OrderStatus'][]
+          | null
+        /** @description Only include orders created after this date. Must include a UTC offset. */
+        created_after?: string | null
+        /** @description Only include orders created before this date. Must include a UTC offset. */
+        created_before?: string | null
+        /** @description Time zone used to render dates in the CSV. */
+        timezone?: string
+        /** @description Columns to include in the CSV, in order. Defaults to email, created_at, product, net_amount, currency, status and invoice_number. */
+        columns?:
+          | components['schemas']['OrderExportColumn']
+          | components['schemas']['OrderExportColumn'][]
+          | null
       }
       header?: never
       path?: never
@@ -51698,11 +51898,89 @@ export interface operations {
       }
     }
   }
+  'merchant-migrations:import_catalog': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'application/json':
+          | components['schemas']['MerchantMigrationImportRequest']
+          | null
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationImportReport']
+        }
+      }
+      /** @description The source is not connected or isn't supported. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['SourceNotConnected']
+            | components['schemas']['UnsupportedMigrationSource']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description The pre-check hasn't run yet, or it reports a blocker. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['CatalogImportNotReady']
+            | components['schemas']['CatalogImportBlocked']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'merchant-migrations:records': {
     parameters: {
-      query: {
-        entity: components['schemas']['PrecheckEntity']
+      query?: {
+        entity?: components['schemas']['PrecheckEntity'] | null
         status?: components['schemas']['PrecheckRecordStatus'] | null
+        reason_level?: components['schemas']['PrecheckReasonLevel'] | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -64408,6 +64686,9 @@ export const memberRoleValues: ReadonlyArray<
 export const memberSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberSortProperty']
 > = ['created_at', '-created_at']
+export const merchantMigrationRecordStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationRecordStatus']
+> = ['pending', 'imported', 'skipped', 'failed']
 export const merchantMigrationSourcePlatformValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationSourcePlatform']
 > = ['stripe', 'lemon_squeezy', 'paddle']
@@ -64490,6 +64771,26 @@ export const orderBillingReasonInternalValues: ReadonlyArray<
   'subscription_cycle_after_trial',
   'subscription_cancel',
   'subscription_update',
+]
+export const orderExportColumnValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrderExportColumn']
+> = [
+  'email',
+  'created_at',
+  'product',
+  'net_amount',
+  'currency',
+  'status',
+  'invoice_number',
+  'customer_name',
+  'billing_name',
+  'billing_country',
+  'subtotal_amount',
+  'discount_amount',
+  'tax_amount',
+  'total_amount',
+  'refunded_amount',
+  'billing_reason',
 ]
 export const orderPaidEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderPaidEvent']['name']
@@ -66014,6 +66315,9 @@ export const precheckEntityValues: ReadonlyArray<
 export const precheckIssueLevelValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckIssueLevel']
 > = ['blocker', 'warning']
+export const precheckReasonLevelValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PrecheckReasonLevel']
+> = ['action_required', 'info']
 export const precheckRecordStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckRecordStatus']
 > = ['importable', 'skipped']
@@ -66469,6 +66773,32 @@ export const subscriptionCreatedEventNameValues: ReadonlyArray<
 export const subscriptionCycledEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionCycledEvent']['name']
 > = ['subscription.cycled']
+export const subscriptionExportColumnValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SubscriptionExportColumn']
+> = [
+  'email',
+  'started_at',
+  'product',
+  'amount',
+  'currency',
+  'status',
+  'recurring_interval',
+  'customer_name',
+  'billing_name',
+  'billing_country',
+  'net_amount',
+  'discount',
+  'seats',
+  'current_period_start',
+  'current_period_end',
+  'cancel_at_period_end',
+  'canceled_at',
+  'ends_at',
+  'ended_at',
+  'cancellation_reason',
+  'trial_start',
+  'trial_end',
+]
 export const subscriptionPastDueEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionPastDueEvent']['name']
 > = ['subscription.past_due']

@@ -14,14 +14,14 @@ const userTestimonials = [
     logo: <StillaAI size={40} />,
     text: (
       <>
-        <Text variant="body" as="p">
+        <Text variant="heading-xxs" as="p">
           Polar&apos;s Python SDK and Webhook infrastructure made our billing
           integration straightforward.
         </Text>
-        <Text variant="body" as="p">
+        <Text variant="heading-xxs" as="p">
           It gave us production-ready billing in hours, not weeks.
         </Text>
-        <Text variant="body" as="p">
+        <Text variant="heading-xxs" as="p">
           It&apos;s rare to find a vendor that moves this fast.
         </Text>
       </>
@@ -34,7 +34,7 @@ const userTestimonials = [
     verified: true,
     avatar: '/assets/landing/testamonials/rauch.jpg',
     text: (
-      <Text variant="body" as="p">
+      <Text variant="heading-xxs" as="p">
         The speed at which Polar is executing on the financial infrastructure
         primitives the new world needs is very impressive.
       </Text>
@@ -48,10 +48,10 @@ const userTestimonials = [
     avatar: '/assets/landing/testamonials/mitchell.jpg',
     text: (
       <>
-        <Text variant="body" as="p">
+        <Text variant="heading-xxs" as="p">
           I&apos;ve joined Polar as an advisor!
         </Text>
-        <Text variant="body" as="p">
+        <Text variant="heading-xxs" as="p">
           I think it benefits everyone for devs to have more options to get paid
           to work on their passions, to support upstreams, and for users to have
           more confidence/transparency in the software they&apos;re
@@ -71,7 +71,7 @@ const userTestimonials = [
       </div>
     ),
     text: (
-      <Text variant="body" as="p">
+      <Text variant="heading-xxs" as="p">
         Polar has been giving us the high attention support of a startup, with
         an enterprise-level product and service.
       </Text>
@@ -84,11 +84,11 @@ const userTestimonials = [
     verified: true,
     avatar: '/assets/landing/testamonials/alex.jpg',
     text: (
-      <p>
+      <Text variant="heading-xxs" as="p">
         We switched to @polar_sh because of their killer API, UX, and product.
         Also love that it&apos;s Open-Source. Their team cares A LOT as well.
         Worth the minor fee difference.
-      </p>
+      </Text>
     ),
   },
   {
@@ -97,7 +97,11 @@ const userTestimonials = [
     company: 'Midday',
     verified: true,
     avatar: '/assets/landing/testamonials/pontus.jpg',
-    text: <p>You can tell @polar_sh is building DX first</p>,
+    text: (
+      <Text variant="heading-xxs" as="p">
+        You can tell @polar_sh is building DX first
+      </Text>
+    ),
   },
 ]
 
@@ -123,7 +127,7 @@ export const Testimonials = () => (
             flexDirection="column"
             justifyContent="between"
             rowGap="2xl"
-            padding="3xl"
+            padding="2xl"
             height="100%"
           >
             {t.logo ? (
@@ -146,10 +150,10 @@ export const Testimonials = () => (
               width="1.5rem"
             />
             <Box flexDirection="column">
-              <Text variant="body" as="span">
+              <Text variant="heading-xxs" as="span">
                 {t.name}
               </Text>
-              <Text variant="body" as="span" color="muted">
+              <Text variant="heading-xxs" as="span" color="muted">
                 {t.company}
               </Text>
             </Box>

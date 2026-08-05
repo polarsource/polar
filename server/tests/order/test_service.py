@@ -1165,6 +1165,76 @@ class TestCreateSubscriptionOrder:
             payment_trigger="subscription_cycle",
         )
 
+    @pytest.mark.parametrize(
+        "billing_reason",
+        [
+            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+        ],
+    )
+    async def test_cycle_excludes_billing_entries_after_current_period(
+        self,
+        billing_reason: OrderBillingReasonInternal,
+        calculate_tax_mock: MagicMock,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+        payment_method: PaymentMethod,
+    ) -> None:
+        cycle_cutoff = datetime(2025, 7, 1, tzinfo=UTC)
+        next_period_start = datetime(2025, 8, 1, tzinfo=UTC)
+        next_period_end = datetime(2025, 9, 1, tzinfo=UTC)
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+            current_period_start=next_period_start,
+            current_period_end=next_period_end,
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+        current_entry = await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            start_timestamp=cycle_cutoff,
+            end_timestamp=next_period_start,
+            customer=customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+        future_entry = await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            start_timestamp=next_period_start,
+            end_timestamp=next_period_end,
+            customer=customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        order = await order_service.create_subscription_order(
+            session, subscription, billing_reason, cutoff=cycle_cutoff
+        )
+
+        assert len(order.items) == 1
+        assert order.items[0].amount == current_entry.amount
+        await session.refresh(current_entry)
+        await session.refresh(future_entry)
+        assert current_entry.order_item_id == order.items[0].id
+        assert future_entry.order_item_id is None
+
     async def test_cycle_discount(
         self,
         calculate_tax_mock: MagicMock,
@@ -1775,7 +1845,7 @@ class TestCreateSubscriptionOrder:
             False,
         )
 
-    async def test_metered_subscription_cycle_resets_meters(
+    async def test_metered_subscription_cycle_does_not_reset_meters(
         self,
         mocker: MockerFixture,
         save_fixture: SaveFixture,
@@ -1784,12 +1854,6 @@ class TestCreateSubscriptionOrder:
         customer: Customer,
         organization: Organization,
     ) -> None:
-        """
-        Test that subscription_cycle orders reset meters.
-
-        This is the expected behavior for new billing cycles - meters should be
-        reset to start fresh for the new period.
-        """
         subscription_service_mock = mocker.patch(
             "polar.order.service.subscription_service", spec=SubscriptionService
         )
@@ -1802,6 +1866,7 @@ class TestCreateSubscriptionOrder:
             save_fixture,
             organization=organization,
             customer=customer,
+            timestamp=subscription.current_period_start - timedelta(seconds=1),
         )
         await save_fixture(
             BillingEntry.from_metered_event(
@@ -1816,9 +1881,7 @@ class TestCreateSubscriptionOrder:
         assert len(order.items) == 1
         assert order.subtotal_amount == 100
 
-        subscription_service_mock.reset_meters.assert_awaited_once_with(
-            session, subscription
-        )
+        subscription_service_mock.reset_meters.assert_not_awaited()
 
     async def test_subscription_update_does_not_reset_meters(
         self,

@@ -610,9 +610,11 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
                 )
 
         # Remove old ones
-        for subscription_meter in subscription_meters:
-            if subscription_meter.meter not in price_meters:
-                subscription_meters.remove(subscription_meter)
+        subscription_meters = [
+            subscription_meter
+            for subscription_meter in subscription_meters
+            if subscription_meter.meter in price_meters
+        ]
 
         self.meters = subscription_meters
 

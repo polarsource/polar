@@ -96,6 +96,7 @@ interface CreatePersonInput {
   lastName: string
   email: string
   jobTitle?: string
+  linkedinUrl?: string
   companyRecordId?: string
 }
 
@@ -114,6 +115,9 @@ export const createPerson = async (
   }
   if (input.jobTitle) {
     values.job_title = input.jobTitle
+  }
+  if (input.linkedinUrl) {
+    values.linkedin = input.linkedinUrl
   }
   if (input.companyRecordId) {
     values.company = [

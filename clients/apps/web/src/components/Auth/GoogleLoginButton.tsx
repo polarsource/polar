@@ -49,15 +49,9 @@ const GoogleLoginButton = ({
 
   return (
     <a onClick={onClick}>
-      <Button
-        variant={variant}
-        wrapperClassNames="space-x-2 p-2.5 px-5"
-        fullWidth
-      >
+      <Button variant={variant} wrapperClassNames="space-x-2" fullWidth>
         <Google />
-        <div className="w-32 text-left">
-          {signup ? 'Sign up with Google' : 'Sign in with Google'}
-        </div>
+        <div>{signup ? 'Sign up with Google' : 'Sign in with Google'}</div>
       </Button>
     </a>
   )

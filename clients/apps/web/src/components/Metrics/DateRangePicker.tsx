@@ -33,7 +33,7 @@ import {
 import { useContext } from 'react'
 import { twMerge } from 'tailwind-merge'
 
-const intervals = (
+export const dateRangeIntervals = (
   organization: schemas['Organization'],
 ): DateRangeInterval[] => [
   {
@@ -89,7 +89,7 @@ const intervals = (
   },
 ]
 
-const dateToInterval = (
+export const dateRangeToMatchingInterval = (
   date: DateRange,
   organization: schemas['Organization'],
 ) => {
@@ -98,7 +98,7 @@ const dateToInterval = (
   const fromDate = format(date.from, 'yyyy-MM-dd')
   const toDate = format(date.to, 'yyyy-MM-dd')
 
-  return intervals(organization).find((interval) => {
+  return dateRangeIntervals(organization).find((interval) => {
     const intervalFromDate = format(interval.value[0], 'yyyy-MM-dd')
     const intervalToDate = format(interval.value[1], 'yyyy-MM-dd')
     return fromDate === intervalFromDate && toDate === intervalToDate
@@ -125,7 +125,9 @@ const DateRangePicker: React.FC<DateRangePickerProps> = ({
   additionalIntervals,
 }) => {
   const { organization } = useContext(OrganizationContext)
-  const interval = date ? dateToInterval(date, organization) : undefined
+  const interval = date
+    ? dateRangeToMatchingInterval(date, organization)
+    : undefined
 
   return (
     <div
@@ -221,7 +223,7 @@ const DateRangeIntervals = ({
   const { organization } = useContext(OrganizationContext)
   const allIntervals = [
     ...(additionalIntervals ?? []),
-    ...intervals(organization),
+    ...dateRangeIntervals(organization),
   ]
 
   return (

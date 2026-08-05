@@ -1,0 +1,10 @@
+SCHEMA >
+    `organization_id` UUID,
+    `quarter_hour` DateTime,
+    `product_id` UUID,
+    `event_name` LowCardinality(String),
+    `settlement_revenue` AggregateFunction(sum, Int64),
+    `settlement_fee` AggregateFunction(sum, Int64)
+
+ENGINE AggregatingMergeTree
+ENGINE_SORTING_KEY organization_id, quarter_hour, product_id, event_name

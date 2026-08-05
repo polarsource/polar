@@ -1,52 +1,66 @@
 'use client'
 
-import { RadialSpinner } from './graphics/RadialSpinner'
+import { Grid, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+
 import { GaugeSweep } from './graphics/GaugeSweep'
-import { ConcentricDraw } from './graphics/ConcentricDraw'
+import { RadialSpinner } from './graphics/RadialSpinner'
+import { SteppedRadial } from './graphics/SteppedRadial'
+import { SectionHeader } from './SectionHeader'
 
 const LAYERS = [
   {
     id: '01',
-    name: 'Ingest',
-    desc: 'Ingest usage & inference on behalf of your users.',
+    name: 'Measure the usage',
+    desc: 'Every call, token, and second your users consume, recorded the moment it happens.',
   },
   {
     id: '02',
-    name: 'Aggregate',
-    desc: 'Transform raw signals into aggregated units.',
+    name: 'Calculate the charge',
+    desc: 'Raw events roll into priced units. Per seat, per token, tiered or hybrid. However you wish to price.',
   },
   {
     id: '03',
-    name: 'Charge',
-    desc: 'Generate charges & collect payments automatically.',
+    name: 'Merchant of Record',
+    desc: 'We take on all the liability. Sales tax, VAT & chargebacks land on our name, not yours.',
   },
 ]
 
 export const Usage = () => (
-  <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-    {LAYERS.map((l, i) => (
-      <div
-        key={l.id}
-        className="dark:bg-polar-900 flex flex-col bg-gray-50 p-2"
-      >
-        {/* Graphic */}
-        <div className="aspect-square">
-          {i === 0 && <RadialSpinner />}
-          {i === 1 && <GaugeSweep />}
-          {i === 2 && <ConcentricDraw />}
-        </div>
-        {/* Label */}
-        <div className="flex flex-col px-8 py-8">
-          <div className="flex flex-col items-center gap-2 text-center">
-            <span className="font-display text-2xl text-gray-900 dark:text-white">
+  <div className="flex w-full flex-col gap-y-12 md:gap-y-16">
+    <SectionHeader
+      title="Powerful usage billing for modern software"
+      description="Meter anything your product does. Compose it with subscriptions, seats, credits, and trials into whatever shape your pricing takes."
+    />
+    <Grid templateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }} gap="l">
+      {LAYERS.map((l, i) => (
+        <Box
+          key={l.id}
+          flexDirection="column"
+          backgroundColor="background-secondary"
+          padding="s"
+        >
+          <Box display="block" aspectRatio="1 / 1">
+            {i === 0 && <RadialSpinner />}
+            {i === 1 && <GaugeSweep />}
+            {i === 2 && <SteppedRadial />}
+          </Box>
+          <Box flexDirection="column" rowGap="xl" padding="2xl">
+            <Text variant="heading-xs" as="h3">
               {l.name}
-            </span>
-            <span className="dark:text-polar-500 text-xl text-pretty text-gray-500">
+            </Text>
+            <Box
+              width="2rem"
+              borderWidth={1}
+              borderColor="border-primary"
+              borderStyle="solid"
+            />
+            <Text variant="heading-xxs" color="muted">
               {l.desc}
-            </span>
-          </div>
-        </div>
-      </div>
-    ))}
+            </Text>
+          </Box>
+        </Box>
+      ))}
+    </Grid>
   </div>
 )

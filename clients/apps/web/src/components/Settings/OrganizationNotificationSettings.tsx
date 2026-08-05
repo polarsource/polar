@@ -44,6 +44,7 @@ const OrganizationNotificationSettings: React.FC<
   return (
     <SettingsGroup>
       <SettingsGroupItem
+        layout="inline"
         title="New Orders"
         description="Receive a notification when new orders are created"
       >
@@ -56,6 +57,7 @@ const OrganizationNotificationSettings: React.FC<
       </SettingsGroupItem>
 
       <SettingsGroupItem
+        layout="inline"
         title="New Subscriptions"
         description="Receive a notification when new subscriptions are created"
       >
@@ -69,6 +71,7 @@ const OrganizationNotificationSettings: React.FC<
 
       {canManage === true && (
         <SettingsGroupItem
+          layout="inline"
           title="Prevented Chargebacks"
           description="Receive a notification when a refund is issued to prevent a chargeback"
         >

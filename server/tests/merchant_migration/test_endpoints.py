@@ -8,6 +8,7 @@ from pytest_mock import MockerFixture
 from polar.auth.scope import Scope
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
+    CanonicalCustomer,
     CanonicalPrice,
     CanonicalPricingScheme,
     CanonicalProduct,
@@ -357,6 +358,110 @@ class TestRecords:
         assert json_body["pagination"]["total_count"] == 1
         assert json_body["items"][0]["source_id"] == "prod_1"
         assert json_body["items"][0]["status"] == "importable"
+
+
+async def _catalog_with_customer_extract() -> AsyncIterator[CanonicalRecord]:
+    async for record in _catalog_extract():
+        yield record
+    yield CanonicalCustomer(
+        source_id="cus_1",
+        email="alice@example.com",
+        name="Alice",
+        country="US",
+    )
+
+
+@pytest.mark.asyncio
+class TestImport:
+    async def test_anonymous(
+        self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/import")
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_precheck_required_returns_409(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/import")
+        assert response.status_code == 409
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_imports_catalog(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        adapter = mocker.MagicMock()
+        adapter.extract.return_value = _catalog_with_customer_extract()
+        adapter.get_source_account = mocker.AsyncMock(
+            return_value=CanonicalAccount(country="US", is_connect_platform=False)
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
+        )
+
+        precheck = await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
+        assert precheck.status_code == 200
+
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/import")
+        assert response.status_code == 200
+        json_body = response.json()
+        assert json_body["step"] == "create_catalog"
+        results = {result["entity"]: result for result in json_body["results"]}
+        assert results["products"]["imported"] == 1
+        assert results["customers"]["imported"] == 1
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_imports_only_selected_records(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        adapter = mocker.MagicMock()
+        adapter.extract.return_value = _catalog_with_customer_extract()
+        adapter.get_source_account = mocker.AsyncMock(
+            return_value=CanonicalAccount(country="US", is_connect_platform=False)
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
+        )
+
+        assert (
+            await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
+        ).status_code == 200
+
+        # pick the customer row's ledger id from the records listing
+        records = await client.get(
+            f"/v1/merchant-migrations/{migration.id}/records",
+            params={"entity": "customers"},
+        )
+        customer_record_id = records.json()["items"][0]["record_id"]
+        assert customer_record_id is not None
+
+        response = await client.post(
+            f"/v1/merchant-migrations/{migration.id}/import",
+            json={"record_ids": [customer_record_id]},
+        )
+        assert response.status_code == 200
+        results = {r["entity"]: r for r in response.json()["results"]}
+        # only the customer was selected; the product stays pending
+        assert results["customers"]["imported"] == 1
+        assert results["products"]["imported"] == 0
 
 
 async def _create_migration(

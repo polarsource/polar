@@ -5,19 +5,22 @@ import type { ReactNode } from 'react'
 interface SectionHeaderProps {
   title: ReactNode
   description: ReactNode
+  align?: 'start' | 'center'
 }
 
 /**
  * The shared landing-section header: title on the left, supporting
  * description on the right. The two halves share the row equally and sit
- * vertically centered, stacking to a single column below `xl`. The title's
- * text width is capped so it wraps to roughly two lines, keeping its
- * vertical weight in balance with the description.
+ * vertically centered (pass `align="start"` to top-align, e.g. next to a
+ * multi-paragraph description), stacking to a single column below `xl`. The
+ * title's text width is capped so it wraps to roughly two lines, keeping its
+ * vertical weight in balance with the description. A string description gets
+ * the standard muted styling; pass a node to fully control the right column.
  */
 export const SectionHeader = ({ title, description }: SectionHeaderProps) => (
   <Box
     flexDirection={{ base: 'column', xl: 'row' }}
-    alignItems={{ base: 'start', xl: 'center' }}
+    alignItems="start"
     rowGap="l"
     columnGap="4xl"
   >
@@ -29,9 +32,13 @@ export const SectionHeader = ({ title, description }: SectionHeaderProps) => (
       </Box>
     </Box>
     <Box display="block" flex={1}>
-      <Text variant="heading-xs" color="muted" wrap="pretty">
-        {description}
-      </Text>
+      {typeof description === 'string' ? (
+        <Text variant="heading-xs" color="muted" wrap="pretty">
+          {description}
+        </Text>
+      ) : (
+        description
+      )}
     </Box>
   </Box>
 )

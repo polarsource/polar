@@ -16,12 +16,17 @@ from .auth import MerchantMigrationRead, MerchantMigrationWrite
 from .schemas import MerchantMigration as MerchantMigrationSchema
 from .schemas import (
     MerchantMigrationCreate,
+    MerchantMigrationImportReport,
+    MerchantMigrationImportRequest,
     MerchantMigrationRecordItem,
     PrecheckEntity,
+    PrecheckReasonLevel,
     PrecheckRecordStatus,
     PrecheckReport,
 )
 from .service import (
+    CatalogImportBlocked,
+    CatalogImportNotReady,
     InvalidSourceCredentials,
     MerchantMigrationNotEnabled,
     MerchantMigrationNotFound,
@@ -142,6 +147,44 @@ async def precheck(
     return await merchant_migration_service.run_precheck(session, auth_subject, id)
 
 
+@router.post(
+    "/{id}/import",
+    response_model=MerchantMigrationImportReport,
+    summary="Import Merchant Migration Catalog",
+    responses={
+        400: {
+            "description": "The source is not connected or isn't supported.",
+            "model": SourceNotConnected.schema() | UnsupportedMigrationSource.schema(),
+        },
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+        409: {
+            "description": "The pre-check hasn't run yet, or it reports a blocker.",
+            "model": CatalogImportNotReady.schema() | CatalogImportBlocked.schema(),
+        },
+    },
+)
+async def import_catalog(
+    id: UUID4,
+    auth_subject: MerchantMigrationWrite,
+    body: MerchantMigrationImportRequest | None = None,
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigrationImportReport:
+    return await merchant_migration_service.import_catalog(
+        session,
+        auth_subject,
+        id,
+        record_ids=body.record_ids if body is not None else None,
+        exclude_record_ids=body.exclude_record_ids if body is not None else None,
+    )
+
+
 @router.get(
     "/{id}/records",
     response_model=ListResource[MerchantMigrationRecordItem],
@@ -165,8 +208,9 @@ async def records(
     id: UUID4,
     auth_subject: MerchantMigrationWrite,
     pagination: PaginationParamsQuery,
-    entity: Annotated[PrecheckEntity, Query()],
+    entity: Annotated[PrecheckEntity | None, Query()] = None,
     status: Annotated[PrecheckRecordStatus | None, Query()] = None,
+    reason_level: Annotated[PrecheckReasonLevel | None, Query()] = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[MerchantMigrationRecordItem]:
     items, count = await merchant_migration_service.list_records(
@@ -175,6 +219,7 @@ async def records(
         id,
         entity=entity,
         status=status,
+        reason_level=reason_level,
         pagination=pagination,
     )
     return ListResource.from_paginated_results(items, count, pagination)

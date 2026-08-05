@@ -672,7 +672,9 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         member = None
         if grant.member_id:
             member_repository = MemberRepository.from_session(session)
-            member = await member_repository.get_by_id(grant.member_id)
+            member = await member_repository.get_by_id(
+                grant.member_id, include_deleted=True
+            )
 
         previous_properties = grant.properties
         benefit_strategy = get_benefit_strategy(benefit.type, session, redis)

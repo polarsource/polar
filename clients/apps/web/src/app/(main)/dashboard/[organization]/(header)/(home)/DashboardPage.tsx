@@ -6,8 +6,8 @@ import { CompassWidget } from '@/components/Compass/CompassWidget'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { PlanUpsell } from '@/components/Upsell/PlanUpsell'
 import { AccountWidget } from '@/components/Widgets/AccountWidget'
-import { OrdersWidget } from '@/components/Widgets/OrdersWidget'
 import RevenueWidget from '@/components/Widgets/RevenueWidget'
+import { TimelineWidget } from '@/components/Widgets/TimelineWidget/TimelineWidget'
 import { useHasPermission } from '@/hooks/permissions'
 import { schemas } from '@polar-sh/client'
 import { DisputesBanner } from './DisputesBanner'
@@ -48,7 +48,7 @@ export default function OverviewPage({ organization }: OverviewPageProps) {
       <div className="dark:border-polar-700 overflow-hidden rounded-xl border border-gray-200">
         <div className="grid grid-cols-1 [clip-path:inset(1px_1px_1px_1px)] lg:grid-cols-3">
           <RevenueWidget className={cellClassName} />
-          <OrdersWidget className={cellClassName} />
+          <TimelineWidget className={cellClassName} />
           <AccountWidget className={cellClassName} />
         </div>
       </div>

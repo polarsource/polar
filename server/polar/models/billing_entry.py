@@ -38,12 +38,6 @@ class BillingEntry(RecordModel):
     __tablename__ = "billing_entry"
     __table_args__ = (
         Index(
-            "ix_billing_entries_s_oi_pp",
-            "subscription_id",
-            "order_item_id",
-            "product_price_id",
-        ),
-        Index(
             "ix_billing_entries_s_d_oi_pp",
             "subscription_id",
             "deleted_at",
@@ -56,10 +50,13 @@ class BillingEntry(RecordModel):
         TIMESTAMP(timezone=True), nullable=False, index=True
     )
     end_timestamp: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False, index=True
+        TIMESTAMP(timezone=True), nullable=False
     )
     type: Mapped[BillingEntryType] = mapped_column(
-        StringEnum(BillingEntryType), nullable=False, index=True
+        StringEnum(BillingEntryType), nullable=False
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
     direction: Mapped[BillingEntryDirection] = mapped_column(
         StringEnum(BillingEntryDirection), nullable=False
@@ -84,7 +81,6 @@ class BillingEntry(RecordModel):
         Uuid,
         ForeignKey("subscriptions.id", ondelete="cascade"),
         nullable=True,
-        index=True,
     )
     discount_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("discounts.id", ondelete="restrict"), nullable=True

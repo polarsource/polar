@@ -74,6 +74,7 @@ const OrganizationSubscriptionSettings: React.FC<
       >
         <SettingsGroup>
           <SettingsGroupItem
+            layout="inline"
             title="Allow multiple subscriptions"
             description="Customers can have multiple active subscriptions at the same time."
           >
@@ -142,6 +143,7 @@ const OrganizationSubscriptionSettings: React.FC<
           </SettingsGroupItem>
 
           <SettingsGroupItem
+            layout="inline"
             title="Prevent trial abuse"
             description="When enabled, customers who previously had a trial on any of your products won't be eligible for another trial."
           >

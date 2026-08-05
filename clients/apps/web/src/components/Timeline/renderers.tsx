@@ -13,11 +13,14 @@ import type { ReactNode } from 'react'
 
 export type TimelineImportance = 'high' | 'medium' | 'low'
 
+export type TimelineSentiment = 'neutral' | 'negative'
+
 export interface TimelineEntry {
   importance: TimelineImportance
   title: string
   icon: ReactNode
   summary?: ReactNode
+  sentiment?: TimelineSentiment
 }
 
 type SystemEventName = schemas['SystemEvent']['name']
@@ -29,6 +32,7 @@ type SystemEventByName<N extends SystemEventName> = Extract<
 interface TimelineRenderer<N extends SystemEventName> {
   importance: TimelineImportance
   summary?: (event: SystemEventByName<N>) => ReactNode
+  sentiment?: TimelineSentiment
 }
 
 type TimelineRendererMap = {
@@ -88,16 +92,17 @@ const timelineRenderers: TimelineRendererMap = {
   'subscription.reactivated': { importance: 'high' },
   'subscription.reinstated': { importance: 'high' },
   'subscription.resumed': { importance: 'medium' },
-  'subscription.paused': { importance: 'medium' },
+  'subscription.paused': { importance: 'medium', sentiment: 'negative' },
   'subscription.canceled': {
     importance: 'high',
+    sentiment: 'negative',
     summary: ({ metadata }) =>
       metadata.customer_cancellation_reason
         ? humanize(metadata.customer_cancellation_reason)
         : undefined,
   },
-  'subscription.revoked': { importance: 'high' },
-  'subscription.past_due': { importance: 'high' },
+  'subscription.revoked': { importance: 'high', sentiment: 'negative' },
+  'subscription.past_due': { importance: 'high', sentiment: 'negative' },
   'order.paid': {
     importance: 'high',
     summary: ({ metadata }) =>
@@ -105,11 +110,13 @@ const timelineRenderers: TimelineRendererMap = {
   },
   'order.refunded': {
     importance: 'high',
+    sentiment: 'negative',
     summary: ({ metadata }) =>
       currency(metadata.refunded_amount, metadata.currency),
   },
   'order.voided': {
     importance: 'high',
+    sentiment: 'negative',
     summary: ({ metadata }) => currency(metadata.amount, metadata.currency),
   },
   'order.unvoided': {
@@ -128,6 +135,7 @@ const timelineRenderers: TimelineRendererMap = {
   'customer.updated': { importance: 'low' },
   'customer.deleted': {
     importance: 'medium',
+    sentiment: 'negative',
     summary: ({ metadata }) =>
       metadata.customer_name || metadata.customer_email || undefined,
   },
@@ -137,6 +145,7 @@ const timelineRenderers: TimelineRendererMap = {
   },
   'benefit.revoked': {
     importance: 'medium',
+    sentiment: 'negative',
     summary: ({ metadata }) => benefitsDisplayNames[metadata.benefit_type],
   },
   'benefit.cycled': {
@@ -151,11 +160,13 @@ const timelineRenderers: TimelineRendererMap = {
   'balance.credit_order': { importance: 'low' },
   'balance.refund': {
     importance: 'high',
+    sentiment: 'negative',
     summary: ({ metadata }) => currency(metadata.amount, metadata.currency),
   },
   'balance.refund_reversal': { importance: 'medium' },
   'balance.dispute': {
     importance: 'high',
+    sentiment: 'negative',
     summary: ({ metadata }) => currency(metadata.amount, metadata.currency),
   },
   'balance.dispute_reversal': { importance: 'medium' },
@@ -212,5 +223,6 @@ export const resolveTimelineEntry = (
     title: event.label,
     icon,
     summary: renderer.summary?.(event as never),
+    sentiment: renderer.sentiment,
   }
 }

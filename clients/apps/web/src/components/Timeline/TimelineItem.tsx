@@ -35,6 +35,7 @@ export const TimelineItem = ({
     className="block"
   >
     <Box
+      alignItems="center"
       columnGap="m"
       paddingVertical="s"
       paddingHorizontal="m"
@@ -43,9 +44,29 @@ export const TimelineItem = ({
       transitionProperty="colors"
       transitionDuration="fast"
     >
-      <span className="flex h-5 w-4 shrink-0 items-center justify-center text-sm text-black dark:text-white">
-        {entry.icon}
-      </span>
+      <Box
+        alignItems="center"
+        justifyContent="center"
+        flexShrink={0}
+        width={32}
+        height={32}
+        borderRadius="full"
+        backgroundColor={
+          entry.sentiment === 'negative'
+            ? 'background-danger'
+            : 'background-card'
+        }
+        color="text-primary"
+      >
+        <span
+          className={twMerge(
+            'flex items-center justify-center text-sm',
+            entry.sentiment === 'negative' && 'text-red-500',
+          )}
+        >
+          {entry.icon}
+        </span>
+      </Box>
       <Box flexDirection="column" flexGrow={1} minWidth={0}>
         <Box alignItems="baseline" justifyContent="between" columnGap="m">
           <Text variant="title" truncate>
@@ -99,7 +120,7 @@ export const TimelineFold = ({
     onClick={onToggle}
     aria-expanded={expanded}
   >
-    <span className="flex h-5 w-4 shrink-0 items-center justify-center">
+    <span className="flex h-5 w-8 shrink-0 items-center justify-center">
       <ChevronRightOutlined
         className={twMerge(
           'dark:text-polar-500 size-3.5 text-gray-500 transition-transform',

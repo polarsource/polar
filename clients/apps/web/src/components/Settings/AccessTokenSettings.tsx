@@ -44,10 +44,10 @@ const AccessToken = (props: schemas['PersonalAccessToken']) => {
 
   return (
     <div className="flex flex-col gap-y-4">
-      <div className="flex flex-row items-center justify-between">
-        <div className="flex flex-row">
-          <div className="gap-y flex flex-col">
-            <h3 className="text-md">{props.comment}</h3>
+      <div className="flex flex-col gap-y-2 md:flex-row md:items-center md:justify-between md:gap-x-4">
+        <div className="flex min-w-0 flex-row">
+          <div className="flex min-w-0 flex-col">
+            <h3 className="text-md truncate">{props.comment}</h3>
             <p className="dark:text-polar-400 text-sm text-gray-500">
               {props.expires_at ? (
                 new Date(props.expires_at) < new Date() ? (
@@ -87,7 +87,7 @@ const AccessToken = (props: schemas['PersonalAccessToken']) => {
             </p>
           </div>
         </div>{' '}
-        <div className="dark:text-polar-400 flex flex-row items-center gap-x-4 space-x-4 text-gray-500">
+        <div className="dark:text-polar-400 flex shrink-0 flex-row items-center justify-end gap-x-4 space-x-4 text-gray-500">
           <AlertDialog>
             <AlertDialogTrigger asChild>
               <Button variant="destructive">Revoke</Button>

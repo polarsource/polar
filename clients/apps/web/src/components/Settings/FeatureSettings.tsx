@@ -84,6 +84,7 @@ export default function FeatureSettings({
       >
         <SettingsGroup>
           <SettingsGroupItem
+            layout="inline"
             title="Localized Checkout"
             description={
               <>
@@ -115,6 +116,7 @@ export default function FeatureSettings({
             />
           </SettingsGroupItem>
           <SettingsGroupItem
+            layout="inline"
             title="Seat-Based Billing"
             description={
               <>

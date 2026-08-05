@@ -166,7 +166,7 @@ export function ReviewTableView({
             onClick={onRerunPrecheck}
             disabled={rerunning}
           >
-{rerunning ? 'Refreshing…' : 'Refresh from Stripe'}
+            {rerunning ? 'Refreshing…' : 'Refresh from Stripe'}
           </Button>
         )}
       </Box>

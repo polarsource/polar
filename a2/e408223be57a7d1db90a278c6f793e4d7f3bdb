@@ -1,0 +1,39 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationCard.tsx
+  s_81f519e3bb364f::t_8b6dbf635dfb2a 7,13-18
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/MigrationStepper.tsx
+  s_81f519e3bb364f::t_8b6dbf635dfb2a 5,20-23
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewColumns.tsx
+  s_81f519e3bb364f::t_1785babccd7351 4,69
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewTable.tsx
+  s_81f519e3bb364f::t_f6092e4cef361e 11,57-65
+  s_81f519e3bb364f::t_fc31e5865784ee 20-21
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewRows.ts
+  s_81f519e3bb364f::t_48ba0129ba5999 3,11-17,19,23
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/importSummary.ts
+  s_81f519e3bb364f::t_48ba0129ba5999 1-3,6
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_81f519e3bb364f::t_41778c0816600b 115-117,123
+  s_81f519e3bb364f::t_274aefce23ecce 135-138
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewRecordModal.tsx
+  s_81f519e3bb364f::t_1785babccd7351 12,64
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.ts
+  s_81f519e3bb364f::t_28616b189bb758 67-75,77,79,83,88-90
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewStatusIndicator.tsx
+  s_81f519e3bb364f::t_26dfece5acafd8 1-21
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "a2e408223be57a7d1db90a278c6f793e4d7f3bdb",
+  "prompts": {},
+  "sessions": {
+    "s_81f519e3bb364f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ac6e6895-3b5c-40c8-8804-f6a4f5e8786b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

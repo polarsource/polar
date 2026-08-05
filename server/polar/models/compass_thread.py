@@ -34,7 +34,7 @@ class CompassThread(RecordModel):
         index=True,
     )
     title: Mapped[str] = mapped_column(String, nullable=False)
-    scopes_digest: Mapped[str] = mapped_column(String, nullable=False)
+    scopes_fingerprint: Mapped[str] = mapped_column(String, nullable=False)
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:

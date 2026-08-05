@@ -27,13 +27,14 @@ log: Logger = structlog.get_logger()
 HISTORY_TURNS = 12
 """How many recent turns are replayed as model context. Older turns stay
 readable in the UI but drop out of the model's context, keeping long threads
-from growing every request without bound."""
+from growing every request without bound. This could probably be built
+in a smarter way in the future"""
 
 MESSAGES_LIMIT = 50
 THREADS_CAP = 500
 
 
-def scopes_digest(scopes: set[Scope]) -> str:
+def scopes_fingerprint(scopes: set[Scope]) -> str:
     """Fingerprint of a token's scopes for history replay gating."""
     joined = ",".join(sorted(scope.value for scope in scopes))
     return hashlib.sha256(joined.encode()).hexdigest()
@@ -79,6 +80,7 @@ class CompassThreadService:
             CompassThread.organization_id == organization_id
         )
         statement = repository.apply_recency_order(statement)
+
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page
         )
@@ -103,6 +105,7 @@ class CompassThreadService:
             MESSAGES_LIMIT + 1
         )
         recent = await repository.get_all(statement)
+
         has_more = len(recent) > MESSAGES_LIMIT
         return list(reversed(recent[:MESSAGES_LIMIT])), has_more
 
@@ -135,16 +138,19 @@ class CompassThreadService:
             organization_id=organization_id,
             user_id=auth_subject.subject.id if is_user(auth_subject) else None,
             title=_title_from_prompt(prompt),
-            scopes_digest=scopes_digest(auth_subject.scopes),
+            scopes_fingerprint=scopes_fingerprint(auth_subject.scopes),
         )
         thread = await repository.create(thread, flush=True)
+
         overflow_statement = repository.apply_recency_order(
             repository.get_readable_statement(auth_subject).where(
                 CompassThread.organization_id == organization_id
             )
         ).offset(THREADS_CAP)
+
         for overflow in await repository.get_all(overflow_statement):
             await repository.soft_delete(overflow)
+
         return thread
 
     async def begin_turn(
@@ -172,6 +178,7 @@ class CompassThreadService:
                 session, auth_subject, thread
             )
             return TurnStart(thread, history, history_last_at, is_new=False)
+
         async with write_sessionmaker.begin() as write_session:
             thread = await self.create(
                 write_session,
@@ -179,6 +186,7 @@ class CompassThreadService:
                 organization_id=organization_id,
                 prompt=prompt,
             )
+
         return TurnStart(thread, None, None, is_new=True)
 
     def turn_recorder(
@@ -242,22 +250,26 @@ class CompassThreadService:
         Scope mismatch (token scopes changed since the thread was created)
         or stored history that no longer validates (e.g. after a pydantic-ai
         upgrade) degrades to a fresh context instead of breaking the thread.
+        Could be rethought to be more backwards compatible.
         """
-        if thread.scopes_digest != scopes_digest(auth_subject.scopes):
+        if thread.scopes_fingerprint != scopes_fingerprint(auth_subject.scopes):
             log.info(
                 "compass.thread_history_scope_mismatch",
                 thread_id=str(thread.id),
             )
             return None, None
+
         repository = CompassThreadMessageRepository.from_session(session)
         recent = await repository.get_all(
             repository.get_replay_statement(thread.id, HISTORY_TURNS)
         )
+
         combined = list(
             chain.from_iterable(message.model_messages for message in reversed(recent))
         )
         if not combined:
             return None, None
+
         try:
             history = ModelMessagesTypeAdapter.validate_python(combined)
             return history, recent[0].created_at

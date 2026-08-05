@@ -33,6 +33,7 @@ export default function CompassPage({ organization }: CompassPageProps) {
     [router, pathname],
   )
 
+  // Captured once on mount: the deep-linked thread this page opened with.
   const [initialThreadId] = useState(() => searchParams.get('thread'))
   const { messages, send, isStreaming, threadId, selectThread, newChat } =
     useCompassAssistant({
@@ -49,9 +50,6 @@ export default function CompassPage({ organization }: CompassPageProps) {
   // The overview's idle box hands its question over via `?ask=`. Send it
   // once, then strip the param so refresh and back don't re-ask.
   const ask = searchParams.get('ask')
-  // Escape returns to wherever Compass was invoked from, mirroring the old
-  // overlay's close behavior. The ?ask= handoff uses router.replace, so back
-  // lands on the true previous page, not an intermediate ask URL.
   useEffect(() => {
     if (ask && !askedRef.current) {
       askedRef.current = true
@@ -60,6 +58,9 @@ export default function CompassPage({ organization }: CompassPageProps) {
     }
   }, [ask, send, router, pathname])
 
+  // Escape returns to wherever Compass was invoked from, mirroring the old
+  // overlay's close behavior. The ?ask= handoff uses router.replace, so back
+  // lands on the true previous page, not an intermediate ask URL.
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
       if (e.key === 'Escape' && !e.isComposing) {
@@ -73,6 +74,9 @@ export default function CompassPage({ organization }: CompassPageProps) {
   const handleAsk = (question: string) => {
     const content = question.trim()
     if (!content || isStreaming) return
+    // Prefill so the input mirrors what is being asked, then send; the
+    // submit clears it like a hand-typed question.
+    setValue(content)
     void send(content)
     setValue('')
     inputRef.current?.focus()

@@ -120,6 +120,8 @@ export const CompassConversation = ({
     (insightsError || (insights ?? []).length > 0)
   const presets = presetsFromInsights(insights)
 
+  // Sending always re-follows the bottom, even if the user had scrolled up
+  // in the previous answer. Streamed growth is handled by the hook itself.
   const lastMessageId = messages[messages.length - 1]?.id
   useEffect(() => {
     if (lastMessageId !== undefined) {

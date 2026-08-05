@@ -9,6 +9,11 @@ import { useCallback, useEffect, useRef, useState } from 'react'
 export type AssistantPart =
   | schemas['AssistantTextPart']
   | schemas['AssistantBlockPart']
+/**
+ * The closed set of renderable blocks the assistant can produce. Mirrors the
+ * backend `AssistantBlock` union; anything outside it is ignored by the
+ * registry rather than rendered.
+ */
 export type AssistantBlock = schemas['AssistantBlockPart']['block']
 export type MetricChartPoint = schemas['MetricChartPoint']
 export type DataTableColumn = schemas['DataTableColumn']
@@ -40,6 +45,13 @@ interface UseCompassAssistantOptions {
   onThreadChange?: (threadId: string | null) => void
 }
 
+/**
+ * Client for the Compass assistant SSE endpoint. Streams one turn at a time:
+ * `text` deltas and `block` events append to the pending assistant message.
+ * Conversation state lives server-side on a thread: `thread` / `done` carry
+ * the thread id we send back on the next turn, and `hydrate` replays a
+ * stored thread into the message list.
+ */
 export const useCompassAssistant = ({
   organizationId,
   initialThreadId = null,
@@ -48,6 +60,11 @@ export const useCompassAssistant = ({
   const queryClient = useQueryClient()
   const [messages, setMessages] = useState<AssistantMessage[]>([])
   const [isStreaming, setIsStreaming] = useState(false)
+  // The server-side thread the conversation belongs to. The ref is what the
+  // next `send` posts (updated mid-stream without re-rendering); the state
+  // mirrors it for consumers that render against it. Seeding it from a deep
+  // link means a prompt sent before rehydration resolves still continues the
+  // linked thread instead of forking a new one.
   const [threadId, setThreadId] = useState<string | null>(initialThreadId)
   const threadIdRef = useRef<string | null>(initialThreadId)
   const idRef = useRef(0)
@@ -144,6 +161,9 @@ export const useCompassAssistant = ({
               { kind: 'block', block: payload as AssistantBlock },
             ])
           } else if (event === 'thread') {
+            // A new thread was created server-side; adopt it immediately so
+            // a refresh mid-stream can find its way back. The history list is
+            // stale the moment a thread exists server-side.
             setThread(payload.thread_id)
             onThreadChangeRef.current?.(payload.thread_id)
             void queryClient.invalidateQueries({
@@ -177,7 +197,6 @@ export const useCompassAssistant = ({
           )
         }
       } finally {
-        // Only the current stream may clear isStreaming.
         // A superseding send owns isStreaming now; only the current stream
         // may clear it.
         if (controllerRef.current === controller) {
@@ -191,6 +210,8 @@ export const useCompassAssistant = ({
 
   const hydrate = useCallback(
     (thread: schemas['CompassThreadWithMessages']) => {
+      // Replaying a stored thread supersedes whatever was on screen,
+      // including a live stream.
       controllerRef.current?.abort()
       controllerRef.current = null
       setIsStreaming(false)
@@ -231,10 +252,14 @@ export const useCompassAssistant = ({
     async (id: string, { ifIdle = false }: { ifIdle?: boolean } = {}) => {
       try {
         const detail = await fetchCompassThread(queryClient, id)
-        // A stream that began while fetching wins over background hydration.
+        // A deep-link load must not clobber a conversation the user already
+        // started while it was in flight.
         if (ifIdle && controllerRef.current) return
         hydrate(detail)
       } catch {
+        // Deleted or inaccessible thread: fall back to a fresh conversation
+        // (newChat also drops the seeded thread id, so the next send doesn't
+        // post against the dead thread).
         newChat()
       }
     },
@@ -250,8 +275,9 @@ export const useCompassAssistant = ({
     [loadThread],
   )
 
-  // Hydrate the initial thread only once, on mount. Reactive URL hydration
-  // races router.replace and can resurrect conversations the user just left.
+  // Hydration is imperative — once on mount for a `?thread=` deep link, and
+  // on an explicit history selection. Reactive URL/cache hydration races
+  // router.replace and resurrects conversations the user just left.
   const initialLoadedRef = useRef(false)
   useEffect(() => {
     if (!initialThreadId || initialLoadedRef.current) return

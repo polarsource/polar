@@ -1,8 +1,7 @@
 import { Checkbox, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { DataTableColumnDef } from '@polar-sh/orbit'
-import { Circle } from 'lucide-react'
-import { reviewStatus } from './reviewStatus'
+import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 import { HeaderCheckState } from './reviewSelection'
 import {
   entityLabelSingular,
@@ -67,7 +66,7 @@ export function buildReviewColumns(
       id: 'status',
       size: 180,
       header: 'Import',
-      cell: ({ row }) => <StatusCell row={row.original} />,
+      cell: ({ row }) => <ReviewStatusIndicator row={row.original} />,
     },
     {
       id: 'amount',
@@ -91,20 +90,6 @@ function NameCell({ row }: { row: ReviewRow }) {
     <Box minWidth={0}>
       <Text truncate color={row.status === 'skipped' ? 'muted' : 'default'}>
         {row.title}
-      </Text>
-    </Box>
-  )
-}
-
-function StatusCell({ row }: { row: ReviewRow }) {
-  const { label, dot, labelColor } = reviewStatus(row)
-  return (
-    <Box alignItems="center" columnGap="s" minWidth={0}>
-      <Box color={dot} flexShrink={0} alignItems="center">
-        <Circle size={8} fill="currentColor" strokeWidth={0} />
-      </Box>
-      <Text truncate color={labelColor}>
-        {label}
       </Text>
     </Box>
   )

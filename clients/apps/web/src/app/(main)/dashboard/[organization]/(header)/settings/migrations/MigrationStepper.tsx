@@ -2,7 +2,7 @@ import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { Check, Circle } from 'lucide-react'
-import { currentVisibleIndex, MIGRATION_STEPS } from './steps'
+import { currentPosition, MIGRATION_STEPS } from './steps'
 
 type StepState = 'done' | 'current' | 'upcoming'
 
@@ -17,7 +17,10 @@ export function MigrationStepper({
 }: {
   migration: schemas['MerchantMigration']
 }) {
-  const current = currentVisibleIndex(migration)
+  const position = currentPosition(migration)
+  // A completed migration has every step behind it.
+  const current =
+    position.kind === 'completed' ? MIGRATION_STEPS.length : position.index
 
   return (
     <Box as="ol" alignItems="stretch" columnGap="s">

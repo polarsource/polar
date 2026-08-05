@@ -2,7 +2,6 @@
 
 import { Alert, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Circle } from 'lucide-react'
 import { ReactNode } from 'react'
 import {
   entityLabelSingular,
@@ -10,7 +9,7 @@ import {
   ReviewRow,
   rowAmount,
 } from './reviewRows'
-import { reviewStatus } from './reviewStatus'
+import { ReviewStatusIndicator } from './ReviewStatusIndicator'
 
 // What `subtitle` carries depends on the entity it came from.
 const SUBTITLE_LABELS: Record<ReviewRow['entity'], string> = {
@@ -27,7 +26,6 @@ export function ReviewRecordModal({
   row: ReviewRow
   onClose: () => void
 }) {
-  const { label, dot } = reviewStatus(row)
   const amount = rowAmount(row)
 
   return (
@@ -63,12 +61,7 @@ export function ReviewRecordModal({
             <Text>{entityLabelSingular(row.entity)}</Text>
           </Field>
           <Field label="Import">
-            <Box alignItems="center" columnGap="s">
-              <Box color={dot} alignItems="center" flexShrink={0}>
-                <Circle size={8} fill="currentColor" strokeWidth={0} />
-              </Box>
-              <Text>{label}</Text>
-            </Box>
+            <ReviewStatusIndicator row={row} />
           </Field>
           {amount && (
             <Field label="Amount">

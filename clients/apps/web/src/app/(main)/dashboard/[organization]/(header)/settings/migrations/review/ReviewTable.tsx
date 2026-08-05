@@ -8,7 +8,7 @@ import {
 } from '@/hooks/queries/merchantMigrations'
 import { Alert, Spinner } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { useState } from 'react'
+import { useCallback, useState } from 'react'
 import { ReviewScope } from './reviewRows'
 import {
   importPayload,
@@ -17,7 +17,8 @@ import {
   toggleAll,
   toggleRow,
 } from './reviewSelection'
-import { ReviewFilter, ReviewTableView } from './ReviewTableView'
+import { ReviewFilter } from './ReviewStatusTabs'
+import { ReviewTableView } from './ReviewTableView'
 
 export function ReviewTable({ migrationId }: { migrationId: string }) {
   const [entity, setEntity] = useState<ReviewScope>('all')
@@ -53,8 +54,15 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     setPage(1)
   }
 
-  const toggle = (id: string) => setSelection((prev) => toggleRow(prev, id))
-  const onToggleAll = () => setSelection((prev) => toggleAll(prev))
+  // Stable so `buildReviewColumns` can actually be memoised.
+  const toggle = useCallback(
+    (id: string) => setSelection((prev) => toggleRow(prev, id)),
+    [],
+  )
+  const onToggleAll = useCallback(
+    () => setSelection((prev) => toggleAll(prev)),
+    [],
+  )
 
   if (records.isLoading || countsLoading) {
     return (

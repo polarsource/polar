@@ -13,11 +13,6 @@ import { ReviewTable } from '../review/ReviewTable'
 import { currentStepDef, MigrationStepDef, OWNER_LABELS } from '../steps'
 import { StripeMark } from '../StripeMark'
 
-const REVIEW_STEPS: schemas['MerchantMigrationStep'][] = [
-  'pre_check',
-  'create_catalog',
-]
-
 interface Props {
   organization: schemas['Organization']
   migrationId: string
@@ -117,13 +112,15 @@ function StepContent({
       </Text>
     )
   }
-  if (REVIEW_STEPS.includes(migration.step)) {
+  const def = currentStepDef(migration)
+  // `steps.ts` owns which backend steps the assessment covers.
+  if (def?.key === 'assessment') {
     return <ReviewTable migrationId={migration.id} />
   }
 
   return (
     <Box flexDirection="column" rowGap="l">
-      <StepHeading def={currentStepDef(migration)} />
+      <StepHeading def={def} />
       {migration.step === 'source_setup' ? (
         <PrecheckPanel migrationId={migration.id} />
       ) : (
@@ -135,7 +132,10 @@ function StepContent({
   )
 }
 
-function StepHeading({ def }: { def: MigrationStepDef }) {
+function StepHeading({ def }: { def: MigrationStepDef | null }) {
+  if (def === null) {
+    return null
+  }
   const owner = OWNER_LABELS[def.owner]
   return (
     <Box flexDirection="column" rowGap="xs">

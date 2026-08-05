@@ -24,9 +24,6 @@ import { ReviewRow, ReviewScope } from './reviewRows'
 
 const numberFormat = new Intl.NumberFormat('en-US')
 
-export type { ReviewFilter } from './ReviewStatusTabs'
-export type { ImportSummary } from './importSummary'
-
 interface Props {
   entity: ReviewScope
   onEntityChange: (entity: ReviewScope) => void

@@ -64,22 +64,28 @@ export const OWNER_LABELS: Record<StepOwner, string | null> = {
   stripe: 'Stripe',
 }
 
-// Which visible step the merchant is on. Connecting completes Connect even
-// though the backend still reads `source_setup`, so once connected we surface
-// Assessment. Terminal states resolve to the last step.
-export function currentVisibleIndex(
+// Where the merchant is. `cleanup` and `completed` map to no visible step, so
+// they get their own case rather than being clamped onto the last one.
+export type MigrationPosition =
+  | { kind: 'step'; index: number }
+  | { kind: 'completed' }
+
+// Connecting completes Connect even though the backend still reads
+// `source_setup`, so once connected we surface Assessment.
+export function currentPosition(
   migration: schemas['MerchantMigration'],
-): number {
+): MigrationPosition {
   if (!migration.source_connected) {
-    return 0
+    return { kind: 'step', index: 0 }
   }
   const step = migration.step === 'source_setup' ? 'pre_check' : migration.step
   const index = MIGRATION_STEPS.findIndex((def) => def.steps.includes(step))
-  return index === -1 ? MIGRATION_STEPS.length - 1 : index
+  return index === -1 ? { kind: 'completed' } : { kind: 'step', index }
 }
 
 export function currentStepDef(
   migration: schemas['MerchantMigration'],
-): MigrationStepDef {
-  return MIGRATION_STEPS[currentVisibleIndex(migration)]
+): MigrationStepDef | null {
+  const position = currentPosition(migration)
+  return position.kind === 'completed' ? null : MIGRATION_STEPS[position.index]
 }

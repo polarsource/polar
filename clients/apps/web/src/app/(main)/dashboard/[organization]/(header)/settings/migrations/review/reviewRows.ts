@@ -1,5 +1,6 @@
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
+import { ENTITY_LABELS } from '../reasons'
 
 export type ReviewRow = schemas['MerchantMigrationRecordItem']
 export type ReviewEntity = ReviewRow['entity']
@@ -7,28 +8,19 @@ export type ReviewEntity = ReviewRow['entity']
 // aren't listed as their own rows, so they're excluded from the scope.
 export type ReviewScope = 'all' | 'products' | 'customers' | 'subscriptions'
 
+const SINGULAR_LABELS: Record<ReviewEntity, string> = {
+  subscriptions: 'Subscription',
+  customers: 'Customer',
+  products: 'Product',
+  prices: 'Price',
+}
+
 export function entityLabelPlural(entity: ReviewScope): string {
-  switch (entity) {
-    case 'all':
-      return 'All'
-    case 'subscriptions':
-      return 'Subscriptions'
-    case 'customers':
-      return 'Customers'
-    default:
-      return 'Products'
-  }
+  return entity === 'all' ? 'All' : ENTITY_LABELS[entity]
 }
 
 export function entityLabelSingular(entity: ReviewEntity): string {
-  switch (entity) {
-    case 'subscriptions':
-      return 'Subscription'
-    case 'customers':
-      return 'Customer'
-    default:
-      return 'Product'
-  }
+  return SINGULAR_LABELS[entity]
 }
 
 // A row can be picked for import only when the pre-check says it's importable

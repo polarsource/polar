@@ -1,9 +1,9 @@
-export interface ImportSummary {
-  results: { entity: string; imported: number }[]
-}
+import { schemas } from '@polar-sh/client'
+
+export type ImportSummary = schemas['MerchantMigrationImportReport']
 
 export function importResultText(report: ImportSummary): string {
-  const byEntity = new Map(
+  const byEntity = new Map<schemas['PrecheckEntity'], number>(
     report.results.map((result) => [result.entity, result.imported]),
   )
   const parts = [

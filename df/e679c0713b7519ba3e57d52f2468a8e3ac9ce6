@@ -1,0 +1,20 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/reviewStatus.ts
+  s_81f519e3bb364f::t_132a22c05133be 3
+  s_81f519e3bb364f::t_63de1d9e9ff05c 15-17,28
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "dfe679c0713b7519ba3e57d52f2468a8e3ac9ce6",
+  "prompts": {},
+  "sessions": {
+    "s_81f519e3bb364f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ac6e6895-3b5c-40c8-8804-f6a4f5e8786b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

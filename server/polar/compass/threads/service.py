@@ -225,10 +225,8 @@ class CompassThreadService:
             ),
             flush=True,
         )
-        # Bump the thread so the list orders by last activity. (Any update —
-        # including a rename — touches modified_at via the column's onupdate;
-        # this explicit touch is needed because appending a message row does
-        # not otherwise UPDATE the thread row.)
+        # Keep list order by last activity. Inserting a message does not
+        # update the thread row on its own.
         await thread_repository.update(thread, update_dict={"modified_at": utc_now()})
         return message
 

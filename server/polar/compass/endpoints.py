@@ -210,27 +210,23 @@ async def assistant_chat(
     )
     if turn is None:
         raise ResourceNotFound()
-    thread_id = turn.thread.id
-    thread_title = turn.thread.title
-    history = turn.history
-    history_last_at = turn.history_last_at
-    is_new_thread = turn.is_new
 
     tz = ZoneInfo(timezone)
     agent, model_provider, model_name = build_assistant_agent(auth_subject.scopes)
     record_turn = compass_thread_service.turn_recorder(
-        write_sessionmaker, thread_id, body.prompt
+        write_sessionmaker, turn.thread.id, body.prompt
     )
     # The request-scoped session closes when this handler returns, before the
     # response streams — the generator opens its own session for tool calls.
     read_sessionmaker = request.state.async_read_sessionmaker
 
     async def event_stream() -> AsyncGenerator[dict[str, str]]:
-        if is_new_thread:
+        if turn.is_new:
             # Announced up-front so the client can point its URL at the
             # thread before the first token arrives.
             yield sse_event(
-                "thread", {"thread_id": str(thread_id), "title": thread_title}
+                "thread",
+                {"thread_id": str(turn.thread.id), "title": turn.thread.title},
             )
         async with read_sessionmaker() as stream_session:
             deps = AssistantDeps(
@@ -240,17 +236,17 @@ async def assistant_chat(
                 timezone=tz,
                 today=datetime.now(tz=tz).date(),
                 redis=redis,
-                history_last_at=history_last_at,
+                history_last_at=turn.history_last_at,
             )
             async for event in stream_assistant_run(
                 agent,
                 deps,
                 body.prompt,
-                history,
+                turn.history,
                 model_provider=model_provider,
                 model_name=model_name,
                 record_turn=record_turn,
-                thread_id=str(thread_id),
+                thread_id=str(turn.thread.id),
             ):
                 yield event
 

@@ -810,7 +810,7 @@ class TestPlanProductImports:
 
         assert plan.importable is False
         assert plan.skip is not None
-        assert plan.skip[0] == "one_time_product"
+        assert plan.skip.code == "one_time_product"
 
     def test_drops_unsupported_prices_but_keeps_the_rest(self) -> None:
         product = build_product(
@@ -842,7 +842,7 @@ class TestPlanProductImports:
 
         assert plan.importable is False
         assert plan.skip is not None
-        assert plan.skip[0] == "no_importable_price"
+        assert plan.skip.code == "no_importable_price"
 
     def test_products_sharing_a_name_both_import(self) -> None:
         first = build_product(source_id="prod_1:month:1", product_source_id="prod_1")
@@ -869,7 +869,7 @@ class TestPlanCustomerImports:
 
         assert plans["cus_1"] is None
         assert skip is not None
-        assert skip[0] == "duplicate_customer_email"
+        assert skip.code == "duplicate_customer_email"
 
     def test_customer_without_email_is_skipped(self) -> None:
         customer = build_customer(source_id="cus_1", email="")
@@ -877,4 +877,4 @@ class TestPlanCustomerImports:
         skip = plan_customer_imports([customer])["cus_1"]
 
         assert skip is not None
-        assert skip[0] == "customer_missing_email"
+        assert skip.code == "customer_missing_email"

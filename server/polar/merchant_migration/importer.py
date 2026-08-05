@@ -3,6 +3,7 @@ Idempotent; migrated subscriptions arrive paused so nothing bills until cutover.
 """
 
 from collections.abc import Sequence
+from dataclasses import dataclass
 from typing import TypeVar
 from uuid import UUID
 
@@ -48,6 +49,7 @@ from .canonical import (
 )
 from .precheck import (
     ProductImportPlan,
+    Reason,
     plan_customer_imports,
     plan_product_imports,
     plan_subscription_imports,
@@ -61,20 +63,42 @@ from .schemas import (
 
 _CanonicalT = TypeVar("_CanonicalT")
 
-_CUSTOMER_NOT_IMPORTED_REASON = (
-    "Its customer wasn't imported, so this subscription stays on the source."
+_DEPENDENCY_CODE = "subscription_dependency_not_imported"
+_CUSTOMER_NOT_IMPORTED = Reason(
+    _DEPENDENCY_CODE,
+    "Its customer wasn't imported, so this subscription stays on the source.",
 )
-_PRODUCT_NOT_IMPORTED_REASON = (
-    "Its product wasn't imported, so this subscription stays on the source."
+_PRODUCT_NOT_IMPORTED = Reason(
+    _DEPENDENCY_CODE,
+    "Its product wasn't imported, so this subscription stays on the source.",
 )
-_CUSTOMER_ALREADY_SUBSCRIBED_REASON = (
+_CUSTOMER_ALREADY_SUBSCRIBED = Reason(
+    _DEPENDENCY_CODE,
     "This customer already has a live subscription to the product on Polar, so a "
-    "duplicate isn't created. It stays on the source."
+    "duplicate isn't created. It stays on the source.",
 )
-_CUSTOMER_STRIPE_ID_CONFLICT_REASON = (
+_CUSTOMER_STRIPE_ID_CONFLICT = Reason(
+    "customer_stripe_id_conflict",
     "A Polar customer with this email already has a different Stripe id. Reconcile "
-    "them manually; this customer stays on the source."
+    "them manually; this customer stays on the source.",
 )
+
+
+@dataclass(frozen=True)
+class ImportedCustomer:
+    """The Polar customer to use, or why the record is skipped."""
+
+    customer: Customer | None = None
+    skip: Reason | None = None
+
+
+@dataclass(frozen=True)
+class ImportedSubscription:
+    """The created subscription, or why the record is skipped. Both unset means
+    an unexpected miss, which leaves the record pending."""
+
+    subscription: Subscription | None = None
+    skip: Reason | None = None
 
 
 class CatalogImporter:
@@ -157,7 +181,7 @@ class CatalogImporter:
                 continue
             plan = plans[product.source_id]
             if plan.skip is not None:
-                await self._mark_skipped(record, *plan.skip)
+                await self._mark_skipped(record, plan.skip)
                 skipped += 1
                 continue
             polar_product = await self._create_product(product, plan)
@@ -186,20 +210,16 @@ class CatalogImporter:
                 continue
             skip = plans[customer.source_id]
             if skip is not None:
-                await self._mark_skipped(record, *skip)
+                await self._mark_skipped(record, skip)
                 skipped += 1
                 continue
-            polar_customer, conflict_reason = await self._create_or_reuse_customer(
-                customer
-            )
-            if conflict_reason is not None:
-                await self._mark_skipped(
-                    record, "customer_stripe_id_conflict", conflict_reason
-                )
+            result = await self._create_or_reuse_customer(customer)
+            if result.skip is not None:
+                await self._mark_skipped(record, result.skip)
                 skipped += 1
                 continue
-            assert polar_customer is not None
-            await self._mark_imported(record, polar_customer.id)
+            assert result.customer is not None
+            await self._mark_imported(record, result.customer.id)
             imported += 1
 
         return MerchantMigrationImportResult(
@@ -240,7 +260,7 @@ class CatalogImporter:
 
     async def _create_or_reuse_customer(
         self, customer: CanonicalCustomer
-    ) -> tuple[Customer | None, str | None]:
+    ) -> ImportedCustomer:
         stripe_customer_id = self._stripe_customer_id(customer)
         existing = await self.customer_repository.get_by_email_and_organization(
             customer.email, self.organization.id
@@ -253,14 +273,14 @@ class CatalogImporter:
                 and existing.stripe_customer_id is not None
                 and existing.stripe_customer_id != stripe_customer_id
             ):
-                return None, _CUSTOMER_STRIPE_ID_CONFLICT_REASON
+                return ImportedCustomer(skip=_CUSTOMER_STRIPE_ID_CONFLICT)
             # Reconcile the source id so the PAN-copied card lands on the same
             # customer, but never overwrite one that's already set.
             if stripe_customer_id and existing.stripe_customer_id is None:
                 await self.customer_repository.update(
                     existing, update_dict={"stripe_customer_id": stripe_customer_id}
                 )
-            return existing, None
+            return ImportedCustomer(customer=existing)
         polar_customer = await customer_service.create_for_organization(
             self.session,
             self.organization,
@@ -269,7 +289,7 @@ class CatalogImporter:
             billing_address=self._billing_address(customer),
             stripe_customer_id=stripe_customer_id,
         )
-        return polar_customer, None
+        return ImportedCustomer(customer=polar_customer)
 
     def _stripe_customer_id(self, customer: CanonicalCustomer) -> str | None:
         # PAN copy preserves the Stripe `cus_…` id; other providers have no
@@ -323,10 +343,10 @@ class CatalogImporter:
                 continue
             skip = plans[subscription.source_id]
             if skip is not None:
-                await self._mark_skipped(record, *skip)
+                await self._mark_skipped(record, skip)
                 skipped += 1
                 continue
-            polar_subscription, skip_reason = await self._create_subscription(
+            result = await self._create_subscription(
                 subscription,
                 product_by_price,
                 customer_target_by_source,
@@ -334,15 +354,13 @@ class CatalogImporter:
             )
             # A missing dependency means it was skipped or deselected, so skip
             # the subscription rather than leave it pending.
-            if skip_reason is not None:
-                await self._mark_skipped(
-                    record, "subscription_dependency_not_imported", skip_reason
-                )
+            if result.skip is not None:
+                await self._mark_skipped(record, result.skip)
                 skipped += 1
                 continue
-            if polar_subscription is None:
+            if result.subscription is None:
                 continue
-            await self._mark_imported(record, polar_subscription.id)
+            await self._mark_imported(record, result.subscription.id)
             imported += 1
 
         return MerchantMigrationImportResult(
@@ -355,40 +373,40 @@ class CatalogImporter:
         product_by_price: dict[str, CanonicalProduct],
         customer_target_by_source: dict[str, UUID],
         product_target_by_source: dict[str, UUID],
-    ) -> tuple[Subscription | None, str | None]:
-        # A reason means skip; both None means an unexpected miss, left pending.
+    ) -> ImportedSubscription:
         customer_target = customer_target_by_source.get(subscription.customer_source_id)
         if customer_target is None:
-            return None, _CUSTOMER_NOT_IMPORTED_REASON
+            return ImportedSubscription(skip=_CUSTOMER_NOT_IMPORTED)
         canonical_product = product_by_price.get(subscription.price_source_id)
         if canonical_product is None:
-            return None, _PRODUCT_NOT_IMPORTED_REASON
+            return ImportedSubscription(skip=_PRODUCT_NOT_IMPORTED)
         product_target = product_target_by_source.get(canonical_product.source_id)
         if product_target is None:
-            return None, _PRODUCT_NOT_IMPORTED_REASON
+            return ImportedSubscription(skip=_PRODUCT_NOT_IMPORTED)
 
         polar_product = await self._load_product(product_target)
         customer = await self.customer_repository.get_by_id(customer_target)
         if polar_product is None or customer is None:
-            return None, None
+            return ImportedSubscription()
 
         # Never create a second live subscription to the same product for a
         # customer — at cutover it would double-bill them.
         if await self.subscription_repository.exists_live_by_customer_and_product(
             customer.id, polar_product.id
         ):
-            return None, _CUSTOMER_ALREADY_SUBSCRIBED_REASON
+            return ImportedSubscription(skip=_CUSTOMER_ALREADY_SUBSCRIBED)
 
         price = self._find_price(
             polar_product, canonical_product, subscription.price_source_id
         )
         if price is None:
-            return None, None
+            return ImportedSubscription()
 
-        subscription_target = await self._persist_subscription(
-            subscription, polar_product, price, customer
+        return ImportedSubscription(
+            subscription=await self._persist_subscription(
+                subscription, polar_product, price, customer
+            )
         )
-        return subscription_target, None
 
     async def _persist_subscription(
         self,
@@ -473,16 +491,13 @@ class CatalogImporter:
         )
 
     async def _mark_skipped(
-        self,
-        record: MerchantMigrationRecord,
-        code: str,
-        reason: str,
+        self, record: MerchantMigrationRecord, reason: Reason
     ) -> None:
         await self.record_repository.update(
             record,
             update_dict={
                 "status": MerchantMigrationRecordStatus.skipped,
-                "error": reason or code,
+                "error": reason.message,
             },
         )
 

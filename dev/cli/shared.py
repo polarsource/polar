@@ -54,6 +54,9 @@ def update_secrets(values: dict[str, str | None]) -> None:
     Values are read and written quoted, so multi-line secrets such as the
     GitHub App private key survive a rewrite intact.
     """
+    if not values:
+        return
+
     secrets = read_secrets()
     for key, value in values.items():
         if value is None:

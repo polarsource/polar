@@ -113,13 +113,14 @@ def has_saved_keys() -> bool:
     )
 
 
-def saved_keys_rejection() -> str | None:
+def saved_keys_rejection(profile: StripeProfile | None) -> str | None:
     """Why the saved Stripe keys can't back a local environment, or None if they can."""
+    if not has_saved_keys():
+        return "no Stripe keys are configured"
+
     secret_key = read_secrets().get("POLAR_STRIPE_SECRET_KEY", "")
     if not secret_key.startswith("sk_test_"):
         return "a live secret key is configured"
-
-    profile = read_profile()
     if profile is None:
         return f"there is no '{STRIPE_CLI_PROFILE}' Stripe CLI profile"
     if secret_key != profile.secret_key:
@@ -256,7 +257,7 @@ def configure(relink: bool = False) -> StripeProfile | None:
     step_status(True, "Stripe sandbox", profile.display_name)
 
     changed = False
-    if has_saved_keys() and saved_keys_rejection() is None:
+    if saved_keys_rejection(profile) is None:
         step_status(True, "Stripe API keys", "configured")
     else:
         save_keys(profile)

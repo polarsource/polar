@@ -65,13 +65,14 @@ def _setup_stripe() -> None:
 
 
 def _configure_stripe() -> None:
-    if stripe_config.has_saved_keys():
-        rejection = stripe_config.saved_keys_rejection()
-        if rejection is None:
-            profile = stripe_config.read_profile()
-            step_status(True, "Stripe sandbox", profile.display_name if profile else "configured")
-            return
+    profile = stripe_config.read_profile()
+    rejection = stripe_config.saved_keys_rejection(profile)
 
+    if rejection is None:
+        step_status(True, "Stripe sandbox", profile.display_name)
+        return
+
+    if stripe_config.has_saved_keys():
         step_status(False, "Stripe", rejection)
         console.print("\n  [yellow]Local environments must use your own Stripe sandbox.[/yellow]")
         if typer.confirm("  Switch to a sandbox now?", default=True):

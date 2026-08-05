@@ -102,7 +102,7 @@ export const Timeline = ({
     )
   }
 
-  if (events.isError) {
+  if (events.isError && !events.data) {
     return (
       <Box
         flexDirection="column"

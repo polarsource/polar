@@ -234,6 +234,19 @@ async def order_confirmation_email(order_id: uuid.UUID) -> None:
         await order_service.send_confirmation_email(session, order)
 
 
+@actor(actor_name="order.subscription_renewal_notification", priority=TaskPriority.LOW)
+async def order_subscription_renewal_notification(order_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = OrderRepository.from_session(session)
+        order = await repository.get_by_id(
+            order_id, options=repository.get_eager_options()
+        )
+        if order is None:
+            raise OrderDoesNotExist(order_id)
+
+        await order_service.send_subscription_renewal_notification(session, order)
+
+
 async def _run_order_invoice(order_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = OrderRepository.from_session(session)

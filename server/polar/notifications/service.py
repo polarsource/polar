@@ -77,17 +77,21 @@ class NotificationsService:
         notif: PartialNotification,
     ) -> None:
         _SETTING_KEY: dict[
-            NotificationType, Literal["new_order", "new_subscription"]
+            NotificationType,
+            Literal["new_order", "new_subscription", "subscription_renewal"],
         ] = {
             NotificationType.maintainer_new_product_sale: "new_order",
             NotificationType.maintainer_new_paid_subscription: "new_subscription",
+            NotificationType.maintainer_subscription_renewal: "subscription_renewal",
         }
         key = _SETTING_KEY.get(notif.type)
         members = await user_organization_service.list_by_org(session, org_id)
 
         for member in members:
             if key is not None:
-                if not member.notification_settings[key]:
+                # `subscription_renewal` is absent on rows written before it
+                # existed, and it's opt-in, so a missing key means "don't send".
+                if not member.notification_settings.get(key, False):
                     continue
 
             await self.send_to_user(

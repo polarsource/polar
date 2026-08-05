@@ -1233,6 +1233,49 @@ export interface components {
       /** Order Url */
       readonly order_url: string | null
     }
+    /** MaintainerSubscriptionRenewalNotificationPayload */
+    MaintainerSubscriptionRenewalNotificationPayload: {
+      /** Product Name */
+      product_name: string
+      /** Product Price Amount */
+      product_price_amount: number
+      /**
+       * Customer Name
+       * @default
+       */
+      customer_name: string
+      /**
+       * Customer Email
+       * @default null
+       */
+      customer_email: string | null
+      /**
+       * Organization Slug
+       * @default null
+       */
+      organization_slug: string | null
+      /**
+       * Subscription Id
+       * @default null
+       */
+      subscription_id: string | null
+      /** Recurring Interval */
+      recurring_interval: string
+      /**
+       * Recurring Interval Count
+       * @default 1
+       */
+      recurring_interval_count: number
+      /**
+       * Currency
+       * @default usd
+       */
+      currency: string
+      /** Formatted Price Amount */
+      readonly formatted_price_amount: string
+      /** Formatted Recurring Interval */
+      readonly formatted_recurring_interval: string
+    }
     MetadataOutputType: {
       [key: string]: string | number | boolean
     }
@@ -1265,6 +1308,16 @@ export interface components {
        */
       template: 'notification_new_subscription'
       props: components['schemas']['MaintainerNewPaidSubscriptionNotificationPayload']
+    }
+    /** NotificationSubscriptionRenewalEmail */
+    NotificationSubscriptionRenewalEmail: {
+      /**
+       * Template
+       * @default notification_subscription_renewal
+       * @constant
+       */
+      template: 'notification_subscription_renewal'
+      props: components['schemas']['MaintainerSubscriptionRenewalNotificationPayload']
     }
     /** OAuth2LeakedClientEmail */
     OAuth2LeakedClientEmail: {

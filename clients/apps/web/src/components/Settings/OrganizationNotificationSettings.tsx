@@ -44,8 +44,8 @@ const OrganizationNotificationSettings: React.FC<
   return (
     <SettingsGroup>
       <SettingsGroupItem
-        title="New Orders"
-        description="Receive a notification when new orders are created"
+        title="New One-Time Purchases"
+        description="Receive a notification when a one-time purchase is made"
       >
         <Switch
           checked={settings.new_order}
@@ -63,6 +63,21 @@ const OrganizationNotificationSettings: React.FC<
           checked={settings.new_subscription}
           onCheckedChange={(checked) =>
             update((previous) => ({ ...previous, new_subscription: checked }))
+          }
+        />
+      </SettingsGroupItem>
+
+      <SettingsGroupItem
+        title="Subscription Renewals"
+        description="Receive a notification each time a subscription renewal payment is collected"
+      >
+        <Switch
+          checked={settings.subscription_renewal ?? false}
+          onCheckedChange={(checked) =>
+            update((previous) => ({
+              ...previous,
+              subscription_renewal: checked,
+            }))
           }
         />
       </SettingsGroupItem>

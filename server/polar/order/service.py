@@ -87,6 +87,7 @@ from polar.models.transaction import TransactionType
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
     MaintainerNewProductSaleNotificationPayload,
+    MaintainerSubscriptionRenewalNotificationPayload,
     NotificationType,
 )
 from polar.notifications.service import PartialNotification
@@ -2269,6 +2270,37 @@ class OrderService:
             ),
         )
 
+    async def send_subscription_renewal_notification(
+        self, session: AsyncSession, order: Order
+    ) -> None:
+        product = order.product
+        subscription = order.subscription
+
+        if product is None or subscription is None:
+            return
+
+        organization = order.organization
+        customer = order.customer
+
+        await notifications_service.send_to_org_members(
+            session,
+            org_id=organization.id,
+            notif=PartialNotification(
+                type=NotificationType.maintainer_subscription_renewal,
+                payload=MaintainerSubscriptionRenewalNotificationPayload(
+                    customer_email=customer.email,
+                    customer_name=customer.display_name,
+                    product_name=product.name,
+                    product_price_amount=order.net_amount,
+                    organization_slug=organization.slug,
+                    subscription_id=str(subscription.id),
+                    recurring_interval=subscription.recurring_interval,
+                    recurring_interval_count=subscription.recurring_interval_count,
+                    currency=order.currency,
+                ),
+            ),
+        )
+
     async def send_confirmation_email(
         self, session: AsyncSession, order: Order
     ) -> None:
@@ -2807,6 +2839,7 @@ class OrderService:
                 "benefit.enqueue_benefit_grant_cycles",
                 subscription_id=order.subscription_id,
             )
+            enqueue_job("order.subscription_renewal_notification", order.id)
 
     async def _emit_balance_credit_order_event(
         self,

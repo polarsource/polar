@@ -18,6 +18,7 @@ if TYPE_CHECKING:
 class NotificationType(StrEnum):
     maintainer_new_paid_subscription = "MaintainerNewPaidSubscriptionNotification"
     maintainer_new_product_sale = "MaintainerNewProductSaleNotification"
+    maintainer_subscription_renewal = "MaintainerSubscriptionRenewalNotification"
     maintainer_account_credits_granted = "MaintainerAccountCreditsGrantedNotification"
 
 
@@ -169,6 +170,41 @@ class MaintainerNewProductSaleNotification(NotificationBase):
     payload: MaintainerNewProductSaleNotificationPayload
 
 
+class MaintainerSubscriptionRenewalNotificationPayload(NotificationPayloadBase):
+    product_name: str
+    product_price_amount: int
+    customer_name: str = ""
+
+    customer_email: str | None = None
+    organization_slug: str | None = None
+    subscription_id: str | None = None
+    recurring_interval: str
+    recurring_interval_count: int = 1
+    currency: str = "usd"
+
+    @computed_field
+    def formatted_price_amount(self) -> str:
+        return format_currency(self.product_price_amount, self.currency)
+
+    @computed_field
+    def formatted_recurring_interval(self) -> str:
+        if self.recurring_interval_count > 1:
+            return f"every {self.recurring_interval_count} {self.recurring_interval}s"
+        return f"every {self.recurring_interval}"
+
+    def subject(self) -> str:
+        return f"You've been paid {self.formatted_price_amount} for a renewal!"
+
+    @classmethod
+    def template_name(cls) -> str:
+        return "notification_subscription_renewal"
+
+
+class MaintainerSubscriptionRenewalNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_subscription_renewal]
+    payload: MaintainerSubscriptionRenewalNotificationPayload
+
+
 class MaintainerAccountCreditsGrantedNotificationPayload(NotificationPayloadBase):
     organization_name: str
     amount: int
@@ -194,12 +230,14 @@ class MaintainerAccountCreditsGrantedNotification(NotificationBase):
 NotificationPayload = (
     MaintainerNewPaidSubscriptionNotificationPayload
     | MaintainerNewProductSaleNotificationPayload
+    | MaintainerSubscriptionRenewalNotificationPayload
     | MaintainerAccountCreditsGrantedNotificationPayload
 )
 
 Notification = Annotated[
     MaintainerNewPaidSubscriptionNotification
     | MaintainerNewProductSaleNotification
+    | MaintainerSubscriptionRenewalNotification
     | MaintainerAccountCreditsGrantedNotification,
     Discriminator(discriminator="type"),
 ]

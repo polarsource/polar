@@ -389,6 +389,57 @@ class TestUpdateMyNotificationSettings:
         }
 
     @pytest.mark.auth
+    async def test_subscription_renewal_round_trips(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        url = f"/v1/users/me/organizations/{organization.id}/notification-settings"
+        response = await client.patch(
+            url,
+            json={
+                "notification_settings": {
+                    "new_order": True,
+                    "new_subscription": True,
+                    "chargeback_prevention": True,
+                    "subscription_renewal": True,
+                }
+            },
+        )
+
+        assert response.status_code == 200
+        assert response.json()["notification_settings"]["subscription_renewal"] is True
+
+        get_response = await client.get(url)
+        assert (
+            get_response.json()["notification_settings"]["subscription_renewal"] is True
+        )
+
+    @pytest.mark.auth
+    async def test_subscription_renewal_may_be_omitted(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Clients that predate the setting omit the key; that must stay valid.
+        url = f"/v1/users/me/organizations/{organization.id}/notification-settings"
+        response = await client.patch(
+            url,
+            json={
+                "notification_settings": {
+                    "new_order": True,
+                    "new_subscription": True,
+                    "chargeback_prevention": True,
+                }
+            },
+        )
+
+        assert response.status_code == 200
+        assert "subscription_renewal" not in response.json()["notification_settings"]
+
+    @pytest.mark.auth
     async def test_non_member_returns_404(
         self, client: AsyncClient, organization: Organization
     ) -> None:

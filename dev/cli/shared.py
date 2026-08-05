@@ -7,6 +7,7 @@ import subprocess
 from dataclasses import dataclass, field
 from pathlib import Path
 
+from dotenv import dotenv_values
 from rich.console import Console
 from rich.live import Live
 from rich.padding import Padding
@@ -35,6 +36,35 @@ class Context:
     skip_tinybird: bool = False
     database_name: str | None = None
     state: dict = field(default_factory=dict)
+
+
+def read_secrets() -> dict[str, str]:
+    """Read the central secrets file."""
+    if not SECRETS_FILE.exists():
+        return {}
+    return {k: v for k, v in dotenv_values(SECRETS_FILE).items() if v is not None}
+
+
+def update_secrets(values: dict[str, str | None]) -> None:
+    """Merge values into the central secrets file, dropping keys set to None.
+
+    Values are read and written quoted, so multi-line secrets such as the
+    GitHub App private key survive a rewrite intact.
+    """
+    secrets = read_secrets()
+    for key, value in values.items():
+        if value is None:
+            secrets.pop(key, None)
+        else:
+            secrets[key] = value
+
+    SECRETS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    with open(SECRETS_FILE, "w") as f:
+        f.write("# Polar Development Secrets\n")
+        f.write("# Shared across Git worktrees. See dev/secrets.env.template\n\n")
+        for key, value in secrets.items():
+            delimiter = "'" if '"' in value else '"'
+            f.write(f"{key}={delimiter}{value}{delimiter}\n")
 
 
 def run_command(

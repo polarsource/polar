@@ -129,8 +129,9 @@ api 202s the webhook and the **worker** creates the order.
 
 ### 3a. Stripe account + keys
 
-Use **your own Stripe sandbox / test-mode account** — any test account works.
-Never use a production account or a real personal account; test mode only.
+Use **your own Stripe sandbox** (https://dashboard.stripe.com/sandboxes). Never a
+live account, and never the shared Polar Software Inc account — `dev stripe`
+refuses both. The Stripe CLI profile is always `polar-sandbox`.
 
 **Secrets are set up once and reused across worktrees.** They live centrally in
 `~/.config/polar/secrets.env` and `dev/setup-environment` propagates them into
@@ -147,9 +148,8 @@ listener (3b). If the CLI is already configured it skips straight to listening.
 
 CLI test keys expire every 90 days. Symptom of an expired key: checkout sticks on
 "We are processing your order" and the worker/api logs show
-`AuthenticationError: Expired API Key provided`. Refresh by re-running
-`stripe login` for your sandbox project (or `dev stripe`), then recreate services
-(3c).
+`AuthenticationError: Expired API Key provided`. Refresh with `dev stripe`, which
+detects the expired key and re-runs the link flow, then recreate services (3c).
 
 If you ever set keys by hand, set them in the central file (or `server/.env`) and
 keep them on the **same account**: `POLAR_STRIPE_SECRET_KEY` (the secret key),
@@ -258,6 +258,11 @@ stale-key retry, a confusing validation message) — that's the signal.
 - Restart ≠ recreate. `dev docker restart` keeps the old compose env; use
   `dev docker up -d <svc>` to load env/key changes.
 - The api session is DB-backed, so recreating the api keeps you logged in.
-- `dev stripe --listen` skips re-saving the webhook secret when keys are already
-  configured — so a rotated signing secret won't propagate. Set it by hand (3b)
-  if webhooks 400 on signature.
+- `dev stripe --listen` refreshes the webhook secret whenever it writes new API
+  keys, so switching sandbox propagates the new signing secret too. It leaves the
+  two secrets alone when they already differ from each other — that means they
+  came from dashboard endpoints, not the CLI listener.
+- `dev seed` runs on the **host** against `server/.env`
+  (`POLAR_POSTGRES_*`), which is not the dockerized `polar_dev_<N>`. For a
+  docker instance, seed inside the container instead:
+  `docker exec polar-app-<N>-api-1 sh -c 'cd /app/server && uv run python -m scripts.seeds_load'`

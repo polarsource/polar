@@ -14,6 +14,17 @@ import { TextRings } from '@/components/Landing/graphics/TextRings'
 
 const JOBS = [
   {
+    category: 'Design',
+    roles: [
+      {
+        role: 'Senior Product Designer',
+        location: 'Remote, Europe',
+        experience: '8+ Years Experience',
+        link: 'https://jobs.ashbyhq.com/polar/ec140cc5-fe50-4c7a-9131-3dd718d2b02d',
+      },
+    ],
+  },
+  {
     category: 'Product & Engineering',
     roles: [
       {
@@ -174,10 +185,10 @@ export default function CompanyPage() {
             title="Open Roles"
             description="We're a small, senior team working remotely across the world. High ownership, high pace and a direct line to the people using what you build."
           />
-          <Box flexDirection="column" rowGap="2xl">
+          <Box flexDirection="column" rowGap="3xl">
             {JOBS.map(({ category, roles }) => (
               <Box key={category} flexDirection="column" rowGap="xl">
-                <Text variant="heading-xxs" as="h3">
+                <Text variant="heading-s" as="h3">
                   {category}
                 </Text>
                 <Box flexDirection="column">

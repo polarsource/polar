@@ -24,7 +24,11 @@ DEFAULT_DB_PORT = 5432
 DEFAULT_REDIS_PORT = 6379
 DEFAULT_MINIO_PORT = 9000
 DEFAULT_TINYBIRD_PORT = 7181
-SECRETS_FILE = Path.home() / ".config" / "polar" / "secrets.env"
+SECRETS_FILE = Path(
+    os.environ.get(
+        "POLAR_SECRETS_FILE", Path.home() / ".config" / "polar" / "secrets.env"
+    )
+)
 
 
 @dataclass
@@ -39,7 +43,6 @@ class Context:
 
 
 def read_secrets() -> dict[str, str]:
-    """Read the central secrets file."""
     if not SECRETS_FILE.exists():
         return {}
     return {k: v for k, v in dotenv_values(SECRETS_FILE).items() if v is not None}

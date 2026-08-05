@@ -1,30 +1,31 @@
 """Stripe sandbox setup shared by `dev up` and `dev stripe`.
 
-A local environment must talk to a personal Stripe **sandbox**: never a live
-account, and never the shared Polar Software Inc account.
+A local environment must talk to a personal Stripe sandbox: never a live
+account, and never a shared team account.
 """
 
-import tomllib
 import webbrowser
 from dataclasses import dataclass
-from pathlib import Path
 
 import typer
 
-from shared import console, read_secrets, run_command, step_status, update_secrets
+from shared import (
+    ROOT_DIR,
+    check_command_exists,
+    console,
+    read_secrets,
+    run_command,
+    step_spinner,
+    step_status,
+    update_secrets,
+)
 
 STRIPE_CLI_PROFILE = "polar-sandbox"
-STRIPE_CLI_CONFIG = Path.home() / ".config" / "stripe" / "config.toml"
 SANDBOX_DASHBOARD_URL = "https://dashboard.stripe.com/sandboxes"
-
-BLOCKED_ACCOUNT_IDS = {
-    "acct_1LzIVeDG1jUQrXwC": "the shared Polar Software Inc account",
-}
 
 
 @dataclass
 class StripeProfile:
-    name: str
     account_id: str
     display_name: str
     secret_key: str
@@ -32,37 +33,53 @@ class StripeProfile:
     has_live_key: bool
 
 
-def is_cli_installed() -> bool:
-    result = run_command(["which", "stripe"], capture=True)
-    return result is not None and result.returncode == 0
+def ensure_cli() -> bool:
+    """Make sure the Stripe CLI is installed, offering to install it."""
+    if check_command_exists("stripe"):
+        step_status(True, "Stripe CLI", "installed")
+        return True
+
+    step_status(False, "Stripe CLI", "not installed")
+    if not typer.confirm("\n  Install Stripe CLI via Homebrew now?", default=True):
+        console.print("  [yellow]Stripe CLI is required to continue.[/yellow]")
+        return False
+
+    with step_spinner("Installing Stripe CLI..."):
+        result = run_command(["brew", "install", "stripe/stripe-cli/stripe"], capture=True)
+    if not result or result.returncode != 0 or not check_command_exists("stripe"):
+        console.print(
+            "  [red]Installation failed. Install manually: brew install stripe/stripe-cli/stripe[/red]"
+        )
+        return False
+
+    step_status(True, "Stripe CLI", "installed")
+    return True
 
 
-def install_cli() -> bool:
-    """Install the Stripe CLI via Homebrew. Returns True once it is available."""
-    result = run_command(["brew", "install", "stripe/stripe-cli/stripe"], capture=False)
-    return result is not None and result.returncode == 0 and is_cli_installed()
-
-
-def read_profile(name: str = STRIPE_CLI_PROFILE) -> StripeProfile | None:
-    """Read a profile out of the Stripe CLI config, or None if it isn't there."""
-    if not STRIPE_CLI_CONFIG.exists():
+def read_profile() -> StripeProfile | None:
+    """Read the sandbox profile through the Stripe CLI's own config resolution."""
+    result = run_command(
+        ["stripe", "config", "--list", "-p", STRIPE_CLI_PROFILE], capture=True
+    )
+    if not result or result.returncode != 0:
         return None
-    try:
-        config = tomllib.loads(STRIPE_CLI_CONFIG.read_text())
-    except (tomllib.TOMLDecodeError, OSError):
-        return None
 
-    section = config.get(name)
-    if not isinstance(section, dict):
+    values = {}
+    for line in result.stdout.splitlines():
+        line = line.strip()
+        if "=" in line and not line.startswith("["):
+            key, value = line.split("=", 1)
+            values[key.strip()] = value.strip().strip("'\"")
+
+    if not values:
         return None
 
     return StripeProfile(
-        name=name,
-        account_id=str(section.get("account_id", "")),
-        display_name=str(section.get("display_name", name)),
-        secret_key=str(section.get("test_mode_api_key", "")),
-        publishable_key=str(section.get("test_mode_pub_key", "")),
-        has_live_key=bool(section.get("live_mode_api_key")),
+        account_id=values.get("account_id", ""),
+        display_name=values.get("display_name", STRIPE_CLI_PROFILE),
+        secret_key=values.get("test_mode_api_key", ""),
+        publishable_key=values.get("test_mode_pub_key", ""),
+        has_live_key=bool(values.get("live_mode_api_key")),
     )
 
 
@@ -77,51 +94,103 @@ def sandbox_rejection(profile: StripeProfile) -> str | None:
     # A sandbox has no live mode at all, so the CLI stores no live key for one.
     if profile.has_live_key:
         return f"'{profile.display_name}' is a full Stripe account, not a sandbox"
-    blocked = BLOCKED_ACCOUNT_IDS.get(profile.account_id)
-    if blocked:
-        return f"it is {blocked}"
     return None
 
 
-def keys_are_usable(profile_name: str = STRIPE_CLI_PROFILE) -> bool:
-    """Check the stored keys still work — CLI keys expire after 90 days."""
+def keys_are_usable() -> bool:
+    """Check the stored keys still work — Stripe CLI keys expire after 90 days."""
     result = run_command(
-        ["stripe", "get", "/v1/account", "-p", profile_name], capture=True
+        ["stripe", "get", "/v1/account", "-p", STRIPE_CLI_PROFILE], capture=True
     )
     return result is not None and result.returncode == 0
 
 
-def login(profile_name: str = STRIPE_CLI_PROFILE) -> bool:
-    result = run_command(
-        ["stripe", "login", "--project-name", profile_name], capture=False
-    )
-    return result is not None and result.returncode == 0
-
-
-def secrets_status() -> tuple[str, str]:
-    """Classify the Stripe keys currently in the secrets file.
-
-    Returns (status, detail) where status is one of:
-      ok        - keys match the sandbox profile
-      missing   - no keys configured
-      live      - live keys, which must never reach a local environment
-      mismatch  - test keys from some other account than the sandbox profile
-    """
+def has_saved_keys() -> bool:
     secrets = read_secrets()
-    secret_key = secrets.get("POLAR_STRIPE_SECRET_KEY", "")
-    publishable_key = secrets.get("POLAR_STRIPE_PUBLISHABLE_KEY", "")
+    return bool(
+        secrets.get("POLAR_STRIPE_SECRET_KEY")
+        and secrets.get("POLAR_STRIPE_PUBLISHABLE_KEY")
+    )
 
-    if not secret_key or not publishable_key:
-        return "missing", "no keys configured"
+
+def saved_keys_rejection() -> str | None:
+    """Why the saved Stripe keys can't back a local environment, or None if they can."""
+    secret_key = read_secrets().get("POLAR_STRIPE_SECRET_KEY", "")
     if not secret_key.startswith("sk_test_"):
-        return "live", "a live secret key is configured"
+        return "a live secret key is configured"
 
     profile = read_profile()
     if profile is None:
-        return "mismatch", f"no '{STRIPE_CLI_PROFILE}' Stripe CLI profile"
+        return f"there is no '{STRIPE_CLI_PROFILE}' Stripe CLI profile"
     if secret_key != profile.secret_key:
-        return "mismatch", f"keys don't match the '{STRIPE_CLI_PROFILE}' sandbox"
-    return "ok", profile.display_name
+        return f"the keys don't match the '{STRIPE_CLI_PROFILE}' sandbox"
+    return None
+
+
+def print_sandbox_instructions() -> None:
+    console.print(
+        "\n  Local development runs against your own Stripe [bold]sandbox[/bold] —"
+    )
+    console.print("  no live account, no shared team account.\n")
+    console.print("  [bold]1.[/bold] Create a sandbox (or pick an existing one) at")
+    console.print(f"     [link={SANDBOX_DASHBOARD_URL}]{SANDBOX_DASHBOARD_URL}[/link]")
+    console.print("  [bold]2.[/bold] Open that sandbox, so it's the selected account")
+    console.print("  [bold]3.[/bold] Confirm the pairing in the browser tab we open next\n")
+
+
+def link_sandbox() -> StripeProfile | None:
+    """Walk the user through pairing the Stripe CLI with a sandbox."""
+    print_sandbox_instructions()
+    if not typer.confirm("  Open the Stripe sandbox dashboard now?", default=True):
+        console.print("  [yellow]A sandbox is required to continue.[/yellow]")
+        return None
+
+    webbrowser.open(SANDBOX_DASHBOARD_URL)
+    typer.prompt(
+        "  Press Enter once your sandbox is open in the dashboard",
+        default="",
+        show_default=False,
+    )
+
+    console.print("\n  Linking the Stripe CLI to that sandbox...\n")
+    result = run_command(
+        ["stripe", "login", "--project-name", STRIPE_CLI_PROFILE], capture=False
+    )
+    if not result or result.returncode != 0:
+        console.print("  [red]Stripe login failed. Please try again.[/red]")
+        return None
+
+    profile = read_profile()
+    if profile is None:
+        console.print("  [red]Stripe login didn't store any keys.[/red]")
+        return None
+
+    rejection = sandbox_rejection(profile)
+    if rejection is not None:
+        console.print(f"\n  [red]You linked '{profile.display_name}', but {rejection}.[/red]")
+        console.print("  [red]Re-run this and pick a sandbox instead.[/red]")
+        return None
+
+    return profile
+
+
+def ensure_sandbox_profile(relink: bool = False) -> StripeProfile | None:
+    """Get a usable sandbox profile, walking through pairing when needed."""
+    if relink:
+        return link_sandbox()
+
+    profile = read_profile()
+    if profile is not None:
+        rejection = sandbox_rejection(profile)
+        if rejection is not None:
+            step_status(False, "Stripe sandbox", rejection)
+        elif keys_are_usable():
+            return profile
+        else:
+            step_status(False, "Stripe sandbox", "the stored key has expired")
+            console.print("\n  [dim]Stripe CLI keys expire after 90 days.[/dim]")
+
+    return link_sandbox()
 
 
 def save_keys(profile: StripeProfile) -> None:
@@ -133,7 +202,24 @@ def save_keys(profile: StripeProfile) -> None:
     )
 
 
-def save_webhook_secret(webhook_secret: str) -> bool:
+def obtain_webhook_secret() -> str:
+    console.print("\n  [bold]Getting webhook secret from the Stripe CLI...[/bold]")
+    console.print(
+        "  [dim]Webhooks let Stripe notify your local server about payment events.[/dim]"
+    )
+    result = run_command(
+        ["stripe", "listen", "--print-secret", "-p", STRIPE_CLI_PROFILE], capture=True
+    )
+    if result and result.returncode == 0 and result.stdout.strip():
+        return result.stdout.strip()
+
+    console.print("  [yellow]Could not get webhook secret automatically.[/yellow]")
+    return typer.prompt(
+        "  Enter webhook secret manually (whsec_...), or press Enter to skip", default=""
+    )
+
+
+def save_webhook_secret(webhook_secret: str) -> None:
     """Store the `stripe listen` secret for both webhook endpoints.
 
     One listener signs both the direct and the Connect endpoint, so both
@@ -144,7 +230,11 @@ def save_webhook_secret(webhook_secret: str) -> bool:
     direct = secrets.get("POLAR_STRIPE_WEBHOOK_SECRET", "")
     connect = secrets.get("POLAR_STRIPE_CONNECT_WEBHOOK_SECRET", "")
     if direct and connect and direct != connect:
-        return False
+        console.print(
+            "  [yellow]Kept your existing webhook secrets — they differ from each\n"
+            "  other, so they look like dashboard endpoints, not the CLI listener.[/yellow]"
+        )
+        return
 
     update_secrets(
         {
@@ -152,76 +242,37 @@ def save_webhook_secret(webhook_secret: str) -> bool:
             "POLAR_STRIPE_CONNECT_WEBHOOK_SECRET": webhook_secret,
         }
     )
-    return True
+    step_status(True, "Webhook secret", "saved")
 
 
-def print_sandbox_instructions() -> None:
-    console.print(
-        "\n  Local development runs against your own Stripe [bold]sandbox[/bold] —"
-    )
-    console.print("  no live account, no shared Polar account.\n")
-    console.print("  [bold]1.[/bold] Create a sandbox (or pick an existing one) at")
-    console.print(f"     [link={SANDBOX_DASHBOARD_URL}]{SANDBOX_DASHBOARD_URL}[/link]")
-    console.print("  [bold]2.[/bold] Open that sandbox, so it's the selected account")
-    console.print("  [bold]3.[/bold] Confirm the pairing in the browser tab we open next\n")
-
-
-def ensure_sandbox_profile(interactive: bool = True) -> StripeProfile | None:
-    """Get a usable sandbox profile, walking through login when needed."""
-    profile = read_profile()
-
-    if profile is not None:
-        rejection = sandbox_rejection(profile)
-        if rejection is not None:
-            step_status(False, "Stripe sandbox", rejection)
-            console.print(
-                f"\n  The '{STRIPE_CLI_PROFILE}' profile can't be used: {rejection}."
-            )
-        elif keys_are_usable():
-            return profile
-        else:
-            step_status(False, "Stripe sandbox", "the stored key has expired")
-            console.print("\n  [dim]Stripe CLI keys expire after 90 days.[/dim]")
-
-    if not interactive:
+def configure(relink: bool = False) -> StripeProfile | None:
+    """Link a sandbox and write its keys into the central secrets file."""
+    if not ensure_cli():
         return None
 
-    print_sandbox_instructions()
-    if not typer.confirm("  Open the Stripe sandbox dashboard now?", default=True):
-        console.print("  [yellow]A sandbox is required to continue.[/yellow]")
-        return None
-
-    webbrowser.open(SANDBOX_DASHBOARD_URL)
-    typer.prompt(
-        "  Press Enter once your sandbox is open in the dashboard", default="", show_default=False
-    )
-
-    console.print("\n  Linking the Stripe CLI to that sandbox...\n")
-    if not login():
-        console.print("  [red]Stripe login failed. Please try again.[/red]")
-        return None
-
-    profile = read_profile()
+    profile = ensure_sandbox_profile(relink=relink)
     if profile is None:
-        console.print("  [red]Stripe login didn't store any keys.[/red]")
         return None
+    step_status(True, "Stripe sandbox", profile.display_name)
 
-    rejection = sandbox_rejection(profile)
-    if rejection is not None:
-        step_status(False, "Stripe sandbox", rejection)
-        console.print(
-            f"\n  [red]You linked '{profile.display_name}', but {rejection}.[/red]"
-        )
-        console.print("  [red]Re-run this and pick a sandbox instead.[/red]")
-        return None
+    changed = False
+    if has_saved_keys() and saved_keys_rejection() is None:
+        step_status(True, "Stripe API keys", "configured")
+    else:
+        save_keys(profile)
+        step_status(True, "Stripe API keys", "saved")
+        changed = True
+
+    # New keys mean a different sandbox, so the stored listener secret is stale.
+    if changed or not read_secrets().get("POLAR_STRIPE_WEBHOOK_SECRET"):
+        webhook_secret = obtain_webhook_secret()
+        if webhook_secret:
+            save_webhook_secret(webhook_secret)
+            changed = True
+
+    if changed:
+        console.print("  [dim]Updating environment files...[/dim]")
+        run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
+        step_status(True, "Environment files", "updated")
 
     return profile
-
-
-def fetch_webhook_secret() -> str:
-    result = run_command(
-        ["stripe", "listen", "--print-secret", "-p", STRIPE_CLI_PROFILE], capture=True
-    )
-    if result and result.returncode == 0:
-        return result.stdout.strip()
-    return ""

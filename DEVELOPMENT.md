@@ -107,8 +107,9 @@ If you want to work with payments and subscriptions, you need a Stripe **sandbox
 
 > [!IMPORTANT]
 > Every local environment runs against a sandbox you own. Never point it at a live account, and
-> never at the shared Polar Software Inc account — `dev` refuses both. A sandbox is free, is
-> yours alone, and has no live mode, so nothing you do locally can touch real money or team data.
+> never at a shared team account — `dev` refuses both. A sandbox is free, is yours alone, and has
+> no live mode at all, so nothing you do locally can touch real money or team data. That missing
+> live mode is also how `dev` tells a sandbox apart from a real account.
 
 The whole setup is one command:
 

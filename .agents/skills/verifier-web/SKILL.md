@@ -130,8 +130,8 @@ api 202s the webhook and the **worker** creates the order.
 ### 3a. Stripe account + keys
 
 Use **your own Stripe sandbox** (https://dashboard.stripe.com/sandboxes). Never a
-live account, and never the shared Polar Software Inc account — `dev stripe`
-refuses both. The Stripe CLI profile is always `polar-sandbox`.
+live account, and never a shared team account — `dev stripe` refuses both. The
+Stripe CLI profile is always `polar-sandbox`.
 
 **Secrets are set up once and reused across worktrees.** They live centrally in
 `~/.config/polar/secrets.env` and `dev/setup-environment` propagates them into

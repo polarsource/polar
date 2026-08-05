@@ -10,7 +10,6 @@ from shared import (
     console,
     read_secrets,
     run_command,
-    step_spinner,
     step_status,
     update_secrets,
 )
@@ -55,56 +54,25 @@ def _setup_stripe() -> None:
     console.print("  Polar uses Stripe for payment processing. You'll need a Stripe")
     console.print("  sandbox and the Stripe CLI to develop locally.\n")
 
-    if not stripe_config.is_cli_installed():
-        step_status(False, "Stripe CLI", "not installed")
-        if not typer.confirm("\n  Install Stripe CLI via Homebrew now?", default=True):
-            console.print("  [yellow]Stripe CLI is required. Install it and re-run dev up.[/yellow]")
-            return
-        with step_spinner("Installing Stripe CLI..."):
-            installed = stripe_config.install_cli()
-        if not installed:
-            console.print("  [red]Installation failed. Install manually: brew install stripe/stripe-cli/stripe[/red]")
-            return
-    step_status(True, "Stripe CLI", "installed")
-
-    profile = stripe_config.ensure_sandbox_profile()
-    if profile is None:
+    if stripe_config.configure() is None:
         return
-    step_status(True, "Stripe sandbox", profile.display_name)
 
-    stripe_config.save_keys(profile)
-
-    console.print("\n  [bold]Getting webhook secret...[/bold]")
-    console.print("  [dim]Webhooks let Stripe notify your local server about payment events (e.g. checkout completed).[/dim]")
-    webhook_secret = stripe_config.fetch_webhook_secret()
-    if webhook_secret:
-        console.print("  [green]✓ Webhook secret obtained[/green]")
-    else:
-        console.print("  [yellow]Could not get webhook secret automatically.[/yellow]")
-        webhook_secret = typer.prompt("  Enter webhook secret manually (whsec_...), or press Enter to skip", default="")
-
-    if webhook_secret and not stripe_config.save_webhook_secret(webhook_secret):
-        console.print("  [yellow]Kept your existing webhook secrets — they look like dashboard endpoints.[/yellow]")
-
-    set_stripe_skipped(False)
-    step_status(True, "Stripe", "configured")
-
-    console.print("  [dim]Updating environment files...[/dim]")
-    run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
+    if is_stripe_skipped():
+        set_stripe_skipped(False)
 
     console.print("\n  [bold]To receive webhooks locally, run:[/bold]")
     console.print("    [bold]dev stripe --listen[/bold]\n")
 
 
 def _configure_stripe() -> None:
-    status, detail = stripe_config.secrets_status()
+    if stripe_config.has_saved_keys():
+        rejection = stripe_config.saved_keys_rejection()
+        if rejection is None:
+            profile = stripe_config.read_profile()
+            step_status(True, "Stripe sandbox", profile.display_name if profile else "configured")
+            return
 
-    if status == "ok":
-        step_status(True, "Stripe sandbox", detail)
-        return
-
-    if status in ("live", "mismatch"):
-        step_status(False, "Stripe", detail)
+        step_status(False, "Stripe", rejection)
         console.print("\n  [yellow]Local environments must use your own Stripe sandbox.[/yellow]")
         if typer.confirm("  Switch to a sandbox now?", default=True):
             _setup_stripe()

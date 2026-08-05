@@ -41,10 +41,10 @@ dev stripe --listen --port <api-port>
 ```
 
 Local environments always run against a **personal Stripe sandbox** — never a
-live account, and never the shared Polar Software Inc account
-(`acct_1LzIVeDG1jUQrXwC`). `dev` refuses both: it checks that the linked
-profile has test keys and, since a sandbox has no live mode, that the Stripe
-CLI stored no live key for it.
+live account, and never a shared team account. `dev` refuses both with one
+structural check: the linked profile must hold test keys, and since a sandbox
+has no live mode at all, the Stripe CLI must have stored no live key for it.
+A shared team account is a live account, so it fails that check.
 
 The Stripe CLI profile is always named `polar-sandbox`, so `dev` never
 depends on whichever account the CLI happens to have active. Pass

@@ -25,6 +25,7 @@ from .schemas import (
     PrecheckReport,
 )
 from .service import (
+    CatalogImportBlocked,
     CatalogImportNotReady,
     InvalidSourceCredentials,
     MerchantMigrationNotEnabled,
@@ -160,8 +161,8 @@ async def precheck(
             "model": MerchantMigrationNotFound.schema(),
         },
         409: {
-            "description": "The pre-check hasn't run yet.",
-            "model": CatalogImportNotReady.schema(),
+            "description": "The pre-check hasn't run yet, or it reports a blocker.",
+            "model": CatalogImportNotReady.schema() | CatalogImportBlocked.schema(),
         },
     },
 )

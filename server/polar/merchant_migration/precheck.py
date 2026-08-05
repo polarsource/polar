@@ -220,6 +220,7 @@ class PrecheckEngine:
     def _check_product(self, product: CanonicalProduct) -> Iterable[PrecheckIssue]:
         # A product Polar can't represent is skipped along with its subscriptions,
         # rather than blocking the whole migration.
+        dropped = False
         if product.recurring_interval is None:
             yield PrecheckIssue(
                 level=PrecheckIssueLevel.warning,
@@ -230,6 +231,7 @@ class PrecheckEngine:
                 ),
                 source_id=product.source_id,
             )
+            dropped = True
         elif (
             product.recurring_interval not in SUPPORTED_INTERVALS
             or not 1 <= product.recurring_interval_count <= MAX_INTERVAL_COUNT
@@ -245,12 +247,16 @@ class PrecheckEngine:
                 ),
                 source_id=product.source_id,
             )
+            dropped = True
         importable_currencies: Counter[str] = Counter()
         for price in product.prices:
             price_issues = list(self._check_price(product, price))
             yield from price_issues
             if not any(issue.code in PRICE_DROP_CODES for issue in price_issues):
                 importable_currencies[price.currency.lower()] += 1
+        # Only worth reporting on a product that would otherwise import.
+        if dropped:
+            return
         for currency, count in importable_currencies.items():
             if count > 1:
                 yield PrecheckIssue(
@@ -761,6 +767,18 @@ class SplitRecords:
             elif isinstance(record, CanonicalSubscription):
                 split.subscriptions.append(record)
         return split
+
+
+def import_blockers(
+    organization: Organization, source_account: CanonicalAccount
+) -> list[PrecheckIssue]:
+    """Blockers that don't depend on the catalog, so the import can re-check them
+    without re-reading the whole source."""
+    issues = [
+        *precheck_engine._check_organization(organization),
+        *precheck_engine._check_account(source_account),
+    ]
+    return [issue for issue in issues if issue.level == PrecheckIssueLevel.blocker]
 
 
 def classify_records(

@@ -25,7 +25,7 @@ from polar.product.repository import ProductRepository
 from .adapters import SourceAdapter, StripeAdapter
 from .canonical import CanonicalRecord, deserialize
 from .importer import CatalogImporter
-from .precheck import classify_records, precheck_engine
+from .precheck import classify_records, import_blockers, precheck_engine
 from .repository import (
     MerchantMigrationRecordRepository,
     MerchantMigrationRepository,
@@ -35,6 +35,7 @@ from .schemas import (
     MerchantMigrationImportReport,
     MerchantMigrationRecordItem,
     PrecheckEntity,
+    PrecheckIssue,
     PrecheckReasonLevel,
     PrecheckRecordStatus,
     PrecheckReport,
@@ -128,6 +129,15 @@ class CatalogImportNotReady(MerchantMigrationError):
     def __init__(self) -> None:
         super().__init__(
             "Run the pre-check before importing the catalog.",
+            409,
+        )
+
+
+class CatalogImportBlocked(MerchantMigrationError):
+    def __init__(self, blockers: list[PrecheckIssue]) -> None:
+        self.blockers = [issue.code for issue in blockers]
+        super().__init__(
+            "The migration can't be imported: " + " ".join(i.message for i in blockers),
             409,
         )
 
@@ -297,6 +307,13 @@ class MerchantMigrationService:
         )
         if organization is None:
             raise MerchantMigrationNotFound()
+
+        # The pre-check reports blockers but doesn't stop the import, and both the
+        # org and the source account can change after it ran.
+        adapter = await self._build_adapter(migration)
+        blockers = import_blockers(organization, await adapter.get_source_account())
+        if blockers:
+            raise CatalogImportBlocked(blockers)
 
         report = await CatalogImporter(
             session,

@@ -11926,6 +11926,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** CatalogImportBlocked */
+    CatalogImportBlocked: {
+      /**
+       * Error
+       * @example CatalogImportBlocked
+       * @constant
+       */
+      error: 'CatalogImportBlocked'
+      /** Detail */
+      detail: string
+    }
     /** CatalogImportNotReady */
     CatalogImportNotReady: {
       /**
@@ -51415,13 +51426,15 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigrationNotFound']
         }
       }
-      /** @description The pre-check hasn't run yet. */
+      /** @description The pre-check hasn't run yet, or it reports a blocker. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CatalogImportNotReady']
+          'application/json':
+            | components['schemas']['CatalogImportNotReady']
+            | components['schemas']['CatalogImportBlocked']
         }
       }
       /** @description Validation Error */

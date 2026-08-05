@@ -84,6 +84,19 @@ _CUSTOMER_STRIPE_ID_CONFLICT = Reason(
 )
 
 
+@dataclass
+class ImportCounts:
+    imported: int = 0
+    skipped: int = 0
+
+    def settle(self, status: MerchantMigrationRecordStatus) -> None:
+        """Carry over a row a previous run already decided."""
+        if status == MerchantMigrationRecordStatus.imported:
+            self.imported += 1
+        else:
+            self.skipped += 1
+
+
 @dataclass(frozen=True)
 class ImportedCustomer:
     """The Polar customer to use, or why the record is skipped."""
@@ -125,6 +138,7 @@ class CatalogImporter:
         self.customer_repository = CustomerRepository.from_session(session)
         self.subscription_repository = SubscriptionRepository.from_session(session)
         self._product_cache: dict[UUID, Product] = {}
+        self._customer_cache: dict[UUID, Customer] = {}
 
     async def run(self) -> MerchantMigrationImportReport:
         records = await self.record_repository.list_by_migration(self.migration.id)
@@ -172,24 +186,26 @@ class CatalogImporter:
         ]
         plans = plan_product_imports(products)
 
-        imported = skipped = 0
+        counts = ImportCounts()
         for record, product in zip(records, products, strict=True):
             if not self._is_selected(record):
                 continue
-            if record.status == MerchantMigrationRecordStatus.imported:
-                imported += 1
+            if record.status != MerchantMigrationRecordStatus.pending:
+                counts.settle(record.status)
                 continue
             plan = plans[product.source_id]
             if plan.skip is not None:
                 await self._mark_skipped(record, plan.skip)
-                skipped += 1
+                counts.skipped += 1
                 continue
             polar_product = await self._create_product(product, plan)
             await self._mark_imported(record, polar_product.id)
-            imported += 1
+            counts.imported += 1
 
         return MerchantMigrationImportResult(
-            entity=PrecheckEntity.products, imported=imported, skipped=skipped
+            entity=PrecheckEntity.products,
+            imported=counts.imported,
+            skipped=counts.skipped,
         )
 
     async def _import_customers(
@@ -201,29 +217,31 @@ class CatalogImporter:
         ]
         plans = plan_customer_imports(customers)
 
-        imported = skipped = 0
+        counts = ImportCounts()
         for record, customer in zip(records, customers, strict=True):
             if not self._is_selected(record):
                 continue
-            if record.status == MerchantMigrationRecordStatus.imported:
-                imported += 1
+            if record.status != MerchantMigrationRecordStatus.pending:
+                counts.settle(record.status)
                 continue
             skip = plans[customer.source_id]
             if skip is not None:
                 await self._mark_skipped(record, skip)
-                skipped += 1
+                counts.skipped += 1
                 continue
             result = await self._create_or_reuse_customer(customer)
             if result.skip is not None:
                 await self._mark_skipped(record, result.skip)
-                skipped += 1
+                counts.skipped += 1
                 continue
             assert result.customer is not None
             await self._mark_imported(record, result.customer.id)
-            imported += 1
+            counts.imported += 1
 
         return MerchantMigrationImportResult(
-            entity=PrecheckEntity.customers, imported=imported, skipped=skipped
+            entity=PrecheckEntity.customers,
+            imported=counts.imported,
+            skipped=counts.skipped,
         )
 
     async def _create_product(
@@ -334,17 +352,17 @@ class CatalogImporter:
         customer_target_by_source = self._imported_targets(customer_records)
         product_target_by_source = self._imported_targets(product_records)
 
-        imported = skipped = 0
+        counts = ImportCounts()
         for record, subscription in zip(records, subscriptions, strict=True):
             if not self._is_selected(record):
                 continue
-            if record.status == MerchantMigrationRecordStatus.imported:
-                imported += 1
+            if record.status != MerchantMigrationRecordStatus.pending:
+                counts.settle(record.status)
                 continue
             skip = plans[subscription.source_id]
             if skip is not None:
                 await self._mark_skipped(record, skip)
-                skipped += 1
+                counts.skipped += 1
                 continue
             result = await self._create_subscription(
                 subscription,
@@ -356,15 +374,17 @@ class CatalogImporter:
             # the subscription rather than leave it pending.
             if result.skip is not None:
                 await self._mark_skipped(record, result.skip)
-                skipped += 1
+                counts.skipped += 1
                 continue
             if result.subscription is None:
                 continue
             await self._mark_imported(record, result.subscription.id)
-            imported += 1
+            counts.imported += 1
 
         return MerchantMigrationImportResult(
-            entity=PrecheckEntity.subscriptions, imported=imported, skipped=skipped
+            entity=PrecheckEntity.subscriptions,
+            imported=counts.imported,
+            skipped=counts.skipped,
         )
 
     async def _create_subscription(
@@ -385,7 +405,7 @@ class CatalogImporter:
             return ImportedSubscription(skip=_PRODUCT_NOT_IMPORTED)
 
         polar_product = await self._load_product(product_target)
-        customer = await self.customer_repository.get_by_id(customer_target)
+        customer = await self._load_customer(customer_target)
         if polar_product is None or customer is None:
             return ImportedSubscription()
 
@@ -434,6 +454,15 @@ class CatalogImporter:
             if record.status == MerchantMigrationRecordStatus.imported
             and record.target_id is not None
         }
+
+    async def _load_customer(self, customer_id: UUID) -> Customer | None:
+        # Several subscriptions often share one customer.
+        if customer_id not in self._customer_cache:
+            customer = await self.customer_repository.get_by_id(customer_id)
+            if customer is None:
+                return None
+            self._customer_cache[customer_id] = customer
+        return self._customer_cache[customer_id]
 
     async def _load_product(self, product_id: UUID) -> Product | None:
         cached = self._product_cache.get(product_id)

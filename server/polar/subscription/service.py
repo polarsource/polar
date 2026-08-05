@@ -679,8 +679,15 @@ class SubscriptionService:
         recurring_interval = product.recurring_interval
         recurring_interval_count = product.recurring_interval_count or 1
         start = current_period_start or utc_now()
-        end = current_period_end or recurring_interval.get_next_period(
+        next_period = recurring_interval.get_next_period(
             start, start.day, recurring_interval_count
+        )
+        # A source end that predates the start would invert the period, which
+        # would then feed the renewal maths at cutover.
+        end = (
+            current_period_end
+            if current_period_end and current_period_end > start
+            else next_period
         )
 
         subscription = Subscription(

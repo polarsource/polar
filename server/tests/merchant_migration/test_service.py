@@ -34,6 +34,7 @@ from polar.merchant_migration.schemas import (
     PrecheckRecordStatus,
 )
 from polar.merchant_migration.service import (
+    CatalogImportBlocked,
     CatalogImportNotReady,
     InvalidSourceCredentials,
     MissingStripeScopes,
@@ -60,6 +61,7 @@ from polar.models.merchant_migration_record import (
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
+from polar.models.organization import OrganizationStatus
 from polar.models.product_price import ProductPriceFixed
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
@@ -670,6 +672,55 @@ class TestImportCatalog:
         updated = await migration_repository.get_by_id(migration.id)
         assert updated is not None
         assert updated.step == MerchantMigrationStep.create_catalog
+
+    @pytest.mark.auth
+    async def test_blocked_organization_cannot_import(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        organization.status = OrganizationStatus.CREATED
+        await save_fixture(organization)
+
+        with pytest.raises(CatalogImportBlocked):
+            await service.import_catalog(session, auth_subject, migration.id)
+
+        assert await _products(session, organization) == []
+
+    @pytest.mark.auth
+    async def test_settled_records_are_not_reimported(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        records = await record_repository.list_by_migration(migration.id)
+        for record in records:
+            if record.type == MerchantMigrationRecordType.product:
+                await record_repository.update(
+                    record,
+                    update_dict={"status": MerchantMigrationRecordStatus.skipped},
+                )
+
+        report = await service.import_catalog(session, auth_subject, migration.id)
+
+        results = {result.entity: result for result in report.results}
+        assert results[PrecheckEntity.products].imported == 0
+        assert await _products(session, organization) == []
 
     @pytest.mark.auth
     async def test_import_does_not_notify_for_each_product(

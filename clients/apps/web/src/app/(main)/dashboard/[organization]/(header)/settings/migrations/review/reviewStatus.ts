@@ -13,33 +13,18 @@ export interface ReviewStatus {
   labelColor: LabelColor
 }
 
-// A single, consistent status cell across every entity. Subscriptions surface
-// their lifecycle (Active, Trialing, Past due); products and customers surface
-// their import disposition (Ready, Needs info, Won't import).
+// One question, asked the same way for every entity: what happens to this
+// record at import. The source lifecycle (Active, Trialing, Past due) is a
+// property of the Stripe record, so it lives in the row's detail modal.
 export function reviewStatus(row: ReviewRow): ReviewStatus {
   if (isImported(row)) {
     return { label: 'Imported', dot: 'text-tertiary', labelColor: 'muted' }
   }
-
   if (row.status === 'skipped') {
-    const lifecycle = row.entity === 'subscriptions' ? row.subtitle : null
-    return {
-      label: lifecycle || "Won't import",
-      dot: 'text-danger',
-      labelColor: 'muted',
-    }
+    return { label: "Won't import", dot: 'text-danger', labelColor: 'muted' }
   }
-
-  const attention = needsAttention(row)
-  const dot: DotColor = attention ? 'text-warning' : 'text-success'
-
-  if (row.entity === 'subscriptions') {
-    return { label: row.subtitle || 'Active', dot, labelColor: 'default' }
+  if (needsAttention(row)) {
+    return { label: 'Needs info', dot: 'text-warning', labelColor: 'default' }
   }
-
-  return {
-    label: attention ? 'Needs info' : 'Ready',
-    dot,
-    labelColor: 'default',
-  }
+  return { label: 'Ready', dot: 'text-success', labelColor: 'default' }
 }

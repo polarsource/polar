@@ -12,11 +12,12 @@ import {
 } from './reviewRows'
 import { reviewStatus } from './reviewStatus'
 
-const IMPORT_STATUS_LABELS: Record<string, string> = {
-  pending: 'Not imported yet',
-  imported: 'Imported',
-  skipped: 'Skipped',
-  failed: 'Failed',
+// What `subtitle` carries depends on the entity it came from.
+const SUBTITLE_LABELS: Record<ReviewRow['entity'], string> = {
+  subscriptions: 'Stripe status',
+  customers: 'Country',
+  products: 'Billing',
+  prices: 'Price',
 }
 
 export function ReviewRecordModal({
@@ -61,7 +62,7 @@ export function ReviewRecordModal({
           <Field label="Type">
             <Text>{entityLabelSingular(row.entity)}</Text>
           </Field>
-          <Field label="Status">
+          <Field label="Import">
             <Box alignItems="center" columnGap="s">
               <Box color={dot} alignItems="center" flexShrink={0}>
                 <Circle size={8} fill="currentColor" strokeWidth={0} />
@@ -78,15 +79,14 @@ export function ReviewRecordModal({
             </Field>
           )}
           {row.subtitle && (
-            <Field label={row.entity === 'customers' ? 'Country' : 'Detail'}>
+            <Field label={SUBTITLE_LABELS[row.entity]}>
               <Text>{row.subtitle}</Text>
             </Field>
           )}
-          {row.import_status && (
-            <Field label="Import">
-              <Text>
-                {IMPORT_STATUS_LABELS[row.import_status] ?? row.import_status}
-              </Text>
+          {/* Only the failed case says something "Import" doesn't already. */}
+          {row.import_status === 'failed' && (
+            <Field label="Last run">
+              <Text color="danger">Failed</Text>
             </Field>
           )}
           <Field label="Stripe ID">

@@ -1,19 +1,13 @@
-from typing import TYPE_CHECKING
-
 import structlog
 
 from polar.exceptions import PolarError
 from polar.integrations.github.client import GitHub, TokenAuthStrategy
-
-if TYPE_CHECKING:
-    from githubkit.versions.latest.models import PrivateUser, PublicUser
 
 from .. import client as github
 
 log = structlog.get_logger()
 
 
-type GithubUser = "PrivateUser | PublicUser"
 type GithubEmail = tuple[str, bool]
 
 
@@ -46,13 +40,6 @@ class GithubUserService:
                 return email.email, email.verified
 
         raise NoPrimaryEmailError()
-
-    async def _fetch_authenticated_user(
-        self, *, client: GitHub[TokenAuthStrategy]
-    ) -> GithubUser:
-        response = await client.rest.users.async_get_authenticated()
-        github.ensure_expected_response(response)
-        return response.parsed_data
 
 
 github_user = GithubUserService()

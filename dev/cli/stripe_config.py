@@ -124,7 +124,7 @@ def saved_keys_rejection() -> str | None:
         return f"there is no '{STRIPE_CLI_PROFILE}' Stripe CLI profile"
     if secret_key != profile.secret_key:
         return f"the keys don't match the '{STRIPE_CLI_PROFILE}' sandbox"
-    return None
+    return sandbox_rejection(profile)
 
 
 def print_sandbox_instructions() -> None:

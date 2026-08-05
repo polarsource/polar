@@ -79,10 +79,19 @@ alone.
 
 ## Taxes
 
-Tax is off until the sandbox has a registration. Add one under Tax >
-Registrations in the sandbox: pick "I've already registered", then
-"Non-Union One-Stop Shop (OSS)" for Ireland, starting immediately. EU
-countries then get VAT (Ireland 23%, Sweden 25%, and so on).
+`dev stripe` reports on Stripe Tax, because checkout can't price an order
+without it:
+
+- **inactive/pending** — checkout fails with a tax calculation error. Activate
+  Stripe Tax in the sandbox (it needs a head office address).
+- **active, no registrations** — checkout works, every order is taxed at 0.
+- **active with registrations** — the countries are listed.
+
+To test real tax, add a registration under Tax > Registrations in the sandbox:
+pick "I've already registered", then "Non-Union One-Stop Shop (OSS)" for
+Ireland, starting immediately. EU countries then get VAT (Ireland 23%,
+Sweden 25%, and so on). Tax applies per the customer's billing country, so a
+US-only registration leaves EU orders at 0.
 
 ## Checkout Email Validation
 

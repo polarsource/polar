@@ -4,6 +4,7 @@ A local environment must talk to a personal Stripe sandbox: never a live
 account, and never a shared team account.
 """
 
+import json
 import webbrowser
 from dataclasses import dataclass
 
@@ -22,6 +23,8 @@ from shared import (
 
 STRIPE_CLI_PROFILE = "polar-sandbox"
 SANDBOX_DASHBOARD_URL = "https://dashboard.stripe.com/sandboxes"
+TAX_SETTINGS_URL = "https://dashboard.stripe.com/test/tax/settings"
+TAX_REGISTRATIONS_URL = "https://dashboard.stripe.com/test/tax/registrations"
 
 
 @dataclass
@@ -194,6 +197,47 @@ def ensure_sandbox_profile(relink: bool = False) -> StripeProfile | None:
     return link_sandbox()
 
 
+def _get_json(path: str) -> dict | None:
+    result = run_command(["stripe", "get", path, "-p", STRIPE_CLI_PROFILE], capture=True)
+    if not result or result.returncode != 0:
+        return None
+    try:
+        return json.loads(result.stdout)
+    except json.JSONDecodeError:
+        return None
+
+
+def check_tax() -> None:
+    """Report on Stripe Tax, which checkout needs before it can price an order."""
+    settings = _get_json("/v1/tax/settings")
+    if settings is None:
+        return
+
+    if settings.get("status") != "active":
+        step_status(False, "Stripe Tax", settings.get("status", "not set up"))
+        console.print(
+            "\n  [yellow]Checkout fails while Stripe Tax is inactive — it can't price\n"
+            "  an order. Activate it (set a head office address) at[/yellow]"
+        )
+        console.print(f"  [link={TAX_SETTINGS_URL}]{TAX_SETTINGS_URL}[/link]\n")
+        return
+
+    registrations = _get_json("/v1/tax/registrations")
+    if registrations is None:
+        step_status(True, "Stripe Tax", "active")
+        return
+
+    active = [r for r in registrations.get("data", []) if r.get("status") == "active"]
+    if active:
+        countries = ", ".join(sorted({r.get("country", "?") for r in active}))
+        step_status(True, "Stripe Tax", f"active ({countries})")
+        return
+
+    step_status(True, "Stripe Tax", "active, no registrations")
+    console.print("  [dim]Every order is taxed at 0. Add a registration to test tax:[/dim]")
+    console.print(f"  [dim][link={TAX_REGISTRATIONS_URL}]{TAX_REGISTRATIONS_URL}[/link][/dim]")
+
+
 def save_keys(profile: StripeProfile) -> None:
     update_secrets(
         {
@@ -255,6 +299,7 @@ def configure(relink: bool = False) -> StripeProfile | None:
     if profile is None:
         return None
     step_status(True, "Stripe sandbox", profile.display_name)
+    check_tax()
 
     changed = False
     if saved_keys_rejection(profile) is None:

@@ -138,7 +138,9 @@ through linking again.
 > `dev stripe`, or a manual run), it rebuilds the file from the central secrets and those values win — so
 > edits made directly to `server/.env` are overwritten.
 
-To test **tax calculation**, add a tax registration to your sandbox — see
+**Stripe Tax** must be active in the sandbox, or checkout fails when it tries to price an order.
+`dev stripe` checks this and tells you if it isn't. Once active, orders are taxed at 0 until you
+add a tax registration — see
 [Testing taxes locally](https://handbook.polar.sh/engineering/oncall/developer-faq) in the handbook.
 
 <details>

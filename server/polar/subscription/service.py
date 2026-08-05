@@ -673,13 +673,8 @@ class SubscriptionService:
         current_period_end: datetime | None,
         user_metadata: dict[str, Any],
     ) -> Subscription:
-        """Create a subscription migrated from another provider.
-
-        It starts paused so the renewal scheduler skips it and the customer isn't
-        charged until the merchant cuts over. No benefits are granted and no
-        webhook fires: the subscription already exists for the customer, it is
-        only moving to Polar.
-        """
+        """Create a subscription migrated from another provider. It starts paused
+        so nothing bills until the merchant cuts over, and grants no benefits."""
         assert product.recurring_interval is not None
         recurring_interval = product.recurring_interval
         recurring_interval_count = product.recurring_interval_count or 1

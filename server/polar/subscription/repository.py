@@ -156,7 +156,6 @@ class SubscriptionRepository(
         self, customer_id: UUID, product_id: UUID
     ) -> bool:
         # "Live" = could still bill: not canceled/unpaid/incomplete, not ended.
-        # Used to avoid importing a duplicate subscription.
         dead_statuses = (
             SubscriptionStatus.revoked_statuses()
             | SubscriptionStatus.incomplete_statuses()

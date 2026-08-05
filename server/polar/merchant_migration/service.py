@@ -265,8 +265,8 @@ class MerchantMigrationService:
             existing_product_names,
         )
 
-        # Only advance from source setup: re-running precheck later (to refresh the
-        # ledger) must not regress a migration that has already moved on.
+        # Re-running the precheck to refresh the ledger must not regress a
+        # migration that has already moved on.
         if migration.step == MerchantMigrationStep.source_setup:
             repository = MerchantMigrationRepository.from_session(session)
             await repository.update(
@@ -284,11 +284,8 @@ class MerchantMigrationService:
         exclude_record_ids: Sequence[UUID] | None = None,
     ) -> MerchantMigrationImportReport:
         """Create the Polar catalog from the staged importable records, then
-        advance the migration to the create-catalog step. Import a subset via
-        ``record_ids`` (only those), or everything except ``exclude_record_ids``
-        (the opt-out default); otherwise everything importable. Idempotent:
-        re-running only imports records still pending in the ledger.
-        """
+        advance the migration to the create-catalog step. Idempotent: re-running
+        only imports records still pending in the ledger."""
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
@@ -332,8 +329,7 @@ class MerchantMigrationService:
             MerchantMigration.id == migration_id
         )
         if for_update:
-            # Serialize concurrent precheck/import for the same migration so a
-            # double-click or retry can't create duplicate Polar objects.
+            # Serialized so a double-click or retry can't create duplicates.
             statement = statement.with_for_update(of=MerchantMigration)
         migration = await repository.get_one_or_none(statement)
         if migration is None:

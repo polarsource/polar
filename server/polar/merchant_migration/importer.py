@@ -92,8 +92,8 @@ class CatalogImporter:
         self.migration = migration
         self.organization = organization
         self.auth_subject = auth_subject
-        # Selection: include only `record_ids`, or exclude `exclude_record_ids`
-        # (the opt-out default for large catalogs), or neither to import all.
+        # Neither set imports everything; excluding is the opt-out default for
+        # large catalogs.
         self.record_ids = record_ids
         self.exclude_record_ids = exclude_record_ids
         self.record_repository = MerchantMigrationRecordRepository.from_session(session)
@@ -112,8 +112,8 @@ class CatalogImporter:
             records, MerchantMigrationRecordType.subscription
         )
 
-        # Products and customers first: a subscription resolves its Polar product,
-        # price and customer from their imported ledger rows.
+        # Products and customers first: a subscription resolves both from their
+        # imported ledger rows.
         product_result = await self._import_products(product_records)
         customer_result = await self._import_customers(customer_records)
         subscription_result = await self._import_subscriptions(
@@ -222,8 +222,7 @@ class CatalogImporter:
                     price_currency=PresentmentCurrency(price.currency.lower()),
                 )
             )
-        # `notify=False`: a bulk import must not fire a product_created webhook or
-        # re-run the organization review for every product.
+        # A bulk import must not webhook or re-review the org for every product.
         return await product_service.create(
             self.session,
             ProductCreateRecurring(
@@ -247,18 +246,16 @@ class CatalogImporter:
             customer.email, self.organization.id
         )
         if existing is not None:
-            # The email matches an existing Polar customer that already carries a
-            # different Stripe id: reusing it would attach this subscription and a
-            # PAN-copied card to the wrong record, so skip for manual reconciliation.
+            # Reusing a customer bound to another Stripe id would attach the
+            # PAN-copied card to the wrong record.
             if (
                 stripe_customer_id is not None
                 and existing.stripe_customer_id is not None
                 and existing.stripe_customer_id != stripe_customer_id
             ):
                 return None, _CUSTOMER_STRIPE_ID_CONFLICT_REASON
-            # Reuse the existing customer (design Appendix A). Reconcile the source
-            # id so the PAN-copied card lands on the same customer, but never
-            # overwrite an id that's already set.
+            # Reconcile the source id so the PAN-copied card lands on the same
+            # customer, but never overwrite one that's already set.
             if stripe_customer_id and existing.stripe_customer_id is None:
                 await self.customer_repository.update(
                     existing, update_dict={"stripe_customer_id": stripe_customer_id}
@@ -275,8 +272,8 @@ class CatalogImporter:
         return polar_customer, None
 
     def _stripe_customer_id(self, customer: CanonicalCustomer) -> str | None:
-        # PAN copy preserves the Stripe `cus_…` id, which the canonical record
-        # carries as its source id; other providers have no such concept.
+        # PAN copy preserves the Stripe `cus_…` id; other providers have no
+        # such concept.
         if self.migration.source_platform == MerchantMigrationSourcePlatform.stripe:
             return customer.source_id
         return None
@@ -312,9 +309,8 @@ class CatalogImporter:
         product_by_price = {
             price.source_id: product for product in products for price in product.prices
         }
-        # Products and customers were imported earlier in this run, so their ledger
-        # rows already carry target ids in-session: resolve dependencies from these
-        # maps instead of a per-subscription query.
+        # Their ledger rows already carry target ids in-session, so resolve from
+        # these maps instead of a query per subscription.
         customer_target_by_source = self._imported_targets(customer_records)
         product_target_by_source = self._imported_targets(product_records)
 
@@ -336,8 +332,8 @@ class CatalogImporter:
                 customer_target_by_source,
                 product_target_by_source,
             )
-            # Product and customer import first, so a missing one means it was
-            # skipped or deselected: skip the subscription rather than leave it pending.
+            # A missing dependency means it was skipped or deselected, so skip
+            # the subscription rather than leave it pending.
             if skip_reason is not None:
                 await self._mark_skipped(
                     record, "subscription_dependency_not_imported", skip_reason
@@ -360,8 +356,7 @@ class CatalogImporter:
         customer_target_by_source: dict[str, UUID],
         product_target_by_source: dict[str, UUID],
     ) -> tuple[Subscription | None, str | None]:
-        # (subscription, skip_reason): a reason means skip; both None means an
-        # unexpected miss, left pending.
+        # A reason means skip; both None means an unexpected miss, left pending.
         customer_target = customer_target_by_source.get(subscription.customer_source_id)
         if customer_target is None:
             return None, _CUSTOMER_NOT_IMPORTED_REASON
@@ -426,8 +421,8 @@ class CatalogImporter:
         cached = self._product_cache.get(product_id)
         if cached is not None:
             return cached
-        # None only if an imported product row vanished (data corruption); the
-        # caller leaves the subscription pending rather than crashing.
+        # None only if an imported product row vanished; the caller leaves the
+        # subscription pending rather than crashing.
         product = await self.product_repository.get_by_id_and_organization(
             product_id,
             self.organization.id,
@@ -446,8 +441,8 @@ class CatalogImporter:
         canonical_product: CanonicalProduct,
         price_source_id: str,
     ) -> ProductPriceFixed | None:
-        # Prices carry no durable source id, so match on currency. A product that
-        # got this far holds one fixed price per currency, so that's unambiguous.
+        # Prices carry no durable source id, and an imported product holds one
+        # fixed price per currency, so the currency identifies it.
         canonical_price = next(
             (p for p in canonical_product.prices if p.source_id == price_source_id),
             None,

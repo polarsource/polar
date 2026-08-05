@@ -174,9 +174,8 @@ class ProductService:
         *,
         notify: bool = True,
     ) -> Product:
-        """Create a product. ``notify=False`` skips the webhook and the
-        organization re-review, for bulk internal writes such as a catalog
-        import."""
+        """``notify=False`` skips the webhook and the organization re-review, for
+        bulk internal writes such as a catalog import."""
         repository = ProductRepository.from_session(session)
         organization = await get_payload_organization(
             session, auth_subject, create_schema

@@ -1,8 +1,7 @@
-import { Text } from '@polar-sh/orbit'
+import { Checkbox, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { DataTableColumnDef } from '@polar-sh/orbit'
-import { Check, Circle, Minus } from 'lucide-react'
-import { ReactNode } from 'react'
+import { Circle } from 'lucide-react'
 import { reviewStatus } from './reviewStatus'
 import { HeaderCheckState } from './reviewSelection'
 import {
@@ -140,25 +139,26 @@ function SelectCell({
   onToggle: (id: string) => void
 }) {
   const id = row.record_id
+  // A row that can't be picked keeps a disabled box, so the column stays a
+  // column instead of a run of gaps.
   if (isImported(row)) {
-    return (
-      <Box color="text-secondary">
-        <Check size={16} aria-hidden="true" />
-      </Box>
-    )
+    return <SelectBox checked disabled ariaLabel={`${row.title} is imported`} />
   }
   if (!isSelectable(row) || !id) {
-    return <Box />
+    return (
+      <SelectBox
+        checked={false}
+        disabled
+        ariaLabel={`${row.title} can't be imported`}
+      />
+    )
   }
-  const selected = isSelected(id)
   return (
-    <CheckboxBox
-      checked={selected}
+    <SelectBox
+      checked={isSelected(id)}
       ariaLabel={`Import ${row.title}`}
       onToggle={() => onToggle(id)}
-    >
-      {selected && <Check size={12} strokeWidth={2.5} aria-hidden="true" />}
-    </CheckboxBox>
+    />
   )
 }
 
@@ -170,65 +170,35 @@ function HeaderCheckbox({
   onToggle: () => void
 }) {
   return (
-    <CheckboxBox
-      checked={state === 'checked'}
-      indeterminate={state === 'indeterminate'}
+    <SelectBox
+      checked={
+        state === 'indeterminate' ? 'indeterminate' : state === 'checked'
+      }
       ariaLabel="Select all"
       onToggle={onToggle}
-    >
-      {state === 'checked' && (
-        <Check size={12} strokeWidth={2.5} aria-hidden="true" />
-      )}
-      {state === 'indeterminate' && (
-        <Minus size={12} strokeWidth={2.5} aria-hidden="true" />
-      )}
-    </CheckboxBox>
+    />
   )
 }
 
-function CheckboxBox({
+function SelectBox({
   checked,
-  indeterminate = false,
+  disabled = false,
   ariaLabel,
   onToggle,
-  children,
 }: {
-  checked: boolean
-  indeterminate?: boolean
+  checked: boolean | 'indeterminate'
+  disabled?: boolean
   ariaLabel: string
-  onToggle: () => void
-  children: ReactNode
+  onToggle?: () => void
 }) {
   return (
-    <Box
-      role="checkbox"
-      aria-checked={indeterminate ? 'mixed' : checked}
+    <Checkbox
+      checked={checked}
+      disabled={disabled}
       aria-label={ariaLabel}
-      tabIndex={0}
-      width={18}
-      height={18}
-      borderRadius="s"
-      borderWidth={1}
-      borderStyle="solid"
-      borderColor="border-secondary"
-      alignItems="center"
-      justifyContent="center"
-      color="text-secondary"
-      cursor={{ hover: 'pointer' }}
-      onClick={(event) => {
-        // The row itself opens the detail modal.
-        event.stopPropagation()
-        onToggle()
-      }}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          event.stopPropagation()
-          onToggle()
-        }
-      }}
-    >
-      {children}
-    </Box>
+      onCheckedChange={() => onToggle?.()}
+      // The row itself opens the detail modal.
+      onClick={(event) => event.stopPropagation()}
+    />
   )
 }

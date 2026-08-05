@@ -1,4 +1,4 @@
-import { Text } from '@polar-sh/orbit'
+import { Status } from '@polar-sh/orbit'
 import { ReviewRow } from './reviewRows'
 import { reviewStatus } from './reviewStatus'
 
@@ -6,9 +6,5 @@ import { reviewStatus } from './reviewStatus'
 // the two can't drift apart.
 export function ReviewStatusIndicator({ row }: { row: ReviewRow }) {
   const { label, color } = reviewStatus(row)
-  return (
-    <Text truncate color={color}>
-      {label}
-    </Text>
-  )
+  return <Status status={label} color={color} size="small" />
 }

@@ -12,7 +12,14 @@ if TYPE_CHECKING:
 
 
 class CompassThreadMessage(RecordModel):
-    """One completed turn. `parts` for the UI, `model_messages` for replay."""
+    """One completed assistant turn of a Compass thread.
+
+    `parts` is the rendered sequence exactly as it was streamed to the client
+    (interleaved text and blocks) and is what rehydrates the UI.
+    `model_messages` is the turn's pydantic-ai message delta; the full replay
+    context for the next turn is the concatenation of all turns' deltas in
+    order, so a stored row is never rewritten.
+    """
 
     __tablename__ = "compass_thread_messages"
     # Every message query filters by thread and orders by created_at.

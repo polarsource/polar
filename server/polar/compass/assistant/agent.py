@@ -146,8 +146,9 @@ def build_assistant_agent(
         model_settings=({} if model_name.startswith("gpt-5.5") else {"temperature": 0}),
     )
 
-    # Relative dates need today's date. On resumed threads, history_last_at
-    # lets the model apply the staleness rule.
+    # Relative dates ("yesterday", "last month") are resolvable only if the
+    # model knows what today is; the static prompt can't carry it. On resumed
+    # threads, history_last_at lets the model apply the staleness rule.
     @agent.instructions
     async def _run_context(ctx: RunContext[AssistantDeps]) -> str:
         lines = [

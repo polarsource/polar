@@ -24,6 +24,9 @@ class CompassThreadRepository(
     def get_readable_statement(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[CompassThread]]:
+        """Threads owned by the caller: a user sees their own threads in
+        organizations they can read analytics for; an organization token sees
+        the organization's user-less threads."""
         statement = self.get_base_statement()
         if is_user(auth_subject):
             statement = statement.where(

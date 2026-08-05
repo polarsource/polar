@@ -82,10 +82,6 @@ async def get_db_sessionmaker(request: Request) -> AsyncSessionMaker:
     return request.state.async_sessionmaker
 
 
-async def get_db_read_sessionmaker(request: Request) -> AsyncReadSessionMaker:
-    return request.state.async_read_sessionmaker
-
-
 async def get_db_session(request: Request) -> AsyncGenerator[AsyncSession]:
     try:
         session = request.state.async_session
@@ -125,7 +121,6 @@ __all__ = [
     "create_async_read_engine",
     "create_sync_engine",
     "get_db_read_session",
-    "get_db_read_sessionmaker",
     "get_db_session",
     "get_db_sessionmaker",
     "sql",

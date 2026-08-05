@@ -13,12 +13,12 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.scope import Scope
-from polar.compass.thread_service import (
+from polar.compass.threads.service import (
     HISTORY_TURNS,
     MESSAGES_LIMIT,
     scopes_digest,
 )
-from polar.compass.thread_service import (
+from polar.compass.threads.service import (
     compass_thread as compass_thread_service,
 )
 from polar.kit.pagination import PaginationParams
@@ -120,7 +120,7 @@ class TestCreate:
         user_organization: UserOrganization,
         organization: Organization,
     ) -> None:
-        mocker.patch("polar.compass.thread_service.THREADS_CAP", 2)
+        mocker.patch("polar.compass.threads.service.THREADS_CAP", 2)
         now = utc_now()
         oldest = await _create_thread(
             save_fixture, organization, user=user, created_at=now - timedelta(hours=2)

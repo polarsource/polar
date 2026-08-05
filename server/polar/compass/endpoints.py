@@ -3,7 +3,7 @@ from datetime import datetime
 from typing import Annotated
 from zoneinfo import ZoneInfo
 
-from fastapi import Depends, Path, Query
+from fastapi import Depends, Path, Query, Request
 from pydantic import UUID4
 from pydantic_extra_types.timezone_name import TimeZoneName
 from sse_starlette.sse import EventSourceResponse
@@ -11,7 +11,7 @@ from sse_starlette.sse import EventSourceResponse
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.exceptions import ResourceNotFound
-from polar.kit.db.postgres import AsyncReadSessionMaker, AsyncSessionMaker
+from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.models import CompassThread
@@ -22,7 +22,6 @@ from polar.postgres import (
     AsyncReadSession,
     AsyncSession,
     get_db_read_session,
-    get_db_read_sessionmaker,
     get_db_session,
     get_db_sessionmaker,
 )
@@ -36,12 +35,12 @@ from .assistant.schemas import AssistantChatRequest
 from .assistant.stream import sse_event, stream_assistant_run
 from .schemas import Insight, InsightCategory
 from .service import compass as compass_service
-from .thread_schemas import (
+from .threads.schemas import (
     CompassThreadSchema,
     CompassThreadUpdate,
     CompassThreadWithMessages,
 )
-from .thread_service import compass_thread as compass_thread_service
+from .threads.service import compass_thread as compass_thread_service
 
 router = APIRouter(prefix="/compass", tags=["compass", APITag.private])
 
@@ -93,6 +92,7 @@ async def list_threads(
     ),
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[CompassThreadSchema]:
+    """List the caller's assistant conversation threads, most recent first."""
     results, count = await compass_thread_service.list(
         session, auth_subject, organization_id=organization_id, pagination=pagination
     )
@@ -111,6 +111,7 @@ async def get_thread(
     id: CompassThreadID,
     session: AsyncReadSession = Depends(get_db_read_session),
 ) -> CompassThreadWithMessages:
+    """Get a thread with its rendered messages, for rehydrating the UI."""
     thread = await compass_thread_service.get(session, auth_subject, id)
     if thread is None:
         raise ResourceNotFound()
@@ -139,6 +140,7 @@ async def update_thread(
     body: CompassThreadUpdate,
     session: AsyncSession = Depends(get_db_session),
 ) -> CompassThread:
+    """Rename a thread."""
     thread = await compass_thread_service.get(session, auth_subject, id)
     if thread is None:
         raise ResourceNotFound()
@@ -155,6 +157,7 @@ async def delete_thread(
     id: CompassThreadID,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
+    """Delete a thread and its conversation history."""
     thread = await compass_thread_service.get(session, auth_subject, id)
     if thread is None:
         raise ResourceNotFound()
@@ -167,6 +170,7 @@ async def delete_thread(
     include_in_schema=False,
 )
 async def assistant_chat(
+    request: Request,
     body: AssistantChatRequest,
     auth_subject: auth.CompassRead,
     timezone: TimeZoneName = Query(
@@ -174,13 +178,18 @@ async def assistant_chat(
         description="Timezone used to resolve metric windows. Default is UTC.",
     ),
     session: AsyncReadSession = Depends(get_db_read_session),
-    # The SSE generator outlives the request-scoped session; it opens its own
-    # sessions for tool calls and turn persistence through these.
+    # Write sessionmaker for turn persistence; the SSE generator outlives the
+    # request-scoped session, so tool calls open their own read sessions below.
     write_sessionmaker: AsyncSessionMaker = Depends(get_db_sessionmaker),
-    read_sessionmaker: AsyncReadSessionMaker = Depends(get_db_read_sessionmaker),
     redis: Redis | None = Depends(get_redis),
 ) -> EventSourceResponse:
-    """Stream one assistant turn as SSE."""
+    """Stream one assistant turn as SSE: `text` deltas, renderable `block`
+    events, then `thread` (new conversations) and `done` with the thread id.
+
+    The agent runs under the caller's auth subject: its toolset is derived
+    from the token's granted scopes, so a restricted token can only reach the
+    data those scopes allow. Conversation state lives server-side on a thread.
+    """
     org_ids = await get_accessible_org_ids(
         session, auth_subject, permission=OrganizationPermission.analytics_read
     )
@@ -212,9 +221,14 @@ async def assistant_chat(
     record_turn = compass_thread_service.turn_recorder(
         write_sessionmaker, thread_id, body.prompt
     )
+    # The request-scoped session closes when this handler returns, before the
+    # response streams — the generator opens its own session for tool calls.
+    read_sessionmaker = request.state.async_read_sessionmaker
 
     async def event_stream() -> AsyncGenerator[dict[str, str]]:
         if is_new_thread:
+            # Announced up-front so the client can point its URL at the
+            # thread before the first token arrives.
             yield sse_event(
                 "thread", {"thread_id": str(thread_id), "title": thread_title}
             )

@@ -20,11 +20,15 @@ from polar.models import CompassThread, CompassThreadMessage
 from polar.postgres import AsyncReadSession, AsyncSession
 
 from .repository import CompassThreadMessageRepository, CompassThreadRepository
-from .thread_schemas import TITLE_MAX_LENGTH, CompassThreadUpdate
+from .schemas import TITLE_MAX_LENGTH, CompassThreadUpdate
 
 log: Logger = structlog.get_logger()
 
 HISTORY_TURNS = 12
+"""How many recent turns are replayed as model context. Older turns stay
+readable in the UI but drop out of the model's context, keeping long threads
+from growing every request without bound."""
+
 MESSAGES_LIMIT = 50
 THREADS_CAP = 500
 
@@ -221,7 +225,10 @@ class CompassThreadService:
             ),
             flush=True,
         )
-        # Message insert does not UPDATE the thread. Bump for list recency.
+        # Bump the thread so the list orders by last activity. (Any update —
+        # including a rename — touches modified_at via the column's onupdate;
+        # this explicit touch is needed because appending a message row does
+        # not otherwise UPDATE the thread row.)
         await thread_repository.update(thread, update_dict={"modified_at": utc_now()})
         return message
 
@@ -231,7 +238,13 @@ class CompassThreadService:
         auth_subject: AuthSubject[User | Organization],
         thread: CompassThread,
     ) -> tuple[ModelHistory | None, datetime | None]:
-        """Replay recent model deltas. Scope mismatch or invalid history yields None."""
+        """The model context for the next turn: the concatenated per-turn
+        deltas of the last `HISTORY_TURNS` turns.
+
+        Scope mismatch (token scopes changed since the thread was created)
+        or stored history that no longer validates (e.g. after a pydantic-ai
+        upgrade) degrades to a fresh context instead of breaking the thread.
+        """
         if thread.scopes_digest != scopes_digest(auth_subject.scopes):
             log.info(
                 "compass.thread_history_scope_mismatch",

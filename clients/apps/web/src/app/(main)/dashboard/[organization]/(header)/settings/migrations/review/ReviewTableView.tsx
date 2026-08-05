@@ -115,12 +115,25 @@ export function ReviewTableView({
     onPageChange(next.pageIndex + 1)
   }
 
+  // The scan is the only way out of this state, so the button ships with the
+  // sentence that asks for it.
   if (!hasCatalog) {
     return (
-      <Text variant="caption" color="muted">
-        No records staged yet. Use &ldquo;Refresh from Stripe&rdquo; to scan
-        Stripe.
-      </Text>
+      <Box flexDirection="column" alignItems="start" rowGap="l">
+        <Text variant="caption" color="muted">
+          No records staged yet. Scan Stripe to see what can move.
+        </Text>
+        {onRerunPrecheck && (
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={onRerunPrecheck}
+            disabled={rerunning}
+          >
+            {rerunning ? 'Scanning…' : 'Refresh from Stripe'}
+          </Button>
+        )}
+      </Box>
     )
   }
 

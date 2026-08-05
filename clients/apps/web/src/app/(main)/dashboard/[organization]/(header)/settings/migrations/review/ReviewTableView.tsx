@@ -12,7 +12,6 @@ import {
   ReviewFilter,
   ReviewStatusTabs,
 } from './ReviewStatusTabs'
-import { ReviewSummary } from './ReviewSummary'
 import { buildReviewColumns } from './reviewColumns'
 import {
   headerCheckState,
@@ -22,6 +21,8 @@ import {
 } from './reviewSelection'
 import { ImportSummary, importResultText } from './importSummary'
 import { ReviewRow, ReviewScope } from './reviewRows'
+
+const numberFormat = new Intl.NumberFormat('en-US')
 
 export type { ReviewFilter } from './ReviewStatusTabs'
 export type { ImportSummary } from './importSummary'
@@ -149,13 +150,6 @@ export function ReviewTableView({
         />
       )}
 
-      <ReviewSummary
-        counts={counts}
-        importCount={importCount}
-        onImport={onImport}
-        importing={importing}
-      />
-
       <Box flexDirection="column" rowGap="m">
         <Box
           alignItems="center"
@@ -185,8 +179,21 @@ export function ReviewTableView({
                 {rerunning ? 'Refreshing…' : 'Refresh from Stripe'}
               </Button>
             )}
+            <Button
+              size="sm"
+              onClick={onImport}
+              disabled={importing || importCount <= 0}
+            >
+              {importing
+                ? 'Importing…'
+                : `Import ${numberFormat.format(importCount)} records`}
+            </Button>
           </Box>
         </Box>
+
+        <Text variant="caption" color="muted">
+          Subscriptions arrive paused; nothing is billed until cutover.
+        </Text>
 
         {rows.length === 0 ? (
           <Box

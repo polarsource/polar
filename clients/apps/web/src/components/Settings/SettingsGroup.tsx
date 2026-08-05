@@ -1,4 +1,4 @@
-import { twMerge } from 'tailwind-merge'
+import { Box } from '@polar-sh/orbit/Box'
 
 export const SettingsGroup: React.FC<React.PropsWithChildren> = ({
   children,
@@ -10,19 +10,29 @@ export const SettingsGroup: React.FC<React.PropsWithChildren> = ({
 
 const layouts = {
   split: {
-    row: 'flex-col gap-x-12 md:flex-row md:items-start md:justify-between',
-    label: 'w-full md:max-w-1/2',
-    control: 'w-full md:justify-end',
+    row: {
+      flexDirection: { base: 'column', md: 'row' },
+      columnGap: '3xl',
+      alignItems: { md: 'start' },
+      justifyContent: { md: 'between' },
+    },
+    label: { width: '100%', maxWidth: { md: '50%' } },
+    control: { width: '100%', justifyContent: { md: 'end' } },
   },
   stacked: {
-    row: 'flex-col gap-x-12',
-    label: 'w-full md:max-w-1/2',
-    control: 'w-full',
+    row: { flexDirection: 'column', columnGap: '3xl' },
+    label: { width: '100%', maxWidth: { md: '50%' } },
+    control: { width: '100%' },
   },
   inline: {
-    row: 'flex-row items-start justify-between gap-x-4 md:gap-x-12',
-    label: 'min-w-0 flex-1 md:max-w-1/2',
-    control: 'shrink-0 justify-end',
+    row: {
+      flexDirection: 'row',
+      columnGap: { base: 'l', md: '3xl' },
+      alignItems: 'start',
+      justifyContent: 'between',
+    },
+    label: { minWidth: 0, flex: 1, maxWidth: { md: '50%' } },
+    control: { flexShrink: 0, justifyContent: 'end' },
   },
 } as const
 
@@ -38,20 +48,20 @@ export const SettingsGroupItem: React.FC<
   const { row, label, control } = layouts[layout]
 
   return (
-    <div className={twMerge('flex gap-y-4 p-4', row)}>
-      <div className={twMerge('flex flex-col', label)}>
+    <Box padding="l" rowGap="l" {...row}>
+      <Box flexDirection="column" {...label}>
         <h3 className="text-sm font-medium">{title}</h3>
         {description && (
           <p className="dark:text-polar-500 text-xs text-gray-500">
             {description}
           </p>
         )}
-      </div>
+      </Box>
       {children && (
-        <div className={twMerge('flex flex-row gap-y-2', control)}>
+        <Box flexDirection="row" rowGap="s" {...control}>
           {children}
-        </div>
+        </Box>
       )}
-    </div>
+    </Box>
   )
 }

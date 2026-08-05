@@ -112,17 +112,6 @@ async def update_member(external_customer_id: str, external_id: str, name: str) 
     )
 
 
-@actor(actor_name="polar_self.update_customer_slug", priority=TaskPriority.LOW)
-async def update_customer_slug(external_id: str, slug: str) -> None:
-    client = get_client()
-    customer = await client.get_customer_by_external_id_or_none(external_id)
-    if customer is None:
-        return
-    metadata = dict(customer.metadata) if customer.metadata else {}
-    metadata["slug"] = slug
-    await client.update_customer_metadata(external_id=external_id, metadata=metadata)
-
-
 @actor(actor_name="polar_self.remove_member", priority=TaskPriority.LOW)
 async def remove_member(external_customer_id: str, external_id: str) -> None:
     client = get_client()

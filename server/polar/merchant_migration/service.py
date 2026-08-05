@@ -268,9 +268,7 @@ class MerchantMigrationService:
         """Read the connected source, normalize it, and report whether it can be
         imported. Advances the migration from source setup to the pre-check step,
         unless the report says something blocks the import."""
-        migration = await self._get_manageable(
-            session, auth_subject, migration_id, for_update=True
-        )
+        migration = await self._lock_manageable(session, auth_subject, migration_id)
 
         organization = await OrganizationRepository.from_session(session).get_by_id(
             migration.organization_id
@@ -326,9 +324,7 @@ class MerchantMigrationService:
         """Create the Polar catalog from the staged importable records, then
         advance the migration to the create-catalog step. Idempotent: re-running
         only imports records still pending in the ledger."""
-        migration = await self._get_manageable(
-            session, auth_subject, migration_id, for_update=True
-        )
+        migration = await self._lock_manageable(session, auth_subject, migration_id)
         if migration.step not in IMPORTABLE_STEPS:
             raise CatalogImportNotReady()
 
@@ -363,6 +359,18 @@ class MerchantMigrationService:
         report.step = MerchantMigrationStep.create_catalog
         return report
 
+    async def _lock_manageable(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> MerchantMigration:
+        """Serialized so a double-click or retry can't run twice. Takes the write
+        session on purpose: a replica can't lock a row."""
+        return await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
+
     async def _get_manageable(
         self,
         session: AsyncReadSession,
@@ -371,8 +379,6 @@ class MerchantMigrationService:
         *,
         for_update: bool = False,
     ) -> MerchantMigration:
-        """``for_update`` locks the row, so it needs a write session: a replica
-        can't take one."""
         repository = MerchantMigrationRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).where(
             MerchantMigration.id == migration_id

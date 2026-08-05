@@ -15,6 +15,7 @@ import {
 interface ColumnContext {
   isSelected: (id: string) => boolean
   headerState: HeaderCheckState
+  canSelectAll: boolean
   onToggle: (id: string) => void
   onToggleAll: () => void
 }
@@ -28,14 +29,24 @@ const NAME_HEADER: Record<ReviewScope, string> = {
 
 export function buildReviewColumns(
   entity: ReviewScope,
-  { isSelected, headerState, onToggle, onToggleAll }: ColumnContext,
+  {
+    isSelected,
+    headerState,
+    canSelectAll,
+    onToggle,
+    onToggleAll,
+  }: ColumnContext,
 ): DataTableColumnDef<ReviewRow>[] {
   const columns: DataTableColumnDef<ReviewRow>[] = [
     {
       id: 'select',
       size: 44,
       header: () => (
-        <HeaderCheckbox state={headerState} onToggle={onToggleAll} />
+        <HeaderCheckbox
+          state={headerState}
+          disabled={!canSelectAll}
+          onToggle={onToggleAll}
+        />
       ),
       cell: ({ row }) => (
         <SelectCell
@@ -149,9 +160,11 @@ function SelectCell({
 
 function HeaderCheckbox({
   state,
+  disabled,
   onToggle,
 }: {
   state: HeaderCheckState
+  disabled: boolean
   onToggle: () => void
 }) {
   return (
@@ -159,6 +172,7 @@ function HeaderCheckbox({
       checked={
         state === 'indeterminate' ? 'indeterminate' : state === 'checked'
       }
+      disabled={disabled}
       ariaLabel="Select all"
       onToggle={onToggle}
     />

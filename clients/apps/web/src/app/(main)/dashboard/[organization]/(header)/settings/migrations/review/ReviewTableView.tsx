@@ -20,7 +20,7 @@ import {
   SelectionState,
 } from './reviewSelection'
 import { ImportSummary, importResultText } from './importSummary'
-import { ReviewRow, ReviewScope } from './reviewRows'
+import { isSelectable, ReviewRow, ReviewScope } from './reviewRows'
 
 const numberFormat = new Intl.NumberFormat('en-US')
 
@@ -88,7 +88,6 @@ export function ReviewTableView({
 
   const importCount = selectedCount(selection, importableTotal)
   const hasCatalog = importableTotal + skippedTotal > 0
-  const allImported = hasCatalog && importableTotal === 0
   const [openRow, setOpenRow] = useState<ReviewRow | null>(null)
 
   const columns = useMemo(
@@ -96,17 +95,22 @@ export function ReviewTableView({
       buildReviewColumns(entity, {
         isSelected: (id) => isRowSelected(selection, id),
         headerState: headerCheckState(selection),
+        // Select-all flips the whole catalog, so hide it when this view offers
+        // nothing to select.
+        canSelectAll: rows.some(isSelectable),
         onToggle,
         onToggleAll,
       }),
-    [entity, selection, onToggle, onToggleAll],
+    [entity, rows, selection, onToggle, onToggleAll],
   )
 
   const pagination: PaginationState = { pageIndex: page - 1, pageSize }
   const onPaginationChange: OnChangeFn<PaginationState> = (updater) => {
     const next = typeof updater === 'function' ? updater(pagination) : updater
     if (next.pageSize !== pageSize) {
+      // Resets to the first page, so don't put the old one back.
       onPageSizeChange(next.pageSize)
+      return
     }
     onPageChange(next.pageIndex + 1)
   }
@@ -117,16 +121,6 @@ export function ReviewTableView({
         No records staged yet. Use &ldquo;Refresh from Stripe&rdquo; to scan
         Stripe.
       </Text>
-    )
-  }
-
-  if (allImported) {
-    return (
-      <Alert
-        variant="success"
-        title="Catalog imported"
-        description="All importable records are in Polar. Next: move saved cards."
-      />
     )
   }
 

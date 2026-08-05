@@ -136,6 +136,7 @@ const useEntityCount = (
   entity: CountEntity,
 ): EntityCount & {
   isLoading: boolean
+  isError: boolean
 } => {
   const importable = useMigrationRecords(id, {
     entity,
@@ -153,6 +154,9 @@ const useEntityCount = (
     importable: importable.data?.pagination.total_count ?? 0,
     skipped: skipped.data?.pagination.total_count ?? 0,
     isLoading: importable.isLoading || skipped.isLoading,
+    // A failed count would otherwise read as zero, which the caller can't tell
+    // apart from an empty catalog.
+    isError: importable.isError || skipped.isError,
   }
 }
 
@@ -174,5 +178,6 @@ export const useMigrationEntityCounts = (id: string) => {
     counts,
     isLoading:
       subscriptions.isLoading || products.isLoading || customers.isLoading,
+    isError: subscriptions.isError || products.isError || customers.isError,
   }
 }

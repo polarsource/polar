@@ -113,6 +113,16 @@ function StepContent({
     )
   }
   const def = currentStepDef(migration)
+  // The stepper shows a connected migration as assessing, but nothing is staged
+  // until the first pre-check runs.
+  if (migration.step === 'source_setup') {
+    return (
+      <Box flexDirection="column" rowGap="l">
+        <StepHeading def={def} />
+        <PrecheckPanel migrationId={migration.id} />
+      </Box>
+    )
+  }
   // `steps.ts` owns which backend steps the assessment covers.
   if (def?.key === 'assessment') {
     return <ReviewTable migrationId={migration.id} />
@@ -121,13 +131,11 @@ function StepContent({
   return (
     <Box flexDirection="column" rowGap="l">
       <StepHeading def={def} />
-      {migration.step === 'source_setup' ? (
-        <PrecheckPanel migrationId={migration.id} />
-      ) : (
-        <Text variant="caption" color="muted">
-          This step is being rolled out. We&apos;ll keep this page up to date.
-        </Text>
-      )}
+      <Text variant="caption" color="muted">
+        {def === null
+          ? 'This migration is complete.'
+          : "This step is being rolled out. We'll keep this page up to date."}
+      </Text>
     </Box>
   )
 }

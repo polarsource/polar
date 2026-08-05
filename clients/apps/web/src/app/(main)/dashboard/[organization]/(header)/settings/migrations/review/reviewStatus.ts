@@ -16,6 +16,9 @@ export function reviewStatus(row: ReviewRow): ReviewStatus {
   if (isImported(row)) {
     return { label: 'Imported', color: 'gray' }
   }
+  if (row.import_status === 'failed') {
+    return { label: 'Import failed', color: 'red' }
+  }
   if (row.status === 'skipped') {
     return { label: "Won't import", color: 'red' }
   }

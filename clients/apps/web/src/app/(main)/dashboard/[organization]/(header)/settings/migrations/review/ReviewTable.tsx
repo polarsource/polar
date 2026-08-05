@@ -34,8 +34,11 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     ...(filter === 'attention' ? { reasonLevel: 'action_required' } : {}),
     ...(filter === 'skipped' ? { status: 'skipped' as const } : {}),
   })
-  const { counts, isLoading: countsLoading } =
-    useMigrationEntityCounts(migrationId)
+  const {
+    counts,
+    isLoading: countsLoading,
+    isError: countsError,
+  } = useMigrationEntityCounts(migrationId)
   const importCatalog = useImportMerchantMigrationCatalog(migrationId)
   const rerunPrecheck = useRunMerchantMigrationPrecheck(migrationId)
 
@@ -72,7 +75,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     )
   }
 
-  if (records.isError) {
+  if (records.isError || countsError) {
     return (
       <Alert
         variant="danger"
@@ -99,7 +102,13 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       selection={selection}
       onToggle={toggle}
       onToggleAll={onToggleAll}
-      onImport={() => importCatalog.mutate(importPayload(selection))}
+      onImport={() =>
+        importCatalog.mutate(importPayload(selection), {
+          // Imported rows are no longer selectable, so a stale selection would
+          // keep counting them and resubmit them.
+          onSuccess: () => setSelection(initialSelection),
+        })
+      }
       importing={importCatalog.isPending}
       importResult={importCatalog.data}
       importError={importCatalog.isError}

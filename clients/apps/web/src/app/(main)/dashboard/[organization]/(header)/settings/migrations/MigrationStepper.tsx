@@ -46,6 +46,12 @@ function Marker({ state }: { state: StepState }) {
   )
 }
 
+const STATE_LABELS: Record<StepState, string> = {
+  done: 'completed',
+  current: 'current step',
+  upcoming: 'not started',
+}
+
 function Segment({ label, state }: { label: string; state: StepState }) {
   const reached = state !== 'upcoming'
   const color =
@@ -57,6 +63,9 @@ function Segment({ label, state }: { label: string; state: StepState }) {
   return (
     <Box
       as="li"
+      // Colour and the marker carry the state visually; these carry it aloud.
+      aria-current={state === 'current' ? 'step' : undefined}
+      aria-label={`${label}, ${STATE_LABELS[state]}`}
       flex={1}
       minWidth={0}
       flexDirection="column"

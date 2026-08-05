@@ -152,6 +152,10 @@ async def precheck(
     response_model=MerchantMigrationImportReport,
     summary="Import Merchant Migration Catalog",
     responses={
+        400: {
+            "description": "The source is not connected or isn't supported.",
+            "model": SourceNotConnected.schema() | UnsupportedMigrationSource.schema(),
+        },
         403: {
             "description": "Not allowed to manage this organization.",
             "model": NotPermitted.schema(),

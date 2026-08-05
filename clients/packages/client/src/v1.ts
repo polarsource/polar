@@ -51408,6 +51408,17 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigrationImportReport']
         }
       }
+      /** @description The source is not connected or isn't supported. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['SourceNotConnected']
+            | components['schemas']['UnsupportedMigrationSource']
+        }
+      }
       /** @description Not allowed to manage this organization. */
       403: {
         headers: {

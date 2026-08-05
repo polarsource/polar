@@ -171,54 +171,71 @@ export function DataTable<TData, TValue>({
             ) : (
               <>
                 {table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      className={
-                        enableRowSelection || onRowClick
-                          ? row.getCanSelect()
-                            ? 'cursor-pointer'
-                            : ''
-                          : undefined
-                      }
-                      data-state={
-                        enableRowSelection
-                          ? row.getIsSelected()
-                            ? 'selected'
+                  table.getRowModel().rows.map((row) => {
+                    const activate = onRowClick
+                      ? () => onRowClick(row)
+                      : enableRowSelection
+                        ? row.getToggleSelectedHandler()
+                        : undefined
+                    return (
+                      <TableRow
+                        key={row.id}
+                        className={
+                          enableRowSelection || onRowClick
+                            ? row.getCanSelect()
+                              ? 'cursor-pointer'
+                              : ''
                             : undefined
-                          : undefined
-                      }
-                      onClick={
-                        onRowClick
-                          ? () => onRowClick(row)
-                          : enableRowSelection
-                            ? row.getToggleSelectedHandler()
+                        }
+                        data-state={
+                          enableRowSelection
+                            ? row.getIsSelected()
+                              ? 'selected'
+                              : undefined
                             : undefined
-                      }
-                    >
-                      {row.getVisibleCells().map((cell) => {
-                        const colSpan = getCellColSpan
-                          ? getCellColSpan(cell)
-                          : 1
+                        }
+                        // An activatable row must be reachable without a mouse.
+                        tabIndex={activate ? 0 : undefined}
+                        onClick={activate}
+                        onKeyDown={
+                          activate
+                            ? (event) => {
+                                if (event.target !== event.currentTarget) return
+                                if (
+                                  event.key === 'Enter' ||
+                                  event.key === ' '
+                                ) {
+                                  event.preventDefault()
+                                  activate(event)
+                                }
+                              }
+                            : undefined
+                        }
+                      >
+                        {row.getVisibleCells().map((cell) => {
+                          const colSpan = getCellColSpan
+                            ? getCellColSpan(cell)
+                            : 1
 
-                        return (
-                          <React.Fragment key={cell.id}>
-                            {colSpan ? (
-                              <TableCell
-                                colSpan={colSpan}
-                                style={{ width: cell.column.getSize() }}
-                              >
-                                {flexRender(
-                                  cell.column.columnDef.cell,
-                                  cell.getContext(),
-                                )}
-                              </TableCell>
-                            ) : null}
-                          </React.Fragment>
-                        )
-                      })}
-                    </TableRow>
-                  ))
+                          return (
+                            <React.Fragment key={cell.id}>
+                              {colSpan ? (
+                                <TableCell
+                                  colSpan={colSpan}
+                                  style={{ width: cell.column.getSize() }}
+                                >
+                                  {flexRender(
+                                    cell.column.columnDef.cell,
+                                    cell.getContext(),
+                                  )}
+                                </TableCell>
+                              ) : null}
+                            </React.Fragment>
+                          )
+                        })}
+                      </TableRow>
+                    )
+                  })
                 ) : (
                   <TableRow>
                     <TableCell

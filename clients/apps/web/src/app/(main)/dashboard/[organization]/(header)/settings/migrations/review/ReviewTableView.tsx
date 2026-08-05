@@ -1,11 +1,12 @@
 'use client'
 
 import { CountEntity, EntityCount } from '@/hooks/queries/merchantMigrations'
-import { Alert, Button, DataTable, Text } from '@polar-sh/orbit'
+import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { OnChangeFn, PaginationState } from '@tanstack/react-table'
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { ReviewEntityTabs } from './ReviewEntityTabs'
+import { ReviewRecordModal } from './ReviewRecordModal'
 import {
   EMPTY_MESSAGES,
   ReviewFilter,
@@ -90,6 +91,7 @@ export function ReviewTableView({
   const importCount = selectedCount(selection, importableTotal)
   const hasCatalog = importableTotal + skippedTotal > 0
   const allImported = hasCatalog && importableTotal === 0
+  const [openRow, setOpenRow] = useState<ReviewRow | null>(null)
 
   const columns = useMemo(
     () =>
@@ -209,9 +211,22 @@ export function ReviewTableView({
             onPaginationChange={onPaginationChange}
             isLoading={false}
             getRowId={(row) => row.record_id ?? row.source_id}
+            onRowClick={(row) => setOpenRow(row.original)}
           />
         )}
       </Box>
+
+      <InlineModal
+        isShown={openRow !== null}
+        hide={() => setOpenRow(null)}
+        modalContent={
+          openRow ? (
+            <ReviewRecordModal row={openRow} onClose={() => setOpenRow(null)} />
+          ) : (
+            <Box />
+          )
+        }
+      />
     </Box>
   )
 }

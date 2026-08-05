@@ -1,4 +1,4 @@
-import { Avatar, Text } from '@polar-sh/orbit'
+import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { DataTableColumnDef } from '@polar-sh/orbit'
 import { Check, Circle, Minus } from 'lucide-react'
@@ -9,7 +9,6 @@ import {
   entityLabelSingular,
   isImported,
   isSelectable,
-  needsAttention,
   ReviewRow,
   ReviewScope,
   rowAmount,
@@ -56,64 +55,44 @@ export function buildReviewColumns(
     },
   ]
 
-  if (entity === 'all') {
-    columns.push({
+  columns.push(
+    {
       id: 'type',
       size: 140,
       header: 'Type',
       cell: ({ row }) => (
         <Text color="muted">{entityLabelSingular(row.original.entity)}</Text>
       ),
-    })
-  }
-
-  columns.push({
-    id: 'status',
-    size: 180,
-    header: 'Status',
-    cell: ({ row }) => <StatusCell row={row.original} />,
-  })
-
-  if (entity !== 'customers') {
-    columns.push({
+    },
+    {
+      id: 'status',
+      size: 180,
+      header: 'Status',
+      cell: ({ row }) => <StatusCell row={row.original} />,
+    },
+    {
       id: 'amount',
       size: 150,
       header: () => (
         <Box width="100%" justifyContent="end">
           <Text variant="caption" color="muted">
-            {entity === 'products' ? 'Price' : 'Amount'}
+            Amount
           </Text>
         </Box>
       ),
       cell: ({ row }) => <AmountCell row={row.original} />,
-    })
-  }
+    },
+  )
 
   return columns
 }
 
 function NameCell({ row }: { row: ReviewRow }) {
-  const skipped = row.status === 'skipped'
   return (
-    <Box alignItems="center" columnGap="s" minWidth={0}>
-      {row.entity !== 'products' && (
-        <Box flexShrink={0}>
-          <Avatar avatar_url={null} name={row.title} height={28} width={28} />
-        </Box>
-      )}
-      <Box flexDirection="column" rowGap="xs" minWidth={0}>
-        <Text truncate color={skipped ? 'muted' : 'default'}>
-          {row.title}
-        </Text>
-        {row.reason && (
-          <Text
-            variant="caption"
-            color={needsAttention(row) ? 'warning' : 'muted'}
-          >
-            {row.reason}
-          </Text>
-        )}
-      </Box>
+    <Box minWidth={0}>
+      <Text truncate color={row.status === 'skipped' ? 'muted' : 'default'}>
+        {row.title}
+      </Text>
     </Box>
   )
 }
@@ -236,10 +215,15 @@ function CheckboxBox({
       justifyContent="center"
       color="text-secondary"
       cursor={{ hover: 'pointer' }}
-      onClick={onToggle}
+      onClick={(event) => {
+        // The row itself opens the detail modal.
+        event.stopPropagation()
+        onToggle()
+      }}
       onKeyDown={(event) => {
         if (event.key === 'Enter' || event.key === ' ') {
           event.preventDefault()
+          event.stopPropagation()
           onToggle()
         }
       }}

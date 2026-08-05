@@ -71,6 +71,19 @@ const queryIsDisabled = (s: ReactQueryLoading): boolean => {
   return false
 }
 
+const activationKeyHandler =
+  (activate: (event: unknown) => void) =>
+  (event: React.KeyboardEvent<HTMLTableRowElement>) => {
+    // Let buttons, links and checkboxes inside the row keep their own keys.
+    if (event.target !== event.currentTarget) return
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.preventDefault()
+    activate(event)
+  }
+
+const ACTIVATABLE_ROW_CLASS =
+  'cursor-pointer focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none'
+
 export function DataTable<TData, TValue>({
   columns,
   data,
@@ -174,42 +187,23 @@ export function DataTable<TData, TValue>({
                   table.getRowModel().rows.map((row) => {
                     const activate = onRowClick
                       ? () => onRowClick(row)
-                      : enableRowSelection
+                      : enableRowSelection && row.getCanSelect()
                         ? row.getToggleSelectedHandler()
                         : undefined
                     return (
                       <TableRow
                         key={row.id}
-                        className={
-                          enableRowSelection || onRowClick
-                            ? row.getCanSelect()
-                              ? 'cursor-pointer'
-                              : ''
-                            : undefined
-                        }
+                        className={activate ? ACTIVATABLE_ROW_CLASS : undefined}
                         data-state={
-                          enableRowSelection
-                            ? row.getIsSelected()
-                              ? 'selected'
-                              : undefined
+                          enableRowSelection && row.getIsSelected()
+                            ? 'selected'
                             : undefined
                         }
                         // An activatable row must be reachable without a mouse.
                         tabIndex={activate ? 0 : undefined}
                         onClick={activate}
                         onKeyDown={
-                          activate
-                            ? (event) => {
-                                if (event.target !== event.currentTarget) return
-                                if (
-                                  event.key === 'Enter' ||
-                                  event.key === ' '
-                                ) {
-                                  event.preventDefault()
-                                  activate(event)
-                                }
-                              }
-                            : undefined
+                          activate ? activationKeyHandler(activate) : undefined
                         }
                       >
                         {row.getVisibleCells().map((cell) => {

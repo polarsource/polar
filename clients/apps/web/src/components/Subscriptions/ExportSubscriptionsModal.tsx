@@ -81,10 +81,6 @@ const ExportSubscriptionsModal: React.FC<ExportSubscriptionsModalProps> = ({
       url.searchParams.set('cancel_at_period_end', String(cancelAtPeriodEnd))
     }
 
-    // The date-range boundaries already represent the correct instants selected
-    // by the user in their local timezone; `toISOString()` converts them to UTC
-    // for the API. The `timezone` query param is only used by the server to
-    // render dates in the CSV output, not to alter filter boundaries.
     url.searchParams.set('started_after', dateRange.from.toISOString())
     url.searchParams.set('started_before', dateRange.to.toISOString())
     url.searchParams.set('timezone', timezone === 'utc' ? 'UTC' : localTimezone)

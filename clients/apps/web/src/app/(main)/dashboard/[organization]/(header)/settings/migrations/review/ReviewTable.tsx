@@ -37,6 +37,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
   const {
     counts,
     attentionCount,
+    blockers,
     isLoading: countsLoading,
     isError: countsError,
   } = useMigrationEntityCounts(migrationId)
@@ -120,9 +121,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       importError={importCatalog.isError}
       onRerunPrecheck={() => rerunPrecheck.mutate()}
       rerunning={rerunPrecheck.isPending}
-      blockers={rerunPrecheck.data?.issues.filter(
-        (issue) => issue.level === 'blocker',
-      )}
+      blockers={blockers}
     />
   )
 }

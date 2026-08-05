@@ -360,6 +360,49 @@ class TestRecords:
         assert json_body["items"][0]["status"] == "importable"
 
 
+@pytest.mark.asyncio
+class TestCounts:
+    async def test_anonymous(
+        self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        response = await client.get(
+            f"/v1/merchant-migrations/{migration.id}/counts",
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_counts_the_staged_catalog(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        migration = await build_connected_migration(save_fixture, organization)
+        adapter = mocker.MagicMock()
+        adapter.extract.return_value = _catalog_extract()
+        adapter.get_source_account = mocker.AsyncMock(
+            return_value=CanonicalAccount(country="US", is_connect_platform=False)
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
+        )
+        precheck = await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
+        assert precheck.status_code == 200
+
+        response = await client.get(f"/v1/merchant-migrations/{migration.id}/counts")
+
+        assert response.status_code == 200
+        json_body = response.json()
+        products = next(
+            entity for entity in json_body["entities"] if entity["entity"] == "products"
+        )
+        assert products["importable"] == 1
+        assert json_body["blockers"] == []
+
+
 async def _catalog_with_customer_extract() -> AsyncIterator[CanonicalRecord]:
     async for record in _catalog_extract():
         yield record

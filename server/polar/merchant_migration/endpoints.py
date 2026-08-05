@@ -15,6 +15,7 @@ from polar.routing import APIRouter
 from .auth import MerchantMigrationRead, MerchantMigrationWrite
 from .schemas import MerchantMigration as MerchantMigrationSchema
 from .schemas import (
+    MerchantMigrationCounts,
     MerchantMigrationCreate,
     MerchantMigrationImportReport,
     MerchantMigrationImportRequest,
@@ -183,6 +184,33 @@ async def import_catalog(
         record_ids=body.record_ids if body is not None else None,
         exclude_record_ids=body.exclude_record_ids if body is not None else None,
     )
+
+
+@router.get(
+    "/{id}/counts",
+    response_model=MerchantMigrationCounts,
+    summary="Count Merchant Migration Records",
+    responses={
+        400: {
+            "description": "The source is not connected or isn't supported.",
+            "model": SourceNotConnected.schema() | UnsupportedMigrationSource.schema(),
+        },
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+    },
+)
+async def counts(
+    id: UUID4,
+    auth_subject: MerchantMigrationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigrationCounts:
+    return await merchant_migration_service.count_records(session, auth_subject, id)
 
 
 @router.get(

@@ -507,6 +507,7 @@ module "tailscale_router" {
   registry_credential_id = render_registry_credential.ghcr.id
   tailscale_authkey      = var.tailscale_authkey
   advertise_routes       = var.tailscale_advertise_routes
+  advertise_exit_node    = true
 
   depends_on = [render_registry_credential.ghcr, render_project.polar]
 }

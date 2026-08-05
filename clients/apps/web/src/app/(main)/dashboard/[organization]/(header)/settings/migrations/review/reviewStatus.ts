@@ -1,29 +1,28 @@
 import { isImported, needsAttention, ReviewRow } from './reviewRows'
 
-type DotColor = 'text-warning' | 'text-danger' | 'text-tertiary'
-type LabelColor = 'default' | 'muted'
+type LabelColor = 'default' | 'muted' | 'warning' | 'danger'
 
 export interface ReviewStatus {
   label: string
-  dot: DotColor
-  labelColor: LabelColor
+  color: LabelColor
 }
 
 // One question, asked the same way for every entity: what happens to this
 // record at import. The source lifecycle (Active, Trialing, Past due) is a
 // property of the Stripe record, so it lives in the row's detail modal.
 //
-// Colour marks the exceptions only. Most rows import as they are, so painting
-// those green would leave the whole column shouting.
+// The word carries the meaning, so there's no status dot. Colour marks the
+// exceptions only: most rows import as they are, and colouring those too would
+// leave nothing standing out.
 export function reviewStatus(row: ReviewRow): ReviewStatus {
   if (isImported(row)) {
-    return { label: 'Imported', dot: 'text-tertiary', labelColor: 'muted' }
+    return { label: 'Imported', color: 'muted' }
   }
   if (row.status === 'skipped') {
-    return { label: "Won't import", dot: 'text-danger', labelColor: 'muted' }
+    return { label: "Won't import", color: 'danger' }
   }
   if (needsAttention(row)) {
-    return { label: 'Needs info', dot: 'text-warning', labelColor: 'default' }
+    return { label: 'Needs info', color: 'warning' }
   }
-  return { label: 'Ready', dot: 'text-tertiary', labelColor: 'default' }
+  return { label: 'Ready', color: 'default' }
 }

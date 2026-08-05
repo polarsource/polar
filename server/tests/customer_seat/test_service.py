@@ -8,7 +8,6 @@ import pytest
 from polar.auth.models import AuthSubject
 from polar.customer_seat.service import (
     CustomerNotFound,
-    FeatureNotEnabled,
     InvalidInvitationToken,
     InvalidSeatAssignmentRequest,
     MemberEmailMismatch,
@@ -46,35 +45,6 @@ from tests.fixtures.random_objects import (
 )
 
 
-@pytest.mark.asyncio
-class TestCheckSeatFeatureEnabled:
-    async def test_feature_enabled(
-        self, session: AsyncSession, save_fixture: SaveFixture, account: Account
-    ) -> None:
-        organization = await create_organization(save_fixture, account)
-        organization.feature_settings = {"seat_based_pricing_enabled": True}
-        await save_fixture(organization)
-        await seat_service.check_seat_feature_enabled(session, organization.id)
-
-    async def test_feature_disabled(
-        self, session: AsyncSession, save_fixture: SaveFixture, account: Account
-    ) -> None:
-        organization = await create_organization(save_fixture, account)
-        organization.feature_settings = {"seat_based_pricing_enabled": False}
-        await save_fixture(organization)
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.check_seat_feature_enabled(session, organization.id)
-
-    async def test_feature_missing(
-        self, session: AsyncSession, save_fixture: SaveFixture, account: Account
-    ) -> None:
-        organization = await create_organization(save_fixture, account)
-        organization.feature_settings = {}
-        await save_fixture(organization)
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.check_seat_feature_enabled(session, organization.id)
-
-
 class TestListSeats:
     @pytest.mark.asyncio
     async def test_list_seats_success(
@@ -87,14 +57,6 @@ class TestListSeats:
         seats = await seat_service.list_seats(session, subscription_with_seats)
         assert len(seats) == 1
         assert seats[0].id == customer_seat_pending.id
-
-    @pytest.mark.asyncio
-    async def test_list_seats_feature_disabled(
-        self, session: AsyncSession, subscription: Subscription
-    ) -> None:
-        subscription.product.organization.feature_settings = {}
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.list_seats(session, subscription)
 
 
 class TestGetAvailableSeatsCount:
@@ -118,14 +80,6 @@ class TestGetAvailableSeatsCount:
             session, subscription_with_seats
         )
         assert count == 4
-
-    @pytest.mark.asyncio
-    async def test_available_seats_feature_disabled(
-        self, session: AsyncSession, subscription: Subscription
-    ) -> None:
-        subscription.product.organization.feature_settings = {}
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.get_available_seats_count(session, subscription)
 
 
 class TestAssignSeat:
@@ -297,16 +251,6 @@ class TestAssignSeat:
                 session, subscription_with_seats, customer_id=fake_customer_id
             )
         assert str(fake_customer_id) in str(exc_info.value)
-
-    @pytest.mark.asyncio
-    async def test_assign_seat_feature_disabled(
-        self, session: AsyncSession, subscription: Subscription
-    ) -> None:
-        subscription.product.organization.feature_settings = {}
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.assign_seat(
-                session, subscription, email="test@example.com"
-            )
 
     @pytest.mark.asyncio
     async def test_assign_seat_creates_new_customer_with_email(
@@ -660,7 +604,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -713,7 +656,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -795,7 +737,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -842,7 +783,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -890,7 +830,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -926,7 +865,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -968,7 +906,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -1013,7 +950,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -1062,7 +998,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -1098,7 +1033,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -1152,7 +1086,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -1212,7 +1145,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -1262,7 +1194,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -1312,7 +1243,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -1360,7 +1290,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -1406,7 +1335,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -1443,7 +1371,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -1490,7 +1417,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -1586,7 +1512,6 @@ class TestAssignSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -1763,24 +1688,6 @@ class TestClaimSeat:
             await seat_service.claim_seat(session, old_token)
 
     @pytest.mark.asyncio
-    async def test_claim_seat_feature_disabled(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        customer_seat_pending: CustomerSeat,
-    ) -> None:
-        assert customer_seat_pending.subscription is not None
-        customer_seat_pending.subscription.product.organization.feature_settings = {}
-        await save_fixture(customer_seat_pending.subscription.product.organization)
-
-        assert customer_seat_pending.invitation_token is not None
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.claim_seat(
-                session,
-                customer_seat_pending.invitation_token,
-            )
-
-    @pytest.mark.asyncio
     async def test_claim_seat_clears_token(
         self,
         session: AsyncSession,
@@ -1850,7 +1757,6 @@ class TestClaimSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -1916,20 +1822,6 @@ class TestRevokeSeat:
         assert seat.revoked_at is not None
 
     @pytest.mark.asyncio
-    async def test_revoke_seat_feature_disabled(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        customer_seat_claimed: CustomerSeat,
-    ) -> None:
-        assert customer_seat_claimed.subscription is not None
-        customer_seat_claimed.subscription.product.organization.feature_settings = {}
-        await save_fixture(customer_seat_claimed.subscription.product.organization)
-
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.revoke_seat(session, customer_seat_claimed)
-
-    @pytest.mark.asyncio
     async def test_revoke_seat_sends_webhook(
         self, session: AsyncSession, customer_seat_claimed: CustomerSeat
     ) -> None:
@@ -1975,7 +1867,6 @@ class TestRevokeSeat:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -2090,7 +1981,7 @@ class TestGetSeat:
         seat_enabled_org = await create_organization(
             save_fixture, await create_account(save_fixture, user)
         )
-        seat_enabled_org.feature_settings = {"seat_based_pricing_enabled": True}
+        seat_enabled_org.feature_settings = {}
         await save_fixture(seat_enabled_org)
 
         seat_product = await create_product(
@@ -2121,24 +2012,6 @@ class TestGetSeat:
         seat = await seat_service.get_seat(session, auth_subject, uuid.uuid4())
 
         assert seat is None
-
-    @pytest.mark.asyncio
-    async def test_get_seat_feature_disabled(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        customer_seat_claimed: CustomerSeat,
-        seat_enabled_organization: Organization,
-    ) -> None:
-        seat_enabled_organization.feature_settings = {}
-        await save_fixture(seat_enabled_organization)
-
-        auth_subject = AuthSubject(
-            subject=seat_enabled_organization, scopes=set(), session=None
-        )
-
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.get_seat(session, auth_subject, customer_seat_claimed.id)
 
 
 class TestResendInvitation:
@@ -2251,35 +2124,6 @@ class TestResendInvitation:
             await seat_service.resend_invitation(session, seat)
 
     @pytest.mark.asyncio
-    async def test_resend_invitation_feature_disabled(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        subscription_with_seats: Subscription,
-        customer: Customer,
-    ) -> None:
-        """Test that resending invitation fails when feature is disabled."""
-        # Create a pending seat
-        seat = await create_customer_seat(
-            save_fixture,
-            subscription=subscription_with_seats,
-            customer=customer,
-            status=SeatStatus.pending,
-        )
-        await session.refresh(seat, ["subscription", "customer"])
-        assert seat.subscription is not None
-        await session.refresh(seat.subscription, ["product"])
-        assert seat.subscription is not None
-        await session.refresh(seat.subscription.product, ["organization"])
-
-        # Disable feature
-        subscription_with_seats.product.organization.feature_settings = {}
-        await save_fixture(subscription_with_seats.product.organization)
-
-        with pytest.raises(FeatureNotEnabled):
-            await seat_service.resend_invitation(session, seat)
-
-    @pytest.mark.asyncio
     async def test_resend_invitation_revoked_seat(
         self,
         session: AsyncSession,
@@ -2316,7 +2160,6 @@ class TestResendInvitation:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -2685,9 +2528,8 @@ class TestRevokeAllSeatsForSubscription:
         """Seats are revoked even when the organization is blocked.
 
         This happens when a wound-down organization's subscriptions are
-        auto-cancelled: the organization is blocked, and the feature check must
-        still be able to read it, otherwise it raises FeatureNotEnabled and
-        breaks the cancellation.
+        auto-cancelled: the organization is blocked, but its seats must still
+        be revocable.
         """
         customer = await create_customer(
             save_fixture,
@@ -2750,7 +2592,6 @@ class TestAssignSeatToDeletedMember:
             save_fixture,
             account,
             feature_settings={
-                "seat_based_pricing_enabled": True,
                 "member_model_enabled": True,
             },
         )
@@ -2823,7 +2664,6 @@ class TestUpdateProductBenefitsGrants:
 
         organization.feature_settings = {
             **organization.feature_settings,
-            "seat_based_pricing_enabled": True,
         }
         await save_fixture(organization)
 
@@ -2902,7 +2742,6 @@ class TestUpdateProductBenefitsGrants:
 
         organization.feature_settings = {
             **organization.feature_settings,
-            "seat_based_pricing_enabled": True,
         }
         await save_fixture(organization)
 
@@ -2955,7 +2794,6 @@ class TestUpdateProductBenefitsGrants:
         """When there are no claimed seats, no jobs should be enqueued."""
         organization.feature_settings = {
             **organization.feature_settings,
-            "seat_based_pricing_enabled": True,
         }
         await save_fixture(organization)
 
@@ -3004,7 +2842,6 @@ class TestUpdateProductBenefitsGrants:
         """Benefit grants for seats with member_id should include the member_id."""
         organization.feature_settings = {
             **organization.feature_settings,
-            "seat_based_pricing_enabled": True,
             "member_model_enabled": True,
         }
         await save_fixture(organization)

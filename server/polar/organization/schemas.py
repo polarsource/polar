@@ -171,9 +171,6 @@ class OrganizationFeatureSettings(Schema):
     issue_funding_enabled: bool = Field(
         False, description="If this organization has issue funding enabled"
     )
-    seat_based_pricing_enabled: bool = Field(
-        False, description="If this organization has seat-based pricing enabled"
-    )
     wallets_enabled: bool = Field(
         False, description="If this organization has Wallets enabled"
     )
@@ -237,9 +234,6 @@ class OrganizationFeatureSettingsUpdate(Schema):
     provided and keep their current value.
     """
 
-    seat_based_pricing_enabled: bool = Field(
-        False, description="If this organization has seat-based pricing enabled"
-    )
     member_model_enabled: bool = Field(
         False, description="If this organization has the Member model enabled"
     )

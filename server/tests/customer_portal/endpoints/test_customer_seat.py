@@ -78,7 +78,6 @@ class TestListSeats:
         customer: Customer,
     ) -> None:
         # Enable seat-based pricing feature
-        organization.feature_settings["seat_based_pricing_enabled"] = True
         attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
@@ -130,7 +129,6 @@ class TestAssignSeat:
         customer_second: Customer,
     ) -> None:
         # Enable seat-based pricing feature
-        organization.feature_settings["seat_based_pricing_enabled"] = True
         attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
@@ -170,7 +168,6 @@ class TestAssignSeat:
         customer: Customer,
     ) -> None:
         # Enable seat-based pricing feature
-        organization.feature_settings["seat_based_pricing_enabled"] = True
         attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
@@ -222,7 +219,6 @@ class TestAssignSeat:
     ) -> None:
         from tests.fixtures.random_objects import create_checkout
 
-        organization.feature_settings["seat_based_pricing_enabled"] = True
         attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
@@ -275,7 +271,6 @@ class TestAssignSeat:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        organization.feature_settings["seat_based_pricing_enabled"] = True
         organization.feature_settings["member_model_enabled"] = True
         attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
@@ -321,7 +316,6 @@ class TestAssignSeat:
     ) -> None:
         from tests.fixtures.random_objects import create_checkout
 
-        organization.feature_settings["seat_based_pricing_enabled"] = True
         attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
@@ -380,7 +374,6 @@ class TestRevokeSeat:
         customer_second: Customer,
     ) -> None:
         # Enable seat-based pricing feature
-        organization.feature_settings["seat_based_pricing_enabled"] = True
         attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
@@ -424,7 +417,6 @@ class TestRevokeSeat:
         customer: Customer,
     ) -> None:
         # Enable seat-based pricing feature
-        organization.feature_settings["seat_based_pricing_enabled"] = True
         attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
@@ -480,7 +472,6 @@ class TestResendInvitation:
         customer_second: Customer,
     ) -> None:
         # Enable seat-based pricing feature
-        organization.feature_settings["seat_based_pricing_enabled"] = True
         attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
@@ -524,7 +515,6 @@ class TestResendInvitation:
         customer: Customer,
     ) -> None:
         # Enable seat-based pricing feature
-        organization.feature_settings["seat_based_pricing_enabled"] = True
         attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
@@ -568,7 +558,6 @@ class TestResendInvitation:
         customer: Customer,
     ) -> None:
         # Enable seat-based pricing feature
-        organization.feature_settings["seat_based_pricing_enabled"] = True
         attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
@@ -824,7 +813,6 @@ class TestListSeatsForOrder:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        organization.feature_settings["seat_based_pricing_enabled"] = True
         attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
@@ -865,7 +853,6 @@ class TestAssignSeatForOrder:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        organization.feature_settings["seat_based_pricing_enabled"] = True
         attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 
@@ -916,7 +903,6 @@ class TestRevokeSeatForOrder:
         organization: Organization,
         customer: Customer,
     ) -> None:
-        organization.feature_settings["seat_based_pricing_enabled"] = True
         attributes.flag_modified(organization, "feature_settings")
         await save_fixture(organization)
 

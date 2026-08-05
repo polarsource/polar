@@ -61,7 +61,6 @@ export const MembersSection = ({
 
   const isEnabled =
     organization?.feature_settings?.member_model_enabled &&
-    organization?.feature_settings?.seat_based_pricing_enabled &&
     customer.type === 'team'
 
   // Filters out non-seat subscriptions and orders to minimize no. requests.

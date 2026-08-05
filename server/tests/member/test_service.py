@@ -13,7 +13,6 @@ from polar.kit.pagination import PaginationParams
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
 from polar.models import (
-    Customer,
     CustomerSeat,
     Member,
     Organization,
@@ -275,22 +274,6 @@ class TestList:
 
 @pytest.mark.asyncio
 class TestCreateOwnerMember:
-    async def test_feature_flag_disabled(
-        self,
-        session: AsyncSession,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        """Test that member is not created when feature flag is disabled."""
-        organization.feature_settings = {"member_model_enabled": False}
-
-        member = await member_service.create_owner_member(
-            session, customer, organization
-        )
-
-        # Should return None when feature flag is disabled
-        assert member is None
-
     async def test_feature_flag_enabled_creates_member(
         self,
         save_fixture: SaveFixture,

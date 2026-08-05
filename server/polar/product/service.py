@@ -62,7 +62,6 @@ from .schemas import (
     ProductCreate,
     ProductPriceCreate,
     ProductPriceMeteredCreateBase,
-    ProductPriceSeatBasedCreate,
     ProductUpdate,
 )
 from .sorting import ProductSortProperty
@@ -583,19 +582,6 @@ class ProductService:
                 model_class = price_schema.get_model_class()
                 price_kwargs = price_schema.model_dump()
                 price = model_class(product=product, source=source, **price_kwargs)
-                if isinstance(price_schema, ProductPriceSeatBasedCreate):
-                    if not organization.feature_settings.get(
-                        "seat_based_pricing_enabled", False
-                    ):
-                        errors.append(
-                            {
-                                "type": "value_error",
-                                "loc": (*error_prefix, index),
-                                "msg": "Seat-based pricing is not enabled for this organization.",
-                                "input": price_schema,
-                            }
-                        )
-                        continue
                 if is_metered_price(price) and isinstance(
                     price_schema, ProductPriceMeteredCreateBase
                 ):

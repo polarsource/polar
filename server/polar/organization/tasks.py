@@ -902,14 +902,6 @@ async def prepare_members(organization_id: uuid.UUID) -> None:
         if organization is None:
             raise OrganizationDoesNotExist(organization_id)
 
-        if not organization.feature_settings.get("seat_based_pricing_enabled", False):
-            log.warning(
-                "organization.prepare_members.skipped",
-                reason="seat_based_pricing_not_enabled",
-                organization_id=str(organization_id),
-            )
-            return
-
     log.info(
         "organization.prepare_members.start",
         organization_id=str(organization_id),

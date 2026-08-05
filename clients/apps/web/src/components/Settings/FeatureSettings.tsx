@@ -1,14 +1,12 @@
 'use client'
 
-import { useOrganization, useUpdateOrganization } from '@/hooks/queries'
+import { useUpdateOrganization } from '@/hooks/queries'
 import { useAutoSave } from '@/hooks/useAutoSave'
 import { extractApiErrorMessage, setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
 import { Switch } from '@polar-sh/orbit'
 import { Form, FormField } from '@polar-sh/ui/components/ui/form'
-import { useCallback, useRef, useState } from 'react'
 import { useForm } from 'react-hook-form'
-import { ConfirmModal } from '../Modal/ConfirmModal'
 import { toast } from '../Toast/use-toast'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
@@ -61,20 +59,6 @@ export default function FeatureSettings({
     delay: 1000,
   })
 
-  const [showSeatBasedModal, setShowSeatBasedModal] = useState(false)
-  const seatBasedFieldRef = useRef<{ onChange: (value: boolean) => void }>(null)
-
-  const { data: liveOrg } = useOrganization(organization.id)
-  const featureSettings =
-    liveOrg?.feature_settings ?? organization.feature_settings
-
-  const memberModelEnabled = !!featureSettings?.member_model_enabled
-  const seatBasedAlreadyEnabled = !!featureSettings?.seat_based_pricing_enabled
-
-  const handleSeatBasedConfirm = useCallback(() => {
-    seatBasedFieldRef.current?.onChange?.(true)
-  }, [])
-
   return (
     <Form {...form}>
       <form
@@ -114,58 +98,8 @@ export default function FeatureSettings({
               }}
             />
           </SettingsGroupItem>
-          <SettingsGroupItem
-            title="Seat-Based Billing"
-            description={
-              <>
-                Enable seat-based pricing for subscription products. Requires
-                the member model to be enabled.
-              </>
-            }
-          >
-            <FormField
-              control={control}
-              name="seat_based_pricing_enabled"
-              render={({ field }) => {
-                seatBasedFieldRef.current = field
-                return (
-                  <Switch
-                    checked={field.value}
-                    disabled={
-                      readOnly || !memberModelEnabled || seatBasedAlreadyEnabled
-                    }
-                    onCheckedChange={() => {
-                      setShowSeatBasedModal(true)
-                    }}
-                  />
-                )
-              }}
-            />
-          </SettingsGroupItem>
         </SettingsGroup>
       </form>
-
-      <ConfirmModal
-        isShown={showSeatBasedModal}
-        hide={() => setShowSeatBasedModal(false)}
-        title="Enable Seat-Based Billing"
-        description="This action cannot be undone. Once enabled, seat-based billing cannot be disabled."
-        body={
-          <p className="text-sm">
-            Please review the{' '}
-            <a
-              href="https://polar.sh/docs/guides/seat-based-pricing"
-              target="_blank"
-              className="underline"
-              rel="noreferrer noopener"
-            >
-              seat-based pricing guide
-            </a>{' '}
-            before proceeding.
-          </p>
-        }
-        onConfirm={handleSeatBasedConfirm}
-      />
     </Form>
   )
 }

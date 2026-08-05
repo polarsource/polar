@@ -70,26 +70,6 @@ class TestListSeats:
 
         assert response.status_code == 404
 
-    @pytest.mark.auth(SEAT_AUTH)
-    async def test_list_seats_feature_disabled(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        subscription: Subscription,
-        user_organization: UserOrganization,
-    ) -> None:
-        subscription.started_at = datetime.now()
-        await save_fixture(subscription)
-        subscription.product.organization.feature_settings = {}
-        await save_fixture(subscription.product.organization)
-
-        response = await client.get(
-            "/v1/customer-seats",
-            params={"subscription_id": str(subscription.id)},
-        )
-
-        assert response.status_code == 403
-
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.customer_seats_read}),
     )
@@ -297,29 +277,6 @@ class TestAssignSeat:
         assert response.status_code == 404
 
     @pytest.mark.auth(SEAT_AUTH)
-    async def test_assign_seat_feature_disabled(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        subscription: Subscription,
-        user_organization: UserOrganization,
-    ) -> None:
-        subscription.started_at = datetime.now(UTC)
-        await save_fixture(subscription)
-        subscription.product.organization.feature_settings = {}
-        await save_fixture(subscription.product.organization)
-
-        response = await client.post(
-            "/v1/customer-seats",
-            json={
-                "subscription_id": str(subscription.id),
-                "email": "test@example.com",
-            },
-        )
-
-        assert response.status_code == 403
-
-    @pytest.mark.auth(SEAT_AUTH)
     async def test_assign_seat_customer_not_found_email(
         self,
         client: AsyncClient,
@@ -505,23 +462,6 @@ class TestGetClaimInfo:
 
         assert response.status_code == 404
 
-    async def test_get_claim_info_feature_disabled(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        customer_seat_pending: CustomerSeat,
-    ) -> None:
-        assert customer_seat_pending.subscription is not None
-        customer_seat_pending.subscription.product.organization.feature_settings = {}
-        await save_fixture(customer_seat_pending.subscription.product.organization)
-
-        assert customer_seat_pending.invitation_token is not None
-        response = await client.get(
-            f"/v1/customer-seats/claim/{customer_seat_pending.invitation_token}"
-        )
-
-        assert response.status_code == 403
-
 
 @pytest.mark.asyncio
 class TestClaimSeat:
@@ -603,24 +543,6 @@ class TestClaimSeat:
         )
 
         assert response.status_code == 400
-
-    async def test_claim_seat_feature_disabled(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        customer_seat_pending: CustomerSeat,
-    ) -> None:
-        assert customer_seat_pending.subscription is not None
-        customer_seat_pending.subscription.product.organization.feature_settings = {}
-        await save_fixture(customer_seat_pending.subscription.product.organization)
-
-        assert customer_seat_pending.invitation_token is not None
-        response = await client.post(
-            "/v1/customer-seats/claim",
-            json={"invitation_token": customer_seat_pending.invitation_token},
-        )
-
-        assert response.status_code == 403
 
 
 @pytest.mark.asyncio
@@ -712,25 +634,6 @@ class TestRevokeSeat:
         )
 
         assert response.status_code == 404
-
-    @pytest.mark.auth(SEAT_AUTH)
-    async def test_revoke_seat_feature_disabled(
-        self,
-        client: AsyncClient,
-        save_fixture: SaveFixture,
-        subscription_with_seats: Subscription,
-        customer_seat_claimed: CustomerSeat,
-        user_organization_seat_enabled: UserOrganization,
-    ) -> None:
-        # Disable the feature
-        subscription_with_seats.product.organization.feature_settings = {}
-        await save_fixture(subscription_with_seats.product.organization)
-
-        response = await client.delete(
-            f"/v1/customer-seats/{customer_seat_claimed.id}",
-        )
-
-        assert response.status_code == 403
 
     async def test_revoke_seat_unauthorized(
         self,

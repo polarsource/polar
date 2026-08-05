@@ -389,9 +389,7 @@ export const ProductPricingSection = ({
       ? onlyStaticPrice.amount_type
       : null
 
-  const canAddSeatPricing =
-    onlyStaticAmountType === 'fixed' &&
-    !!organization.feature_settings?.seat_based_pricing_enabled
+  const canAddSeatPricing = onlyStaticAmountType === 'fixed'
 
   const canAddBasePrice = onlyStaticAmountType === 'seat_based'
 

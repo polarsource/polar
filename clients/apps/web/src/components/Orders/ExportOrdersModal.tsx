@@ -4,7 +4,6 @@ import DateRangePicker, {
   DateRange,
 } from '@/components/Metrics/DateRangePicker'
 import { getServerURL } from '@/utils/api'
-import { UTCDate } from '@date-fns/utc'
 import { schemas } from '@polar-sh/client'
 import {
   Button,
@@ -37,17 +36,6 @@ const formatGMTOffset = (date: Date = new Date()): string =>
   new Intl.DateTimeFormat('en', { timeZoneName: 'shortOffset' })
     .formatToParts(date)
     .find((part) => part.type === 'timeZoneName')?.value ?? 'Local'
-
-const toUTCBoundary = (date: Date): Date =>
-  new UTCDate(
-    date.getFullYear(),
-    date.getMonth(),
-    date.getDate(),
-    date.getHours(),
-    date.getMinutes(),
-    date.getSeconds(),
-    date.getMilliseconds(),
-  )
 
 interface ExportOrdersModalProps {
   organization: schemas['Organization']
@@ -87,11 +75,12 @@ const ExportOrdersModal: React.FC<ExportOrdersModalProps> = ({
       url.searchParams.append('status', status)
     }
 
-    const from =
-      timezone === 'utc' ? toUTCBoundary(dateRange.from) : dateRange.from
-    const to = timezone === 'utc' ? toUTCBoundary(dateRange.to) : dateRange.to
-    url.searchParams.set('created_after', from.toISOString())
-    url.searchParams.set('created_before', to.toISOString())
+    // The date-range boundaries already represent the correct instants selected
+    // by the user in their local timezone; `toISOString()` converts them to UTC
+    // for the API. The `timezone` query param is only used by the server to
+    // render dates in the CSV output, not to alter filter boundaries.
+    url.searchParams.set('created_after', dateRange.from.toISOString())
+    url.searchParams.set('created_before', dateRange.to.toISOString())
     url.searchParams.set('timezone', timezone === 'utc' ? 'UTC' : localTimezone)
 
     for (const column of orderExportColumns(columns)) {

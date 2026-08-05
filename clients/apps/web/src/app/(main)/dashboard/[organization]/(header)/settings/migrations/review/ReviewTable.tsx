@@ -36,6 +36,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
   })
   const {
     counts,
+    attentionCount,
     isLoading: countsLoading,
     isError: countsError,
   } = useMigrationEntityCounts(migrationId)
@@ -92,6 +93,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       filter={filter}
       onFilterChange={onFilterChange}
       counts={counts}
+      attentionCount={attentionCount}
       rows={records.data?.items ?? []}
       page={page}
       pageSize={pageSize}
@@ -102,18 +104,25 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       selection={selection}
       onToggle={toggle}
       onToggleAll={onToggleAll}
-      onImport={() =>
-        importCatalog.mutate(importPayload(selection), {
-          // Imported rows are no longer selectable, so a stale selection would
-          // keep counting them and resubmit them.
-          onSuccess: () => setSelection(initialSelection),
+      onImport={() => {
+        const submitted = selection
+        importCatalog.mutate(importPayload(submitted), {
+          // Imported rows stop being selectable, so a stale selection would
+          // keep counting them. Keep anything picked while the import ran.
+          onSuccess: () =>
+            setSelection((current) =>
+              current === submitted ? initialSelection : current,
+            ),
         })
-      }
+      }}
       importing={importCatalog.isPending}
       importResult={importCatalog.data}
       importError={importCatalog.isError}
       onRerunPrecheck={() => rerunPrecheck.mutate()}
       rerunning={rerunPrecheck.isPending}
+      blockers={rerunPrecheck.data?.issues.filter(
+        (issue) => issue.level === 'blocker',
+      )}
     />
   )
 }

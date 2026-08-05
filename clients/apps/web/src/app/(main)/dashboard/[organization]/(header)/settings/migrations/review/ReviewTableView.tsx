@@ -1,6 +1,7 @@
 'use client'
 
 import { CountEntity, EntityCount } from '@/hooks/queries/merchantMigrations'
+import { schemas } from '@polar-sh/client'
 import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { OnChangeFn, PaginationState } from '@tanstack/react-table'
@@ -20,7 +21,7 @@ import {
   SelectionState,
 } from './reviewSelection'
 import { ImportSummary, importResultText } from './importSummary'
-import { isSelectable, ReviewRow, ReviewScope } from './reviewRows'
+import { ReviewRow, ReviewScope } from './reviewRows'
 
 const numberFormat = new Intl.NumberFormat('en-US')
 
@@ -46,6 +47,8 @@ interface Props {
   importError?: boolean
   onRerunPrecheck?: () => void
   rerunning?: boolean
+  blockers?: schemas['PrecheckIssue'][]
+  attentionCount: number
 }
 
 export function ReviewTableView({
@@ -70,6 +73,8 @@ export function ReviewTableView({
   importError = false,
   onRerunPrecheck,
   rerunning = false,
+  blockers = [],
+  attentionCount,
 }: Props) {
   const tabCounts: Record<CountEntity, number> = {
     subscriptions:
@@ -95,13 +100,12 @@ export function ReviewTableView({
       buildReviewColumns(entity, {
         isSelected: (id) => isRowSelected(selection, id),
         headerState: headerCheckState(selection),
-        // Select-all flips the whole catalog, so hide it when this view offers
-        // nothing to select.
-        canSelectAll: rows.some(isSelectable),
+        // It flips the whole catalog, not this page, so gate it on the same scope.
+        canSelectAll: importableTotal > 0,
         onToggle,
         onToggleAll,
       }),
-    [entity, rows, selection, onToggle, onToggleAll],
+    [entity, importableTotal, selection, onToggle, onToggleAll],
   )
 
   const pagination: PaginationState = { pageIndex: page - 1, pageSize }
@@ -113,6 +117,21 @@ export function ReviewTableView({
       return
     }
     onPageChange(next.pageIndex + 1)
+  }
+
+  if (blockers.length > 0) {
+    return (
+      <Box flexDirection="column" rowGap="l">
+        {blockers.map((blocker) => (
+          <Alert
+            key={blocker.code}
+            variant="danger"
+            title="This migration can't run"
+            description={blocker.message}
+          />
+        ))}
+      </Box>
+    )
   }
 
   // Reaching this step means a scan already ran, so an empty ledger means
@@ -180,7 +199,15 @@ export function ReviewTableView({
           flexWrap="wrap"
         >
           <Box maxWidth="100%" overflowX="auto">
-            <ReviewStatusTabs value={filter} onChange={onFilterChange} />
+            <ReviewStatusTabs
+              value={filter}
+              counts={{
+                attention: attentionCount,
+                skipped: skippedTotal,
+                all: importableTotal + skippedTotal,
+              }}
+              onChange={onFilterChange}
+            />
           </Box>
           <Box alignItems="center" columnGap="s" rowGap="s" flexWrap="wrap">
             <Box maxWidth="100%" overflowX="auto">

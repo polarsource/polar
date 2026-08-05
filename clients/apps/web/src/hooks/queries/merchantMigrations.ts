@@ -164,6 +164,11 @@ export const useMigrationEntityCounts = (id: string) => {
   const subscriptions = useEntityCount(id, 'subscriptions')
   const products = useEntityCount(id, 'products')
   const customers = useEntityCount(id, 'customers')
+  const attention = useMigrationRecords(id, {
+    reasonLevel: 'action_required',
+    page: 1,
+    limit: 1,
+  })
 
   const counts: Record<CountEntity, EntityCount> = {
     subscriptions: {
@@ -176,8 +181,16 @@ export const useMigrationEntityCounts = (id: string) => {
 
   return {
     counts,
+    attentionCount: attention.data?.pagination.total_count ?? 0,
     isLoading:
-      subscriptions.isLoading || products.isLoading || customers.isLoading,
-    isError: subscriptions.isError || products.isError || customers.isError,
+      subscriptions.isLoading ||
+      products.isLoading ||
+      customers.isLoading ||
+      attention.isLoading,
+    isError:
+      subscriptions.isError ||
+      products.isError ||
+      customers.isError ||
+      attention.isError,
   }
 }

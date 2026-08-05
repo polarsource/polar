@@ -121,19 +121,10 @@ class MerchantMigrationRecordItem(Schema):
     )
 
 
-class MerchantMigrationEntityCount(Schema):
-    entity: PrecheckEntity = Field(description="The source entity type.")
-    importable: int = Field(description="How many will be imported into Polar.")
-    skipped: int = Field(
-        description="How many won't be imported and stay on the source."
-    )
-    imported: int = Field(description="How many are already imported.")
-
-
 class MerchantMigrationCounts(Schema):
     """Everything the review page needs to draw its tabs and totals, in one call."""
 
-    entities: list[MerchantMigrationEntityCount] = Field(
+    entities: list[PrecheckEntitySummary] = Field(
         description="Per-entity counts, for products, customers and subscriptions."
     )
     action_required: int = Field(

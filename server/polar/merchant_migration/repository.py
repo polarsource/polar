@@ -83,7 +83,7 @@ class MerchantMigrationRecordRepository(
         self,
         merchant_migration: MerchantMigration,
         seen: Collection[tuple[MerchantMigrationRecordType, str]],
-    ) -> int:
+    ) -> None:
         """Drop staged records the source no longer returns. Only pending rows
         go: an imported, skipped or failed one is the record of what a past run
         did, and deleting it would let a later run import the same thing twice.
@@ -92,13 +92,9 @@ class MerchantMigrationRecordRepository(
             MerchantMigrationRecord.merchant_migration_id == merchant_migration.id,
             MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
         )
-        pruned = 0
         for record in await self.get_all(statement):
-            if (record.type, record.source_id) in seen:
-                continue
-            await self.soft_delete(record)
-            pruned += 1
-        return pruned
+            if (record.type, record.source_id) not in seen:
+                await self.soft_delete(record)
 
     async def upsert(
         self,

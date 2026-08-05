@@ -5177,7 +5177,7 @@ export interface paths {
     }
     /**
      * Count Merchant Migration Records
-     * @description **Scopes**: `organizations:write`
+     * @description **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['merchant-migrations:counts']
     put?: never
@@ -5197,7 +5197,7 @@ export interface paths {
     }
     /**
      * List Merchant Migration Records
-     * @description **Scopes**: `organizations:write`
+     * @description **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['merchant-migrations:records']
     put?: never
@@ -23148,7 +23148,7 @@ export interface components {
        * Entities
        * @description Per-entity counts, for products, customers and subscriptions.
        */
-      entities: components['schemas']['MerchantMigrationEntityCount'][]
+      entities: components['schemas']['PrecheckEntitySummary'][]
       /**
        * Action Required
        * @description How many records the merchant has to act on.
@@ -23175,26 +23175,6 @@ export interface components {
        * @description A Stripe API key for the source account (a restricted `rk_...` key is recommended). It is validated for all required permissions before the migration is saved.
        */
       api_key: string
-    }
-    /** MerchantMigrationEntityCount */
-    MerchantMigrationEntityCount: {
-      /** @description The source entity type. */
-      entity: components['schemas']['PrecheckEntity']
-      /**
-       * Importable
-       * @description How many will be imported into Polar.
-       */
-      importable: number
-      /**
-       * Skipped
-       * @description How many won't be imported and stay on the source.
-       */
-      skipped: number
-      /**
-       * Imported
-       * @description How many are already imported.
-       */
-      imported: number
     }
     /** MerchantMigrationImportReport */
     MerchantMigrationImportReport: {
@@ -51585,17 +51565,6 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['MerchantMigrationCounts']
-        }
-      }
-      /** @description The source is not connected or isn't supported. */
-      400: {
-        headers: {
-          [name: string]: unknown
-        }
-        content: {
-          'application/json':
-            | components['schemas']['SourceNotConnected']
-            | components['schemas']['UnsupportedMigrationSource']
         }
       }
       /** @description Not allowed to manage this organization. */

@@ -191,10 +191,6 @@ async def import_catalog(
     response_model=MerchantMigrationCounts,
     summary="Count Merchant Migration Records",
     responses={
-        400: {
-            "description": "The source is not connected or isn't supported.",
-            "model": SourceNotConnected.schema() | UnsupportedMigrationSource.schema(),
-        },
         403: {
             "description": "Not allowed to manage this organization.",
             "model": NotPermitted.schema(),
@@ -207,8 +203,8 @@ async def import_catalog(
 )
 async def counts(
     id: UUID4,
-    auth_subject: MerchantMigrationWrite,
-    session: AsyncSession = Depends(get_db_session),
+    auth_subject: MerchantMigrationRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> MerchantMigrationCounts:
     return await merchant_migration_service.count_records(session, auth_subject, id)
 
@@ -234,12 +230,12 @@ async def counts(
 )
 async def records(
     id: UUID4,
-    auth_subject: MerchantMigrationWrite,
+    auth_subject: MerchantMigrationRead,
     pagination: PaginationParamsQuery,
     entity: Annotated[PrecheckEntity | None, Query()] = None,
     status: Annotated[PrecheckRecordStatus | None, Query()] = None,
     reason_level: Annotated[PrecheckReasonLevel | None, Query()] = None,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[MerchantMigrationRecordItem]:
     items, count = await merchant_migration_service.list_records(
         session,

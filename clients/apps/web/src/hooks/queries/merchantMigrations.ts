@@ -130,7 +130,8 @@ export const useMigrationRecords = (
     enabled: !!id,
   })
 
-export type CountEntity = 'subscriptions' | 'products' | 'customers'
+// Prices import with their product, so they have no tab of their own.
+export type CountEntity = Exclude<schemas['PrecheckEntity'], 'prices'>
 
 export interface EntityCount {
   importable: number
@@ -152,16 +153,12 @@ export const useMigrationEntityCounts = (id: string) => {
     enabled: !!id,
   })
 
-  const byEntity = new Map(
-    query.data?.entities.map((entity) => [
-      entity.entity,
-      { importable: entity.importable, skipped: entity.skipped },
-    ]),
-  )
+  const countFor = (entity: CountEntity): EntityCount =>
+    query.data?.entities.find((item) => item.entity === entity) ?? EMPTY_COUNT
   const counts: Record<CountEntity, EntityCount> = {
-    subscriptions: byEntity.get('subscriptions') ?? EMPTY_COUNT,
-    products: byEntity.get('products') ?? EMPTY_COUNT,
-    customers: byEntity.get('customers') ?? EMPTY_COUNT,
+    subscriptions: countFor('subscriptions'),
+    products: countFor('products'),
+    customers: countFor('customers'),
   }
 
   return {

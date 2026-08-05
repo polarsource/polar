@@ -57,6 +57,9 @@ def _mock_stripe_adapter(
     else:
         adapter.verify_scopes = mocker.AsyncMock(return_value=missing_scopes or [])
     adapter.get_account_id = mocker.AsyncMock(return_value="acct_test")
+    adapter.get_source_account = mocker.AsyncMock(
+        return_value=CanonicalAccount(country="US", is_connect_platform=False)
+    )
     mocker.patch("polar.merchant_migration.service.StripeAdapter", return_value=adapter)
 
 

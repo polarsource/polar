@@ -61,13 +61,14 @@ def update_secrets(values: dict[str, str | None]) -> None:
         else:
             secrets[key] = value
 
-    SECRETS_FILE.parent.mkdir(parents=True, exist_ok=True)
+    SECRETS_FILE.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
     with open(SECRETS_FILE, "w") as f:
         f.write("# Polar Development Secrets\n")
         f.write("# Shared across Git worktrees. See dev/secrets.env.template\n\n")
         for key, value in secrets.items():
             delimiter = "'" if '"' in value else '"'
             f.write(f"{key}={delimiter}{value}{delimiter}\n")
+    SECRETS_FILE.chmod(0o600)
 
 
 def run_command(

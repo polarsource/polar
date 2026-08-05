@@ -226,6 +226,7 @@ export const CompassConversation = ({
             value={value}
             onValueChange={onValueChange}
             onSubmit={onSubmit}
+            isStreaming={isStreaming}
             autoFocus
           />
         </div>

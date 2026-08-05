@@ -98,6 +98,11 @@ export const useCompassAssistant = ({
 
   const send = useCallback(
     async (prompt: string) => {
+      // One turn at a time. A send during a live stream used to abort it, and
+      // an aborted turn is never recorded server-side: the conversation would
+      // silently lose the turn the user just watched.
+      if (controllerRef.current) return
+
       const userId = `m${(idRef.current += 1)}`
       const assistantId = `m${(idRef.current += 1)}`
       const answeredAt = new Date().toISOString()
@@ -113,9 +118,6 @@ export const useCompassAssistant = ({
       ])
       setIsStreaming(true)
 
-      // One live stream at a time: a new send supersedes the previous one,
-      // which would otherwise race it for the thread and isStreaming.
-      controllerRef.current?.abort()
       const controller = new AbortController()
       controllerRef.current = controller
 
@@ -185,15 +187,16 @@ export const useCompassAssistant = ({
           }
         }
       } catch (error) {
-        // An aborted stream (unmount or superseding send) is not a failure.
+        // An aborted stream (unmount, or a thread switch that supersedes it)
+        // is not a failure.
         if (!(error instanceof DOMException && error.name === 'AbortError')) {
           appendToAssistant(assistantId, (parts) =>
             appendDelta(parts, 'Something went wrong. Please try again.'),
           )
         }
       } finally {
-        // A superseding send owns isStreaming now; only the current stream
-        // may clear it.
+        // Hydrating another thread already cleared isStreaming and dropped
+        // this controller; only the stream still in charge may clear it.
         if (controllerRef.current === controller) {
           setIsStreaming(false)
           controllerRef.current = null

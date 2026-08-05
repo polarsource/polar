@@ -1,7 +1,7 @@
 import { schemas } from '@polar-sh/client'
 import { Text, Tooltip, TooltipContent, TooltipTrigger } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { ChevronRightIcon } from 'lucide-react'
+import ChevronRightOutlined from '@mui/icons-material/ChevronRightOutlined'
 import Link from 'next/link'
 import { twMerge } from 'tailwind-merge'
 import { resolveTimelineEventHref } from './links'
@@ -100,15 +100,15 @@ export const TimelineFold = ({
     aria-expanded={expanded}
   >
     <span className="flex h-5 w-4 shrink-0 items-center justify-center">
-      <ChevronRightIcon
+      <ChevronRightOutlined
         className={twMerge(
           'dark:text-polar-500 size-3.5 text-gray-500 transition-transform',
           expanded && 'rotate-90',
         )}
-        strokeWidth={1.5}
+        fontSize="inherit"
       />
     </span>
-    <Text variant="caption" color="muted">
+    <Text color="muted">
       {expanded
         ? 'Hide collapsed events'
         : `${count} collapsed ${count === 1 ? 'event' : 'events'}`}

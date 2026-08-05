@@ -25,3 +25,17 @@ module "permission_boundary_test" {
     aws = aws.test
   }
 }
+
+module "permission_boundary_identity" {
+  source = "../modules/permission_boundary"
+  providers = {
+    aws = aws.identity
+  }
+}
+
+module "permission_boundary_security" {
+  source = "../modules/permission_boundary"
+  providers = {
+    aws = aws.security
+  }
+}

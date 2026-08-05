@@ -115,14 +115,31 @@ export function ReviewTableView({
     onPageChange(next.pageIndex + 1)
   }
 
-  // The scan is the only way out of this state, so the button ships with the
-  // sentence that asks for it.
+  // Reaching this step means a scan already ran, so an empty ledger means
+  // Stripe had nothing we can migrate, not that the merchant still has to scan.
   if (!hasCatalog) {
     return (
-      <Box flexDirection="column" alignItems="start" rowGap="l">
-        <Text variant="caption" color="muted">
-          No records staged yet. Scan Stripe to see what can move.
-        </Text>
+      <Box
+        borderWidth={1}
+        borderStyle="solid"
+        borderColor="border-primary"
+        borderRadius="l"
+        paddingVertical="3xl"
+        paddingHorizontal="xl"
+        flexDirection="column"
+        alignItems="center"
+        rowGap="l"
+        textAlign="center"
+      >
+        <Box flexDirection="column" rowGap="xs" alignItems="center">
+          <Text variant="heading-xs" as="h3">
+            Nothing to import
+          </Text>
+          <Text variant="caption" color="muted">
+            We found no products, customers or subscriptions in Stripe that can
+            move to Polar. If you have added some since, scan again.
+          </Text>
+        </Box>
         {onRerunPrecheck && (
           <Button
             size="sm"

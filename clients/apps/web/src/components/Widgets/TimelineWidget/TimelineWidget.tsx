@@ -3,7 +3,7 @@
 import { useEvents } from '@/hooks/queries/events'
 import { OrganizationContext } from '@/providers/maintainerOrganization'
 import { schemas } from '@polar-sh/client'
-import { SegmentedControl, Text } from '@polar-sh/orbit'
+import { Button, SegmentedControl, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { Fragment, useContext, useMemo, useState } from 'react'
@@ -122,6 +122,32 @@ const TimelineWidgetContent = ({ className }: TimelineWidgetProps) => {
             backgroundColor="background-card"
           />
         </div>
+      ) : events.isError ? (
+        <Box
+          flexDirection="column"
+          alignItems="center"
+          justifyContent="center"
+          flex={1}
+          marginBottom="xl"
+          padding="2xl"
+          borderRadius="s"
+          backgroundColor="background-card"
+          rowGap="s"
+          textAlign="center"
+        >
+          <Text variant="body" as="h3">
+            Couldn&apos;t load events
+          </Text>
+          <Text color="muted">Something went wrong. Please try again.</Text>
+          <Button
+            variant="secondary"
+            size="sm"
+            loading={events.isRefetching}
+            onClick={() => events.refetch()}
+          >
+            Retry
+          </Button>
+        </Box>
       ) : segments.length > 0 ? (
         <div className="-mx-3">
           <Box flexDirection="column" rowGap="xs" paddingBottom="xl">

@@ -71,7 +71,7 @@ const timelineRenderers: TimelineRendererMap = {
   'subscription.cycled': {
     importance: 'medium',
     summary: ({ metadata }) =>
-      metadata.amount && metadata.currency
+      metadata.amount !== undefined && metadata.currency
         ? currency(metadata.amount, metadata.currency)
         : undefined,
   },

@@ -14,6 +14,7 @@ from polar.models.organization import (
     EMBED_HOSTS_ENFORCED_FROM,
     Organization,
     OrganizationStatus,
+    _default_customer_portal_settings,
 )
 from polar.models.organization_sso_connection import (
     OIDCAuthMethod,
@@ -509,6 +510,188 @@ class TestUpdateOrganization:
         assert response.status_code == 200
         settings = response.json()["customer_portal_settings"]
         assert settings["customer"]["allow_email_change"] is True
+
+    @pytest.mark.auth
+    async def test_portal_url_override_ignored_without_flag(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    **_default_customer_portal_settings(),
+                    "portal_url": "https://acme.example.com/billing",
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_portal_settings"]
+        assert settings.get("portal_url") is None
+
+    @pytest.mark.auth
+    async def test_portal_url_override_saved_with_flag(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"portal_url_override_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    **_default_customer_portal_settings(),
+                    "portal_url": "https://acme.example.com/billing",
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_portal_settings"]
+        assert settings["portal_url"] == "https://acme.example.com/billing"
+
+    @pytest.mark.auth
+    async def test_portal_url_override_can_be_cleared_with_flag(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"portal_url_override_enabled": True}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "portal_url": "https://acme.example.com/billing",
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    **_default_customer_portal_settings(),
+                    "portal_url": "",
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_portal_settings"]
+        assert settings.get("portal_url") is None
+
+    @pytest.mark.auth
+    async def test_portal_url_override_preserved_when_omitted(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"portal_url_override_enabled": True}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "portal_url": "https://acme.example.com/billing",
+        }
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    **_default_customer_portal_settings(),
+                    "usage": {"show": False},
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_portal_settings"]
+        assert settings["usage"]["show"] is False
+        assert settings["portal_url"] == "https://acme.example.com/billing"
+
+    @pytest.mark.auth
+    async def test_portal_url_override_rejects_non_https(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"portal_url_override_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    **_default_customer_portal_settings(),
+                    "portal_url": "http://acme.example.com/billing",
+                },
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_portal_url_override_accepts_placeholders(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"portal_url_override_enabled": True}
+        await save_fixture(organization)
+        portal_url = (
+            "https://acme.example.com/billing"
+            "?e={EMAIL}&u={EXTERNAL_ID}&o={ORDER_ID}&s={SUBSCRIPTION_ID}"
+        )
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    **_default_customer_portal_settings(),
+                    "portal_url": portal_url,
+                },
+            },
+        )
+
+        assert response.status_code == 200
+        settings = response.json()["customer_portal_settings"]
+        assert settings["portal_url"] == portal_url
+
+    @pytest.mark.auth
+    async def test_portal_url_override_rejects_unknown_placeholder(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        organization.feature_settings = {"portal_url_override_enabled": True}
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "customer_portal_settings": {
+                    **_default_customer_portal_settings(),
+                    "portal_url": "https://acme.example.com/billing?e={EMIAL}",
+                },
+            },
+        )
+
+        assert response.status_code == 422
+        detail = response.json()["detail"]
+        assert "{EMIAL}" in detail[0]["msg"]
 
     @pytest.mark.auth
     async def test_submit_for_review_requires_relevant_fields(

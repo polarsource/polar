@@ -4,7 +4,6 @@ from contextlib import asynccontextmanager
 from datetime import datetime
 from enum import StrEnum
 from typing import Any, Literal
-from urllib.parse import urlencode
 
 import stripe as stripe_lib
 import structlog
@@ -2284,63 +2283,26 @@ class OrderService:
             "subscription_updated",
         ]
         subject_template: str
-        url_path_template: str
 
         match order.billing_reason:
             case OrderBillingReasonInternal.purchase:
                 template_name = "order_confirmation"
                 subject_template = "Your {description} order confirmation"
-                url_path_template = "/{organization}/portal"
-                url_params = {
-                    "customer_session_token": "{token}",
-                    "id": "{order}",
-                    "email": "{email}",
-                }
             case OrderBillingReasonInternal.subscription_create:
                 template_name = "subscription_confirmation"
                 subject_template = "Your {description} subscription"
-                url_path_template = "/{organization}/portal"
-                url_params = {
-                    "customer_session_token": "{token}",
-                    "id": "{subscription}",
-                    "email": "{email}",
-                }
             case OrderBillingReasonInternal.subscription_cycle:
                 template_name = "subscription_cycled"
                 subject_template = "Your {description} subscription has been renewed"
-                url_path_template = "/{organization}/portal"
-                url_params = {
-                    "customer_session_token": "{token}",
-                    "id": "{subscription}",
-                    "email": "{email}",
-                }
             case OrderBillingReasonInternal.subscription_cycle_after_trial:
                 template_name = "subscription_cycled_after_trial"
                 subject_template = "Your {description} subscription is now active"
-                url_path_template = "/{organization}/portal"
-                url_params = {
-                    "customer_session_token": "{token}",
-                    "id": "{subscription}",
-                    "email": "{email}",
-                }
             case OrderBillingReasonInternal.subscription_cancel:
                 template_name = "subscription_final_invoice"
                 subject_template = "Your {description} final invoice"
-                url_path_template = "/{organization}/portal"
-                url_params = {
-                    "customer_session_token": "{token}",
-                    "id": "{subscription}",
-                    "email": "{email}",
-                }
             case OrderBillingReasonInternal.subscription_update:
                 template_name = "subscription_updated"
                 subject_template = "Your subscription has changed to {description}"
-                url_path_template = "/{organization}/portal"
-                url_params = {
-                    "customer_session_token": "{token}",
-                    "id": "{subscription}",
-                    "email": "{email}",
-                }
 
         # Final invoice uses the same email setting as subscription_cycled
         email_setting_name = (
@@ -2394,31 +2356,17 @@ class OrderService:
             ]
 
         for recipient_email in recipients:
-            token = await customer_service.create_session_token_for_recipient(
-                session, customer, recipient_email
+            url = await customer_service.generate_email_portal_url(
+                session,
+                organization,
+                customer,
+                recipient_email,
+                order_id=order.id,
+                subscription_id=subscription.id if subscription else None,
             )
-            if token is None:
+            if url is None:
                 continue
 
-            # Build query parameters with per-recipient email
-            params = {
-                key: value.format(
-                    token=token,
-                    order=order.id,
-                    subscription=subscription.id if subscription else "",
-                    email=recipient_email,
-                )
-                for key, value in url_params.items()
-            }
-            override_url = settings.CUSTOMER_PORTAL_URL_OVERRIDES.get(
-                str(organization.id)
-            )
-            if override_url is not None:
-                url = f"{override_url}?{urlencode({'email': recipient_email})}"
-            else:
-                query_string = urlencode(params)
-                url_path = url_path_template.format(organization=organization.slug)
-                url = settings.generate_frontend_url(f"{url_path}?{query_string}")
             email = EmailAdapter.validate_python(
                 {
                     "template": template_name,

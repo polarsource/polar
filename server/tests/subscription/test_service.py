@@ -4,6 +4,7 @@ from collections.abc import Generator
 from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from unittest.mock import ANY, AsyncMock, MagicMock, call
+from urllib.parse import parse_qs, urlparse
 
 import freezegun
 import pytest
@@ -9010,3 +9011,57 @@ class TestFixedSeatComposition:
         assert subscription.amount == (
             fixed_price.price_amount + seat_price.calculate_amount(10)
         )
+
+
+@pytest.mark.asyncio
+class TestSendCancellationEmail:
+    async def test_uses_portal_url_override(
+        self,
+        session: AsyncSession,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        organization.feature_settings = {"portal_url_override_enabled": True}
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "portal_url": "https://acme.example.com/billing?e={EMAIL}&s={SUBSCRIPTION_ID}",
+        }
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        await subscription_service.send_cancellation_email(session, subscription)
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert email.props.url.startswith("https://acme.example.com/billing?")
+        params = parse_qs(urlparse(email.props.url).query)
+        assert params["e"] == [customer.email]
+        assert params["s"] == [str(subscription.id)]
+        assert "customer_session_token" not in params
+
+    async def test_defaults_to_polar_portal(
+        self,
+        session: AsyncSession,
+        enqueue_email_mock: MagicMock,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+
+        await subscription_service.send_cancellation_email(session, subscription)
+
+        enqueue_email_mock.assert_called_once()
+        email = enqueue_email_mock.call_args[0][0]
+        assert f"/{organization.slug}/portal" in email.props.url
+        params = parse_qs(urlparse(email.props.url).query)
+        assert params["email"] == [customer.email]
+        assert params["customer_session_token"][0]

@@ -26758,6 +26758,8 @@ export interface components {
       usage: components['schemas']['CustomerPortalUsageSettings']
       subscription: components['schemas']['CustomerPortalSubscriptionSettings']
       customer?: components['schemas']['CustomerPortalCustomerSettings']
+      /** Portal Url */
+      portal_url?: string | null
     }
     /** OrganizationCustomerSession */
     OrganizationCustomerSession: {
@@ -26971,6 +26973,12 @@ export interface components {
        * @default false
        */
       merchant_migration_enabled: boolean
+      /**
+       * Portal Url Override Enabled
+       * @description If this organization can configure a URL that customer emails link to instead of the Polar customer portal.
+       * @default false
+       */
+      portal_url_override_enabled: boolean
     }
     /**
      * OrganizationFeatureSettingsUpdate

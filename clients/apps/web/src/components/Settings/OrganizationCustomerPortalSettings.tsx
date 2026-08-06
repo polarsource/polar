@@ -13,6 +13,7 @@ import {
 import React from 'react'
 import { useForm } from 'react-hook-form'
 import { toast } from '../Toast/use-toast'
+import CustomerPortalUrlSetting from './CustomerPortalUrlSetting'
 import { SettingsGroup, SettingsGroupItem } from './SettingsGroup'
 
 interface OrganizationCustomerPortalSettingsProps {
@@ -23,6 +24,8 @@ interface OrganizationCustomerPortalSettingsProps {
 const OrganizationCustomerPortalSettings: React.FC<
   OrganizationCustomerPortalSettingsProps
 > = ({ organization, readOnly }) => {
+  const portalUrlOverrideEnabled =
+    organization.feature_settings?.portal_url_override_enabled ?? false
   const form = useForm<schemas['OrganizationCustomerPortalSettings']>({
     defaultValues: {
       ...organization.customer_portal_settings,
@@ -195,6 +198,21 @@ const OrganizationCustomerPortalSettings: React.FC<
               )}
             />
           </SettingsGroupItem>
+
+          {portalUrlOverrideEnabled && (
+            <FormField
+              control={control}
+              name="portal_url"
+              render={({ field }) => (
+                <CustomerPortalUrlSetting
+                  organizationId={organization.id}
+                  value={field.value ?? null}
+                  readOnly={readOnly}
+                  onChange={field.onChange}
+                />
+              )}
+            />
+          )}
         </SettingsGroup>
       </form>
     </Form>

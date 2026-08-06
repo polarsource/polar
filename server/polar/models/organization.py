@@ -11,7 +11,7 @@ from typing import (
     TypedDict,
     cast,
 )
-from urllib.parse import urlparse
+from urllib.parse import quote, urlencode, urlparse
 from uuid import UUID
 
 from pydantic.json_schema import WithJsonSchema
@@ -51,6 +51,7 @@ from .account import Account
 if TYPE_CHECKING:
     from polar.email.sender import EmailFromReply
 
+    from .customer import Customer
     from .organization_agent_review import OrganizationAgentReview
     from .organization_review import OrganizationReview
     from .organization_review_feedback import OrganizationReviewFeedback
@@ -189,6 +190,7 @@ class OrganizationCustomerPortalSettings(TypedDict):
     usage: CustomerPortalUsageSettings
     subscription: CustomerPortalSubscriptionSettings
     customer: NotRequired[CustomerPortalCustomerSettings]
+    portal_url: NotRequired[str | None]
 
 
 def _default_customer_portal_settings() -> OrganizationCustomerPortalSettings:
@@ -899,6 +901,62 @@ class Organization(RateLimitGroupMixin, RecordModel):
     @property
     def customer_portal_subscription_pause(self) -> bool:
         return self.customer_portal_settings.get("subscription", {}).get("pause", False)
+
+    @property
+    def is_portal_url_override_enabled(self) -> bool:
+        return self.feature_settings.get("portal_url_override_enabled", False)
+
+    @property
+    def customer_portal_url_override(self) -> str | None:
+        return self.customer_portal_settings.get("portal_url") or None
+
+    def get_customer_portal_url_override(
+        self,
+        customer: "Customer",
+        recipient_email: str,
+        *,
+        order_id: UUID | None = None,
+        subscription_id: UUID | None = None,
+    ) -> str | None:
+        """Build the customer portal link override for a recipient, if configured.
+
+        Returns None when the organization uses the default Polar customer
+        portal links. The configured URL may contain `{EMAIL}`, `{EXTERNAL_ID}`,
+        `{ORDER_ID}` and `{SUBSCRIPTION_ID}` placeholders, replaced with the
+        recipient's URL-encoded values — or an empty string when not applicable.
+        """
+        # The DB-configured URL is gated by the feature flag, so disabling the
+        # flag stops using it.
+        if self.is_portal_url_override_enabled:
+            configured_url = self.customer_portal_url_override
+            if configured_url is not None:
+                values = {
+                    "{EMAIL}": recipient_email,
+                    "{EXTERNAL_ID}": customer.external_id or "",
+                    "{ORDER_ID}": str(order_id) if order_id is not None else "",
+                    "{SUBSCRIPTION_ID}": str(subscription_id)
+                    if subscription_id is not None
+                    else "",
+                }
+                url = configured_url
+                for placeholder, value in values.items():
+                    url = url.replace(placeholder, quote(value, safe=""))
+                return url
+
+        # The deprecated legacy env-var override predates the placeholder
+        # syntax: it appends fixed query parameters instead. Kept until the
+        # remaining configured organization is migrated to the DB setting.
+        override_url = settings.CUSTOMER_PORTAL_URL_OVERRIDES.get(str(self.id))
+        if not override_url:
+            return None
+        params = {"email": recipient_email}
+        if customer.external_id is not None:
+            params["external_id"] = customer.external_id
+        if order_id is not None:
+            params["order_id"] = str(order_id)
+        if subscription_id is not None:
+            params["subscription_id"] = str(subscription_id)
+        return f"{override_url}?{urlencode(params)}"
 
     @property
     def checkout_require_3ds(self) -> bool:

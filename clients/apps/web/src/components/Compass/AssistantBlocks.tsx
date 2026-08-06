@@ -98,9 +98,11 @@ const ParagraphsText = ({ text }: { text: string }) => {
 const BlockBody = ({
   block,
   organization,
+  answeredAt,
 }: {
   block: AssistantBlock
   organization: schemas['Organization']
+  answeredAt?: string
 }) => {
   switch (block.type) {
     case 'text':
@@ -131,9 +133,9 @@ const BlockBody = ({
         </Grid>
       )
     case 'entity_list':
-      return <EntityListView block={block} />
+      return <EntityListView block={block} answeredAt={answeredAt} />
     case 'data_table':
-      return <EntityTableView block={block} />
+      return <EntityTableView block={block} answeredAt={answeredAt} />
     case 'customer_card':
       return <CustomerCardView block={block} />
     default:
@@ -150,8 +152,17 @@ export const AssistantBlockView = ({
   organization: schemas['Organization']
   answeredAt?: string
 }) => {
-  const body = <BlockBody block={block} organization={organization} />
-  if (block.type === 'text' || !answeredAt) {
+  const body = (
+    <BlockBody
+      block={block}
+      organization={organization}
+      answeredAt={answeredAt}
+    />
+  )
+  // The entity presentations carry the fetch time in their own caption row.
+  const ownsFetchedCaption =
+    block.type === 'entity_list' || block.type === 'data_table'
+  if (block.type === 'text' || ownsFetchedCaption || !answeredAt) {
     return body
   }
   return (

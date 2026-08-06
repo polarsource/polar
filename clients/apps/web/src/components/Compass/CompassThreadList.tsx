@@ -30,47 +30,52 @@ interface ThreadRowProps {
 }
 
 const ThreadRow = ({ thread, active, onSelect, onDelete }: ThreadRowProps) => (
-  <Box
-    className="group"
-    alignItems="center"
-    columnGap="s"
-    paddingLeft="m"
-    paddingRight="s"
-    paddingVertical="s"
-    borderRadius="m"
-    backgroundColor={
-      active
-        ? { base: 'background-card', hover: 'background-card' }
-        : { hover: 'background-secondary' }
-    }
-    transitionProperty="colors"
-    transitionDuration="fast"
-  >
-    <button
-      type="button"
-      className="min-w-0 flex-1 text-left"
-      onClick={() => onSelect(thread.id)}
+  // `group` marks the row for the delete button's reveal; Box pseudo-states
+  // are self-scoped, so there is no typed equivalent.
+  <div className="group">
+    <Box
+      alignItems="center"
+      columnGap="s"
+      paddingLeft="m"
+      paddingRight="s"
+      paddingVertical="s"
+      borderRadius="m"
+      backgroundColor={
+        active
+          ? { base: 'background-card', hover: 'background-card' }
+          : { hover: 'background-secondary' }
+      }
+      transitionProperty="colors"
+      transitionDuration="fast"
     >
-      <Text truncate>{thread.title}</Text>
-    </button>
-    <button
-      type="button"
-      aria-label="Delete conversation"
-      onClick={() => onDelete(thread.id)}
-      className="flex shrink-0 items-center justify-center leading-none opacity-0 transition-opacity duration-150 ease-out group-focus-within:opacity-100 group-hover:opacity-100"
-    >
-      <Box
-        as="span"
-        display="inline-flex"
-        color={{ base: 'text-tertiary', hover: 'text-danger' }}
-        transitionProperty="colors"
-        transitionDuration="fast"
-        cursor={{ hover: 'pointer' }}
+      <button
+        type="button"
+        className="min-w-0 flex-1 text-left"
+        onClick={() => onSelect(thread.id)}
       >
-        <DeleteOutlineRounded style={{ fontSize: '1rem', display: 'block' }} />
-      </Box>
-    </button>
-  </Box>
+        <Text truncate>{thread.title}</Text>
+      </button>
+      <button
+        type="button"
+        aria-label={`Delete ${thread.title}`}
+        onClick={() => onDelete(thread.id)}
+        className="flex shrink-0 items-center justify-center leading-none opacity-0 transition-opacity duration-150 ease-out group-focus-within:opacity-100 group-hover:opacity-100"
+      >
+        <Box
+          as="span"
+          display="inline-flex"
+          color={{ base: 'text-tertiary', hover: 'text-danger' }}
+          transitionProperty="colors"
+          transitionDuration="fast"
+          cursor={{ hover: 'pointer' }}
+        >
+          <DeleteOutlineRounded
+            style={{ fontSize: '1rem', display: 'block' }}
+          />
+        </Box>
+      </button>
+    </Box>
+  </div>
 )
 
 interface CompassThreadListProps {

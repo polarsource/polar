@@ -9,6 +9,7 @@ from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject
 from polar.auth.scope import Scope
+from polar.kit.address import Address, CountryAlpha2
 from polar.models import Customer, Order, Organization, Product, User, UserOrganization
 from polar.models.order import OrderStatus
 from polar.order.service import PaymentFailed, PaymentFailedReason
@@ -659,6 +660,61 @@ class TestGenerateOrderInvoice:
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_read}))
+    async def test_user_read_scope_insufficient(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        orders: list[Order],
+    ) -> None:
+        # Invoice generation is a mutation and requires orders:write.
+        # A read-only token must be rejected with 403 (insufficient_scope).
+        response = await client.post(f"/v1/orders/{orders[0].id}/invoice")
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(subject="organization", scopes={Scope.orders_read})
+    )
+    async def test_organization_read_scope_insufficient(
+        self,
+        client: AsyncClient,
+        orders: list[Order],
+    ) -> None:
+        # Organization tokens bypass assert_resource_permission, so the scope
+        # gate is the only effective authorization barrier. A read-only
+        # Organization Access Token must be rejected with 403.
+        response = await client.post(f"/v1/orders/{orders[0].id}/invoice")
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.orders_write}))
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        # An eligible order (paid, with billing details) + orders:write scope
+        # triggers invoice generation (202 + enqueued job).
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.paid,
+            billing_name="John Doe",
+            billing_address=Address(country=CountryAlpha2("US")),
+        )
+        enqueue_mock = mocker.patch("polar.order.service.enqueue_job")
+
+        response = await client.post(f"/v1/orders/{order.id}/invoice")
+
+        assert response.status_code == 202
+        enqueue_mock.assert_called_once_with("order.invoice", order_id=order.id)
 
 
 @pytest.mark.asyncio

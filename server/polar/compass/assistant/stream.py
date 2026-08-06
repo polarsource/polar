@@ -115,8 +115,8 @@ class _BlockPlacer:
 
 
 class _PartsRecorder:
-    """Accumulates the streamed turn as renderable parts — the exact
-    interleaving of text and blocks the client displayed — so the turn can be
+    """Accumulates the streamed turn as renderable parts: the exact
+    interleaving of text and blocks the client displayed, so the turn can be
     rehydrated later without re-running the model."""
 
     def __init__(self) -> None:

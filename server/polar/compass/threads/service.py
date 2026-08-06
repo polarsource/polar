@@ -40,10 +40,8 @@ THREADS_CAP = 500
 
 
 def granted_assistant_scopes(scopes: set[Scope]) -> list[Scope]:
-    """The assistant scopes a credential holds, in a stable order.
-
-    Only the assistant's own scopes count, so granting an unrelated one can't
-    hide a credential's history from it.
+    """Intersect with assistant scopes so unrelated grants aren't stored on
+    the thread and later block access to its history.
     """
     return sorted(scopes & ASSISTANT_SCOPES, key=lambda scope: scope.value)
 

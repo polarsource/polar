@@ -25,7 +25,7 @@ class CompassThreadRepository(
         self, auth_subject: AuthSubject[User | Organization]
     ) -> Select[tuple[CompassThread]]:
         """Threads owned by the caller: a user sees their own threads in
-        organizations they can read analytics for; an organization token sees
+        organizations they can read analytics for. An organization token sees
         the organization's user-less threads. Both are narrowed to threads
         whose `required_scopes` the caller holds.
         """

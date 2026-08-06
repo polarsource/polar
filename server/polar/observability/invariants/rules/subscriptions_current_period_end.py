@@ -34,9 +34,18 @@ class SubscriptionsCurrentPeriodEndInvariant(Invariant):
     """
 
     LEEWAY = timedelta(minutes=10)
+    SETTLE_GRACE = timedelta(minutes=5)
+    """
+    A dunning recovery flips the subscription back to active while current_period_end
+    is still days old, so LEEWAY never applies. Every step of the handover writes the
+    row: an untouched row is the one that is actually stuck. The trade is that a
+    stuck subscription written more often than this would never be reported.
+    """
+
     LIMIT = 10
 
     async def check(self) -> None:
+        last_write = func.coalesce(Subscription.modified_at, Subscription.created_at)
         statement = (
             select(Subscription.id, over(func.count()))
             .join(Subscription.organization)
@@ -45,6 +54,7 @@ class SubscriptionsCurrentPeriodEndInvariant(Invariant):
                 Organization.deleted_at.is_(None),
                 Subscription.current_period_end < (func.now() - self.LEEWAY),
                 Organization.can_renew_subscriptions.is_(True),
+                last_write < (func.now() - self.SETTLE_GRACE),
             )
             .order_by(Subscription.current_period_end.asc(), Subscription.id.asc())
             .limit(self.LIMIT)

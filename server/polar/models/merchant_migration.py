@@ -8,6 +8,11 @@ from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
 from polar.kit.extensions.sqlalchemy.types import StringEnum
+from polar.merchant_migration.pan_transfer import (
+    PanTransferMethod,
+    PanTransferStep,
+    PanTransferStepsType,
+)
 
 if TYPE_CHECKING:
     from polar.models.organization import Organization
@@ -59,14 +64,22 @@ class MerchantMigration(RecordModel):
     source_credentials: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
     )
-    # The PAN transfer checklist: a list of step objects (see PanTransferStep).
-    pan_transfer_steps: Mapped[list[dict[str, Any]]] = mapped_column(
-        JSONB, nullable=False, default=list
+    # The PAN transfer checklist. Empty until the card move starts.
+    pan_transfer_steps: Mapped[list[PanTransferStep]] = mapped_column(
+        PanTransferStepsType, nullable=False, default=list
     )
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
+
+    @property
+    def pan_transfer_method(self) -> PanTransferMethod:
+        """Stripe sources copy account to account; every other vault goes through
+        a Stripe-coordinated import."""
+        if self.source_platform == MerchantMigrationSourcePlatform.stripe:
+            return PanTransferMethod.pan_copy
+        return PanTransferMethod.pan_import
 
     @property
     def source_connected(self) -> bool:

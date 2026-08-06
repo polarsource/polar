@@ -280,6 +280,9 @@ class Settings(BaseSettings):
     # Account risk signals (preview). Empty disables the endpoint.
     STRIPE_ACCOUNT_RISK_WEBHOOK_SECRET: str = ""
     STRIPE_STATEMENT_DESCRIPTOR: str = "POLAR"
+    # The Stripe account merchants copy or import their saved cards into. Shown to
+    # the merchant so they can address the transfer to us.
+    MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID: str = ""
 
     # Numeral
     NUMERAL_API_KEY: str | None = None

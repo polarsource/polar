@@ -6,6 +6,7 @@ from httpx import AsyncClient
 from pytest_mock import MockerFixture
 
 from polar.auth.scope import Scope
+from polar.config import settings
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCustomer,
@@ -464,13 +465,264 @@ class TestImport:
         assert results["products"]["imported"] == 0
 
 
+def _configure_destination(mocker: MockerFixture) -> None:
+    mocker.patch.object(
+        settings, "MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID", "acct_polar"
+    )
+
+
+@pytest.mark.asyncio
+class TestGetPanTransfer:
+    async def test_anonymous(
+        self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        response = await client.get(
+            f"/v1/merchant-migrations/{migration.id}/pan-transfer"
+        )
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_not_started_still_reports_the_method(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        _configure_destination(mocker)
+        migration = await _create_migration(save_fixture, organization)
+
+        response = await client.get(
+            f"/v1/merchant-migrations/{migration.id}/pan-transfer"
+        )
+        assert response.status_code == 200
+        json_body = response.json()
+        assert json_body["method"] == "pan_copy"
+        assert json_body["started"] is False
+        assert json_body["steps"] == []
+        assert json_body["current_step_key"] is None
+
+
+@pytest.mark.asyncio
+class TestStartPanTransfer:
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_start_requires_an_imported_catalog(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        _configure_destination(mocker)
+        migration = await _create_migration(save_fixture, organization)
+
+        response = await client.post(
+            f"/v1/merchant-migrations/{migration.id}/pan-transfer"
+        )
+        assert response.status_code == 409
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_start_needs_a_destination_account(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        mocker.patch.object(
+            settings, "MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID", ""
+        )
+        migration = await _create_migration(
+            save_fixture, organization, step=MerchantMigrationStep.create_catalog
+        )
+
+        # Otherwise we'd tell the merchant we shared an account and show nothing.
+        response = await client.post(
+            f"/v1/merchant-migrations/{migration.id}/pan-transfer"
+        )
+        assert response.status_code == 409
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_start_lays_out_the_checklist(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        _configure_destination(mocker)
+        migration = await _create_migration(
+            save_fixture, organization, step=MerchantMigrationStep.create_catalog
+        )
+
+        response = await client.post(
+            f"/v1/merchant-migrations/{migration.id}/pan-transfer"
+        )
+        assert response.status_code == 200
+        json_body = response.json()
+        assert json_body["started"] is True
+        # Sharing our destination account is information only, so the merchant
+        # opens on the step they actually have to do.
+        assert json_body["current_step_key"] == "start_copy"
+
+        migration_response = await client.get(f"/v1/merchant-migrations/{migration.id}")
+        assert migration_response.json()["step"] == "copy_cards"
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_start_is_not_repeatable(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        _configure_destination(mocker)
+        migration = await _create_migration(
+            save_fixture, organization, step=MerchantMigrationStep.create_catalog
+        )
+        assert (
+            await client.post(f"/v1/merchant-migrations/{migration.id}/pan-transfer")
+        ).status_code == 200
+
+        response = await client.post(
+            f"/v1/merchant-migrations/{migration.id}/pan-transfer"
+        )
+        assert response.status_code == 409
+
+
+@pytest.mark.asyncio
+class TestCompletePanTransferStep:
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_complete_advances_and_persists(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        _configure_destination(mocker)
+        migration = await _create_migration(
+            save_fixture, organization, step=MerchantMigrationStep.create_catalog
+        )
+        await client.post(f"/v1/merchant-migrations/{migration.id}/pan-transfer")
+
+        response = await client.post(
+            f"/v1/merchant-migrations/{migration.id}/pan-transfer/steps/start_copy/complete",
+            json={"inputs": {"stripe_migration_request_id": "mig_123"}},
+        )
+        assert response.status_code == 200
+        assert response.json()["current_step_key"] == "authorize_copy"
+
+        reread = await client.get(
+            f"/v1/merchant-migrations/{migration.id}/pan-transfer"
+        )
+        steps = {step["key"]: step for step in reread.json()["steps"]}
+        assert steps["start_copy"]["status"] == "completed"
+        assert steps["start_copy"]["completed_by"] == "merchant"
+        assert steps["start_copy"]["inputs"] == {
+            "stripe_migration_request_id": "mig_123"
+        }
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_complete_rejects_an_ops_step(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        _configure_destination(mocker)
+        migration = await _create_migration(
+            save_fixture, organization, step=MerchantMigrationStep.create_catalog
+        )
+        await client.post(f"/v1/merchant-migrations/{migration.id}/pan-transfer")
+        await client.post(
+            f"/v1/merchant-migrations/{migration.id}/pan-transfer/steps/start_copy/complete"
+        )
+
+        response = await client.post(
+            f"/v1/merchant-migrations/{migration.id}/pan-transfer/steps/authorize_copy/complete"
+        )
+        assert response.status_code == 403
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_complete_rejects_skipping_ahead(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        _configure_destination(mocker)
+        migration = await _create_migration(
+            save_fixture, organization, step=MerchantMigrationStep.create_catalog
+        )
+        await client.post(f"/v1/merchant-migrations/{migration.id}/pan-transfer")
+
+        response = await client.post(
+            f"/v1/merchant-migrations/{migration.id}/pan-transfer/steps/cutover/complete"
+        )
+        assert response.status_code == 409
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_complete_rejects_unknown_inputs(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        _configure_destination(mocker)
+        migration = await _create_migration(
+            save_fixture, organization, step=MerchantMigrationStep.create_catalog
+        )
+        await client.post(f"/v1/merchant-migrations/{migration.id}/pan-transfer")
+
+        response = await client.post(
+            f"/v1/merchant-migrations/{migration.id}/pan-transfer/steps/start_copy/complete",
+            json={"inputs": {"whatever": "x"}},
+        )
+        # Per-field, so the client can point at the offending input.
+        assert response.status_code == 422
+        assert response.json()["detail"][0]["loc"] == ["body", "inputs", "whatever"]
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_complete_before_start(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        mocker: MockerFixture,
+    ) -> None:
+        _configure_destination(mocker)
+        migration = await _create_migration(save_fixture, organization)
+
+        response = await client.post(
+            f"/v1/merchant-migrations/{migration.id}/pan-transfer/steps/start_copy/complete"
+        )
+        assert response.status_code == 409
+
+
 async def _create_migration(
-    save_fixture: SaveFixture, organization: Organization
+    save_fixture: SaveFixture,
+    organization: Organization,
+    step: MerchantMigrationStep = MerchantMigrationStep.source_setup,
 ) -> MerchantMigration:
     migration = MerchantMigration(
         organization_id=organization.id,
         source_platform=MerchantMigrationSourcePlatform.stripe,
-        step=MerchantMigrationStep.source_setup,
+        step=step,
     )
     await save_fixture(migration)
     return migration

@@ -11,6 +11,7 @@ from polar.kit.utils import utc_now
 from polar.kit.visibility import Visibility
 from polar.models import (
     Customer,
+    Discount,
     Organization,
     Product,
     Subscription,
@@ -298,6 +299,96 @@ class TestListSubscriptions:
         assert response.status_code == 200
         json = response.json()
         assert json["pagination"]["total_count"] == 1
+
+    @pytest.mark.auth
+    async def test_discount_id(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        product: Product,
+        customer: Customer,
+        discount_percentage_50: Discount,
+        discount_percentage_100: Discount,
+    ) -> None:
+        matching = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount_percentage_50,
+        )
+        other = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount_percentage_100,
+        )
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        # Filter by the single matching discount ID
+        response = await client.get(
+            "/v1/subscriptions/",
+            params={"discount_id": str(matching.discount_id)},
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["id"] == str(matching.id)
+
+        # Filter by both discount IDs (multiple values)
+        response = await client.get(
+            "/v1/subscriptions/",
+            params={
+                "discount_id": [
+                    str(matching.discount_id),
+                    str(other.discount_id),
+                ]
+            },
+        )
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 2
+
+    @pytest.mark.auth
+    async def test_discount_id_openapi_schema(self, client: AsyncClient) -> None:
+        """The discount_id filter must be typed as a UUID4 with no product-specific description.
+
+        Regression test for a bug where discount_id used `MultipleQueryFilter[ProductID]`,
+        which injected the ProductID description ("The product ID.") into the OpenAPI schema.
+        """
+        response = await client.get("/openapi.json")
+        assert response.status_code == 200
+
+        schema = response.json()
+        params = schema["paths"]["/v1/subscriptions/"]["get"]["parameters"]
+
+        discount_id_param = next(
+            param for param in params if param["name"] == "discount_id"
+        )
+        assert discount_id_param["description"] == "Filter by discount ID."
+
+        param_schema = discount_id_param["schema"]
+        assert param_schema["title"] == "DiscountID Filter"
+        assert param_schema["description"] == "Filter by discount ID."
+
+        any_of = param_schema["anyOf"]
+        scalar_schema = any_of[0]
+        array_schema = any_of[1]
+
+        # Scalar form: a UUID4 string with no inner description
+        assert scalar_schema["type"] == "string"
+        assert scalar_schema["format"] == "uuid4"
+        assert "description" not in scalar_schema
+
+        # Array form: list of UUID4 strings with no inner description on items
+        assert array_schema["type"] == "array"
+        assert array_schema["items"]["type"] == "string"
+        assert array_schema["items"]["format"] == "uuid4"
+        assert "description" not in array_schema["items"]
 
 
 @pytest.mark.asyncio

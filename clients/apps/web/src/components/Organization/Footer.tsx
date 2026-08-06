@@ -1,4 +1,6 @@
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import { Grid, GridItem, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { PropsWithChildren } from 'react'
 import { PolarLogotype } from '../Layout/Public/PolarLogotype'
@@ -6,114 +8,155 @@ import { CookiePreferencesButton } from '../Privacy/CookiePreferencesButton'
 
 const Footer = () => {
   return (
-    <div className="mt-16 flex w-full flex-col items-center gap-y-12 bg-gray-50 dark:bg-black">
-      <div className="flex w-full flex-col items-center px-6 py-16 md:max-w-3xl md:px-0 lg:py-32 xl:max-w-7xl">
-        <div className="grid w-full grid-cols-1 gap-12 md:grid-cols-2 md:justify-between md:gap-16 lg:grid-cols-6">
-          <div className="flex h-full flex-1 flex-col justify-between gap-y-6 md:col-span-2">
-            <span className="text-black md:ml-0">
-              <PolarLogotype
-                className="ml-2 md:ml-0"
-                logoVariant="logotype"
-                size={120}
-              />
-            </span>
-            <div className="flex flex-col gap-y-6">
+    // Spacing tokens cap at 96px ('5xl'), so the wrapper and inner paddings
+    // stack to reach the 192px vertical padding on large screens.
+    <Box
+      width="100%"
+      flexDirection="column"
+      alignItems="center"
+      marginTop="4xl"
+      paddingVertical={{ lg: '5xl' }}
+    >
+      <Box
+        width="100%"
+        maxWidth={{ md: 768, xl: 1280 }}
+        flexDirection="column"
+        alignItems="center"
+        paddingHorizontal={{ base: 'xl', md: 'none' }}
+        paddingVertical={{ base: '4xl', lg: '5xl' }}
+      >
+        <Grid
+          width="100%"
+          templateColumns={{
+            base: '1fr',
+            md: 'repeat(2, 1fr)',
+            lg: 'repeat(6, 1fr)',
+          }}
+          gap={{ base: '3xl', md: '4xl' }}
+        >
+          <GridItem
+            colSpan={{ md: 2 }}
+            flexDirection="column"
+            justifyContent="between"
+            rowGap="xl"
+          >
+            <PolarLogotype
+              className="ml-2 md:ml-0"
+              logoVariant="logotype"
+              size={120}
+            />
+            <Box flexDirection="column" rowGap="xl">
               <Link
                 href="/signup"
-                className="flex w-fit flex-row items-center gap-x-2 border-b border-black pb-0.5 dark:border-white"
+                className="w-fit border-b border-current pb-0.5"
               >
-                <span>Join Polar today</span>
-                <ArrowOutwardOutlined fontSize="inherit" />
+                <Box
+                  as="span"
+                  display="inline-flex"
+                  alignItems="center"
+                  columnGap="s"
+                  color="text-primary"
+                >
+                  <Text as="span" variant="body" color="inherit">
+                    Get Started
+                  </Text>
+                  <ArrowOutwardOutlined fontSize="inherit" />
+                </Box>
               </Link>
-              <span className="dark:text-polar-500 w-full text-gray-500">
+              <Text variant="body" color="muted">
                 &copy; Polar Software, Inc. {new Date().getFullYear()}
-              </span>
-            </div>
-          </div>
+              </Text>
+            </Box>
+          </GridItem>
 
-          <div className="flex flex-col gap-y-4 text-sm">
-            <h3 className="dark:text-polar-500 text-gray-500">Features</h3>
-            <div className="flex flex-col gap-y-3">
-              <FooterLink href="/features/usage-billing">
-                Usage Billing
-              </FooterLink>
-              <FooterLink href="/features/subscriptions">
-                Subscriptions
-              </FooterLink>
-              <FooterLink href="/features/seats">Seats</FooterLink>
-              <FooterLink href="/features/credits">Credits</FooterLink>
-              <FooterLink href="/features/trials">Trials</FooterLink>
-              <FooterLink href="/features/discounts">Discounts</FooterLink>
-              <FooterLink href="/features/cost-insights">
-                Cost Insights
-              </FooterLink>
-              <FooterLink href="/features/finance">Finance</FooterLink>
-              <FooterLink href="/features/merchant-of-record">
-                Merchant of Record
-              </FooterLink>
-            </div>
-          </div>
-          <div className="flex flex-col gap-y-4 text-sm">
-            <h3 className="dark:text-polar-500 text-gray-500">Resources</h3>
-            <div className="flex flex-col gap-y-3">
-              <FooterLink href="/resources/why">Why Polar</FooterLink>
-              <FooterLink href="/resources/merchant-of-record">
-                Merchant of Record
-              </FooterLink>
-              <FooterLink href="/resources/pricing">Pricing</FooterLink>
-              <FooterLink href="/downloads">Downloads</FooterLink>
-            </div>
-          </div>
-          <div className="flex flex-col gap-y-4 text-sm">
-            <h3 className="dark:text-polar-500 text-gray-500">Company</h3>
-            <div className="flex flex-col gap-y-3">
-              <FooterLink href="/company">About Polar</FooterLink>
-              <FooterLink href="https://github.com/polarsource">
-                GitHub
-              </FooterLink>
-              <FooterLink href="https://x.com/polar_sh">X / Twitter</FooterLink>
-              <FooterLink href="https://polar.sh/assets/brand/polar_brand.zip">
-                Brand Assets
-              </FooterLink>
-              <FooterLink href="https://polar.sh/legal">Legal</FooterLink>
-              <CookiePreferencesButton />
-            </div>
-          </div>
-          <div className="flex flex-col gap-y-4 text-sm">
-            <h3 className="dark:text-polar-500 text-gray-500">Support</h3>
-            <div className="flex flex-col gap-y-3">
-              <FooterLink href="https://polar.sh/docs">Docs</FooterLink>
-              <FooterLink href="mailto:support@polar.sh">Contact</FooterLink>
-              <FooterLink href="https://status.polar.sh">
-                Service Status
-              </FooterLink>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
+          <FooterSection title="Features">
+            <FooterLink href="/features/usage-billing">
+              Usage Billing
+            </FooterLink>
+            <FooterLink href="/features/subscriptions">
+              Subscriptions
+            </FooterLink>
+            <FooterLink href="/features/seats">Seats</FooterLink>
+            <FooterLink href="/features/credits">Credits</FooterLink>
+            <FooterLink href="/features/trials">Trials</FooterLink>
+            <FooterLink href="/features/discounts">Discounts</FooterLink>
+            <FooterLink href="/features/cost-insights">
+              Cost Insights
+            </FooterLink>
+            <FooterLink href="/features/finance">Finance</FooterLink>
+            <FooterLink href="/features/merchant-of-record">
+              Merchant of Record
+            </FooterLink>
+          </FooterSection>
+
+          <FooterSection title="Resources">
+            <FooterLink href="/resources/why">Why Polar</FooterLink>
+            <FooterLink href="/resources/merchant-of-record">
+              Merchant of Record
+            </FooterLink>
+            <FooterLink href="/resources/pricing">Pricing</FooterLink>
+            <FooterLink href="/downloads">Downloads</FooterLink>
+          </FooterSection>
+
+          <FooterSection title="Company">
+            <FooterLink href="/company">About Polar</FooterLink>
+            <FooterLink href="https://github.com/polarsource">
+              GitHub
+            </FooterLink>
+            <FooterLink href="https://x.com/polar_sh">X / Twitter</FooterLink>
+            <FooterLink href="https://polar.sh/assets/brand/polar_brand.zip">
+              Brand Assets
+            </FooterLink>
+            <FooterLink href="https://polar.sh/legal">Legal</FooterLink>
+            <CookiePreferencesButton />
+          </FooterSection>
+
+          <FooterSection title="Support">
+            <FooterLink href="https://polar.sh/docs">Docs</FooterLink>
+            <FooterLink href="mailto:support@polar.sh">Contact</FooterLink>
+            <FooterLink href="https://status.polar.sh">
+              Service Status
+            </FooterLink>
+          </FooterSection>
+        </Grid>
+      </Box>
+    </Box>
   )
 }
 
 export default Footer
 
-const FooterLinkClassnames =
-  'dark:text-white dark:hover:text-polar-100 flex flex-row items-center gap-x-1 text-black transition-colors hover:text-gray-500'
+const FooterSection = ({
+  title,
+  children,
+}: PropsWithChildren<{ title: string }>) => (
+  <Box flexDirection="column" rowGap="l">
+    <Text as="h3" color="muted">
+      {title}
+    </Text>
+    <Box flexDirection="column" rowGap="s">
+      {children}
+    </Box>
+  </Box>
+)
 
-const FooterLink = (props: PropsWithChildren<{ href: string }>) => {
-  const isExternal = props.href.toString().startsWith('http')
-
-  if (isExternal) {
-    return (
-      <a className={FooterLinkClassnames} {...props}>
-        {props.children}
-      </a>
-    )
-  }
-
-  return (
-    <Link className={FooterLinkClassnames} {...props}>
-      {props.children}
-    </Link>
-  )
-}
+const FooterLink = ({
+  href,
+  children,
+}: PropsWithChildren<{ href: string }>) => (
+  <Link href={href}>
+    <Box
+      as="span"
+      display="inline-flex"
+      alignItems="center"
+      columnGap="xs"
+      color={{ base: 'text-primary', hover: 'text-secondary' }}
+      transitionProperty="colors"
+      transitionDuration="fast"
+    >
+      <Text as="span" color="inherit">
+        {children}
+      </Text>
+    </Box>
+  </Link>
+)

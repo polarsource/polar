@@ -1,4 +1,4 @@
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from uuid import UUID
 
 from sqlalchemy import Select
@@ -78,6 +78,23 @@ class MerchantMigrationRecordRepository(
             )
         )
         return await self.get_all(statement)
+
+    async def prune_missing(
+        self,
+        merchant_migration: MerchantMigration,
+        seen: Collection[tuple[MerchantMigrationRecordType, str]],
+    ) -> None:
+        """Drop staged records the source no longer returns. Only pending rows
+        go: an imported, skipped or failed one is the record of what a past run
+        did, and deleting it would let a later run import the same thing twice.
+        """
+        statement = self.get_base_statement().where(
+            MerchantMigrationRecord.merchant_migration_id == merchant_migration.id,
+            MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
+        )
+        for record in await self.get_all(statement):
+            if (record.type, record.source_id) not in seen:
+                await self.soft_delete(record)
 
     async def upsert(
         self,

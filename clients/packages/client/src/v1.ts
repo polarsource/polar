@@ -5168,6 +5168,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/counts': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Count Merchant Migration Records
+     * @description **Scopes**: `organizations:read` `organizations:write`
+     */
+    get: operations['merchant-migrations:counts']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/merchant-migrations/{id}/records': {
     parameters: {
       query?: never
@@ -5177,7 +5197,7 @@ export interface paths {
     }
     /**
      * List Merchant Migration Records
-     * @description **Scopes**: `organizations:write`
+     * @description **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['merchant-migrations:records']
     put?: never
@@ -23118,6 +23138,27 @@ export interface components {
       source: {
         [key: string]: unknown
       } | null
+    }
+    /**
+     * MerchantMigrationCounts
+     * @description Everything the review page needs to draw its tabs and totals, in one call.
+     */
+    MerchantMigrationCounts: {
+      /**
+       * Entities
+       * @description Per-entity counts, for products, customers and subscriptions.
+       */
+      entities: components['schemas']['PrecheckEntitySummary'][]
+      /**
+       * Action Required
+       * @description How many records the merchant has to act on.
+       */
+      action_required: number
+      /**
+       * Blockers
+       * @description What stops the import right now, re-checked against the organization and the source account. Empty when it can run.
+       */
+      blockers: components['schemas']['PrecheckIssue'][]
     }
     /** MerchantMigrationCreate */
     MerchantMigrationCreate: {
@@ -51493,6 +51534,55 @@ export interface operations {
           'application/json':
             | components['schemas']['CatalogImportNotReady']
             | components['schemas']['CatalogImportBlocked']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:counts': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationCounts']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
         }
       }
       /** @description Validation Error */

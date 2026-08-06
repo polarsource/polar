@@ -425,8 +425,8 @@ class PrecheckEngine:
                 level=PrecheckIssueLevel.warning,
                 code="subscription_has_discount",
                 message=(
-                    "Subscription has a discount, which isn't migrated yet; it "
-                    "won't be imported so the customer isn't overcharged."
+                    "Discounts aren't migrated yet. Importing would charge the "
+                    "full price, so this subscription stays on the source."
                 ),
                 source_id=source_id,
             )

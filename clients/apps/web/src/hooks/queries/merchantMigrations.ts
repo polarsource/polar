@@ -59,6 +59,9 @@ export const useRunMerchantMigrationPrecheck = (id: string) =>
       getQueryClient().invalidateQueries({
         queryKey: ['merchantMigrationRecords'],
       })
+      getQueryClient().invalidateQueries({
+        queryKey: ['merchantMigrationCounts', { id }],
+      })
     },
   })
 
@@ -87,6 +90,9 @@ export const useImportMerchantMigrationCatalog = (id: string) =>
       })
       getQueryClient().invalidateQueries({
         queryKey: ['merchantMigrationRecords'],
+      })
+      getQueryClient().invalidateQueries({
+        queryKey: ['merchantMigrationCounts', { id }],
       })
     },
   })
@@ -124,73 +130,44 @@ export const useMigrationRecords = (
     enabled: !!id,
   })
 
-export type CountEntity = 'subscriptions' | 'products' | 'customers'
+// Prices import with their product, so they have no tab of their own.
+export type CountEntity = Exclude<schemas['PrecheckEntity'], 'prices'>
 
 export interface EntityCount {
   importable: number
   skipped: number
 }
 
-const useEntityCount = (
-  id: string,
-  entity: CountEntity,
-): EntityCount & {
-  isLoading: boolean
-  isError: boolean
-} => {
-  const importable = useMigrationRecords(id, {
-    entity,
-    status: 'importable',
-    page: 1,
-    limit: 1,
-  })
-  const skipped = useMigrationRecords(id, {
-    entity,
-    status: 'skipped',
-    page: 1,
-    limit: 1,
-  })
-  return {
-    importable: importable.data?.pagination.total_count ?? 0,
-    skipped: skipped.data?.pagination.total_count ?? 0,
-    isLoading: importable.isLoading || skipped.isLoading,
-    // A failed count would otherwise read as zero, which the caller can't tell
-    // apart from an empty catalog.
-    isError: importable.isError || skipped.isError,
-  }
-}
+const EMPTY_COUNT: EntityCount = { importable: 0, skipped: 0 }
 
 export const useMigrationEntityCounts = (id: string) => {
-  const subscriptions = useEntityCount(id, 'subscriptions')
-  const products = useEntityCount(id, 'products')
-  const customers = useEntityCount(id, 'customers')
-  const attention = useMigrationRecords(id, {
-    reasonLevel: 'action_required',
-    page: 1,
-    limit: 1,
+  const query = useQuery({
+    queryKey: ['merchantMigrationCounts', { id }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/merchant-migrations/{id}/counts', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!id,
   })
 
+  const countFor = (entity: CountEntity): EntityCount =>
+    query.data?.entities.find((item) => item.entity === entity) ?? EMPTY_COUNT
   const counts: Record<CountEntity, EntityCount> = {
-    subscriptions: {
-      importable: subscriptions.importable,
-      skipped: subscriptions.skipped,
-    },
-    products: { importable: products.importable, skipped: products.skipped },
-    customers: { importable: customers.importable, skipped: customers.skipped },
+    subscriptions: countFor('subscriptions'),
+    products: countFor('products'),
+    customers: countFor('customers'),
   }
 
   return {
     counts,
-    attentionCount: attention.data?.pagination.total_count ?? 0,
-    isLoading:
-      subscriptions.isLoading ||
-      products.isLoading ||
-      customers.isLoading ||
-      attention.isLoading,
-    isError:
-      subscriptions.isError ||
-      products.isError ||
-      customers.isError ||
-      attention.isError,
+    attentionCount: query.data?.action_required ?? 0,
+    blockers: query.data?.blockers ?? [],
+    isLoading: query.isLoading,
+    // A failed count would otherwise read as zero, which the caller can't tell
+    // apart from an empty catalog.
+    isError: query.isError,
   }
 }

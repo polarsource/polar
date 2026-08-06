@@ -15,6 +15,7 @@ from polar.routing import APIRouter
 from .auth import MerchantMigrationRead, MerchantMigrationWrite
 from .schemas import MerchantMigration as MerchantMigrationSchema
 from .schemas import (
+    MerchantMigrationCounts,
     MerchantMigrationCreate,
     MerchantMigrationImportReport,
     MerchantMigrationImportRequest,
@@ -186,6 +187,29 @@ async def import_catalog(
 
 
 @router.get(
+    "/{id}/counts",
+    response_model=MerchantMigrationCounts,
+    summary="Count Merchant Migration Records",
+    responses={
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+    },
+)
+async def counts(
+    id: UUID4,
+    auth_subject: MerchantMigrationRead,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> MerchantMigrationCounts:
+    return await merchant_migration_service.count_records(session, auth_subject, id)
+
+
+@router.get(
     "/{id}/records",
     response_model=ListResource[MerchantMigrationRecordItem],
     summary="List Merchant Migration Records",
@@ -206,12 +230,12 @@ async def import_catalog(
 )
 async def records(
     id: UUID4,
-    auth_subject: MerchantMigrationWrite,
+    auth_subject: MerchantMigrationRead,
     pagination: PaginationParamsQuery,
     entity: Annotated[PrecheckEntity | None, Query()] = None,
     status: Annotated[PrecheckRecordStatus | None, Query()] = None,
     reason_level: Annotated[PrecheckReasonLevel | None, Query()] = None,
-    session: AsyncSession = Depends(get_db_session),
+    session: AsyncReadSession = Depends(get_db_read_session),
 ) -> ListResource[MerchantMigrationRecordItem]:
     items, count = await merchant_migration_service.list_records(
         session,

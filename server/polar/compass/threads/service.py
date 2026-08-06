@@ -247,10 +247,11 @@ class CompassThreadService:
         """The model context for the next turn: the concatenated per-turn
         deltas of the last `HISTORY_TURNS` turns.
 
-        Scope mismatch (token scopes changed since the thread was created)
-        or stored history that no longer validates (e.g. after a pydantic-ai
-        upgrade) degrades to a fresh context instead of breaking the thread.
-        Could be rethought to be more backwards compatible.
+        Scope mismatch (token scopes changed since the thread was created),
+        or stored history that no longer holds the expected shape (e.g. after
+        a pydantic-ai upgrade), degrades to a fresh context instead of
+        breaking the thread. Could be rethought to be more backwards
+        compatible.
         """
         if thread.scopes_fingerprint != scopes_fingerprint(auth_subject.scopes):
             log.info(
@@ -264,16 +265,20 @@ class CompassThreadService:
             repository.get_replay_statement(thread.id, HISTORY_TURNS)
         )
 
-        combined = list(
-            chain.from_iterable(message.model_messages for message in reversed(recent))
-        )
-        if not combined:
-            return None, None
-
         try:
+            # A row whose JSONB is not a list of parts — hand-edited, or a
+            # JSON `null` the NOT NULL constraint doesn't catch — fails here
+            # on flattening rather than on validation.
+            combined = list(
+                chain.from_iterable(
+                    message.model_messages for message in reversed(recent)
+                )
+            )
+            if not combined:
+                return None, None
             history = ModelMessagesTypeAdapter.validate_python(combined)
             return history, recent[0].created_at
-        except ValidationError:
+        except (TypeError, ValidationError):
             log.warning(
                 "compass.thread_history_invalid",
                 thread_id=str(thread.id),

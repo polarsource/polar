@@ -1,5 +1,6 @@
 'use client'
 
+import { relativeTime } from '@/components/Chat/time'
 import { ParsedMetricPeriod } from '@/hooks/queries'
 import { AssistantBlock, AssistantPart } from '@/hooks/useCompassAssistant'
 import { getFormattedMetricValue } from '@/utils/metrics'
@@ -94,12 +95,14 @@ const ParagraphsText = ({ text }: { text: string }) => {
  * reviewed component. The model can only pick block types from the closed
  * union — unknown types render nothing.
  */
-export const AssistantBlockView = ({
+const BlockBody = ({
   block,
   organization,
+  answeredAt,
 }: {
   block: AssistantBlock
   organization: schemas['Organization']
+  answeredAt?: string
 }) => {
   switch (block.type) {
     case 'text':
@@ -130,9 +133,9 @@ export const AssistantBlockView = ({
         </Grid>
       )
     case 'entity_list':
-      return <EntityListView block={block} />
+      return <EntityListView block={block} answeredAt={answeredAt} />
     case 'data_table':
-      return <EntityTableView block={block} />
+      return <EntityTableView block={block} answeredAt={answeredAt} />
     case 'customer_card':
       return <CustomerCardView block={block} />
     default:
@@ -140,15 +143,55 @@ export const AssistantBlockView = ({
   }
 }
 
+export const AssistantBlockView = ({
+  block,
+  organization,
+  answeredAt,
+}: {
+  block: AssistantBlock
+  organization: schemas['Organization']
+  answeredAt?: string
+}) => {
+  const body = (
+    <BlockBody
+      block={block}
+      organization={organization}
+      answeredAt={answeredAt}
+    />
+  )
+  // The entity presentations carry the fetch time in their own caption row.
+  const ownsFetchedCaption =
+    block.type === 'entity_list' || block.type === 'data_table'
+  if (block.type === 'text' || ownsFetchedCaption || !answeredAt) {
+    return body
+  }
+  return (
+    <Box display="flex" flexDirection="column" rowGap="xs">
+      {body}
+      <Text variant="caption" color="muted">
+        Fetched {relativeTime(answeredAt)}
+      </Text>
+    </Box>
+  )
+}
+
 export const AssistantPartView = ({
   part,
   organization,
+  answeredAt,
 }: {
   part: AssistantPart
   organization: schemas['Organization']
+  answeredAt?: string
 }) => {
   if (part.kind === 'text') {
     return <ParagraphsText text={part.text} />
   }
-  return <AssistantBlockView block={part.block} organization={organization} />
+  return (
+    <AssistantBlockView
+      block={part.block}
+      organization={organization}
+      answeredAt={answeredAt}
+    />
+  )
 }

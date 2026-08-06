@@ -1,12 +1,16 @@
 'use client'
 
 import { CompassConversation } from '@/components/Compass/CompassConversation'
+import { CompassHistoryMenu } from '@/components/Compass/CompassHistoryMenu'
+import { CompassIconAction } from '@/components/Compass/CompassIconAction'
 import { CompassTabs } from '@/components/Compass/CompassTabs'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { useCompassAssistant } from '@/hooks/useCompassAssistant'
+import AddRounded from '@mui/icons-material/AddRounded'
 import { schemas } from '@polar-sh/client'
+import { Box } from '@polar-sh/orbit/Box'
 import { usePathname, useRouter, useSearchParams } from 'next/navigation'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 
 interface CompassPageProps {
   organization: schemas['Organization']
@@ -14,12 +18,34 @@ interface CompassPageProps {
 
 export default function CompassPage({ organization }: CompassPageProps) {
   const [value, setValue] = useState('')
-  const { messages, send, isStreaming } = useCompassAssistant(organization.id)
-  const inputRef = useRef<HTMLTextAreaElement | null>(null)
   const router = useRouter()
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const inputRef = useRef<HTMLTextAreaElement | null>(null)
   const askedRef = useRef(false)
+
+  const showThreadUrl = useCallback(
+    (id: string | null) => {
+      router.replace(id ? `${pathname}?thread=${id}` : pathname, {
+        scroll: false,
+      })
+    },
+    [router, pathname],
+  )
+
+  // Captured once on mount: the deep-linked thread this page opened with.
+  const [initialThreadId] = useState(() => searchParams.get('thread'))
+  const { messages, send, isStreaming, threadId, selectThread, newChat } =
+    useCompassAssistant({
+      organizationId: organization.id,
+      initialThreadId,
+      onThreadChange: showThreadUrl,
+    })
+
+  const startNewChat = useCallback(() => {
+    newChat()
+    inputRef.current?.focus()
+  }, [newChat])
 
   // The overview's idle box hands its question over via `?ask=`. Send it
   // once, then strip the param so refresh and back don't re-ask.
@@ -59,7 +85,36 @@ export default function CompassPage({ organization }: CompassPageProps) {
   return (
     <DashboardBody
       title="Compass"
-      header={<CompassTabs organization={organization} active="assistant" />}
+      header={
+        <Box alignItems="center" columnGap="xs">
+          {messages.length > 0 && (
+            <CompassIconAction label="New chat" onClick={startNewChat}>
+              <AddRounded style={{ fontSize: '1.125rem' }} />
+            </CompassIconAction>
+          )}
+          <CompassHistoryMenu
+            organization={organization}
+            activeThreadId={threadId}
+            onSelect={selectThread}
+            onDeleted={(deletedId) => {
+              if (deletedId === threadId) {
+                startNewChat()
+              }
+            }}
+          />
+          <Box
+            as="span"
+            display="block"
+            width={0}
+            height={20}
+            marginHorizontal="s"
+            borderLeftWidth={1}
+            borderStyle="solid"
+            borderColor="border-primary"
+          />
+          <CompassTabs organization={organization} active="assistant" />
+        </Box>
+      }
       className="h-full"
       wrapperClassName="max-w-3xl!"
     >

@@ -3,7 +3,7 @@ from datetime import timedelta
 
 from sqlalchemy import func, over, select
 
-from polar.models import Organization, Subscription
+from polar.models import Customer, Organization, Subscription
 
 from .base import Invariant, InvariantError
 
@@ -30,6 +30,15 @@ class SubscriptionsCurrentPeriodEndInvariant(Invariant):
     """
     Invariant that checks if there are any subscriptions with a current_period_end in the past.
 
+    Subscriptions of soft-deleted customers are excluded: ``SubscriptionJobStore`` never
+    schedules them, so their period end stays in the past by design. That state is
+    reported by ``SubscriptionsCanceledDeletedCustomerInvariant`` instead.
+
+    Nothing else is excluded, so the two failures this is meant to catch still surface:
+    a subscription the scheduler locked but never cycled (the leeway already covers a
+    cycle in flight, so a lock held beyond it means it never completed), and one that was
+    never picked up at all because the scheduler or the worker failed.
+
     Failure of this invariant indicate there is an issue with the subscription cycle process.
     """
 
@@ -39,9 +48,11 @@ class SubscriptionsCurrentPeriodEndInvariant(Invariant):
     async def check(self) -> None:
         statement = (
             select(Subscription.id, over(func.count()))
+            .join(Subscription.customer)
             .join(Subscription.organization)
             .where(
                 Subscription.active.is_(True),
+                Customer.deleted_at.is_(None),
                 Organization.deleted_at.is_(None),
                 Subscription.current_period_end < (func.now() - self.LEEWAY),
                 Organization.can_renew_subscriptions.is_(True),

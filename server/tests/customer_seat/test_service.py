@@ -3070,6 +3070,11 @@ async def _attempt_assign_seat(
     Mirrors the structure of ``tests/license_key/test_service.py::_attempt_activation``:
     each concurrent contender opens its own session, loads the subscription fresh,
     calls the service, and either commits or rolls back.
+
+    Side-effecting patches (enqueue_job, send_seat_invitation_email,
+    webhook_service.send) are applied by the caller around the whole
+    asyncio.gather so that concurrent entries here do not race on the same
+    attribute, which would leave a mock in place and break unrelated tests.
     """
 
     from polar.models import Subscription
@@ -3085,14 +3090,9 @@ async def _attempt_assign_seat(
         subscription = await repository.get_one_or_none(statement)
         assert subscription is not None
         try:
-            with (
-                patch("polar.customer_seat.service.enqueue_job"),
-                patch("polar.customer_seat.service.send_seat_invitation_email"),
-                patch("polar.customer_seat.service.webhook_service.send"),
-            ):
-                seat = await seat_service.assign_seat(
-                    session, subscription, email=email
-                )
+            seat = await seat_service.assign_seat(
+                session, subscription, email=email
+            )
         except SeatNotAvailable:
             await session.rollback()
             return None
@@ -3162,16 +3162,21 @@ class TestAssignSeatConcurrency:
             await setup_session.commit()
 
         try:
-            results = await asyncio.gather(
-                *(
-                    _attempt_assign_seat(
-                        sessionmaker,
-                        subscription.id,
-                        f"seat-member-{i}@example.com",
+            with (
+                patch("polar.customer_seat.service.enqueue_job"),
+                patch("polar.customer_seat.service.send_seat_invitation_email"),
+                patch("polar.customer_seat.service.webhook_service.send"),
+            ):
+                results = await asyncio.gather(
+                    *(
+                        _attempt_assign_seat(
+                            sessionmaker,
+                            subscription.id,
+                            f"seat-member-{i}@example.com",
+                        )
+                        for i in range(5)
                     )
-                    for i in range(5)
                 )
-            )
 
             async with sessionmaker() as session:
                 assigned_count = (

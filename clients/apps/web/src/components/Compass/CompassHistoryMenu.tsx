@@ -34,7 +34,7 @@ export const CompassHistoryMenu = ({
     // Capture phase so closing the panel wins over the page-level Escape
     // handler, which would otherwise navigate back.
     const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
+      if (e.key === 'Escape' && !e.isComposing) {
         e.stopPropagation()
         setOpen(false)
       }

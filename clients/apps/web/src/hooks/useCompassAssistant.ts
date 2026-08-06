@@ -107,7 +107,7 @@ export const useCompassAssistant = ({
       // an aborted turn is never recorded server-side: the conversation would
       // silently lose the turn the user just watched.
       if (controllerRef.current) return
-      claimConversation()
+      const claim = claimConversation()
 
       const userId = `m${(idRef.current += 1)}`
       const assistantId = `m${(idRef.current += 1)}`
@@ -148,6 +148,9 @@ export const useCompassAssistant = ({
         let buffer = ''
 
         const handle = (rawEvent: string) => {
+          // A history selection claims the conversation before its fetch
+          // resolves and aborts us.
+          if (claim !== loadRef.current) return
           let event = 'message'
           let data = ''
           for (const line of rawEvent.split(/\r?\n/)) {

@@ -237,7 +237,7 @@ with server-side rendering. Use this by default."""
                 return f"Error: HTTP {resp.status_code} for {current_url}"
 
             content_type = resp.headers.get("content-type", "")
-            if content_type and not content_type.startswith(TEXT_CONTENT_TYPES):
+            if content_type and not content_type.lower().startswith(TEXT_CONTENT_TYPES):
                 return (
                     f"Error: unsupported content type "
                     f"{content_type.split(';')[0]} for {current_url}"

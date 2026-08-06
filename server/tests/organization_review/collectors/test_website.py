@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import AsyncIterator, Callable
 from typing import Any
 from unittest.mock import AsyncMock, MagicMock, patch
 
@@ -11,6 +12,7 @@ from polar.organization_review.collectors.website import (
     MAX_CHARS_PER_PAGE,
     MAX_PAGES,
     MAX_REDIRECTS,
+    MAX_RESPONSE_BYTES,
     WebsiteDeps,
     _build_tool_response,
     _extract_links_from_html,
@@ -26,6 +28,19 @@ _PATCH_SSRF = patch(
     "polar.organization_review.collectors.website.resolve_and_validate_ip",
     new_callable=AsyncMock,
 )
+
+
+def _make_client(
+    handler: Callable[[httpx.Request], httpx.Response],
+) -> tuple[httpx.AsyncClient, list[httpx.Request]]:
+    requests: list[httpx.Request] = []
+
+    def _handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        return handler(request)
+
+    return httpx.AsyncClient(transport=httpx.MockTransport(_handler)), requests
+
 
 # ---------------------------------------------------------------------------
 # _is_allowed_origin
@@ -218,7 +233,7 @@ class TestBuildToolResponse:
 class TestFetchPage:
     @pytest.mark.asyncio
     async def test_rejects_off_origin_url(self) -> None:
-        client = AsyncMock(spec=httpx.AsyncClient)
+        client, requests = _make_client(lambda request: httpx.Response(200))
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
@@ -227,11 +242,11 @@ class TestFetchPage:
 
         assert "off-origin" in result
         assert deps.pages_navigated == 0
-        client.get.assert_not_called()
+        assert requests == []
 
     @pytest.mark.asyncio
     async def test_respects_page_limit(self) -> None:
-        client = AsyncMock(spec=httpx.AsyncClient)
+        client, requests = _make_client(lambda request: httpx.Response(200))
         deps = WebsiteDeps(
             client=client,
             allowed_domain="example.com",
@@ -243,7 +258,7 @@ class TestFetchPage:
         result = await fetch_page(ctx, "https://example.com/page")
 
         assert "Page limit reached" in result
-        client.get.assert_not_called()
+        assert requests == []
 
     @pytest.mark.asyncio
     async def test_successful_fetch(self) -> None:
@@ -256,16 +271,7 @@ class TestFetchPage:
         </body>
         </html>
         """
-        response = MagicMock(spec=httpx.Response)
-        response.status_code = 200
-        response.text = html
-        response.url = httpx.URL("https://example.com/")
-        response.is_redirect = False
-        response.has_redirect_location = False
-
-        client = AsyncMock(spec=httpx.AsyncClient)
-        client.get.return_value = response
-
+        client, requests = _make_client(lambda request: httpx.Response(200, html=html))
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
@@ -281,14 +287,7 @@ class TestFetchPage:
 
     @pytest.mark.asyncio
     async def test_http_error(self) -> None:
-        response = MagicMock(spec=httpx.Response)
-        response.status_code = 404
-        response.is_redirect = False
-        response.has_redirect_location = False
-
-        client = AsyncMock(spec=httpx.AsyncClient)
-        client.get.return_value = response
-
+        client, requests = _make_client(lambda request: httpx.Response(404))
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
@@ -301,9 +300,10 @@ class TestFetchPage:
 
     @pytest.mark.asyncio
     async def test_connection_error(self) -> None:
-        client = AsyncMock(spec=httpx.AsyncClient)
-        client.get.side_effect = httpx.ConnectError("Connection refused")
+        def handler(request: httpx.Request) -> httpx.Response:
+            raise httpx.ConnectError("Connection refused")
 
+        client, requests = _make_client(handler)
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
@@ -319,16 +319,7 @@ class TestFetchPage:
         long_body = "x" * (MAX_CHARS_PER_PAGE + 5_000)
         html = f"<html><head><title>Big</title></head><body><p>{long_body}</p></body></html>"
 
-        response = MagicMock(spec=httpx.Response)
-        response.status_code = 200
-        response.text = html
-        response.url = httpx.URL("https://example.com/")
-        response.is_redirect = False
-        response.has_redirect_location = False
-
-        client = AsyncMock(spec=httpx.AsyncClient)
-        client.get.return_value = response
-
+        client, requests = _make_client(lambda request: httpx.Response(200, html=html))
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
@@ -339,6 +330,68 @@ class TestFetchPage:
         assert deps.pages_visited[0].content_truncated is True
         assert len(deps.pages_visited[0].content) <= MAX_CHARS_PER_PAGE
         assert "(content truncated)" in result
+
+    @pytest.mark.asyncio
+    async def test_rejects_binary_content_type(self) -> None:
+        client, requests = _make_client(
+            lambda request: httpx.Response(
+                200,
+                content=b"binary",
+                headers={"content-type": "application/x-apple-diskimage"},
+            )
+        )
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        with _PATCH_SSRF:
+            result = await fetch_page(ctx, "https://example.com/Koffi.dmg")
+
+        assert "unsupported content type" in result
+        assert deps.pages_visited == []
+
+    @pytest.mark.asyncio
+    async def test_rejects_oversized_response(self) -> None:
+        client, requests = _make_client(
+            lambda request: httpx.Response(
+                200,
+                content=b"x" * (MAX_RESPONSE_BYTES + 1),
+                headers={"content-type": "text/html"},
+            )
+        )
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        with _PATCH_SSRF:
+            result = await fetch_page(ctx, "https://example.com/big")
+
+        assert "response too large" in result
+        assert deps.pages_visited == []
+
+    @pytest.mark.asyncio
+    async def test_rejects_oversized_streamed_response(self) -> None:
+        class _BigStream(httpx.AsyncByteStream):
+            async def __aiter__(self) -> AsyncIterator[bytes]:
+                for _ in range(MAX_RESPONSE_BYTES // (1024 * 1024) + 1):
+                    yield b"x" * (1024 * 1024)
+
+        client, requests = _make_client(
+            lambda request: httpx.Response(
+                200,
+                stream=_BigStream(),
+                headers={"content-type": "text/html"},
+            )
+        )
+        deps = WebsiteDeps(client=client, allowed_domain="example.com")
+        ctx = MagicMock()
+        ctx.deps = deps
+
+        with _PATCH_SSRF:
+            result = await fetch_page(ctx, "https://example.com/chunked")
+
+        assert "response too large" in result
+        assert deps.pages_visited == []
 
 
 # ---------------------------------------------------------------------------
@@ -422,7 +475,7 @@ class TestFetchPageSSRF:
     @pytest.mark.asyncio
     async def test_blocks_initial_ssrf(self) -> None:
         """fetch_page should block a URL that resolves to a private IP."""
-        client = AsyncMock(spec=httpx.AsyncClient)
+        client, requests = _make_client(lambda request: httpx.Response(200))
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
@@ -436,20 +489,16 @@ class TestFetchPageSSRF:
 
         assert "private IP" in result
         assert deps.pages_navigated == 0
-        client.get.assert_not_called()
+        assert requests == []
 
     @pytest.mark.asyncio
     async def test_blocks_redirect_to_private_ip(self) -> None:
         """Redirect targets that resolve to private IPs should be blocked."""
-        redirect_resp = MagicMock(spec=httpx.Response)
-        redirect_resp.is_redirect = True
-        redirect_resp.has_redirect_location = True
-        redirect_resp.headers = {"location": "https://example.com/internal"}
-        redirect_resp.status_code = 302
-
-        client = AsyncMock(spec=httpx.AsyncClient)
-        client.get.return_value = redirect_resp
-
+        client, requests = _make_client(
+            lambda request: httpx.Response(
+                302, headers={"location": "https://example.com/internal"}
+            )
+        )
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
@@ -474,15 +523,11 @@ class TestFetchPageSSRF:
     @pytest.mark.asyncio
     async def test_blocks_redirect_to_different_domain(self) -> None:
         """Redirects to a different domain should be blocked."""
-        redirect_resp = MagicMock(spec=httpx.Response)
-        redirect_resp.is_redirect = True
-        redirect_resp.has_redirect_location = True
-        redirect_resp.headers = {"location": "https://evil.com/steal"}
-        redirect_resp.status_code = 302
-
-        client = AsyncMock(spec=httpx.AsyncClient)
-        client.get.return_value = redirect_resp
-
+        client, requests = _make_client(
+            lambda request: httpx.Response(
+                302, headers={"location": "https://evil.com/steal"}
+            )
+        )
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
@@ -495,22 +540,18 @@ class TestFetchPageSSRF:
     @pytest.mark.asyncio
     async def test_follows_valid_same_origin_redirect(self) -> None:
         """Valid same-origin redirects should be followed."""
-        redirect_resp = MagicMock(spec=httpx.Response)
-        redirect_resp.is_redirect = True
-        redirect_resp.has_redirect_location = True
-        redirect_resp.headers = {"location": "https://example.com/new-page"}
-        redirect_resp.status_code = 301
 
-        final_resp = MagicMock(spec=httpx.Response)
-        final_resp.is_redirect = False
-        final_resp.has_redirect_location = False
-        final_resp.status_code = 200
-        final_resp.text = "<html><head><title>New</title></head><body><p>Content here</p></body></html>"
-        final_resp.url = httpx.URL("https://example.com/new-page")
+        def handler(request: httpx.Request) -> httpx.Response:
+            if str(request.url) == "https://example.com/old-page":
+                return httpx.Response(
+                    301, headers={"location": "https://example.com/new-page"}
+                )
+            return httpx.Response(
+                200,
+                html="<html><head><title>New</title></head><body><p>Content here</p></body></html>",
+            )
 
-        client = AsyncMock(spec=httpx.AsyncClient)
-        client.get.side_effect = [redirect_resp, final_resp]
-
+        client, requests = _make_client(handler)
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
@@ -518,31 +559,24 @@ class TestFetchPageSSRF:
         with _PATCH_SSRF:
             result = await fetch_page(ctx, "https://example.com/old-page")
 
-        assert client.get.call_count == 2
+        assert len(requests) == 2
         assert "Page: New" in result
 
     @pytest.mark.asyncio
     async def test_follows_www_to_non_www_redirect(self) -> None:
         """www -> non-www redirects should work when allowed_domain is the root."""
-        redirect_resp = MagicMock(spec=httpx.Response)
-        redirect_resp.is_redirect = True
-        redirect_resp.has_redirect_location = True
-        redirect_resp.headers = {"location": "https://example.com/home"}
-        redirect_resp.status_code = 301
 
-        final_resp = MagicMock(spec=httpx.Response)
-        final_resp.is_redirect = False
-        final_resp.has_redirect_location = False
-        final_resp.status_code = 200
-        final_resp.text = (
-            "<html><head><title>Home</title></head><body><p>Welcome</p></body></html>"
-        )
-        final_resp.url = httpx.URL("https://example.com/home")
+        def handler(request: httpx.Request) -> httpx.Response:
+            if request.url.host == "www.example.com":
+                return httpx.Response(
+                    301, headers={"location": "https://example.com/home"}
+                )
+            return httpx.Response(
+                200,
+                html="<html><head><title>Home</title></head><body><p>Welcome</p></body></html>",
+            )
 
-        client = AsyncMock(spec=httpx.AsyncClient)
-        client.get.side_effect = [redirect_resp, final_resp]
-
-        # allowed_domain is root (as _run_website_agent now strips www.)
+        client, requests = _make_client(handler)
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
@@ -550,21 +584,17 @@ class TestFetchPageSSRF:
         with _PATCH_SSRF:
             result = await fetch_page(ctx, "https://www.example.com/")
 
-        assert client.get.call_count == 2
+        assert len(requests) == 2
         assert "Page: Home" in result
 
     @pytest.mark.asyncio
     async def test_max_redirects_exceeded(self) -> None:
         """Exceeding MAX_REDIRECTS should return an error."""
-        redirect_resp = MagicMock(spec=httpx.Response)
-        redirect_resp.is_redirect = True
-        redirect_resp.has_redirect_location = True
-        redirect_resp.headers = {"location": "https://example.com/loop"}
-        redirect_resp.status_code = 302
-
-        client = AsyncMock(spec=httpx.AsyncClient)
-        client.get.return_value = redirect_resp
-
+        client, requests = _make_client(
+            lambda request: httpx.Response(
+                302, headers={"location": "https://example.com/loop"}
+            )
+        )
         deps = WebsiteDeps(client=client, allowed_domain="example.com")
         ctx = MagicMock()
         ctx.deps = deps
@@ -573,7 +603,7 @@ class TestFetchPageSSRF:
             result = await fetch_page(ctx, "https://example.com/start")
 
         assert "too many redirects" in result
-        assert client.get.call_count == MAX_REDIRECTS
+        assert len(requests) == MAX_REDIRECTS
 
 
 # ---------------------------------------------------------------------------

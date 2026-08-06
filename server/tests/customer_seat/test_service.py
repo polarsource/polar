@@ -19,6 +19,11 @@ from polar.customer_seat.service import (
     seat_service,
 )
 from polar.enums import SubscriptionRecurringInterval
+from polar.kit.db.postgres import (
+    AsyncSessionMaker,
+    create_async_engine,
+    create_async_sessionmaker,
+)
 from polar.kit.utils import utc_now
 from polar.models import (
     Account,
@@ -33,7 +38,7 @@ from polar.models.customer_seat import CustomerSeat, SeatStatus
 from polar.models.organization import OrganizationStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.postgres import AsyncSession
-from tests.fixtures.database import SaveFixture
+from tests.fixtures.database import SaveFixture, get_database_url, save_fixture_factory
 from tests.fixtures.random_objects import (
     create_account,
     create_customer,
@@ -43,6 +48,7 @@ from tests.fixtures.random_objects import (
     create_organization,
     create_product,
     create_subscription_with_seats,
+    create_user,
 )
 
 
@@ -3052,3 +3058,172 @@ class TestUpdateProductBenefitsGrants:
             c = enqueue_job_mock.call_args_list[0]
             assert c.kwargs["member_id"] == member.id
             assert c.kwargs["subscription_id"] == subscription.id
+
+
+async def _attempt_assign_seat(
+    sessionmaker: AsyncSessionMaker,
+    subscription_id: uuid.UUID,
+    email: str,
+) -> CustomerSeat | None:
+    """Try to assign a seat in its own session; return the seat or None on failure.
+
+    Mirrors the structure of ``tests/license_key/test_service.py::_attempt_activation``:
+    each concurrent contender opens its own session, loads the subscription fresh,
+    calls the service, and either commits or rolls back.
+    """
+
+    from polar.models import Subscription
+    from polar.subscription.repository import SubscriptionRepository
+
+    async with sessionmaker() as session:
+        repository = SubscriptionRepository.from_session(session)
+        statement = (
+            repository.get_base_statement()
+            .options(*repository.get_eager_options())
+            .where(Subscription.id == subscription_id)
+        )
+        subscription = await repository.get_one_or_none(statement)
+        assert subscription is not None
+        try:
+            with (
+                patch("polar.customer_seat.service.enqueue_job"),
+                patch("polar.customer_seat.service.send_seat_invitation_email"),
+                patch("polar.customer_seat.service.webhook_service.send"),
+            ):
+                seat = await seat_service.assign_seat(
+                    session, subscription, email=email
+                )
+        except SeatNotAvailable:
+            await session.rollback()
+            return None
+        await session.commit()
+        return seat
+
+
+@pytest.mark.asyncio
+class TestAssignSeatConcurrency:
+    """Regression tests for the TOCTOU race between seat assignment and
+    subscription seat-count updates.
+
+    The seat-assignment path reads ``Subscription.seats`` to check availability;
+    the customer-portal subscription-update path locks the same row with
+    ``FOR UPDATE`` while validating a new seat count. Without a matching lock on
+    the assignment side, N concurrent assign-seat calls against a subscription
+    with 1 remaining seat can all observe ``available == 1`` and over-provision.
+
+    These tests use real concurrent sessions (one per contender) rather than
+    mocked concurrency, mirroring ``tests/license_key/test_service.py::TestConcurrentActivation``.
+    """
+
+    async def test_concurrent_assign_seat_does_not_over_provision(
+        self, worker_id: str
+    ) -> None:
+        """Five concurrent seat assignments against a 1-seat subscription must
+        produce exactly one assigned seat and four SeatNotAvailable failures."""
+        from sqlalchemy import delete, func, select
+
+        from polar.config import settings
+
+        engine = create_async_engine(
+            dsn=get_database_url(worker_id),
+            application_name=f"test_{worker_id}_seat_concurrency",
+            pool_size=8,
+            pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+        )
+        sessionmaker = create_async_sessionmaker(engine)
+
+        async with sessionmaker() as setup_session:
+            save_fixture = save_fixture_factory(setup_session)
+            user = await create_user(save_fixture)
+            account = await create_account(save_fixture, user)
+            organization = await create_organization(save_fixture, account)
+            organization.feature_settings = {
+                **organization.feature_settings,
+                "seat_based_pricing_enabled": True,
+            }
+            await save_fixture(organization)
+            product = await create_product(
+                save_fixture,
+                organization=organization,
+                recurring_interval=SubscriptionRecurringInterval.month,
+                prices=[("seat", 1000, "usd")],
+            )
+            customer = await create_customer(
+                save_fixture,
+                organization=organization,
+                email="billing-manager@example.com",
+            )
+            subscription = await create_subscription_with_seats(
+                save_fixture,
+                product=product,
+                customer=customer,
+                seats=1,
+            )
+            await setup_session.commit()
+
+        try:
+            results = await asyncio.gather(
+                *(
+                    _attempt_assign_seat(
+                        sessionmaker,
+                        subscription.id,
+                        f"seat-member-{i}@example.com",
+                    )
+                    for i in range(5)
+                )
+            )
+
+            async with sessionmaker() as session:
+                assigned_count = (
+                    await session.execute(
+                        select(func.count(CustomerSeat.id)).where(
+                            CustomerSeat.subscription_id == subscription.id,
+                            CustomerSeat.status.in_(
+                                [SeatStatus.pending, SeatStatus.claimed]
+                            ),
+                        )
+                    )
+                ).scalar_one()
+
+            successful = [r for r in results if r is not None]
+            assert len(successful) == 1, (
+                f"expected exactly 1 successful assignment, got {len(successful)}: "
+                f"{[str(r.id) for r in successful]}"
+            )
+            assert assigned_count == 1, (
+                f"expected exactly 1 assigned seat in DB, got {assigned_count}"
+            )
+        finally:
+            async with sessionmaker() as cleanup_session:
+                # Delete in FK-dependency order: the successful seat assignment
+                # creates a Member under the billing customer and a seat-member
+                # Customer, both referencing the org. Member.customer_id is
+                # ON DELETE RESTRICT, so members must go before customers.
+                await cleanup_session.execute(
+                    delete(CustomerSeat).where(
+                        CustomerSeat.subscription_id == subscription.id
+                    )
+                )
+                from polar.models import Member
+
+                await cleanup_session.execute(
+                    delete(Member).where(Member.organization_id == organization.id)
+                )
+                await cleanup_session.execute(
+                    delete(Subscription).where(Subscription.id == subscription.id)
+                )
+                await cleanup_session.execute(
+                    delete(Customer).where(Customer.organization_id == organization.id)
+                )
+                await cleanup_session.execute(
+                    delete(Product).where(Product.id == product.id)
+                )
+                await cleanup_session.execute(
+                    delete(Organization).where(Organization.id == organization.id)
+                )
+                await cleanup_session.execute(
+                    delete(Account).where(Account.id == account.id)
+                )
+                await cleanup_session.execute(delete(User).where(User.id == user.id))
+                await cleanup_session.commit()
+            await engine.dispose()

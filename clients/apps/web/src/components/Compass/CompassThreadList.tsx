@@ -90,8 +90,13 @@ export const CompassThreadList = ({
   const deleteThread = useDeleteCompassThread(organization.id)
   const items = threads?.items ?? []
 
-  const removeThread = (threadId: string) =>
-    deleteThread.mutate(threadId, { onSuccess: () => onDeleted(threadId) })
+  const removeThread = async (threadId: string) => {
+    const { error } = await deleteThread.mutateAsync(threadId)
+    if (error) {
+      return
+    }
+    onDeleted(threadId)
+  }
 
   if (isLoading) {
     return (

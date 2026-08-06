@@ -78,7 +78,10 @@ export const useDeleteCompassThread = (organizationId: string) => {
       api.DELETE('/v1/compass/threads/{id}', {
         params: { path: { id: threadId } },
       }),
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (result.error) {
+        return
+      }
       queryClient.invalidateQueries({
         queryKey: ['compass_threads', { organizationId }],
       })

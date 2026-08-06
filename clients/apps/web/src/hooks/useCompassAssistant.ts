@@ -66,9 +66,6 @@ export const useCompassAssistant = ({
   const threadIdRef = useRef<string | null>(initialThreadId)
   const idRef = useRef(0)
   const controllerRef = useRef<AbortController | null>(null)
-  // Monotonic token for thread loads. A load applies its result only while it
-  // is still the newest intent, so a slow fetch can never resurrect a
-  // conversation the user has already moved on from.
   const loadRef = useRef(0)
   const onThreadChangeRef = useRef(onThreadChange)
   onThreadChangeRef.current = onThreadChange
@@ -83,6 +80,10 @@ export const useCompassAssistant = ({
     threadIdRef.current = id
     setThreadId(id)
   }, [])
+
+  // Invalidate in-flight thread loads. Call whenever the on-screen conversation
+  // changes so a slow fetch can't resurrect what the user moved on from.
+  const claimConversation = useCallback(() => (loadRef.current += 1), [])
 
   const appendToAssistant = useCallback(
     (
@@ -106,9 +107,7 @@ export const useCompassAssistant = ({
       // an aborted turn is never recorded server-side: the conversation would
       // silently lose the turn the user just watched.
       if (controllerRef.current) return
-      // The prompt is the newest intent: a thread load still in flight must
-      // not replace it when it lands.
-      loadRef.current += 1
+      claimConversation()
 
       const userId = `m${(idRef.current += 1)}`
       const assistantId = `m${(idRef.current += 1)}`
@@ -210,7 +209,13 @@ export const useCompassAssistant = ({
         }
       }
     },
-    [appendToAssistant, organizationId, queryClient, setThread],
+    [
+      appendToAssistant,
+      claimConversation,
+      organizationId,
+      queryClient,
+      setThread,
+    ],
   )
 
   const hydrate = useCallback(
@@ -247,21 +252,19 @@ export const useCompassAssistant = ({
   const newChat = useCallback(() => {
     controllerRef.current?.abort()
     controllerRef.current = null
-    loadRef.current += 1
+    claimConversation()
     setIsStreaming(false)
     setMessages([])
     setThread(null)
     onThreadChangeRef.current?.(null)
-  }, [setThread])
+  }, [claimConversation, setThread])
 
   const loadThread = useCallback(
     async (id: string) => {
-      const load = (loadRef.current += 1)
+      const claim = claimConversation()
       try {
         const detail = await fetchCompassThread(queryClient, id)
-        // Superseded while in flight — another selection, a new chat or a
-        // prompt now owns the conversation.
-        if (load !== loadRef.current) return
+        if (claim !== loadRef.current) return
         hydrate(detail)
         onThreadChangeRef.current?.(detail.id)
       } catch {
@@ -269,11 +272,11 @@ export const useCompassAssistant = ({
         // (newChat also drops the seeded thread id, so the next send doesn't
         // post against the dead thread). A superseded load stays quiet: the
         // conversation on screen is no longer the one that failed.
-        if (load !== loadRef.current) return
+        if (claim !== loadRef.current) return
         newChat()
       }
     },
-    [queryClient, hydrate, newChat],
+    [claimConversation, queryClient, hydrate, newChat],
   )
 
   const selectThread = useCallback(

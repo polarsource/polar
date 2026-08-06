@@ -19,7 +19,7 @@ from polar.auth.scope import Scope
 from polar.compass.threads.service import (
     HISTORY_TURNS,
     MESSAGES_LIMIT,
-    scopes_fingerprint,
+    granted_assistant_scopes,
 )
 from polar.compass.threads.service import (
     compass_thread as compass_thread_service,
@@ -85,7 +85,9 @@ async def _create_thread(
         organization_id=organization.id,
         user_id=user.id if user is not None else None,
         title=title,
-        scopes_fingerprint=scopes_fingerprint(set(Scope) if scopes is None else scopes),
+        required_scopes=granted_assistant_scopes(
+            set(Scope) if scopes is None else scopes
+        ),
     )
     if created_at is not None:
         thread.created_at = created_at
@@ -113,7 +115,7 @@ class TestCreate:
         assert thread.user_id == user.id
         assert thread.organization_id == organization.id
         assert thread.title == "How is my MRR trending?"
-        assert thread.scopes_fingerprint == scopes_fingerprint(auth_subject.scopes)
+        assert thread.required_scopes == granted_assistant_scopes(auth_subject.scopes)
 
     @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
     async def test_organization_thread_has_no_user(
@@ -368,7 +370,7 @@ class TestBuildMessageHistory:
         thread = await _create_thread(save_fixture, organization, user=user)
 
         history, last_at = await compass_thread_service.build_message_history(
-            session, auth_subject, thread, timezone=UTC
+            session, thread, timezone=UTC
         )
 
         assert history is None
@@ -399,7 +401,7 @@ class TestBuildMessageHistory:
             )
 
         history, last_at = await compass_thread_service.build_message_history(
-            session, auth_subject, thread, timezone=UTC
+            session, thread, timezone=UTC
         )
 
         assert history is not None
@@ -435,7 +437,7 @@ class TestBuildMessageHistory:
             )
 
         history, _ = await compass_thread_service.build_message_history(
-            session, auth_subject, thread, timezone=UTC
+            session, thread, timezone=UTC
         )
 
         assert history is not None
@@ -466,7 +468,7 @@ class TestBuildMessageHistory:
         )
 
         history, last_at = await compass_thread_service.build_message_history(
-            session, auth_subject, thread, timezone=UTC
+            session, thread, timezone=UTC
         )
 
         assert history is None
@@ -502,7 +504,6 @@ class TestBuildMessageHistory:
 
         history, _ = await compass_thread_service.build_message_history(
             session,
-            auth_subject,
             thread,
             timezone=ZoneInfo("America/Los_Angeles"),
         )
@@ -513,31 +514,44 @@ class TestBuildMessageHistory:
             "[fetched 2026-08-05] $180.00",
         ]
 
-    @pytest.mark.auth
-    async def test_different_scopes_degrade_to_fresh_context(
+
+@pytest.mark.asyncio
+class TestRequiredScopes:
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.metrics_read}))
+    async def test_narrower_credential_cannot_reach_the_thread(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
         user: User,
+        user_organization: UserOrganization,
         organization: Organization,
     ) -> None:
-        """History is gated on scopes_fingerprint so a different scope set starts fresh."""
+        """A stored turn holds the answer as rendered under the creating
+        credential's scopes, so a narrower one must not read it back."""
+        thread = await _create_thread(save_fixture, organization, user=user)
+
+        assert (
+            await compass_thread_service.get(session, auth_subject, thread.id) is None
+        )
+
+    @pytest.mark.auth
+    async def test_wider_credential_reaches_a_narrower_thread(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user: User,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        """Holding every scope the thread was built with is enough — the
+        caller could have produced the same answers itself."""
         thread = await _create_thread(
             save_fixture, organization, user=user, scopes={Scope.metrics_read}
         )
-        await save_fixture(
-            CompassThreadMessage(
-                thread=thread,
-                prompt="hi",
-                parts=[],
-                model_messages=_turn_model_messages("hi", "hello"),
-            )
-        )
 
-        history, last_at = await compass_thread_service.build_message_history(
-            session, auth_subject, thread, timezone=UTC
-        )
+        found = await compass_thread_service.get(session, auth_subject, thread.id)
 
-        assert history is None
-        assert last_at is None
+        assert found is not None
+        assert found.id == thread.id

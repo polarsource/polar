@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from httpx import AsyncClient
 
 from polar.auth.scope import Scope
-from polar.compass.threads.service import scopes_fingerprint
+from polar.compass.threads.service import granted_assistant_scopes
 from polar.models import (
     CompassThread,
     CompassThreadMessage,
@@ -30,7 +30,7 @@ async def _create_thread(
         organization_id=organization.id,
         user_id=user.id if user is not None else None,
         title=title,
-        scopes_fingerprint=scopes_fingerprint(set(Scope)),
+        required_scopes=granted_assistant_scopes(set(Scope)),
     )
     await save_fixture(thread)
     return thread

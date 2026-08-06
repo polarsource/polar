@@ -1,4 +1,3 @@
-import hashlib
 import uuid
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
@@ -24,6 +23,7 @@ from polar.logging import Logger
 from polar.models import CompassThread, CompassThreadMessage
 from polar.postgres import AsyncReadSession, AsyncSession
 
+from ..assistant.agent import ASSISTANT_SCOPES
 from .repository import CompassThreadMessageRepository, CompassThreadRepository
 from .schemas import TITLE_MAX_LENGTH, CompassThreadUpdate
 
@@ -39,10 +39,13 @@ MESSAGES_LIMIT = 50
 THREADS_CAP = 500
 
 
-def scopes_fingerprint(scopes: set[Scope]) -> str:
-    """Fingerprint of a token's scopes for history replay gating."""
-    joined = ",".join(sorted(scope.value for scope in scopes))
-    return hashlib.sha256(joined.encode()).hexdigest()
+def granted_assistant_scopes(scopes: set[Scope]) -> list[Scope]:
+    """The assistant scopes a credential holds, in a stable order.
+
+    Only the assistant's own scopes count, so granting an unrelated one can't
+    hide a credential's history from it.
+    """
+    return sorted(scopes & ASSISTANT_SCOPES, key=lambda scope: scope.value)
 
 
 type TurnParts = list[dict[str, Any]]
@@ -161,7 +164,7 @@ class CompassThreadService:
             organization_id=organization_id,
             user_id=auth_subject.subject.id if is_user(auth_subject) else None,
             title=_title_from_prompt(prompt),
-            scopes_fingerprint=scopes_fingerprint(auth_subject.scopes),
+            required_scopes=granted_assistant_scopes(auth_subject.scopes),
         )
         thread = await repository.create(thread, flush=True)
 
@@ -199,7 +202,7 @@ class CompassThreadService:
             if thread is None or thread.organization_id != organization_id:
                 return None
             history, history_last_at = await self.build_message_history(
-                session, auth_subject, thread, timezone=timezone
+                session, thread, timezone=timezone
             )
             return TurnStart(thread, history, history_last_at, is_new=False)
 
@@ -265,7 +268,6 @@ class CompassThreadService:
     async def build_message_history(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
         thread: CompassThread,
         *,
         timezone: ZoneInfo,
@@ -274,19 +276,13 @@ class CompassThreadService:
         deltas of the last `HISTORY_TURNS` turns, each turn's tool results
         stamped with the date it ran in the merchant's timezone.
 
-        Scope mismatch (token scopes changed since the thread was created),
-        or stored history that no longer holds the expected shape (e.g. after
-        a pydantic-ai upgrade), degrades to a fresh context instead of
-        breaking the thread. Could be rethought to be more backwards
-        compatible.
-        """
-        if thread.scopes_fingerprint != scopes_fingerprint(auth_subject.scopes):
-            log.info(
-                "compass.thread_history_scope_mismatch",
-                thread_id=str(thread.id),
-            )
-            return None, None
+        Replaying is safe without a scope check of its own: reaching the
+        thread already means the caller holds its `required_scopes`.
 
+        Stored history that no longer holds the expected shape (e.g. after a
+        pydantic-ai upgrade) degrades to a fresh context instead of breaking
+        the thread. Could be rethought to be more backwards compatible.
+        """
         repository = CompassThreadMessageRepository.from_session(session)
         recent = await repository.get_all(
             repository.get_replay_statement(thread.id, HISTORY_TURNS)

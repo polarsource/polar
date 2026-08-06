@@ -26,8 +26,12 @@ class CompassThreadRepository(
     ) -> Select[tuple[CompassThread]]:
         """Threads owned by the caller: a user sees their own threads in
         organizations they can read analytics for; an organization token sees
-        the organization's user-less threads."""
-        statement = self.get_base_statement()
+        the organization's user-less threads. Both are narrowed to threads
+        whose `required_scopes` the caller holds.
+        """
+        statement = self.get_base_statement().where(
+            CompassThread.required_scopes.contained_by(list(auth_subject.scopes))
+        )
         if is_user(auth_subject):
             statement = statement.where(
                 CompassThread.user_id == auth_subject.subject.id,

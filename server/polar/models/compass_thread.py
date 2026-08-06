@@ -2,9 +2,12 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, String, Uuid
+from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
+from polar.auth.scope import Scope
 from polar.kit.db.models.base import RecordModel
+from polar.kit.extensions.sqlalchemy import StringEnum
 
 if TYPE_CHECKING:
     from .organization import Organization
@@ -34,7 +37,13 @@ class CompassThread(RecordModel):
         index=True,
     )
     title: Mapped[str] = mapped_column(String, nullable=False)
-    scopes_fingerprint: Mapped[str] = mapped_column(String, nullable=False)
+    required_scopes: Mapped[list[Scope]] = mapped_column(
+        ARRAY(StringEnum(Scope)), nullable=False, default=list
+    )
+    """The assistant scopes the creating credential held.
+
+    A stored turn holds the answer as rendered under these scopes, so a
+    credential may read the thread back only if it holds all of them."""
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:

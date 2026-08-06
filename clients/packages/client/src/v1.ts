@@ -3186,6 +3186,62 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/compass/threads': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Assistant Threads
+     * @description List the caller's assistant conversation threads, most recent first.
+     *
+     *     **Scopes**: `metrics:read`
+     */
+    get: operations['compass:list_threads']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/compass/threads/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Assistant Thread
+     * @description Get a thread with its rendered messages, for rehydrating the UI.
+     *
+     *     **Scopes**: `metrics:read`
+     */
+    get: operations['compass:get_thread']
+    put?: never
+    post?: never
+    /**
+     * Delete Assistant Thread
+     * @description Delete a thread and its conversation history.
+     *
+     *     **Scopes**: `metrics:write`
+     */
+    delete: operations['compass:delete_thread']
+    options?: never
+    head?: never
+    /**
+     * Update Assistant Thread
+     * @description Rename a thread.
+     *
+     *     **Scopes**: `metrics:write`
+     */
+    patch: operations['compass:update_thread']
+    trace?: never
+  }
   '/v1/license-keys/': {
     parameters: {
       query?: never
@@ -7761,6 +7817,38 @@ export interface components {
       error: 'AppealNotRejectedError'
       /** Detail */
       detail: string
+    }
+    /**
+     * AssistantBlockPart
+     * @description A renderable block, at the position the model placed it.
+     */
+    AssistantBlockPart: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'block'
+      /** Block */
+      block:
+        | components['schemas']['TextBlock']
+        | components['schemas']['MetricChartBlock']
+        | components['schemas']['InsightCardsBlock']
+        | components['schemas']['EntityListBlock']
+        | components['schemas']['DataTableBlock']
+        | components['schemas']['CustomerCardBlock']
+    }
+    /**
+     * AssistantTextPart
+     * @description A run of assistant prose, as it was streamed.
+     */
+    AssistantTextPart: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'text'
+      /** Text */
+      text: string
     }
     /**
      * AttachedCustomField
@@ -14475,6 +14563,113 @@ export interface components {
       allow_trial?: false | null
     }
     /**
+     * ColumnFormat
+     * @enum {string}
+     */
+    ColumnFormat: 'text' | 'currency' | 'datetime' | 'badge' | 'avatar'
+    /**
+     * CompassThreadMessageSchema
+     * @description One completed turn: the user's prompt and the rendered answer.
+     */
+    CompassThreadMessageSchema: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** Prompt */
+      prompt: string
+      /** Parts */
+      parts: (
+        | components['schemas']['AssistantTextPart']
+        | components['schemas']['AssistantBlockPart']
+      )[]
+    }
+    /**
+     * CompassThreadSchema
+     * @description An assistant conversation thread.
+     */
+    CompassThreadSchema: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+      /** Title */
+      title: string
+    }
+    /** CompassThreadUpdate */
+    CompassThreadUpdate: {
+      /** Title */
+      title?: string | null
+    }
+    /** CompassThreadWithMessages */
+    CompassThreadWithMessages: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+      /** Title */
+      title: string
+      /**
+       * Messages
+       * @description Most recent turns, oldest first.
+       */
+      messages: components['schemas']['CompassThreadMessageSchema'][]
+      /**
+       * Has More
+       * @description Whether older turns exist beyond the ones returned.
+       */
+      has_more: boolean
+    }
+    /**
      * ConfidenceLevel
      * @description How much we trust an insight, derived from sample size and baseline variance.
      *
@@ -16265,6 +16460,28 @@ export interface components {
       | 'too_expensive'
       | 'unused'
       | 'other'
+    /**
+     * CustomerCardBlock
+     * @description A single customer's identity header, above their orders/subscriptions.
+     */
+    CustomerCardBlock: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'customer_card'
+      /** Email */
+      email: string
+      /** Name */
+      name: string | null
+      /** Avatar Url */
+      avatar_url: string | null
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+    }
     CustomerCreate:
       | components['schemas']['CustomerIndividualCreate']
       | components['schemas']['CustomerTeamCreate']
@@ -19439,6 +19656,44 @@ export interface components {
       | '-created_at'
       | 'balance'
       | '-balance'
+    /**
+     * DataTableBlock
+     * @description Tabular entities (orders, subscriptions, customers, ...).
+     */
+    DataTableBlock: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'data_table'
+      /**
+       * Entity
+       * @description What the rows are, e.g. `subscriptions`.
+       */
+      entity: string
+      /**
+       * Title
+       * @description Heading rendered above the table.
+       */
+      title: string | null
+      /** Columns */
+      columns: components['schemas']['DataTableColumn'][]
+      /** Rows */
+      rows: {
+        [key: string]: string | number | null
+      }[]
+      /** Total Count */
+      total_count: number
+    }
+    /** DataTableColumn */
+    DataTableColumn: {
+      /** Key */
+      key: string
+      /** Label */
+      label: string
+      /** @default text */
+      format: components['schemas']['ColumnFormat']
+    }
     /** DiscordGuild */
     DiscordGuild: {
       /** Name */
@@ -20876,6 +21131,36 @@ export interface components {
       /** Return To */
       return_to?: string | null
     }
+    /**
+     * EntityListBlock
+     * @description A few entities as a compact list; same shape as the table so the
+     *     client formats values (currency, dates) identically in both.
+     */
+    EntityListBlock: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'entity_list'
+      /**
+       * Entity
+       * @description What the items are, e.g. `orders`.
+       */
+      entity: string
+      /**
+       * Title
+       * @description Heading rendered above the list.
+       */
+      title: string | null
+      /** Columns */
+      columns: components['schemas']['DataTableColumn'][]
+      /** Rows */
+      rows: {
+        [key: string]: string | number | null
+      }[]
+      /** Total Count */
+      total_count: number
+    }
     Event:
       | components['schemas']['SystemEvent']
       | components['schemas']['UserEvent']
@@ -21718,6 +22003,19 @@ export interface components {
       drivers?: components['schemas']['InsightDriver'][]
     }
     /**
+     * InsightCardsBlock
+     * @description Compass insights, rendered with the same card as the feed.
+     */
+    InsightCardsBlock: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'insight_cards'
+      /** Insights */
+      insights: components['schemas']['Insight'][]
+    }
+    /**
      * InsightCategory
      * @description Buckets an insight by which aspect of the business it speaks to.
      * @enum {string}
@@ -22467,6 +22765,12 @@ export interface components {
     ListResource_Checkout_: {
       /** Items */
       items: components['schemas']['Checkout'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[CompassThreadSchema] */
+    ListResource_CompassThreadSchema_: {
+      /** Items */
+      items: components['schemas']['CompassThreadSchema'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[CustomField] */
@@ -23708,6 +24012,44 @@ export interface components {
       display_name: string
       /** @description Type of the metric, useful to know the unit or format of the value. */
       type: components['schemas']['MetricType']
+    }
+    /**
+     * MetricChartBlock
+     * @description A single metric's series over the requested window.
+     */
+    MetricChartBlock: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'metric_chart'
+      /**
+       * Metric
+       * @description Metric slug, e.g. `monthly_recurring_revenue`.
+       */
+      metric: string
+      /**
+       * Label
+       * @description Human-readable metric name.
+       */
+      label: string
+      /**
+       * Unit
+       * @description Metric unit type, e.g. `currency` or `scalar`.
+       */
+      unit: string
+      /** Points */
+      points: components['schemas']['MetricChartPoint'][]
+    }
+    /** MetricChartPoint */
+    MetricChartPoint: {
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      /** Value */
+      value: number
     }
     /**
      * MetricDashboardCreate
@@ -34862,6 +35204,19 @@ export interface components {
        * @description Number of distinct jurisdictions tax was remitted in.
        */
       jurisdiction_count: number
+    }
+    /**
+     * TextBlock
+     * @description Plain narrated text.
+     */
+    TextBlock: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'text'
+      /** Text */
+      text: string
     }
     /**
      * TimeInterval
@@ -46402,6 +46757,167 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['Insight'][]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'compass:list_threads': {
+    parameters: {
+      query: {
+        /** @description Organization whose threads to list. */
+        organization_id: string
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_CompassThreadSchema_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'compass:get_thread': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The thread ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CompassThreadWithMessages']
+        }
+      }
+      /** @description Thread not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'compass:delete_thread': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The thread ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Thread deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Thread not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'compass:update_thread': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The thread ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CompassThreadUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CompassThreadSchema']
+        }
+      }
+      /** @description Thread not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */
@@ -63482,6 +63998,12 @@ export const aggregationFunctionValues: ReadonlyArray<
 export const appealDecisionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AppealDecision']
 > = ['approved', 'rejected']
+export const assistantBlockPartKindValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['AssistantBlockPart']['kind']
+> = ['block']
+export const assistantTextPartKindValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['AssistantTextPart']['kind']
+> = ['text']
 export const authorizeResponseOrganizationSub_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AuthorizeResponseOrganization']['sub_type']
 > = ['organization']
@@ -63717,6 +64239,9 @@ export const checkoutSortPropertyValues: ReadonlyArray<
 export const checkoutStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CheckoutStatus']
 > = ['open', 'expired', 'confirmed', 'succeeded', 'failed']
+export const columnFormatValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ColumnFormat']
+> = ['text', 'currency', 'datetime', 'badge', 'avatar']
 export const confidenceLevelValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfidenceLevel']
 > = ['low', 'medium', 'high']
@@ -64332,6 +64857,9 @@ export const customerCancellationReasonValues: ReadonlyArray<
   'unused',
   'other',
 ]
+export const customerCardBlockTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['CustomerCardBlock']['type']
+> = ['customer_card']
 export const customerCreatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerCreatedEvent']['name']
 > = ['customer.created']
@@ -64442,6 +64970,9 @@ export const customerUpdatedEventNameValues: ReadonlyArray<
 export const customerWalletSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerWalletSortProperty']
 > = ['created_at', '-created_at', 'balance', '-balance']
+export const dataTableBlockTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['DataTableBlock']['type']
+> = ['data_table']
 export const discountDurationValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DiscountDuration']
 > = ['once', 'forever', 'repeating']
@@ -64501,6 +65032,9 @@ export const downloadableFileCreateServiceValues: ReadonlyArray<
 export const downloadableFileReadServiceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DownloadableFileRead']['service']
 > = ['downloadable']
+export const entityListBlockTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['EntityListBlock']['type']
+> = ['entity_list']
 export const eventNamesSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['EventNamesSortProperty']
 > = [
@@ -64572,6 +65106,9 @@ export const filterOperatorValues: ReadonlyArray<
 export const identityVerificationStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['IdentityVerificationStatus']
 > = ['unverified', 'pending', 'verified', 'failed']
+export const insightCardsBlockTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['InsightCardsBlock']['type']
+> = ['insight_cards']
 export const insightCategoryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['InsightCategory']
 > = ['revenue', 'retention', 'growth', 'risk', 'cost', 'product']
@@ -64643,6 +65180,9 @@ export const meterSortPropertyValues: ReadonlyArray<
 export const meterUnitValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterUnit']
 > = ['scalar', 'token', 'custom']
+export const metricChartBlockTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MetricChartBlock']['type']
+> = ['metric_chart']
 export const metricTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MetricType']
 > = ['scalar', 'currency', 'currency_sub_cent', 'percentage']
@@ -66937,6 +67477,9 @@ export const taxJurisdictionSortPropertyValues: ReadonlyArray<
   'country',
   '-country',
 ]
+export const textBlockTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['TextBlock']['type']
+> = ['text']
 export const timeIntervalValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TimeInterval']
 > = ['year', 'month', 'week', 'day', 'hour']

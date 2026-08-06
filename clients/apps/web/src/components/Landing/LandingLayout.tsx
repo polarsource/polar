@@ -4,9 +4,8 @@ import { PolarLogotype } from '@/components/Layout/Public/PolarLogotype'
 import Footer from '@/components/Organization/Footer'
 import { usePostHog } from '@/hooks/posthog'
 import ArrowForward from '@mui/icons-material/ArrowForward'
-import { Text } from '@polar-sh/orbit'
+import { Modal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Button } from '@polar-sh/orbit'
 import {
   Sidebar,
   SidebarContent,
@@ -17,14 +16,11 @@ import {
 } from '@polar-sh/ui/components/atoms/Sidebar'
 import { motion } from 'motion/react'
 import Link from 'next/link'
-import { usePathname } from 'next/navigation'
-import { ComponentProps, PropsWithChildren, useEffect, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { PropsWithChildren } from 'react'
 import { AuthModal } from '../Auth/AuthModal'
-import GetStartedButton from '../Auth/GetStartedButton'
-import { Modal } from '@polar-sh/orbit'
 import { useModal } from '../Modal/useModal'
-import { NavPopover, NavPopoverSection } from './NavPopover'
+import { LandingPageDesktopNavigation } from './DesktopNav'
+import { NavLink } from './NavLink'
 
 const StartupProgramBanner = () => (
   <Link href="/startup-program" prefetch>
@@ -68,66 +64,6 @@ export default function Layout({ children }: PropsWithChildren) {
         </div>
       </div>
     </>
-  )
-}
-
-const NavLink = ({
-  href,
-  className,
-  children,
-  isActive: _isActive,
-  target,
-  onClick,
-  ...props
-}: ComponentProps<typeof Link> & {
-  isActive?: (pathname: string) => boolean
-}) => {
-  const pathname = usePathname()
-  const hrefString = href.toString()
-  const isActive = _isActive
-    ? _isActive(pathname)
-    : pathname.startsWith(hrefString)
-  const isExternal = hrefString.startsWith('http')
-
-  const handleClick = (event: React.MouseEvent<HTMLAnchorElement>) => {
-    onClick?.(event)
-    if (event.defaultPrevented) return
-
-    const hashIndex = hrefString.indexOf('#')
-    if (hashIndex === -1) return
-
-    const targetPath = hrefString.slice(0, hashIndex) || '/'
-    if (targetPath !== pathname) return
-
-    const targetId = hrefString.slice(hashIndex + 1)
-    if (!targetId) return
-
-    event.preventDefault()
-    // Toggle sidebar hack for mobile
-    const delay = onClick ? 350 : 0
-    window.setTimeout(() => {
-      const element = document.getElementById(targetId)
-      if (!element) return
-      element.scrollIntoView()
-      window.history.replaceState(null, '', hrefString)
-    }, delay)
-  }
-
-  return (
-    <Link
-      href={href}
-      target={isExternal ? '_blank' : target}
-      prefetch
-      onClick={handleClick}
-      className={twMerge(
-        'dark:text-polar-500 -m-1 flex items-center gap-x-2 p-1 text-gray-500 transition-colors hover:text-black dark:hover:text-white',
-        isActive && 'text-black dark:text-white',
-        className,
-      )}
-      {...props}
-    >
-      {children}
-    </Link>
   )
 }
 
@@ -227,204 +163,6 @@ const LandingPageMobileNavigation = () => {
         className="lg:w-full lg:max-w-[480px]"
       />
     </>
-  )
-}
-
-const LandingPageDesktopNavigation = () => {
-  const posthog = usePostHog()
-  const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
-  const pathname = usePathname()
-  const [isScrolled, setIsScrolled] = useState(false)
-
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 0)
-    handleScroll()
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
-
-  const onLoginClick = () => {
-    posthog.capture('global:user:login:click')
-    showModal()
-  }
-
-  const featuresSections: NavPopoverSection[] = [
-    {
-      items: [
-        {
-          href: '/features/usage-billing',
-          label: 'Usage Billing',
-          subtitle: 'Meter and bill any event',
-        },
-        {
-          href: '/features/subscriptions',
-          label: 'Subscriptions',
-          subtitle: 'Recurring revenue on autopilot',
-        },
-        {
-          href: '/features/seats',
-          label: 'Seats',
-          subtitle: 'Pricing that scales with teams',
-        },
-        {
-          href: '/features/credits',
-          label: 'Credits',
-          subtitle: 'Prepay and draw down over time',
-        },
-        {
-          href: '/features/trials',
-          label: 'Trials',
-          subtitle: 'Trials that convert themselves',
-        },
-        {
-          href: '/features/discounts',
-          label: 'Discounts',
-          subtitle: 'Promo codes & recurring deals',
-        },
-        {
-          href: '/features/cost-insights',
-          label: 'Cost Insights',
-          subtitle: 'Cost, profit, and LTV per customer',
-        },
-        {
-          href: '/features/finance',
-          label: 'Finance',
-          subtitle: 'Balance, ledger, fees, payouts',
-        },
-        {
-          href: '/features/merchant-of-record',
-          label: 'Merchant of Record',
-          subtitle: 'Global tax compliance, on us',
-        },
-      ],
-    },
-  ]
-
-  const docsSections: NavPopoverSection[] = [
-    {
-      title: 'Integrate',
-      items: [
-        {
-          href: '/docs/integrate/sdk/adapters/nextjs',
-          label: 'Next.js',
-          target: '_blank',
-        },
-        {
-          href: '/docs/integrate/sdk/adapters/better-auth',
-          label: 'Better Auth',
-          target: '_blank',
-        },
-        {
-          href: '/docs/integrate/sdk/adapters/hono',
-          label: 'Hono',
-          target: '_blank',
-        },
-        {
-          href: '/docs/integrate/sdk/adapters/laravel',
-          label: 'Laravel',
-          target: '_blank',
-        },
-        {
-          href: '/docs/integrate/sdk/adapters/hono',
-          target: '_blank',
-          label: 'All 13 Adapters',
-        },
-      ],
-    },
-    {
-      title: 'Features',
-      items: [
-        {
-          href: '/docs/features/products',
-          label: 'Documentation Portal',
-          target: '_blank',
-          subtitle: 'Get started with Polar',
-        },
-        {
-          href: '/docs/features/products',
-          label: 'Products & Subscriptions',
-          target: '_blank',
-          subtitle: 'Flexible pricing models',
-        },
-        {
-          href: '/docs/features/checkout/links',
-          target: '_blank',
-          label: 'Checkouts',
-          subtitle: 'Checkout Links & Embeds',
-        },
-        {
-          href: '/docs/features/usage-based-billing/introduction',
-          label: 'Usage Billing',
-          subtitle: 'Ingestion-based Billing',
-        },
-        {
-          href: '/docs/features/benefits',
-          label: 'Benefits',
-          subtitle: 'Entitlement Automation',
-        },
-        {
-          href: '/docs/features/finance/payouts',
-          label: 'Finance & Payouts',
-          subtitle: 'Detailed financial insights',
-          target: '_blank',
-        },
-      ],
-    },
-  ]
-
-  return (
-    <div
-      className={twMerge(
-        'dark:text-polar-50 dark:bg-polar-950 hidden w-full flex-col items-center gap-12 border-b border-transparent bg-white py-6 transition-colors md:flex',
-        isScrolled && 'dark:border-polar-800 border-gray-200',
-      )}
-    >
-      <div className="relative flex w-full flex-row items-center justify-between lg:max-w-7xl">
-        <Link href="/">
-          <PolarLogotype logoVariant="logotype" size={100} />
-        </Link>
-
-        <ul className="absolute left-1/2 mx-auto flex -translate-x-1/2 flex-row gap-x-8 font-medium">
-          <li>
-            <NavPopover
-              trigger="Features"
-              sections={featuresSections}
-              isActive={pathname.startsWith('/features')}
-            />
-          </li>
-          <li>
-            <NavPopover trigger="Docs" sections={docsSections} layout="flex" />
-          </li>
-          <li>
-            <NavLink href="/#pricing">Pricing</NavLink>
-          </li>
-          <li>
-            <NavLink href="/blog">Blog</NavLink>
-          </li>
-          <li>
-            <NavLink href="/company">Company</NavLink>
-          </li>
-        </ul>
-
-        <div className="flex flex-row items-center gap-x-4">
-          <Button
-            onClick={onLoginClick}
-            variant="ghost"
-            className="rounded-full"
-          >
-            Sign in
-          </Button>
-          <GetStartedButton size="default" />
-        </div>
-      </div>
-      <Modal
-        title="Sign in"
-        isShown={isModalShown}
-        hide={hideModal}
-        modalContent={<AuthModal />}
-        className="lg:w-full lg:max-w-[480px]"
-      />
-    </div>
   )
 }
 

@@ -2,7 +2,7 @@
 
 import { fetchCompassThread } from '@/hooks/queries'
 import { getServerURL } from '@/utils/api'
-import { schemas } from '@polar-sh/client'
+import { NotFoundResponseError, schemas } from '@polar-sh/client'
 import { useQueryClient } from '@tanstack/react-query'
 import { useCallback, useEffect, useRef, useState } from 'react'
 
@@ -270,13 +270,13 @@ export const useCompassAssistant = ({
         if (claim !== loadRef.current) return
         hydrate(detail)
         onThreadChangeRef.current?.(detail.id)
-      } catch {
-        // Deleted or inaccessible thread: fall back to a fresh conversation
-        // (newChat also drops the seeded thread id, so the next send doesn't
-        // post against the dead thread). A superseded load stays quiet: the
-        // conversation on screen is no longer the one that failed.
+      } catch (error) {
         if (claim !== loadRef.current) return
-        newChat()
+        // Only a thread that is gone justifies clearing the screen, a
+        // transient failure keeps what's on it.
+        if (error instanceof NotFoundResponseError) {
+          newChat()
+        }
       }
     },
     [claimConversation, queryClient, hydrate, newChat],

@@ -1,7 +1,7 @@
 """add compass threads
 
 Revision ID: aaa111ca733d
-Revises: f555e6c3e8f1
+Revises: 71ec0612f44f
 Create Date: 2026-07-30 16:12:22.363248
 
 """

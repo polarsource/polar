@@ -200,6 +200,7 @@ async def assistant_chat(
     if organization is None or not organization.is_compass_enabled:
         raise ResourceNotFound()
 
+    tz = ZoneInfo(timezone)
     turn = await compass_thread_service.begin_turn(
         session,
         write_sessionmaker,
@@ -207,11 +208,11 @@ async def assistant_chat(
         organization_id=organization.id,
         prompt=body.prompt,
         thread_id=body.thread_id,
+        timezone=tz,
     )
     if turn is None:
         raise ResourceNotFound()
 
-    tz = ZoneInfo(timezone)
     agent, model_provider, model_name = build_assistant_agent(auth_subject.scopes)
     record_turn = compass_thread_service.turn_recorder(
         write_sessionmaker, turn.thread.id, body.prompt

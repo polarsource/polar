@@ -2,13 +2,18 @@ import hashlib
 import uuid
 from collections.abc import Awaitable, Callable, Sequence
 from dataclasses import dataclass
-from datetime import datetime
-from itertools import chain
+from datetime import date, datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import structlog
 from pydantic import ValidationError
-from pydantic_ai.messages import ModelMessage, ModelMessagesTypeAdapter
+from pydantic_ai.messages import (
+    ModelMessage,
+    ModelMessagesTypeAdapter,
+    ModelRequest,
+    ToolReturnPart,
+)
 
 from polar.auth.models import AuthSubject, Organization, User, is_user
 from polar.auth.scope import Scope
@@ -57,6 +62,24 @@ class TurnStart:
     history: ModelHistory | None
     history_last_at: datetime | None
     is_new: bool
+
+
+def _stamp_fetch_date(messages: ModelHistory, fetched_on: date) -> None:
+    """Prefix every tool result of one replayed turn with its fetch date.
+
+    pydantic-ai keeps a `timestamp` on tool return parts but never sends it to
+    the model: only the content reaches the provider. Without this stamp a
+    result fetched days ago is indistinguishable from one fetched this turn,
+    and the freshness rule in the system prompt has nothing to act on. The
+    date is the turn's date in the merchant's timezone, so it compares
+    directly against the "today" the run context provides.
+    """
+    for message in messages:
+        if not isinstance(message, ModelRequest):
+            continue
+        for part in message.parts:
+            if isinstance(part, ToolReturnPart) and isinstance(part.content, str):
+                part.content = f"[fetched {fetched_on.isoformat()}] {part.content}"
 
 
 def _title_from_prompt(prompt: str) -> str:
@@ -162,6 +185,7 @@ class CompassThreadService:
         organization_id: uuid.UUID,
         prompt: str,
         thread_id: uuid.UUID | None,
+        timezone: ZoneInfo,
     ) -> TurnStart | None:
         """Resolve the thread one assistant turn runs on.
 
@@ -175,7 +199,7 @@ class CompassThreadService:
             if thread is None or thread.organization_id != organization_id:
                 return None
             history, history_last_at = await self.build_message_history(
-                session, auth_subject, thread
+                session, auth_subject, thread, timezone=timezone
             )
             return TurnStart(thread, history, history_last_at, is_new=False)
 
@@ -243,9 +267,12 @@ class CompassThreadService:
         session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         thread: CompassThread,
+        *,
+        timezone: ZoneInfo,
     ) -> tuple[ModelHistory | None, datetime | None]:
         """The model context for the next turn: the concatenated per-turn
-        deltas of the last `HISTORY_TURNS` turns.
+        deltas of the last `HISTORY_TURNS` turns, each turn's tool results
+        stamped with the date it ran in the merchant's timezone.
 
         Scope mismatch (token scopes changed since the thread was created),
         or stored history that no longer holds the expected shape (e.g. after
@@ -265,25 +292,24 @@ class CompassThreadService:
             repository.get_replay_statement(thread.id, HISTORY_TURNS)
         )
 
+        history: ModelHistory = []
         try:
-            # A row whose JSONB is not a list of parts — hand-edited, or a
-            # JSON `null` the NOT NULL constraint doesn't catch — fails here
-            # on flattening rather than on validation.
-            combined = list(
-                chain.from_iterable(
-                    message.model_messages for message in reversed(recent)
-                )
-            )
-            if not combined:
-                return None, None
-            history = ModelMessagesTypeAdapter.validate_python(combined)
-            return history, recent[0].created_at
-        except (TypeError, ValidationError):
+            # Validated per turn — a turn is the unit a fetch date applies to.
+            # Non-list JSONB (hand-edited / null) fails validation too.
+            for message in reversed(recent):
+                turn = ModelMessagesTypeAdapter.validate_python(message.model_messages)
+                _stamp_fetch_date(turn, message.created_at.astimezone(timezone).date())
+                history.extend(turn)
+        except ValidationError:
             log.warning(
                 "compass.thread_history_invalid",
                 thread_id=str(thread.id),
             )
             return None, None
+
+        if not history:
+            return None, None
+        return history, recent[0].created_at
 
 
 compass_thread = CompassThreadService()

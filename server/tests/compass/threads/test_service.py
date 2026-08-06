@@ -1,5 +1,6 @@
 from datetime import datetime, timedelta
 from typing import Any
+from zoneinfo import ZoneInfo
 
 import pytest
 from pydantic_ai.messages import (
@@ -7,6 +8,8 @@ from pydantic_ai.messages import (
     ModelRequest,
     ModelResponse,
     TextPart,
+    ToolCallPart,
+    ToolReturnPart,
     UserPromptPart,
 )
 from pytest_mock import MockerFixture
@@ -28,6 +31,8 @@ from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 
+UTC = ZoneInfo("UTC")
+
 
 def _turn_model_messages(prompt: str, answer: str) -> list[dict[str, Any]]:
     return ModelMessagesTypeAdapter.dump_python(
@@ -37,6 +42,34 @@ def _turn_model_messages(prompt: str, answer: str) -> list[dict[str, Any]]:
         ],
         mode="json",
     )
+
+
+def _turn_with_tool_call(
+    prompt: str, tool_result: str, answer: str
+) -> list[dict[str, Any]]:
+    return ModelMessagesTypeAdapter.dump_python(
+        [
+            ModelRequest(parts=[UserPromptPart(content=prompt)]),
+            ModelResponse(parts=[ToolCallPart(tool_name="get_metrics", args={})]),
+            ModelRequest(
+                parts=[
+                    ToolReturnPart(tool_name="get_metrics", content=tool_result),
+                ]
+            ),
+            ModelResponse(parts=[TextPart(content=answer)]),
+        ],
+        mode="json",
+    )
+
+
+def _tool_results(history: list[Any]) -> list[Any]:
+    return [
+        part.content
+        for message in history
+        if isinstance(message, ModelRequest)
+        for part in message.parts
+        if isinstance(part, ToolReturnPart)
+    ]
 
 
 async def _create_thread(
@@ -335,7 +368,7 @@ class TestBuildMessageHistory:
         thread = await _create_thread(save_fixture, organization, user=user)
 
         history, last_at = await compass_thread_service.build_message_history(
-            session, auth_subject, thread
+            session, auth_subject, thread, timezone=UTC
         )
 
         assert history is None
@@ -366,7 +399,7 @@ class TestBuildMessageHistory:
             )
 
         history, last_at = await compass_thread_service.build_message_history(
-            session, auth_subject, thread
+            session, auth_subject, thread, timezone=UTC
         )
 
         assert history is not None
@@ -402,7 +435,7 @@ class TestBuildMessageHistory:
             )
 
         history, _ = await compass_thread_service.build_message_history(
-            session, auth_subject, thread
+            session, auth_subject, thread, timezone=UTC
         )
 
         assert history is not None
@@ -433,11 +466,52 @@ class TestBuildMessageHistory:
         )
 
         history, last_at = await compass_thread_service.build_message_history(
-            session, auth_subject, thread
+            session, auth_subject, thread, timezone=UTC
         )
 
         assert history is None
         assert last_at is None
+
+    @pytest.mark.auth
+    async def test_stamps_each_turn_tool_results_with_its_local_fetch_date(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user: User,
+        organization: Organization,
+    ) -> None:
+        """The model only sees tool result content, so the fetch date has to be
+        in it for the staleness rule to be applicable. The second turn ran late
+        in the merchant's day: it is stamped with that local day, not the UTC
+        one it rolled over into."""
+        thread = await _create_thread(save_fixture, organization, user=user)
+        for created_at, revenue in [
+            (datetime(2026, 8, 4, 12, 0, tzinfo=UTC), "$100.00"),
+            (datetime(2026, 8, 6, 2, 0, tzinfo=UTC), "$180.00"),
+        ]:
+            await save_fixture(
+                CompassThreadMessage(
+                    thread=thread,
+                    prompt="revenue?",
+                    parts=[],
+                    model_messages=_turn_with_tool_call("revenue?", revenue, "ok"),
+                    created_at=created_at,
+                )
+            )
+
+        history, _ = await compass_thread_service.build_message_history(
+            session,
+            auth_subject,
+            thread,
+            timezone=ZoneInfo("America/Los_Angeles"),
+        )
+
+        assert history is not None
+        assert _tool_results(history) == [
+            "[fetched 2026-08-04] $100.00",
+            "[fetched 2026-08-05] $180.00",
+        ]
 
     @pytest.mark.auth
     async def test_different_scopes_degrade_to_fresh_context(
@@ -462,7 +536,7 @@ class TestBuildMessageHistory:
         )
 
         history, last_at = await compass_thread_service.build_message_history(
-            session, auth_subject, thread
+            session, auth_subject, thread, timezone=UTC
         )
 
         assert history is None

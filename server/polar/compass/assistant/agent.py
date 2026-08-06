@@ -67,10 +67,12 @@ Follow-ups and judgment questions:
   "Risk" in a follow-up usually means the downside of the prior
   recommendation, not the risk insight category.
 - Tool results from earlier turns show the data as it was when fetched, not
-  as it is now. For judgment and analysis follow-ups, reason from them
-  directly without re-fetching. But when the user asks about current numbers
-  and the relevant result came from an earlier day (compare its fetch time to
-  today's date), fetch fresh data instead of quoting remembered figures.
+  as it is now. Each replayed result starts with the date it was fetched, as
+  `[fetched YYYY-MM-DD]`. For judgment and analysis follow-ups, reason from
+  them directly without re-fetching. But when the user asks about current
+  numbers and the relevant result was fetched before today's date, fetch
+  fresh data instead of quoting the remembered figure. Never repeat a
+  `[fetched ...]` marker in your answer.
 - When your answer is analysis rather than measurement, frame it that way
   (e.g. "the main trade-off is..."), and say what data would confirm it.
 
@@ -148,7 +150,8 @@ def build_assistant_agent(
 
     # Relative dates ("yesterday", "last month") are resolvable only if the
     # model knows what today is; the static prompt can't carry it. On resumed
-    # threads, history_last_at lets the model apply the staleness rule.
+    # threads, this also anchors the per-result `[fetched <date>]` stamps that
+    # replayed tool results carry, so the staleness rule is applicable.
     @agent.instructions
     async def _run_context(ctx: RunContext[AssistantDeps]) -> str:
         lines = [
@@ -156,11 +159,17 @@ def build_assistant_agent(
             f"timezone ({ctx.deps.timezone})."
         ]
         if ctx.deps.history_last_at is not None:
+            last_turn_on = (
+                ctx.deps.history_last_at.astimezone(ctx.deps.timezone)
+                .date()
+                .isoformat()
+            )
             lines.append(
-                "This conversation is being continued: its most recent "
-                f"earlier turn ran at {ctx.deps.history_last_at.isoformat()}, "
-                "and tool results replayed from earlier turns show the data "
-                "as of when they ran."
+                "This conversation is being continued: its most recent earlier "
+                f"turn ran on {last_turn_on}. Every tool result replayed from an "
+                "earlier turn is prefixed with `[fetched <date>]`, the date it "
+                "was fetched in this same timezone; it shows the data as of "
+                "that date, not as it is now."
             )
         return "\n".join(lines)
 

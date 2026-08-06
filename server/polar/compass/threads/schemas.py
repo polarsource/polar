@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import UUID4, Discriminator, Field
+from pydantic import UUID4, Discriminator, Field, StringConstraints
 
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 
@@ -8,6 +8,13 @@ from ..assistant.blocks import AssistantBlock
 
 TITLE_MAX_LENGTH = 80
 """Cap for both generated and user-supplied thread titles."""
+
+ThreadTitle = Annotated[
+    str,
+    StringConstraints(strip_whitespace=True, min_length=1, max_length=TITLE_MAX_LENGTH),
+]
+"""Stripped before the length check, so a whitespace-only title is rejected
+rather than stored as a blank row in the history menu."""
 
 
 class AssistantTextPart(Schema):
@@ -51,4 +58,4 @@ class CompassThreadWithMessages(CompassThreadSchema):
 
 
 class CompassThreadUpdate(Schema):
-    title: str | None = Field(default=None, min_length=1, max_length=TITLE_MAX_LENGTH)
+    title: ThreadTitle | None = None

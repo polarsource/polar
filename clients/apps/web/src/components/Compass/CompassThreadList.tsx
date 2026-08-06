@@ -3,7 +3,7 @@
 import { useCompassThreads, useDeleteCompassThread } from '@/hooks/queries'
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded'
 import { schemas } from '@polar-sh/client'
-import { Spinner, Text } from '@polar-sh/orbit'
+import { Button, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { differenceInCalendarDays, isToday, isYesterday } from 'date-fns'
 
@@ -86,7 +86,12 @@ export const CompassThreadList = ({
   onSelect,
   onDeleted,
 }: CompassThreadListProps) => {
-  const { data: threads, isLoading } = useCompassThreads(organization.id)
+  const {
+    data: threads,
+    isLoading,
+    isError,
+    refetch,
+  } = useCompassThreads(organization.id)
   const deleteThread = useDeleteCompassThread(organization.id)
   const items = threads?.items ?? []
 
@@ -102,6 +107,24 @@ export const CompassThreadList = ({
     return (
       <Box alignItems="center" justifyContent="center" paddingVertical="xl">
         <Spinner />
+      </Box>
+    )
+  }
+
+  if (isError) {
+    return (
+      <Box
+        flexDirection="column"
+        alignItems="center"
+        rowGap="s"
+        paddingVertical="xl"
+      >
+        <Text variant="caption" color="muted">
+          Conversations could not be loaded
+        </Text>
+        <Button variant="ghost" size="sm" onClick={() => refetch()}>
+          Try again
+        </Button>
       </Box>
     )
   }

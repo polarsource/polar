@@ -2590,7 +2590,7 @@ export interface paths {
      * Generate Order Invoice
      * @description Trigger generation of an order's invoice.
      *
-     *     **Scopes**: `orders:read`
+     *     **Scopes**: `orders:write`
      */
     post: operations['orders:generate_invoice']
     delete?: never

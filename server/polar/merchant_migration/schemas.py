@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any
 
@@ -9,6 +10,8 @@ from polar.models.merchant_migration import (
     MerchantMigrationStep,
 )
 from polar.models.merchant_migration_record import MerchantMigrationRecordStatus
+
+from .pan_transfer import PanTransferMethod, PanTransferStep
 
 
 class MerchantMigrationCreate(Schema):
@@ -153,6 +156,40 @@ class MerchantMigrationImportReport(Schema):
     )
     results: list[MerchantMigrationImportResult] = Field(
         description="Per-entity counts of what was imported vs skipped."
+    )
+
+
+class PanTransferStepComplete(Schema):
+    inputs: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Values the step collects. Which keys it accepts depends on the step; "
+            "unknown keys are rejected."
+        ),
+    )
+
+
+class PanTransferChecklist(Schema):
+    method: PanTransferMethod = Field(
+        description=(
+            "How the cards move: `pan_copy` for a Stripe source (account to "
+            "account), `pan_import` for any other vault."
+        )
+    )
+    started: bool = Field(
+        description="Whether the card transfer has been started. Steps are empty until it is."
+    )
+    current_step_key: str | None = Field(
+        description="The one step that can be acted on now. Null once every step is done."
+    )
+    destination_account_id: str | None = Field(
+        description=(
+            "The Stripe account the cards move into. The merchant needs it to "
+            "address the copy or import to Polar."
+        )
+    )
+    steps: Sequence[PanTransferStep] = Field(
+        description="The ordered checklist. Titles and guidance live in the client, keyed by `key`."
     )
 
 

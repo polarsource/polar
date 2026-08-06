@@ -5168,6 +5168,50 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/pan-transfer': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Merchant Migration Card Transfer
+     * @description **Scopes**: `organizations:write`
+     */
+    get: operations['merchant-migrations:pan_transfer']
+    put?: never
+    /**
+     * Start Merchant Migration Card Transfer
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:start_pan_transfer']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/merchant-migrations/{id}/pan-transfer/steps/{key}/complete': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Complete Merchant Migration Card Transfer Step
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:complete_pan_transfer_step']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/merchant-migrations/{id}/records': {
     parameters: {
       query?: never
@@ -28798,6 +28842,199 @@ export interface components {
       /** Max Page */
       max_page: number
     }
+    /**
+     * PanStepActor
+     * @description Who is asking to move a step, which decides what they're allowed to move.
+     * @enum {string}
+     */
+    PanStepActor: 'merchant' | 'ops' | 'system'
+    /**
+     * PanStepKind
+     * @description What the owner has to do, which is what the frontend renders.
+     * @enum {string}
+     */
+    PanStepKind: 'auto' | 'input' | 'confirm'
+    /** PanStepNotActionable */
+    PanStepNotActionable: {
+      /**
+       * Error
+       * @example PanStepNotActionable
+       * @constant
+       */
+      error: 'PanStepNotActionable'
+      /** Detail */
+      detail: string
+    }
+    /** PanStepNotFound */
+    PanStepNotFound: {
+      /**
+       * Error
+       * @example PanStepNotFound
+       * @constant
+       */
+      error: 'PanStepNotFound'
+      /** Detail */
+      detail: string
+    }
+    /** PanStepNotOwned */
+    PanStepNotOwned: {
+      /**
+       * Error
+       * @example PanStepNotOwned
+       * @constant
+       */
+      error: 'PanStepNotOwned'
+      /** Detail */
+      detail: string
+    }
+    /**
+     * PanStepOwner
+     * @description Who moves a step forward.
+     * @enum {string}
+     */
+    PanStepOwner: 'merchant' | 'polar_ops' | 'polar_app' | 'stripe' | 'provider'
+    /**
+     * PanStepStatus
+     * @enum {string}
+     */
+    PanStepStatus: 'blocked' | 'pending' | 'in_progress' | 'completed'
+    /** PanTransferAlreadyStarted */
+    PanTransferAlreadyStarted: {
+      /**
+       * Error
+       * @example PanTransferAlreadyStarted
+       * @constant
+       */
+      error: 'PanTransferAlreadyStarted'
+      /** Detail */
+      detail: string
+    }
+    /** PanTransferChecklist */
+    PanTransferChecklist: {
+      /** @description How the cards move: `pan_copy` for a Stripe source (account to account), `pan_import` for any other vault. */
+      method: components['schemas']['PanTransferMethod']
+      /**
+       * Started
+       * @description Whether the card transfer has been started. Steps are empty until it is.
+       */
+      started: boolean
+      /**
+       * Current Step Key
+       * @description The one step that can be acted on now. Null once every step is done.
+       */
+      current_step_key: string | null
+      /**
+       * Destination Account Id
+       * @description The Stripe account the cards move into. The merchant needs it to address the copy or import to Polar.
+       */
+      destination_account_id: string | null
+      /**
+       * Steps
+       * @description The ordered checklist. Titles and guidance live in the client, keyed by `key`.
+       */
+      steps: components['schemas']['PanTransferStep'][]
+    }
+    /**
+     * PanTransferMethod
+     * @description How the cards reach Polar's Stripe account.
+     * @enum {string}
+     */
+    PanTransferMethod: 'pan_copy' | 'pan_import'
+    /** PanTransferNotReady */
+    PanTransferNotReady: {
+      /**
+       * Error
+       * @example PanTransferNotReady
+       * @constant
+       */
+      error: 'PanTransferNotReady'
+      /** Detail */
+      detail: string
+    }
+    /** PanTransferNotStarted */
+    PanTransferNotStarted: {
+      /**
+       * Error
+       * @example PanTransferNotStarted
+       * @constant
+       */
+      error: 'PanTransferNotStarted'
+      /** Detail */
+      detail: string
+    }
+    /**
+     * PanTransferStep
+     * @description One checklist step, as persisted on `MerchantMigration.pan_transfer_steps`.
+     *
+     *     The row is self-contained: owner and kind are copied off the template so both
+     *     the stored JSONB and the API response can be read without resolving a
+     *     template. The template stays authoritative for the rules that gate a
+     *     transition (`auto_complete`, the accepted inputs), so a step whose key no
+     *     longer has a template can't be completed.
+     */
+    PanTransferStep: {
+      /**
+       * Key
+       * @description Stable identifier. The client keys its copy off it.
+       */
+      key: string
+      /** @description Who moves this step forward. */
+      owner: components['schemas']['PanStepOwner']
+      /** @description What the owner does, so the client knows what to render. */
+      kind: components['schemas']['PanStepKind']
+      /** @description Where the step is. Only one step is actionable at a time. */
+      status: components['schemas']['PanStepStatus']
+      /**
+       * Inputs
+       * @description Values collected on this step.
+       */
+      inputs: {
+        [key: string]: string
+      }
+      /**
+       * Note
+       * @description Free text from Polar Ops, shown to the merchant. How a weeks-long wait on Stripe or the provider gets explained without a support thread.
+       */
+      note: string | null
+      /**
+       * Expected At
+       * @description When Ops expects this step to land.
+       */
+      expected_at: string | null
+      /**
+       * Started At
+       * @description When the step became actionable.
+       */
+      started_at: string | null
+      /**
+       * Completed At
+       * @description When the step was completed.
+       */
+      completed_at: string | null
+      /** @description Who completed the step. */
+      completed_by: components['schemas']['PanStepActor'] | null
+    }
+    /** PanTransferStepComplete */
+    PanTransferStepComplete: {
+      /**
+       * Inputs
+       * @description Values the step collects. Which keys it accepts depends on the step; unknown keys are rejected.
+       */
+      inputs?: {
+        [key: string]: string
+      }
+    }
+    /** PanTransferUnavailable */
+    PanTransferUnavailable: {
+      /**
+       * Error
+       * @example PanTransferUnavailable
+       * @constant
+       */
+      error: 'PanTransferUnavailable'
+      /** Detail */
+      detail: string
+    }
     /** PauseResumeNotAllowed */
     PauseResumeNotAllowed: {
       /**
@@ -51506,6 +51743,187 @@ export interface operations {
       }
     }
   }
+  'merchant-migrations:pan_transfer': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PanTransferChecklist']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:start_pan_transfer': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PanTransferChecklist']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description The catalog isn't imported yet, the transfer already started, or card transfers aren't configured. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['PanTransferNotReady']
+            | components['schemas']['PanTransferAlreadyStarted']
+            | components['schemas']['PanTransferUnavailable']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:complete_pan_transfer_step': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+        key: string
+      }
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'application/json':
+          | components['schemas']['PanTransferStepComplete']
+          | null
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PanTransferChecklist']
+        }
+      }
+      /** @description Not allowed to manage this organization, or the step is completed by someone else. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['PanStepNotOwned']
+        }
+      }
+      /** @description Merchant migration or step not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['MerchantMigrationNotFound']
+            | components['schemas']['PanStepNotFound']
+        }
+      }
+      /** @description The card transfer hasn't started, or this isn't the step to act on. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['PanTransferNotStarted']
+            | components['schemas']['PanStepNotActionable']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'merchant-migrations:records': {
     parameters: {
       query?: {
@@ -65737,6 +66155,21 @@ export const organizationWithRoleCountryAnyOf0Values: ReadonlyArray<
   'ZM',
   'ZW',
 ]
+export const panStepActorValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PanStepActor']
+> = ['merchant', 'ops', 'system']
+export const panStepKindValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PanStepKind']
+> = ['auto', 'input', 'confirm']
+export const panStepOwnerValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PanStepOwner']
+> = ['merchant', 'polar_ops', 'polar_app', 'stripe', 'provider']
+export const panStepStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PanStepStatus']
+> = ['blocked', 'pending', 'in_progress', 'completed']
+export const panTransferMethodValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PanTransferMethod']
+> = ['pan_copy', 'pan_import']
 export const paymentProcessorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PaymentProcessor']
 > = ['stripe']

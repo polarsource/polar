@@ -8,7 +8,6 @@ from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.config import settings
-from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
 from polar.kit.pagination import PaginationParams
@@ -22,9 +21,19 @@ from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
 
+from . import pan_transfer
 from .adapters import SourceAdapter, StripeAdapter
 from .canonical import CanonicalRecord, deserialize
+from .errors import MerchantMigrationError
 from .importer import CatalogImporter
+from .pan_transfer import (
+    PanStepActor,
+    PanTransferAlreadyStarted,
+    PanTransferNotReady,
+    PanTransferNotStarted,
+    PanTransferStep,
+    PanTransferUnavailable,
+)
 from .precheck import classify_records, import_blockers, precheck_engine
 from .repository import (
     MerchantMigrationRecordRepository,
@@ -34,6 +43,7 @@ from .schemas import (
     MerchantMigrationCreate,
     MerchantMigrationImportReport,
     MerchantMigrationRecordItem,
+    PanTransferChecklist,
     PrecheckEntity,
     PrecheckIssue,
     PrecheckReasonLevel,
@@ -71,9 +81,6 @@ class StripeSourceCredentials(TypedDict):
     api_key_encrypted: str
     stripe_user_id: str | None
     livemode: bool
-
-
-class MerchantMigrationError(PolarError): ...
 
 
 class MerchantMigrationNotFound(MerchantMigrationError):
@@ -333,9 +340,103 @@ class MerchantMigrationService:
         report.step = MerchantMigrationStep.create_catalog
         return report
 
-    async def _get_manageable(
+    async def get_pan_transfer(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> PanTransferChecklist:
+        """The card-move checklist. Returns an empty one before it's started, so
+        the client can show the method and the destination account up front."""
+        migration = await self._get_manageable(session, auth_subject, migration_id)
+        return self._checklist(migration)
+
+    async def start_pan_transfer(
         self,
         session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> PanTransferChecklist:
+        """Move the migration onto the card step and lay out its checklist. The
+        catalog has to exist first: the checklist verifies cards against imported
+        subscriptions, and there's nothing to verify against without them."""
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
+        if migration.pan_transfer_steps:
+            raise PanTransferAlreadyStarted()
+        if migration.step != MerchantMigrationStep.create_catalog:
+            raise PanTransferNotReady()
+        # The first step tells the merchant which Stripe account to send the cards
+        # to. Without it configured we'd mark that step done while showing them
+        # nothing, and they'd address the transfer to no one.
+        if not settings.MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID:
+            raise PanTransferUnavailable()
+
+        steps = pan_transfer.build(migration.pan_transfer_method)
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.update(
+            migration,
+            update_dict={
+                "step": MerchantMigrationStep.copy_cards,
+                "pan_transfer_steps": steps,
+            },
+        )
+        return self._checklist(migration, steps)
+
+    async def complete_pan_step(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+        key: str,
+        *,
+        inputs: dict[str, str],
+    ) -> PanTransferChecklist:
+        """Complete a merchant-owned step. Steps owned by Polar Ops, Stripe or the
+        source provider are moved from the backoffice, not here."""
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
+        if not migration.pan_transfer_steps:
+            raise PanTransferNotStarted()
+
+        steps = pan_transfer.complete(
+            migration.pan_transfer_method,
+            list(migration.pan_transfer_steps),
+            key,
+            actor=PanStepActor.merchant,
+            inputs=inputs,
+        )
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.update(migration, update_dict={"pan_transfer_steps": steps})
+        return self._checklist(migration, steps)
+
+    def _checklist(
+        self,
+        migration: MerchantMigration,
+        # `Sequence`, not `list`: this class defines a `list` method, which would
+        # shadow the builtin in an annotation evaluated in the class body.
+        steps: Sequence[PanTransferStep] | None = None,
+    ) -> PanTransferChecklist:
+        if steps is None:
+            steps = migration.pan_transfer_steps
+        current = pan_transfer.current(steps)
+        return PanTransferChecklist(
+            method=migration.pan_transfer_method,
+            started=bool(steps),
+            current_step_key=current.key if current is not None else None,
+            destination_account_id=(
+                settings.MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID or None
+            ),
+            steps=steps,
+        )
+
+    async def _get_manageable(
+        self,
+        # Widened for the read paths: `AsyncSession` is a `NewType` over
+        # `AsyncReadSession`, so the write callers still type-check.
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
         *,

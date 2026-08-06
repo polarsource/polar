@@ -45,6 +45,10 @@ from .threads.service import compass_thread as compass_thread_service
 router = APIRouter(prefix="/compass", tags=["compass", APITag.private])
 
 CompassThreadID = Annotated[UUID4, Path(description="The thread ID.")]
+CompassThreadNotFound = {
+    "description": "Thread not found.",
+    "model": ResourceNotFound.schema(),
+}
 
 
 @router.get("/insights", summary="List Insights", response_model=list[Insight])
@@ -105,6 +109,7 @@ async def list_threads(
     "/threads/{id}",
     summary="Get Assistant Thread",
     response_model=CompassThreadWithMessages,
+    responses={404: CompassThreadNotFound},
 )
 async def get_thread(
     auth_subject: auth.CompassRead,
@@ -133,6 +138,7 @@ async def get_thread(
     "/threads/{id}",
     summary="Update Assistant Thread",
     response_model=CompassThreadSchema,
+    responses={404: CompassThreadNotFound},
 )
 async def update_thread(
     auth_subject: auth.CompassWrite,
@@ -151,6 +157,10 @@ async def update_thread(
     "/threads/{id}",
     summary="Delete Assistant Thread",
     status_code=204,
+    responses={
+        204: {"description": "Thread deleted."},
+        404: CompassThreadNotFound,
+    },
 )
 async def delete_thread(
     auth_subject: auth.CompassWrite,

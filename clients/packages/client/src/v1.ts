@@ -46590,6 +46590,15 @@ export interface operations {
           'application/json': components['schemas']['CompassThreadWithMessages']
         }
       }
+      /** @description Thread not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
       /** @description Validation Error */
       422: {
         headers: {
@@ -46613,12 +46622,21 @@ export interface operations {
     }
     requestBody?: never
     responses: {
-      /** @description Successful Response */
+      /** @description Thread deleted. */
       204: {
         headers: {
           [name: string]: unknown
         }
         content?: never
+      }
+      /** @description Thread not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
       }
       /** @description Validation Error */
       422: {
@@ -46654,6 +46672,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['CompassThreadSchema']
+        }
+      }
+      /** @description Thread not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
         }
       }
       /** @description Validation Error */

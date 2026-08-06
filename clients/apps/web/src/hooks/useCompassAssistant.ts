@@ -1,6 +1,6 @@
 'use client'
 
-import { fetchCompassThread } from '@/hooks/queries'
+import { CompassThreadDetail, fetchCompassThread } from '@/hooks/queries'
 import { getServerURL } from '@/utils/api'
 import { NotFoundResponseError, schemas } from '@polar-sh/client'
 import { useQueryClient } from '@tanstack/react-query'
@@ -222,7 +222,7 @@ export const useCompassAssistant = ({
   )
 
   const hydrate = useCallback(
-    (thread: schemas['CompassThreadWithMessages']) => {
+    (thread: CompassThreadDetail) => {
       // Replaying a stored thread supersedes whatever was on screen,
       // including a live stream.
       controllerRef.current?.abort()

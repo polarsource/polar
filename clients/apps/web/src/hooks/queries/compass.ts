@@ -1,5 +1,5 @@
 import { api } from '@/utils/client'
-import { paths, unwrap } from '@polar-sh/client'
+import { paths, schemas, unwrap } from '@polar-sh/client'
 import {
   QueryClient,
   useMutation,
@@ -51,23 +51,44 @@ export const useCompassThreads = (organizationId: string, enabled = true) => {
   })
 }
 
+const THREAD_MESSAGES_PAGE_SIZE = 50
+
+export type CompassThreadDetail = schemas['CompassThreadSchema'] & {
+  messages: schemas['CompassThreadMessageSchema'][]
+}
+
 /**
- * Imperative fetch of a thread's rendered messages. Use for explicit
+ * Imperative fetch of a thread and its most recent turns. Use for explicit
  * hydration (deep link, history pick). A mounted query would re-hydrate on
  * cache/focus updates and clobber a live conversation.
+ *
+ * Messages are their own paginated resource; this takes the first page, which
+ * the API serves newest-first, so it's the tail of the conversation.
  */
 export const fetchCompassThread = (
   queryClient: QueryClient,
   threadId: string,
-) =>
+): Promise<CompassThreadDetail> =>
   queryClient.fetchQuery({
     queryKey: ['compass_threads', 'detail', threadId],
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/compass/threads/{id}', {
-          params: { path: { id: threadId } },
-        }),
-      ),
+    queryFn: async () => {
+      const [thread, messages] = await Promise.all([
+        unwrap(
+          api.GET('/v1/compass/threads/{id}', {
+            params: { path: { id: threadId } },
+          }),
+        ),
+        unwrap(
+          api.GET('/v1/compass/threads/{id}/messages', {
+            params: {
+              path: { id: threadId },
+              query: { limit: THREAD_MESSAGES_PAGE_SIZE },
+            },
+          }),
+        ),
+      ])
+      return { ...thread, messages: messages.items }
+    },
     staleTime: 0,
   })
 

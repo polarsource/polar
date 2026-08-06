@@ -3217,7 +3217,7 @@ export interface paths {
     }
     /**
      * Get Assistant Thread
-     * @description Get a thread with its rendered messages, for rehydrating the UI.
+     * @description Get a thread. Its messages are fetched separately, page by page.
      *
      *     **Scopes**: `metrics:read`
      */
@@ -3240,6 +3240,32 @@ export interface paths {
      *     **Scopes**: `metrics:write`
      */
     patch: operations['compass:update_thread']
+    trace?: never
+  }
+  '/v1/compass/threads/{id}/messages': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Assistant Thread Messages
+     * @description List a thread's turns, for rehydrating the UI.
+     *
+     *     Paged newest-first: page 1 is the tail of the conversation and higher
+     *     pages walk back through it. Within a page, turns read oldest-first the
+     *     way they're rendered.
+     *
+     *     **Scopes**: `metrics:read`
+     */
+    get: operations['compass:list_thread_messages']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
     trace?: never
   }
   '/v1/license-keys/': {
@@ -14632,43 +14658,6 @@ export interface components {
       /** Title */
       title?: string | null
     }
-    /** CompassThreadWithMessages */
-    CompassThreadWithMessages: {
-      /**
-       * Created At
-       * Format: date-time
-       * @description Creation timestamp of the object.
-       */
-      created_at: string
-      /**
-       * Modified At
-       * @description Last modification timestamp of the object.
-       */
-      modified_at: string | null
-      /**
-       * Id
-       * Format: uuid4
-       * @description The ID of the object.
-       */
-      id: string
-      /**
-       * Organization Id
-       * Format: uuid4
-       */
-      organization_id: string
-      /** Title */
-      title: string
-      /**
-       * Messages
-       * @description Most recent turns, oldest first.
-       */
-      messages: components['schemas']['CompassThreadMessageSchema'][]
-      /**
-       * Has More
-       * @description Whether older turns exist beyond the ones returned.
-       */
-      has_more: boolean
-    }
     /**
      * ConfidenceLevel
      * @description How much we trust an insight, derived from sample size and baseline variance.
@@ -22765,6 +22754,12 @@ export interface components {
     ListResource_Checkout_: {
       /** Items */
       items: components['schemas']['Checkout'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[CompassThreadMessageSchema] */
+    ListResource_CompassThreadMessageSchema_: {
+      /** Items */
+      items: components['schemas']['CompassThreadMessageSchema'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[CompassThreadSchema] */
@@ -46824,7 +46819,7 @@ export interface operations {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['CompassThreadWithMessages']
+          'application/json': components['schemas']['CompassThreadSchema']
         }
       }
       /** @description Thread not found. */
@@ -46909,6 +46904,52 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['CompassThreadSchema']
+        }
+      }
+      /** @description Thread not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'compass:list_thread_messages': {
+    parameters: {
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path: {
+        /** @description The thread ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_CompassThreadMessageSchema_']
         }
       }
       /** @description Thread not found. */

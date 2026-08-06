@@ -36,9 +36,9 @@ from .assistant.stream import sse_event, stream_assistant_run
 from .schemas import Insight, InsightCategory
 from .service import compass as compass_service
 from .threads.schemas import (
+    CompassThreadMessageSchema,
     CompassThreadSchema,
     CompassThreadUpdate,
-    CompassThreadWithMessages,
 )
 from .threads.service import compass_thread as compass_thread_service
 
@@ -108,29 +108,49 @@ async def list_threads(
 @router.get(
     "/threads/{id}",
     summary="Get Assistant Thread",
-    response_model=CompassThreadWithMessages,
+    response_model=CompassThreadSchema,
     responses={404: CompassThreadNotFound},
 )
 async def get_thread(
     auth_subject: auth.CompassRead,
     id: CompassThreadID,
     session: AsyncReadSession = Depends(get_db_read_session),
-) -> CompassThreadWithMessages:
-    """Get a thread with its rendered messages, for rehydrating the UI."""
+) -> CompassThread:
+    """Get a thread. Its messages are fetched separately, page by page."""
     thread = await compass_thread_service.get(session, auth_subject, id)
     if thread is None:
         raise ResourceNotFound()
-    messages, has_more = await compass_thread_service.list_messages(session, thread)
-    return CompassThreadWithMessages.model_validate(
-        {
-            "id": thread.id,
-            "created_at": thread.created_at,
-            "modified_at": thread.modified_at,
-            "organization_id": thread.organization_id,
-            "title": thread.title,
-            "messages": messages,
-            "has_more": has_more,
-        }
+    return thread
+
+
+@router.get(
+    "/threads/{id}/messages",
+    summary="List Assistant Thread Messages",
+    response_model=ListResource[CompassThreadMessageSchema],
+    responses={404: CompassThreadNotFound},
+)
+async def list_thread_messages(
+    auth_subject: auth.CompassRead,
+    id: CompassThreadID,
+    pagination: PaginationParamsQuery,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> ListResource[CompassThreadMessageSchema]:
+    """List a thread's turns, for rehydrating the UI.
+
+    Paged newest-first: page 1 is the tail of the conversation and higher
+    pages walk back through it. Within a page, turns read oldest-first the
+    way they're rendered.
+    """
+    thread = await compass_thread_service.get(session, auth_subject, id)
+    if thread is None:
+        raise ResourceNotFound()
+    messages, count = await compass_thread_service.list_messages(
+        session, thread, pagination=pagination
+    )
+    return ListResource.from_paginated_results(
+        [CompassThreadMessageSchema.model_validate(m) for m in messages],
+        count,
+        pagination,
     )
 
 

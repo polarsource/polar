@@ -3090,9 +3090,7 @@ async def _attempt_assign_seat(
         subscription = await repository.get_one_or_none(statement)
         assert subscription is not None
         try:
-            seat = await seat_service.assign_seat(
-                session, subscription, email=email
-            )
+            seat = await seat_service.assign_seat(session, subscription, email=email)
         except SeatNotAvailable:
             await session.rollback()
             return None

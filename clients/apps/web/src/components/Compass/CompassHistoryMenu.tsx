@@ -72,6 +72,8 @@ export const CompassHistoryMenu = ({
             className="absolute top-full right-0 z-40 mt-2 w-80"
           >
             <Box
+              role="group"
+              aria-label="Conversation history"
               flexDirection="column"
               backgroundColor="background-primary"
               borderWidth={1}

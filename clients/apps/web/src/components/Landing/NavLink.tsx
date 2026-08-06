@@ -13,28 +13,41 @@ export const NavLink = ({
   target,
   onClick,
   ...props
-}: ComponentProps<typeof Link> & {
+}: Omit<ComponentProps<typeof Link>, 'href'> & {
+  href: string
   isActive?: (pathname: string) => boolean
 }) => {
   const pathname = usePathname()
-  const hrefString = href.toString()
-  const isActive = _isActive
-    ? _isActive(pathname)
-    : pathname.startsWith(hrefString)
-  const isExternal = hrefString.startsWith('http')
+  const isActive = _isActive ? _isActive(pathname) : pathname.startsWith(href)
+  const isExternal = href.startsWith('http')
+  const linkTarget = isExternal ? '_blank' : target
 
   const handleClick = (event: MouseEvent<HTMLAnchorElement>) => {
     onClick?.(event)
-    if (event.defaultPrevented) return
+    if (
+      event.defaultPrevented ||
+      event.button !== 0 ||
+      event.metaKey ||
+      event.ctrlKey ||
+      event.shiftKey ||
+      event.altKey ||
+      (linkTarget && linkTarget !== '_self')
+    ) {
+      return
+    }
 
-    const hashIndex = hrefString.indexOf('#')
+    const hashIndex = href.indexOf('#')
     if (hashIndex === -1) return
 
-    const targetPath = hrefString.slice(0, hashIndex) || '/'
-    if (targetPath !== pathname) return
+    const targetId = href.slice(hashIndex + 1)
+    if (!targetId) {
+      // A bare `#` href is an action (e.g. mobile Login), not a destination
+      event.preventDefault()
+      return
+    }
 
-    const targetId = hrefString.slice(hashIndex + 1)
-    if (!targetId) return
+    const targetPath = href.slice(0, hashIndex) || '/'
+    if (targetPath !== pathname) return
 
     event.preventDefault()
     // Toggle sidebar hack for mobile
@@ -43,14 +56,14 @@ export const NavLink = ({
       const element = document.getElementById(targetId)
       if (!element) return
       element.scrollIntoView()
-      window.history.replaceState(null, '', hrefString)
+      window.history.replaceState(null, '', href)
     }, delay)
   }
 
   return (
     <Link
       href={href}
-      target={isExternal ? '_blank' : target}
+      target={linkTarget}
       prefetch
       onClick={handleClick}
       className={twMerge(

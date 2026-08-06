@@ -52,6 +52,16 @@ export const LandingPageDesktopNavigation = () => {
       borderStyle="solid"
       borderColor="border-primary"
       onMouseLeave={closeMenu}
+      onBlur={(event) => {
+        if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+          closeMenu()
+        }
+      }}
+      onKeyDown={(event) => {
+        if (event.key === 'Escape') {
+          closeMenu()
+        }
+      }}
     >
       <Box
         position="relative"
@@ -70,7 +80,7 @@ export const LandingPageDesktopNavigation = () => {
           left="50%"
           transform="translateX(-50%)"
           alignItems="center"
-          columnGap="2xl"
+          columnGap={{ base: 'l', lg: '2xl' }}
         >
           {navMenus.map((menu) => (
             <Box as="li" key={menu.id}>

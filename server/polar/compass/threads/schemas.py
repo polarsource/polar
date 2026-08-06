@@ -1,6 +1,6 @@
 from typing import Annotated, Literal
 
-from pydantic import UUID4, Discriminator, Field, StringConstraints
+from pydantic import UUID4, Discriminator, StringConstraints
 
 from polar.kit.schemas import IDSchema, Schema, TimestampedSchema
 
@@ -46,15 +46,6 @@ class CompassThreadMessageSchema(IDSchema, TimestampedSchema):
 
     prompt: str
     parts: list[AssistantPart]
-
-
-class CompassThreadWithMessages(CompassThreadSchema):
-    messages: list[CompassThreadMessageSchema] = Field(
-        description="Most recent turns, oldest first."
-    )
-    has_more: bool = Field(
-        description="Whether older turns exist beyond the ones returned."
-    )
 
 
 class CompassThreadUpdate(Schema):

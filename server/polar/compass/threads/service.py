@@ -35,9 +35,6 @@ readable in the UI but drop out of the model's context, keeping long threads
 from growing every request without bound. This could probably be built
 in a smarter way in the future"""
 
-MESSAGES_LIMIT = 50
-THREADS_CAP = 500
-
 
 def granted_assistant_scopes(scopes: set[Scope]) -> list[Scope]:
     """Intersect with assistant scopes so unrelated grants aren't stored on
@@ -122,16 +119,24 @@ class CompassThreadService:
         return await repository.get_one_or_none(statement)
 
     async def list_messages(
-        self, session: AsyncReadSession, thread: CompassThread
-    ) -> tuple[Sequence[CompassThreadMessage], bool]:
-        repository = CompassThreadMessageRepository.from_session(session)
-        statement = repository.get_statement_by_thread(thread.id).limit(
-            MESSAGES_LIMIT + 1
-        )
-        recent = await repository.get_all(statement)
+        self,
+        session: AsyncReadSession,
+        thread: CompassThread,
+        *,
+        pagination: PaginationParams,
+    ) -> tuple[Sequence[CompassThreadMessage], int]:
+        """One page of a thread's turns.
 
-        has_more = len(recent) > MESSAGES_LIMIT
-        return list(reversed(recent[:MESSAGES_LIMIT])), has_more
+        Paged newest-first, so page 1 is the tail of the conversation and
+        higher pages walk back through it. Each page is then reversed, so it
+        reads oldest-first the way it's rendered.
+        """
+        repository = CompassThreadMessageRepository.from_session(session)
+        statement = repository.get_statement_by_thread(thread.id)
+        messages, count = await repository.paginate(
+            statement, limit=pagination.limit, page=pagination.page
+        )
+        return list(reversed(messages)), count
 
     async def update(
         self,
@@ -164,18 +169,7 @@ class CompassThreadService:
             title=_title_from_prompt(prompt),
             required_scopes=granted_assistant_scopes(auth_subject.scopes),
         )
-        thread = await repository.create(thread, flush=True)
-
-        overflow_statement = repository.apply_recency_order(
-            repository.get_readable_statement(auth_subject).where(
-                CompassThread.organization_id == organization_id
-            )
-        ).offset(THREADS_CAP)
-
-        for overflow in await repository.get_all(overflow_statement):
-            await repository.soft_delete(overflow)
-
-        return thread
+        return await repository.create(thread, flush=True)
 
     async def begin_turn(
         self,

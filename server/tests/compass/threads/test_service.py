@@ -12,13 +12,11 @@ from pydantic_ai.messages import (
     ToolReturnPart,
     UserPromptPart,
 )
-from pytest_mock import MockerFixture
 
 from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.scope import Scope
 from polar.compass.threads.service import (
     HISTORY_TURNS,
-    MESSAGES_LIMIT,
     granted_assistant_scopes,
 )
 from polar.compass.threads.service import (
@@ -95,6 +93,23 @@ async def _create_thread(
     return thread
 
 
+async def _create_messages(
+    save_fixture: SaveFixture, thread: CompassThread, count: int
+) -> None:
+    """`count` turns named `q0`…`q{count - 1}`, oldest first."""
+    now = utc_now()
+    for turn in range(count):
+        await save_fixture(
+            CompassThreadMessage(
+                thread=thread,
+                prompt=f"q{turn}",
+                parts=[],
+                model_messages=[],
+                created_at=now + timedelta(seconds=turn),
+            )
+        )
+
+
 @pytest.mark.asyncio
 class TestCreate:
     @pytest.mark.auth
@@ -145,9 +160,8 @@ class TestCreate:
         assert thread.title.endswith("…")
 
     @pytest.mark.auth
-    async def test_prunes_least_recent_beyond_cap(
+    async def test_keeps_existing_threads(
         self,
-        mocker: MockerFixture,
         session: AsyncSession,
         save_fixture: SaveFixture,
         auth_subject: AuthSubject[User],
@@ -155,13 +169,9 @@ class TestCreate:
         user_organization: UserOrganization,
         organization: Organization,
     ) -> None:
-        mocker.patch("polar.compass.threads.service.THREADS_CAP", 2)
         now = utc_now()
-        oldest = await _create_thread(
+        existing = await _create_thread(
             save_fixture, organization, user=user, created_at=now - timedelta(hours=2)
-        )
-        kept = await _create_thread(
-            save_fixture, organization, user=user, created_at=now - timedelta(hours=1)
         )
 
         created = await compass_thread_service.create(
@@ -175,8 +185,8 @@ class TestCreate:
             pagination=PaginationParams(1, 10),
         )
         assert count == 2
-        assert {t.id for t in results} == {created.id, kept.id}
-        assert oldest.deleted_at is not None
+        assert {t.id for t in results} == {created.id, existing.id}
+        assert existing.deleted_at is None
 
 
 @pytest.mark.asyncio
@@ -321,13 +331,15 @@ class TestListMessages:
                 )
             )
 
-        messages, has_more = await compass_thread_service.list_messages(session, thread)
+        messages, count = await compass_thread_service.list_messages(
+            session, thread, pagination=PaginationParams(1, 10)
+        )
 
         assert [message.prompt for message in messages] == ["first?", "second?"]
-        assert has_more is False
+        assert count == 2
 
     @pytest.mark.auth
-    async def test_caps_at_most_recent_turns(
+    async def test_first_page_is_the_most_recent_turns(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -335,25 +347,35 @@ class TestListMessages:
         organization: Organization,
     ) -> None:
         thread = await _create_thread(save_fixture, organization, user=user)
-        now = utc_now()
-        total = MESSAGES_LIMIT + 2
-        for turn in range(total):
-            await save_fixture(
-                CompassThreadMessage(
-                    thread=thread,
-                    prompt=f"q{turn}",
-                    parts=[],
-                    model_messages=[],
-                    created_at=now + timedelta(seconds=turn),
-                )
-            )
+        await _create_messages(save_fixture, thread, 5)
 
-        messages, has_more = await compass_thread_service.list_messages(session, thread)
+        messages, count = await compass_thread_service.list_messages(
+            session, thread, pagination=PaginationParams(1, 2)
+        )
 
-        assert len(messages) == MESSAGES_LIMIT
-        assert messages[0].prompt == "q2"
-        assert messages[-1].prompt == f"q{total - 1}"
-        assert has_more is True
+        assert [message.prompt for message in messages] == ["q3", "q4"]
+        assert count == 5
+
+    @pytest.mark.auth
+    async def test_later_pages_walk_back_through_older_turns(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        user: User,
+        organization: Organization,
+    ) -> None:
+        thread = await _create_thread(save_fixture, organization, user=user)
+        await _create_messages(save_fixture, thread, 5)
+
+        second, _ = await compass_thread_service.list_messages(
+            session, thread, pagination=PaginationParams(2, 2)
+        )
+        third, _ = await compass_thread_service.list_messages(
+            session, thread, pagination=PaginationParams(3, 2)
+        )
+
+        assert [message.prompt for message in second] == ["q1", "q2"]
+        assert [message.prompt for message in third] == ["q0"]
 
 
 @pytest.mark.asyncio

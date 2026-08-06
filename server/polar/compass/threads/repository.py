@@ -52,7 +52,8 @@ class CompassThreadRepository(
         self, statement: Select[tuple[CompassThread]]
     ) -> Select[tuple[CompassThread]]:
         return statement.order_by(
-            func.coalesce(CompassThread.modified_at, CompassThread.created_at).desc()
+            func.coalesce(CompassThread.modified_at, CompassThread.created_at).desc(),
+            CompassThread.id.desc(),
         )
 
 
@@ -69,7 +70,10 @@ class CompassThreadMessageRepository(
         return (
             self.get_base_statement()
             .where(CompassThreadMessage.thread_id == thread_id)
-            .order_by(CompassThreadMessage.created_at.desc())
+            .order_by(
+                CompassThreadMessage.created_at.desc(),
+                CompassThreadMessage.id.desc(),
+            )
         )
 
     def get_replay_statement(

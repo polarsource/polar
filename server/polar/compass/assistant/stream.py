@@ -2,14 +2,12 @@
 Run the assistant agent and turn it into an SSE event stream.
 
 Events, in order of appearance:
-- `text`   {"delta": str}         — model output, streamed as it generates
-- `block`  {<AssistantBlock>}     — a renderable block, placed by the model
-- `done`   {"message_history": str} — opaque state to send back next turn
+- `text`   {"delta": str}         model output, streamed as it generates
+- `block`  {<AssistantBlock>}     a renderable block, placed by the model
+- `done`   {"thread_id": str}     the thread to continue on the next turn
 - `error`  {"message": str}
 """
 
-import hashlib
-import hmac
 import json
 import re
 import uuid
@@ -19,6 +17,7 @@ from typing import Any
 import structlog
 from pydantic_ai import Agent
 from pydantic_ai.messages import (
+    ModelMessage,
     ModelMessagesTypeAdapter,
     PartDeltaEvent,
     PartStartEvent,
@@ -26,17 +25,17 @@ from pydantic_ai.messages import (
     TextPartDelta,
 )
 
-from polar.config import settings
 from polar.integrations.polar.service import polar_self
 from polar.logging import Logger
 from polar.organization_review.schemas import UsageInfo
 
+from ..threads.service import RecordTurn
 from .deps import AssistantDeps
 
 log: Logger = structlog.get_logger()
 
 
-def _event(event: str, data: Any) -> dict[str, str]:
+def sse_event(event: str, data: Any) -> dict[str, str]:
     return {"event": event, "data": json.dumps(data)}
 
 
@@ -64,55 +63,6 @@ def _track_usage(
             "compass.assistant_usage_tracking_error",
             organization_id=str(deps.organization_id),
         )
-
-
-def _scopes_digest(deps: AssistantDeps) -> str:
-    joined = ",".join(sorted(scope.value for scope in deps.auth_subject.scopes))
-    return hashlib.sha256(joined.encode()).hexdigest()
-
-
-def _history_mac(organization_id: str, scopes: str, messages: str) -> str:
-    payload = f"{organization_id}|{scopes}|{messages}".encode()
-    return hmac.new(settings.SECRET.encode(), payload, hashlib.sha256).hexdigest()
-
-
-def seal_history(deps: AssistantDeps, messages_json: str) -> str:
-    """Bind conversation state to the caller's organization and scopes.
-
-    The state round-trips through the client, so it is signed with claims:
-    replaying it against another organization, or after the token's scopes
-    changed, fails verification instead of leaking prior context (including
-    old tool results) into a conversation it does not belong to.
-    """
-    organization_id = str(deps.organization_id)
-    scopes = _scopes_digest(deps)
-    return json.dumps(
-        {
-            "org": organization_id,
-            "scopes": scopes,
-            "messages": messages_json,
-            "mac": _history_mac(organization_id, scopes, messages_json),
-        }
-    )
-
-
-def open_history(deps: AssistantDeps, sealed: str) -> str | None:
-    """The messages JSON if the seal verifies for this caller, else None."""
-    try:
-        envelope = json.loads(sealed)
-        organization_id = envelope["org"]
-        scopes = envelope["scopes"]
-        messages = envelope["messages"]
-        mac = envelope["mac"]
-    except (ValueError, TypeError, KeyError):
-        return None
-    if not hmac.compare_digest(mac, _history_mac(organization_id, scopes, messages)):
-        return None
-    if organization_id != str(deps.organization_id):
-        return None
-    if scopes != _scopes_digest(deps):
-        return None
-    return str(messages)
 
 
 _MARKER_RE = re.compile(r"\s*\[block:(\d+)\]\s*")
@@ -164,48 +114,57 @@ class _BlockPlacer:
         return tail
 
 
+class _PartsRecorder:
+    """Accumulates the streamed turn as renderable parts: the exact
+    interleaving of text and blocks the client displayed, so the turn can be
+    rehydrated later without re-running the model."""
+
+    def __init__(self) -> None:
+        self.parts: list[dict[str, Any]] = []
+
+    def add_text(self, delta: str) -> None:
+        if self.parts and self.parts[-1]["kind"] == "text":
+            self.parts[-1]["text"] += delta
+        else:
+            self.parts.append({"kind": "text", "text": delta})
+
+    def add_block(self, block: dict[str, Any]) -> None:
+        self.parts.append({"kind": "block", "block": block})
+
+
 async def stream_assistant_run(
     agent: Agent[AssistantDeps, str],
     deps: AssistantDeps,
     prompt: str,
-    message_history_json: str | None,
+    message_history: list[ModelMessage] | None,
     *,
     model_provider: str,
     model_name: str,
+    record_turn: RecordTurn,
+    thread_id: str,
 ) -> AsyncGenerator[dict[str, str]]:
-    history = None
-    if message_history_json:
-        messages_json = open_history(deps, message_history_json)
-        if messages_json is None:
-            yield _event(
-                "error",
-                {
-                    "message": "This conversation state is invalid or from a "
-                    "different context. Start a new conversation."
-                },
-            )
-            return
-        try:
-            history = ModelMessagesTypeAdapter.validate_json(messages_json)
-        except ValueError:
-            yield _event("error", {"message": "Invalid message history."})
-            return
-
+    recorder = _PartsRecorder()
     placer = _BlockPlacer()
     placed: set[int] = set()
+
+    def text_event(delta: str) -> dict[str, str]:
+        recorder.add_text(delta)
+        return sse_event("text", {"delta": delta})
 
     def block_event(index: int) -> dict[str, str] | None:
         # Markers are 1-based indexes into the run's prepared blocks.
         if index in placed or not (1 <= index <= len(deps.blocks)):
             return None
         placed.add(index)
-        return _event("block", deps.blocks[index - 1].model_dump(mode="json"))
+        dumped = deps.blocks[index - 1].model_dump(mode="json")
+        recorder.add_block(dumped)
+        return sse_event("block", dumped)
 
     def placed_events(delta: str) -> list[dict[str, str]]:
         events: list[dict[str, str]] = []
         for kind, value in placer.feed(delta):
             if kind == "text":
-                events.append(_event("text", {"delta": str(value)}))
+                events.append(text_event(str(value)))
             else:
                 placed_block = block_event(int(value))
                 if placed_block is not None:
@@ -213,7 +172,9 @@ async def stream_assistant_run(
         return events
 
     try:
-        async with agent.iter(prompt, deps=deps, message_history=history) as run:
+        async with agent.iter(
+            prompt, deps=deps, message_history=message_history
+        ) as run:
             async for node in run:
                 if Agent.is_model_request_node(node):
                     async with node.stream(run.ctx) as request_stream:
@@ -231,7 +192,7 @@ async def stream_assistant_run(
                                     for out in placed_events(event.delta.content_delta):
                                         yield out
                     if tail := placer.flush():
-                        yield _event("text", {"delta": tail})
+                        yield text_event(tail)
 
             # Fallback: blocks the model never placed still reach the user,
             # after the text.
@@ -243,22 +204,18 @@ async def stream_assistant_run(
             result = run.result
             assert result is not None
             _track_usage(deps, result.usage, model_provider, model_name)
-            yield _event(
-                "done",
-                {
-                    "message_history": seal_history(
-                        deps,
-                        ModelMessagesTypeAdapter.dump_json(
-                            result.all_messages()
-                        ).decode(),
-                    )
-                },
+            new_messages = ModelMessagesTypeAdapter.dump_python(
+                result.new_messages(), mode="json"
             )
+            # Persist only completed turns: a turn that errored mid-stream is
+            # never recorded, so replay history can't be poisoned by it.
+            await record_turn(recorder.parts, new_messages)
+            yield sse_event("done", {"thread_id": thread_id})
     except Exception:
         log.exception(
             "compass.assistant_error", organization_id=str(deps.organization_id)
         )
-        yield _event(
+        yield sse_event(
             "error",
             {"message": "The assistant hit an unexpected error. Try again."},
         )

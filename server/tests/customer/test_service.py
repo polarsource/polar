@@ -751,6 +751,206 @@ class TestUpdate:
             )
         assert exc_info.value.errors()[0]["loc"] == ("body", "tax_id")
 
+    async def test_clear_tax_id_with_empty_string(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Sending tax_id="" (normalized to None) clears an existing tax_id."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="clear-taxid-empty@example.com",
+            billing_address=Address(country=CountryAlpha2("FR")),
+            tax_id=("FR61954506077", TaxIDFormat.eu_vat),
+        )
+        assert customer.tax_id is not None
+
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(tax_id=""),
+        )
+        await session.flush()
+
+        assert updated_customer.tax_id is None
+
+    async def test_clear_tax_id_with_explicit_none(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Explicitly sending tax_id=null clears an existing tax_id."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="clear-taxid-none@example.com",
+            billing_address=Address(country=CountryAlpha2("FR")),
+            tax_id=("FR61954506077", TaxIDFormat.eu_vat),
+        )
+        assert customer.tax_id is not None
+
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(tax_id=None),
+        )
+        await session.flush()
+
+        assert updated_customer.tax_id is None
+
+    async def test_update_name_does_not_revalidate_tax_id(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Updating an unrelated field must not re-validate an existing tax_id."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="no-revalidate@example.com",
+            billing_address=Address(country=CountryAlpha2("FR")),
+            tax_id=("FR61954506077", TaxIDFormat.eu_vat),
+        )
+
+        mock_validate = mocker.patch("polar.customer.service.validate_tax_id")
+        mock_validate.return_value = ("FR61954506077", TaxIDFormat.eu_vat)
+
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(name="New Name"),
+        )
+        await session.flush()
+
+        assert not mock_validate.called
+        assert updated_customer.name == "New Name"
+        # tax_id is unchanged
+        assert updated_customer.tax_id is not None
+        assert updated_customer.tax_id[0] == "FR61954506077"
+
+    async def test_update_tax_id_to_new_valid_value(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Replacing an existing tax_id with a new valid value validates and stores it."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="replace-taxid@example.com",
+            billing_address=Address(country=CountryAlpha2("FR")),
+            tax_id=("FR61954506077", TaxIDFormat.eu_vat),
+        )
+
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(tax_id="FR00300076965"),
+        )
+        await session.flush()
+
+        assert updated_customer.tax_id is not None
+        assert updated_customer.tax_id[0] == "FR00300076965"
+        assert updated_customer.tax_id[1] == TaxIDFormat.eu_vat
+
+    async def test_clear_tax_id_no_billing_address_required(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Clearing tax_id should NOT require a billing_address to be present."""
+        # Customer has a tax_id and a billing_address.
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="clear-no-billing@example.com",
+            billing_address=Address(country=CountryAlpha2("FR")),
+            tax_id=("FR61954506077", TaxIDFormat.eu_vat),
+        )
+
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(tax_id=""),
+        )
+        await session.flush()
+
+        assert updated_customer.tax_id is None
+        # billing_address untouched
+        assert updated_customer.billing_address is not None
+        assert updated_customer.billing_address.country == CountryAlpha2("FR")
+
+    async def test_billing_address_change_revalidates_tax_id_to_valid_country(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Changing billing_address to a country where the existing tax_id is still
+        valid should succeed and keep the tax_id."""
+        # Use a valid DE VAT number; re-supplying DE as billing address country
+        # re-validates the existing tax_id successfully.
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="revalidate-valid@example.com",
+            billing_address=Address(country=CountryAlpha2("DE")),
+            tax_id=("DE114103379", TaxIDFormat.eu_vat),
+        )
+
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(
+                billing_address=AddressInput(country=CountryAlpha2Input("DE"))
+            ),
+        )
+        await session.flush()
+
+        # tax_id remains set and unchanged (re-validated against DE again)
+        assert updated_customer.tax_id is not None
+        assert updated_customer.tax_id[0] == "DE114103379"
+        assert updated_customer.tax_id[1] == TaxIDFormat.eu_vat
+
+    async def test_update_tax_id_omitted_keeps_existing(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Omitting tax_id from the update entirely keeps the existing value
+        and does not trigger validation."""
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="omit-taxid@example.com",
+            billing_address=Address(country=CountryAlpha2("FR")),
+            tax_id=("FR61954506077", TaxIDFormat.eu_vat),
+        )
+
+        mock_validate = mocker.patch("polar.customer.service.validate_tax_id")
+        mock_validate.return_value = ("FR61954506077", TaxIDFormat.eu_vat)
+
+        # Update only email — tax_id and billing_address both omitted
+        updated_customer = await customer_service.update(
+            session,
+            customer,
+            CustomerUpdate(email="omit-taxid-new@example.com"),
+        )
+        await session.flush()
+
+        assert not mock_validate.called
+        assert updated_customer.tax_id is not None
+        assert updated_customer.tax_id[0] == "FR61954506077"
+
     async def test_syncs_owner_member_email_for_individual_customer(
         self,
         session: AsyncSession,

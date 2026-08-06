@@ -195,11 +195,13 @@ async def stream_assistant_run(
                         yield text_event(tail)
 
             # Fallback: blocks the model never placed still reach the user,
-            # after the text.
+            # after the text. Collected rather than yielded here — they add to
+            # `recorder.parts`, so they belong in the turn persisted below.
+            fallback: list[dict[str, str]] = []
             for index in range(1, len(deps.blocks) + 1):
                 unplaced = block_event(index)
                 if unplaced is not None:
-                    yield unplaced
+                    fallback.append(unplaced)
 
             result = run.result
             assert result is not None
@@ -209,7 +211,12 @@ async def stream_assistant_run(
             )
             # Persist only completed turns: a turn that errored mid-stream is
             # never recorded, so replay history can't be poisoned by it.
+            # Written before the yields below — a client disconnecting at a
+            # yield closes this generator, losing a turn the model finished.
             await record_turn(recorder.parts, new_messages)
+
+            for fallback_event in fallback:
+                yield fallback_event
             yield sse_event("done", {"thread_id": thread_id})
     except Exception:
         log.exception(

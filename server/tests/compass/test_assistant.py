@@ -578,3 +578,66 @@ class TestPartsRecorder:
             {"kind": "block", "block": {"type": "text", "text": "block"}},
             {"kind": "text", "text": "After"},
         ]
+
+
+class _FinishedRun:
+    """A run whose model has already completed, producing no nodes."""
+
+    def __init__(self) -> None:
+        self.ctx = None
+        self.result = SimpleNamespace(usage=SimpleNamespace(), new_messages=list)
+
+    def __aiter__(self) -> "_FinishedRun":
+        return self
+
+    async def __anext__(self) -> Any:
+        raise StopAsyncIteration
+
+    async def __aenter__(self) -> "_FinishedRun":
+        return self
+
+    async def __aexit__(self, *args: Any) -> bool:
+        return False
+
+
+class _FinishedAgent:
+    def iter(self, prompt: str, **kwargs: Any) -> _FinishedRun:
+        return _FinishedRun()
+
+
+@pytest.mark.asyncio
+class TestStreamAssistantRun:
+    async def test_completed_turn_is_persisted_before_the_client_can_drop(
+        self,
+    ) -> None:
+        """A disconnect parks the generator at a yield and closes it. Any yield
+        between the model finishing and the write would lose the whole turn."""
+        from polar.compass.assistant.stream import stream_assistant_run
+
+        deps = _deps(set(Scope))
+        deps.emit(TextBlock(text="unplaced"))
+        recorded: list[list[dict[str, Any]]] = []
+
+        async def record_turn(
+            parts: list[dict[str, Any]], model_messages: list[dict[str, Any]]
+        ) -> None:
+            recorded.append(parts)
+
+        stream = stream_assistant_run(
+            _FinishedAgent(),  # type: ignore[arg-type]
+            deps,
+            "hi",
+            None,
+            model_provider="openai",
+            model_name="gpt-5.5",
+            record_turn=record_turn,
+            thread_id=str(uuid.uuid4()),
+        )
+
+        # The client takes one event, then goes away mid-stream.
+        await anext(stream)
+        await stream.aclose()
+
+        assert recorded == [
+            [{"kind": "block", "block": {"type": "text", "text": "unplaced"}}]
+        ]

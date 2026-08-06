@@ -5,7 +5,7 @@ type Step = schemas['MerchantMigrationStep']
 // Who moves a step forward. `you` (the merchant) is implicit and never badged;
 // `polar` and `stripe` are surfaced so the merchant knows they're waiting on
 // someone else.
-export type StepOwner = 'you' | 'polar' | 'stripe'
+export type StepOwner = 'you' | 'polar' | 'stripe' | 'varies'
 
 export interface MigrationStepDef {
   key: string
@@ -41,10 +41,11 @@ export const MIGRATION_STEPS: MigrationStepDef[] = [
   {
     key: 'cards',
     short: 'Card movement',
-    owner: 'stripe',
+    // No single party owns this step; the checklist inside it badges per step.
+    owner: 'varies',
     title: 'Move saved cards',
     description:
-      "Stripe copies your customers' saved cards onto Polar's account.",
+      "Follow the checklist to move your customers' saved cards onto Polar.",
     steps: ['copy_cards'],
   },
   {
@@ -60,6 +61,7 @@ export const MIGRATION_STEPS: MigrationStepDef[] = [
 
 export const OWNER_LABELS: Record<StepOwner, string | null> = {
   you: null,
+  varies: null,
   polar: 'Polar',
   stripe: 'Stripe',
 }

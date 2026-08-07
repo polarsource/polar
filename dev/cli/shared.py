@@ -1,9 +1,12 @@
 """Shared utilities and context for the Polar Development CLI."""
 
+import fcntl
 import os
 import shutil
 import socket
 import subprocess
+import tempfile
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -43,35 +46,74 @@ class Context:
 
 
 def read_secrets() -> dict[str, str]:
+    """Read the central secrets file literally.
+
+    Interpolation is off: a secret containing `${...}` is a literal value here,
+    not a reference to another entry.
+    """
     if not SECRETS_FILE.exists():
         return {}
-    return {k: v for k, v in dotenv_values(SECRETS_FILE).items() if v is not None}
+    return {
+        k: v
+        for k, v in dotenv_values(SECRETS_FILE, interpolate=False).items()
+        if v is not None
+    }
+
+
+@contextmanager
+def _secrets_lock():
+    """Serialize read/merge/write so parallel worktrees don't drop each other's keys."""
+    SECRETS_FILE.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    lock_path = SECRETS_FILE.with_name(f"{SECRETS_FILE.name}.lock")
+    fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        os.close(fd)
+
+
+def _quote(value: str) -> str:
+    """Quote a value so any content survives a dotenv round-trip."""
+    escaped = value.replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
 
 
 def update_secrets(values: dict[str, str | None]) -> None:
     """Merge values into the central secrets file, dropping keys set to None.
 
-    Values are read and written quoted, so multi-line secrets such as the
-    GitHub App private key survive a rewrite intact.
+    Values are written quoted and escaped, so multi-line secrets such as the
+    GitHub App private key survive a rewrite intact. The file is replaced
+    atomically, so an interrupted write can't destroy the previous contents.
     """
     if not values:
         return
 
-    secrets = read_secrets()
-    for key, value in values.items():
-        if value is None:
-            secrets.pop(key, None)
-        else:
-            secrets[key] = value
+    with _secrets_lock():
+        secrets = read_secrets()
+        for key, value in values.items():
+            if value is None:
+                secrets.pop(key, None)
+            else:
+                secrets[key] = value
 
-    SECRETS_FILE.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    with open(SECRETS_FILE, "w") as f:
-        f.write("# Polar Development Secrets\n")
-        f.write("# Shared across Git worktrees. See dev/secrets.env.template\n\n")
-        for key, value in secrets.items():
-            delimiter = "'" if '"' in value else '"'
-            f.write(f"{key}={delimiter}{value}{delimiter}\n")
-    SECRETS_FILE.chmod(0o600)
+        # mkstemp creates with 0600, so the values are never briefly world-readable.
+        fd, tmp_path = tempfile.mkstemp(
+            dir=SECRETS_FILE.parent, prefix=f".{SECRETS_FILE.name}.", suffix=".tmp"
+        )
+        try:
+            with os.fdopen(fd, "w") as f:
+                f.write("# Polar Development Secrets\n")
+                f.write("# Shared across Git worktrees. See dev/secrets.env.template\n\n")
+                for key, value in secrets.items():
+                    # The file has to stay plain text: dev/setup-environment reads it
+                    # to build server/.env, which docker compose loads as-is.
+                    f.write(f"{key}={_quote(value)}\n")  # codeql[py/clear-text-storage-sensitive-data]
+            os.replace(tmp_path, SECRETS_FILE)
+        except BaseException:
+            os.unlink(tmp_path)
+            raise
 
 
 def run_command(

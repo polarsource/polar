@@ -180,7 +180,8 @@ everything. Use dashboard endpoints instead only when you need Stripe to reach a
             ```
 
 These two secrets differ from each other, and `dev stripe` leaves them alone when it sees that —
-it only writes the CLI listener secret when both entries are empty or already identical.
+it writes the CLI listener secret only when the two entries are identical (including both empty),
+and leaves them untouched whenever they differ.
 
 </details>
 

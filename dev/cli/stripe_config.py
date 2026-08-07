@@ -121,12 +121,18 @@ def saved_keys_rejection(profile: StripeProfile | None) -> str | None:
     if not has_saved_keys():
         return "no Stripe keys are configured"
 
-    secret_key = read_secrets().get("POLAR_STRIPE_SECRET_KEY", "")
+    secrets = read_secrets()
+    secret_key = secrets.get("POLAR_STRIPE_SECRET_KEY", "")
+    publishable_key = secrets.get("POLAR_STRIPE_PUBLISHABLE_KEY", "")
     if not secret_key.startswith("sk_test_"):
         return "a live secret key is configured"
+    if not publishable_key.startswith("pk_test_"):
+        return "a live publishable key is configured"
     if profile is None:
         return f"there is no '{STRIPE_CLI_PROFILE}' Stripe CLI profile"
-    if secret_key != profile.secret_key:
+    # The browser tokenizes the card with the publishable key while the backend
+    # charges with the secret key, so a split pair silently talks to two accounts.
+    if secret_key != profile.secret_key or publishable_key != profile.publishable_key:
         return f"the keys don't match the '{STRIPE_CLI_PROFILE}' sandbox"
     return sandbox_rejection(profile)
 
@@ -259,9 +265,13 @@ def obtain_webhook_secret() -> str:
         return result.stdout.strip()
 
     console.print("  [yellow]Could not get webhook secret automatically.[/yellow]")
-    return typer.prompt(
+    entered = typer.prompt(
         "  Enter webhook secret manually (whsec_...), or press Enter to skip", default=""
-    )
+    ).strip()
+    if entered and not entered.startswith("whsec_"):
+        console.print("  [yellow]That isn't a webhook secret (they start with whsec_). Skipping.[/yellow]")
+        return ""
+    return entered
 
 
 def save_webhook_secret(webhook_secret: str) -> None:
@@ -274,7 +284,7 @@ def save_webhook_secret(webhook_secret: str) -> None:
     secrets = read_secrets()
     direct = secrets.get("POLAR_STRIPE_WEBHOOK_SECRET", "")
     connect = secrets.get("POLAR_STRIPE_CONNECT_WEBHOOK_SECRET", "")
-    if direct and connect and direct != connect:
+    if direct != connect:
         console.print(
             "  [yellow]Kept your existing webhook secrets — they differ from each\n"
             "  other, so they look like dashboard endpoints, not the CLI listener.[/yellow]"
@@ -315,10 +325,21 @@ def configure(relink: bool = False) -> StripeProfile | None:
         if webhook_secret:
             save_webhook_secret(webhook_secret)
             changed = True
+        elif changed:
+            step_status(False, "Webhook secret", "still the previous sandbox's")
+            console.print(
+                "  [yellow]Webhooks will fail signature checks until you set it.\n"
+                "  Re-run `dev stripe` once the Stripe CLI can reach Stripe.[/yellow]"
+            )
 
     if changed:
         console.print("  [dim]Updating environment files...[/dim]")
-        run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
-        step_status(True, "Environment files", "updated")
+        result = run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
+        if result and result.returncode == 0:
+            step_status(True, "Environment files", "updated")
+        else:
+            step_status(False, "Environment files", "update failed")
+            console.print("  [yellow]Run dev/setup-environment by hand to see why.[/yellow]")
+            return None
 
     return profile

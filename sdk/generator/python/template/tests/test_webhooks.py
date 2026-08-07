@@ -59,6 +59,40 @@ def test_validate_event(as_bytes: bool) -> None:
     )
 
 
+def test_validate_event_standard_webhooks_secret() -> None:
+    standard_secret = "whsec_" + base64.b64encode(b"k" * 32).decode()
+    body = json.dumps({"type": _EVENT_TYPE, "value": "payload"})
+    timestamp = datetime.datetime.now(tz=datetime.UTC)
+    headers = {
+        "Webhook-Id": "test-webhook",
+        "Webhook-Timestamp": str(int(timestamp.timestamp())),
+        "Webhook-Signature": Webhook(standard_secret).sign(
+            "test-webhook", timestamp, body
+        ),
+    }
+
+    assert _validate_event(body, headers, standard_secret) == DummyPayload(
+        type=_EVENT_TYPE, value="payload"
+    )
+
+
+def test_validate_event_legacy_prefixed_secret() -> None:
+    legacy_secret = "whsec_" + "a" * 43
+    body = json.dumps({"type": _EVENT_TYPE, "value": "payload"})
+    timestamp = datetime.datetime.now(tz=datetime.UTC)
+    headers = {
+        "Webhook-Id": "test-webhook",
+        "Webhook-Timestamp": str(int(timestamp.timestamp())),
+        "Webhook-Signature": Webhook(
+            base64.b64encode(legacy_secret.encode()).decode()
+        ).sign("test-webhook", timestamp, body),
+    }
+
+    assert _validate_event(body, headers, legacy_secret) == DummyPayload(
+        type=_EVENT_TYPE, value="payload"
+    )
+
+
 def test_validate_event_rejects_invalid_signature() -> None:
     body = json.dumps({"type": _EVENT_TYPE, "value": "payload"})
 

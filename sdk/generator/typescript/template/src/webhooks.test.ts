@@ -1,5 +1,4 @@
 import { Buffer } from "node:buffer";
-
 import { Webhook } from "standardwebhooks";
 import { describe, expect, test } from "vitest";
 
@@ -20,15 +19,8 @@ const secret = "test-secret";
 const base64Secret = Buffer.from(secret, "utf8").toString("base64");
 const eventTypes = new Set(["dummy.event"]);
 
-const getHeaders = (
-  body: string,
-  timestamp: Date = new Date(),
-): Record<string, string> => {
-  const signature = new Webhook(base64Secret).sign(
-    "test-webhook",
-    timestamp,
-    body,
-  );
+const getHeaders = (body: string, timestamp: Date = new Date()): Record<string, string> => {
+  const signature = new Webhook(base64Secret).sign("test-webhook", timestamp, body);
   return {
     "Webhook-Id": "test-webhook",
     "Webhook-Timestamp": String(Math.floor(timestamp.getTime() / 1000)),
@@ -51,12 +43,45 @@ describe("validateWebhook", () => {
   ])("validates a known event from a %s", async (_type, getRawBody) => {
     const body = JSON.stringify({ type: "dummy.event", value: "payload" });
 
-    await expect(
-      validateEvent(getRawBody(body), getHeaders(body)),
-    ).resolves.toEqual({
+    await expect(validateEvent(getRawBody(body), getHeaders(body))).resolves.toEqual({
       type: "dummy.event",
       value: "payload",
     });
+  });
+
+  test("validates a Standard Webhooks encoded secret", async () => {
+    const keyMaterial = Buffer.alloc(32, "k").toString("base64");
+    const standardSecret = `whsec_${keyMaterial}`;
+    const body = JSON.stringify({ type: "dummy.event", value: "payload" });
+    const timestamp = new Date();
+    const headers = {
+      "Webhook-Id": "test-webhook",
+      "Webhook-Timestamp": String(Math.floor(timestamp.getTime() / 1000)),
+      "Webhook-Signature": new Webhook(keyMaterial).sign("test-webhook", timestamp, body),
+    };
+
+    await expect(
+      validateWebhook<DummyPayload>(body, headers, standardSecret, eventTypes),
+    ).resolves.toEqual({ type: "dummy.event", value: "payload" });
+  });
+
+  test("validates a legacy whsec_-prefixed secret", async () => {
+    const legacySecret = `whsec_${"a".repeat(43)}`;
+    const body = JSON.stringify({ type: "dummy.event", value: "payload" });
+    const timestamp = new Date();
+    const headers = {
+      "Webhook-Id": "test-webhook",
+      "Webhook-Timestamp": String(Math.floor(timestamp.getTime() / 1000)),
+      "Webhook-Signature": new Webhook(Buffer.from(legacySecret, "utf8").toString("base64")).sign(
+        "test-webhook",
+        timestamp,
+        body,
+      ),
+    };
+
+    await expect(
+      validateWebhook<DummyPayload>(body, headers, legacySecret, eventTypes),
+    ).resolves.toEqual({ type: "dummy.event", value: "payload" });
   });
 
   test("rejects an invalid signature", async () => {
@@ -72,26 +97,20 @@ describe("validateWebhook", () => {
     const headers = getHeaders(body);
     headers["Webhook-Signature"] = "v1,not-base64!";
 
-    await expect(validateEvent(body, headers)).rejects.toThrow(
-      PolarWebhookVerificationError,
-    );
+    await expect(validateEvent(body, headers)).rejects.toThrow(PolarWebhookVerificationError);
   });
 
   test("rejects missing headers", async () => {
     const body = JSON.stringify({ type: "dummy.event", value: "payload" });
 
-    await expect(validateEvent(body, {})).rejects.toThrow(
-      PolarWebhookVerificationError,
-    );
+    await expect(validateEvent(body, {})).rejects.toThrow(PolarWebhookVerificationError);
   });
 
   test("rejects a stale timestamp", async () => {
     const body = JSON.stringify({ type: "dummy.event", value: "payload" });
     const timestamp = new Date(Date.now() - 6 * 60 * 1000);
 
-    await expect(
-      validateEvent(body, getHeaders(body, timestamp)),
-    ).rejects.toThrow(
+    await expect(validateEvent(body, getHeaders(body, timestamp))).rejects.toThrow(
       PolarWebhookVerificationError,
     );
   });
@@ -104,27 +123,19 @@ describe("validateWebhook", () => {
       throw new Error("Expected validateEvent to throw");
     } catch (error) {
       expect(error).toBeInstanceOf(PolarWebhookUnknownTypeError);
-      expect((error as PolarWebhookUnknownTypeError).eventType).toBe(
-        "future.event",
-      );
+      expect((error as PolarWebhookUnknownTypeError).eventType).toBe("future.event");
     }
   });
 
   test("wraps malformed signed payloads", async () => {
     const body = "{";
 
-    await expect(validateEvent(body, getHeaders(body))).rejects.toThrow(
-      PolarWebhookError,
-    );
+    await expect(validateEvent(body, getHeaders(body))).rejects.toThrow(PolarWebhookError);
   });
 
   test("uses the Polar webhook error hierarchy", () => {
     expect(new PolarWebhookError("error")).toBeInstanceOf(PolarError);
-    expect(new PolarWebhookVerificationError("error")).toBeInstanceOf(
-      PolarWebhookError,
-    );
-    expect(new PolarWebhookUnknownTypeError("future.event")).toBeInstanceOf(
-      PolarWebhookError,
-    );
+    expect(new PolarWebhookVerificationError("error")).toBeInstanceOf(PolarWebhookError);
+    expect(new PolarWebhookUnknownTypeError("future.event")).toBeInstanceOf(PolarWebhookError);
   });
 });

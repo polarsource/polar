@@ -49,6 +49,41 @@ describe("validateWebhook", () => {
     });
   });
 
+  test("validates a Standard Webhooks encoded secret", async () => {
+    const keyMaterial = Buffer.alloc(32, "k").toString("base64");
+    const standardSecret = `whsec_${keyMaterial}`;
+    const body = JSON.stringify({ type: "dummy.event", value: "payload" });
+    const timestamp = new Date();
+    const headers = {
+      "Webhook-Id": "test-webhook",
+      "Webhook-Timestamp": String(Math.floor(timestamp.getTime() / 1000)),
+      "Webhook-Signature": new Webhook(keyMaterial).sign("test-webhook", timestamp, body),
+    };
+
+    await expect(
+      validateWebhook<DummyPayload>(body, headers, standardSecret, eventTypes),
+    ).resolves.toEqual({ type: "dummy.event", value: "payload" });
+  });
+
+  test("validates a legacy whsec_-prefixed secret", async () => {
+    const legacySecret = `whsec_${"a".repeat(43)}`;
+    const body = JSON.stringify({ type: "dummy.event", value: "payload" });
+    const timestamp = new Date();
+    const headers = {
+      "Webhook-Id": "test-webhook",
+      "Webhook-Timestamp": String(Math.floor(timestamp.getTime() / 1000)),
+      "Webhook-Signature": new Webhook(Buffer.from(legacySecret, "utf8").toString("base64")).sign(
+        "test-webhook",
+        timestamp,
+        body,
+      ),
+    };
+
+    await expect(
+      validateWebhook<DummyPayload>(body, headers, legacySecret, eventTypes),
+    ).resolves.toEqual({ type: "dummy.event", value: "payload" });
+  });
+
   test("rejects an invalid signature", async () => {
     const body = JSON.stringify({ type: "dummy.event", value: "payload" });
 

@@ -24,6 +24,7 @@ from polar.merchant_migration.canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
 )
+from polar.merchant_migration.precheck import precheck_engine
 from polar.merchant_migration.repository import (
     MerchantMigrationRecordRepository,
     MerchantMigrationRepository,
@@ -32,6 +33,7 @@ from polar.merchant_migration.schemas import (
     MerchantMigrationCreate,
     PrecheckEntity,
     PrecheckRecordStatus,
+    PrecheckReport,
 )
 from polar.merchant_migration.service import (
     CatalogImportBlocked,
@@ -476,6 +478,37 @@ class TestRunPrecheck:
         assert {record.source_id for record in remaining} == {"prod_1:month:1"}
 
     @pytest.mark.auth
+    async def test_keeps_everything_when_the_source_read_stops_short(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(_importable_catalog()),
+        )
+        # A pass that never reaches the end has only seen part of the source, so
+        # what it didn't see says nothing about what the source still has.
+        mocker.patch.object(
+            precheck_engine,
+            "run",
+            side_effect=lambda records, *args: _run_partially(records),
+        )
+
+        await service.run_precheck(session, auth_subject, migration.id)
+
+        record_repository = MerchantMigrationRecordRepository.from_session(session)
+        remaining = await record_repository.list_by_migration(migration.id)
+        assert len(remaining) == len(_importable_catalog())
+
+    @pytest.mark.auth
     async def test_keeps_imported_records_the_source_no_longer_has(
         self,
         mocker: MockerFixture,
@@ -500,6 +533,14 @@ class TestRunPrecheck:
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         remaining = await record_repository.list_by_migration(migration.id)
         assert "prod_1:month:1" in {record.source_id for record in remaining}
+
+
+async def _run_partially(records: AsyncIterator[CanonicalRecord]) -> PrecheckReport:
+    """Read one record, then stop — the generator never reaches its end, so it
+    never marks the pass complete."""
+    async for _ in records:
+        break
+    return PrecheckReport(can_start=True, issues=[], entities=[])
 
 
 def _catalog() -> list[CanonicalRecord]:

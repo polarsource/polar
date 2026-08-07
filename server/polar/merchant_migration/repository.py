@@ -83,14 +83,19 @@ class MerchantMigrationRecordRepository(
         self,
         merchant_migration: MerchantMigration,
         seen: Collection[tuple[MerchantMigrationRecordType, str]],
+        types: Collection[MerchantMigrationRecordType],
     ) -> None:
-        """Drop staged records the source no longer returns. Only pending rows
-        go: an imported, skipped or failed one is the record of what a past run
-        did, and deleting it would let a later run import the same thing twice.
+        """Drop staged records the source no longer returns.
+
+        ``types`` is what the pass reads, so a type it never looks at is never
+        mistaken for a record the source dropped. Only pending rows go: an
+        imported, skipped or failed one is the record of what a past run did, and
+        deleting it would let a later run import the same thing twice.
         """
         statement = self.get_base_statement().where(
             MerchantMigrationRecord.merchant_migration_id == merchant_migration.id,
             MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
+            MerchantMigrationRecord.type.in_(types),
         )
         for record in await self.get_all(statement):
             if (record.type, record.source_id) not in seen:

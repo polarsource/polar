@@ -69,8 +69,9 @@ class StripeSourceCredentials(TypedDict):
     """Shape of ``MerchantMigration.source_credentials`` for a Stripe source.
 
     Only ``api_key_encrypted`` is a secret: the ciphertext of the merchant's
-    restricted API key, decrypted on demand to read their account. The other
-    fields are non-secret metadata surfaced to the API.
+    restricted API key, decrypted on demand to read their account. The rest is
+    non-secret metadata; `MerchantMigration.source` decides which of it the API
+    exposes.
     """
 
     api_key_encrypted: str
@@ -293,23 +294,29 @@ class MerchantMigrationService:
         )
         # Pruning against a half-read source would delete records it still has.
         if staged.complete:
-            await record_repository.prune_missing(migration, staged.keys)
+            await record_repository.prune_missing(
+                migration, staged.keys, _ENTITY_RECORD_TYPE.values()
+            )
 
         repository = MerchantMigrationRepository.from_session(session)
-        update_dict: dict[str, Any] = {
-            "source_credentials": {
+        update_dict: dict[str, Any] = {}
+        # `get_source_account` is best-effort: it returns an empty country when
+        # it couldn't read the account at all. Storing that would erase a
+        # blocker we already know about.
+        if source_account.country is not None:
+            update_dict["source_credentials"] = {
                 **migration.source_credentials,
                 "country": source_account.country,
                 "is_connect_platform": source_account.is_connect_platform,
             }
-        }
         # A blocked migration stays on source setup, so the merchant keeps the
         # panel that tells them what to fix instead of landing on a review table
         # they can't import from. Re-running to refresh the ledger must also not
         # regress a migration that has already moved on.
         if migration.step == MerchantMigrationStep.source_setup and report.can_start:
             update_dict["step"] = MerchantMigrationStep.pre_check
-        await repository.update(migration, update_dict=update_dict)
+        if update_dict:
+            await repository.update(migration, update_dict=update_dict)
         return report
 
     async def import_catalog(
@@ -365,8 +372,7 @@ class MerchantMigrationService:
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
     ) -> MerchantMigration:
-        """Serialized so a double-click or retry can't run twice. Takes the write
-        session on purpose: a replica can't lock a row."""
+        # Takes the write session on purpose: a replica can't lock a row.
         return await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
@@ -470,7 +476,7 @@ class MerchantMigrationService:
                 if item.reason_level == PrecheckReasonLevel.action_required
             ),
             blockers=import_blockers(
-                organization, self._stored_source_account(migration)
+                organization, await self._source_account(migration)
             ),
         )
 
@@ -572,12 +578,15 @@ class MerchantMigrationService:
             is_connect_platform=account.is_connect_platform,
         )
 
-    def _stored_source_account(self, migration: MerchantMigration) -> CanonicalAccount:
-        """The source account as last seen, so a read can report blockers without
-        a Stripe round-trip. `run_precheck` refreshes it."""
+    async def _source_account(self, migration: MerchantMigration) -> CanonicalAccount:
+        """The source account as the last pre-check saw it, so a read can report
+        blockers without a Stripe round-trip. A migration connected before we
+        stored it falls back to asking Stripe, once, until its next pre-check."""
         credentials = migration.source_credentials
+        if credentials.get("country") is None:
+            return await (await self._build_adapter(migration)).get_source_account()
         return CanonicalAccount(
-            country=credentials.get("country"),
+            country=credentials["country"],
             is_connect_platform=bool(credentials.get("is_connect_platform")),
         )
 

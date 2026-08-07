@@ -44,6 +44,16 @@ export const useCreateMerchantMigration = (organizationId: string) =>
     },
   })
 
+// Both mutations reshape the ledger, so everything drawn from it goes stale.
+const invalidateMigration = (id: string) => {
+  const queryClient = getQueryClient()
+  queryClient.invalidateQueries({ queryKey: ['merchantMigration', { id }] })
+  queryClient.invalidateQueries({ queryKey: ['merchantMigrationRecords'] })
+  queryClient.invalidateQueries({
+    queryKey: ['merchantMigrationCounts', { id }],
+  })
+}
+
 export const useRunMerchantMigrationPrecheck = (id: string) =>
   useMutation({
     mutationFn: () =>
@@ -52,17 +62,7 @@ export const useRunMerchantMigrationPrecheck = (id: string) =>
           params: { path: { id } },
         }),
       ),
-    onSuccess: () => {
-      getQueryClient().invalidateQueries({
-        queryKey: ['merchantMigration', { id }],
-      })
-      getQueryClient().invalidateQueries({
-        queryKey: ['merchantMigrationRecords'],
-      })
-      getQueryClient().invalidateQueries({
-        queryKey: ['merchantMigrationCounts', { id }],
-      })
-    },
+    onSuccess: () => invalidateMigration(id),
   })
 
 interface ImportOptions {
@@ -84,17 +84,7 @@ export const useImportMerchantMigrationCatalog = (id: string) =>
           },
         }),
       ),
-    onSuccess: () => {
-      getQueryClient().invalidateQueries({
-        queryKey: ['merchantMigration', { id }],
-      })
-      getQueryClient().invalidateQueries({
-        queryKey: ['merchantMigrationRecords'],
-      })
-      getQueryClient().invalidateQueries({
-        queryKey: ['merchantMigrationCounts', { id }],
-      })
-    },
+    onSuccess: () => invalidateMigration(id),
   })
 
 export const useMigrationRecords = (

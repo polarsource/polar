@@ -121,7 +121,7 @@ export function ReviewTableView({
 
   if (blockers.length > 0) {
     return (
-      <Box flexDirection="column" rowGap="l">
+      <Box flexDirection="column" rowGap="l" alignItems="start">
         {blockers.map((blocker) => (
           <Alert
             key={blocker.code}
@@ -130,6 +130,17 @@ export function ReviewTableView({
             description={blocker.message}
           />
         ))}
+        {/* Without this the step is a dead end once a blocker shows. */}
+        {onRerunPrecheck && (
+          <Button
+            size="sm"
+            variant="secondary"
+            onClick={onRerunPrecheck}
+            disabled={rerunning}
+          >
+            {rerunning ? 'Checking…' : 'Check again'}
+          </Button>
+        )}
       </Box>
     )
   }

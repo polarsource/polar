@@ -98,6 +98,7 @@ describe('CheckoutFormProvider', () => {
     })
 
     it.each([
+      'DiscountRedemptionLimitReached',
       'AlreadyActiveSubscriptionError',
       'NotOpenCheckout',
       'PaymentNotReady',
@@ -120,6 +121,7 @@ describe('CheckoutFormProvider', () => {
       expect(getCtx().form.formState.errors.root?.message).toBe(
         `${errorCode} detail`,
       )
+      expect(getCtx().form.formState.errors.discount_code).toBeUndefined()
     })
 
     it.each(['ResourceNotFound', 'ExpiredCheckoutError'] as const)(
@@ -214,6 +216,7 @@ describe('CheckoutFormProvider', () => {
 
     it.each([
       'PaymentError',
+      'DiscountRedemptionLimitReached',
       'AlreadyActiveSubscriptionError',
       'NotOpenCheckout',
       'PaymentNotReady',
@@ -238,6 +241,7 @@ describe('CheckoutFormProvider', () => {
       expect(getCtx().form.formState.errors.root?.message).toBe(
         `${errorCode} detail`,
       )
+      expect(getCtx().form.formState.errors.discount_code).toBeUndefined()
     })
 
     it.each(['ResourceNotFound', 'ExpiredCheckoutError'] as const)(

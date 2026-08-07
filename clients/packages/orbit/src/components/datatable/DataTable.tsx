@@ -71,6 +71,19 @@ const queryIsDisabled = (s: ReactQueryLoading): boolean => {
   return false
 }
 
+const activationKeyHandler =
+  (activate: (event: unknown) => void) =>
+  (event: React.KeyboardEvent<HTMLTableRowElement>) => {
+    // Let buttons, links and checkboxes inside the row keep their own keys.
+    if (event.target !== event.currentTarget) return
+    if (event.key !== 'Enter' && event.key !== ' ') return
+    event.preventDefault()
+    activate(event)
+  }
+
+const ACTIVATABLE_ROW_CLASS =
+  'cursor-pointer focus-visible:ring-ring focus-visible:ring-2 focus-visible:ring-inset focus-visible:outline-none'
+
 export function DataTable<TData, TValue>({
   columns,
   data,
@@ -171,54 +184,52 @@ export function DataTable<TData, TValue>({
             ) : (
               <>
                 {table.getRowModel().rows?.length ? (
-                  table.getRowModel().rows.map((row) => (
-                    <TableRow
-                      key={row.id}
-                      className={
-                        enableRowSelection || onRowClick
-                          ? row.getCanSelect()
-                            ? 'cursor-pointer'
-                            : ''
-                          : undefined
-                      }
-                      data-state={
-                        enableRowSelection
-                          ? row.getIsSelected()
+                  table.getRowModel().rows.map((row) => {
+                    const activate = onRowClick
+                      ? () => onRowClick(row)
+                      : enableRowSelection && row.getCanSelect()
+                        ? row.getToggleSelectedHandler()
+                        : undefined
+                    return (
+                      <TableRow
+                        key={row.id}
+                        className={activate ? ACTIVATABLE_ROW_CLASS : undefined}
+                        data-state={
+                          enableRowSelection && row.getIsSelected()
                             ? 'selected'
                             : undefined
-                          : undefined
-                      }
-                      onClick={
-                        onRowClick
-                          ? () => onRowClick(row)
-                          : enableRowSelection
-                            ? row.getToggleSelectedHandler()
-                            : undefined
-                      }
-                    >
-                      {row.getVisibleCells().map((cell) => {
-                        const colSpan = getCellColSpan
-                          ? getCellColSpan(cell)
-                          : 1
+                        }
+                        // An activatable row must be reachable without a mouse.
+                        tabIndex={activate ? 0 : undefined}
+                        onClick={activate}
+                        onKeyDown={
+                          activate ? activationKeyHandler(activate) : undefined
+                        }
+                      >
+                        {row.getVisibleCells().map((cell) => {
+                          const colSpan = getCellColSpan
+                            ? getCellColSpan(cell)
+                            : 1
 
-                        return (
-                          <React.Fragment key={cell.id}>
-                            {colSpan ? (
-                              <TableCell
-                                colSpan={colSpan}
-                                style={{ width: cell.column.getSize() }}
-                              >
-                                {flexRender(
-                                  cell.column.columnDef.cell,
-                                  cell.getContext(),
-                                )}
-                              </TableCell>
-                            ) : null}
-                          </React.Fragment>
-                        )
-                      })}
-                    </TableRow>
-                  ))
+                          return (
+                            <React.Fragment key={cell.id}>
+                              {colSpan ? (
+                                <TableCell
+                                  colSpan={colSpan}
+                                  style={{ width: cell.column.getSize() }}
+                                >
+                                  {flexRender(
+                                    cell.column.columnDef.cell,
+                                    cell.getContext(),
+                                  )}
+                                </TableCell>
+                              ) : null}
+                            </React.Fragment>
+                          )
+                        })}
+                      </TableRow>
+                    )
+                  })
                 ) : (
                   <TableRow>
                     <TableCell

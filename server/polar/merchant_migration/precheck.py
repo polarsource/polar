@@ -206,13 +206,13 @@ class PrecheckEngine:
                 ),
                 source_id=None,
             )
-        if account.is_connect_platform:
+        if account.has_connected_accounts:
             yield PrecheckIssue(
                 level=PrecheckIssueLevel.blocker,
-                code="connect_platform_account",
+                code="source_has_connected_accounts",
                 message=(
-                    "The source is a Connect platform; only platform-account data "
-                    "is copyable, so it can't be migrated automatically."
+                    "The source has Connect accounts. Only data on the platform "
+                    "account can be copied, so it can't be migrated automatically."
                 ),
                 source_id=None,
             )

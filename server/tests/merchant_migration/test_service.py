@@ -97,7 +97,7 @@ class _FakeAdapter:
             yield record
 
     async def get_source_account(self) -> CanonicalAccount:
-        return CanonicalAccount(country="US", is_connect_platform=False)
+        return CanonicalAccount(country="US", has_connected_accounts=False)
 
 
 async def _enable_feature(

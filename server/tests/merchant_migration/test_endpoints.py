@@ -279,7 +279,7 @@ class TestPrecheck:
         adapter = mocker.MagicMock()
         adapter.extract.return_value = _empty_extract()
         adapter.get_source_account = mocker.AsyncMock(
-            return_value=CanonicalAccount(country="US", is_connect_platform=False)
+            return_value=CanonicalAccount(country="US", has_connected_accounts=False)
         )
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter", return_value=adapter
@@ -341,7 +341,7 @@ class TestRecords:
         adapter = mocker.MagicMock()
         adapter.extract.return_value = _catalog_extract()
         adapter.get_source_account = mocker.AsyncMock(
-            return_value=CanonicalAccount(country="US", is_connect_platform=False)
+            return_value=CanonicalAccount(country="US", has_connected_accounts=False)
         )
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter", return_value=adapter
@@ -406,7 +406,7 @@ class TestImport:
         adapter = mocker.MagicMock()
         adapter.extract.return_value = _catalog_with_customer_extract()
         adapter.get_source_account = mocker.AsyncMock(
-            return_value=CanonicalAccount(country="US", is_connect_platform=False)
+            return_value=CanonicalAccount(country="US", has_connected_accounts=False)
         )
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter", return_value=adapter
@@ -436,7 +436,7 @@ class TestImport:
         adapter = mocker.MagicMock()
         adapter.extract.return_value = _catalog_with_customer_extract()
         adapter.get_source_account = mocker.AsyncMock(
-            return_value=CanonicalAccount(country="US", is_connect_platform=False)
+            return_value=CanonicalAccount(country="US", has_connected_accounts=False)
         )
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter", return_value=adapter

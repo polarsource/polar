@@ -105,23 +105,21 @@ class StripeAdapter:
         async for subscription in self._extract_subscriptions():
             yield subscription
 
-    async def get_source_account(self) -> CanonicalAccount:
-        # Best-effort: the restricted key may lack account/Connect read scope, in
-        # which case we can't determine these and don't block.
-        account = await self._current_account()
-        is_connect_platform = False
+    async def _has_connected_accounts(self) -> bool:
+        # Best-effort: a restricted key may lack Connect read scope. Stripe
+        # answers with an empty list for a non-platform rather than an error, so
+        # only an actual connected account counts.
         try:
-            # Only Connect platforms may list connected accounts; a non-platform
-            # gets a permission error. So the call *succeeding* — not the number
-            # of accounts returned — is what identifies a platform (a platform
-            # with zero connected accounts still succeeds here).
-            await self._client.v1.accounts.list_async(params={"limit": 1})
-            is_connect_platform = True
+            accounts = await self._client.v1.accounts.list_async(params={"limit": 1})
         except stripe_lib.StripeError:
-            pass
+            return False
+        return bool(accounts.data)
+
+    async def get_source_account(self) -> CanonicalAccount:
+        account = await self._current_account()
         return CanonicalAccount(
             country=account.country if account else None,
-            is_connect_platform=is_connect_platform,
+            has_connected_accounts=await self._has_connected_accounts(),
         )
 
     async def _extract_products(self) -> AsyncIterator[CanonicalProduct]:

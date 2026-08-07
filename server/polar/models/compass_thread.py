@@ -14,8 +14,8 @@ if TYPE_CHECKING:
 class CompassThread(RecordModel):
     """A Compass assistant conversation.
 
-    A thread belongs to the user whose dashboard session created it: Compass
-    is reachable from a web session only, so there are no threads shared by
+    A thread belongs to the user credential that created it: Compass is
+    reachable from user credentials only, so there are no threads shared by
     an organization's API tokens.
     """
 

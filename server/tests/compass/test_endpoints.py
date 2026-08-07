@@ -1,14 +1,54 @@
 import uuid
+from collections.abc import Iterator
+from datetime import timedelta
 
 import pytest
+from fastapi import FastAPI
 from httpx import AsyncClient
 
-from polar.models import Organization, UserOrganization
+from polar.auth.scope import Scope
+from polar.kit.utils import utc_now
+from polar.models import (
+    CompassThread,
+    CompassThreadMessage,
+    Organization,
+    User,
+    UserOrganization,
+)
+from polar.postgres import get_db_sessionmaker
+from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
+
+
+async def _create_thread(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    *,
+    user: User,
+    title: str = "Thread",
+) -> CompassThread:
+    thread = CompassThread(
+        organization_id=organization.id,
+        user_id=user.id,
+        title=title,
+    )
+    await save_fixture(thread)
+    return thread
 
 
 @pytest.mark.asyncio
 class TestAssistantChat:
+    @pytest.fixture(autouse=True)
+    def stub_sessionmakers(self, app: FastAPI) -> Iterator[None]:
+        # The chat endpoint depends on the write sessionmaker, which the test
+        # harness doesn't provide. Every scenario here 4xxs before it is used,
+        # so a stub override is enough to let the dependency resolve.
+        app.dependency_overrides[get_db_sessionmaker] = lambda: None
+        try:
+            yield
+        finally:
+            app.dependency_overrides.pop(get_db_sessionmaker)
+
     async def test_anonymous(
         self, client: AsyncClient, organization: Organization
     ) -> None:
@@ -45,3 +85,299 @@ class TestAssistantChat:
         )
 
         assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_someone_elses_thread(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user_second: User,
+    ) -> None:
+        organization.feature_settings = {"compass_enabled": True}
+        await save_fixture(organization)
+        thread = await _create_thread(save_fixture, organization, user=user_second)
+
+        response = await client.post(
+            "/v1/compass/assistant",
+            json={
+                "organization_id": str(organization.id),
+                "prompt": "hi",
+                "thread_id": str(thread.id),
+            },
+        )
+
+        assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestListThreads:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(
+            "/v1/compass/threads",
+            params={"organization_id": str(organization.id)},
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_lists_only_own_threads(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+        user_second: User,
+    ) -> None:
+        mine = await _create_thread(save_fixture, organization, user=user, title="Mine")
+        await _create_thread(save_fixture, organization, user=user_second)
+
+        response = await client.get(
+            "/v1/compass/threads",
+            params={"organization_id": str(organization.id)},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        assert json["items"][0]["id"] == str(mine.id)
+        assert json["items"][0]["title"] == "Mine"
+
+    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
+    async def test_organization_token_is_rejected(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        """A thread belongs to a user, so an organization token has none to
+        list."""
+        response = await client.get(
+            "/v1/compass/threads",
+            params={"organization_id": str(organization.id)},
+        )
+
+        assert response.status_code == 401
+
+
+@pytest.mark.asyncio
+class TestGetThread:
+    @pytest.mark.auth
+    async def test_not_found_for_someone_elses_thread(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user_second: User,
+    ) -> None:
+        thread = await _create_thread(save_fixture, organization, user=user_second)
+
+        response = await client.get(f"/v1/compass/threads/{thread.id}")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_returns_thread(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        thread = await _create_thread(save_fixture, organization, user=user)
+
+        response = await client.get(f"/v1/compass/threads/{thread.id}")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["id"] == str(thread.id)
+        assert json["organization_id"] == str(organization.id)
+        assert json["title"] == thread.title
+
+
+@pytest.mark.asyncio
+class TestListThreadMessages:
+    @pytest.mark.auth
+    async def test_not_found_for_someone_elses_thread(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user_second: User,
+    ) -> None:
+        thread = await _create_thread(save_fixture, organization, user=user_second)
+
+        response = await client.get(f"/v1/compass/threads/{thread.id}/messages")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_returns_messages_with_parts(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        thread = await _create_thread(save_fixture, organization, user=user)
+        await save_fixture(
+            CompassThreadMessage(
+                thread=thread,
+                prompt="How is my MRR?",
+                parts=[{"kind": "text", "text": "MRR is up 12%."}],
+                model_messages=[],
+            )
+        )
+
+        response = await client.get(f"/v1/compass/threads/{thread.id}/messages")
+
+        assert response.status_code == 200
+        json = response.json()
+        assert json["pagination"]["total_count"] == 1
+        message = json["items"][0]
+        assert message["prompt"] == "How is my MRR?"
+        assert message["parts"] == [{"kind": "text", "text": "MRR is up 12%."}]
+        assert "model_messages" not in message
+
+    @pytest.mark.auth
+    async def test_first_page_is_the_most_recent_turns(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        thread = await _create_thread(save_fixture, organization, user=user)
+        now = utc_now()
+        for turn in range(5):
+            await save_fixture(
+                CompassThreadMessage(
+                    thread=thread,
+                    prompt=f"q{turn}",
+                    parts=[],
+                    model_messages=[],
+                    created_at=now + timedelta(seconds=turn),
+                )
+            )
+
+        response = await client.get(
+            f"/v1/compass/threads/{thread.id}/messages",
+            params={"page": 1, "limit": 2},
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert [item["prompt"] for item in json["items"]] == ["q3", "q4"]
+        assert json["pagination"]["total_count"] == 5
+
+
+@pytest.mark.asyncio
+class TestUpdateThread:
+    @pytest.mark.auth
+    async def test_rename(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        thread = await _create_thread(save_fixture, organization, user=user)
+
+        response = await client.patch(
+            f"/v1/compass/threads/{thread.id}",
+            json={"title": "Churn investigation"},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["title"] == "Churn investigation"
+
+    @pytest.mark.auth
+    async def test_not_found_for_someone_elses_thread(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user_second: User,
+    ) -> None:
+        thread = await _create_thread(save_fixture, organization, user=user_second)
+
+        response = await client.patch(
+            f"/v1/compass/threads/{thread.id}", json={"title": "Hijacked"}
+        )
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.metrics_read}))
+    async def test_read_only_token_cannot_rename(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        thread = await _create_thread(save_fixture, organization, user=user)
+
+        response = await client.patch(
+            f"/v1/compass/threads/{thread.id}", json={"title": "Renamed"}
+        )
+
+        assert response.status_code == 403
+
+
+@pytest.mark.asyncio
+class TestDeleteThread:
+    @pytest.mark.auth
+    async def test_deleted_thread_disappears(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        thread = await _create_thread(save_fixture, organization, user=user)
+
+        response = await client.delete(f"/v1/compass/threads/{thread.id}")
+        assert response.status_code == 204
+
+        response = await client.get(f"/v1/compass/threads/{thread.id}")
+        assert response.status_code == 404
+
+    @pytest.mark.auth
+    async def test_not_found_for_someone_elses_thread(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user_second: User,
+    ) -> None:
+        thread = await _create_thread(save_fixture, organization, user=user_second)
+
+        response = await client.delete(f"/v1/compass/threads/{thread.id}")
+
+        assert response.status_code == 404
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.metrics_read}))
+    async def test_read_only_token_cannot_delete(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+        user: User,
+    ) -> None:
+        thread = await _create_thread(save_fixture, organization, user=user)
+
+        response = await client.delete(f"/v1/compass/threads/{thread.id}")
+
+        assert response.status_code == 403

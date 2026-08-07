@@ -190,6 +190,7 @@ export const useMigrationRecords = (
     entity?: schemas['PrecheckEntity']
     status?: schemas['PrecheckRecordStatus']
     reasonLevel?: schemas['PrecheckReasonLevel']
+    importStatus?: schemas['MerchantMigrationRecordStatus']
     page: number
     limit: number
   },
@@ -207,6 +208,9 @@ export const useMigrationRecords = (
               ...(params.reasonLevel
                 ? { reason_level: params.reasonLevel }
                 : {}),
+              ...(params.importStatus
+                ? { import_status: params.importStatus }
+                : {}),
               page: params.page,
               limit: params.limit,
             },
@@ -216,74 +220,3 @@ export const useMigrationRecords = (
     retry: defaultRetry,
     enabled: !!id,
   })
-
-export type CountEntity = 'subscriptions' | 'products' | 'customers'
-
-export interface EntityCount {
-  importable: number
-  skipped: number
-}
-
-const useEntityCount = (
-  id: string,
-  entity: CountEntity,
-): EntityCount & {
-  isLoading: boolean
-  isError: boolean
-} => {
-  const importable = useMigrationRecords(id, {
-    entity,
-    status: 'importable',
-    page: 1,
-    limit: 1,
-  })
-  const skipped = useMigrationRecords(id, {
-    entity,
-    status: 'skipped',
-    page: 1,
-    limit: 1,
-  })
-  return {
-    importable: importable.data?.pagination.total_count ?? 0,
-    skipped: skipped.data?.pagination.total_count ?? 0,
-    isLoading: importable.isLoading || skipped.isLoading,
-    // A failed count would otherwise read as zero, which the caller can't tell
-    // apart from an empty catalog.
-    isError: importable.isError || skipped.isError,
-  }
-}
-
-export const useMigrationEntityCounts = (id: string) => {
-  const subscriptions = useEntityCount(id, 'subscriptions')
-  const products = useEntityCount(id, 'products')
-  const customers = useEntityCount(id, 'customers')
-  const attention = useMigrationRecords(id, {
-    reasonLevel: 'action_required',
-    page: 1,
-    limit: 1,
-  })
-
-  const counts: Record<CountEntity, EntityCount> = {
-    subscriptions: {
-      importable: subscriptions.importable,
-      skipped: subscriptions.skipped,
-    },
-    products: { importable: products.importable, skipped: products.skipped },
-    customers: { importable: customers.importable, skipped: customers.skipped },
-  }
-
-  return {
-    counts,
-    attentionCount: attention.data?.pagination.total_count ?? 0,
-    isLoading:
-      subscriptions.isLoading ||
-      products.isLoading ||
-      customers.isLoading ||
-      attention.isLoading,
-    isError:
-      subscriptions.isError ||
-      products.isError ||
-      customers.isError ||
-      attention.isError,
-  }
-}

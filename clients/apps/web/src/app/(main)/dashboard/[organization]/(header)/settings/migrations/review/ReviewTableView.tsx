@@ -1,6 +1,9 @@
 'use client'
 
-import { CountEntity, EntityCount } from '@/hooks/queries/merchantMigrations'
+import {
+  CountEntity,
+  EntityCount,
+} from '@/hooks/queries/merchantMigrationCounts'
 import { schemas } from '@polar-sh/client'
 import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -20,7 +23,6 @@ import {
   selectedCount,
   SelectionState,
 } from './reviewSelection'
-import { ImportSummary, importResultText } from './importSummary'
 import { ReviewRow, ReviewScope } from './reviewRows'
 
 const numberFormat = new Intl.NumberFormat('en-US')
@@ -43,7 +45,6 @@ interface Props {
   onToggleAll: () => void
   onImport: () => void
   importing?: boolean
-  importResult?: ImportSummary | null
   importError?: boolean
   onRerunPrecheck?: () => void
   rerunning?: boolean
@@ -69,7 +70,6 @@ export function ReviewTableView({
   onToggleAll,
   onImport,
   importing = false,
-  importResult,
   importError = false,
   onRerunPrecheck,
   rerunning = false,
@@ -175,13 +175,6 @@ export function ReviewTableView({
 
   return (
     <Box as="section" flexDirection="column" rowGap="xl">
-      {importResult && (
-        <Alert
-          variant="success"
-          title="Catalog imported"
-          description={importResultText(importResult)}
-        />
-      )}
       {importError && (
         <Alert
           variant="danger"

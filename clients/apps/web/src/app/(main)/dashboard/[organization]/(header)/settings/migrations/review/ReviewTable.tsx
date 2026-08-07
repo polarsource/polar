@@ -2,10 +2,10 @@
 
 import {
   useImportMerchantMigrationCatalog,
-  useMigrationEntityCounts,
   useMigrationRecords,
   useRunMerchantMigrationPrecheck,
 } from '@/hooks/queries/merchantMigrations'
+import { useMigrationEntityCounts } from '@/hooks/queries/merchantMigrationCounts'
 import { Alert, Spinner } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useState } from 'react'
@@ -116,7 +116,6 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
         })
       }}
       importing={importCatalog.isPending}
-      importResult={importCatalog.data}
       importError={importCatalog.isError}
       onRerunPrecheck={() => rerunPrecheck.mutate()}
       rerunning={rerunPrecheck.isPending}

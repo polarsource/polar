@@ -16,7 +16,10 @@ from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
-from polar.models.merchant_migration_record import MerchantMigrationRecordType
+from polar.models.merchant_migration_record import (
+    MerchantMigrationRecordStatus,
+    MerchantMigrationRecordType,
+)
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
@@ -462,21 +465,24 @@ class MerchantMigrationService:
 
     async def list_records(
         self,
-        session: AsyncSession,
+        # Reads only, so it takes the read session like `_get_manageable`.
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
         *,
         entity: PrecheckEntity | None,
         status: PrecheckRecordStatus | None,
         reason_level: PrecheckReasonLevel | None = None,
+        import_status: MerchantMigrationRecordStatus | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[MerchantMigrationRecordItem], int]:
         """Return staged records classified importable/skipped and paginated in
         memory. ``entity`` scopes to one type; ``None`` returns products, customers
         and subscriptions together. ``status`` filters to importable or skipped;
         ``reason_level`` filters to rows the merchant has to act on
-        (`action_required`) or only needs to know about (`info`). Reads what
-        ``run_precheck`` persisted."""
+        (`action_required`) or only needs to know about (`info`);
+        ``import_status`` filters on the ledger outcome, which excludes price rows
+        since they have none. Reads what ``run_precheck`` persisted."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
 
         record_repository = MerchantMigrationRecordRepository.from_session(session)
@@ -499,6 +505,8 @@ class MerchantMigrationService:
             items = [item for item in items if item.status == status]
         if reason_level is not None:
             items = [item for item in items if item.reason_level == reason_level]
+        if import_status is not None:
+            items = [item for item in items if item.import_status == import_status]
 
         start = (pagination.page - 1) * pagination.limit
         return items[start : start + pagination.limit], len(items)

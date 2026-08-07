@@ -43,8 +43,12 @@ async def aiter_records(
 
 def build_organization(
     status: OrganizationStatus = OrganizationStatus.ACTIVE,
+    *,
+    default_presentment_currency: str = "usd",
 ) -> Organization:
-    return Organization(status=status)
+    return Organization(
+        status=status, default_presentment_currency=default_presentment_currency
+    )
 
 
 def build_account(
@@ -227,6 +231,103 @@ class TestPrecheckEngine:
         report = await run([build_product(prices=[build_price(currency="xyz")])])
         assert "unsupported_currency" in codes(report, PrecheckIssueLevel.warning)
 
+    async def test_product_without_default_currency_price_warns(self) -> None:
+        report = await run(
+            [
+                build_product(product_source_id="prod_1", name="Pro"),
+                build_product(
+                    product_source_id="prod_2",
+                    name="Team",
+                    prices=[build_price(source_id="price_eur", currency="eur")],
+                ),
+            ]
+        )
+        assert "missing_default_currency_price" in codes(
+            report, PrecheckIssueLevel.warning
+        )
+        # One product still imports, so the catalog is worth importing.
+        assert report.can_start is True
+
+    async def test_catalog_priced_in_another_currency_blocks(self) -> None:
+        report = await run(
+            [build_product(prices=[build_price(currency="eur")])],
+        )
+        assert "no_default_currency_prices" in codes(report, PrecheckIssueLevel.blocker)
+        assert report.can_start is False
+
+    async def test_blocker_names_only_the_currencies_polar_would_take(self) -> None:
+        # A price Polar drops anyway isn't a currency the merchant can switch to.
+        report = await run(
+            [
+                build_product(
+                    prices=[
+                        build_price(source_id="price_eur", currency="eur"),
+                        build_price(source_id="price_bad", currency="xyz"),
+                    ]
+                )
+            ]
+        )
+        blocker = next(
+            issue
+            for issue in report.issues
+            if issue.code == "no_default_currency_prices"
+        )
+        assert "EUR" in blocker.message
+        assert "XYZ" not in blocker.message
+
+    async def test_blocker_does_not_claim_dropped_products_lack_the_currency(
+        self,
+    ) -> None:
+        # The one-time product does have a USD price; it just can't be imported.
+        report = await run(
+            [
+                build_product(
+                    product_source_id="prod_1", name="Legacy", recurring_interval=None
+                ),
+                build_product(
+                    product_source_id="prod_2",
+                    name="Pro",
+                    prices=[build_price(source_id="price_eur", currency="eur")],
+                ),
+            ]
+        )
+        blocker = next(
+            issue
+            for issue in report.issues
+            if issue.code == "no_default_currency_prices"
+        )
+        assert "No product can be imported." in blocker.message
+        assert "EUR" in blocker.message
+
+    async def test_default_currency_matching_the_catalog_does_not_warn(self) -> None:
+        report = await run(
+            [build_product(prices=[build_price(currency="eur")])],
+            organization=build_organization(default_presentment_currency="eur"),
+        )
+        assert report.issues == []
+        assert report.can_start is True
+
+    async def test_product_with_a_price_in_each_currency_does_not_warn(self) -> None:
+        report = await run(
+            [
+                build_product(
+                    prices=[
+                        build_price(source_id="price_usd", currency="usd"),
+                        build_price(source_id="price_eur", currency="eur"),
+                    ]
+                )
+            ]
+        )
+        assert report.issues == []
+
+    async def test_product_without_importable_price_keeps_its_own_reason(self) -> None:
+        report = await run(
+            [build_product(prices=[build_price(currency="eur", amount=None)])]
+        )
+        warnings = codes(report, PrecheckIssueLevel.warning)
+        assert "unsupported_price_amount" in warnings
+        assert "missing_default_currency_price" not in warnings
+
     async def test_price_below_minimum_warns(self) -> None:
         report = await run([build_product(prices=[build_price(amount=1)])])
         assert "price_out_of_bounds" in codes(report, PrecheckIssueLevel.warning)
@@ -369,7 +470,7 @@ class TestClassifyRecords:
             ),
         ]
 
-        items = classify_records(records, PrecheckEntity.products)
+        items = classify_records(records, PrecheckEntity.products, "usd")
 
         by_id = {item.source_id: item for item in items}
         assert by_id["prod_1"].status == PrecheckRecordStatus.importable
@@ -388,7 +489,7 @@ class TestClassifyRecords:
             ),
         ]
 
-        items = classify_records(records, PrecheckEntity.products)
+        items = classify_records(records, PrecheckEntity.products, "usd")
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "no_importable_price"
@@ -402,7 +503,7 @@ class TestClassifyRecords:
             build_subscription(source_id="sub_1", has_discount=True),
         ]
 
-        items = classify_records(records, PrecheckEntity.subscriptions)
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_has_discount"
@@ -425,7 +526,7 @@ class TestClassifyRecords:
             ),
         ]
 
-        items = classify_records(records, PrecheckEntity.prices)
+        items = classify_records(records, PrecheckEntity.prices, "usd")
 
         by_id = {item.source_id: item for item in items}
         assert by_id["price_ok"].status == PrecheckRecordStatus.importable
@@ -437,7 +538,7 @@ class TestClassifyRecords:
             build_customer(source_id="cus_1", email="a@example.com", country=None)
         ]
 
-        items = classify_records(records, PrecheckEntity.customers)
+        items = classify_records(records, PrecheckEntity.customers, "usd")
 
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].reason_code == "customer_missing_country"
@@ -452,7 +553,7 @@ class TestClassifyRecords:
             build_subscription(source_id="sub_1", trialing=True),
         ]
 
-        items = classify_records(records, PrecheckEntity.subscriptions)
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].reason_code == "subscription_trialing"
@@ -472,7 +573,7 @@ class TestClassifyRecords:
             ),
         ]
 
-        items = classify_records(records, PrecheckEntity.subscriptions)
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].reason_code == "payment_method_requires_reentry"
@@ -487,7 +588,7 @@ class TestClassifyRecords:
             build_subscription(source_id="sub_1", has_discount=True),
         ]
 
-        items = classify_records(records, PrecheckEntity.subscriptions)
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_level == PrecheckReasonLevel.action_required
@@ -503,7 +604,7 @@ class TestClassifyRecords:
             )
         ]
 
-        items = classify_records(records, PrecheckEntity.products)
+        items = classify_records(records, PrecheckEntity.products, "usd")
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "multiple_prices_same_currency"
@@ -520,7 +621,7 @@ class TestClassifyRecords:
             )
         ]
 
-        items = classify_records(records, PrecheckEntity.products)
+        items = classify_records(records, PrecheckEntity.products, "usd")
 
         assert items[0].status == PrecheckRecordStatus.importable
 
@@ -539,7 +640,7 @@ class TestClassifyRecords:
             )
         ]
 
-        items = classify_records(records, PrecheckEntity.products)
+        items = classify_records(records, PrecheckEntity.products, "usd")
 
         assert items[0].status == PrecheckRecordStatus.importable
 
@@ -558,7 +659,7 @@ class TestClassifyRecords:
             )
         ]
 
-        items = classify_records(records, PrecheckEntity.products)
+        items = classify_records(records, PrecheckEntity.products, "usd")
 
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].amount == 1000
@@ -574,17 +675,50 @@ class TestClassifyRecords:
             subscription,
         ]
 
-        items = classify_records(records, PrecheckEntity.subscriptions)
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_customer_not_importable"
+
+    def test_product_without_default_currency_price_skipped(self) -> None:
+        # Polar requires a price in the organization's default currency, so the
+        # classifier must not promise a product the importer would reject.
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                prices=[build_price(source_id="price_eur", currency="eur")],
+            )
+        ]
+
+        items = classify_records(records, PrecheckEntity.products, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "missing_default_currency_price"
+        assert items[0].reason_level == PrecheckReasonLevel.action_required
+
+    def test_subscription_of_product_without_default_currency_price_skipped(
+        self,
+    ) -> None:
+        records: list[CanonicalRecord] = [
+            build_product(
+                product_source_id="prod_1",
+                prices=[build_price(source_id="price_1", currency="eur")],
+            ),
+            build_customer(source_id="cus_1", email="a@example.com"),
+            build_subscription(source_id="sub_1"),
+        ]
+
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
+
+        assert items[0].status == PrecheckRecordStatus.skipped
+        assert items[0].reason_code == "subscription_product_not_importable"
 
     def test_product_matching_an_existing_polar_name_gets_a_note(self) -> None:
         records: list[CanonicalRecord] = [
             build_product(product_source_id="prod_1", name="Pro")
         ]
 
-        items = classify_records(records, PrecheckEntity.products, {"pro"})
+        items = classify_records(records, PrecheckEntity.products, "usd", {"pro"})
 
         assert items[0].status == PrecheckRecordStatus.importable
         assert items[0].reason_code == "product_exists_in_polar"
@@ -596,7 +730,7 @@ class TestClassifyRecords:
             build_customer(source_id="cus_2", email="same@example.com"),
         ]
 
-        items = classify_records(records, PrecheckEntity.customers)
+        items = classify_records(records, PrecheckEntity.customers, "usd")
 
         by_id = {item.source_id: item for item in items}
         assert by_id["cus_1"].status == PrecheckRecordStatus.importable
@@ -609,7 +743,7 @@ class TestClassifyRecords:
         # is skipped, not promised as importable.
         records: list[CanonicalRecord] = [build_customer(source_id="cus_1", email="")]
 
-        items = classify_records(records, PrecheckEntity.customers)
+        items = classify_records(records, PrecheckEntity.customers, "usd")
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "customer_missing_email"
@@ -626,7 +760,7 @@ class TestClassifyRecords:
             ),
         ]
 
-        items = classify_records(records, PrecheckEntity.subscriptions)
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
         by_id = {item.source_id: item for item in items}
         assert by_id["sub_1"].status == PrecheckRecordStatus.importable
@@ -645,7 +779,7 @@ class TestSummarizeRecords:
             build_customer(source_id="cus_1", email="a@example.com"),
         ]
 
-        summaries = {s.entity: s for s in summarize_records(records)}
+        summaries = {s.entity: s for s in summarize_records(records, "usd")}
 
         assert summaries[PrecheckEntity.products].total == 2
         assert summaries[PrecheckEntity.products].importable == 1
@@ -654,7 +788,7 @@ class TestSummarizeRecords:
         assert summaries[PrecheckEntity.subscriptions].total == 0
 
         for entity, summary in summaries.items():
-            items = classify_records(records, entity)
+            items = classify_records(records, entity, "usd")
             importable = sum(
                 1 for i in items if i.status == PrecheckRecordStatus.importable
             )
@@ -682,7 +816,7 @@ class TestClassifyCascade:
             ),
         ]
 
-        items = classify_records(records, PrecheckEntity.products)
+        items = classify_records(records, PrecheckEntity.products, "usd")
 
         assert len(items) == 2
         assert all(i.status == PrecheckRecordStatus.importable for i in items)
@@ -693,7 +827,7 @@ class TestClassifyCascade:
             build_product(product_source_id="prod_2", name="Pro"),
         ]
 
-        items = classify_records(records, PrecheckEntity.products)
+        items = classify_records(records, PrecheckEntity.products, "usd")
 
         by_id = {item.source_id: item for item in items}
         for source_id in ("prod_1", "prod_2"):
@@ -711,7 +845,7 @@ class TestClassifyCascade:
             ),
         ]
 
-        items = classify_records(records, PrecheckEntity.prices)
+        items = classify_records(records, PrecheckEntity.prices, "usd")
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "one_time_product"
@@ -728,7 +862,7 @@ class TestClassifyCascade:
             build_subscription(source_id="sub_1"),
         ]
 
-        items = classify_records(records, PrecheckEntity.subscriptions)
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_product_not_importable"
@@ -746,7 +880,7 @@ class TestClassifyCascade:
             duplicate_customer_subscription,
         ]
 
-        items = classify_records(records, PrecheckEntity.subscriptions)
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_customer_not_importable"
@@ -772,7 +906,7 @@ class TestClassifyCascade:
             subscription,
         ]
 
-        items = classify_records(records, PrecheckEntity.subscriptions)
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
         assert items[0].status == PrecheckRecordStatus.importable
 
@@ -791,7 +925,7 @@ class TestClassifyCascade:
             subscription,
         ]
 
-        items = classify_records(records, PrecheckEntity.subscriptions)
+        items = classify_records(records, PrecheckEntity.subscriptions, "usd")
 
         assert items[0].status == PrecheckRecordStatus.skipped
         assert items[0].reason_code == "subscription_product_not_importable"
@@ -801,7 +935,7 @@ class TestPlanProductImports:
     def test_importable_product_lists_its_prices(self) -> None:
         product = build_product(prices=[build_price(source_id="price_1")])
 
-        plans = plan_product_imports([product])
+        plans = plan_product_imports([product], "usd")
 
         plan = plans[product.source_id]
         assert plan.importable is True
@@ -810,7 +944,7 @@ class TestPlanProductImports:
     def test_one_time_product_is_skipped(self) -> None:
         product = build_product(source_id="prod_1:one_time", recurring_interval=None)
 
-        plan = plan_product_imports([product])[product.source_id]
+        plan = plan_product_imports([product], "usd")[product.source_id]
 
         assert plan.importable is False
         assert plan.skip is not None
@@ -827,7 +961,7 @@ class TestPlanProductImports:
             ]
         )
 
-        plan = plan_product_imports([product])[product.source_id]
+        plan = plan_product_imports([product], "usd")[product.source_id]
 
         assert plan.importable is True
         assert plan.importable_price_ids == {"price_ok"}
@@ -842,17 +976,41 @@ class TestPlanProductImports:
             ]
         )
 
-        plan = plan_product_imports([product])[product.source_id]
+        plan = plan_product_imports([product], "usd")[product.source_id]
 
         assert plan.importable is False
         assert plan.skip is not None
         assert plan.skip.code == "no_importable_price"
 
+    def test_product_without_default_currency_price_is_skipped(self) -> None:
+        product = build_product(
+            prices=[build_price(source_id="price_eur", currency="eur")]
+        )
+
+        plan = plan_product_imports([product], "usd")[product.source_id]
+
+        assert plan.importable is False
+        assert plan.skip is not None
+        assert plan.skip.code == "missing_default_currency_price"
+
+    def test_default_currency_price_keeps_the_other_currencies(self) -> None:
+        product = build_product(
+            prices=[
+                build_price(source_id="price_usd", currency="usd"),
+                build_price(source_id="price_eur", currency="eur"),
+            ]
+        )
+
+        plan = plan_product_imports([product], "usd")[product.source_id]
+
+        assert plan.importable is True
+        assert plan.importable_price_ids == {"price_usd", "price_eur"}
+
     def test_products_sharing_a_name_both_import(self) -> None:
         first = build_product(source_id="prod_1:month:1", product_source_id="prod_1")
         second = build_product(source_id="prod_2:month:1", product_source_id="prod_2")
 
-        plans = plan_product_imports([first, second])
+        plans = plan_product_imports([first, second], "usd")
 
         assert plans[first.source_id].importable is True
         assert plans[second.source_id].importable is True

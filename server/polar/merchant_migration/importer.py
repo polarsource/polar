@@ -184,7 +184,9 @@ class CatalogImporter:
             self._as(deserialize(record.type, record.canonical), CanonicalProduct)
             for record in records
         ]
-        plans = plan_product_imports(products)
+        plans = plan_product_imports(
+            products, self.organization.default_presentment_currency
+        )
 
         counts = ImportCounts()
         for record, product in zip(records, products, strict=True):
@@ -343,7 +345,12 @@ class CatalogImporter:
             self._as(deserialize(record.type, record.canonical), CanonicalCustomer)
             for record in customer_records
         ]
-        plans = plan_subscription_imports(subscriptions, products, customers)
+        plans = plan_subscription_imports(
+            subscriptions,
+            products,
+            customers,
+            self.organization.default_presentment_currency,
+        )
         product_by_price = {
             price.source_id: product for product in products for price in product.prices
         }

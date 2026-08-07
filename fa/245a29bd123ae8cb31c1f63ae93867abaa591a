@@ -2,6 +2,7 @@ server/tests/merchant_migration/test_endpoints.py
   s_1cbf1253d16ca4::t_21bf0c9d33c88d 163-171,173-177,179-187
   s_1cbf1253d16ca4::t_22a5be5109a5fa 62-63,65-66
   s_1cbf1253d16ca4::t_b8f7c9b80e5848 161
+  s_1cbf1253d16ca4::t_e437426b8518a2 54,64,162,172,178
 clients/apps/web/src/hooks/queries/merchantMigrations.ts
   s_1cbf1253d16ca4::t_18d357f3a83630 176,184
   s_1cbf1253d16ca4::t_495c73759dd00b 72-74,76,78-84
@@ -40,6 +41,7 @@ server/tests/merchant_migration/test_service.py
   s_1cbf1253d16ca4::t_4caed1206c1e53 733-749,751-756,758-759
   s_1cbf1253d16ca4::t_3472791a320d67 187
   s_1cbf1253d16ca4::t_2857eb7f1486c7 732
+  s_1cbf1253d16ca4::t_e437426b8518a2 89,188,201,208,750,757
 clients/packages/client/src/v1.ts
   s_1cbf1253d16ca4::t_4b325409e4e9d7 32417-32427,52095,52104
 ---

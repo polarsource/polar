@@ -11,6 +11,7 @@ from dataclasses import dataclass
 import typer
 from dotenv import dotenv_values
 
+from secrets_io import ensure_secrets_file
 from shared import (
     ROOT_DIR,
     check_command_exists,
@@ -348,6 +349,9 @@ def save_webhook_secret(webhook_secret: str) -> None:
 
 def configure(relink: bool = False) -> StripeProfile | None:
     """Link a sandbox and write its keys into the central secrets file."""
+    # Also tightens the file to 0600 if an older run left it readable.
+    ensure_secrets_file()
+
     if not ensure_cli():
         return None
 

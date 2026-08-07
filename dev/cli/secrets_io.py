@@ -9,6 +9,7 @@ setup-environment script depends on only those.
 import fcntl
 import os
 import shutil
+import stat
 import tempfile
 from contextlib import contextmanager
 from pathlib import Path
@@ -103,9 +104,16 @@ def update_secrets(values: dict[str, str | None]) -> None:
 
 
 def ensure_secrets_file() -> bool:
-    """Create the secrets file from the template. Returns True if it created one."""
+    """Create the secrets file if missing and keep it private.
+
+    Returns True if it created one. Files created before this ran, or copied in
+    from elsewhere, are tightened to 0600 here rather than staying readable
+    until something happens to rewrite them.
+    """
     with secrets_lock():
         if SECRETS_FILE.exists():
+            if stat.S_IMODE(SECRETS_FILE.stat().st_mode) != 0o600:
+                SECRETS_FILE.chmod(0o600)
             return False
 
         if TEMPLATE_FILE.exists():

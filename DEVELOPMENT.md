@@ -103,32 +103,64 @@ You can override the secrets file location with `POLAR_SECRETS_FILE` environment
 > [!NOTE]
 > Some functions, such as product creation, may not work as expected due to missing Stripe environment variables.
 
-If you want to work with payments and subscriptions, you'll need to set up a Stripe development environment:
+If you want to work with payments and subscriptions, you need a Stripe **sandbox**.
+
+> [!IMPORTANT]
+> Every local environment runs against a sandbox you own. Never point it at a live account, and
+> never at a shared team account — `dev` refuses both. A sandbox is free, is yours alone, and has
+> no live mode at all, so nothing you do locally can touch real money or team data. That missing
+> live mode is also how `dev` tells a sandbox apart from a real account.
+
+The whole setup is one command:
+
+```sh
+dev stripe
+```
+
+It installs the Stripe CLI if it's missing, opens the sandbox dashboard, links the CLI to the
+sandbox you pick (under the `polar-sandbox` profile), writes the keys into the central secrets
+file, regenerates the env files, and starts webhook forwarding. `dev up` runs the same flow.
+
+Later runs just start the listener:
+
+```sh
+dev stripe --listen                    # default instance (api on port 8000)
+dev stripe --listen --port <api-port>  # other instances, see `dev docker ports`
+dev stripe --relink                    # switch to a different sandbox
+```
+
+Stripe CLI keys expire after 90 days. When that happens `dev stripe` notices and walks you
+through linking again.
 
 > [!IMPORTANT]
 > Put all Stripe values in the central secrets file `~/.config/polar/secrets.env`, **not** in `server/.env`.
 > Whenever `setup-environment` regenerates `server/.env` (a fresh clone or worktree, `dev up --clean`,
 > `dev stripe`, or a manual run), it rebuilds the file from the central secrets and those values win — so
 > edits made directly to `server/.env` are overwritten.
->
-> Do **not** rely on `dev stripe` for the webhook secrets when using the dashboard-endpoint flow below: it
-> derives the secret from `stripe listen --print-secret` (the Stripe CLI listener, a different secret) and
-> writes that one value to *both* `POLAR_STRIPE_WEBHOOK_SECRET` and `POLAR_STRIPE_CONNECT_WEBHOOK_SECRET`,
-> clobbering your two distinct dashboard secrets. Set those by hand in the central file.
 
-1. **Create a Stripe account** at [https://dashboard.stripe.com/register](https://dashboard.stripe.com/register)
+**Stripe Tax** must be active in the sandbox, or checkout fails when it tries to price an order.
+`dev stripe` checks this and tells you if it isn't. Once active, orders are taxed at 0 until you
+add a tax registration — see
+[Testing taxes locally](https://handbook.polar.sh/engineering/oncall/developer-faq) in the handbook.
 
-2. **Copy your API keys** from the [Stripe API Keys page](https://dashboard.stripe.com/test/apikeys) and add them to your `~/.config/polar/secrets.env` file:
+<details>
+<summary>Manual setup, and receiving webhooks on a public URL</summary>
+
+`dev stripe` forwards webhooks through the Stripe CLI listener, which is enough for almost
+everything. Use dashboard endpoints instead only when you need Stripe to reach a public URL
+(for example an ngrok tunnel shared with someone else).
+
+1. **Create a sandbox** at [https://dashboard.stripe.com/sandboxes](https://dashboard.stripe.com/sandboxes)
+
+2. **Copy the sandbox API keys** from its API keys page and add them to `~/.config/polar/secrets.env`:
 
     ```
     POLAR_STRIPE_SECRET_KEY=sk_test_...
     POLAR_STRIPE_PUBLISHABLE_KEY=pk_test_...
     ```
 
-3. **Enable tax calculation** by visiting [https://dashboard.stripe.com/test/tax](https://dashboard.stripe.com/test/tax)
-
-4. **Create webhook endpoints** to handle Stripe events:
-    - Go to [Stripe Webhooks](https://dashboard.stripe.com/test/webhooks)
+3. **Create webhook endpoints** to handle Stripe events:
+    - Go to Webhooks in your sandbox
     - Click "Add destination"
     - Select "Your account"
     - Set API version to the latest (not the preview)
@@ -146,6 +178,12 @@ If you want to work with payments and subscriptions, you'll need to set up a Str
             ```
             POLAR_STRIPE_CONNECT_WEBHOOK_SECRET=whsec_...
             ```
+
+These two secrets differ from each other, and `dev stripe` leaves them alone when it sees that —
+it writes the CLI listener secret only when the two entries are identical (including both empty),
+and leaves them untouched whenever they differ.
+
+</details>
 
 **Optional: setup SSO (local mock OIDC)**
 

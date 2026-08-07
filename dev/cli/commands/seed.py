@@ -7,34 +7,13 @@ from rich.text import Text
 
 from shared import (
     ROOT_DIR,
-    SECRETS_FILE,
     SERVER_DIR,
     console,
     run_command,
     step_spinner,
     step_status,
+    update_secrets,
 )
-
-
-def _update_secrets_file(key: str, value: str) -> None:
-    """Update a key in the central secrets file."""
-    SECRETS_FILE.parent.mkdir(parents=True, exist_ok=True)
-
-    existing = {}
-    if SECRETS_FILE.exists():
-        for line in SECRETS_FILE.read_text().split("\n"):
-            if "=" in line and not line.startswith("#"):
-                k, v = line.split("=", 1)
-                existing[k.strip()] = v.strip().strip("\"'")
-
-    existing[key] = value
-
-    with open(SECRETS_FILE, "w") as f:
-        f.write("# Polar Development Secrets\n")
-        f.write("# Shared across Git worktrees\n\n")
-        for k, v in existing.items():
-            delimiter = "'" if '"' in v else '"'
-            f.write(f"{k}={delimiter}{v}{delimiter}\n")
 
 
 def _configure_polar_self_integration() -> None:
@@ -47,10 +26,12 @@ def _configure_polar_self_integration() -> None:
     if not result or result.returncode != 0:
         return
 
+    values = {}
     for line in result.stdout.strip().split("\n"):
         if "=" in line:
             key, value = line.split("=", 1)
-            _update_secrets_file(key.strip(), value.strip())
+            values[key.strip()] = value.strip()
+    update_secrets(values)
 
     run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
     console.print("[dim]Configured Polar self-integration in .env[/dim]")

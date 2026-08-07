@@ -88,7 +88,7 @@ For this to work, make sure to set the [`embed_origin`](/api-reference/checkouts
 
 ## Embed Hosts
 
-List the hosts allowed to embed your checkout under **Settings → Preferences → Embedding**. An embedded checkout only opens on a host you've listed.
+List the hosts allowed to embed your checkout under **Settings → Preferences → Embedding**. Once the list is enforced, an embedded checkout only opens on a host you've listed.
 
 After a payment, the checkout sends your page a message carrying a session token for your customer. The allowlist is how we know that page is yours.
 
@@ -110,7 +110,7 @@ An entry without a port matches the default port only, so `example.com` does not
 Applications embedding checkout from their own origin, such as a browser extension, list that origin in full: `chrome-extension://abcdefghijklmnopqrstuvwxyzabcdef`.
 
 <Note>
-  Add every host in one go, staging and preview domains included — separate them with commas or spaces. The list takes effect as soon as you save it, so a host you leave out stops working straight away.
+  Add every host in one go, staging and preview domains included — separate them with commas or spaces. Nothing breaks today, but a host you leave out will stop opening your checkout once we enforce the list.
 </Note>
 
 ### Serving over HTTP

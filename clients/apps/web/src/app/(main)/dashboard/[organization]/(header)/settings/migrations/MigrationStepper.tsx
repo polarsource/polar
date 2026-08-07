@@ -1,12 +1,8 @@
 import { schemas } from '@polar-sh/client'
 import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Check, Circle } from 'lucide-react'
+import { STATE_COLORS, STATE_LABELS, StepMarker, StepState } from './stepMarker'
 import { currentPosition, MIGRATION_STEPS } from './steps'
-
-type StepState = 'done' | 'current' | 'upcoming'
-
-const MARKER_SIZE = 16
 
 // One derived control: every segment carries the same 2px top track, and the
 // filled length of that track is the only dimension encoding progress. Position
@@ -33,33 +29,8 @@ export function MigrationStepper({
   )
 }
 
-function Marker({ state }: { state: StepState }) {
-  if (state === 'done') {
-    return <Check size={MARKER_SIZE} strokeWidth={2.5} aria-hidden="true" />
-  }
-  return (
-    <Circle
-      size={MARKER_SIZE}
-      fill={state === 'current' ? 'currentColor' : 'none'}
-      aria-hidden="true"
-    />
-  )
-}
-
-const STATE_LABELS: Record<StepState, string> = {
-  done: 'completed',
-  current: 'current step',
-  upcoming: 'not started',
-}
-
 function Segment({ label, state }: { label: string; state: StepState }) {
   const reached = state !== 'upcoming'
-  const color =
-    state === 'current'
-      ? 'text-accent'
-      : state === 'done'
-        ? 'text-secondary'
-        : 'text-tertiary'
   return (
     <Box
       as="li"
@@ -75,9 +46,9 @@ function Segment({ label, state }: { label: string; state: StepState }) {
       borderStyle="solid"
       borderColor={reached ? 'border-primary' : 'border-secondary'}
     >
-      <Box alignItems="center" columnGap="xs" color={color}>
-        <Marker state={state} />
-        <Text variant="caption" color="inherit" truncate>
+      <Box alignItems="center" columnGap="xs">
+        <StepMarker state={state} />
+        <Text variant="caption" color={STATE_COLORS[state]} truncate>
           {label}
         </Text>
       </Box>

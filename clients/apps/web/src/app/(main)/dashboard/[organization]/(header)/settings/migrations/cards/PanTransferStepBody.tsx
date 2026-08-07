@@ -1,0 +1,114 @@
+'use client'
+
+import { schemas } from '@polar-sh/client'
+import { Alert, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
+import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
+import { StepCopy } from './panTransferCopy'
+import { PanTransferStepForm } from './PanTransferStepForm'
+
+interface Props {
+  step: schemas['PanTransferStep']
+  copy: StepCopy
+  destinationAccountId: string | null
+  migrationId: string
+}
+
+export function PanTransferStepBody({
+  step,
+  copy,
+  destinationAccountId,
+  migrationId,
+}: Props) {
+  const submittable = step.owner === 'merchant' && step.kind !== 'auto'
+  // A newer backend: submitting would 422 on a field we never rendered, because
+  // the accepted-input contract isn't on the wire.
+  const fieldsUnknown = step.kind === 'input' && !copy.inputs?.length
+
+  return (
+    <Box flexDirection="column" rowGap="l">
+      <Text variant="caption" color="muted">
+        {copy.description}
+      </Text>
+
+      {copy.showsDestinationAccount &&
+        (destinationAccountId ? (
+          <Box flexDirection="column" rowGap="xs" maxWidth={380}>
+            <Text variant="caption" color="muted">
+              Polar account ID
+            </Text>
+            <CopyToClipboardInput value={destinationAccountId} variant="mono" />
+          </Box>
+        ) : (
+          // The guidance below says to paste an ID we would not be showing.
+          <Alert
+            variant="danger"
+            title="We can't show the Polar account ID right now"
+            description="Please contact support before you start the copy in Stripe."
+          />
+        ))}
+
+      {copy.guidance && (
+        <Box as="ol" flexDirection="column" rowGap="xs">
+          {copy.guidance.map((line, index) => (
+            <Box as="li" key={index} display="flex" columnGap="s">
+              {/* The list marker is reset away, so spell the order out. */}
+              <Text variant="caption" color="muted" tabularNums>
+                {index + 1}.
+              </Text>
+              <Text variant="caption" color="muted">
+                {line}
+              </Text>
+            </Box>
+          ))}
+        </Box>
+      )}
+
+      {copy.warning && <Alert variant="warning" title={copy.warning} />}
+
+      <OpsUpdate step={step} />
+
+      {submittable &&
+        (fieldsUnknown || !copy.action ? (
+          <Text variant="caption" color="muted">
+            This step needs a newer version of this page. Please refresh.
+          </Text>
+        ) : (
+          <PanTransferStepForm
+            copy={copy}
+            migrationId={migrationId}
+            stepKey={step.key}
+          />
+        ))}
+    </Box>
+  )
+}
+
+export function OpsUpdate({ step }: { step: schemas['PanTransferStep'] }) {
+  if (!step.note && !step.expected_at) {
+    return null
+  }
+
+  return (
+    <Box
+      flexDirection="column"
+      rowGap="xs"
+      padding="l"
+      borderRadius="m"
+      backgroundColor="background-secondary"
+    >
+      {/* Prose wraps on its own; a pasted link does not. */}
+      {step.note && (
+        <Box overflowX="auto" maxWidth="100%">
+          <Text variant="caption">{step.note}</Text>
+        </Box>
+      )}
+      {step.expected_at && (
+        <Text variant="caption" color="muted">
+          Expected by <FormattedDateTime datetime={step.expected_at} />
+        </Text>
+      )}
+    </Box>
+  )
+}

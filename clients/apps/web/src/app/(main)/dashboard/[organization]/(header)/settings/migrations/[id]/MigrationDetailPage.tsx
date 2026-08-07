@@ -7,6 +7,8 @@ import { Alert, Spinner, Status, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
+import { PanTransferPanel } from '../cards/PanTransferPanel'
+import { StartPanTransfer } from '../cards/StartPanTransfer'
 import { MigrationStepper } from '../MigrationStepper'
 import { PrecheckPanel } from '../PrecheckPanel'
 import { ReviewTable } from '../review/ReviewTable'
@@ -125,7 +127,25 @@ function StepContent({
   }
   // `steps.ts` owns which backend steps the assessment covers.
   if (def?.key === 'assessment') {
-    return <ReviewTable migrationId={migration.id} />
+    return (
+      <Box flexDirection="column" rowGap="xl">
+        <ReviewTable migrationId={migration.id} />
+        {/* Gated on the catalog existing, since the cards are verified
+            against it. Moving on stays the merchant's call. */}
+        {migration.step === 'create_catalog' && (
+          <StartPanTransfer migrationId={migration.id} />
+        )}
+      </Box>
+    )
+  }
+
+  if (def?.key === 'cards') {
+    return (
+      <Box flexDirection="column" rowGap="l">
+        <StepHeading def={def} />
+        <PanTransferPanel migrationId={migration.id} />
+      </Box>
+    )
   }
 
   return (

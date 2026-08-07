@@ -36,7 +36,7 @@ export const MIGRATION_STEPS: MigrationStepDef[] = [
     title: 'Assess & import your catalog',
     description:
       'Polar checks what can move, then imports your products, customers and subscriptions.',
-    steps: ['pre_check', 'create_catalog'],
+    steps: ['pre_check'],
   },
   {
     key: 'cards',
@@ -46,7 +46,9 @@ export const MIGRATION_STEPS: MigrationStepDef[] = [
     title: 'Move saved cards',
     description:
       "Follow the checklist to move your customers' saved cards onto Polar.",
-    steps: ['copy_cards'],
+    // `create_catalog` means the catalog is already in Polar, so the merchant's
+    // next real action is card movement even before they start the checklist.
+    steps: ['create_catalog', 'copy_cards'],
   },
   {
     key: 'cutover',
@@ -72,8 +74,9 @@ export type MigrationPosition =
   | { kind: 'step'; index: number }
   | { kind: 'completed' }
 
-// Connecting completes Connect even though the backend still reads
-// `source_setup`, so once connected we surface Assessment.
+// Every backend step maps to a visible step through `MIGRATION_STEPS`, except
+// `source_setup`: connecting completes Connect even though the backend still
+// reads `source_setup`, so once connected we surface Assessment instead.
 export function currentPosition(
   migration: schemas['MerchantMigration'],
 ): MigrationPosition {

@@ -8,7 +8,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { ChevronLeft } from 'lucide-react'
 import Link from 'next/link'
 import { PanTransferPanel } from '../cards/PanTransferPanel'
-import { StartPanTransfer } from '../cards/StartPanTransfer'
+import { ImportedStep } from '../ImportedStep'
 import { MigrationStepper } from '../MigrationStepper'
 import { PrecheckPanel } from '../PrecheckPanel'
 import { ReviewTable } from '../review/ReviewTable'
@@ -115,37 +115,31 @@ function StepContent({
     )
   }
   const def = currentStepDef(migration)
-  // The stepper shows a connected migration as assessing, but nothing is staged
-  // until the first pre-check runs.
-  if (migration.step === 'source_setup') {
-    return (
-      <Box flexDirection="column" rowGap="l">
-        <StepHeading def={def} />
-        <PrecheckPanel migrationId={migration.id} />
-      </Box>
-    )
-  }
-  // `steps.ts` owns which backend steps the assessment covers.
-  if (def?.key === 'assessment') {
-    return (
-      <Box flexDirection="column" rowGap="xl">
-        <ReviewTable migrationId={migration.id} />
-        {/* Gated on the catalog existing, since the cards are verified
-            against it. Moving on stays the merchant's call. */}
-        {migration.step === 'create_catalog' && (
-          <StartPanTransfer migrationId={migration.id} />
-        )}
-      </Box>
-    )
-  }
-
-  if (def?.key === 'cards') {
-    return (
-      <Box flexDirection="column" rowGap="l">
-        <StepHeading def={def} />
-        <PanTransferPanel migrationId={migration.id} />
-      </Box>
-    )
+  // One switch on the backend step, so the branches are mutually exclusive and
+  // their order carries no meaning. `def` only supplies the heading.
+  switch (migration.step) {
+    // The stepper shows a connected migration as assessing, but nothing is
+    // staged until the first pre-check runs.
+    case 'source_setup':
+      return (
+        <Box flexDirection="column" rowGap="l">
+          <StepHeading def={def} />
+          <PrecheckPanel migrationId={migration.id} />
+        </Box>
+      )
+    case 'pre_check':
+      return <ReviewTable migrationId={migration.id} />
+    // The catalog is in Polar but the card checklist hasn't started. The
+    // handoff panel is its own heading, so `StepHeading` would only repeat it.
+    case 'create_catalog':
+      return <ImportedStep migrationId={migration.id} />
+    case 'copy_cards':
+      return (
+        <Box flexDirection="column" rowGap="l">
+          <StepHeading def={def} />
+          <PanTransferPanel migrationId={migration.id} />
+        </Box>
+      )
   }
 
   return (

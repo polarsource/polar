@@ -191,6 +191,7 @@ export const useMigrationRecords = (
     entity?: schemas['PrecheckEntity']
     status?: schemas['PrecheckRecordStatus']
     reasonLevel?: schemas['PrecheckReasonLevel']
+    importStatus?: schemas['MerchantMigrationRecordStatus']
     page: number
     limit: number
   },
@@ -207,6 +208,9 @@ export const useMigrationRecords = (
               ...(params.status ? { status: params.status } : {}),
               ...(params.reasonLevel
                 ? { reason_level: params.reasonLevel }
+                : {}),
+              ...(params.importStatus
+                ? { import_status: params.importStatus }
                 : {}),
               page: params.page,
               limit: params.limit,
@@ -225,6 +229,33 @@ export interface EntityCount {
   skipped: number
 }
 
+interface RecordCount {
+  count: number
+  isLoading: boolean
+  isError: boolean
+}
+
+// The listing carries its own total, so a `limit: 1` page is how this module
+// asks "how many match?". A failed count would otherwise read as zero, which
+// the caller can't tell apart from an empty catalog, so `isError` rides along.
+const useRecordCount = (
+  id: string,
+  filters: Omit<Parameters<typeof useMigrationRecords>[1], 'page' | 'limit'>,
+): RecordCount => {
+  const query = useMigrationRecords(id, { ...filters, page: 1, limit: 1 })
+  return {
+    count: query.data?.pagination.total_count ?? 0,
+    isLoading: query.isLoading,
+    isError: query.isError,
+  }
+}
+
+type QueryState = Pick<RecordCount, 'isLoading' | 'isError'>
+
+const anyLoading = (states: QueryState[]) =>
+  states.some((state) => state.isLoading)
+const anyError = (states: QueryState[]) => states.some((state) => state.isError)
+
 const useEntityCount = (
   id: string,
   entity: CountEntity,
@@ -232,25 +263,48 @@ const useEntityCount = (
   isLoading: boolean
   isError: boolean
 } => {
-  const importable = useMigrationRecords(id, {
-    entity,
-    status: 'importable',
-    page: 1,
-    limit: 1,
-  })
-  const skipped = useMigrationRecords(id, {
-    entity,
-    status: 'skipped',
-    page: 1,
-    limit: 1,
-  })
+  const importable = useRecordCount(id, { entity, status: 'importable' })
+  const skipped = useRecordCount(id, { entity, status: 'skipped' })
   return {
-    importable: importable.data?.pagination.total_count ?? 0,
-    skipped: skipped.data?.pagination.total_count ?? 0,
-    isLoading: importable.isLoading || skipped.isLoading,
-    // A failed count would otherwise read as zero, which the caller can't tell
-    // apart from an empty catalog.
-    isError: importable.isError || skipped.isError,
+    importable: importable.count,
+    skipped: skipped.count,
+    isLoading: anyLoading([importable, skipped]),
+    isError: anyError([importable, skipped]),
+  }
+}
+
+// What the catalog import actually landed, read from the ledger rather than the
+// import mutation, so the receipt survives a page reload. `remaining` is what
+// the merchant could still import: importable by the pre-check, untouched by
+// every import so far.
+export const useMigrationImportOutcome = (id: string) => {
+  const subscriptions = useRecordCount(id, {
+    entity: 'subscriptions',
+    importStatus: 'imported',
+  })
+  const products = useRecordCount(id, {
+    entity: 'products',
+    importStatus: 'imported',
+  })
+  const customers = useRecordCount(id, {
+    entity: 'customers',
+    importStatus: 'imported',
+  })
+  const remaining = useRecordCount(id, {
+    status: 'importable',
+    importStatus: 'pending',
+  })
+  const all = [subscriptions, products, customers, remaining]
+
+  return {
+    imported: {
+      subscriptions: subscriptions.count,
+      products: products.count,
+      customers: customers.count,
+    },
+    remaining: remaining.count,
+    isLoading: anyLoading(all),
+    isError: anyError(all),
   }
 }
 
@@ -258,11 +312,8 @@ export const useMigrationEntityCounts = (id: string) => {
   const subscriptions = useEntityCount(id, 'subscriptions')
   const products = useEntityCount(id, 'products')
   const customers = useEntityCount(id, 'customers')
-  const attention = useMigrationRecords(id, {
-    reasonLevel: 'action_required',
-    page: 1,
-    limit: 1,
-  })
+  const attention = useRecordCount(id, { reasonLevel: 'action_required' })
+  const all = [subscriptions, products, customers, attention]
 
   const counts: Record<CountEntity, EntityCount> = {
     subscriptions: {
@@ -275,16 +326,8 @@ export const useMigrationEntityCounts = (id: string) => {
 
   return {
     counts,
-    attentionCount: attention.data?.pagination.total_count ?? 0,
-    isLoading:
-      subscriptions.isLoading ||
-      products.isLoading ||
-      customers.isLoading ||
-      attention.isLoading,
-    isError:
-      subscriptions.isError ||
-      products.isError ||
-      customers.isError ||
-      attention.isError,
+    attentionCount: attention.count,
+    isLoading: anyLoading(all),
+    isError: anyError(all),
   }
 }

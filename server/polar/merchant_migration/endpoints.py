@@ -7,6 +7,7 @@ from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import MerchantMigration
+from polar.models.merchant_migration_record import MerchantMigrationRecordStatus
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncReadSession, get_db_read_session, get_db_session
@@ -316,6 +317,7 @@ async def records(
     entity: Annotated[PrecheckEntity | None, Query()] = None,
     status: Annotated[PrecheckRecordStatus | None, Query()] = None,
     reason_level: Annotated[PrecheckReasonLevel | None, Query()] = None,
+    import_status: Annotated[MerchantMigrationRecordStatus | None, Query()] = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[MerchantMigrationRecordItem]:
     items, count = await merchant_migration_service.list_records(
@@ -325,6 +327,7 @@ async def records(
         entity=entity,
         status=status,
         reason_level=reason_level,
+        import_status=import_status,
         pagination=pagination,
     )
     return ListResource.from_paginated_results(items, count, pagination)

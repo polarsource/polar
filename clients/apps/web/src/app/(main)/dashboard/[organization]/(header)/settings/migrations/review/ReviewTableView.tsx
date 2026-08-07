@@ -20,7 +20,6 @@ import {
   selectedCount,
   SelectionState,
 } from './reviewSelection'
-import { ImportSummary, importResultText } from './importSummary'
 import { ReviewRow, ReviewScope } from './reviewRows'
 
 const numberFormat = new Intl.NumberFormat('en-US')
@@ -43,7 +42,6 @@ interface Props {
   onToggleAll: () => void
   onImport: () => void
   importing?: boolean
-  importResult?: ImportSummary | null
   importError?: string
   onRerunPrecheck?: () => void
   rerunning?: boolean
@@ -69,7 +67,6 @@ export function ReviewTableView({
   onToggleAll,
   onImport,
   importing = false,
-  importResult,
   importError,
   onRerunPrecheck,
   rerunning = false,
@@ -175,13 +172,6 @@ export function ReviewTableView({
 
   return (
     <Box as="section" flexDirection="column" rowGap="xl">
-      {importResult && (
-        <Alert
-          variant="success"
-          title="Catalog imported"
-          description={importResultText(importResult)}
-        />
-      )}
       {importError && (
         <Alert
           variant="danger"

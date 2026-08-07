@@ -116,7 +116,6 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
         })
       }}
       importing={importCatalog.isPending}
-      importResult={importCatalog.data}
       importError={
         importCatalog.isError
           ? importCatalog.error?.message ||

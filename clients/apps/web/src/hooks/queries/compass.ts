@@ -2,6 +2,7 @@ import { api } from '@/utils/client'
 import { paths, schemas, unwrap } from '@polar-sh/client'
 import {
   QueryClient,
+  useInfiniteQuery,
   useMutation,
   useQuery,
   useQueryClient,
@@ -37,17 +38,35 @@ export const useCompassInsights = (organizationId: string, enabled = true) => {
   })
 }
 
+const THREADS_PAGE_SIZE = 50
+
 export const useCompassThreads = (organizationId: string, enabled = true) => {
-  return useQuery({
+  return useInfiniteQuery({
     queryKey: ['compass_threads', { organizationId }],
     enabled,
-    queryFn: () =>
+    queryFn: ({ pageParam }) =>
       unwrap(
         api.GET('/v1/compass/threads', {
-          params: { query: { organization_id: organizationId, limit: 50 } },
+          params: {
+            query: {
+              organization_id: organizationId,
+              limit: THREADS_PAGE_SIZE,
+              page: pageParam,
+            },
+          },
         }),
       ),
     retry: defaultRetry,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage, _allPages, lastPageParam) => {
+      if (
+        lastPageParam === lastPage.pagination.max_page ||
+        lastPage.items.length === 0
+      ) {
+        return null
+      }
+      return lastPageParam + 1
+    },
   })
 }
 

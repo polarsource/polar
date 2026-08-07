@@ -1,11 +1,13 @@
 'use client'
 
 import { useCompassThreads, useDeleteCompassThread } from '@/hooks/queries'
+import { useInViewport } from '@/hooks/utils'
 import DeleteOutlineRounded from '@mui/icons-material/DeleteOutlineRounded'
 import { schemas } from '@polar-sh/client'
 import { Button, Spinner, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { differenceInCalendarDays, isToday, isYesterday } from 'date-fns'
+import { useEffect, useMemo } from 'react'
 
 type CompassThread = schemas['CompassThreadSchema']
 
@@ -96,9 +98,23 @@ export const CompassThreadList = ({
     isLoading,
     isError,
     refetch,
+    hasNextPage,
+    fetchNextPage,
+    isFetchingNextPage,
   } = useCompassThreads(organization.id)
   const deleteThread = useDeleteCompassThread(organization.id)
-  const items = threads?.items ?? []
+  const items = useMemo(
+    () => threads?.pages.flatMap((page) => page.items) ?? [],
+    [threads],
+  )
+
+  const { ref: loadingRef, inViewport } = useInViewport<HTMLElement>()
+
+  useEffect(() => {
+    if (inViewport && hasNextPage && !isFetchingNextPage) {
+      fetchNextPage()
+    }
+  }, [inViewport, hasNextPage, isFetchingNextPage, fetchNextPage])
 
   const removeThread = async (threadId: string) => {
     const { error } = await deleteThread.mutateAsync(threadId)
@@ -176,6 +192,16 @@ export const CompassThreadList = ({
           </Box>
         )
       })}
+      {hasNextPage && (
+        <Box
+          ref={loadingRef}
+          alignItems="center"
+          justifyContent="center"
+          paddingVertical="l"
+        >
+          <Spinner />
+        </Box>
+      )}
     </>
   )
 }

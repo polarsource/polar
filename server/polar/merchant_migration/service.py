@@ -34,7 +34,12 @@ from .pan_transfer import (
     PanTransferStep,
     PanTransferUnavailable,
 )
-from .precheck import classify_records, import_blockers, precheck_engine
+from .precheck import (
+    account_blockers,
+    classify_records,
+    import_blockers,
+    precheck_engine,
+)
 from .repository import (
     MerchantMigrationRecordRepository,
     MerchantMigrationRepository,
@@ -140,13 +145,27 @@ class CatalogImportNotReady(MerchantMigrationError):
         )
 
 
-class CatalogImportBlocked(MerchantMigrationError):
-    def __init__(self, blockers: list[PrecheckIssue]) -> None:
+class BlockedByPrecheck(MerchantMigrationError):
+    """Precheck blockers as an API error: the codes stay machine-readable while
+    the merchant reads the joined messages."""
+
+    def __init__(
+        self, summary: str, blockers: list[PrecheckIssue], status_code: int
+    ) -> None:
         self.blockers = [issue.code for issue in blockers]
         super().__init__(
-            "The migration can't be imported: " + " ".join(i.message for i in blockers),
-            409,
+            f"{summary} " + " ".join(issue.message for issue in blockers), status_code
         )
+
+
+class CatalogImportBlocked(BlockedByPrecheck):
+    def __init__(self, blockers: list[PrecheckIssue]) -> None:
+        super().__init__("The migration can't be imported:", blockers, 409)
+
+
+class SourceAccountNotMigratable(BlockedByPrecheck):
+    def __init__(self, blockers: list[PrecheckIssue]) -> None:
+        super().__init__("This account can't be migrated:", blockers, 400)
 
 
 class SourceKeyModeMismatch(MerchantMigrationError):
@@ -231,6 +250,12 @@ class MerchantMigrationService:
             raise SourceVerificationUnavailable() from e
         if missing_scopes:
             raise MissingStripeScopes(missing_scopes)
+
+        # An account we can never migrate is rejected here rather than at the
+        # import, so the merchant hears it while they're still connecting the key.
+        blockers = account_blockers(await adapter.get_source_account())
+        if blockers:
+            raise SourceAccountNotMigratable(blockers)
 
         # Pre-generate the id so the credentials (encrypted with it as context) can
         # be set before the row is inserted — one INSERT instead of INSERT+UPDATE.

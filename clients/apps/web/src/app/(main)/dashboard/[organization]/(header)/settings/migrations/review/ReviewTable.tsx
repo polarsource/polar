@@ -117,7 +117,12 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       }}
       importing={importCatalog.isPending}
       importResult={importCatalog.data}
-      importError={importCatalog.isError}
+      importError={
+        importCatalog.isError
+          ? importCatalog.error?.message ||
+            'Something went wrong. Please try again.'
+          : undefined
+      }
       onRerunPrecheck={() => rerunPrecheck.mutate()}
       rerunning={rerunPrecheck.isPending}
       blockers={rerunPrecheck.data?.issues.filter(

@@ -68,10 +68,25 @@ interface ImportOptions {
   excludeRecordIds?: string[]
 }
 
+// Not `unwrap` like its neighbours: that reads `message`, the API reports
+// `detail`, and these surface the server's wording to the merchant. Takes the
+// request, not its result: a rejected fetch (offline, DNS) would otherwise put
+// the browser's own wording on screen instead of the fallback.
+const dataOrThrow = async <T>(
+  request: Promise<{ data?: T; error?: { detail?: unknown } }>,
+  fallback: string,
+): Promise<T> => {
+  const result = await request.catch(() => null)
+  if (!result || result.error || result.data === undefined) {
+    throw new Error(extractApiErrorMessage(result?.error ?? {}, fallback))
+  }
+  return result.data
+}
+
 export const useImportMerchantMigrationCatalog = (id: string) =>
   useMutation({
     mutationFn: (options: ImportOptions = {}) =>
-      unwrap(
+      dataOrThrow(
         api.POST('/v1/merchant-migrations/{id}/import', {
           params: { path: { id } },
           body: {
@@ -81,6 +96,7 @@ export const useImportMerchantMigrationCatalog = (id: string) =>
               : {}),
           },
         }),
+        'Something went wrong. Please try again.',
       ),
     onSuccess: () => {
       getQueryClient().invalidateQueries({
@@ -126,21 +142,6 @@ const syncPanTransfer = (
   invalidateMigration(id)
 }
 
-// Not `unwrap` like its neighbours: that reads `message`, the API reports
-// `detail`, and these two surface the server's wording to the merchant.
-const checklistOrThrow = (
-  result: {
-    data?: schemas['PanTransferChecklist']
-    error?: { detail?: unknown }
-  },
-  fallback: string,
-): schemas['PanTransferChecklist'] => {
-  if (result.error || !result.data) {
-    throw new Error(extractApiErrorMessage(result.error ?? {}, fallback))
-  }
-  return result.data
-}
-
 // A step can move from the backoffice or another tab, so a conflict means our
 // view is stale. Refetch the migration too: the page picks its view from it,
 // and otherwise the start button stays live and keeps failing the same way.
@@ -155,9 +156,9 @@ const panTransferHandlers = (id: string) => ({
 
 export const useStartPanTransfer = (id: string) =>
   useMutation({
-    mutationFn: async () =>
-      checklistOrThrow(
-        await api.POST('/v1/merchant-migrations/{id}/pan-transfer', {
+    mutationFn: () =>
+      dataOrThrow(
+        api.POST('/v1/merchant-migrations/{id}/pan-transfer', {
           params: { path: { id } },
         }),
         "We couldn't start the card transfer.",
@@ -167,15 +168,15 @@ export const useStartPanTransfer = (id: string) =>
 
 export const useCompletePanTransferStep = (id: string) =>
   useMutation({
-    mutationFn: async ({
+    mutationFn: ({
       key,
       inputs,
     }: {
       key: string
       inputs: Record<string, string>
     }) =>
-      checklistOrThrow(
-        await api.POST(
+      dataOrThrow(
+        api.POST(
           '/v1/merchant-migrations/{id}/pan-transfer/steps/{key}/complete',
           { params: { path: { id, key } }, body: { inputs } },
         ),

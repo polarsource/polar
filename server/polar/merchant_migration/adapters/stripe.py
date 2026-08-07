@@ -36,6 +36,7 @@ class StripeAdapter:
         self._client = stripe_lib.StripeClient(
             access_token, stripe_version=STRIPE_API_VERSION
         )
+        self._account: stripe_lib.Account | None = None
 
     async def verify_scopes(self) -> list[str]:
         """Probe every permission the migration needs, concurrently, and return the
@@ -87,11 +88,16 @@ class StripeAdapter:
             pass
 
     async def _current_account(self) -> stripe_lib.Account | None:
-        # Best-effort: a restricted key may lack account read scope.
-        try:
-            return await self._client.v1.accounts.retrieve_current_async()
-        except stripe_lib.StripeError:
-            return None
+        # Best-effort: a restricted key may lack account read scope. Only a
+        # successful read is cached — creating a migration needs both the account
+        # id and its country, but a rate-limited read must not stick and cost the
+        # id we would otherwise have stored.
+        if self._account is None:
+            try:
+                self._account = await self._client.v1.accounts.retrieve_current_async()
+            except stripe_lib.StripeError:
+                return None
+        return self._account
 
     async def get_account_id(self) -> str | None:
         account = await self._current_account()
@@ -116,10 +122,12 @@ class StripeAdapter:
         return bool(accounts.data)
 
     async def get_source_account(self) -> CanonicalAccount:
-        account = await self._current_account()
+        account, has_connected_accounts = await asyncio.gather(
+            self._current_account(), self._has_connected_accounts()
+        )
         return CanonicalAccount(
             country=account.country if account else None,
-            has_connected_accounts=await self._has_connected_accounts(),
+            has_connected_accounts=has_connected_accounts,
         )
 
     async def _extract_products(self) -> AsyncIterator[CanonicalProduct]:

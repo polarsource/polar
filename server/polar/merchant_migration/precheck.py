@@ -849,16 +849,26 @@ class SplitRecords:
         return split
 
 
+def _blockers(issues: Iterable[PrecheckIssue]) -> list[PrecheckIssue]:
+    return [issue for issue in issues if issue.level == PrecheckIssueLevel.blocker]
+
+
+def account_blockers(source_account: CanonicalAccount) -> list[PrecheckIssue]:
+    """Blockers that come from the source account itself rather than its catalog,
+    so the caller can reject the source as soon as it's connected instead of at
+    the import."""
+    return _blockers(precheck_engine._check_account(source_account))
+
+
 def import_blockers(
     organization: Organization, source_account: CanonicalAccount
 ) -> list[PrecheckIssue]:
     """Blockers that don't depend on the catalog, so the import can re-check them
     without re-reading the whole source."""
-    issues = [
-        *precheck_engine._check_organization(organization),
-        *precheck_engine._check_account(source_account),
+    return [
+        *_blockers(precheck_engine._check_organization(organization)),
+        *account_blockers(source_account),
     ]
-    return [issue for issue in issues if issue.level == PrecheckIssueLevel.blocker]
 
 
 def classify_records(

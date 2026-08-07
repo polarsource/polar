@@ -261,11 +261,7 @@ class MerchantMigrationService:
             session, auth_subject, migration_id, for_update=True
         )
 
-        organization = await OrganizationRepository.from_session(session).get_by_id(
-            migration.organization_id
-        )
-        if organization is None:
-            raise MerchantMigrationNotFound()
+        organization = await self._get_organization(session, migration)
 
         adapter = await self._build_adapter(migration)
         source_account = await adapter.get_source_account()
@@ -309,11 +305,7 @@ class MerchantMigrationService:
         if migration.step not in IMPORTABLE_STEPS:
             raise CatalogImportNotReady()
 
-        organization = await OrganizationRepository.from_session(session).get_by_id(
-            migration.organization_id
-        )
-        if organization is None:
-            raise MerchantMigrationNotFound()
+        organization = await self._get_organization(session, migration)
 
         # The pre-check reports blockers but doesn't stop the import, and both the
         # org and the source account can change after it ran.
@@ -460,6 +452,16 @@ class MerchantMigrationService:
         )
         return migration
 
+    async def _get_organization(
+        self, session: AsyncReadSession, migration: MerchantMigration
+    ) -> Organization:
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            migration.organization_id
+        )
+        if organization is None:
+            raise MerchantMigrationNotFound()
+        return organization
+
     async def list_records(
         self,
         session: AsyncSession,
@@ -479,6 +481,8 @@ class MerchantMigrationService:
         ``run_precheck`` persisted."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
 
+        organization = await self._get_organization(session, migration)
+
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         staged = await record_repository.list_by_migration(migration.id)
         records = [deserialize(record.type, record.canonical) for record in staged]
@@ -490,7 +494,10 @@ class MerchantMigrationService:
         items: list[MerchantMigrationRecordItem] = []
         for entity_type in entities:
             entity_items = classify_records(
-                records, entity_type, existing_product_names
+                records,
+                entity_type,
+                organization.default_presentment_currency,
+                existing_product_names,
             )
             self._attach_record_ids(entity_items, staged, entity_type)
             items.extend(entity_items)

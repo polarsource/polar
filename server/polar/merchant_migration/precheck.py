@@ -59,6 +59,7 @@ PRODUCT_DROP_CODES = {
     "one_time_product",
     "unsupported_recurring_interval",
     "multiple_prices_same_currency",
+    "missing_default_currency_price",
 }
 PRICE_DROP_CODES = {
     "unsupported_pricing_scheme",
@@ -80,6 +81,7 @@ ACTION_REQUIRED_CODES = {
     "customer_missing_country",
     "customer_missing_email",
     "duplicate_customer_email",
+    "missing_default_currency_price",
     "multiple_prices_same_currency",
     "subscription_has_discount",
     "send_invoice_collection",
@@ -138,10 +140,12 @@ class PrecheckEngine:
         existing_product_names: set[str] | None = None,
     ) -> PrecheckReport:
         record_list = [record async for record in records]
+        default_currency = organization.default_presentment_currency
 
         issues: list[PrecheckIssue] = list(self._check_organization(organization))
         issues.extend(self._check_account(source_account))
 
+        products: list[CanonicalProduct] = []
         products_by_name: dict[str, set[str]] = {}
         email_counts: Counter[str] = Counter()
         customers_without_country = 0
@@ -149,10 +153,11 @@ class PrecheckEngine:
 
         for record in record_list:
             if isinstance(record, CanonicalProduct):
+                products.append(record)
                 products_by_name.setdefault(record.name, set()).add(
                     record.product_source_id
                 )
-                issues.extend(self._check_product(record))
+                issues.extend(self._check_product(record, default_currency))
             elif isinstance(record, CanonicalCustomer):
                 if record.email:
                     email_counts[record.email.lower()] += 1
@@ -163,6 +168,7 @@ class PrecheckEngine:
             elif isinstance(record, CanonicalSubscription):
                 issues.extend(self._check_subscription(record))
 
+        issues.extend(self._check_default_currency(products, default_currency))
         issues.extend(self._check_duplicate_names(products_by_name))
         issues.extend(
             self._check_existing_products(
@@ -178,7 +184,7 @@ class PrecheckEngine:
             can_start=not any(
                 issue.level == PrecheckIssueLevel.blocker for issue in issues
             ),
-            entities=summarize_records(record_list),
+            entities=summarize_records(record_list, default_currency),
         )
 
     def _check_organization(
@@ -217,7 +223,51 @@ class PrecheckEngine:
                 source_id=None,
             )
 
-    def _check_product(self, product: CanonicalProduct) -> Iterable[PrecheckIssue]:
+    def _check_default_currency(
+        self, products: Sequence[CanonicalProduct], default_currency: str
+    ) -> Iterable[PrecheckIssue]:
+        """A catalog priced entirely in another currency imports nothing: every
+        product is dropped for the same reason. Say it once, up front, with the
+        two ways out, instead of leaving the merchant to read it off every row.
+        """
+        plans = plan_product_imports(products, default_currency)
+        skips = [plans[product.source_id].skip for product in products]
+        dropped_for_currency = [
+            product
+            for product, skip in zip(products, skips, strict=True)
+            if skip is not None and skip.code == "missing_default_currency_price"
+        ]
+        if not dropped_for_currency:
+            return
+        # Some products still import, so their rows carry the reason on their own.
+        if any(skip is None for skip in skips):
+            return
+
+        # Only the currencies Polar would have taken: naming a price it drops
+        # anyway would send the merchant after a currency it can't switch to.
+        currencies = sorted(
+            {
+                currency.upper()
+                for product in dropped_for_currency
+                for currency in self._importable_price_currencies(product)
+            }
+        )
+        yield PrecheckIssue(
+            level=PrecheckIssueLevel.blocker,
+            code="no_default_currency_prices",
+            message=(
+                "No product can be imported. The ones that could be are priced "
+                f"in {', '.join(currencies)}, and your organization's default "
+                f"currency is {default_currency.upper()}. Change the default "
+                "currency in your organization's payment settings, or add "
+                f"{default_currency.upper()} prices at the source, then refresh."
+            ),
+            source_id=None,
+        )
+
+    def _check_product(
+        self, product: CanonicalProduct, default_currency: str
+    ) -> Iterable[PrecheckIssue]:
         # A product Polar can't represent is skipped along with its subscriptions,
         # rather than blocking the whole migration.
         dropped = False
@@ -248,15 +298,12 @@ class PrecheckEngine:
                 source_id=product.source_id,
             )
             dropped = True
-        importable_currencies: Counter[str] = Counter()
         for price in product.prices:
-            price_issues = list(self._check_price(product, price))
-            yield from price_issues
-            if not any(issue.code in PRICE_DROP_CODES for issue in price_issues):
-                importable_currencies[price.currency.lower()] += 1
+            yield from self._check_price(product, price)
         # Only worth reporting on a product that would otherwise import.
         if dropped:
             return
+        importable_currencies = self._importable_price_currencies(product)
         for currency, count in importable_currencies.items():
             if count > 1:
                 yield PrecheckIssue(
@@ -269,6 +316,33 @@ class PrecheckEngine:
                     ),
                     source_id=product.source_id,
                 )
+        # A Polar product must price in the organization's default currency: it's
+        # the fallback for every checkout that has no local price. A product with
+        # no importable price at all is reported as such instead.
+        if importable_currencies and default_currency not in importable_currencies:
+            yield PrecheckIssue(
+                level=PrecheckIssueLevel.warning,
+                code="missing_default_currency_price",
+                message=(
+                    f"Product '{product.name}' has no price in "
+                    f"{default_currency.upper()}, your organization's default "
+                    "currency, so it and its subscriptions won't be imported. "
+                    f"Add a {default_currency.upper()} price at the source, then "
+                    "refresh."
+                ),
+                source_id=product.source_id,
+            )
+
+    def _importable_price_currencies(self, product: CanonicalProduct) -> Counter[str]:
+        """How many prices Polar would take, per currency."""
+        currencies: Counter[str] = Counter()
+        for price in product.prices:
+            if (
+                _drop_reason(self._check_price(product, price), PRICE_DROP_CODES)
+                is None
+            ):
+                currencies[price.currency.lower()] += 1
+        return currencies
 
     def _check_price(
         self, product: CanonicalProduct, price: CanonicalPrice
@@ -624,9 +698,10 @@ def _duplicate_customer_source_ids(
 def _product_items(
     products: Sequence[CanonicalProduct],
     existing_product_names: set[str],
+    default_currency: str,
 ) -> list[MerchantMigrationRecordItem]:
     # Use the importer's plan, so the report can't promise a product it will skip.
-    plans = plan_product_imports(products)
+    plans = plan_product_imports(products, default_currency)
     duplicate_names = _duplicate_product_names(products)
     items: list[MerchantMigrationRecordItem] = []
     for product in products:
@@ -656,12 +731,14 @@ def _product_items(
 
 def _price_items(
     products: Sequence[CanonicalProduct],
+    default_currency: str,
 ) -> list[MerchantMigrationRecordItem]:
     items: list[MerchantMigrationRecordItem] = []
     for product in products:
         # A price under a product that won't import can't import either.
         product_skip = _drop_reason(
-            precheck_engine._check_product(product), PRODUCT_DROP_CODES
+            precheck_engine._check_product(product, default_currency),
+            PRODUCT_DROP_CODES,
         )
         for price in product.prices:
             skip = product_skip or _drop_reason(
@@ -715,9 +792,12 @@ def _subscription_items(
     subscriptions: Sequence[CanonicalSubscription],
     products: Sequence[CanonicalProduct],
     customers: Sequence[CanonicalCustomer],
+    default_currency: str,
 ) -> list[MerchantMigrationRecordItem]:
     # Use the importer's plan; the notes on top are display-only.
-    plans = plan_subscription_imports(subscriptions, products, customers)
+    plans = plan_subscription_imports(
+        subscriptions, products, customers, default_currency
+    )
     email_by_source = {c.source_id: c.email for c in customers if c.email}
     price_by_source = _price_display_by_source_id(products)
     items: list[MerchantMigrationRecordItem] = []
@@ -784,18 +864,23 @@ def import_blockers(
 def classify_records(
     records: Sequence[CanonicalRecord],
     entity: PrecheckEntity,
+    default_currency: str,
     existing_product_names: set[str] | None = None,
 ) -> list[MerchantMigrationRecordItem]:
     """Classify the source catalog into per-record rows of one entity type,
     each marked importable or skipped with a reason."""
     split = SplitRecords.of(records)
     if entity == PrecheckEntity.products:
-        return _product_items(split.products, existing_product_names or set())
+        return _product_items(
+            split.products, existing_product_names or set(), default_currency
+        )
     if entity == PrecheckEntity.prices:
-        return _price_items(split.products)
+        return _price_items(split.products, default_currency)
     if entity == PrecheckEntity.customers:
         return _customer_items(split.customers)
-    return _subscription_items(split.subscriptions, split.products, split.customers)
+    return _subscription_items(
+        split.subscriptions, split.products, split.customers, default_currency
+    )
 
 
 @dataclass
@@ -815,18 +900,23 @@ class ProductImportPlan:
 
 def plan_product_imports(
     products: Sequence[CanonicalProduct],
+    default_currency: str,
 ) -> dict[str, ProductImportPlan]:
     """What the catalog importer should do with each canonical product, using the
     exact same predicates as the precheck report so imported == report-importable.
 
-    A product is skipped when its own checks fail (one-time, unsupported interval)
-    or when none of its prices can be imported (a product with no price is
-    unsellable). Otherwise it imports with the prices that pass. Sharing a name
-    with another product is fine: Polar doesn't require unique names.
+    A product is skipped when its own checks fail (one-time, unsupported interval,
+    no price in the organization's default currency) or when none of its prices
+    can be imported (a product with no price is unsellable). Otherwise it imports
+    with the prices that pass. Sharing a name with another product is fine: Polar
+    doesn't require unique names.
     """
     plans: dict[str, ProductImportPlan] = {}
     for product in products:
-        skip = _drop_reason(precheck_engine._check_product(product), PRODUCT_DROP_CODES)
+        skip = _drop_reason(
+            precheck_engine._check_product(product, default_currency),
+            PRODUCT_DROP_CODES,
+        )
         if skip is not None:
             plans[product.source_id] = ProductImportPlan(skip, set())
             continue
@@ -874,6 +964,7 @@ def plan_subscription_imports(
     subscriptions: Sequence[CanonicalSubscription],
     products: Sequence[CanonicalProduct],
     customers: Sequence[CanonicalCustomer],
+    default_currency: str,
 ) -> dict[str, Reason | None]:
     """Per subscription ``source_id``, the skip reason or ``None`` when
     importable. Mirrors the review drawer's per-subscription classification: a
@@ -881,7 +972,7 @@ def plan_subscription_imports(
     customer it depends on won't import."""
     importable_prices = {
         price_id
-        for plan in plan_product_imports(products).values()
+        for plan in plan_product_imports(products, default_currency).values()
         for price_id in plan.importable_price_ids
     }
     importable_customers = {
@@ -910,12 +1001,13 @@ def plan_subscription_imports(
 
 def summarize_records(
     records: Sequence[CanonicalRecord],
+    default_currency: str,
 ) -> list[PrecheckEntitySummary]:
     """Per-entity counts of total/importable/skipped, computed from the same
     classification the review drawer shows."""
     summaries: list[PrecheckEntitySummary] = []
     for entity in PrecheckEntity:
-        items = classify_records(records, entity)
+        items = classify_records(records, entity, default_currency)
         importable = sum(
             1 for item in items if item.status == PrecheckRecordStatus.importable
         )

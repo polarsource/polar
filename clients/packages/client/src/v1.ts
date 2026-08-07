@@ -51930,6 +51930,9 @@ export interface operations {
         entity?: components['schemas']['PrecheckEntity'] | null
         status?: components['schemas']['PrecheckRecordStatus'] | null
         reason_level?: components['schemas']['PrecheckReasonLevel'] | null
+        import_status?:
+          | components['schemas']['MerchantMigrationRecordStatus']
+          | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

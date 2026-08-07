@@ -774,6 +774,34 @@ class TestImportCatalog:
         )
 
     @pytest.mark.auth
+    async def test_listing_filters_on_import_status(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        items, count = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.products,
+            status=None,
+            import_status=MerchantMigrationRecordStatus.imported,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+
+        assert count == 1
+        assert [item.source_id for item in items] == ["prod_1"]
+
+    @pytest.mark.auth
     async def test_imports_subscription_as_paused(
         self,
         mocker: MockerFixture,

@@ -69,10 +69,11 @@ def _configure_stripe() -> None:
     rejection = stripe_config.saved_keys_rejection(profile)
 
     if rejection is None:
-        if stripe_config.keys_are_usable():
+        auth_failure = stripe_config.key_auth_failure()
+        if auth_failure is None:
             step_status(True, "Stripe sandbox", profile.display_name)
             return
-        step_status(False, "Stripe", "the Stripe CLI key has expired")
+        step_status(False, "Stripe", auth_failure)
         console.print("\n  [dim]Stripe CLI keys expire after 90 days.[/dim]")
         if typer.confirm("  Link your sandbox again now?", default=True):
             _setup_stripe()

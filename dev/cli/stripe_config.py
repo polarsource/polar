@@ -9,6 +9,7 @@ import webbrowser
 from dataclasses import dataclass
 
 import typer
+from dotenv import dotenv_values
 
 from shared import (
     ROOT_DIR,
@@ -100,12 +101,49 @@ def sandbox_rejection(profile: StripeProfile) -> str | None:
     return None
 
 
-def keys_are_usable() -> bool:
-    """Check the stored keys still work — Stripe CLI keys expire after 90 days."""
+def key_auth_failure() -> str | None:
+    """Why Stripe rejected the stored key, or None if it didn't reject it.
+
+    Only an authentication answer counts. A missing CLI, an outage or a
+    dropped network gives a non-zero exit too, and sending someone through a
+    re-link for that would be wrong — so anything unrecognised passes.
+    """
     result = run_command(
         ["stripe", "get", "/v1/account", "-p", STRIPE_CLI_PROFILE], capture=True
     )
-    return result is not None and result.returncode == 0
+    if result is None or result.returncode == 0:
+        return None
+
+    output = f"{result.stdout} {result.stderr}".lower()
+    if "expired" in output:
+        return "the Stripe CLI key has expired"
+    if "invalid api key" in output or "authentication" in output:
+        return "Stripe rejected the stored key"
+    return None
+
+
+def env_needs_sync() -> bool:
+    """True when server/.env doesn't carry the Stripe values from the secrets file.
+
+    Without this, a run that saved the keys but failed to regenerate the env
+    files would look fully configured next time, leaving the services on the
+    previous account's credentials.
+    """
+    env_path = ROOT_DIR / "server" / ".env"
+    if not env_path.exists():
+        return True
+
+    env = dotenv_values(env_path, interpolate=False)
+    secrets = read_secrets()
+    return any(
+        env.get(key) != secrets.get(key)
+        for key in (
+            "POLAR_STRIPE_SECRET_KEY",
+            "POLAR_STRIPE_PUBLISHABLE_KEY",
+            "POLAR_STRIPE_WEBHOOK_SECRET",
+            "POLAR_STRIPE_CONNECT_WEBHOOK_SECRET",
+        )
+    )
 
 
 def has_saved_keys() -> bool:
@@ -191,14 +229,10 @@ def ensure_sandbox_profile(relink: bool = False) -> StripeProfile | None:
 
     profile = read_profile()
     if profile is not None:
-        rejection = sandbox_rejection(profile)
-        if rejection is not None:
-            step_status(False, "Stripe sandbox", rejection)
-        elif keys_are_usable():
+        rejection = sandbox_rejection(profile) or key_auth_failure()
+        if rejection is None:
             return profile
-        else:
-            step_status(False, "Stripe sandbox", "the stored key has expired")
-            console.print("\n  [dim]Stripe CLI keys expire after 90 days.[/dim]")
+        step_status(False, "Stripe sandbox", rejection)
 
     return link_sandbox()
 
@@ -332,7 +366,7 @@ def configure(relink: bool = False) -> StripeProfile | None:
                 "  Re-run `dev stripe` once the Stripe CLI can reach Stripe.[/yellow]"
             )
 
-    if changed:
+    if changed or env_needs_sync():
         console.print("  [dim]Updating environment files...[/dim]")
         result = run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
         if result and result.returncode == 0:

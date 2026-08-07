@@ -9,6 +9,8 @@
 # ]
 # ///
 import argparse
+import contextlib
+import fcntl
 import functools
 import http.server
 import json
@@ -18,6 +20,7 @@ import queue
 import random
 import shutil
 import string
+import tempfile
 import typing
 import urllib.parse
 import webbrowser
@@ -213,10 +216,38 @@ def _register_github_app(code: str) -> dict[str, typing.Any]:
 
 
 def _load_central_secrets() -> dict[str, str]:
-    """Load secrets from central file if it exists."""
+    """Load secrets from central file if it exists.
+
+    Interpolation is off, matching dev/cli/shared.py: a secret containing
+    `${...}` is a literal value, not a reference to another entry.
+    """
     if SECRETS_FILE_PATH.exists():
-        return {k: v for k, v in dotenv_values(SECRETS_FILE_PATH).items() if v}
+        return {
+            k: v
+            for k, v in dotenv_values(SECRETS_FILE_PATH, interpolate=False).items()
+            if v
+        }
     return {}
+
+
+@contextlib.contextmanager
+def _secrets_lock() -> typing.Iterator[None]:
+    """Same lock dev/cli/shared.py takes, so the two writers can't interleave."""
+    SECRETS_FILE_PATH.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+    lock_path = SECRETS_FILE_PATH.with_name(f"{SECRETS_FILE_PATH.name}.lock")
+    fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
+    try:
+        fcntl.flock(fd, fcntl.LOCK_EX)
+        yield
+    finally:
+        fcntl.flock(fd, fcntl.LOCK_UN)
+        os.close(fd)
+
+
+def _quote_secret(value: str) -> str:
+    """Quote a value so any content survives a dotenv round-trip."""
+    escaped = str(value).replace("\\", "\\\\").replace('"', '\\"')
+    return f'"{escaped}"'
 
 
 def _ensure_secrets_file() -> bool:
@@ -238,6 +269,11 @@ def _ensure_secrets_file() -> bool:
 def _save_github_app_to_secrets(github_app: dict[str, typing.Any]) -> None:
     """Save GitHub App credentials to central secrets file."""
     _ensure_secrets_file()
+    with _secrets_lock():
+        _write_github_app_secrets(github_app)
+
+
+def _write_github_app_secrets(github_app: dict[str, typing.Any]) -> None:
     secrets = _load_central_secrets()
     secrets.update(
         {
@@ -259,12 +295,23 @@ def _save_github_app_to_secrets(github_app: dict[str, typing.Any]) -> None:
         }
     )
 
-    with open(SECRETS_FILE_PATH, "w") as f:
-        f.write("# Polar Development Secrets\n")
-        f.write("# Shared across Git worktrees. See dev/secrets.env.template\n\n")
-        for key, value in secrets.items():
-            delimiter = "'" if '"' in str(value) else '"'
-            f.write(f"{key}={delimiter}{value}{delimiter}\n")
+    # mkstemp creates with 0600, and the rename is atomic, so an interrupted
+    # write can't leave a truncated secrets file behind.
+    fd, tmp_path = tempfile.mkstemp(
+        dir=SECRETS_FILE_PATH.parent,
+        prefix=f".{SECRETS_FILE_PATH.name}.",
+        suffix=".tmp",
+    )
+    try:
+        with os.fdopen(fd, "w") as f:
+            f.write("# Polar Development Secrets\n")
+            f.write("# Shared across Git worktrees. See dev/secrets.env.template\n\n")
+            for key, value in secrets.items():
+                f.write(f"{key}={_quote_secret(value)}\n")
+        os.replace(tmp_path, SECRETS_FILE_PATH)
+    except BaseException:
+        os.unlink(tmp_path)
+        raise
 
 
 def _write_env_file(

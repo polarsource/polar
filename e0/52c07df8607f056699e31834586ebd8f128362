@@ -1,0 +1,39 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewTableView.tsx
+  s_81f519e3bb364f::t_a872510924e126 124,133-143
+server/polar/merchant_migration/adapters/stripe.py
+  s_81f519e3bb364f::t_36e87bc4f3c4b7 39,91-94,96-98
+  s_81f519e3bb364f::t_b0db2b24a03157 95
+server/polar/merchant_migration/repository.py
+  s_81f519e3bb364f::t_e11c576ee0ad17 88-89
+  s_81f519e3bb364f::t_1aa9be5efdf44f 86,90-93,98
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_81f519e3bb364f::t_407475331e578e 65,87
+  s_81f519e3bb364f::t_8c933ee35c9ecf 52-54
+  s_81f519e3bb364f::t_7e501b0a2059dd 47-51,55-56
+server/tests/merchant_migration/test_service.py
+  s_81f519e3bb364f::t_b0db2b24a03157 27,36,538-543
+  s_81f519e3bb364f::t_8e3e4e1691003a 481-510
+  s_81f519e3bb364f::t_4d80d4f7b5388f 480,544-545
+server/polar/merchant_migration/service.py
+  s_81f519e3bb364f::t_2dc871b3df338f 72-74,375,479
+  s_81f519e3bb364f::t_937576300fa774 581-584,586-587,589
+  s_81f519e3bb364f::t_b32ff6470d092b 302-307
+  s_81f519e3bb364f::t_866c7f01d1ade3 297-299
+  s_81f519e3bb364f::t_ef8416f3418ddb 318-319
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "e052c07df8607f056699e31834586ebd8f128362",
+  "prompts": {},
+  "sessions": {
+    "s_81f519e3bb364f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ac6e6895-3b5c-40c8-8804-f6a4f5e8786b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

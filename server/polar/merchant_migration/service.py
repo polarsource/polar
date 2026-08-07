@@ -492,7 +492,8 @@ class MerchantMigrationService:
 
     async def list_records(
         self,
-        session: AsyncSession,
+        # Reads only, so it takes the read session like `_get_manageable`.
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
         *,

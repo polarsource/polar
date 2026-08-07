@@ -1,6 +1,6 @@
 'use client'
 
-import { useMigrationImportOutcome } from '@/hooks/queries/merchantMigrations'
+import { useMigrationImportOutcome } from '@/hooks/queries/merchantMigrationCounts'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useId, useRef, useState } from 'react'

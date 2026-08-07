@@ -1,4 +1,4 @@
-import { CountEntity } from '@/hooks/queries/merchantMigrations'
+import { CountEntity } from '@/hooks/queries/merchantMigrationCounts'
 
 export type ImportedCounts = Record<CountEntity, number>
 

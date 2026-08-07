@@ -1,6 +1,9 @@
 'use client'
 
-import { CountEntity, EntityCount } from '@/hooks/queries/merchantMigrations'
+import {
+  CountEntity,
+  EntityCount,
+} from '@/hooks/queries/merchantMigrationCounts'
 import { schemas } from '@polar-sh/client'
 import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'

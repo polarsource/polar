@@ -1,9 +1,7 @@
 'use client'
 
-import {
-  useMigrationImportOutcome,
-  useStartPanTransfer,
-} from '@/hooks/queries/merchantMigrations'
+import { useStartPanTransfer } from '@/hooks/queries/merchantMigrations'
+import { useMigrationImportOutcome } from '@/hooks/queries/merchantMigrationCounts'
 import { ButtonGroup, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { CheckCircle2 } from 'lucide-react'

@@ -19,7 +19,12 @@ export function reviewStatus(row: ReviewRow): ReviewStatus {
   if (row.import_status === 'failed') {
     return { label: 'Import failed', color: 'red' }
   }
-  if (row.status === 'skipped') {
+  // A record can be marked "won't import" at two stages: precheck classifies
+  // it as `status === 'skipped'` up front, and the importer may mark a record
+  // `import_status === 'skipped'` at runtime (e.g. when a dependency wasn't
+  // selected). Either way the record stays on the source, so the indicator
+  // must reflect the runtime reality — not just the precheck prediction.
+  if (row.status === 'skipped' || row.import_status === 'skipped') {
     return { label: "Won't import", color: 'red' }
   }
   if (needsAttention(row)) {

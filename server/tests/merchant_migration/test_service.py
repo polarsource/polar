@@ -68,7 +68,10 @@ from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.service import product as product_service
 from tests.fixtures.database import SaveFixture
-from tests.merchant_migration._helpers import build_connected_migration
+from tests.merchant_migration._helpers import (
+    assert_no_migrations,
+    build_connected_migration,
+)
 
 
 class _FakeAdapter:
@@ -176,13 +179,7 @@ class TestCreate:
             await service.create(session, auth_subject, _create_schema(organization))
 
         assert exc_info.value.missing == ["Payment methods", "Subscriptions (write)"]
-        repository = MerchantMigrationRepository.from_session(session)
-        migrations = await repository.get_all(
-            repository.get_base_statement().where(
-                MerchantMigration.organization_id == organization.id
-            )
-        )
-        assert len(migrations) == 0
+        await assert_no_migrations(session, organization)
 
     @pytest.mark.auth
     async def test_source_with_connected_accounts_raises_and_persists_nothing(
@@ -198,7 +195,9 @@ class TestCreate:
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(
-                source_account=CanonicalAccount(country="US", has_connected_accounts=True)
+                source_account=CanonicalAccount(
+                    country="US", has_connected_accounts=True
+                )
             ),
         )
 
@@ -206,13 +205,7 @@ class TestCreate:
             await service.create(session, auth_subject, _create_schema(organization))
 
         assert exc_info.value.blockers == ["source_has_connected_accounts"]
-        repository = MerchantMigrationRepository.from_session(session)
-        migrations = await repository.get_all(
-            repository.get_base_statement().where(
-                MerchantMigration.organization_id == organization.id
-            )
-        )
-        assert len(migrations) == 0
+        await assert_no_migrations(session, organization)
 
     @pytest.mark.auth
     async def test_invalid_key_raises(
@@ -257,13 +250,7 @@ class TestCreate:
         with pytest.raises(SourceVerificationUnavailable):
             await service.create(session, auth_subject, _create_schema(organization))
 
-        repository = MerchantMigrationRepository.from_session(session)
-        migrations = await repository.get_all(
-            repository.get_base_statement().where(
-                MerchantMigration.organization_id == organization.id
-            )
-        )
-        assert len(migrations) == 0
+        await assert_no_migrations(session, organization)
 
     @pytest.mark.auth
     async def test_sandbox_rejects_a_live_key(
@@ -747,7 +734,9 @@ class TestImportCatalog:
         mocker.patch(
             "polar.merchant_migration.service.StripeAdapter",
             return_value=_FakeAdapter(
-                source_account=CanonicalAccount(country="US", has_connected_accounts=True)
+                source_account=CanonicalAccount(
+                    country="US", has_connected_accounts=True
+                )
             ),
         )
 

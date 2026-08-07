@@ -774,9 +774,9 @@ def _blockers(issues: Iterable[PrecheckIssue]) -> list[PrecheckIssue]:
 
 
 def account_blockers(source_account: CanonicalAccount) -> list[PrecheckIssue]:
-    """Blockers that come from the source account itself. They hold for every
-    catalog that account could ever have, so the caller can reject the source as
-    soon as it's connected rather than at the import."""
+    """Blockers that come from the source account itself rather than its catalog,
+    so the caller can reject the source as soon as it's connected instead of at
+    the import."""
     return _blockers(precheck_engine._check_account(source_account))
 
 

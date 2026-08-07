@@ -122,10 +122,12 @@ class StripeAdapter:
         return bool(accounts.data)
 
     async def get_source_account(self) -> CanonicalAccount:
-        account = await self._current_account()
+        account, has_connected_accounts = await asyncio.gather(
+            self._current_account(), self._has_connected_accounts()
+        )
         return CanonicalAccount(
             country=account.country if account else None,
-            has_connected_accounts=await self._has_connected_accounts(),
+            has_connected_accounts=has_connected_accounts,
         )
 
     async def _extract_products(self) -> AsyncIterator[CanonicalProduct]:

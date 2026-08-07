@@ -76,14 +76,9 @@ const dataOrThrow = async <T>(
   request: Promise<{ data?: T; error?: { detail?: unknown } }>,
   fallback: string,
 ): Promise<T> => {
-  let result
-  try {
-    result = await request
-  } catch {
-    throw new Error(fallback)
-  }
-  if (result.error || result.data === undefined) {
-    throw new Error(extractApiErrorMessage(result.error ?? {}, fallback))
+  const result = await request.catch(() => null)
+  if (!result || result.error || result.data === undefined) {
+    throw new Error(extractApiErrorMessage(result?.error ?? {}, fallback))
   }
   return result.data
 }
@@ -101,7 +96,7 @@ export const useImportMerchantMigrationCatalog = (id: string) =>
               : {}),
           },
         }),
-        "We couldn't import the catalog.",
+        'Something went wrong. Please try again.',
       ),
     onSuccess: () => {
       getQueryClient().invalidateQueries({

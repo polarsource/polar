@@ -24,7 +24,10 @@ from polar.models.merchant_migration import (
 from polar.postgres import AsyncSession
 from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
-from tests.merchant_migration._helpers import build_connected_migration
+from tests.merchant_migration._helpers import (
+    assert_no_migrations,
+    build_connected_migration,
+)
 
 VALID_BODY = {
     "source_platform": "stripe",
@@ -131,13 +134,7 @@ class TestCreate:
         assert response.status_code == 400
         assert "Subscriptions (write)" in response.text
 
-        repository = MerchantMigrationRepository.from_session(session)
-        migrations = await repository.get_all(
-            repository.get_base_statement().where(
-                MerchantMigration.organization_id == organization.id
-            )
-        )
-        assert len(migrations) == 0
+        await assert_no_migrations(session, organization)
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_invalid_key_returns_400(
@@ -177,13 +174,7 @@ class TestCreate:
         assert response.status_code == 400
         assert "Connect accounts" in response.text
 
-        repository = MerchantMigrationRepository.from_session(session)
-        migrations = await repository.get_all(
-            repository.get_base_statement().where(
-                MerchantMigration.organization_id == organization.id
-            )
-        )
-        assert len(migrations) == 0
+        await assert_no_migrations(session, organization)
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_creates_connected_migration(

@@ -145,23 +145,27 @@ class CatalogImportNotReady(MerchantMigrationError):
         )
 
 
-class CatalogImportBlocked(MerchantMigrationError):
-    def __init__(self, blockers: list[PrecheckIssue]) -> None:
+class BlockedByPrecheck(MerchantMigrationError):
+    """Precheck blockers as an API error: the codes stay machine-readable while
+    the merchant reads the joined messages."""
+
+    def __init__(
+        self, summary: str, blockers: list[PrecheckIssue], status_code: int
+    ) -> None:
         self.blockers = [issue.code for issue in blockers]
         super().__init__(
-            "The migration can't be imported: " + " ".join(i.message for i in blockers),
-            409,
+            f"{summary} " + " ".join(issue.message for issue in blockers), status_code
         )
 
 
-class SourceAccountNotMigratable(MerchantMigrationError):
+class CatalogImportBlocked(BlockedByPrecheck):
     def __init__(self, blockers: list[PrecheckIssue]) -> None:
-        self.blockers = [issue.code for issue in blockers]
-        super().__init__(
-            "This account can't be migrated: "
-            + " ".join(issue.message for issue in blockers),
-            400,
-        )
+        super().__init__("The migration can't be imported:", blockers, 409)
+
+
+class SourceAccountNotMigratable(BlockedByPrecheck):
+    def __init__(self, blockers: list[PrecheckIssue]) -> None:
+        super().__init__("This account can't be migrated:", blockers, 400)
 
 
 class SourceKeyModeMismatch(MerchantMigrationError):

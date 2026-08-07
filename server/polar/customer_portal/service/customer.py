@@ -117,10 +117,48 @@ class CustomerService:
                     ]
                 )
 
-        tax_id = customer_update.tax_id or (
-            customer.tax_id[0] if customer.tax_id else None
-        )
-        if tax_id is not None:
+        if "tax_id" in customer_update.model_fields_set:
+            if customer_update.tax_id is None:
+                # Explicitly clearing the tax ID.
+                customer.tax_id = None
+            else:
+                # A new tax ID value was provided; validate it against the
+                # (possibly updated) billing address country. By this point
+                # `customer.billing_address` already reflects any update
+                # applied above.
+                if customer.billing_address is None:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "missing",
+                                "loc": ("body", "billing_address"),
+                                "msg": "Country is required to validate tax ID.",
+                                "input": None,
+                            }
+                        ]
+                    )
+                try:
+                    customer.tax_id = validate_tax_id(
+                        customer_update.tax_id, customer.billing_address.country
+                    )
+                except InvalidTaxID as e:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "invalid",
+                                "loc": ("body", "tax_id"),
+                                "msg": "Invalid tax ID.",
+                                "input": customer_update.tax_id,
+                            }
+                        ]
+                    ) from e
+        elif (
+            "billing_address" in customer_update.model_fields_set
+            and customer.tax_id is not None
+        ):
+            # Billing address changed while an existing tax ID is set:
+            # re-validate the existing tax ID against the new country.
+            # `customer.billing_address` was updated in-place above.
             if customer.billing_address is None:
                 raise PolarRequestValidationError(
                     [
@@ -134,7 +172,7 @@ class CustomerService:
                 )
             try:
                 customer.tax_id = validate_tax_id(
-                    tax_id, customer.billing_address.country
+                    customer.tax_id[0], customer.billing_address.country
                 )
             except InvalidTaxID as e:
                 raise PolarRequestValidationError(

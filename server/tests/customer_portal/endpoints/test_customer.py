@@ -8,11 +8,13 @@ from pytest_mock import MockerFixture
 from polar.config import settings
 from polar.customer_email_update.service import TOKEN_PREFIX
 from polar.integrations.stripe.service import StripeService
+from polar.kit.address import Address, CountryAlpha2
 from polar.kit.crypto import generate_token_hash_pair
 from polar.models import Customer, Organization, Product
 from polar.models.customer_email_verification import CustomerEmailVerification
 from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
+from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.auth import CUSTOMER_AUTH_SUBJECT
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -293,6 +295,44 @@ class TestUpdateDefaultPaymentMethod:
         assert call_kwargs["invoice_settings"] == {
             "default_payment_method": payment_method.processor_id,
         }
+
+
+@pytest.mark.asyncio
+class TestUpdateCustomerTaxId:
+    """E2E HTTP verification of tax_id clearing via the customer portal API."""
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_clear_tax_id_with_empty_string(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        stripe_service_mock: MagicMock,
+    ) -> None:
+        """Procedure 5 (G1 + G12): clearing tax_id syncs to Stripe with no tax_id datum."""
+        # Set a tax_id + billing_address directly on the authenticated customer.
+        customer.billing_address = Address(country=CountryAlpha2("FR"))
+        customer.tax_id = ("FR61954506077", TaxIDFormat.eu_vat)
+        await save_fixture(customer)
+
+        response = await client.patch(
+            "/v1/customer-portal/customers/me",
+            json={"tax_id": ""},
+        )
+        assert response.status_code == 200, response.text
+        assert response.json()["tax_id"] is None
+
+        # Stripe customer update must fire (tax_id removed from Stripe too).
+        stripe_service_mock.update_customer.assert_awaited_once()
+        call_args = stripe_service_mock.update_customer.await_args
+        # `to_stripe_tax_id` is only called when customer.tax_id is not None;
+        # after clearing, tax_id kwarg should be None.
+        assert call_args.kwargs.get("tax_id") is None
+
+        await session.refresh(customer)
+        assert customer.tax_id is None
 
 
 async def _create_verification(

@@ -159,10 +159,15 @@ export const AssistantBlockView = ({
       answeredAt={answeredAt}
     />
   )
-  // The entity presentations carry the fetch time in their own caption row.
-  const ownsFetchedCaption =
-    block.type === 'entity_list' || block.type === 'data_table'
-  if (block.type === 'text' || ownsFetchedCaption || !answeredAt) {
+  // Only the blocks that render a surface of their own get the caption: text
+  // reads as prose, the entity presentations carry the fetch time in their own
+  // caption row, and an unknown type renders nothing — a bare caption would be
+  // worse than none. Keep in sync with BlockBody.
+  const wantsFetchedCaption =
+    block.type === 'metric_chart' ||
+    block.type === 'insight_cards' ||
+    block.type === 'customer_card'
+  if (!wantsFetchedCaption || !answeredAt) {
     return body
   }
   return (

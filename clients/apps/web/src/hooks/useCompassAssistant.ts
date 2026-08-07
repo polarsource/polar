@@ -177,6 +177,11 @@ export const useCompassAssistant = ({
             })
           } else if (event === 'done') {
             setThread(payload.thread_id)
+            // The recorded turn bumps the thread's recency, which reorders and
+            // re-buckets the history list.
+            void queryClient.invalidateQueries({
+              queryKey: ['compass_threads'],
+            })
           } else if (event === 'error') {
             appendToAssistant(assistantId, (parts) =>
               appendDelta(parts, payload.message),

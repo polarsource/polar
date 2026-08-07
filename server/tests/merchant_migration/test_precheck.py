@@ -48,9 +48,11 @@ def build_organization(
 
 
 def build_account(
-    *, country: str | None = "US", is_connect_platform: bool = False
+    *, country: str | None = "US", has_connected_accounts: bool = False
 ) -> CanonicalAccount:
-    return CanonicalAccount(country=country, is_connect_platform=is_connect_platform)
+    return CanonicalAccount(
+        country=country, has_connected_accounts=has_connected_accounts
+    )
 
 
 def build_customer(
@@ -192,11 +194,13 @@ class TestPrecheckEngine:
         report = await run([build_product()], account=build_account(country="IN"))
         assert "india_account" in codes(report, PrecheckIssueLevel.blocker)
 
-    async def test_connect_platform_account_blocks(self) -> None:
+    async def test_connected_accounts_block(self) -> None:
         report = await run(
-            [build_product()], account=build_account(is_connect_platform=True)
+            [build_product()], account=build_account(has_connected_accounts=True)
         )
-        assert "connect_platform_account" in codes(report, PrecheckIssueLevel.blocker)
+        assert "source_has_connected_accounts" in codes(
+            report, PrecheckIssueLevel.blocker
+        )
 
     async def test_non_fixed_pricing_warns_and_can_start(self) -> None:
         report = await run(

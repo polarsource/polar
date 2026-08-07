@@ -118,7 +118,9 @@ class CanonicalAccount:
     """Source-account-level facts the precheck needs but that aren't per-record."""
 
     country: str | None
-    is_connect_platform: bool
+    # The source is a Connect platform *and* has connected accounts, whose data
+    # can't be copied. A platform with none has nothing to leave behind.
+    has_connected_accounts: bool
 
 
 CanonicalRecord = CanonicalProduct | CanonicalCustomer | CanonicalSubscription

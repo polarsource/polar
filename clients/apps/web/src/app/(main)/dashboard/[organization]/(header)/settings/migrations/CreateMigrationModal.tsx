@@ -95,7 +95,7 @@ export function CreateMigrationModal({
         {error && (
           <Alert
             variant="danger"
-            title="Couldn't validate the key"
+            title="We couldn't connect this account"
             description={error}
           />
         )}

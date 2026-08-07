@@ -38,6 +38,7 @@ from polar.merchant_migration.service import (
     CatalogImportNotReady,
     InvalidSourceCredentials,
     MissingStripeScopes,
+    SourceAccountNotMigratable,
     SourceKeyModeMismatch,
     SourceNotConnected,
     SourceVerificationUnavailable,
@@ -78,11 +79,15 @@ class _FakeAdapter:
         missing_scopes: list[str] | None = None,
         verify_error: Exception | None = None,
         account_id: str | None = "acct_test",
+        source_account: CanonicalAccount | None = None,
     ) -> None:
         self._records = records or []
         self._missing_scopes = missing_scopes or []
         self._verify_error = verify_error
         self._account_id = account_id
+        self._source_account = source_account or CanonicalAccount(
+            country="US", has_connected_accounts=False
+        )
 
     async def verify_scopes(self) -> list[str]:
         if self._verify_error is not None:
@@ -97,7 +102,7 @@ class _FakeAdapter:
             yield record
 
     async def get_source_account(self) -> CanonicalAccount:
-        return CanonicalAccount(country="US", has_connected_accounts=False)
+        return self._source_account
 
 
 async def _enable_feature(
@@ -171,6 +176,36 @@ class TestCreate:
             await service.create(session, auth_subject, _create_schema(organization))
 
         assert exc_info.value.missing == ["Payment methods", "Subscriptions (write)"]
+        repository = MerchantMigrationRepository.from_session(session)
+        migrations = await repository.get_all(
+            repository.get_base_statement().where(
+                MerchantMigration.organization_id == organization.id
+            )
+        )
+        assert len(migrations) == 0
+
+    @pytest.mark.auth
+    async def test_source_with_connected_accounts_raises_and_persists_nothing(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await _enable_feature(save_fixture, organization)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(
+                source_account=CanonicalAccount(country="US", has_connected_accounts=True)
+            ),
+        )
+
+        with pytest.raises(SourceAccountNotMigratable) as exc_info:
+            await service.create(session, auth_subject, _create_schema(organization))
+
+        assert exc_info.value.blockers == ["source_has_connected_accounts"]
         repository = MerchantMigrationRepository.from_session(session)
         migrations = await repository.get_all(
             repository.get_base_statement().where(
@@ -692,6 +727,34 @@ class TestImportCatalog:
         with pytest.raises(CatalogImportBlocked):
             await service.import_catalog(session, auth_subject, migration.id)
 
+        assert await _products(session, organization) == []
+
+    @pytest.mark.auth
+    async def test_blocked_source_account_cannot_import(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        # Migrations created before the source account grew a blocker, or before
+        # `create` started rejecting them, still have to be caught here.
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter",
+            return_value=_FakeAdapter(
+                source_account=CanonicalAccount(country="US", has_connected_accounts=True)
+            ),
+        )
+
+        with pytest.raises(CatalogImportBlocked) as exc_info:
+            await service.import_catalog(session, auth_subject, migration.id)
+
+        assert exc_info.value.blockers == ["source_has_connected_accounts"]
         assert await _products(session, organization) == []
 
     @pytest.mark.auth

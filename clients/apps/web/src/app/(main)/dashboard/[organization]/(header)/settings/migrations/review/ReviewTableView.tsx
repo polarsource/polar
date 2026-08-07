@@ -44,7 +44,7 @@ interface Props {
   onImport: () => void
   importing?: boolean
   importResult?: ImportSummary | null
-  importError?: boolean
+  importError?: string
   onRerunPrecheck?: () => void
   rerunning?: boolean
   blockers?: schemas['PrecheckIssue'][]
@@ -70,7 +70,7 @@ export function ReviewTableView({
   onImport,
   importing = false,
   importResult,
-  importError = false,
+  importError,
   onRerunPrecheck,
   rerunning = false,
   blockers = [],
@@ -186,7 +186,7 @@ export function ReviewTableView({
         <Alert
           variant="danger"
           title="We couldn't import the catalog"
-          description="Something went wrong. Please try again."
+          description={importError}
         />
       )}
 

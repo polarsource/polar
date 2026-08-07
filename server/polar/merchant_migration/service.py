@@ -34,7 +34,12 @@ from .pan_transfer import (
     PanTransferStep,
     PanTransferUnavailable,
 )
-from .precheck import classify_records, import_blockers, precheck_engine
+from .precheck import (
+    account_blockers,
+    classify_records,
+    import_blockers,
+    precheck_engine,
+)
 from .repository import (
     MerchantMigrationRecordRepository,
     MerchantMigrationRepository,
@@ -149,6 +154,16 @@ class CatalogImportBlocked(MerchantMigrationError):
         )
 
 
+class SourceAccountNotMigratable(MerchantMigrationError):
+    def __init__(self, blockers: list[PrecheckIssue]) -> None:
+        self.blockers = [issue.code for issue in blockers]
+        super().__init__(
+            "This account can't be migrated: "
+            + " ".join(issue.message for issue in blockers),
+            400,
+        )
+
+
 class SourceKeyModeMismatch(MerchantMigrationError):
     def __init__(self, *, expect_live: bool) -> None:
         mode = "live" if expect_live else "test"
@@ -231,6 +246,12 @@ class MerchantMigrationService:
             raise SourceVerificationUnavailable() from e
         if missing_scopes:
             raise MissingStripeScopes(missing_scopes)
+
+        # An account we can never migrate is rejected here rather than at the
+        # import, so the merchant hears it while they're still connecting the key.
+        blockers = account_blockers(await adapter.get_source_account())
+        if blockers:
+            raise SourceAccountNotMigratable(blockers)
 
         # Pre-generate the id so the credentials (encrypted with it as context) can
         # be set before the row is inserted — one INSERT instead of INSERT+UPDATE.

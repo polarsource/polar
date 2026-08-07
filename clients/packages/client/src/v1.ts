@@ -32414,6 +32414,17 @@ export interface components {
        */
       users: components['schemas']['SlackWorkspaceUser'][]
     }
+    /** SourceAccountNotMigratable */
+    SourceAccountNotMigratable: {
+      /**
+       * Error
+       * @example SourceAccountNotMigratable
+       * @constant
+       */
+      error: 'SourceAccountNotMigratable'
+      /** Detail */
+      detail: string
+    }
     /** SourceKeyModeMismatch */
     SourceKeyModeMismatch: {
       /**
@@ -52081,7 +52092,7 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigration']
         }
       }
-      /** @description The Stripe API key is invalid, wrong mode, or missing permissions. */
+      /** @description The Stripe API key is invalid, wrong mode, or missing permissions, or the account it belongs to can't be migrated. */
       400: {
         headers: {
           [name: string]: unknown
@@ -52090,6 +52101,7 @@ export interface operations {
           'application/json':
             | components['schemas']['InvalidSourceCredentials']
             | components['schemas']['MissingStripeScopes']
+            | components['schemas']['SourceAccountNotMigratable']
             | components['schemas']['SourceKeyModeMismatch']
             | components['schemas']['UnsupportedMigrationSource']
         }

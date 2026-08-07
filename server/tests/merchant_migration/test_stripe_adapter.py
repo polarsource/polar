@@ -99,6 +99,22 @@ class TestGetAccountId:
 
         assert await adapter.get_account_id() is None
 
+    async def test_account_is_read_once(self, mocker: MockerFixture) -> None:
+        # Creating a migration needs both the id and the country; one read serves
+        # both.
+        adapter, client = _adapter(mocker)
+        client.v1.accounts.retrieve_current_async = mocker.AsyncMock(
+            return_value=mocker.MagicMock(id="acct_123", country="US")
+        )
+        client.v1.accounts.list_async = mocker.AsyncMock(
+            side_effect=stripe_lib.PermissionError("not a platform")
+        )
+
+        assert (await adapter.get_source_account()).country == "US"
+        assert await adapter.get_account_id() == "acct_123"
+
+        client.v1.accounts.retrieve_current_async.assert_awaited_once()
+
 
 @pytest.mark.asyncio
 class TestGetSourceAccount:

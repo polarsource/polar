@@ -42,6 +42,7 @@ from .service import (
     MerchantMigrationNotEnabled,
     MerchantMigrationNotFound,
     MissingStripeScopes,
+    SourceAccountNotMigratable,
     SourceKeyModeMismatch,
     SourceNotConnected,
     SourceVerificationUnavailable,
@@ -87,9 +88,10 @@ async def list(
     responses={
         400: {
             "description": "The Stripe API key is invalid, wrong mode, or missing "
-            "permissions.",
+            "permissions, or the account it belongs to can't be migrated.",
             "model": InvalidSourceCredentials.schema()
             | MissingStripeScopes.schema()
+            | SourceAccountNotMigratable.schema()
             | SourceKeyModeMismatch.schema()
             | UnsupportedMigrationSource.schema(),
         },

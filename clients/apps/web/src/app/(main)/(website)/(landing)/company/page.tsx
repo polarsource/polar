@@ -135,6 +135,17 @@ export default function CompanyPage() {
       </Section>
 
       <Section>
+        <StaticImage
+          src="/assets/landing/company/polar.jpg"
+          alt="Polar graphic"
+          width={1920}
+          height={1080}
+          className="object-cover"
+          sizes="(min-width: 768px) 40rem, 100vw"
+        />
+      </Section>
+
+      <Section>
         <HowWeWork />
       </Section>
 

@@ -37,7 +37,6 @@ class StripeAdapter:
             access_token, stripe_version=STRIPE_API_VERSION
         )
         self._account: stripe_lib.Account | None = None
-        self._account_read = False
 
     async def verify_scopes(self) -> list[str]:
         """Probe every permission the migration needs, concurrently, and return the
@@ -89,14 +88,15 @@ class StripeAdapter:
             pass
 
     async def _current_account(self) -> stripe_lib.Account | None:
-        # Best-effort: a restricted key may lack account read scope. Read once:
-        # creating a migration needs both the account id and its country.
-        if not self._account_read:
+        # Best-effort: a restricted key may lack account read scope. Only a
+        # successful read is cached — creating a migration needs both the account
+        # id and its country, but a rate-limited read must not stick and cost the
+        # id we would otherwise have stored.
+        if self._account is None:
             try:
                 self._account = await self._client.v1.accounts.retrieve_current_async()
             except stripe_lib.StripeError:
-                self._account = None
-            self._account_read = True
+                return None
         return self._account
 
     async def get_account_id(self) -> str | None:

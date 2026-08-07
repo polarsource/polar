@@ -359,7 +359,7 @@ async def finalize(
 )
 async def generate_invoice(
     id: OrderID,
-    auth_subject: auth.OrdersRead,
+    auth_subject: auth.OrdersWrite,
     session: AsyncSession = Depends(get_db_session),
 ) -> None:
     """Trigger generation of an order's invoice."""

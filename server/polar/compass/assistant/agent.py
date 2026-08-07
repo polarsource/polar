@@ -18,6 +18,9 @@ _ALL_TOOLS_WITH_SCOPES: list[tuple[object, Scope]] = [
     *CUSTOMER_TOOLS_WITH_SCOPES,
 ]
 
+ASSISTANT_SCOPES: set[Scope] = {scope for _, scope in _ALL_TOOLS_WITH_SCOPES}
+"""Every scope the assistant's tools can require."""
+
 SYSTEM_PROMPT = """\
 You are Compass, Polar's business assistant, embedded in the merchant's
 dashboard. You answer questions about the merchant's own organization using
@@ -66,8 +69,13 @@ Follow-ups and judgment questions:
 - Never map words in the question onto tool or category names literally.
   "Risk" in a follow-up usually means the downside of the prior
   recommendation, not the risk insight category.
-- Tool results from earlier turns remain valid context; do not re-fetch to
-  re-answer.
+- Tool results from earlier turns show the data as it was when fetched, not
+  as it is now. Each replayed result starts with the date it was fetched, as
+  `[fetched YYYY-MM-DD]`. For judgment and analysis follow-ups, reason from
+  them directly without re-fetching. But when the user asks about current
+  numbers and the relevant result was fetched before today's date, fetch
+  fresh data instead of quoting the remembered figure. Never repeat a
+  `[fetched ...]` marker in your answer.
 - When your answer is analysis rather than measurement, frame it that way
   (e.g. "the main trade-off is..."), and say what data would confirm it.
 
@@ -134,19 +142,38 @@ def build_assistant_agent(
     agent: Agent[AssistantDeps, str] = Agent(
         model_instance,
         deps_type=AssistantDeps,
-        system_prompt=SYSTEM_PROMPT,
+        # Use `instructions`, not `system_prompt`. System prompts only go out
+        # on a history-less first turn, so a resumed thread would keep the
+        # original date forever. Instructions rebuild every turn.
+        instructions=SYSTEM_PROMPT,
         tools=tools,
         # gpt-5.5+ reasoning models reject any non-default temperature.
         model_settings=({} if model_name.startswith("gpt-5.5") else {"temperature": 0}),
     )
 
     # Relative dates ("yesterday", "last month") are resolvable only if the
-    # model knows what today is; the static prompt can't carry it.
-    @agent.system_prompt
-    async def _current_date(ctx: RunContext[AssistantDeps]) -> str:
-        return (
+    # model knows what today is; the static prompt can't carry it. On resumed
+    # threads, this also anchors the per-result `[fetched <date>]` stamps that
+    # replayed tool results carry, so the staleness rule is applicable.
+    @agent.instructions
+    async def _run_context(ctx: RunContext[AssistantDeps]) -> str:
+        lines = [
             f"Today's date is {ctx.deps.today.isoformat()} in the merchant's "
             f"timezone ({ctx.deps.timezone})."
-        )
+        ]
+        if ctx.deps.history_last_at is not None:
+            last_turn_on = (
+                ctx.deps.history_last_at.astimezone(ctx.deps.timezone)
+                .date()
+                .isoformat()
+            )
+            lines.append(
+                "This conversation is being continued: its most recent earlier "
+                f"turn ran on {last_turn_on}. Every tool result replayed from an "
+                "earlier turn is prefixed with `[fetched <date>]`, the date it "
+                "was fetched in this same timezone; it shows the data as of "
+                "that date, not as it is now."
+            )
+        return "\n".join(lines)
 
     return agent, model_provider, model_name

@@ -12,3 +12,5 @@ export const relativeTime = (iso: string): string => {
 }
 
 export const exactTime = (iso: string): string => format(new Date(iso), 'PPpp')
+
+export const messageTime = (iso: string): string => format(new Date(iso), 'PPp')

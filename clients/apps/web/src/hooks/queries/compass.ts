@@ -1,6 +1,11 @@
 import { api } from '@/utils/client'
 import { paths, unwrap } from '@polar-sh/client'
-import { useQuery } from '@tanstack/react-query'
+import {
+  QueryClient,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 type CompassTimezone = NonNullable<
@@ -29,5 +34,57 @@ export const useCompassInsights = (organizationId: string, enabled = true) => {
         }),
       ),
     retry: defaultRetry,
+  })
+}
+
+export const useCompassThreads = (organizationId: string, enabled = true) => {
+  return useQuery({
+    queryKey: ['compass_threads', { organizationId }],
+    enabled,
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/compass/threads', {
+          params: { query: { organization_id: organizationId, limit: 50 } },
+        }),
+      ),
+    retry: defaultRetry,
+  })
+}
+
+/**
+ * Imperative fetch of a thread's rendered messages. Use for explicit
+ * hydration (deep link, history pick). A mounted query would re-hydrate on
+ * cache/focus updates and clobber a live conversation.
+ */
+export const fetchCompassThread = (
+  queryClient: QueryClient,
+  threadId: string,
+) =>
+  queryClient.fetchQuery({
+    queryKey: ['compass_threads', 'detail', threadId],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/compass/threads/{id}', {
+          params: { path: { id: threadId } },
+        }),
+      ),
+    staleTime: 0,
+  })
+
+export const useDeleteCompassThread = (organizationId: string) => {
+  const queryClient = useQueryClient()
+  return useMutation({
+    mutationFn: (threadId: string) =>
+      api.DELETE('/v1/compass/threads/{id}', {
+        params: { path: { id: threadId } },
+      }),
+    onSuccess: (result) => {
+      if (result.error) {
+        return
+      }
+      queryClient.invalidateQueries({
+        queryKey: ['compass_threads', { organizationId }],
+      })
+    },
   })
 }

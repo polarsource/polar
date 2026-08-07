@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 import structlog
 from fastapi import Depends, Query
-from pydantic import AwareDatetime
+from pydantic import UUID4, AwareDatetime
 
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_resource_permission
@@ -88,7 +88,7 @@ async def list(
         title="ExternalCustomerID Filter",
         description="Filter by customer external ID.",
     ),
-    discount_id: MultipleQueryFilter[ProductID] | None = Query(
+    discount_id: MultipleQueryFilter[UUID4] | None = Query(
         None, title="DiscountID Filter", description="Filter by discount ID."
     ),
     active: bool | None = Query(

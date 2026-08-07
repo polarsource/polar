@@ -9,7 +9,7 @@ variable "environment" {
 }
 
 variable "name" {
-  description = "Short service name, combined into polar-{environment}-{name}."
+  description = "Short worker name, combined into polar-{environment}-{name}."
   type        = string
 }
 
@@ -21,12 +21,12 @@ variable "cluster_arn" {
 variable "image" {
   description = "Container image."
   type        = string
+  default     = "ghcr.io/polarsource/polar:latest"
 }
 
 variable "command" {
-  description = "Container command override."
+  description = "Dramatiq worker command."
   type        = list(string)
-  default     = null
 }
 
 variable "cpu" {
@@ -47,22 +47,10 @@ variable "desired_count" {
   default     = 1
 }
 
-variable "container_port" {
-  description = "Container port to expose, if any."
-  type        = number
-  default     = null
-}
-
 variable "environment_variables" {
   description = "Environment variables for the container."
   type        = map(string)
   default     = {}
-}
-
-variable "target_group_arns" {
-  description = "Target groups to register tasks in (ALB or NLB)."
-  type        = list(string)
-  default     = []
 }
 
 variable "subnet_ids" {
@@ -75,19 +63,7 @@ variable "security_group_ids" {
   type        = list(string)
 }
 
-variable "task_role_arn" {
-  description = "IAM role assumed by the running task, if any."
-  type        = string
-  default     = null
-}
-
 variable "permissions_boundary_arn" {
   description = "Permissions boundary for the execution role."
   type        = string
-}
-
-variable "log_retention_days" {
-  description = "CloudWatch log retention in days."
-  type        = number
-  default     = 30
 }

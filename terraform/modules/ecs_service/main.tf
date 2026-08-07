@@ -75,4 +75,14 @@ resource "aws_ecs_service" "this" {
     subnets         = var.subnet_ids
     security_groups = var.security_group_ids
   }
+
+  dynamic "load_balancer" {
+    for_each = var.target_group_arns
+
+    content {
+      target_group_arn = load_balancer.value
+      container_name   = local.full_name
+      container_port   = var.container_port
+    }
+  }
 }

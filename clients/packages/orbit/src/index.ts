@@ -45,7 +45,6 @@ export {
   SelectLabel,
   SelectSeparator,
   SelectTrigger,
-  SelectTriggerBase,
   SelectValue,
 } from './components/Select'
 export { Spinner, SpinnerNoMargin } from './components/Spinner'

@@ -12,7 +12,6 @@ import {
   SelectTrigger as SelectTriggerPrimitive,
   SelectValue as SelectValuePrimitive,
 } from './ui/select'
-import { Trigger as SelectTriggerBase } from '@radix-ui/react-select'
 import { twMerge } from 'tailwind-merge'
 
 const Select = SelectPrimitive
@@ -110,6 +109,5 @@ export {
   SelectLabel,
   SelectSeparator,
   SelectTrigger,
-  SelectTriggerBase,
   SelectValue,
 }

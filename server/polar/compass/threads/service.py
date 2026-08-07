@@ -14,8 +14,7 @@ from pydantic_ai.messages import (
     ToolReturnPart,
 )
 
-from polar.auth.models import AuthSubject, Organization, User, is_user
-from polar.auth.scope import Scope
+from polar.auth.models import AuthSubject, User
 from polar.kit.db.postgres import AsyncSessionMaker
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
@@ -23,7 +22,6 @@ from polar.logging import Logger
 from polar.models import CompassThread, CompassThreadMessage
 from polar.postgres import AsyncReadSession, AsyncSession
 
-from ..assistant.agent import ASSISTANT_SCOPES
 from .repository import CompassThreadMessageRepository, CompassThreadRepository
 from .schemas import TITLE_MAX_LENGTH, CompassThreadUpdate
 
@@ -34,13 +32,6 @@ HISTORY_TURNS = 12
 readable in the UI but drop out of the model's context, keeping long threads
 from growing every request without bound. This could probably be built
 in a smarter way in the future"""
-
-
-def granted_assistant_scopes(scopes: set[Scope]) -> list[Scope]:
-    """Intersect with assistant scopes so unrelated grants aren't stored on
-    the thread and later block access to its history.
-    """
-    return sorted(scopes & ASSISTANT_SCOPES, key=lambda scope: scope.value)
 
 
 type TurnParts = list[dict[str, Any]]
@@ -91,7 +82,7 @@ class CompassThreadService:
     async def list(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User],
         *,
         organization_id: uuid.UUID,
         pagination: PaginationParams,
@@ -109,7 +100,7 @@ class CompassThreadService:
     async def get(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User],
         id: uuid.UUID,
     ) -> CompassThread | None:
         repository = CompassThreadRepository.from_session(session)
@@ -157,7 +148,7 @@ class CompassThreadService:
     async def create(
         self,
         session: AsyncSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User],
         *,
         organization_id: uuid.UUID,
         prompt: str,
@@ -165,9 +156,8 @@ class CompassThreadService:
         repository = CompassThreadRepository.from_session(session)
         thread = CompassThread(
             organization_id=organization_id,
-            user_id=auth_subject.subject.id if is_user(auth_subject) else None,
+            user_id=auth_subject.subject.id,
             title=_title_from_prompt(prompt),
-            required_scopes=granted_assistant_scopes(auth_subject.scopes),
         )
         return await repository.create(thread, flush=True)
 
@@ -175,7 +165,7 @@ class CompassThreadService:
         self,
         session: AsyncReadSession,
         write_sessionmaker: AsyncSessionMaker,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User],
         *,
         organization_id: uuid.UUID,
         prompt: str,
@@ -267,9 +257,6 @@ class CompassThreadService:
         """The model context for the next turn: the concatenated per-turn
         deltas of the last `HISTORY_TURNS` turns, each turn's tool results
         stamped with the date it ran in the merchant's timezone.
-
-        Replaying is safe without a scope check of its own: reaching the
-        thread already means the caller holds its `required_scopes`.
 
         Stored history that no longer holds the expected shape (e.g. after a
         pydantic-ai upgrade) degrades to a fresh context instead of breaking

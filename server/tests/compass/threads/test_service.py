@@ -14,11 +14,7 @@ from pydantic_ai.messages import (
 )
 
 from polar.auth.models import AuthSubject, Organization, User
-from polar.auth.scope import Scope
-from polar.compass.threads.service import (
-    HISTORY_TURNS,
-    granted_assistant_scopes,
-)
+from polar.compass.threads.service import HISTORY_TURNS
 from polar.compass.threads.service import (
     compass_thread as compass_thread_service,
 )
@@ -26,7 +22,6 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.models import CompassThread, CompassThreadMessage, UserOrganization
 from polar.postgres import AsyncSession
-from tests.fixtures.auth import AuthSubjectFixture
 from tests.fixtures.database import SaveFixture
 
 UTC = ZoneInfo("UTC")
@@ -74,18 +69,14 @@ async def _create_thread(
     save_fixture: SaveFixture,
     organization: Organization,
     *,
-    user: User | None = None,
+    user: User,
     title: str = "Thread",
     created_at: datetime | None = None,
-    scopes: set[Scope] | None = None,
 ) -> CompassThread:
     thread = CompassThread(
         organization_id=organization.id,
-        user_id=user.id if user is not None else None,
+        user_id=user.id,
         title=title,
-        required_scopes=granted_assistant_scopes(
-            set(Scope) if scopes is None else scopes
-        ),
     )
     if created_at is not None:
         thread.created_at = created_at
@@ -130,20 +121,6 @@ class TestCreate:
         assert thread.user_id == user.id
         assert thread.organization_id == organization.id
         assert thread.title == "How is my MRR trending?"
-        assert thread.required_scopes == granted_assistant_scopes(auth_subject.scopes)
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_organization_thread_has_no_user(
-        self,
-        session: AsyncSession,
-        auth_subject: AuthSubject[Organization],
-        organization: Organization,
-    ) -> None:
-        thread = await compass_thread_service.create(
-            session, auth_subject, organization_id=organization.id, prompt="hi"
-        )
-
-        assert thread.user_id is None
 
     @pytest.mark.auth
     async def test_long_prompt_is_truncated(
@@ -204,7 +181,6 @@ class TestList:
     ) -> None:
         mine = await _create_thread(save_fixture, organization, user=user)
         await _create_thread(save_fixture, organization, user=user_second)
-        await _create_thread(save_fixture, organization, user=None)
 
         results, count = await compass_thread_service.list(
             session,
@@ -215,28 +191,6 @@ class TestList:
 
         assert count == 1
         assert [t.id for t in results] == [mine.id]
-
-    @pytest.mark.auth(AuthSubjectFixture(subject="organization"))
-    async def test_organization_sees_only_userless_threads(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[Organization],
-        user: User,
-        organization: Organization,
-    ) -> None:
-        await _create_thread(save_fixture, organization, user=user)
-        shared = await _create_thread(save_fixture, organization, user=None)
-
-        results, count = await compass_thread_service.list(
-            session,
-            auth_subject,
-            organization_id=organization.id,
-            pagination=PaginationParams(1, 10),
-        )
-
-        assert count == 1
-        assert [t.id for t in results] == [shared.id]
 
     @pytest.mark.auth
     async def test_ordered_by_last_activity(
@@ -538,27 +492,9 @@ class TestBuildMessageHistory:
 
 
 @pytest.mark.asyncio
-class TestRequiredScopes:
-    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.metrics_read}))
-    async def test_narrower_credential_cannot_reach_the_thread(
-        self,
-        session: AsyncSession,
-        save_fixture: SaveFixture,
-        auth_subject: AuthSubject[User],
-        user: User,
-        user_organization: UserOrganization,
-        organization: Organization,
-    ) -> None:
-        """A stored turn holds the answer as rendered under the creating
-        credential's scopes, so a narrower one must not read it back."""
-        thread = await _create_thread(save_fixture, organization, user=user)
-
-        assert (
-            await compass_thread_service.get(session, auth_subject, thread.id) is None
-        )
-
+class TestGet:
     @pytest.mark.auth
-    async def test_wider_credential_reaches_a_narrower_thread(
+    async def test_own_thread_is_readable(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -567,13 +503,25 @@ class TestRequiredScopes:
         user_organization: UserOrganization,
         organization: Organization,
     ) -> None:
-        """Holding every scope the thread was built with is enough — the
-        caller could have produced the same answers itself."""
-        thread = await _create_thread(
-            save_fixture, organization, user=user, scopes={Scope.metrics_read}
-        )
+        thread = await _create_thread(save_fixture, organization, user=user)
 
         found = await compass_thread_service.get(session, auth_subject, thread.id)
 
         assert found is not None
         assert found.id == thread.id
+
+    @pytest.mark.auth
+    async def test_another_users_thread_is_not_found(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        user_second: User,
+        user_organization: UserOrganization,
+        organization: Organization,
+    ) -> None:
+        thread = await _create_thread(save_fixture, organization, user=user_second)
+
+        assert (
+            await compass_thread_service.get(session, auth_subject, thread.id) is None
+        )

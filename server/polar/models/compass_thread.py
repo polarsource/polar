@@ -2,12 +2,9 @@ from typing import TYPE_CHECKING
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, String, Uuid
-from sqlalchemy.dialects.postgresql import ARRAY
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
-from polar.auth.scope import Scope
 from polar.kit.db.models.base import RecordModel
-from polar.kit.extensions.sqlalchemy import StringEnum
 
 if TYPE_CHECKING:
     from .organization import Organization
@@ -17,9 +14,9 @@ if TYPE_CHECKING:
 class CompassThread(RecordModel):
     """A Compass assistant conversation.
 
-    Threads created by a user session belong to that user; threads created
-    with an organization token have no user and are shared by the
-    organization's token holders.
+    A thread belongs to the user whose dashboard session created it: Compass
+    is reachable from a web session only, so there are no threads shared by
+    an organization's API tokens.
     """
 
     __tablename__ = "compass_threads"
@@ -30,25 +27,18 @@ class CompassThread(RecordModel):
         nullable=False,
         index=True,
     )
-    user_id: Mapped[UUID | None] = mapped_column(
+    user_id: Mapped[UUID] = mapped_column(
         Uuid,
         ForeignKey("users.id", ondelete="cascade"),
-        nullable=True,
+        nullable=False,
         index=True,
     )
     title: Mapped[str] = mapped_column(String, nullable=False)
-    required_scopes: Mapped[list[Scope]] = mapped_column(
-        ARRAY(StringEnum(Scope)), nullable=False, default=list
-    )
-    """The assistant scopes the creating credential held.
-
-    A stored turn holds the answer as rendered under these scopes, so a
-    credential may read the thread back only if it holds all of them."""
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:
         return relationship("Organization", lazy="raise")
 
     @declared_attr
-    def user(cls) -> Mapped["User | None"]:
+    def user(cls) -> Mapped["User"]:
         return relationship("User", lazy="raise")

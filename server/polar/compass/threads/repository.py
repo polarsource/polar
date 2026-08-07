@@ -3,7 +3,7 @@ from uuid import UUID
 from sqlalchemy import Select, func
 from sqlalchemy.orm import undefer
 
-from polar.auth.models import AuthSubject, Organization, User, is_user
+from polar.auth.models import AuthSubject, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.repository import select_accessible_org_ids
 from polar.kit.repository import (
@@ -22,31 +22,19 @@ class CompassThreadRepository(
     model = CompassThread
 
     def get_readable_statement(
-        self, auth_subject: AuthSubject[User | Organization]
+        self, auth_subject: AuthSubject[User]
     ) -> Select[tuple[CompassThread]]:
-        """Threads owned by the caller: a user sees their own threads in
-        organizations they can read analytics for. An organization token sees
-        the organization's user-less threads. Both are narrowed to threads
-        whose `required_scopes` the caller holds.
+        """Threads owned by the caller: their own threads, in organizations
+        they can still read analytics for.
         """
-        statement = self.get_base_statement().where(
-            CompassThread.required_scopes.contained_by(list(auth_subject.scopes))
+        return self.get_base_statement().where(
+            CompassThread.user_id == auth_subject.subject.id,
+            CompassThread.organization_id.in_(
+                select_accessible_org_ids(
+                    auth_subject, permission=OrganizationPermission.analytics_read
+                )
+            ),
         )
-        if is_user(auth_subject):
-            statement = statement.where(
-                CompassThread.user_id == auth_subject.subject.id,
-                CompassThread.organization_id.in_(
-                    select_accessible_org_ids(
-                        auth_subject, permission=OrganizationPermission.analytics_read
-                    )
-                ),
-            )
-        else:
-            statement = statement.where(
-                CompassThread.user_id.is_(None),
-                CompassThread.organization_id == auth_subject.subject.id,
-            )
-        return statement
 
     def apply_recency_order(
         self, statement: Select[tuple[CompassThread]]

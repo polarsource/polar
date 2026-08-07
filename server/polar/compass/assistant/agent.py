@@ -18,9 +18,6 @@ _ALL_TOOLS_WITH_SCOPES: list[tuple[object, Scope]] = [
     *CUSTOMER_TOOLS_WITH_SCOPES,
 ]
 
-ASSISTANT_SCOPES: set[Scope] = {scope for _, scope in _ALL_TOOLS_WITH_SCOPES}
-"""Every scope the assistant's tools can require."""
-
 SYSTEM_PROMPT = """\
 You are Compass, Polar's business assistant, embedded in the merchant's
 dashboard. You answer questions about the merchant's own organization using

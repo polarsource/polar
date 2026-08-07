@@ -116,34 +116,46 @@ def key_auth_failure() -> str | None:
 
     output = f"{result.stdout} {result.stderr}".lower()
     if "expired" in output:
-        return "the Stripe CLI key has expired"
+        return "the Stripe CLI key has expired (they last 90 days)"
     if "invalid api key" in output or "authentication" in output:
         return "Stripe rejected the stored key"
     return None
 
 
 def env_needs_sync() -> bool:
-    """True when server/.env doesn't carry the Stripe values from the secrets file.
+    """True when the generated env files don't carry the Stripe values from secrets.
 
     Without this, a run that saved the keys but failed to regenerate the env
     files would look fully configured next time, leaving the services on the
-    previous account's credentials.
+    previous account's credentials. The web env is checked too: it carries the
+    publishable key the browser tokenizes with, so a stale one would have the
+    browser and the backend on different sandboxes.
     """
-    env_path = ROOT_DIR / "server" / ".env"
-    if not env_path.exists():
+    secrets = read_secrets()
+    server_env = ROOT_DIR / "server" / ".env"
+    web_env = ROOT_DIR / "clients" / "apps" / "web" / ".env.local"
+
+    if not server_env.exists() or not web_env.exists():
         return True
 
-    env = dotenv_values(env_path, interpolate=False)
-    secrets = read_secrets()
-    return any(
-        env.get(key) != secrets.get(key)
+    server = dotenv_values(server_env, interpolate=False)
+    if any(
+        server.get(key) != secrets.get(key)
         for key in (
             "POLAR_STRIPE_SECRET_KEY",
             "POLAR_STRIPE_PUBLISHABLE_KEY",
             "POLAR_STRIPE_WEBHOOK_SECRET",
             "POLAR_STRIPE_CONNECT_WEBHOOK_SECRET",
         )
-    )
+    ):
+        return True
+
+    publishable_key = secrets.get("POLAR_STRIPE_PUBLISHABLE_KEY")
+    if server.get("NEXT_PUBLIC_STRIPE_KEY") != publishable_key:
+        return True
+
+    web = dotenv_values(web_env, interpolate=False)
+    return web.get("NEXT_PUBLIC_STRIPE_KEY") != publishable_key
 
 
 def has_saved_keys() -> bool:

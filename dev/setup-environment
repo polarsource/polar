@@ -9,18 +9,14 @@
 # ]
 # ///
 import argparse
-import contextlib
-import fcntl
 import functools
 import http.server
 import json
-import os
 import pathlib
 import queue
 import random
-import shutil
 import string
-import tempfile
+import sys
 import typing
 import urllib.parse
 import webbrowser
@@ -32,12 +28,12 @@ from yaspin import yaspin
 from yaspin.spinners import Spinners
 
 ROOT_PATH = pathlib.Path(__file__).parent.parent
-SECRETS_FILE_PATH = pathlib.Path(
-    os.environ.get(
-        "POLAR_SECRETS_FILE",
-        pathlib.Path.home() / ".config" / "polar" / "secrets.env",
-    )
-)
+
+# One implementation of the secrets file rules, shared with the dev CLI.
+sys.path.insert(0, str(ROOT_PATH / "dev" / "cli"))
+import secrets_io
+
+SECRETS_FILE_PATH = secrets_io.SECRETS_FILE
 SETUP_PAGE = """
 <form id="setup-form" action="https://github.com/settings/apps/new" method="post">
  Register a GitHub App Manifest: <input type="text" name="manifest" id="manifest"><br>
@@ -216,66 +212,19 @@ def _register_github_app(code: str) -> dict[str, typing.Any]:
 
 
 def _load_central_secrets() -> dict[str, str]:
-    """Load secrets from central file if it exists.
-
-    Interpolation is off, matching dev/cli/shared.py: a secret containing
-    `${...}` is a literal value, not a reference to another entry.
-    """
-    if SECRETS_FILE_PATH.exists():
-        return {
-            k: v
-            for k, v in dotenv_values(SECRETS_FILE_PATH, interpolate=False).items()
-            if v
-        }
-    return {}
-
-
-@contextlib.contextmanager
-def _secrets_lock() -> typing.Iterator[None]:
-    """Same lock dev/cli/shared.py takes, so the two writers can't interleave."""
-    SECRETS_FILE_PATH.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
-    lock_path = SECRETS_FILE_PATH.with_name(f"{SECRETS_FILE_PATH.name}.lock")
-    fd = os.open(lock_path, os.O_CREAT | os.O_RDWR, 0o600)
-    try:
-        fcntl.flock(fd, fcntl.LOCK_EX)
-        yield
-    finally:
-        fcntl.flock(fd, fcntl.LOCK_UN)
-        os.close(fd)
-
-
-def _quote_secret(value: str) -> str:
-    """Quote a value so any content survives a dotenv round-trip."""
-    escaped = str(value).replace("\\", "\\\\").replace('"', '\\"')
-    return f'"{escaped}"'
+    """Load secrets that carry a value, so blanks don't override template defaults."""
+    return {k: v for k, v in secrets_io.read_secrets().items() if v}
 
 
 def _ensure_secrets_file() -> bool:
     """Create secrets file from template if it doesn't exist. Returns True if created."""
-    if SECRETS_FILE_PATH.exists():
-        return False
-
-    SECRETS_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    template_path = ROOT_PATH / "dev" / "secrets.env.template"
-    if template_path.exists():
-        shutil.copy(template_path, SECRETS_FILE_PATH)
-    else:
-        with open(SECRETS_FILE_PATH, "w") as f:
-            f.write("# Polar Development Secrets\n")
-            f.write("# See dev/secrets.env.template for all options\n")
-    return True
+    return secrets_io.ensure_secrets_file()
 
 
 def _save_github_app_to_secrets(github_app: dict[str, typing.Any]) -> None:
     """Save GitHub App credentials to central secrets file."""
     _ensure_secrets_file()
-    with _secrets_lock():
-        _write_github_app_secrets(github_app)
-
-
-def _write_github_app_secrets(github_app: dict[str, typing.Any]) -> None:
-    secrets = _load_central_secrets()
-    secrets.update(
+    secrets_io.update_secrets(
         {
             "POLAR_GITHUB_APP_NAMESPACE": github_app["slug"],
             "POLAR_GITHUB_CLIENT_ID": github_app["client_id"],
@@ -294,24 +243,6 @@ def _write_github_app_secrets(github_app: dict[str, typing.Any]) -> None:
             "NEXT_PUBLIC_GITHUB_APP_NAMESPACE": github_app["slug"],
         }
     )
-
-    # mkstemp creates with 0600, and the rename is atomic, so an interrupted
-    # write can't leave a truncated secrets file behind.
-    fd, tmp_path = tempfile.mkstemp(
-        dir=SECRETS_FILE_PATH.parent,
-        prefix=f".{SECRETS_FILE_PATH.name}.",
-        suffix=".tmp",
-    )
-    try:
-        with os.fdopen(fd, "w") as f:
-            f.write("# Polar Development Secrets\n")
-            f.write("# Shared across Git worktrees. See dev/secrets.env.template\n\n")
-            for key, value in secrets.items():
-                f.write(f"{key}={_quote_secret(value)}\n")
-        os.replace(tmp_path, SECRETS_FILE_PATH)
-    except BaseException:
-        os.unlink(tmp_path)
-        raise
 
 
 def _write_env_file(

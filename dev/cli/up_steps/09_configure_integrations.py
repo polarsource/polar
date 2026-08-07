@@ -74,8 +74,7 @@ def _configure_stripe() -> None:
             step_status(True, "Stripe sandbox", profile.display_name)
             return
         step_status(False, "Stripe", auth_failure)
-        console.print("\n  [dim]Stripe CLI keys expire after 90 days.[/dim]")
-        if typer.confirm("  Link your sandbox again now?", default=True):
+        if typer.confirm("\n  Link your sandbox again now?", default=True):
             _setup_stripe()
         else:
             console.print("  [yellow]Stripe calls will fail until you run `dev stripe`.[/yellow]")

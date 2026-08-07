@@ -56,6 +56,17 @@ output "terraform_cloud_run_roles" {
   }
 }
 
+output "compliance_auditor_roles" {
+  value = {
+    management = module.compliance_auditor_management.role_arn
+    production = module.compliance_auditor_production.role_arn
+    sandbox    = module.compliance_auditor_sandbox.role_arn
+    test       = module.compliance_auditor_test.role_arn
+    identity   = module.compliance_auditor_identity.role_arn
+    security   = module.compliance_auditor_security.role_arn
+  }
+}
+
 output "service_control_policies" {
   value = {
     for key, policy in aws_organizations_policy.service_control :

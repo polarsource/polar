@@ -13,6 +13,7 @@ interface CompassInputBarProps {
   onFocus?: () => void
   placeholder?: string
   autoFocus?: boolean
+  isStreaming?: boolean
 }
 
 /**
@@ -20,6 +21,9 @@ interface CompassInputBarProps {
  * attach / expand / send controls. The idle bottom box and the conversation
  * overlay render this same component, so the surface cannot drift between
  * the two again.
+ *
+ * While a turn streams the next question can still be typed, but sending
+ * waits: the assistant answers one turn at a time.
  */
 export const CompassInputBar = forwardRef<
   HTMLTextAreaElement,
@@ -32,10 +36,11 @@ export const CompassInputBar = forwardRef<
     onFocus,
     placeholder = 'Ask Compass...',
     autoFocus,
+    isStreaming = false,
   },
   ref,
 ) {
-  const canSend = value.trim().length > 0
+  const canSend = value.trim().length > 0 && !isStreaming
 
   return (
     <Box

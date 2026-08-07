@@ -3,7 +3,7 @@ from dataclasses import dataclass, field
 from datetime import date
 from zoneinfo import ZoneInfo
 
-from polar.auth.models import AuthSubject, Organization, User
+from polar.auth.models import AuthSubject, User
 from polar.postgres import AsyncReadSession
 from polar.redis import Redis
 
@@ -21,7 +21,7 @@ class AssistantDeps:
     """
 
     session: AsyncReadSession
-    auth_subject: AuthSubject[User | Organization]
+    auth_subject: AuthSubject[User]
     organization_id: uuid.UUID
     timezone: ZoneInfo
     today: date

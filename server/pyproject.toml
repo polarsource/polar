@@ -118,6 +118,7 @@ lint_check = { cmd = "ruff format --check . && ruff check . && task lint_ast", h
 lint_ast = { cmd = "python -m scripts.linters", help = "run all custom AST lint rules" }
 lint_subquery = { cmd = "python -m scripts.linters --only subquery", help = "flag .subquery() calls that don't narrow columns" }
 lint_org_scope = { cmd = "python -m scripts.linters --only org-scope", help = "flag inline UserOrganization filters that bypass select_user_org_ids" }
+lint_nested_form = { cmd = "python -m scripts.linters --only nested-form", help = "flag nested <form> elements in backoffice views" }
 lint_types = { cmd = "mypy --num-workers 2 polar scripts tests", help = "run mypy type verify" }
 db_migrate = { cmd = "python -m scripts.db upgrade", help = "run alembic upgrade" }
 db_recreate = { cmd = "python -m scripts.db recreate", help = "drop and recreate database" }

@@ -11,7 +11,7 @@ from ._dispute_status_badge import dispute_status_badge
 from ._evidence_due_label import evidence_due_label
 from ._layout import layout
 from ._metric_card import metric_card
-from ._modal import modal
+from ._modal import modal, modal_close_button
 from ._state import card, empty_state, loading_state
 from ._status_badge import status_badge
 from ._support_tier_badge import support_tier_badge
@@ -35,6 +35,7 @@ __all__ = [
     "loading_state",
     "metric_card",
     "modal",
+    "modal_close_button",
     "navigation",
     "status_badge",
     "support_tier_badge",

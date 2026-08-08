@@ -6,7 +6,7 @@ from collections.abc import Generator
 from pydantic import ValidationError
 from tagflow import tag, text
 
-from polar.backoffice.components import button, modal
+from polar.backoffice.components import button, modal, modal_close_button
 from polar.enums import PayoutAccountType
 from polar.models import PayoutAccount
 
@@ -100,9 +100,8 @@ class DeletePayoutAccountModal:
                     with tag.div(classes="mr-auto"):
                         pass  # spacer
 
-                    with tag.form(method="dialog"):
-                        with button(ghost=True, type="submit"):
-                            text("Cancel")
+                    with modal_close_button(ghost=True):
+                        text("Cancel")
 
                     with button(variant="error", type="submit"):
                         text("Delete Payout Account")

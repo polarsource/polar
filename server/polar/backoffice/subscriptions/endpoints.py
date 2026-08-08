@@ -35,6 +35,7 @@ from ..components import (
     description_list,
     input,
     modal,
+    modal_close_button,
 )
 from ..layout import layout
 from ..orders.components import orders_datatable
@@ -481,9 +482,8 @@ async def cancel(
             validation_error=validation_error,
         ):
             with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(type="submit", variant="primary"):
                     text("Submit")
 
@@ -653,8 +653,7 @@ async def update_billing_period_end(
             validation_error=validation_error,
         ):
             with tag.div(classes="modal-action"):
-                with tag.form(method="dialog"):
-                    with button(ghost=True):
-                        text("Cancel")
+                with modal_close_button(ghost=True):
+                    text("Cancel")
                 with button(type="submit", variant="primary"):
                     text("Submit")

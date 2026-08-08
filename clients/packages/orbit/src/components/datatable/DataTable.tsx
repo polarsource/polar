@@ -54,6 +54,7 @@ interface DataTableProps<TData, TValue> {
   enableRowSelection?: boolean
   onRowSelectionChange?: OnChangeFn<RowSelectionState>
   onRowClick?: (row: Row<TData>) => void
+  isRowActive?: (row: Row<TData>) => boolean
 }
 
 export type DataTableColumnDef<TData, TValue = unknown> = ColumnDef<
@@ -91,6 +92,7 @@ export function DataTable<TData, TValue>({
   enableRowSelection,
   onRowSelectionChange,
   onRowClick,
+  isRowActive,
 }: DataTableProps<TData, TValue>) {
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
@@ -182,10 +184,9 @@ export function DataTable<TData, TValue>({
                           : undefined
                       }
                       data-state={
-                        enableRowSelection
-                          ? row.getIsSelected()
-                            ? 'selected'
-                            : undefined
+                        isRowActive?.(row) ||
+                        (enableRowSelection && row.getIsSelected())
+                          ? 'selected'
                           : undefined
                       }
                       onClick={

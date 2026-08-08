@@ -25,11 +25,7 @@ import {
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { Status } from '@polar-sh/orbit'
 import { Text } from '@polar-sh/orbit'
-import {
-  functionalUpdate,
-  OnChangeFn,
-  RowSelectionState,
-} from '@tanstack/react-table'
+import { functionalUpdate, OnChangeFn } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import {
   parseAsArrayOf,
@@ -38,7 +34,7 @@ import {
   parseAsStringLiteral,
   useQueryStates,
 } from 'nuqs'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import SubscriptionFilters from './SubscriptionFilters'
 
 const filterParsers = {
@@ -70,9 +66,6 @@ interface ClientPageProps {
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
-  const [selectedSubscriptionState, setSelectedSubscriptionState] =
-    useState<RowSelectionState>({})
-
   const router = useRouter()
 
   const {
@@ -146,18 +139,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const subscriptions = subscriptionsHook.data?.items || []
   const rowCount = subscriptionsHook.data?.pagination.total_count ?? 0
   const pageCount = subscriptionsHook.data?.pagination.max_page ?? 1
-
-  const selectedSubscription = subscriptions.find(
-    (subscription) => selectedSubscriptionState[subscription.id],
-  )
-
-  useEffect(() => {
-    if (selectedSubscription) {
-      router.push(
-        `/dashboard/${organization.slug}/sales/subscriptions/${selectedSubscription.id}`,
-      )
-    }
-  }, [selectedSubscription, organization, router])
 
   const columns: DataTableColumnDef<schemas['Subscription']>[] = [
     {
@@ -301,12 +282,12 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             sorting={sorting}
             onSortingChange={setSorting}
             isLoading={subscriptionsHook}
-            onRowSelectionChange={(row) => {
-              setSelectedSubscriptionState(row)
-            }}
-            rowSelection={selectedSubscriptionState}
+            onRowClick={(row) =>
+              router.push(
+                `/dashboard/${organization.slug}/sales/subscriptions/${row.original.id}`,
+              )
+            }
             getRowId={(row) => row.id.toString()}
-            enableRowSelection
           />
         ) : null}
       </div>

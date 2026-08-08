@@ -25,7 +25,6 @@ import {
 } from '@polar-sh/orbit'
 import { Status } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import {
   parseAsArrayOf,
@@ -33,7 +32,7 @@ import {
   parseAsStringLiteral,
   useQueryStates,
 } from 'nuqs'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import SalesFilters from './SalesFilters'
 
 const filterParsers = {
@@ -47,9 +46,6 @@ interface ClientPageProps {
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
-  const [selectedOrderState, setSelectedOrderState] =
-    useState<RowSelectionState>({})
-
   const router = useRouter()
 
   const { pagination, setPagination, sorting, setSorting, resetPage } =
@@ -225,14 +221,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       : []),
   ]
 
-  const selectedOrder = orders.find((order) => selectedOrderState[order.id])
-
-  useEffect(() => {
-    if (selectedOrder) {
-      router.push(`/dashboard/${organization.slug}/sales/${selectedOrder.id}`)
-    }
-  }, [selectedOrder, router, organization])
-
   const { data: metricsData } = useMetrics({
     organization_id: organization.id,
     startDate,
@@ -289,12 +277,12 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             sorting={sorting}
             onSortingChange={setSorting}
             isLoading={ordersHook.isLoading}
-            onRowSelectionChange={(row) => {
-              setSelectedOrderState(row)
-            }}
-            rowSelection={selectedOrderState}
+            onRowClick={(row) =>
+              router.push(
+                `/dashboard/${organization.slug}/sales/${row.original.id}`,
+              )
+            }
             getRowId={(row) => row.id.toString()}
-            enableRowSelection
           />
         )}
       </div>

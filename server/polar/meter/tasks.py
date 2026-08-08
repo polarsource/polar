@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from apscheduler.triggers.cron import CronTrigger
-from sqlalchemy import select
+from sqlalchemy import and_, or_, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import selectinload
 
@@ -67,6 +67,7 @@ BACKFILL_INSERT_CHUNK_SIZE = 500
 async def meter_backfill_events(
     meter_id: uuid.UUID,
     last_ingested_at: str | None = None,
+    last_event_id: str | None = None,
 ) -> None:
     """Backfill meter_events for a meter from historical events."""
     async with AsyncSessionMaker() as session:
@@ -78,12 +79,24 @@ async def meter_backfill_events(
         statement = (
             select(Event)
             .where(Event.organization_id == meter.organization_id)
-            .order_by(Event.ingested_at)
+            .order_by(Event.ingested_at, Event.id)
             .limit(BACKFILL_BATCH_SIZE)
         )
         if last_ingested_at is not None:
             cursor_timestamp = datetime.fromisoformat(last_ingested_at)
-            statement = statement.where(Event.ingested_at > cursor_timestamp)
+            if last_event_id is None:
+                statement = statement.where(Event.ingested_at > cursor_timestamp)
+            else:
+                cursor_event_id = uuid.UUID(last_event_id)
+                statement = statement.where(
+                    or_(
+                        Event.ingested_at > cursor_timestamp,
+                        and_(
+                            Event.ingested_at == cursor_timestamp,
+                            Event.id > cursor_event_id,
+                        ),
+                    )
+                )
 
         result = await session.execute(statement)
         events = list(result.scalars().all())
@@ -118,4 +131,5 @@ async def meter_backfill_events(
                 "meter.backfill_events",
                 meter_id,
                 last_ingested_at=last_event.ingested_at.isoformat(),
+                last_event_id=str(last_event.id),
             )

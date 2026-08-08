@@ -1,4 +1,5 @@
 import uuid
+from datetime import UTC, datetime
 
 import pytest
 from pytest_mock import MockerFixture
@@ -181,3 +182,63 @@ class TestMeterBackfillEvents:
         assert call_args[0][0] == "meter.backfill_events"
         assert call_args[0][1] == meter.id
         assert call_args[1]["last_ingested_at"] is not None
+        assert call_args[1]["last_event_id"] is not None
+
+    async def test_pagination_skips_events_with_duplicate_ingested_at(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        duplicate_ingested_at = datetime(2026, 1, 1, tzinfo=UTC)
+        total_events = BACKFILL_BATCH_SIZE + 50
+
+        for _ in range(total_events):
+            event = await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer,
+                name="test.event",
+            )
+            event.ingested_at = duplicate_ingested_at
+        await session.flush()
+
+        meter = await create_meter(
+            save_fixture,
+            organization=organization,
+            filter=Filter(
+                conjunction=FilterConjunction.and_,
+                clauses=[
+                    FilterClause(
+                        property="name",
+                        operator=FilterOperator.eq,
+                        value="test.event",
+                    )
+                ],
+            ),
+            aggregation=CountAggregation(),
+        )
+
+        session.expunge_all()
+
+        enqueue_job_mock = mocker.patch("polar.meter.tasks.enqueue_job")
+
+        await meter_backfill_events(meter.id)
+
+        enqueue_job_mock.assert_called_once()
+        first_batch_kwargs = enqueue_job_mock.call_args[1]
+        await meter_backfill_events(
+            meter.id,
+            last_ingested_at=first_batch_kwargs["last_ingested_at"],
+            last_event_id=first_batch_kwargs["last_event_id"],
+        )
+
+        count_result = await session.execute(
+            select(func.count())
+            .select_from(MeterEvent)
+            .where(MeterEvent.meter_id == meter.id)
+        )
+        meter_events_count = count_result.scalar_one()
+        assert meter_events_count == total_events

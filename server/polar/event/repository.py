@@ -17,6 +17,7 @@ from sqlalchemy import (
     literal,
     or_,
     select,
+    tuple_,
     update,
 )
 from sqlalchemy.dialects.postgresql import aggregate_order_by, insert
@@ -329,13 +330,8 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
         if after_ingested_at is not None:
             assert after_event_id is not None
             page_statement = page_statement.where(
-                or_(
-                    MeterEvent.ingested_at > after_ingested_at,
-                    and_(
-                        MeterEvent.ingested_at == after_ingested_at,
-                        MeterEvent.event_id > after_event_id,
-                    ),
-                )
+                tuple_(MeterEvent.ingested_at, MeterEvent.event_id)
+                > (after_ingested_at, after_event_id)
             )
 
         event_page = page_statement.cte("meter_billing_event_page")

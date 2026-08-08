@@ -4280,6 +4280,132 @@ class TestUpdate:
 
         assert updated_checkout.seats == 7
 
+    async def test_switching_product_preserves_locked_seats(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_seat_based: Product,
+        product_seat_based_with_min_max: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_seat_based, product_seat_based_with_min_max],
+            product=product_seat_based,
+            seats=5,
+            min_seats=5,
+            max_seats=5,
+        )
+
+        updated_checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(product_id=product_seat_based_with_min_max.id),
+        )
+
+        assert updated_checkout.seats == 5
+
+    async def test_switching_product_preserves_selected_seats(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_seat_based: Product,
+        product_seat_based_with_min_max: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_seat_based, product_seat_based_with_min_max],
+            product=product_seat_based,
+            seats=7,
+        )
+
+        updated_checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(product_id=product_seat_based_with_min_max.id),
+        )
+
+        assert updated_checkout.seats == 7
+
+    async def test_switching_product_clamps_seats_to_new_tier(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_seat_based: Product,
+        product_seat_based_with_max: Product,
+    ) -> None:
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_seat_based, product_seat_based_with_max],
+            product=product_seat_based,
+            seats=15,
+        )
+
+        updated_checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(product_id=product_seat_based_with_max.id),
+        )
+
+        assert updated_checkout.seats == 10
+
+    async def test_switching_product_clamps_locked_seats_to_new_tier(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_seat_based: Product,
+        product_seat_based_with_max: Product,
+    ) -> None:
+        """A locked count above the new tier's ceiling clamps down to it.
+
+        The tier is a hard bound, so the switch stays possible rather than
+        dead-ending the customer on a product the merchant offered.
+        """
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product_seat_based, product_seat_based_with_max],
+            product=product_seat_based,
+            seats=15,
+            min_seats=15,
+            max_seats=15,
+        )
+
+        updated_checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(product_id=product_seat_based_with_max.id),
+        )
+
+        assert updated_checkout.seats == 10
+
+    async def test_switching_currency_preserves_seats(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[("seat", 1000, "usd"), ("seat", 900, "eur")],
+        )
+        checkout = await create_checkout(
+            save_fixture,
+            products=[product],
+            currency="usd",
+            seats=6,
+            min_seats=6,
+            max_seats=6,
+        )
+
+        updated_checkout = await checkout_service.update(
+            session,
+            checkout,
+            CheckoutUpdate(currency=PresentmentCurrency.eur),
+        )
+
+        assert updated_checkout.seats == 6
+
     async def test_trial_update(
         self,
         save_fixture: SaveFixture,

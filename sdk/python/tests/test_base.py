@@ -1,10 +1,16 @@
 import dataclasses
 import typing
 
+import httpx
 import pytest
 
 from polar import deserialize
-from polar.base import AsyncClientBase, SyncClientBase, resolve_base_url
+from polar.base import (
+    AsyncClientBase,
+    SyncClientBase,
+    parse_response_json,
+    resolve_base_url,
+)
 
 SERVERS = {
     "production": "https://api.polar.sh",
@@ -58,6 +64,30 @@ def test_resolve_base_url(
 def test_resolve_base_url_invalid_environment() -> None:
     with pytest.raises(ValueError, match="Invalid environment 'invalid'"):
         resolve_base_url(SERVERS, "invalid", None)
+
+
+class TestParseResponseJson:
+    def test_empty_body_returns_none(self) -> None:
+        response = httpx.Response(
+            status_code=202,
+            request=httpx.Request("GET", "https://api.polar.sh/v1/test"),
+        )
+        assert parse_response_json(response) is None
+
+    def test_empty_body_with_response_model_returns_none(self) -> None:
+        response = httpx.Response(
+            status_code=202,
+            request=httpx.Request("GET", "https://api.polar.sh/v1/test"),
+        )
+        assert parse_response_json(response, Cat) is None
+
+    def test_json_body_is_parsed(self) -> None:
+        response = httpx.Response(
+            status_code=200,
+            json={"type": "cat", "lives": 9},
+            request=httpx.Request("GET", "https://api.polar.sh/v1/test"),
+        )
+        assert parse_response_json(response, Cat) == Cat(type="cat", lives=9)
 
 
 @pytest.fixture(params=[SyncClientBase, AsyncClientBase])

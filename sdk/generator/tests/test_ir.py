@@ -1695,7 +1695,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                                 "description": "Validation error",
                                             },
                                             {
-                                                "name": "Get503Error",
+                                                "name": "ProductsGet503Error",
                                                 "status_code": 503,
                                                 "response_type": "none",
                                                 "description": "Service unavailable — no body",
@@ -2772,3 +2772,175 @@ def test_ir_generation(
     ir = generate_ir(*(op.OpenAPI.model_validate(spec) for spec in specs))
 
     assert ir.model_dump(mode="json", exclude_none=True) == expected
+
+
+def _find_service(
+    services: list[dict[typing.Any, typing.Any]], name: str
+) -> dict[typing.Any, typing.Any]:
+    return next(s for s in services if s["name"] == name)
+
+
+def test_single_ref_error_names_keep_the_model_name() -> None:
+    spec = {
+        "openapi": "3.1.0",
+        "info": {"title": "Test API", "version": "1.0.0"},
+        "paths": {
+            "/checkouts/{id}": {
+                "patch": {
+                    "operationId": "checkouts:update",
+                    "responses": {
+                        "200": {
+                            "description": "OK",
+                            "content": {
+                                "application/json": {
+                                    "schema": {"$ref": "#/components/schemas/Checkout"}
+                                }
+                            },
+                        },
+                        "403": {
+                            "description": "Forbidden",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/CheckoutForbidden"
+                                    }
+                                }
+                            },
+                        },
+                    },
+                }
+            },
+            "/customer-portal/subscriptions/{id}": {
+                "patch": {
+                    "operationId": "customer_portal:subscriptions:update",
+                    "responses": {
+                        "200": {
+                            "description": "OK",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/Subscription"
+                                    }
+                                }
+                            },
+                        },
+                        "403": {
+                            "description": "Forbidden",
+                            "content": {
+                                "application/json": {
+                                    "schema": {
+                                        "$ref": "#/components/schemas/AlreadyCanceled"
+                                    }
+                                }
+                            },
+                        },
+                    },
+                }
+            },
+        },
+        "components": {
+            "schemas": {
+                "Checkout": {
+                    "type": "object",
+                    "properties": {"id": {"type": "string"}},
+                    "title": "Checkout",
+                },
+                "Subscription": {
+                    "type": "object",
+                    "properties": {"id": {"type": "string"}},
+                    "title": "Subscription",
+                },
+                "CheckoutForbidden": {
+                    "type": "object",
+                    "properties": {"error": {"type": "string"}},
+                    "title": "CheckoutForbidden",
+                },
+                "AlreadyCanceled": {
+                    "type": "object",
+                    "properties": {"error": {"type": "string"}},
+                    "title": "AlreadyCanceled",
+                },
+            }
+        },
+    }
+
+    ir = generate_ir(op.OpenAPI.model_validate(spec))
+    services = ir.model_dump(mode="json", exclude_none=True)["versions"][0]["services"]
+
+    checkouts = _find_service(services, "Checkouts")
+    checkouts_403 = next(
+        e for e in checkouts["methods"][0]["errors"] if e["status_code"] == 403
+    )
+
+    customer_portal = _find_service(services, "CustomerPortal")
+    subscriptions = _find_service(customer_portal["services"], "Subscriptions")
+    subscriptions_403 = next(
+        e for e in subscriptions["methods"][0]["errors"] if e["status_code"] == 403
+    )
+
+    assert checkouts_403["name"] == "CheckoutForbidden"
+    assert subscriptions_403["name"] == "AlreadyCanceled"
+
+
+def test_fallback_error_names_qualified_by_service() -> None:
+    body_403 = {
+        "403": {
+            "description": "Forbidden",
+            "content": {
+                "application/json": {
+                    "schema": {
+                        "oneOf": [
+                            {"$ref": "#/components/schemas/A"},
+                            {"$ref": "#/components/schemas/B"},
+                        ]
+                    }
+                }
+            },
+        }
+    }
+    spec = {
+        "openapi": "3.1.0",
+        "info": {"title": "Test API", "version": "1.0.0"},
+        "paths": {
+            "/checkouts/{id}": {
+                "patch": {
+                    "operationId": "checkouts:update",
+                    "responses": dict(body_403),
+                }
+            },
+            "/customer-portal/subscriptions/{id}": {
+                "patch": {
+                    "operationId": "customer_portal:subscriptions:update",
+                    "responses": dict(body_403),
+                }
+            },
+        },
+        "components": {
+            "schemas": {
+                "A": {
+                    "type": "object",
+                    "properties": {"a": {"type": "string"}},
+                    "title": "A",
+                },
+                "B": {
+                    "type": "object",
+                    "properties": {"b": {"type": "string"}},
+                    "title": "B",
+                },
+            }
+        },
+    }
+
+    ir = generate_ir(op.OpenAPI.model_validate(spec))
+    services = ir.model_dump(mode="json", exclude_none=True)["versions"][0]["services"]
+
+    checkouts = _find_service(services, "Checkouts")
+    checkouts_names = {e["name"] for e in checkouts["methods"][0]["errors"]}
+
+    customer_portal = _find_service(services, "CustomerPortal")
+    subscriptions = _find_service(customer_portal["services"], "Subscriptions")
+    subscriptions_names = {e["name"] for e in subscriptions["methods"][0]["errors"]}
+
+    assert "CheckoutsUpdate403Error" in checkouts_names
+    assert "CustomerPortalSubscriptionsUpdate403Error" in subscriptions_names
+    assert checkouts_names.isdisjoint(subscriptions_names)

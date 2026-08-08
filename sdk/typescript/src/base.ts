@@ -179,7 +179,11 @@ export class ClientBase {
     }
 
     if (responseType === "json") {
-      return (await response.json()) as T;
+      const text = await response.text();
+      if (!text) {
+        return undefined as unknown as T;
+      }
+      return JSON.parse(text) as T;
     }
     if (responseType === "text") {
       return (await response.text()) as unknown as T;

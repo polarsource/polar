@@ -249,27 +249,6 @@ class TypeScriptEmitter(EmitterBase):
 
         self.render_file("src/version/services/service.ts", service_path, context)
 
-    def _collect_all_errors(self, api: APIVersion) -> list[ErrorResponse]:
-        """Collect all unique error responses from all services and methods."""
-        errors: list[ErrorResponse] = []
-        error_names: set[str] = set()
-
-        def _collect_error_names_from_service(service: Service) -> None:
-            for method in service.methods:
-                for error in method.errors:
-                    if error.name not in error_names:
-                        errors.append(error)
-                        error_names.add(error.name)
-
-            # Recursively collect from sub-services
-            for sub_service in service.services:
-                _collect_error_names_from_service(sub_service)
-
-        for service in api.services:
-            _collect_error_names_from_service(service)
-
-        return errors
-
     def _get_error_type_imports(
         self, errors: list[ErrorResponse], api: APIVersion
     ) -> list[str]:

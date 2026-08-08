@@ -13,14 +13,14 @@ import type {
 } from "../../models";
 
 import {
-  CheckEmailUpdate401Error,
   CustomerNotReady,
+  CustomerPortalCustomersCheckEmailUpdate401Error,
+  CustomerPortalCustomersVerifyEmailUpdate401Error,
+  CustomerPortalCustomersVerifyEmailUpdate422Error,
   HTTPValidationError,
   PaymentMethodInUseByActiveSubscription,
   PaymentMethodSetupFailed,
   ResourceNotFound,
-  VerifyEmailUpdate401Error,
-  VerifyEmailUpdate422Error,
 } from "../../errors";
 
 export const getCustomers = (client: ClientBase) => {
@@ -271,7 +271,7 @@ export const checkEmailUpdateCustomers = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {CheckEmailUpdate401Error} Invalid or expired verification token.
+   * @throws {CustomerPortalCustomersCheckEmailUpdate401Error} Invalid or expired verification token.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (query: { token: string }): Promise<void> => {
@@ -288,7 +288,7 @@ export const checkEmailUpdateCustomers = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request);
     return client.parseResponse<void>(response, "none", {
-      401: CheckEmailUpdate401Error,
+      401: CustomerPortalCustomersCheckEmailUpdate401Error,
       422: HTTPValidationError,
     });
   };
@@ -302,8 +302,8 @@ export const verifyEmailUpdateCustomers = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {VerifyEmailUpdate401Error} Invalid or expired verification token.
-   * @throws {VerifyEmailUpdate422Error} Email address is already in use.
+   * @throws {CustomerPortalCustomersVerifyEmailUpdate401Error} Invalid or expired verification token.
+   * @throws {CustomerPortalCustomersVerifyEmailUpdate422Error} Email address is already in use.
    */
   return async (
     body: CustomerEmailUpdateVerifyRequest,
@@ -319,8 +319,8 @@ export const verifyEmailUpdateCustomers = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request);
     return client.parseResponse<CustomerEmailUpdateVerifyResponse>(response, "json", {
-      401: VerifyEmailUpdate401Error,
-      422: VerifyEmailUpdate422Error,
+      401: CustomerPortalCustomersVerifyEmailUpdate401Error,
+      422: CustomerPortalCustomersVerifyEmailUpdate422Error,
     });
   };
 };

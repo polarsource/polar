@@ -5,8 +5,8 @@ import typing
 
 from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.v2026_04.errors import (
+    EventTypesUpdate404Error,
     HTTPValidationError,
-    Update404Error,
 )
 from polar.v2026_04.inputs import (
     EventTypeUpdate,
@@ -158,7 +158,7 @@ class EventTypesSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            Update404Error: Not Found
+            EventTypesUpdate404Error: Not Found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -175,7 +175,7 @@ class EventTypesSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            404: Update404Error,
+            404: EventTypesUpdate404Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, EventType, method_errors)
@@ -318,7 +318,7 @@ class EventTypesAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            Update404Error: Not Found
+            EventTypesUpdate404Error: Not Found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -335,7 +335,7 @@ class EventTypesAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            404: Update404Error,
+            404: EventTypesUpdate404Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, EventType, method_errors)

@@ -213,6 +213,9 @@ def parse_response_json(
 ) -> typing.Any:
     _handle_errors(response, errors)
 
+    if not response.content:
+        return None
+
     if response_model is not None:
         return deserialize(response.json(), response_model)
 

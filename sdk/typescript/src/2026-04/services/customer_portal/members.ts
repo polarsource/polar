@@ -7,20 +7,20 @@ import type {
 } from "../../models";
 
 import {
-  AddMember400Error,
-  AddMember401Error,
-  AddMember403Error,
+  CustomerPortalMembersAddMember400Error,
+  CustomerPortalMembersAddMember401Error,
+  CustomerPortalMembersAddMember403Error,
+  CustomerPortalMembersListMembers401Error,
+  CustomerPortalMembersListMembers403Error,
+  CustomerPortalMembersRemoveMember400Error,
+  CustomerPortalMembersRemoveMember401Error,
+  CustomerPortalMembersRemoveMember403Error,
+  CustomerPortalMembersRemoveMember404Error,
+  CustomerPortalMembersUpdateMember400Error,
+  CustomerPortalMembersUpdateMember401Error,
+  CustomerPortalMembersUpdateMember403Error,
+  CustomerPortalMembersUpdateMember404Error,
   HTTPValidationError,
-  ListMembers401Error,
-  ListMembers403Error,
-  RemoveMember400Error,
-  RemoveMember401Error,
-  RemoveMember403Error,
-  RemoveMember404Error,
-  UpdateMember400Error,
-  UpdateMember401Error,
-  UpdateMember403Error,
-  UpdateMember404Error,
 } from "../../errors";
 
 export const listMembersMembers = (client: ClientBase) => {
@@ -34,8 +34,8 @@ export const listMembersMembers = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {ListMembers401Error} Authentication required
-   * @throws {ListMembers403Error} Not permitted - requires owner or billing manager role
+   * @throws {CustomerPortalMembersListMembers401Error} Authentication required
+   * @throws {CustomerPortalMembersListMembers403Error} Not permitted - requires owner or billing manager role
    * @throws {HTTPValidationError} Validation Error
    */
   return async (query?: {
@@ -56,8 +56,8 @@ export const listMembersMembers = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request);
     return client.parseResponse<ListResourceCustomerPortalMember>(response, "json", {
-      401: ListMembers401Error,
-      403: ListMembers403Error,
+      401: CustomerPortalMembersListMembers401Error,
+      403: CustomerPortalMembersListMembers403Error,
       422: HTTPValidationError,
     });
   };
@@ -72,8 +72,8 @@ export const listMembersMembers = (client: ClientBase) => {
  * @throws {PolarNetworkError} When a network error occurs
  * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
- * @throws {ListMembers401Error} Authentication required
- * @throws {ListMembers403Error} Not permitted - requires owner or billing manager role
+ * @throws {CustomerPortalMembersListMembers401Error} Authentication required
+ * @throws {CustomerPortalMembersListMembers403Error} Not permitted - requires owner or billing manager role
  * @throws {HTTPValidationError} Validation Error
  */
 export const iterListMembersMembers = (client: ClientBase) => {
@@ -113,9 +113,9 @@ export const addMemberMembers = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {AddMember400Error} Invalid request or member already exists.
-   * @throws {AddMember401Error} Authentication required
-   * @throws {AddMember403Error} Not permitted - requires owner or billing manager role
+   * @throws {CustomerPortalMembersAddMember400Error} Invalid request or member already exists.
+   * @throws {CustomerPortalMembersAddMember401Error} Authentication required
+   * @throws {CustomerPortalMembersAddMember403Error} Not permitted - requires owner or billing manager role
    * @throws {HTTPValidationError} Validation Error
    */
   return async (body: CustomerPortalMemberCreate): Promise<CustomerPortalMember> => {
@@ -130,9 +130,9 @@ export const addMemberMembers = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request);
     return client.parseResponse<CustomerPortalMember>(response, "json", {
-      400: AddMember400Error,
-      401: AddMember401Error,
-      403: AddMember403Error,
+      400: CustomerPortalMembersAddMember400Error,
+      401: CustomerPortalMembersAddMember401Error,
+      403: CustomerPortalMembersAddMember403Error,
       422: HTTPValidationError,
     });
   };
@@ -152,10 +152,10 @@ export const removeMemberMembers = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {RemoveMember400Error} Cannot remove the only owner.
-   * @throws {RemoveMember401Error} Authentication required
-   * @throws {RemoveMember403Error} Not permitted - requires owner or billing manager role
-   * @throws {RemoveMember404Error} Member not found.
+   * @throws {CustomerPortalMembersRemoveMember400Error} Cannot remove the only owner.
+   * @throws {CustomerPortalMembersRemoveMember401Error} Authentication required
+   * @throws {CustomerPortalMembersRemoveMember403Error} Not permitted - requires owner or billing manager role
+   * @throws {CustomerPortalMembersRemoveMember404Error} Member not found.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (id: string): Promise<void> => {
@@ -172,10 +172,10 @@ export const removeMemberMembers = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request);
     return client.parseResponse<void>(response, "none", {
-      400: RemoveMember400Error,
-      401: RemoveMember401Error,
-      403: RemoveMember403Error,
-      404: RemoveMember404Error,
+      400: CustomerPortalMembersRemoveMember400Error,
+      401: CustomerPortalMembersRemoveMember401Error,
+      403: CustomerPortalMembersRemoveMember403Error,
+      404: CustomerPortalMembersRemoveMember404Error,
       422: HTTPValidationError,
     });
   };
@@ -196,10 +196,10 @@ export const updateMemberMembers = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {UpdateMember400Error} Invalid role change.
-   * @throws {UpdateMember401Error} Authentication required
-   * @throws {UpdateMember403Error} Not permitted - requires owner or billing manager role
-   * @throws {UpdateMember404Error} Member not found.
+   * @throws {CustomerPortalMembersUpdateMember400Error} Invalid role change.
+   * @throws {CustomerPortalMembersUpdateMember401Error} Authentication required
+   * @throws {CustomerPortalMembersUpdateMember403Error} Not permitted - requires owner or billing manager role
+   * @throws {CustomerPortalMembersUpdateMember404Error} Member not found.
    * @throws {HTTPValidationError} Validation Error
    */
   return async (id: string, body: CustomerPortalMemberUpdate): Promise<CustomerPortalMember> => {
@@ -216,10 +216,10 @@ export const updateMemberMembers = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request);
     return client.parseResponse<CustomerPortalMember>(response, "json", {
-      400: UpdateMember400Error,
-      401: UpdateMember401Error,
-      403: UpdateMember403Error,
-      404: UpdateMember404Error,
+      400: CustomerPortalMembersUpdateMember400Error,
+      401: CustomerPortalMembersUpdateMember401Error,
+      403: CustomerPortalMembersUpdateMember403Error,
+      404: CustomerPortalMembersUpdateMember404Error,
       422: HTTPValidationError,
     });
   };

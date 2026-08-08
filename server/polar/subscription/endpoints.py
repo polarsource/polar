@@ -47,6 +47,7 @@ from .schemas import (
 )
 from .service import (
     AlreadyCanceledSubscription,
+    InactiveSubscription,
     NotASeatBasedSubscription,
     SubscriptionLocked,
     SubscriptionUpdateContext,
@@ -400,9 +401,11 @@ async def create(
         },
         403: {
             "description": (
-                "Subscription is already canceled or will be at the end of the period."
+                "Subscription is already canceled or will be at the end of the "
+                "period, or is not active."
             ),
-            "model": AlreadyCanceledSubscription.schema(),
+            "model": AlreadyCanceledSubscription.schema()
+            | InactiveSubscription.schema(),
         },
         404: SubscriptionNotFound,
         409: {

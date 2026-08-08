@@ -1037,10 +1037,18 @@ class EventService:
 
         customers: set[Customer] = set()
         organization_ids: set[uuid.UUID] = set()
+        first_user_event_at: dict[uuid.UUID, datetime] = {}
         for event in events:
             organization_ids.add(event.organization_id)
             if event.customer and not event.customer.is_deleted:
                 customers.add(event.customer)
+                if event.source == EventSource.user:
+                    earliest = first_user_event_at.get(event.customer.id)
+                    if earliest is None or event.timestamp < earliest:
+                        first_user_event_at[event.customer.id] = event.timestamp
+
+        customer_repository = CustomerRepository.from_session(session)
+        await customer_repository.lower_first_user_event_at(first_user_event_at)
 
         span = trace.get_current_span()
         span.set_attribute(

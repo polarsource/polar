@@ -911,7 +911,7 @@ class CustomerService:
     ) -> CustomerState:
         # 👋 Whenever you change the state schema,
         # please also update the cache key with a version number.
-        cache_key = f"polar:customer_state:v6:{customer.id}"
+        cache_key = f"polar:customer_state:v7:{customer.id}"
 
         if cache:
             raw_state = await redis.get(cache_key)

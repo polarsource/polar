@@ -5751,6 +5751,116 @@ class TestVoidOrder:
         )
         assert new_balance == 200
 
+    @pytest.mark.asyncio
+    async def test_void_restores_balance_consumed_by_order(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=3000,
+            applied_balance_amount=-1000,
+        )
+
+        # The customer had 1000, consumed by the order at creation
+        wallet = await create_wallet_billing(
+            save_fixture,
+            customer=customer,
+            initial_balance=1000,
+        )
+        await create_wallet_transaction(save_fixture, wallet=wallet, amount=-1000)
+
+        # When
+        result_order = await order_service.void(session, order)
+
+        # Then
+        assert result_order.status == OrderStatus.void
+
+        new_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert new_balance == 1000
+
+    @pytest.mark.asyncio
+    async def test_void_restores_consumed_balance_and_reduces_credit(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=3000,
+            applied_balance_amount=-1000,
+        )
+
+        # The customer had 1000, consumed by the order at creation, then got a
+        # 1500 credit from another order
+        wallet = await create_wallet_billing(
+            save_fixture,
+            customer=customer,
+            initial_balance=1000,
+        )
+        await create_wallet_transaction(save_fixture, wallet=wallet, amount=-1000)
+        await create_wallet_transaction(save_fixture, wallet=wallet, amount=1500)
+
+        # When
+        result_order = await order_service.void(session, order)
+
+        # Then
+        assert result_order.status == OrderStatus.void
+
+        # The 1500 credit is reduced by the 2000 due, the 1000 consumed is restored
+        new_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert new_balance == 1000
+
+    @pytest.mark.asyncio
+    async def test_void_leaves_negative_balance_untouched(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=800,
+        )
+
+        # The customer owes 500 and the order consumed nothing
+        await create_wallet_billing(
+            save_fixture,
+            customer=customer,
+            initial_balance=-500,
+        )
+
+        # When
+        await order_service.void(session, order)
+
+        # Then
+        new_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert new_balance == -500
+
 
 class TestUnvoidOrder:
     @pytest.mark.asyncio
@@ -5804,6 +5914,77 @@ class TestUnvoidOrder:
 
         with pytest.raises(OrderNotVoid):
             await order_service.unvoid(session, order)
+
+    @pytest.mark.asyncio
+    async def test_unvoid_reconsumes_restored_balance(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.void,
+            subtotal_amount=3000,
+            applied_balance_amount=-1000,
+        )
+
+        # The 1000 consumed by the order was restored when it was voided
+        await create_wallet_billing(
+            save_fixture,
+            customer=customer,
+            initial_balance=1000,
+        )
+
+        # When
+        result_order = await order_service.unvoid(session, order)
+
+        # Then
+        assert result_order.status == OrderStatus.pending
+
+        new_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert new_balance == 0
+
+    @pytest.mark.asyncio
+    async def test_void_unvoid_round_trip_leaves_balance_unchanged(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Given
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=OrderStatus.pending,
+            subtotal_amount=3000,
+            applied_balance_amount=-1000,
+        )
+        wallet = await create_wallet_billing(
+            save_fixture,
+            customer=customer,
+            initial_balance=1000,
+        )
+        await create_wallet_transaction(save_fixture, wallet=wallet, amount=-1000)
+
+        # When
+        order = await order_service.void(session, order)
+        order = await order_service.unvoid(session, order)
+        order = await order_service.void(session, order)
+
+        # Then
+        new_balance = await wallet_service.get_billing_wallet_balance(
+            session, customer, order.currency
+        )
+        assert new_balance == 1000
 
 
 @pytest.mark.asyncio

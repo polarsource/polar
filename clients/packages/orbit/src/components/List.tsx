@@ -66,16 +66,20 @@ export const ListItem = ({
       onClick={onSelect}
     >
       {selectable && (
-        <Checkbox
-          aria-label="Select item"
-          checked={checked}
+        <div
+          className="-my-2 -mr-5 -ml-4 flex cursor-pointer items-center p-2"
           onClick={(event) => {
             event.preventDefault()
             event.stopPropagation()
             onCheckedChange?.(!checked, event)
           }}
-          className={selectionRevealClassName(!!checkboxVisible)}
-        />
+        >
+          <Checkbox
+            aria-label="Select item"
+            checked={checked}
+            className={selectionRevealClassName(!!checkboxVisible)}
+          />
+        </div>
       )}
       {children}
     </div>

@@ -25,6 +25,10 @@ import {
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import { DataTablePagination } from './DataTablePagination'
+import {
+  createSelectionColumn,
+  DataTableSelection,
+} from './DataTableSelectionColumn'
 
 export interface ReactQueryLoading {
   isFetching: boolean
@@ -50,9 +54,7 @@ interface DataTableProps<TData, TValue> {
   isLoading: boolean | ReactQueryLoading
   getCellColSpan?: (cell: Cell<TData, unknown>) => number
   getRowId?: (originalRow: TData, index: number, parent?: Row<TData>) => string
-  rowSelection?: RowSelectionState
-  enableRowSelection?: boolean
-  onRowSelectionChange?: OnChangeFn<RowSelectionState>
+  selection?: DataTableSelection<TData>
   onRowClick?: (row: Row<TData>) => void
   isRowActive?: (row: Row<TData>) => boolean
 }
@@ -88,16 +90,38 @@ export function DataTable<TData, TValue>({
   isLoading,
   getCellColSpan,
   getRowId,
-  rowSelection,
-  enableRowSelection,
-  onRowSelectionChange,
+  selection,
   onRowClick,
   isRowActive,
 }: DataTableProps<TData, TValue>) {
+  const rowSelection = React.useMemo(() => {
+    const state: RowSelectionState = {}
+    if (!selection) {
+      return state
+    }
+    data.forEach((item, index) => {
+      if (selection.isSelected(item)) {
+        state[getRowId ? getRowId(item, index) : String(index)] = true
+      }
+    })
+    return state
+  }, [selection, data, getRowId])
+
+  const allColumns = React.useMemo(
+    () =>
+      selection
+        ? [
+            createSelectionColumn(selection) as ColumnDef<TData, TValue>,
+            ...columns,
+          ]
+        : columns,
+    [selection, columns],
+  )
+
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
-    columns,
+    columns: allColumns,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     manualSorting: true,
@@ -108,9 +132,7 @@ export function DataTable<TData, TValue>({
     getSubRows,
     getExpandedRowModel: getExpandedRowModel(),
     getRowId,
-    enableRowSelection,
-    onRowSelectionChange,
-    enableMultiRowSelection: false,
+    enableRowSelection: !!selection,
     state: {
       pagination,
       sorting,
@@ -138,7 +160,7 @@ export function DataTable<TData, TValue>({
               <TableRow
                 key={headerGroup.id}
                 className={twMerge(
-                  'dark:bg-polar-800 bg-gray-50',
+                  'dark:bg-polar-800 group/row bg-gray-50',
                   headerClassName,
                 )}
               >
@@ -164,7 +186,7 @@ export function DataTable<TData, TValue>({
             {calcLoading ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={allColumns.length}
                   className="h-24 text-center"
                 >
                   Loading...
@@ -176,26 +198,16 @@ export function DataTable<TData, TValue>({
                   table.getRowModel().rows.map((row) => (
                     <TableRow
                       key={row.id}
-                      className={
-                        enableRowSelection || onRowClick
-                          ? row.getCanSelect()
-                            ? 'cursor-pointer'
-                            : ''
-                          : undefined
-                      }
+                      className={twMerge(
+                        'group/row',
+                        onRowClick && 'cursor-pointer',
+                      )}
                       data-state={
-                        isRowActive?.(row) ||
-                        (enableRowSelection && row.getIsSelected())
+                        isRowActive?.(row) || row.getIsSelected()
                           ? 'selected'
                           : undefined
                       }
-                      onClick={
-                        onRowClick
-                          ? () => onRowClick(row)
-                          : enableRowSelection
-                            ? row.getToggleSelectedHandler()
-                            : undefined
-                      }
+                      onClick={onRowClick ? () => onRowClick(row) : undefined}
                     >
                       {row.getVisibleCells().map((cell) => {
                         const colSpan = getCellColSpan
@@ -223,7 +235,7 @@ export function DataTable<TData, TValue>({
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={columns.length}
+                      colSpan={allColumns.length}
                       className="h-24 text-center"
                     >
                       No Results

@@ -6,3 +6,4 @@ export type {
   DataTableSortingState,
   ReactQueryLoading,
 } from './DataTable'
+export type { DataTableSelection } from './DataTableSelectionColumn'

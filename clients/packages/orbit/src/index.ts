@@ -13,6 +13,7 @@ export type {
 } from './components/ButtonGroup'
 export { Checkbox } from './components/Checkbox'
 export { DataTable, DataTableColumnHeader } from './components/datatable'
+export type { DataTableSelection } from './components/datatable'
 export type {
   DataTableColumnDef,
   DataTablePaginationState,

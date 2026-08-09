@@ -1,5 +1,9 @@
+'use client'
+
 import React, { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
+import { selectionRevealClassName } from '../lib/selectionReveal'
+import { Checkbox } from './Checkbox'
 
 export interface ListProps extends PropsWithChildren {
   className?: string
@@ -28,6 +32,10 @@ export interface ListItemProps extends PropsWithChildren {
   selected?: boolean
   onSelect?: (e: React.MouseEvent) => void
   size?: 'small' | 'default'
+  selectable?: boolean
+  checked?: boolean
+  onCheckedChange?: (checked: boolean, event: React.MouseEvent) => void
+  checkboxVisible?: boolean
 }
 
 export const ListItem = ({
@@ -38,11 +46,15 @@ export const ListItem = ({
   selected,
   onSelect,
   size = 'default',
+  selectable,
+  checked,
+  onCheckedChange,
+  checkboxVisible,
 }: ListItemProps) => {
   return (
     <div
       className={twMerge(
-        'flex flex-row items-center gap-x-6 justify-between',
+        'group/row flex flex-row items-center justify-between gap-x-6',
         selected
           ? 'dark:bg-polar-800 bg-gray-50'
           : 'dark:hover:bg-polar-800 hover:bg-gray-50',
@@ -53,6 +65,18 @@ export const ListItem = ({
       )}
       onClick={onSelect}
     >
+      {selectable && (
+        <Checkbox
+          aria-label="Select item"
+          checked={checked}
+          onClick={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            onCheckedChange?.(!checked, event)
+          }}
+          className={selectionRevealClassName(!!checkboxVisible)}
+        />
+      )}
       {children}
     </div>
   )

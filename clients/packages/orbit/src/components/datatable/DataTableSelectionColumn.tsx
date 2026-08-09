@@ -1,7 +1,7 @@
 'use client'
 
 import { ColumnDef } from '@tanstack/react-table'
-import { twMerge } from 'tailwind-merge'
+import { selectionRevealClassName } from '../../lib/selectionReveal'
 import { Checkbox } from '../Checkbox'
 
 export interface DataTableSelection<TData> {
@@ -11,12 +11,6 @@ export interface DataTableSelection<TData> {
   toggle: (item: TData, options?: { shiftKey?: boolean }) => void
   setPageSelected: (selected: boolean) => void
 }
-
-const revealClassName = (alwaysVisible: boolean) =>
-  twMerge(
-    'opacity-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100 data-[state=checked]:opacity-100 data-[state=indeterminate]:opacity-100 pointer-coarse:opacity-100',
-    alwaysVisible && 'opacity-100',
-  )
 
 export const createSelectionColumn = <TData,>(
   selection: DataTableSelection<TData>,
@@ -33,7 +27,7 @@ export const createSelectionColumn = <TData,>(
           : selection.pageState === 'all'
       }
       onCheckedChange={(checked) => selection.setPageSelected(checked === true)}
-      className={revealClassName(selection.count > 0)}
+      className={selectionRevealClassName(selection.count > 0)}
     />
   ),
   cell: ({ row }) => (
@@ -44,7 +38,7 @@ export const createSelectionColumn = <TData,>(
         event.stopPropagation()
         selection.toggle(row.original, { shiftKey: event.shiftKey })
       }}
-      className={revealClassName(selection.count > 0)}
+      className={selectionRevealClassName(selection.count > 0)}
     />
   ),
 })

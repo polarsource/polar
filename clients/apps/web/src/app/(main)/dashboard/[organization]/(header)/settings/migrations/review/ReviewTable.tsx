@@ -2,17 +2,18 @@
 
 import {
   useImportMerchantMigrationCatalog,
-  useMigrationEntityCounts,
   useMigrationRecords,
   useRunMerchantMigrationPrecheck,
 } from '@/hooks/queries/merchantMigrations'
 import { Alert, Spinner } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useState } from 'react'
+import { useRecordSummary } from './recordSummary'
 import { ReviewScope } from './reviewRows'
 import {
   importPayload,
   initialSelection,
+  selectionAfterImport,
   SelectionState,
   toggleAll,
   toggleRow,
@@ -39,7 +40,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     attentionCount,
     isLoading: countsLoading,
     isError: countsError,
-  } = useMigrationEntityCounts(migrationId)
+  } = useRecordSummary(migrationId)
   const importCatalog = useImportMerchantMigrationCatalog(migrationId)
   const rerunPrecheck = useRunMerchantMigrationPrecheck(migrationId)
 
@@ -107,16 +108,11 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       onImport={() => {
         const submitted = selection
         importCatalog.mutate(importPayload(submitted), {
-          // Imported rows stop being selectable, so a stale selection would
-          // keep counting them. Keep anything picked while the import ran.
           onSuccess: () =>
-            setSelection((current) =>
-              current === submitted ? initialSelection : current,
-            ),
+            setSelection((current) => selectionAfterImport(submitted, current)),
         })
       }}
       importing={importCatalog.isPending}
-      importResult={importCatalog.data}
       importError={
         importCatalog.isError
           ? importCatalog.error?.message ||

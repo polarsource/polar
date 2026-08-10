@@ -31,6 +31,7 @@ from polar.merchant_migration.repository import (
 from polar.merchant_migration.schemas import (
     MerchantMigrationCreate,
     PrecheckEntity,
+    PrecheckReasonLevel,
     PrecheckRecordStatus,
 )
 from polar.merchant_migration.service import (
@@ -847,6 +848,34 @@ class TestImportCatalog:
         )
 
     @pytest.mark.auth
+    async def test_listing_filters_on_import_status(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        items, count = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=PrecheckEntity.products,
+            status=None,
+            import_status=MerchantMigrationRecordStatus.imported,
+            pagination=PaginationParams(page=1, limit=20),
+        )
+
+        assert count == 1
+        assert [item.source_id for item in items] == ["prod_1"]
+
+    @pytest.mark.auth
     async def test_imports_subscription_as_paused(
         self,
         mocker: MockerFixture,
@@ -1306,3 +1335,76 @@ class TestImportCatalog:
         assert record.status == MerchantMigrationRecordStatus.skipped
         assert record.error is not None
         assert "USD" in record.error
+
+
+@pytest.mark.asyncio
+class TestSummarizeRecords:
+    @pytest.mark.auth
+    async def test_summary_counts_match_the_listing_after_import(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+        await service.import_catalog(session, auth_subject, migration.id)
+
+        summary = await service.summarize_records(session, auth_subject, migration.id)
+
+        by_entity = {entry.entity: entry for entry in summary.entities}
+        # prices ride along with their product, so they get no row of their own
+        assert set(by_entity) == {
+            PrecheckEntity.products,
+            PrecheckEntity.customers,
+            PrecheckEntity.subscriptions,
+        }
+
+        products = by_entity[PrecheckEntity.products]
+        # the fixture stages one importable product and one the pre-check skips
+        assert products.total == 2
+        assert products.importable == 1
+        assert products.skipped == 1
+        assert products.imported == 1
+        assert products.selectable == 0
+
+        customers = by_entity[PrecheckEntity.customers]
+        assert customers.total == 1
+        assert customers.imported == 1
+        assert customers.selectable == 0
+
+        items, count = await service.list_records(
+            session,
+            auth_subject,
+            migration.id,
+            entity=None,
+            status=None,
+            reason_level=PrecheckReasonLevel.action_required,
+            pagination=PaginationParams(page=1, limit=100),
+        )
+        assert summary.action_required == count
+
+    @pytest.mark.auth
+    async def test_summary_counts_what_is_still_selectable(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _staged_migration(
+            mocker, session, save_fixture, auth_subject, organization
+        )
+
+        summary = await service.summarize_records(session, auth_subject, migration.id)
+
+        by_entity = {entry.entity: entry for entry in summary.entities}
+        products = by_entity[PrecheckEntity.products]
+        assert products.imported == 0
+        assert products.selectable == 1

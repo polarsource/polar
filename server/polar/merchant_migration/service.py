@@ -16,7 +16,10 @@ from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
-from polar.models.merchant_migration_record import MerchantMigrationRecordType
+from polar.models.merchant_migration_record import (
+    MerchantMigrationRecordStatus,
+    MerchantMigrationRecordType,
+)
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
 from polar.product.repository import ProductRepository
@@ -48,6 +51,8 @@ from .schemas import (
     MerchantMigrationCreate,
     MerchantMigrationImportReport,
     MerchantMigrationRecordItem,
+    MerchantMigrationRecordSummary,
+    MerchantMigrationRecordSummaryEntity,
     PanTransferChecklist,
     PrecheckEntity,
     PrecheckIssue,
@@ -176,6 +181,41 @@ class SourceKeyModeMismatch(MerchantMigrationError):
             f"(e.g. `rk_{mode}_…`), so the migration runs against {mode} data.",
             400,
         )
+
+
+def _summarize_entities(
+    items: Sequence[MerchantMigrationRecordItem], entities: Sequence[PrecheckEntity]
+) -> list[MerchantMigrationRecordSummaryEntity]:
+    """Tally every entity in one pass over the classified rows."""
+    tallies = {
+        entity: {"total": 0, "importable": 0, "imported": 0, "selectable": 0}
+        for entity in entities
+    }
+    for item in items:
+        tally = tallies.get(item.entity)
+        if tally is None:
+            continue
+        tally["total"] += 1
+        if item.import_status == MerchantMigrationRecordStatus.imported:
+            tally["imported"] += 1
+        if item.status != PrecheckRecordStatus.importable:
+            continue
+        tally["importable"] += 1
+        # Only pending rows move; the importer skips every other ledger status.
+        if item.import_status == MerchantMigrationRecordStatus.pending:
+            tally["selectable"] += 1
+
+    return [
+        MerchantMigrationRecordSummaryEntity(
+            entity=entity,
+            total=tally["total"],
+            importable=tally["importable"],
+            skipped=tally["total"] - tally["importable"],
+            imported=tally["imported"],
+            selectable=tally["selectable"],
+        )
+        for entity, tally in tallies.items()
+    ]
 
 
 def _is_live_key(api_key: str) -> bool:
@@ -489,33 +529,61 @@ class MerchantMigrationService:
 
     async def list_records(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
         *,
         entity: PrecheckEntity | None,
         status: PrecheckRecordStatus | None,
         reason_level: PrecheckReasonLevel | None = None,
+        import_status: MerchantMigrationRecordStatus | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[MerchantMigrationRecordItem], int]:
         """Return staged records classified importable/skipped and paginated in
         memory. ``entity`` scopes to one type; ``None`` returns products, customers
         and subscriptions together. ``status`` filters to importable or skipped;
         ``reason_level`` filters to rows the merchant has to act on
-        (`action_required`) or only needs to know about (`info`). Reads what
-        ``run_precheck`` persisted."""
+        (`action_required`) or only needs to know about (`info`);
+        ``import_status`` filters on the ledger outcome, which excludes price rows
+        since they have none. Reads what ``run_precheck`` persisted."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
+        entities = [entity] if entity is not None else list(_ENTITY_RECORD_TYPE)
+        items = await self._classify_staged(session, migration, entities)
 
+        if status is not None:
+            items = [item for item in items if item.status == status]
+        if reason_level is not None:
+            items = [item for item in items if item.reason_level == reason_level]
+        if import_status is not None:
+            items = [item for item in items if item.import_status == import_status]
+
+        start = (pagination.page - 1) * pagination.limit
+        return items[start : start + pagination.limit], len(items)
+
+    async def _classify_staged(
+        self,
+        session: AsyncReadSession,
+        migration: MerchantMigration,
+        entities: Sequence[PrecheckEntity],
+        # `Sequence`, not `list`: this class's own `list` method shadows it.
+    ) -> Sequence[MerchantMigrationRecordItem]:
+        """Load the staged catalog once and classify the requested entities.
+
+        The expensive half of both listing and summarising, shared rather than
+        repeated per caller.
+        """
         organization = await self._get_organization(session, migration)
 
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         staged = await record_repository.list_by_migration(migration.id)
         records = [deserialize(record.type, record.canonical) for record in staged]
-        existing_product_names = await ProductRepository.from_session(
-            session
-        ).get_active_names_by_organization(migration.organization_id)
+        # Only product classification consults it.
+        existing_product_names: set[str] = set()
+        if PrecheckEntity.products in entities:
+            existing_product_names = await ProductRepository.from_session(
+                session
+            ).get_active_names_by_organization(migration.organization_id)
 
-        entities = [entity] if entity is not None else list(_ENTITY_RECORD_TYPE)
         items: list[MerchantMigrationRecordItem] = []
         for entity_type in entities:
             entity_items = classify_records(
@@ -526,14 +594,27 @@ class MerchantMigrationService:
             )
             self._attach_record_ids(entity_items, staged, entity_type)
             items.extend(entity_items)
+        return items
 
-        if status is not None:
-            items = [item for item in items if item.status == status]
-        if reason_level is not None:
-            items = [item for item in items if item.reason_level == reason_level]
+    async def summarize_records(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> MerchantMigrationRecordSummary:
+        """Every count the review UI needs, from a single classification pass."""
+        migration = await self._get_manageable(session, auth_subject, migration_id)
+        entities = list(_ENTITY_RECORD_TYPE)
+        items = await self._classify_staged(session, migration, entities)
 
-        start = (pagination.page - 1) * pagination.limit
-        return items[start : start + pagination.limit], len(items)
+        return MerchantMigrationRecordSummary(
+            entities=_summarize_entities(items, entities),
+            action_required=sum(
+                1
+                for item in items
+                if item.reason_level == PrecheckReasonLevel.action_required
+            ),
+        )
 
     def _attach_record_ids(
         self,

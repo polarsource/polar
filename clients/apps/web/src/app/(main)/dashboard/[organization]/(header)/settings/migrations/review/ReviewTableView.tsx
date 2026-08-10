@@ -1,6 +1,5 @@
 'use client'
 
-import { CountEntity, EntityCount } from '@/hooks/queries/merchantMigrations'
 import { schemas } from '@polar-sh/client'
 import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -13,6 +12,7 @@ import {
   ReviewFilter,
   ReviewStatusTabs,
 } from './ReviewStatusTabs'
+import { CountEntity, EntityCount } from './recordSummary'
 import { buildReviewColumns } from './reviewColumns'
 import {
   headerCheckState,
@@ -20,7 +20,6 @@ import {
   selectedCount,
   SelectionState,
 } from './reviewSelection'
-import { ImportSummary, importResultText } from './importSummary'
 import { ReviewRow, ReviewScope } from './reviewRows'
 
 const numberFormat = new Intl.NumberFormat('en-US')
@@ -43,7 +42,6 @@ interface Props {
   onToggleAll: () => void
   onImport: () => void
   importing?: boolean
-  importResult?: ImportSummary | null
   importError?: string
   onRerunPrecheck?: () => void
   rerunning?: boolean
@@ -69,7 +67,6 @@ export function ReviewTableView({
   onToggleAll,
   onImport,
   importing = false,
-  importResult,
   importError,
   onRerunPrecheck,
   rerunning = false,
@@ -77,35 +74,43 @@ export function ReviewTableView({
   attentionCount,
 }: Props) {
   const tabCounts: Record<CountEntity, number> = {
-    subscriptions:
-      counts.subscriptions.importable + counts.subscriptions.skipped,
-    products: counts.products.importable + counts.products.skipped,
-    customers: counts.customers.importable + counts.customers.skipped,
+    subscriptions: counts.subscriptions.total,
+    products: counts.products.total,
+    customers: counts.customers.total,
   }
-  const importableTotal =
-    counts.subscriptions.importable +
-    counts.products.importable +
-    counts.customers.importable
-  const skippedTotal =
-    counts.subscriptions.skipped +
-    counts.products.skipped +
-    counts.customers.skipped
+  const sum = (field: 'total' | 'skipped' | 'selectable') =>
+    counts.subscriptions[field] +
+    counts.products[field] +
+    counts.customers[field]
+  const rowTotal = sum('total')
+  const skippedTotal = sum('skipped')
+  // Rows already in Polar stay `importable` forever, so the pre-check total
+  // can't serve as the selection ceiling.
+  const selectableTotal = sum('selectable')
 
-  const importCount = selectedCount(selection, importableTotal)
-  const hasCatalog = importableTotal + skippedTotal > 0
+  const importCount = selectedCount(selection, selectableTotal)
+  const importLabel = importing
+    ? 'Importing…'
+    : importCount > 0
+      ? `Import ${numberFormat.format(importCount)} records`
+      : 'Import records'
+  const hasCatalog = rowTotal > 0
   const [openRow, setOpenRow] = useState<ReviewRow | null>(null)
 
   const columns = useMemo(
     () =>
       buildReviewColumns(entity, {
         isSelected: (id) => isRowSelected(selection, id),
-        headerState: headerCheckState(selection),
+        // The opt-out default reads as "all" even when no row can be picked,
+        // which would show as ticked-but-disabled.
+        headerState:
+          selectableTotal > 0 ? headerCheckState(selection) : 'unchecked',
         // It flips the whole catalog, not this page, so gate it on the same scope.
-        canSelectAll: importableTotal > 0,
+        canSelectAll: selectableTotal > 0,
         onToggle,
         onToggleAll,
       }),
-    [entity, importableTotal, selection, onToggle, onToggleAll],
+    [entity, selectableTotal, selection, onToggle, onToggleAll],
   )
 
   const pagination: PaginationState = { pageIndex: page - 1, pageSize }
@@ -175,13 +180,6 @@ export function ReviewTableView({
 
   return (
     <Box as="section" flexDirection="column" rowGap="xl">
-      {importResult && (
-        <Alert
-          variant="success"
-          title="Catalog imported"
-          description={importResultText(importResult)}
-        />
-      )}
       {importError && (
         <Alert
           variant="danger"
@@ -204,7 +202,7 @@ export function ReviewTableView({
               counts={{
                 attention: attentionCount,
                 skipped: skippedTotal,
-                all: importableTotal + skippedTotal,
+                all: rowTotal,
               }}
               onChange={onFilterChange}
             />
@@ -232,9 +230,7 @@ export function ReviewTableView({
               onClick={onImport}
               disabled={importing || importCount <= 0}
             >
-              {importing
-                ? 'Importing…'
-                : `Import ${numberFormat.format(importCount)} records`}
+              {importLabel}
             </Button>
           </Box>
         </Box>

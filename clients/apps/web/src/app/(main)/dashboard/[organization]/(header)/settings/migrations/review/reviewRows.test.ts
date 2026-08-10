@@ -73,7 +73,7 @@ describe('isSelectable', () => {
   it('does not select a failed row', () => {
     expect(
       isSelectable(row({ status: 'importable', import_status: 'failed' })),
-    ).toBe(true)
+    ).toBe(false)
   })
 })
 

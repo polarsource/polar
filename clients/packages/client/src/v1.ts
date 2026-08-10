@@ -5294,6 +5294,26 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/records/summary': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Summarize Merchant Migration Records
+     * @description **Scopes**: `organizations:write`
+     */
+    get: operations['merchant-migrations:records_summary']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/merchant-migrations/{id}/records': {
     parameters: {
       query?: never
@@ -23642,6 +23662,55 @@ export interface components {
      * @enum {string}
      */
     MerchantMigrationRecordStatus: 'pending' | 'imported' | 'skipped' | 'failed'
+    /**
+     * MerchantMigrationRecordSummary
+     * @description Every count the review UI needs, from one classification pass.
+     */
+    MerchantMigrationRecordSummary: {
+      /**
+       * Entities
+       * @description Per-entity counts, for the listable entities only.
+       */
+      entities: components['schemas']['MerchantMigrationRecordSummaryEntity'][]
+      /**
+       * Action Required
+       * @description How many records the pre-check flagged for the merchant to fix, across entities. Classification only, so a flagged record that has since been imported still counts.
+       */
+      action_required: number
+    }
+    /**
+     * MerchantMigrationRecordSummaryEntity
+     * @description The pre-check's per-entity counts, plus where the ledger has got to.
+     */
+    MerchantMigrationRecordSummaryEntity: {
+      /** @description The source entity type. */
+      entity: components['schemas']['PrecheckEntity']
+      /**
+       * Total
+       * @description How many were read from the source.
+       */
+      total: number
+      /**
+       * Importable
+       * @description How many will be imported into Polar.
+       */
+      importable: number
+      /**
+       * Skipped
+       * @description How many won't be imported and stay on the source.
+       */
+      skipped: number
+      /**
+       * Imported
+       * @description How many are already in Polar.
+       */
+      imported: number
+      /**
+       * Selectable
+       * @description How many an import would actually move: importable by the pre-check and still pending in the ledger.
+       */
+      selectable: number
+    }
     /**
      * MerchantMigrationSourcePlatform
      * @enum {string}
@@ -52580,12 +52649,75 @@ export interface operations {
       }
     }
   }
+  'merchant-migrations:records_summary': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationRecordSummary']
+        }
+      }
+      /** @description The source is not connected or isn't supported. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['SourceNotConnected']
+            | components['schemas']['UnsupportedMigrationSource']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'merchant-migrations:records': {
     parameters: {
       query?: {
         entity?: components['schemas']['PrecheckEntity'] | null
         status?: components['schemas']['PrecheckRecordStatus'] | null
         reason_level?: components['schemas']['PrecheckReasonLevel'] | null
+        import_status?:
+          | components['schemas']['MerchantMigrationRecordStatus']
+          | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */

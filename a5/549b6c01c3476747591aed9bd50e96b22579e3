@@ -1,0 +1,30 @@
+server/polar/payment_method/repository.py
+  s_055272d137234c::t_941c77bb9ab3e1 34-49
+  s_055272d137234c::t_91c50bcc489702 2
+server/tests/payment_method/test_repository.py
+  s_055272d137234c::t_0e71af55deb93e 18,24-27
+  s_055272d137234c::t_c510998d8d970c 69-103
+  s_055272d137234c::t_bfbac0cfd4553b 2
+server/polar/payment_method/tasks.py
+  s_055272d137234c::t_1cdc90fdf725cf 41-45
+  s_055272d137234c::t_ecbe232c03d901 13,20-21
+server/tests/payment_method/test_tasks.py
+  s_055272d137234c::t_ddcde07362c376 1-57,59-93
+  s_055272d137234c::t_87964258e33057 58
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "a5549b6c01c3476747591aed9bd50e96b22579e3",
+  "prompts": {},
+  "sessions": {
+    "s_055272d137234c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ee94dbe5-c15a-44e2-9fb8-aed3888c188f",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

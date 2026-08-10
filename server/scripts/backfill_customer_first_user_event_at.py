@@ -72,6 +72,31 @@ CHUNK_SIZE = 1000
 PAGE_SIZE = 50_000
 
 
+async def organization_ids_with_user_events() -> set[UUID]:
+    """
+    Organizations that appear in either view, in two queries rather than two per org.
+
+    Production has ~90k organizations and almost none of them ingest events. Iterating
+    all of them costs two Tinybird round trips each, which is hours before any writes.
+    """
+    organization_ids: set[UUID] = set()
+
+    for table in (
+        event_types_by_customer_id_table,
+        event_types_by_external_customer_id_table,
+    ):
+        statement = (
+            select(table.c.organization_id)
+            .where(table.c.source == EventSource.user)
+            .group_by(table.c.organization_id)
+        )
+        sql, template = _compile(statement)
+        rows = await tinybird_client.query(sql, db_statement=template)
+        organization_ids.update(_parse_uuid(row["organization_id"]) for row in rows)
+
+    return organization_ids
+
+
 async def _pages_by_key(
     table: Table, key: str, organization_id: UUID, *, uuid_key: bool
 ) -> AsyncIterator[dict[str, datetime]]:
@@ -198,12 +223,20 @@ async def backfill(
     sessionmaker = create_async_sessionmaker(engine)
 
     try:
-        async with sessionmaker() as session:
-            statement = select(Organization.id).order_by(Organization.id)
-            if organization_id is not None:
-                statement = statement.where(Organization.id == organization_id)
-            result = await session.execute(statement)
-            organization_ids = list(result.scalars().all())
+        if organization_id is not None:
+            organization_ids = [organization_id]
+        else:
+            console.print("[cyan]Listing organizations with events…")
+            with_events = await organization_ids_with_user_events()
+            async with sessionmaker() as session:
+                result = await session.execute(
+                    select(Organization.id)
+                    .where(Organization.id.in_(with_events))
+                    .order_by(Organization.id)
+                )
+                organization_ids = list(result.scalars().all())
+
+        console.print(f"[cyan]{len(organization_ids)} organization(s) to process.")
 
         total_rows = 0
         with Progress(console=console) as progress:

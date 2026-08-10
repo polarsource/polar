@@ -57,6 +57,7 @@ from polar.models.organization import (
     CapabilityName,
     OrganizationCapabilities,
     OrganizationDetails,
+    OrganizationDisputeSettings,
     OrganizationStatus,
     SnoozeType,
 )
@@ -253,6 +254,14 @@ class CannotCreateOrganizationError(OrganizationError):
         super().__init__(
             "You cannot create an organization from a session restricted to a "
             "specific organization.",
+            403,
+        )
+
+
+class DisputeAutoAcceptNotEnabled(OrganizationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Dispute auto-accept is not enabled for this organization.",
             403,
         )
 
@@ -561,6 +570,22 @@ class OrganizationService:
                 )
             organization.subscription_settings = update_schema.subscription_settings
 
+        if update_schema.dispute_settings is not None:
+            if (
+                update_schema.dispute_settings.auto_accept_below_amount is not None
+                and not organization.is_dispute_auto_accept_enabled
+            ):
+                raise DisputeAutoAcceptNotEnabled()
+            organization.dispute_settings = cast(
+                OrganizationDisputeSettings,
+                {
+                    **organization.dispute_settings,
+                    **update_schema.dispute_settings.model_dump(
+                        mode="json", exclude_unset=True
+                    ),
+                },
+            )
+
         if update_schema.default_presentment_currency is not None:
             await self._validate_currency_change(
                 session, organization, update_schema.default_presentment_currency
@@ -577,6 +602,7 @@ class OrganizationService:
                 "profile_settings",
                 "feature_settings",
                 "subscription_settings",
+                "dispute_settings",
                 "details",
             },
         )

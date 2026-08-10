@@ -28248,8 +28248,6 @@ export interface components {
       customer_portal_settings?:
         | components['schemas']['OrganizationCustomerPortalSettings']
         | null
-      /** Embed Hosts */
-      embed_hosts?: string[] | null
       /** @description Default presentment currency for the organization */
       default_presentment_currency?:
         | components['schemas']['PresentmentCurrency']

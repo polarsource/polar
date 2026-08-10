@@ -5,7 +5,7 @@ import { twMerge } from 'tailwind-merge'
 import { Checkbox } from '../Checkbox'
 
 export const SELECTION_COLUMN_ID = 'select'
-export const SELECTION_COLUMN_WIDTH = 48
+export const SELECTION_COLUMN_WIDTH = 36
 
 export interface DataTableSelection<TData> {
   count: number
@@ -29,7 +29,7 @@ export const createSelectionColumn = <TData,>(
   enableSorting: false,
   header: () => (
     <div
-      className="flex h-12 cursor-pointer items-center pr-2 pl-4"
+      className="flex h-12 cursor-pointer items-center pl-4"
       onClick={() => selection.setPageSelected(selection.pageState !== 'all')}
     >
       <Checkbox
@@ -45,7 +45,7 @@ export const createSelectionColumn = <TData,>(
   ),
   cell: ({ row }) => (
     <div
-      className="flex cursor-pointer items-center py-4 pr-2 pl-4"
+      className="flex cursor-pointer items-center py-4 pl-4"
       onClick={(event) => {
         event.stopPropagation()
         selection.toggle(row.original, { shiftKey: event.shiftKey })

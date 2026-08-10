@@ -13,6 +13,7 @@ import { ReviewScope } from './reviewRows'
 import {
   importPayload,
   initialSelection,
+  selectionAfterImport,
   SelectionState,
   toggleAll,
   toggleRow,
@@ -105,16 +106,10 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       onToggle={toggle}
       onToggleAll={onToggleAll}
       onImport={() => {
-        // Keep the opt-in/opt-out mode, drop the per-row toggles: those name
-        // rows that just changed state, and an imported row's checkbox is
-        // disabled, so an id left behind can never be cleared and would
-        // decrement the selection count for good.
-        importCatalog.mutate(importPayload(selection), {
+        const submitted = selection
+        importCatalog.mutate(importPayload(submitted), {
           onSuccess: () =>
-            setSelection((current) => ({
-              mode: current.mode,
-              toggled: new Set(),
-            })),
+            setSelection((current) => selectionAfterImport(submitted, current)),
         })
       }}
       importing={importCatalog.isPending}

@@ -34,6 +34,7 @@ export interface ListItemProps extends PropsWithChildren {
   checked?: boolean
   onCheckedChange?: (checked: boolean, event: React.MouseEvent) => void
   checkboxVisible?: boolean
+  checkboxLabel?: string
 }
 
 export const ListItem = ({
@@ -47,6 +48,7 @@ export const ListItem = ({
   checked,
   onCheckedChange,
   checkboxVisible,
+  checkboxLabel = 'Select item',
 }: ListItemProps) => {
   const hasCheckbox = !!onCheckedChange
 
@@ -80,7 +82,7 @@ export const ListItem = ({
           }}
         >
           <Checkbox
-            aria-label="Select item"
+            aria-label={checkboxLabel}
             checked={checked}
             className={twMerge(
               'opacity-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100 data-[state=checked]:opacity-100 data-[state=indeterminate]:opacity-100 pointer-coarse:opacity-100',

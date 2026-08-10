@@ -264,6 +264,23 @@ class EventRepository(RepositoryBase[Event], RepositoryIDMixin[Event, UUID]):
             statement = statement.where(Event.timestamp < cutoff)
         return await self.get_one_or_none(statement)
 
+    async def get_first_user_event_timestamp(
+        self, customer: Customer
+    ) -> datetime | None:
+        """
+        Earliest `user` event timestamp for a customer, straight from Postgres.
+
+        The comparator matches on `customer_id` and on `external_customer_id`, so this
+        also covers events ingested before the customer row existed.
+        """
+        statement = select(func.min(Event.timestamp)).where(
+            Event.organization_id == customer.organization_id,
+            Event.source == EventSource.user,
+            Event.customer == customer,
+        )
+        result = await self.session.execute(statement)
+        return result.scalar_one_or_none()
+
     def get_customer_id_filter_clause(
         self, customer_id: Sequence[UUID]
     ) -> ColumnElement[bool]:

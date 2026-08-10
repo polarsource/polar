@@ -1,9 +1,23 @@
 import contextlib
-from collections.abc import AsyncGenerator, Sequence
+from collections.abc import AsyncGenerator, Mapping, Sequence
+from datetime import datetime
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import ColumnElement, Select, String, cast, func, or_, select, update
+from sqlalchemy import (
+    TIMESTAMP,
+    ColumnElement,
+    Select,
+    String,
+    Uuid,
+    cast,
+    column,
+    func,
+    or_,
+    select,
+    update,
+    values,
+)
 from sqlalchemy import inspect as orm_inspect
 from sqlalchemy.orm import InstanceState
 
@@ -70,10 +84,11 @@ class CustomerRepository(
         yield customer
         assert customer.id is not None, "Customer.id is None"
 
-        # If the customer has an external_id, enqueue a meter update job
-        # to create meters for any pre-existing events with that external_id.
+        # If the customer has an external_id, enqueue jobs to pick up any pre-existing
+        # events with that external_id.
         if customer.external_id is not None:
             enqueue_job("customer_meter.update_customer", customer.id)
+            enqueue_job("customer.resolve_first_user_event_at", customer.id)
 
         enqueue_job("customer.webhook", WebhookEventType.customer_created, customer.id)
         enqueue_job("customer.event", customer.id, SystemEvent.customer_created)
@@ -134,6 +149,12 @@ class CustomerRepository(
                 SystemEvent.customer_updated,
                 updated_fields,
             )
+
+            # Setting an external_id can attribute events ingested before the customer
+            # existed. It's write-once, so this fires at most once per customer.
+            changed, value = _get_changed_value(inspection, "external_id")
+            if changed and value is not None:
+                enqueue_job("customer.resolve_first_user_event_at", customer.id)
 
         return customer
 
@@ -330,6 +351,51 @@ class CustomerRepository(
         result = await self.session.execute(stmt)
         next_number = result.scalar_one()
         return next_number - 1
+
+    async def get_ids_by_external_ids_and_organization(
+        self, external_ids: Sequence[str], organization_id: UUID
+    ) -> dict[str, UUID]:
+        statement = (
+            self.get_base_statement()
+            .with_only_columns(Customer.external_id, Customer.id)
+            .where(
+                Customer.organization_id == organization_id,
+                Customer.external_id.in_(external_ids),
+            )
+        )
+        result = await self.session.execute(statement)
+        return {external_id: id for external_id, id in result.all()}
+
+    async def lower_first_user_event_at(
+        self, timestamps: Mapping[UUID, datetime]
+    ) -> None:
+        """
+        Move `first_user_event_at` earlier for each customer. Never later.
+        """
+        if not timestamps:
+            return
+
+        new_values = values(
+            column("customer_id", Uuid),
+            column("timestamp", TIMESTAMP(timezone=True)),
+            name="new_first_user_event_at",
+        ).data(list(timestamps.items()))
+
+        statement = (
+            update(Customer)
+            .where(
+                Customer.id == new_values.c.customer_id,
+                or_(
+                    Customer.first_user_event_at.is_(None),
+                    Customer.first_user_event_at > new_values.c.timestamp,
+                ),
+            )
+            .values(
+                first_user_event_at=new_values.c.timestamp,
+                modified_at=Customer.modified_at,
+            )
+        )
+        await self.session.execute(statement)
 
     async def increment_receipt_next_number(self, customer_id: UUID) -> int:
         """

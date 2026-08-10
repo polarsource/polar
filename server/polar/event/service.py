@@ -1037,10 +1037,13 @@ class EventService:
 
         customers: set[Customer] = set()
         organization_ids: set[uuid.UUID] = set()
+        customers_with_user_events: set[uuid.UUID] = set()
         for event in events:
             organization_ids.add(event.organization_id)
             if event.customer and not event.customer.is_deleted:
                 customers.add(event.customer)
+                if event.source == EventSource.user:
+                    customers_with_user_events.add(event.customer.id)
 
         span = trace.get_current_span()
         span.set_attribute(
@@ -1059,6 +1062,9 @@ class EventService:
 
         tinybird_events = events_to_tinybird(events, ancestors_by_event)
         enqueue_job("tinybird.ingest", tinybird_events)
+
+        for customer_id in customers_with_user_events:
+            enqueue_job("customer.resolve_first_user_event_at", customer_id)
 
     async def _create_meter_events(
         self, session: AsyncSession, events: Sequence[Event]

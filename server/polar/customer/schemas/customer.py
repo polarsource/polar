@@ -229,6 +229,13 @@ class CustomerBase(MetadataOutputMixin, TimestampedSchema, IDSchema):
         description="Timestamp for when the customer was soft deleted."
     )
 
+    first_user_event_at: datetime | None = Field(
+        description=(
+            "Timestamp of the first event ingested for this customer. "
+            "Can predate `created_at`, and is null if no event was ever ingested."
+        )
+    )
+
     avatar_url: str | None = Field(
         examples=["https://www.gravatar.com/avatar/xxx?d=404"],
     )

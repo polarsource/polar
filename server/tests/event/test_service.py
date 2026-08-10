@@ -2037,6 +2037,84 @@ class TestIngested:
 
 
 @pytest.mark.asyncio
+class TestIngestedFirstUserEventAt:
+    async def test_enqueues_for_user_events(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        events = [
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer,
+                source=EventSource.user,
+            )
+            for _ in range(2)
+        ]
+
+        await event_service.ingested(session, [event.id for event in events])
+
+        resolve_calls = [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args[0] == "customer.resolve_first_user_event_at"
+        ]
+        assert resolve_calls == [
+            call("customer.resolve_first_user_event_at", customer.id)
+        ]
+
+    async def test_matches_by_external_customer_id(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, external_id="EXTERNAL_ID"
+        )
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            external_customer_id="EXTERNAL_ID",
+            source=EventSource.user,
+        )
+
+        await event_service.ingested(session, [event.id])
+
+        enqueue_job_mock.assert_any_call(
+            "customer.resolve_first_user_event_at", customer.id
+        )
+
+    async def test_system_events_do_not_enqueue(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        event = await create_event(
+            save_fixture,
+            organization=organization,
+            customer=customer,
+            source=EventSource.system,
+        )
+
+        await event_service.ingested(session, [event.id])
+
+        assert not [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args[0] == "customer.resolve_first_user_event_at"
+        ]
+
+
+@pytest.mark.asyncio
 class TestSystemEvents:
     async def test_order_paid_one_time(
         self,

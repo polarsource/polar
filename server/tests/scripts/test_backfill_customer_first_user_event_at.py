@@ -158,6 +158,33 @@ class TestGetFirstUserEventAtByOrganization:
             in query_mock.await_args_list[1].args[0]
         )
 
+    async def test_pages_the_external_customer_id_view(
+        self, mocker: MockerFixture
+    ) -> None:
+        mocker.patch("scripts.backfill_customer_first_user_event_at.PAGE_SIZE", 2)
+        timestamp = datetime(2020, 1, 1, tzinfo=UTC)
+        query_mock = mocker.patch(
+            "scripts.backfill_customer_first_user_event_at.tinybird_client.query",
+            new_callable=AsyncMock,
+            side_effect=[
+                [],
+                [
+                    {"external_customer_id": key, "first_seen": timestamp}
+                    for key in ("EXT_1", "EXT_2")
+                ],
+                [{"external_customer_id": "EXT_3", "first_seen": timestamp}],
+            ],
+        )
+
+        _, by_external_customer_id = await get_first_user_event_at_by_organization(
+            uuid.uuid4()
+        )
+
+        assert set(by_external_customer_id) == {"EXT_1", "EXT_2", "EXT_3"}
+        assert (
+            "external_customer_id` > 'EXT_2'" in query_mock.await_args_list[2].args[0]
+        )
+
     async def test_no_rows(self, mocker: MockerFixture) -> None:
         query_mock = mocker.patch(
             "scripts.backfill_customer_first_user_event_at.tinybird_client.query",

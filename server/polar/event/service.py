@@ -1060,11 +1060,11 @@ class EventService:
         for customer in customers:
             enqueue_job("customer_meter.update_customer", customer.id)
 
-        for customer_id in customers_with_user_events:
-            enqueue_job("customer.resolve_first_user_event_at", customer_id)
-
         tinybird_events = events_to_tinybird(events, ancestors_by_event)
         enqueue_job("tinybird.ingest", tinybird_events)
+
+        for customer_id in customers_with_user_events:
+            enqueue_job("customer.resolve_first_user_event_at", customer_id)
 
     async def _create_meter_events(
         self, session: AsyncSession, events: Sequence[Event]

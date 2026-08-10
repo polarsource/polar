@@ -3,6 +3,7 @@ from typing import Literal
 
 from sqlalchemy.orm import joinedload
 
+from polar.event.repository import EventRepository
 from polar.event.service import event as event_service
 from polar.event.system import CustomerUpdatedFields, SystemEvent, build_system_event
 from polar.exceptions import PolarTaskError
@@ -63,6 +64,12 @@ async def customer_resolve_first_user_event_at(customer_id: uuid.UUID) -> None:
             customer_id=customer.id,
             external_customer_id=customer.external_id,
         )
+
+        if first_user_event_at is None:
+            event_repository = EventRepository.from_session(session)
+            first_user_event_at = await event_repository.get_first_user_event_timestamp(
+                customer
+            )
 
         if first_user_event_at is not None:
             await repository.lower_first_user_event_at(

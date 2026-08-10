@@ -164,9 +164,15 @@ async def backfill_organization(
     timestamps = dict(by_customer_id)
 
     if by_external_customer_id:
-        customer_ids = await repository.get_ids_by_external_ids_and_organization(
-            list(by_external_customer_id), organization_id
-        )
+        external_ids = list(by_external_customer_id)
+        customer_ids: dict[str, UUID] = {}
+
+        for start in range(0, len(external_ids), CHUNK_SIZE):
+            customer_ids.update(
+                await repository.get_ids_by_external_ids_and_organization(
+                    external_ids[start : start + CHUNK_SIZE], organization_id
+                )
+            )
         for external_id, timestamp in by_external_customer_id.items():
             customer_id = customer_ids.get(external_id)
             if customer_id is None:

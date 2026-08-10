@@ -59,6 +59,9 @@ async def customer_resolve_first_user_event_at(customer_id: uuid.UUID) -> None:
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
 
+        if customer.is_deleted:
+            return
+
         first_user_event_at = await tinybird_service.get_first_user_event_at(
             organization_id=customer.organization_id,
             customer_id=customer.id,

@@ -5,6 +5,7 @@ import { CustomerSessionCode } from './customer_session_code'
 import { EmailUpdate } from './email_update'
 import { LoginCode } from './login_code'
 import { NotificationCreditsGranted } from './notification_credits_granted'
+import { NotificationFileFlaggedMalicious } from './notification_file_flagged_malicious'
 import { NotificationNewSale } from './notification_new_sale'
 import { NotificationNewSubscription } from './notification_new_subscription'
 import { OAuth2LeakedClient } from './oauth2_leaked_client'
@@ -71,6 +72,7 @@ const TEMPLATES: Record<string, React.FC<never>> = {
   notification_new_sale: NotificationNewSale,
   notification_new_subscription: NotificationNewSubscription,
   notification_credits_granted: NotificationCreditsGranted,
+  notification_file_flagged_malicious: NotificationFileFlaggedMalicious,
   chargeback_prevention_refund: ChargebackPreventionRefund,
   polar_self_subscription_cancellation: PolarSelfSubscriptionCancellation,
   polar_self_subscription_confirmation: PolarSelfSubscriptionConfirmation,

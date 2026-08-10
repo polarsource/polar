@@ -23107,6 +23107,34 @@ export interface components {
       /** Formatted Amount */
       readonly formatted_amount: string
     }
+    /** MaintainerFileFlaggedMaliciousNotification */
+    MaintainerFileFlaggedMaliciousNotification: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'MaintainerFileFlaggedMaliciousNotification'
+      payload: components['schemas']['MaintainerFileFlaggedMaliciousNotificationPayload']
+    }
+    /** MaintainerFileFlaggedMaliciousNotificationPayload */
+    MaintainerFileFlaggedMaliciousNotificationPayload: {
+      /** File Name */
+      file_name: string
+      /** Organization Name */
+      organization_name: string
+      /** Organization Slug */
+      organization_slug?: string | null
+    }
     /** MaintainerNewPaidSubscriptionNotification */
     MaintainerNewPaidSubscriptionNotification: {
       /**
@@ -24616,6 +24644,7 @@ export interface components {
         | components['schemas']['MaintainerNewPaidSubscriptionNotification']
         | components['schemas']['MaintainerNewProductSaleNotification']
         | components['schemas']['MaintainerAccountCreditsGrantedNotification']
+        | components['schemas']['MaintainerFileFlaggedMaliciousNotification']
       )[]
       /** Last Read Notification Id */
       last_read_notification_id: string | null
@@ -65186,6 +65215,9 @@ export const licenseKeyStatusValues: ReadonlyArray<
 export const maintainerAccountCreditsGrantedNotificationTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MaintainerAccountCreditsGrantedNotification']['type']
 > = ['MaintainerAccountCreditsGrantedNotification']
+export const maintainerFileFlaggedMaliciousNotificationTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MaintainerFileFlaggedMaliciousNotification']['type']
+> = ['MaintainerFileFlaggedMaliciousNotification']
 export const maintainerNewPaidSubscriptionNotificationTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MaintainerNewPaidSubscriptionNotification']['type']
 > = ['MaintainerNewPaidSubscriptionNotification']

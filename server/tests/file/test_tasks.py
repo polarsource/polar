@@ -11,6 +11,11 @@ from polar.file.tasks import guardduty_scan_result
 from polar.kit.utils import utc_now
 from polar.models import File, Organization
 from polar.models.file import FileServiceTypes
+from polar.notifications.notification import (
+    MaintainerFileFlaggedMaliciousNotificationPayload,
+    NotificationType,
+)
+from polar.notifications.service import PartialNotification
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 
@@ -78,6 +83,9 @@ class TestGuardDutyScanResult:
             "polar.file.tasks.AsyncSessionMaker",
             side_effect=lambda: _session_maker(session),
         )
+        send_to_org_members_mock = mocker.patch(
+            "polar.file.service.notifications_service.send_to_org_members"
+        )
 
         await _guardduty_scan_result(
             build_scan_result(settings.S3_FILES_BUCKET_NAME, file.path)
@@ -88,6 +96,19 @@ class TestGuardDutyScanResult:
             "scanResultStatus": "THREATS_FOUND",
             "threats": THREATS,
         }
+
+        send_to_org_members_mock.assert_called_once()
+        notification: PartialNotification = send_to_org_members_mock.call_args.kwargs[
+            "notif"
+        ]
+        assert send_to_org_members_mock.call_args.kwargs["org_id"] == organization.id
+        assert notification.type == NotificationType.maintainer_file_flagged_malicious
+        assert isinstance(
+            notification.payload, MaintainerFileFlaggedMaliciousNotificationPayload
+        )
+        assert notification.payload.file_name == file.name
+        assert notification.payload.organization_name == organization.name
+        assert notification.payload.organization_slug == organization.slug
 
     async def test_idempotent(
         self,
@@ -105,6 +126,9 @@ class TestGuardDutyScanResult:
             "polar.file.tasks.AsyncSessionMaker",
             side_effect=lambda: _session_maker(session),
         )
+        send_to_org_members_mock = mocker.patch(
+            "polar.file.service.notifications_service.send_to_org_members"
+        )
 
         await _guardduty_scan_result(
             build_scan_result(settings.S3_FILES_BUCKET_NAME, file.path)
@@ -112,6 +136,7 @@ class TestGuardDutyScanResult:
 
         assert file.flagged_malicious_at == flagged_at
         assert file.flagged_malicious_details == {"scanResultStatus": "THREATS_FOUND"}
+        send_to_org_members_mock.assert_not_called()
 
     async def test_unknown_object_key(
         self,

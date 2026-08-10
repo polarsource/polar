@@ -67,15 +67,9 @@ def find_subscriptions_missing_reset_events(
             repository = SubscriptionRepository.from_session(session)
             event_repository = EventRepository.from_session(session)
 
-            statement = (
-                repository.get_base_statement()
-                .where(
-                    Subscription.active.is_(True),
-                    exists().where(
-                        SubscriptionMeter.subscription_id == Subscription.id
-                    ),
-                )
-                .options(*repository.get_eager_options())
+            statement = repository.get_base_statement().where(
+                Subscription.active.is_(True),
+                exists().where(SubscriptionMeter.subscription_id == Subscription.id),
             )
             count = await session.scalar(
                 statement.with_only_columns(func.count()).order_by(None)
@@ -86,7 +80,8 @@ def find_subscriptions_missing_reset_events(
                 task = progress.add_task(
                     "[cyan]Checking metered subscriptions...", total=count
                 )
-                async for subscription in repository.stream(statement):
+                eager_statement = statement.options(*repository.get_eager_options())
+                async for subscription in repository.stream(eager_statement):
                     missing_meters = []
                     for subscription_meter in subscription.meters:
                         latest_reset = await event_repository.get_latest_meter_reset(

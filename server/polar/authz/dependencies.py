@@ -188,6 +188,20 @@ AuthorizeOrgManageUser = Annotated[
         )
     ),
 ]
+# User-only counterpart to `AuthorizeOrgManageRead`.
+AuthorizeOrgManageUserRead = Annotated[
+    AuthzContext[User],
+    Depends(
+        OrgPolicyGuard(
+            org_policy.can_manage,
+            allowed_subjects={User},
+            required_scopes={
+                Scope.organizations_read,
+                Scope.organizations_write,
+            },
+        )
+    ),
+]
 AuthorizeOrgAccess = Annotated[
     AuthzContext[User | Organization], Depends(OrgPolicyGuard())
 ]

@@ -1270,7 +1270,7 @@ export interface paths {
      * Get Organization Billing Details
      * @description Get the billing name, address, and tax ID used on Polar invoices.
      *
-     *     **Scopes**: `organizations:write`
+     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:get_billing_details']
     put?: never
@@ -1298,7 +1298,7 @@ export interface paths {
      * List Organization Payment Methods
      * @description List the saved payment methods used to pay Polar invoices.
      *
-     *     **Scopes**: `organizations:write`
+     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:list_payment_methods']
     put?: never
@@ -1411,7 +1411,7 @@ export interface paths {
      * @description List Slack shared channel benefit grants attached to this org's Polar
      *     subscription.
      *
-     *     **Scopes**: `organizations:write`
+     *     **Scopes**: `organizations:read` `organizations:write`
      */
     get: operations['organizations:list_benefit_grants']
     put?: never

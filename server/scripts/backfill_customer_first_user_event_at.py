@@ -10,6 +10,9 @@ Polar id, and `external_customer_id` otherwise — including events ingested bef
 the customer row existed, which is the whole point of the column. Both views are
 read, and the earlier of the two wins.
 
+Pages are written as they arrive, so memory stays bounded by `PAGE_SIZE` however
+many customers an organization has.
+
 Work is driven per organization because that is the leading column of both views'
 sorting keys, so each read stays on the key prefix instead of scanning the view.
 
@@ -28,6 +31,7 @@ Usage:
 """
 
 import asyncio
+from collections.abc import AsyncIterator
 from datetime import datetime
 from uuid import UUID
 
@@ -68,9 +72,9 @@ CHUNK_SIZE = 1000
 PAGE_SIZE = 50_000
 
 
-async def _first_seen_by_key(
+async def _pages_by_key(
     table: Table, key: str, organization_id: UUID, *, uuid_key: bool
-) -> dict[str, datetime]:
+) -> AsyncIterator[dict[str, datetime]]:
     """
     Page through one aggregating view, keyed on the column after `organization_id`.
 
@@ -78,7 +82,6 @@ async def _first_seen_by_key(
     each page scans the remaining range instead of re-aggregating from the start.
     """
     key_column = table.c[key]
-    results: dict[str, datetime] = {}
     last: str | None = None
 
     while True:
@@ -104,44 +107,26 @@ async def _first_seen_by_key(
         if not rows:
             break
 
-        for row in rows:
-            results[str(row[key])] = _parse_datetime(row["first_seen"])
+        yield {str(row[key]): _parse_datetime(row["first_seen"]) for row in rows}
 
         if len(rows) < PAGE_SIZE:
             break
 
         last = str(rows[-1][key])
 
-    return results
-
-
-async def get_first_user_event_at_by_organization(
-    organization_id: UUID,
-) -> tuple[dict[UUID, datetime], dict[str, datetime]]:
-    """
-    Earliest `user` event timestamp for every customer of an organization.
-
-    Returns one mapping keyed by customer id and one keyed by external customer id.
-    """
-    by_customer_id = await _first_seen_by_key(
-        event_types_by_customer_id_table, "customer_id", organization_id, uuid_key=True
-    )
-    by_external_customer_id = await _first_seen_by_key(
-        event_types_by_external_customer_id_table,
-        "external_customer_id",
-        organization_id,
-        uuid_key=False,
-    )
-
-    return (
-        {_parse_uuid(key): value for key, value in by_customer_id.items()},
-        by_external_customer_id,
-    )
-
 
 def _chunks(timestamps: dict[UUID, datetime], size: int) -> list[dict[UUID, datetime]]:
     items = list(timestamps.items())
     return [dict(items[i : i + size]) for i in range(0, len(items), size)]
+
+
+async def _lower(
+    repository: CustomerRepository, timestamps: dict[UUID, datetime], *, execute: bool
+) -> int:
+    if execute:
+        for chunk in _chunks(timestamps, CHUNK_SIZE):
+            await repository.lower_first_user_event_at(chunk)
+    return len(timestamps)
 
 
 async def backfill_organization(
@@ -150,42 +135,50 @@ async def backfill_organization(
     """
     Resolve and write `first_user_event_at` for one organization's customers.
 
-    Returns the number of customers the views produced a timestamp for.
+    Each page is written as it arrives. A customer present in both views is written
+    twice, and `lower_first_user_event_at` keeps the earlier value, so there's no
+    need to hold an organization's mappings in memory to merge them here.
+
+    Returns the number of rows written, which counts such a customer twice.
     """
-    (
-        by_customer_id,
-        by_external_customer_id,
-    ) = await get_first_user_event_at_by_organization(organization_id)
-
-    if not by_customer_id and not by_external_customer_id:
-        return 0
-
     repository = CustomerRepository.from_session(session)
-    timestamps = dict(by_customer_id)
+    written = 0
 
-    if by_external_customer_id:
-        external_ids = list(by_external_customer_id)
+    async for page in _pages_by_key(
+        event_types_by_customer_id_table, "customer_id", organization_id, uuid_key=True
+    ):
+        written += await _lower(
+            repository,
+            {_parse_uuid(key): value for key, value in page.items()},
+            execute=execute,
+        )
+
+    async for page in _pages_by_key(
+        event_types_by_external_customer_id_table,
+        "external_customer_id",
+        organization_id,
+        uuid_key=False,
+    ):
+        external_ids = list(page)
         customer_ids: dict[str, UUID] = {}
-
+        # Chunked for the same reason the writes are: a page can hold far more
+        # external ids than Postgres allows bind parameters.
         for start in range(0, len(external_ids), CHUNK_SIZE):
             customer_ids.update(
                 await repository.get_ids_by_external_ids_and_organization(
                     external_ids[start : start + CHUNK_SIZE], organization_id
                 )
             )
-        for external_id, timestamp in by_external_customer_id.items():
-            customer_id = customer_ids.get(external_id)
-            if customer_id is None:
-                continue
-            earliest = timestamps.get(customer_id)
-            if earliest is None or timestamp < earliest:
-                timestamps[customer_id] = timestamp
+        written += await _lower(
+            repository,
+            {
+                customer_id: page[external_id]
+                for external_id, customer_id in customer_ids.items()
+            },
+            execute=execute,
+        )
 
-    if execute:
-        for chunk in _chunks(timestamps, CHUNK_SIZE):
-            await repository.lower_first_user_event_at(chunk)
-
-    return len(timestamps)
+    return written
 
 
 @cli.command()
@@ -212,12 +205,12 @@ async def backfill(
             result = await session.execute(statement)
             organization_ids = list(result.scalars().all())
 
-        total_customers = 0
+        total_rows = 0
         with Progress(console=console) as progress:
             task = progress.add_task("[cyan]Organizations", total=len(organization_ids))
             for id in organization_ids:
                 async with sessionmaker() as session:
-                    total_customers += await backfill_organization(
+                    total_rows += await backfill_organization(
                         session, id, execute=execute
                     )
                     if execute:
@@ -228,14 +221,15 @@ async def backfill(
 
         if not execute:
             console.print(
-                f"[yellow]Dry-run — use --execute to backfill {total_customers} "
-                f"customer(s) across {len(organization_ids)} organization(s)."
+                f"[yellow]Dry-run — use --execute to write {total_rows} row(s) "
+                f"across {len(organization_ids)} organization(s). A customer in both "
+                "views counts twice."
             )
             return
 
-        log.info("backfill.complete", customers=total_customers)
+        log.info("backfill.complete", rows=total_rows)
         console.print(
-            f"\n[green]Backfilled {total_customers} customer(s) across "
+            f"\n[green]Wrote {total_rows} row(s) across "
             f"{len(organization_ids)} organization(s)."
         )
 

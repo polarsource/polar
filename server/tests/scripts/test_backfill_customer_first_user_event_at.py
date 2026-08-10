@@ -6,11 +6,15 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
+from polar.integrations.tinybird.service import (
+    event_types_by_customer_id_table,
+    event_types_by_external_customer_id_table,
+)
 from polar.kit.db.postgres import AsyncSession
 from polar.models import Customer, Organization
 from scripts.backfill_customer_first_user_event_at import (
+    _pages_by_key,
     backfill_organization,
-    get_first_user_event_at_by_organization,
 )
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer
@@ -29,11 +33,21 @@ def _mock_views(
     mocker: MockerFixture,
     by_customer_id: dict[object, datetime],
     by_external_customer_id: dict[str, datetime],
-) -> None:
-    mocker.patch(
-        "scripts.backfill_customer_first_user_event_at."
-        "get_first_user_event_at_by_organization",
-        return_value=(by_customer_id, by_external_customer_id),
+) -> AsyncMock:
+    """One short page per view, so each read stops after a single query."""
+    return mocker.patch(
+        "scripts.backfill_customer_first_user_event_at.tinybird_client.query",
+        new_callable=AsyncMock,
+        side_effect=[
+            [
+                {"customer_id": str(key), "first_seen": value}
+                for key, value in by_customer_id.items()
+            ],
+            [
+                {"external_customer_id": key, "first_seen": value}
+                for key, value in by_external_customer_id.items()
+            ],
+        ],
     )
 
 
@@ -92,7 +106,8 @@ class TestBackfillOrganization:
 
         count = await backfill_organization(session, organization.id, execute=True)
 
-        assert count == 1
+        # Written once per view; the repository guard keeps the earlier value.
+        assert count == 2
         assert await _get_first_user_event_at(session, customer) == earliest
 
     async def test_unknown_external_customer_id_is_skipped(
@@ -124,8 +139,8 @@ class TestBackfillOrganization:
 
 
 @pytest.mark.asyncio
-class TestGetFirstUserEventAtByOrganization:
-    async def test_pages_until_a_short_page(self, mocker: MockerFixture) -> None:
+class TestPagesByKey:
+    async def test_pages_the_customer_id_view(self, mocker: MockerFixture) -> None:
         mocker.patch("scripts.backfill_customer_first_user_event_at.PAGE_SIZE", 2)
         customer_ids = [uuid.uuid4() for _ in range(3)]
         timestamp = datetime(2020, 1, 1, tzinfo=UTC)
@@ -138,19 +153,20 @@ class TestGetFirstUserEventAtByOrganization:
                     for id in customer_ids[:2]
                 ],
                 [{"customer_id": str(customer_ids[2]), "first_seen": timestamp}],
-                [],
             ],
         )
 
-        (
-            by_customer_id,
-            by_external_customer_id,
-        ) = await get_first_user_event_at_by_organization(uuid.uuid4())
+        pages = [
+            page
+            async for page in _pages_by_key(
+                event_types_by_customer_id_table,
+                "customer_id",
+                uuid.uuid4(),
+                uuid_key=True,
+            )
+        ]
 
-        assert set(by_customer_id) == set(customer_ids)
-        assert by_external_customer_id == {}
-        # Two pages for the customer id view, one empty for the external one.
-        assert query_mock.await_count == 3
+        assert [len(page) for page in pages] == [2, 1]
         # The second page resumes after the last key of the first, cast so
         # ClickHouse compares UUIDs rather than a UUID against a string.
         assert (
@@ -167,7 +183,6 @@ class TestGetFirstUserEventAtByOrganization:
             "scripts.backfill_customer_first_user_event_at.tinybird_client.query",
             new_callable=AsyncMock,
             side_effect=[
-                [],
                 [
                     {"external_customer_id": key, "first_seen": timestamp}
                     for key in ("EXT_1", "EXT_2")
@@ -176,27 +191,38 @@ class TestGetFirstUserEventAtByOrganization:
             ],
         )
 
-        _, by_external_customer_id = await get_first_user_event_at_by_organization(
-            uuid.uuid4()
-        )
+        pages = [
+            page
+            async for page in _pages_by_key(
+                event_types_by_external_customer_id_table,
+                "external_customer_id",
+                uuid.uuid4(),
+                uuid_key=False,
+            )
+        ]
 
-        assert set(by_external_customer_id) == {"EXT_1", "EXT_2", "EXT_3"}
+        assert [len(page) for page in pages] == [2, 1]
+        # This view keys on a String, so the cursor is a plain literal rather than
+        # the toUUID() cast the customer id view needs.
         assert (
-            "external_customer_id` > 'EXT_2'" in query_mock.await_args_list[2].args[0]
+            "external_customer_id` > 'EXT_2'" in query_mock.await_args_list[1].args[0]
         )
 
     async def test_no_rows(self, mocker: MockerFixture) -> None:
-        query_mock = mocker.patch(
+        mocker.patch(
             "scripts.backfill_customer_first_user_event_at.tinybird_client.query",
             new_callable=AsyncMock,
             return_value=[],
         )
 
-        (
-            by_customer_id,
-            by_external_customer_id,
-        ) = await get_first_user_event_at_by_organization(uuid.uuid4())
+        pages = [
+            page
+            async for page in _pages_by_key(
+                event_types_by_customer_id_table,
+                "customer_id",
+                uuid.uuid4(),
+                uuid_key=True,
+            )
+        ]
 
-        assert by_customer_id == {}
-        assert by_external_customer_id == {}
-        assert query_mock.await_count == 2
+        assert pages == []

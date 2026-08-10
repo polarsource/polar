@@ -1,111 +1,77 @@
-import { useMigrationRecords } from './merchantMigrations'
+import { api } from '@/utils/client'
+import { schemas, unwrap } from '@polar-sh/client'
+import { useQuery } from '@tanstack/react-query'
+import { useMemo } from 'react'
+import { defaultRetry } from './retry'
 
 export type CountEntity = 'subscriptions' | 'products' | 'customers'
 
-export interface EntityCount {
-  importable: number
-  skipped: number
-}
+export type EntityCount = schemas['MerchantMigrationRecordSummaryEntity']
 
-interface RecordCount {
-  count: number
-  isLoading: boolean
-  isError: boolean
-}
+const COUNT_ENTITIES: CountEntity[] = ['subscriptions', 'products', 'customers']
 
-// The listing carries its own total, so a `limit: 1` page is how this module
-// asks "how many match?". A failed count would otherwise read as zero, which
-// the caller can't tell apart from an empty catalog, so `isError` rides along.
-const useRecordCount = (
-  id: string,
-  filters: Omit<Parameters<typeof useMigrationRecords>[1], 'page' | 'limit'>,
-): RecordCount => {
-  const query = useMigrationRecords(id, { ...filters, page: 1, limit: 1 })
+const empty = (entity: CountEntity): EntityCount => ({
+  entity,
+  total: 0,
+  importable: 0,
+  skipped: 0,
+  imported: 0,
+  selectable: 0,
+})
+
+export const merchantMigrationRecordSummaryKey = (id: string) => [
+  'merchantMigrationRecordSummary',
+  { id },
+]
+
+// One read for every count the UI shows: asking per number made the server
+// re-read and re-classify the whole staged catalog once per count.
+export const useMerchantMigrationRecordSummary = (id: string) => {
+  const query = useQuery({
+    queryKey: merchantMigrationRecordSummaryKey(id),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/merchant-migrations/{id}/records/summary', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!id,
+  })
+
+  const derived = useMemo(() => {
+    const counts = Object.fromEntries(
+      COUNT_ENTITIES.map((entity) => [
+        entity,
+        query.data?.entities.find((entry) => entry.entity === entity) ??
+          empty(entity),
+      ]),
+    ) as Record<CountEntity, EntityCount>
+
+    return {
+      counts,
+      imported: {
+        subscriptions: counts.subscriptions.imported,
+        products: counts.products.imported,
+        customers: counts.customers.imported,
+      },
+      selectableTotal: COUNT_ENTITIES.reduce(
+        (total, entity) => total + counts[entity].selectable,
+        0,
+      ),
+      attentionCount: query.data?.action_required ?? 0,
+    }
+  }, [query.data])
+
   return {
-    count: query.data?.pagination.total_count ?? 0,
+    ...derived,
     isLoading: query.isLoading,
+    // Distinct from `isLoading`, which is false whenever anything is cached. A
+    // refetch after an import serves the pre-import numbers until it lands, so
+    // callers that draw a conclusion from a zero count have to wait for this.
+    isFetching: query.isFetching,
+    // A failed count would otherwise read as zero, which the caller can't tell
+    // apart from an empty catalog.
     isError: query.isError,
-  }
-}
-
-type QueryState = Pick<RecordCount, 'isLoading' | 'isError'>
-
-const anyLoading = (states: QueryState[]) =>
-  states.some((state) => state.isLoading)
-const anyError = (states: QueryState[]) => states.some((state) => state.isError)
-
-const useEntityCount = (
-  id: string,
-  entity: CountEntity,
-): EntityCount & {
-  isLoading: boolean
-  isError: boolean
-} => {
-  const importable = useRecordCount(id, { entity, status: 'importable' })
-  const skipped = useRecordCount(id, { entity, status: 'skipped' })
-  return {
-    importable: importable.count,
-    skipped: skipped.count,
-    isLoading: anyLoading([importable, skipped]),
-    isError: anyError([importable, skipped]),
-  }
-}
-
-// What the catalog import actually landed, read from the ledger rather than the
-// import mutation, so the receipt survives a page reload. `remaining` is what
-// the merchant could still import: importable by the pre-check, untouched by
-// every import so far.
-export const useMigrationImportOutcome = (id: string) => {
-  const subscriptions = useRecordCount(id, {
-    entity: 'subscriptions',
-    importStatus: 'imported',
-  })
-  const products = useRecordCount(id, {
-    entity: 'products',
-    importStatus: 'imported',
-  })
-  const customers = useRecordCount(id, {
-    entity: 'customers',
-    importStatus: 'imported',
-  })
-  const remaining = useRecordCount(id, {
-    status: 'importable',
-    importStatus: 'pending',
-  })
-  const all = [subscriptions, products, customers, remaining]
-
-  return {
-    imported: {
-      subscriptions: subscriptions.count,
-      products: products.count,
-      customers: customers.count,
-    },
-    remaining: remaining.count,
-    isLoading: anyLoading(all),
-    isError: anyError(all),
-  }
-}
-
-export const useMigrationEntityCounts = (id: string) => {
-  const subscriptions = useEntityCount(id, 'subscriptions')
-  const products = useEntityCount(id, 'products')
-  const customers = useEntityCount(id, 'customers')
-  const attention = useRecordCount(id, { reasonLevel: 'action_required' })
-  const all = [subscriptions, products, customers, attention]
-
-  const counts: Record<CountEntity, EntityCount> = {
-    subscriptions: {
-      importable: subscriptions.importable,
-      skipped: subscriptions.skipped,
-    },
-    products: { importable: products.importable, skipped: products.skipped },
-    customers: { importable: customers.importable, skipped: customers.skipped },
-  }
-
-  return {
-    counts,
-    attentionCount: attention.count,
-    isLoading: anyLoading(all),
-    isError: anyError(all),
   }
 }

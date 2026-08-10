@@ -6,9 +6,24 @@ export function importedTotal(counts: ImportedCounts): number {
   return counts.subscriptions + counts.products + counts.customers
 }
 
-// "1 subscription, 3 products and 13 customers". Entity types that landed
-// nothing are dropped rather than reported as zero; callers check
-// `importedTotal` first, so an all-zero count has no wording of its own.
+// True only on a settled read. `isFetching` matters as much as `isLoading`:
+// the refetch the import itself triggers serves the pre-import zeros until it
+// lands, which would read as "nothing imported" just as the import succeeded.
+export function nothingImported(outcome: {
+  imported: ImportedCounts
+  isLoading: boolean
+  isFetching: boolean
+  isError: boolean
+}): boolean {
+  return (
+    !outcome.isLoading &&
+    !outcome.isFetching &&
+    !outcome.isError &&
+    importedTotal(outcome.imported) === 0
+  )
+}
+
+// "1 subscription, 3 products and 13 customers", dropping what landed nothing.
 export function importedCountsText(counts: ImportedCounts): string {
   const parts = [
     plural(counts.subscriptions, 'subscription'),

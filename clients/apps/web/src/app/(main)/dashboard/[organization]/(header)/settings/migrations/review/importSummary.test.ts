@@ -1,8 +1,9 @@
 import { describe, expect, it } from 'vitest'
+import type { ImportedCounts } from './importSummary'
 import {
-  ImportedCounts,
   importedCountsText,
   importedTotal,
+  nothingImported,
   plural,
 } from './importSummary'
 
@@ -41,10 +42,37 @@ describe('importedCountsText', () => {
     expect(importedCountsText(counts({ products: 2 }))).toBe('2 products')
   })
 
-  // Callers gate on `importedTotal`, so this only guards against a future one
-  // that forgets to.
   it('is empty when nothing landed', () => {
     expect(importedCountsText(counts())).toBe('')
+  })
+})
+
+describe('nothingImported', () => {
+  const settled = { isLoading: false, isFetching: false, isError: false }
+
+  it('is true once a settled read reports no imports', () => {
+    expect(nothingImported({ imported: counts(), ...settled })).toBe(true)
+  })
+
+  it('is false when something landed', () => {
+    expect(
+      nothingImported({ imported: counts({ products: 1 }), ...settled }),
+    ).toBe(false)
+  })
+
+  it('is false while a refetch is in flight over cached zeros', () => {
+    expect(
+      nothingImported({ imported: counts(), ...settled, isFetching: true }),
+    ).toBe(false)
+  })
+
+  it('is false on first load and on a failed read', () => {
+    expect(
+      nothingImported({ imported: counts(), ...settled, isLoading: true }),
+    ).toBe(false)
+    expect(
+      nothingImported({ imported: counts(), ...settled, isError: true }),
+    ).toBe(false)
   })
 })
 

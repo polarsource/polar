@@ -5,7 +5,7 @@ import {
   useMigrationRecords,
   useRunMerchantMigrationPrecheck,
 } from '@/hooks/queries/merchantMigrations'
-import { useMigrationEntityCounts } from '@/hooks/queries/merchantMigrationCounts'
+import { useMerchantMigrationRecordSummary } from '@/hooks/queries/merchantMigrationCounts'
 import { Alert, Spinner } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useState } from 'react'
@@ -39,7 +39,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     attentionCount,
     isLoading: countsLoading,
     isError: countsError,
-  } = useMigrationEntityCounts(migrationId)
+  } = useMerchantMigrationRecordSummary(migrationId)
   const importCatalog = useImportMerchantMigrationCatalog(migrationId)
   const rerunPrecheck = useRunMerchantMigrationPrecheck(migrationId)
 
@@ -105,14 +105,11 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
       onToggle={toggle}
       onToggleAll={onToggleAll}
       onImport={() => {
-        const submitted = selection
-        importCatalog.mutate(importPayload(submitted), {
-          // Imported rows stop being selectable, so a stale selection would
-          // keep counting them. Keep anything picked while the import ran.
-          onSuccess: () =>
-            setSelection((current) =>
-              current === submitted ? initialSelection : current,
-            ),
+        // Reset unconditionally: an imported row's checkbox is disabled, so an
+        // id left in `toggled` can never be cleared, and would decrement the
+        // selection count for good.
+        importCatalog.mutate(importPayload(selection), {
+          onSuccess: () => setSelection(initialSelection),
         })
       }}
       importing={importCatalog.isPending}

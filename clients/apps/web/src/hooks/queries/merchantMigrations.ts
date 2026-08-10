@@ -3,6 +3,7 @@ import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
+import { merchantMigrationRecordSummaryKey } from './merchantMigrationCounts'
 import { defaultRetry } from './retry'
 
 export const useMerchantMigrations = (organizationId: string) =>
@@ -45,6 +46,14 @@ export const useCreateMerchantMigration = (organizationId: string) =>
     },
   })
 
+// The listing and its counts live behind separate keys but are one unit.
+const invalidateMigrationRecords = (id: string) => {
+  const client = getQueryClient()
+  client.invalidateQueries({ queryKey: ['merchantMigration', { id }] })
+  client.invalidateQueries({ queryKey: ['merchantMigrationRecords', { id }] })
+  client.invalidateQueries({ queryKey: merchantMigrationRecordSummaryKey(id) })
+}
+
 export const useRunMerchantMigrationPrecheck = (id: string) =>
   useMutation({
     mutationFn: () =>
@@ -54,12 +63,7 @@ export const useRunMerchantMigrationPrecheck = (id: string) =>
         }),
       ),
     onSuccess: () => {
-      getQueryClient().invalidateQueries({
-        queryKey: ['merchantMigration', { id }],
-      })
-      getQueryClient().invalidateQueries({
-        queryKey: ['merchantMigrationRecords'],
-      })
+      invalidateMigrationRecords(id)
     },
   })
 
@@ -99,12 +103,7 @@ export const useImportMerchantMigrationCatalog = (id: string) =>
         'Something went wrong. Please try again.',
       ),
     onSuccess: () => {
-      getQueryClient().invalidateQueries({
-        queryKey: ['merchantMigration', { id }],
-      })
-      getQueryClient().invalidateQueries({
-        queryKey: ['merchantMigrationRecords'],
-      })
+      invalidateMigrationRecords(id)
     },
   })
 

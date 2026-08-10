@@ -77,35 +77,43 @@ export function ReviewTableView({
   attentionCount,
 }: Props) {
   const tabCounts: Record<CountEntity, number> = {
-    subscriptions:
-      counts.subscriptions.importable + counts.subscriptions.skipped,
-    products: counts.products.importable + counts.products.skipped,
-    customers: counts.customers.importable + counts.customers.skipped,
+    subscriptions: counts.subscriptions.total,
+    products: counts.products.total,
+    customers: counts.customers.total,
   }
-  const importableTotal =
-    counts.subscriptions.importable +
-    counts.products.importable +
-    counts.customers.importable
-  const skippedTotal =
-    counts.subscriptions.skipped +
-    counts.products.skipped +
-    counts.customers.skipped
+  const sum = (field: 'total' | 'skipped' | 'selectable') =>
+    counts.subscriptions[field] +
+    counts.products[field] +
+    counts.customers[field]
+  const rowTotal = sum('total')
+  const skippedTotal = sum('skipped')
+  // Rows already in Polar stay `importable` forever, so the pre-check total
+  // can't serve as the selection ceiling.
+  const selectableTotal = sum('selectable')
 
-  const importCount = selectedCount(selection, importableTotal)
-  const hasCatalog = importableTotal + skippedTotal > 0
+  const importCount = selectedCount(selection, selectableTotal)
+  const importLabel = importing
+    ? 'Importing…'
+    : importCount > 0
+      ? `Import ${numberFormat.format(importCount)} records`
+      : 'Import records'
+  const hasCatalog = rowTotal > 0
   const [openRow, setOpenRow] = useState<ReviewRow | null>(null)
 
   const columns = useMemo(
     () =>
       buildReviewColumns(entity, {
         isSelected: (id) => isRowSelected(selection, id),
-        headerState: headerCheckState(selection),
+        // The opt-out default reads as "all" even when no row can be picked,
+        // which would show as ticked-but-disabled.
+        headerState:
+          selectableTotal > 0 ? headerCheckState(selection) : 'unchecked',
         // It flips the whole catalog, not this page, so gate it on the same scope.
-        canSelectAll: importableTotal > 0,
+        canSelectAll: selectableTotal > 0,
         onToggle,
         onToggleAll,
       }),
-    [entity, importableTotal, selection, onToggle, onToggleAll],
+    [entity, selectableTotal, selection, onToggle, onToggleAll],
   )
 
   const pagination: PaginationState = { pageIndex: page - 1, pageSize }
@@ -197,7 +205,7 @@ export function ReviewTableView({
               counts={{
                 attention: attentionCount,
                 skipped: skippedTotal,
-                all: importableTotal + skippedTotal,
+                all: rowTotal,
               }}
               onChange={onFilterChange}
             />
@@ -225,9 +233,7 @@ export function ReviewTableView({
               onClick={onImport}
               disabled={importing || importCount <= 0}
             >
-              {importing
-                ? 'Importing…'
-                : `Import ${numberFormat.format(importCount)} records`}
+              {importLabel}
             </Button>
           </Box>
         </Box>

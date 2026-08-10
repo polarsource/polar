@@ -124,6 +124,27 @@ class MerchantMigrationRecordItem(Schema):
     )
 
 
+class MerchantMigrationRecordSummaryEntity(PrecheckEntitySummary):
+    """The pre-check's per-entity counts, plus where the ledger has got to."""
+
+    imported: int = Field(description="How many are already in Polar.")
+    selectable: int = Field(
+        description="How many an import would actually move: importable by the "
+        "pre-check and still pending in the ledger."
+    )
+
+
+class MerchantMigrationRecordSummary(Schema):
+    """Every count the review UI needs, from one classification pass."""
+
+    entities: list[MerchantMigrationRecordSummaryEntity] = Field(
+        description="Per-entity counts, for the listable entities only."
+    )
+    action_required: int = Field(
+        description="How many records the merchant has to act on, across entities."
+    )
+
+
 class MerchantMigrationImportRequest(Schema):
     record_ids: list[UUID4] | None = Field(
         default=None,

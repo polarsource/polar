@@ -29,6 +29,7 @@ from .schemas import (
     MerchantMigrationImportReport,
     MerchantMigrationImportRequest,
     MerchantMigrationRecordItem,
+    MerchantMigrationRecordSummary,
     PanTransferChecklist,
     PanTransferStepComplete,
     PrecheckEntity,
@@ -292,6 +293,36 @@ async def complete_pan_transfer_step(
 
 
 @router.get(
+    "/{id}/records/summary",
+    response_model=MerchantMigrationRecordSummary,
+    summary="Summarize Merchant Migration Records",
+    responses={
+        400: {
+            "description": "The source is not connected or isn't supported.",
+            "model": SourceNotConnected.schema() | UnsupportedMigrationSource.schema(),
+        },
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+    },
+)
+async def records_summary(
+    id: UUID4,
+    auth_subject: MerchantMigrationWrite,
+    # The primary, not the replica: the receipt reads these counts back the
+    # moment the import commits, so replica lag would report it as having
+    # landed nothing.
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigrationRecordSummary:
+    return await merchant_migration_service.summarize_records(session, auth_subject, id)
+
+
+@router.get(
     "/{id}/records",
     response_model=ListResource[MerchantMigrationRecordItem],
     summary="List Merchant Migration Records",
@@ -318,7 +349,10 @@ async def records(
     status: Annotated[PrecheckRecordStatus | None, Query()] = None,
     reason_level: Annotated[PrecheckReasonLevel | None, Query()] = None,
     import_status: Annotated[MerchantMigrationRecordStatus | None, Query()] = None,
-    session: AsyncReadSession = Depends(get_db_read_session),
+    # The primary, like the summary above: it supplies the selection ceiling
+    # and these rows supply the checkboxes, so a split would let replica lag
+    # show a tickable row the count doesn't include.
+    session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[MerchantMigrationRecordItem]:
     items, count = await merchant_migration_service.list_records(
         session,

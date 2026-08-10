@@ -115,8 +115,6 @@ function StepContent({
     )
   }
   const def = currentStepDef(migration)
-  // One switch on the backend step, so the branches are mutually exclusive and
-  // their order carries no meaning. `def` only supplies the heading.
   switch (migration.step) {
     // The stepper shows a connected migration as assessing, but nothing is
     // staged until the first pre-check runs.
@@ -129,8 +127,7 @@ function StepContent({
       )
     case 'pre_check':
       return <ReviewTable migrationId={migration.id} />
-    // The catalog is in Polar but the card checklist hasn't started. The
-    // handoff panel is its own heading, so `StepHeading` would only repeat it.
+    // No `StepHeading`: the handoff panel is its own heading.
     case 'create_catalog':
       return <ImportedStep migrationId={migration.id} />
     case 'copy_cards':

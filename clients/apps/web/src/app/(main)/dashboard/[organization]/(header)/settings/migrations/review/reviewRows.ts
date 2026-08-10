@@ -23,16 +23,16 @@ export function entityLabelSingular(entity: ReviewEntity): string {
   return SINGULAR_LABELS[entity]
 }
 
-// A row can be picked for import only when the pre-check says it's importable
-// and it isn't already in the ledger as imported or skipped. The importer
-// ignores non-`pending` records, so allowing skipped rows to be selected would
-// silently drop them from the import count.
+// The importer ignores records that aren't pending, so every settled ledger
+// status is unselectable. Must match the summary's `selectable` count, or the
+// ticked rows and the "Import N records" count disagree.
 export function isSelectable(row: ReviewRow): boolean {
   return (
     row.record_id != null &&
     row.status === 'importable' &&
     row.import_status !== 'imported' &&
-    row.import_status !== 'skipped'
+    row.import_status !== 'skipped' &&
+    row.import_status !== 'failed'
   )
 }
 

@@ -62,11 +62,7 @@ export const ListItem = ({
         selected ? selectedClassName : inactiveClassName,
         onSelect && 'cursor-pointer',
         size === 'default' ? 'py-4' : 'py-2',
-        hasCheckbox
-          ? 'pr-6 pl-4'
-          : size === 'default'
-            ? 'px-6'
-            : 'px-4',
+        hasCheckbox ? 'pr-6 pl-4' : size === 'default' ? 'px-6' : 'px-4',
         !hasCheckbox && 'gap-x-6',
         className,
       )}

@@ -2,8 +2,7 @@ from collections.abc import Callable
 from typing import Any
 
 import typer
-from sqlalchemy import ColumnElement, and_, func, or_, select, update
-from sqlalchemy.orm import aliased
+from sqlalchemy import ColumnElement, Select, and_, func, select, update
 
 from polar.email.schemas import EmailTemplate
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
@@ -87,6 +86,43 @@ CONFIGS: list[tuple[EmailTemplate, KeyExpr, ValidExpr]] = [
 ]
 
 
+def _canonical_ids(
+    template: EmailTemplate, key: KeyExpr, valid: ValidExpr
+) -> Select[tuple[Any]]:
+    """Select the id of the row to key per (computed key, recipient) group.
+
+    A single window pass over the template's sent rows (no correlated subquery,
+    so it scales to a large `email_logs`): pick the earliest row in each group
+    (`rn == 1`), but only when the group has no already-keyed row — that row
+    occupies the target key (from the new send path or a previous run), so the
+    rest stay NULL and are excluded from the partial unique index PR2 builds.
+    """
+    partition = (key(EmailLog), EmailLog.to_email_addr)
+    ranked = (
+        select(
+            EmailLog.id.label("id"),
+            func.row_number()
+            .over(partition_by=partition, order_by=(EmailLog.created_at, EmailLog.id))
+            .label("rank"),
+            func.bool_or(EmailLog.deduplication_key.isnot(None))
+            .over(partition_by=partition)
+            .label("group_keyed"),
+        )
+        .where(
+            EmailLog.status == EmailLogStatus.sent,
+            EmailLog.email_template == template,
+            valid(EmailLog),
+        )
+        .subquery()
+    )
+    # rank == 1 is the earliest row in the group; group_keyed is false only when
+    # no row in the group is keyed, so that earliest row is guaranteed NULL.
+    return select(ranked.c.id).where(
+        ranked.c.rank == 1,
+        ranked.c.group_keyed.is_(False),
+    )
+
+
 async def run_backfill(
     *,
     batch_size: int = 5000,
@@ -96,45 +132,11 @@ async def run_backfill(
 ) -> int:
     total = 0
     for template, key, valid in CONFIGS:
-        src = aliased(EmailLog)
-        other = aliased(EmailLog)
-
-        # Only key the earliest not-yet-keyed row per (computed key, recipient)
-        # group so any historical duplicate leaves the others NULL — excluded from
-        # the partial unique index PR2 builds. A row is skipped if another row in
-        # the group is already keyed (it occupies the target key, e.g. via the
-        # new send path or a previous run) or is earlier. Membership is defined
-        # over ALL sent rows in the group, so it stays stable as batches fill in.
-        is_canonical = ~(
-            select(other.id)
-            .where(
-                other.status == EmailLogStatus.sent,
-                other.email_template == template,
-                key(other) == key(src),
-                other.to_email_addr == src.to_email_addr,
-                or_(
-                    other.deduplication_key.isnot(None),
-                    other.created_at < src.created_at,
-                    and_(
-                        other.created_at == src.created_at,
-                        other.id < src.id,
-                    ),
-                ),
-            )
-            .exists()
-        )
-
-        candidate_statement = select(src.id).where(
-            src.status == EmailLogStatus.sent,
-            src.email_template == template,
-            src.deduplication_key.is_(None),
-            valid(src),
-            is_canonical,
-        )
+        canonical_ids = _canonical_ids(template, key, valid)
 
         if dry_run:
             count = await _count(
-                select(func.count()).select_from(candidate_statement.subquery()),
+                select(func.count()).select_from(canonical_ids.subquery()),
                 session,
             )
             typer.echo(f"[dry-run] {template}: {count} rows would be updated")
@@ -144,7 +146,7 @@ async def run_backfill(
         total += await run_batched_update(
             update(EmailLog)
             .values(deduplication_key=key(EmailLog))
-            .where(EmailLog.id.in_(candidate_statement.limit(limit_bindparam()))),
+            .where(EmailLog.id.in_(canonical_ids.limit(limit_bindparam()))),
             batch_size=batch_size,
             sleep_seconds=sleep_seconds,
             session=session,

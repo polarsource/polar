@@ -91,7 +91,8 @@ def emit_meter_reset_events(
             event_repository = EventRepository.from_session(session)
 
             subscriptions = []
-            for subscription_id in subscription_ids:
+            # Dedupe so passing the same id twice can't emit duplicate resets.
+            for subscription_id in dict.fromkeys(subscription_ids):
                 subscription = await repository.get_by_id(
                     subscription_id, options=repository.get_eager_options()
                 )

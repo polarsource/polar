@@ -1,0 +1,60 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/importSummary.ts
+  s_151f5b1b3b0a9c::t_f2f1b3ef8dda5a 10-11,18
+  s_151f5b1b3b0a9c::t_e294ca5469d5a8 5-9,12,14-16,19-20
+  s_151f5b1b3b0a9c::t_360decff3deb52 1,3,23
+server/polar/merchant_migration/service.py
+  s_151f5b1b3b0a9c::t_c569359ff4a2ad 502,509-511
+  s_151f5b1b3b0a9c::t_e24b9d0606eba6 539-540
+  s_151f5b1b3b0a9c::t_9818ab474c8b46 19-22
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/[id]/MigrationDetailPage.tsx
+  s_151f5b1b3b0a9c::t_71cc0253f88e86 11
+  s_151f5b1b3b0a9c::t_ecc45308bfa02e 118-142
+server/tests/merchant_migration/test_service.py
+  s_151f5b1b3b0a9c::t_e06e1c051e288e 850-876
+  s_8b0695b2959676::t_81008de34b1cdf 849
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportedHandoff.tsx
+  s_151f5b1b3b0a9c::t_7fe3af6bc12de9 1-124
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/steps.ts
+  s_151f5b1b3b0a9c::t_3a5f57694d22a8 39,49-51
+  s_151f5b1b3b0a9c::t_ca5d205d688c39 77-79
+server/polar/merchant_migration/endpoints.py
+  s_151f5b1b3b0a9c::t_2864469b5850f0 10
+  s_151f5b1b3b0a9c::t_a33e193073aa24 320,330
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/ImportedStep.tsx
+  s_151f5b1b3b0a9c::t_d064690839e1c1 6-7,20-26,32-33
+  s_151f5b1b3b0a9c::t_9359ca885f0fc6 74-76
+  s_151f5b1b3b0a9c::t_6c820acc09ab80 1-5,8-19,27-31,34-73,77-84
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_151f5b1b3b0a9c::t_b57eb294a8028f 275-280,294-296,298,300,304
+  s_151f5b1b3b0a9c::t_e408020fca88a6 194,212-213
+  s_151f5b1b3b0a9c::t_c2bf264ec8131c 315-316,329-331
+  s_151f5b1b3b0a9c::t_5a518a7c02d0ce 232-252,258,266-274,281-287,289-291,293,297,301-303,305-307
+  s_151f5b1b3b0a9c::t_b8b12fcb884f39 253-257
+  s_151f5b1b3b0a9c::t_cd27eb6e0aa489 214
+clients/packages/client/src/v1.ts
+  s_151f5b1b3b0a9c::t_7e7e1e302b4886 52549-52551
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "dba3b822d7d022a1d5c293d8abe9651e54c7c961",
+  "prompts": {},
+  "sessions": {
+    "s_151f5b1b3b0a9c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bdbe59d6-8531-45ce-b4c1-476d7178c275",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    },
+    "s_8b0695b2959676": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "0578f2e3-d3ed-4edd-b79d-110891391ca5",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

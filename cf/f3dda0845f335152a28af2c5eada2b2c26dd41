@@ -1,0 +1,19 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/importSummary.test.ts
+  s_151f5b1b3b0a9c::t_11b6a5370dd780 1-63
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "cff3dda0845f335152a28af2c5eada2b2c26dd41",
+  "prompts": {},
+  "sessions": {
+    "s_151f5b1b3b0a9c": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "bdbe59d6-8531-45ce-b4c1-476d7178c275",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

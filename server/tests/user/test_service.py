@@ -2,6 +2,7 @@ import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 from sqlalchemy import select
+from sqlalchemy.exc import IntegrityError
 
 from polar.kit.utils import utc_now
 from polar.models import (
@@ -14,6 +15,7 @@ from polar.models import (
 from polar.models.user import IdentityVerificationStatus, OAuthPlatform
 from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncSession
+from polar.user.repository import UserRepository
 from polar.user.schemas import UserDeletionBlockedReason, UserUpdate
 from polar.user.service import (
     IdentityAlreadyVerified,
@@ -27,6 +29,47 @@ from tests.fixtures.random_objects import (
     create_oauth_account,
     create_payout_account,
 )
+
+
+@pytest.mark.asyncio
+class TestGetByEmailOrCreate:
+    async def test_existing_user(self, session: AsyncSession, user: User) -> None:
+        result, created = await user_service.get_by_email_or_create(
+            session, user.email.upper()
+        )
+
+        assert result.id == user.id
+        assert created is False
+
+    async def test_creates_missing_user(self, session: AsyncSession) -> None:
+        result, created = await user_service.get_by_email_or_create(
+            session, "new-user@example.com"
+        )
+
+        assert result.email == "new-user@example.com"
+        assert created is True
+
+    async def test_concurrent_creation_returns_existing_user(
+        self, session: AsyncSession, mocker: MockerFixture, user: User
+    ) -> None:
+        """Both concurrent requests saw no user, so the insert hits the unique
+        index on the email: the loser must recover the row instead of failing."""
+        mocker.patch.object(UserRepository, "get_by_email", side_effect=[None, user])
+
+        result, created = await user_service.get_by_email_or_create(session, user.email)
+
+        assert result.id == user.id
+        assert created is False
+
+    async def test_integrity_error_without_conflicting_user(
+        self, session: AsyncSession, mocker: MockerFixture, user: User
+    ) -> None:
+        """An IntegrityError we can't explain by a concurrent creation must not be
+        swallowed."""
+        mocker.patch.object(UserRepository, "get_by_email", side_effect=[None, None])
+
+        with pytest.raises(IntegrityError):
+            await user_service.get_by_email_or_create(session, user.email)
 
 
 @pytest.mark.asyncio

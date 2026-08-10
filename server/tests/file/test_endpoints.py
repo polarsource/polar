@@ -181,7 +181,7 @@ class TestList:
         AuthSubjectFixture(subject="user"),
         AuthSubjectFixture(subject="organization"),
     )
-    async def test_excludes_flagged_malicious(
+    async def test_includes_flagged_malicious(
         self,
         client: AsyncClient,
         save_fixture: SaveFixture,
@@ -191,12 +191,18 @@ class TestList:
         flagged = await create_support_case_attachment_file(
             save_fixture,
             organization,
-            name="malware.jpg",
-            service=FileServiceTypes.product_media,
+            name="malware.zip",
+            service=FileServiceTypes.downloadable,
         )
         flagged.flagged_malicious_at = utc_now()
         await save_fixture(flagged)
         visible = await create_support_case_attachment_file(
+            save_fixture,
+            organization,
+            name="archive.zip",
+            service=FileServiceTypes.downloadable,
+        )
+        media = await create_support_case_attachment_file(
             save_fixture,
             organization,
             name="media.jpg",
@@ -209,7 +215,11 @@ class TestList:
 
         assert response.status_code == 200
         json = response.json()
-        assert [item["id"] for item in json["items"]] == [str(visible.id)]
+        items = {item["id"]: item for item in json["items"]}
+        assert set(items) == {str(flagged.id), str(visible.id), str(media.id)}
+        assert items[str(flagged.id)]["flagged_malicious_at"] is not None
+        assert items[str(visible.id)]["flagged_malicious_at"] is None
+        assert "flagged_malicious_at" not in items[str(media.id)]
 
 
 @pytest.mark.asyncio

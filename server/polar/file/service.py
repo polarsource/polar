@@ -44,7 +44,6 @@ class FileService:
 
         statement = repository.get_statement_by_org_ids(org_ids).where(
             File.is_uploaded.is_(True),
-            File.flagged_malicious_at.is_(None),
             File.service != FileServiceTypes.support_case_attachment,
         )
 

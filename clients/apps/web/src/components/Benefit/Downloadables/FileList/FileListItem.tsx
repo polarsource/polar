@@ -8,7 +8,7 @@ import ImageOutlined from '@mui/icons-material/ImageOutlined'
 import InsertDriveFileOutlined from '@mui/icons-material/InsertDriveFileOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import VideoFileOutlined from '@mui/icons-material/VideoFileOutlined'
-import { Switch } from '@polar-sh/orbit'
+import { Status, Switch } from '@polar-sh/orbit'
 import {
   FocusEvent,
   FormEventHandler,
@@ -277,6 +277,9 @@ export const FileListItem = ({
 
   const isUploading = useMemo(() => file.isUploading, [file])
 
+  const isFlaggedMalicious =
+    'flagged_malicious_at' in file && file.flagged_malicious_at !== null
+
   const isEnabled = useMemo(() => {
     return archivedFiles ? !archivedFiles[file.id] : true
   }, [archivedFiles, file])
@@ -311,12 +314,17 @@ export const FileListItem = ({
           <FilePreview mimeType={file.mime_type} />
         </div>
         <div className="flex w-full min-w-0 grow flex-col gap-y-1 text-gray-950 dark:text-white">
-          <FilenameEditor
-            name={file.name}
-            className="text-sm font-medium"
-            onUpdate={(updated) => update({ name: updated })}
-            enabled={file.is_uploaded ?? false}
-          />
+          <div className="flex flex-row items-center gap-x-2">
+            <FilenameEditor
+              name={file.name}
+              className="text-sm font-medium"
+              onUpdate={(updated) => update({ name: updated })}
+              enabled={file.is_uploaded ?? false}
+            />
+            {isFlaggedMalicious && (
+              <Status status="Flagged as malicious" color="red" size="small" />
+            )}
+          </div>
           {!isUploading && <FileUploadDetails file={file} />}
           {isUploading && <FileUploadProgress file={file} />}
         </div>
@@ -340,7 +348,7 @@ export const FileListItem = ({
               align="end"
               className="dark:bg-polar-800 bg-gray-50 shadow-lg"
             >
-              {file.is_uploaded && (
+              {file.is_uploaded && !isFlaggedMalicious && (
                 <DropdownMenuItem onClick={onDownload}>
                   Download
                 </DropdownMenuItem>

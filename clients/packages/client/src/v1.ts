@@ -21089,6 +21089,8 @@ export interface components {
        * Format: date-time
        */
       created_at: string
+      /** Flagged Malicious At */
+      flagged_malicious_at: string | null
       /** Size Readable */
       readonly size_readable: string
     }

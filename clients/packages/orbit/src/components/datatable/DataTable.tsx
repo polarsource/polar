@@ -161,9 +161,7 @@ export function DataTable<TData, TValue>({
                       style={
                         isSelectColumn
                           ? { width: SELECTION_COLUMN_WIDTH }
-                          : selection
-                            ? undefined
-                            : { width: header.column.getSize() }
+                          : { width: header.column.getSize() }
                       }
                     >
                       {header.isPlaceholder
@@ -222,9 +220,7 @@ export function DataTable<TData, TValue>({
                                 style={
                                   isSelectColumn
                                     ? { width: SELECTION_COLUMN_WIDTH }
-                                    : selection
-                                      ? undefined
-                                      : { width: cell.column.getSize() }
+                                    : { width: cell.column.getSize() }
                                 }
                               >
                                 {flexRender(

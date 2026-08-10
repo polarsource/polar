@@ -6,7 +6,6 @@ import {
   OnChangeFn,
   PaginationState,
   Row,
-  RowSelectionState,
   SortingState,
   flexRender,
   getCoreRowModel,
@@ -28,6 +27,8 @@ import { DataTablePagination } from './DataTablePagination'
 import {
   createSelectionColumn,
   DataTableSelection,
+  SELECTION_COLUMN_ID,
+  SELECTION_COLUMN_WIDTH,
 } from './DataTableSelectionColumn'
 
 export interface ReactQueryLoading {
@@ -94,19 +95,6 @@ export function DataTable<TData, TValue>({
   onRowClick,
   isRowActive,
 }: DataTableProps<TData, TValue>) {
-  const rowSelection = React.useMemo(() => {
-    const state: RowSelectionState = {}
-    if (!selection) {
-      return state
-    }
-    data.forEach((item, index) => {
-      if (selection.isSelected(item)) {
-        state[getRowId ? getRowId(item, index) : String(index)] = true
-      }
-    })
-    return state
-  }, [selection, data, getRowId])
-
   const allColumns = React.useMemo(
     () =>
       selection
@@ -132,11 +120,9 @@ export function DataTable<TData, TValue>({
     getSubRows,
     getExpandedRowModel: getExpandedRowModel(),
     getRowId,
-    enableRowSelection: !!selection,
     state: {
       pagination,
       sorting,
-      rowSelection,
     },
   })
 
@@ -165,10 +151,20 @@ export function DataTable<TData, TValue>({
                 )}
               >
                 {headerGroup.headers.map((header) => {
+                  const isSelectColumn =
+                    header.column.id === SELECTION_COLUMN_ID
+
                   return (
                     <TableHead
                       key={header.id}
-                      style={{ width: header.column.getSize() }}
+                      className={isSelectColumn ? 'w-12' : undefined}
+                      style={
+                        isSelectColumn
+                          ? { width: SELECTION_COLUMN_WIDTH }
+                          : selection
+                            ? undefined
+                            : { width: header.column.getSize() }
+                      }
                     >
                       {header.isPlaceholder
                         ? null
@@ -203,7 +199,8 @@ export function DataTable<TData, TValue>({
                         onRowClick && 'cursor-pointer',
                       )}
                       data-state={
-                        isRowActive?.(row) || row.getIsSelected()
+                        isRowActive?.(row) ||
+                        selection?.isSelected(row.original)
                           ? 'selected'
                           : undefined
                       }
@@ -213,13 +210,22 @@ export function DataTable<TData, TValue>({
                         const colSpan = getCellColSpan
                           ? getCellColSpan(cell)
                           : 1
+                        const isSelectColumn =
+                          cell.column.id === SELECTION_COLUMN_ID
 
                         return (
                           <React.Fragment key={cell.id}>
                             {colSpan ? (
                               <TableCell
                                 colSpan={colSpan}
-                                style={{ width: cell.column.getSize() }}
+                                className={isSelectColumn ? 'w-12' : undefined}
+                                style={
+                                  isSelectColumn
+                                    ? { width: SELECTION_COLUMN_WIDTH }
+                                    : selection
+                                      ? undefined
+                                      : { width: cell.column.getSize() }
+                                }
                               >
                                 {flexRender(
                                   cell.column.columnDef.cell,

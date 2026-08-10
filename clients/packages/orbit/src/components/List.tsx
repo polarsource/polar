@@ -2,7 +2,6 @@
 
 import React, { PropsWithChildren } from 'react'
 import { twMerge } from 'tailwind-merge'
-import { selectionRevealClassName } from '../lib/selectionReveal'
 import { Checkbox } from './Checkbox'
 
 export interface ListProps extends PropsWithChildren {
@@ -32,7 +31,6 @@ export interface ListItemProps extends PropsWithChildren {
   selected?: boolean
   onSelect?: (e: React.MouseEvent) => void
   size?: 'small' | 'default'
-  selectable?: boolean
   checked?: boolean
   onCheckedChange?: (checked: boolean, event: React.MouseEvent) => void
   checkboxVisible?: boolean
@@ -46,38 +44,48 @@ export const ListItem = ({
   selected,
   onSelect,
   size = 'default',
-  selectable,
   checked,
   onCheckedChange,
   checkboxVisible,
 }: ListItemProps) => {
+  const hasCheckbox = !!onCheckedChange
+
   return (
     <div
       className={twMerge(
-        'group/row flex flex-row items-center justify-between gap-x-6',
+        'group/row flex flex-row items-center justify-between',
         selected
           ? 'dark:bg-polar-800 bg-gray-50'
           : 'dark:hover:bg-polar-800 hover:bg-gray-50',
         selected ? selectedClassName : inactiveClassName,
         onSelect && 'cursor-pointer',
-        size === 'default' ? 'px-6 py-4' : 'px-4 py-2',
+        size === 'default' ? 'py-4' : 'py-2',
+        hasCheckbox
+          ? 'pr-6 pl-4'
+          : size === 'default'
+            ? 'px-6'
+            : 'px-4',
+        !hasCheckbox && 'gap-x-6',
         className,
       )}
       onClick={onSelect}
     >
-      {selectable && (
+      {onCheckedChange && (
         <div
-          className="-my-2 -mr-5 -ml-4 flex cursor-pointer items-center p-2"
+          className="flex shrink-0 cursor-pointer items-center pr-4"
           onClick={(event) => {
             event.preventDefault()
             event.stopPropagation()
-            onCheckedChange?.(!checked, event)
+            onCheckedChange(!checked, event)
           }}
         >
           <Checkbox
             aria-label="Select item"
             checked={checked}
-            className={selectionRevealClassName(!!checkboxVisible)}
+            className={twMerge(
+              'opacity-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100 data-[state=checked]:opacity-100 data-[state=indeterminate]:opacity-100 pointer-coarse:opacity-100',
+              checkboxVisible && 'opacity-100',
+            )}
           />
         </div>
       )}

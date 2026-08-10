@@ -1,8 +1,11 @@
 'use client'
 
 import { ColumnDef } from '@tanstack/react-table'
-import { selectionRevealClassName } from '../../lib/selectionReveal'
+import { twMerge } from 'tailwind-merge'
 import { Checkbox } from '../Checkbox'
+
+export const SELECTION_COLUMN_ID = 'select'
+export const SELECTION_COLUMN_WIDTH = 48
 
 export interface DataTableSelection<TData> {
   count: number
@@ -12,15 +15,21 @@ export interface DataTableSelection<TData> {
   setPageSelected: (selected: boolean) => void
 }
 
+const selectionRevealClassName = (alwaysVisible: boolean) =>
+  twMerge(
+    'opacity-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100 data-[state=checked]:opacity-100 data-[state=indeterminate]:opacity-100 pointer-coarse:opacity-100',
+    alwaysVisible && 'opacity-100',
+  )
+
 export const createSelectionColumn = <TData,>(
   selection: DataTableSelection<TData>,
 ): ColumnDef<TData, unknown> => ({
-  id: 'select',
-  size: 32,
+  id: SELECTION_COLUMN_ID,
+  size: SELECTION_COLUMN_WIDTH,
   enableSorting: false,
   header: () => (
     <div
-      className="-ml-4 flex h-12 w-8 cursor-pointer items-center pl-4"
+      className="flex h-12 cursor-pointer items-center pr-2 pl-4"
       onClick={() => selection.setPageSelected(selection.pageState !== 'all')}
     >
       <Checkbox
@@ -36,7 +45,7 @@ export const createSelectionColumn = <TData,>(
   ),
   cell: ({ row }) => (
     <div
-      className="-my-4 -ml-4 flex cursor-pointer items-center py-4 pl-4"
+      className="flex cursor-pointer items-center py-4 pr-2 pl-4"
       onClick={(event) => {
         event.stopPropagation()
         selection.toggle(row.original, { shiftKey: event.shiftKey })
@@ -44,7 +53,7 @@ export const createSelectionColumn = <TData,>(
     >
       <Checkbox
         aria-label="Select row"
-        checked={row.getIsSelected()}
+        checked={selection.isSelected(row.original)}
         className={selectionRevealClassName(selection.count > 0)}
       />
     </div>

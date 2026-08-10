@@ -75,9 +75,11 @@ class BillingEntryRepository(
             .join(BillingEntry.product_price)
             # Metered entries always carry a metered price: `from_metered_event`
             # is the only writer of this type, and it takes the price from a
-            # meter-scoped lookup. So this predicate selects the same rows as
-            # `is_static` alone, but lets the `billing_entry` scan drop them
-            # before the join to `events` rather than after it.
+            # meter-scoped lookup. So filtering on `type` selects the same rows as
+            # `is_static` alone, but lets the planner use the partial
+            # `ix_billing_entry_pending_static` index and drop the pending metered
+            # entries during the `billing_entry` scan instead of walking the whole
+            # pending set — which was timing out on high-volume subscriptions.
             .where(
                 BillingEntry.type != BillingEntryType.metered,
                 ProductPrice.is_static.is_(True),

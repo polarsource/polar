@@ -109,9 +109,15 @@ const dataTableProps: PropRow[] = [
     description: 'Called when a row is clicked. Makes rows pointer targets.',
   },
   {
-    name: 'enableRowSelection',
-    type: 'boolean',
-    description: 'Enables single-row selection with selected styling.',
+    name: 'isRowActive',
+    type: '(row: Row<TData>) => boolean',
+    description: 'Marks rows as active, rendering them with selected styling.',
+  },
+  {
+    name: 'selection',
+    type: 'DataTableSelection<TData>',
+    description:
+      'Enables multi-row selection with a hover-revealed checkbox column.',
   },
   {
     name: 'getSubRows',

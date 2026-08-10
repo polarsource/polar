@@ -24,7 +24,8 @@
     "knip": "^5.88.1",
     "only-allow": "1.2.2",
     "oxfmt": "^0.41.0",
-    "turbo": "^2.9.12"
+    "turbo": "^2.9.12",
+    "typescript": "6.0.3"
   },
   "resolutions": {
     "sharp": "0.33.3"

@@ -29,7 +29,7 @@ importers:
         version: 9.39.4(jiti@2.7.0)
       knip:
         specifier: ^5.88.1
-        version: 5.88.1(@emnapi/core@1.7.1)(@emnapi/runtime@1.7.1)(@types/node@25.0.2)(typescript@7.0.2)
+        version: 5.88.1(@emnapi/core@1.7.1)(@emnapi/runtime@1.7.1)(@types/node@25.0.2)(typescript@6.0.3)
       only-allow:
         specifier: 1.2.2
         version: 1.2.2
@@ -39,6 +39,9 @@ importers:
       turbo:
         specifier: ^2.9.12
         version: 2.9.12
+      typescript:
+        specifier: 6.0.3
+        version: 6.0.3
 
   apps/app:
     dependencies:
@@ -22929,7 +22932,7 @@ snapshots:
 
   kleur@3.0.3: {}
 
-  knip@5.88.1(@emnapi/core@1.7.1)(@emnapi/runtime@1.7.1)(@types/node@25.0.2)(typescript@7.0.2):
+  knip@5.88.1(@emnapi/core@1.7.1)(@emnapi/runtime@1.7.1)(@types/node@25.0.2)(typescript@6.0.3):
     dependencies:
       '@nodelib/fs.walk': 1.2.8
       '@types/node': 25.0.2
@@ -22942,7 +22945,7 @@ snapshots:
       picomatch: 4.0.4
       smol-toml: 1.6.1
       strip-json-comments: 5.0.3
-      typescript: 7.0.2
+      typescript: 6.0.3
       unbash: 2.2.0
       yaml: 2.9.0
       zod: 4.4.3

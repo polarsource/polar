@@ -5,7 +5,7 @@ from typing import Any, Literal
 
 import structlog
 from sqlalchemy import Select, UnaryExpression, asc, delete, desc, func, or_, select
-from sqlalchemy.exc import DBAPIError
+from sqlalchemy.exc import DBAPIError, IntegrityError
 
 from polar.auth.models import AuthSubject, is_organization, is_user
 from polar.auth.permission import OrganizationPermission
@@ -130,22 +130,9 @@ class DiscountService(ResourceServiceReader[Discount]):
         repository = DiscountRepository.from_session(session)
 
         if discount_create.code is not None:
-            existing_discount = (
-                await repository.get_by_code_and_organization_for_update(
-                    discount_create.code, organization.id
-                )
+            await self._assert_code_available(
+                repository, discount_create.code, organization.id
             )
-            if existing_discount is not None:
-                raise PolarRequestValidationError(
-                    [
-                        {
-                            "type": "value_error",
-                            "loc": ("body", "code"),
-                            "msg": "Discount with this code already exists.",
-                            "input": discount_create.code,
-                        }
-                    ]
-                )
 
         discount_products: list[DiscountProduct] = []
         if discount_create.products:
@@ -190,11 +177,38 @@ class DiscountService(ResourceServiceReader[Discount]):
             discount_redemptions=[],
             redemptions_count=0,
         )
-        discount = await repository.create(discount, flush=True)
+        nested = await session.begin_nested()
+        try:
+            discount = await repository.create(discount, flush=True)
+        except IntegrityError:
+            await nested.rollback()
+            if discount_create.code is not None:
+                await self._assert_code_available(
+                    repository, discount_create.code, organization.id
+                )
+            raise
 
         await self._send_webhook(session, discount, WebhookEventType.discount_created)
 
         return discount
+
+    async def _assert_code_available(
+        self, repository: DiscountRepository, code: str, organization_id: uuid.UUID
+    ) -> None:
+        existing_discount = await repository.get_by_code_and_organization_for_update(
+            code, organization_id
+        )
+        if existing_discount is not None:
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("body", "code"),
+                        "msg": "Discount with this code already exists.",
+                        "input": code,
+                    }
+                ]
+            )
 
     async def update(
         self,

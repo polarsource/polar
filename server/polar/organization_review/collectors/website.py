@@ -25,6 +25,8 @@ MAX_PAGES = 5
 MAX_CHARS_PER_PAGE = 15_000
 PAGE_TIMEOUT_MS = 15_000
 MAX_REDIRECTS = 10
+MAX_RESPONSE_BYTES = 25 * 1024 * 1024
+TEXT_CONTENT_TYPES = ("text/", "application/xhtml", "application/xml")
 
 
 # Realistic Chrome user-agent to avoid bot detection by CDNs (Cloudflare, Vercel, etc.)
@@ -206,12 +208,14 @@ with server-side rendering. Use this by default."""
     current_url = url
     try:
         for _ in range(MAX_REDIRECTS):
-            resp = await deps.client.get(current_url)
+            request = deps.client.build_request("GET", current_url)
+            resp = await deps.client.send(request, stream=True)
 
             if not resp.is_redirect or not resp.has_redirect_location:
                 break
 
             location = resp.headers["location"]
+            await resp.aclose()
             redirect_url = urljoin(current_url, location)
 
             if not _is_allowed_origin(redirect_url, deps.allowed_domain):
@@ -228,14 +232,34 @@ with server-side rendering. Use this by default."""
         else:
             return f"Error: too many redirects (>{MAX_REDIRECTS}) for {url}"
 
-        if resp.status_code >= 400:
-            return f"Error: HTTP {resp.status_code} for {current_url}"
+        try:
+            if resp.status_code >= 400:
+                return f"Error: HTTP {resp.status_code} for {current_url}"
+
+            content_type = resp.headers.get("content-type", "")
+            if content_type and not content_type.lower().startswith(TEXT_CONTENT_TYPES):
+                return (
+                    f"Error: unsupported content type "
+                    f"{content_type.split(';')[0]} for {current_url}"
+                )
+
+            content_length = resp.headers.get("content-length")
+            if content_length and int(content_length) > MAX_RESPONSE_BYTES:
+                return f"Error: response too large for {current_url}"
+
+            body = bytearray()
+            async for chunk in resp.aiter_bytes():
+                body.extend(chunk)
+                if len(body) > MAX_RESPONSE_BYTES:
+                    return f"Error: response too large for {current_url}"
+        finally:
+            await resp.aclose()
     except SSRFBlockedError as e:
         return f"Error: {e}"
     except Exception as e:
         return f"Error fetching {url}: {str(e)[:100]}"
 
-    html = resp.text
+    html = bytes(body).decode(resp.encoding or "utf-8", errors="replace")
     content = trafilatura.extract(html, output_format="markdown") or ""
 
     title_match = re.search(r"<title[^>]*>([^<]+)</title>", html, re.IGNORECASE)

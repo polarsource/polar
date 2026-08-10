@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from enum import StrEnum
 from typing import Any
 
@@ -8,6 +9,9 @@ from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
+from polar.models.merchant_migration_record import MerchantMigrationRecordStatus
+
+from .pan_transfer import PanTransferMethod, PanTransferStep
 
 
 class MerchantMigrationCreate(Schema):
@@ -52,6 +56,11 @@ class PrecheckRecordStatus(StrEnum):
     skipped = "skipped"
 
 
+class PrecheckReasonLevel(StrEnum):
+    action_required = "action_required"
+    info = "info"
+
+
 class PrecheckEntitySummary(Schema):
     entity: PrecheckEntity = Field(description="The source entity type.")
     total: int = Field(description="How many were read from the source.")
@@ -70,18 +79,117 @@ class PrecheckReport(Schema):
 
 
 class MerchantMigrationRecordItem(Schema):
+    record_id: UUID4 | None = Field(
+        description=(
+            "The ledger record id, used to select this row for import. Null for "
+            "price rows, which are imported together with their product."
+        ),
+    )
     entity: PrecheckEntity = Field(description="The source entity type.")
     source_id: str = Field(description="The source identifier (e.g. Stripe `sub_…`).")
     title: str = Field(description="Primary label (name, email or product).")
     subtitle: str | None = Field(
-        description="Secondary detail (interval, amount, country, status)."
+        description="Secondary detail (lifecycle status, country)."
+    )
+    amount: int | None = Field(
+        description=(
+            "Recurring price in the currency's smallest unit (cents for USD), for "
+            "priced rows."
+        ),
+    )
+    currency: str | None = Field(description="ISO currency for `amount`.")
+    recurring_interval: str | None = Field(
+        description="Billing interval for `amount` (e.g. `month`, `year`).",
     )
     status: PrecheckRecordStatus = Field(
         description="Whether this record will be imported or stays on the source."
     )
-    reason: str | None = Field(description="Why the record is skipped, if it is.")
-    reason_code: str | None = Field(
-        description="Stable code for the skip reason, if any."
+    import_status: MerchantMigrationRecordStatus | None = Field(
+        description=(
+            "The ledger status of this record: `pending` (not imported yet), "
+            "`imported`, `skipped` or `failed`. Null for price rows, which import "
+            "with their product."
+        ),
+    )
+    reason: str | None = Field(
+        description="Why the record is skipped, or what to know about it if it isn't."
+    )
+    reason_code: str | None = Field(description="Stable code for `reason`, if any.")
+    reason_level: PrecheckReasonLevel | None = Field(
+        description=(
+            "How urgent `reason` is: `action_required` when the merchant has to "
+            "fix something, `info` when there is nothing to fix. Null without a "
+            "reason."
+        )
+    )
+
+
+class MerchantMigrationImportRequest(Schema):
+    record_ids: list[UUID4] | None = Field(
+        default=None,
+        description=(
+            "The ledger record ids to import (from the records listing). When "
+            "omitted, every importable record is imported (subject to "
+            "`exclude_record_ids`). Records not selected stay pending."
+        ),
+    )
+    exclude_record_ids: list[UUID4] | None = Field(
+        default=None,
+        description=(
+            "Import every importable record except these — the opt-out selection "
+            "for large catalogs. Ignored when `record_ids` is set."
+        ),
+    )
+
+
+class MerchantMigrationImportResult(Schema):
+    entity: PrecheckEntity = Field(description="The source entity type.")
+    imported: int = Field(description="How many were created or reused in Polar.")
+    skipped: int = Field(
+        description="How many were left on the source (not importable)."
+    )
+
+
+class MerchantMigrationImportReport(Schema):
+    step: MerchantMigrationStep = Field(
+        description="The migration step after the import."
+    )
+    results: list[MerchantMigrationImportResult] = Field(
+        description="Per-entity counts of what was imported vs skipped."
+    )
+
+
+class PanTransferStepComplete(Schema):
+    inputs: dict[str, str] = Field(
+        default_factory=dict,
+        description=(
+            "Values the step collects. Which keys it accepts depends on the step; "
+            "unknown keys are rejected."
+        ),
+    )
+
+
+class PanTransferChecklist(Schema):
+    method: PanTransferMethod = Field(
+        description=(
+            "How the cards move: `pan_copy` for a Stripe source (account to "
+            "account), `pan_import` for any other vault."
+        )
+    )
+    started: bool = Field(
+        description="Whether the card transfer has been started. Steps are empty until it is."
+    )
+    current_step_key: str | None = Field(
+        description="The one step that can be acted on now. Null once every step is done."
+    )
+    destination_account_id: str | None = Field(
+        description=(
+            "The Stripe account the cards move into. The merchant needs it to "
+            "address the copy or import to Polar."
+        )
+    )
+    steps: Sequence[PanTransferStep] = Field(
+        description="The ordered checklist. Titles and guidance live in the client, keyed by `key`."
     )
 
 

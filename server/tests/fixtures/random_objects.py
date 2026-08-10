@@ -1156,6 +1156,8 @@ async def create_subscription(
     scheduler_locked_at: datetime | None = None,
     seats: int | None = None,
     past_due_at: datetime | None = None,
+    created_at: datetime | None = None,
+    modified_at: datetime | None = None,
 ) -> Subscription:
     currency_prices = PriceSet.from_product(product, currency)
     prices = prices or currency_prices.prices
@@ -1193,6 +1195,8 @@ async def create_subscription(
             canceled_at = now
 
     subscription = Subscription(
+        created_at=created_at or utc_now(),
+        modified_at=modified_at,
         recurring_interval=recurring_interval,
         recurring_interval_count=recurring_interval_count,
         status=status,
@@ -2108,6 +2112,7 @@ async def create_event(
     source: EventSource = EventSource.user,
     name: str = METER_TEST_EVENT,
     timestamp: datetime | None = None,
+    ingested_at: datetime | None = None,
     customer: Customer | None = None,
     external_customer_id: str | None = None,
     external_id: str | None = None,
@@ -2122,6 +2127,7 @@ async def create_event(
     event = Event(
         id=event_id,
         timestamp=timestamp or utc_now(),
+        ingested_at=ingested_at or utc_now(),
         source=source,
         name=name,
         customer_id=customer.id if customer else None,
@@ -2376,11 +2382,12 @@ async def create_billing_entry(
             customer=customer,
         )
 
-    if start_timestamp is None:
-        start_timestamp = event.timestamp
-
-    if end_timestamp is None:
-        end_timestamp = event.timestamp
+    if type == BillingEntryType.cycle and subscription is not None:
+        start_timestamp = start_timestamp or subscription.current_period_start
+        end_timestamp = end_timestamp or subscription.current_period_end
+    else:
+        start_timestamp = start_timestamp or event.timestamp
+        end_timestamp = end_timestamp or event.timestamp
 
     billing_entry = BillingEntry(
         start_timestamp=start_timestamp,

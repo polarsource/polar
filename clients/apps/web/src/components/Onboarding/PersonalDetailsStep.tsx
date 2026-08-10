@@ -5,7 +5,7 @@ import * as Sentry from '@sentry/nextjs'
 import { useUpdateUser } from '@/hooks/queries'
 import { enums, schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import { Button } from '@polar-sh/orbit'
+import { Alert, Button } from '@polar-sh/orbit'
 import CountryPicker from '@polar-sh/ui/components/atoms/CountryPicker'
 import { Input } from '@polar-sh/orbit'
 import {
@@ -100,9 +100,11 @@ function SubmitButton({ loading }: { loading: boolean }) {
     !accepted_terms_of_service
 
   return (
-    <Button type="submit" loading={loading} disabled={disabled} fullWidth>
-      Continue
-    </Button>
+    <Box alignSelf="start">
+      <Button type="submit" loading={loading} disabled={disabled}>
+        Continue
+      </Button>
+    </Box>
   )
 }
 
@@ -288,22 +290,11 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
             />
 
             {isUnsupportedCountry && (
-              <Box
-                flexDirection="column"
-                rowGap="m"
-                borderRadius="m"
-                borderWidth={1}
-                borderStyle="solid"
-                borderColor="border-warning"
-                backgroundColor="background-warning"
-                padding="l"
-              >
-                <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                  Payouts are not available in {countryDisplayName}&nbsp;yet.
-                  You can still continue and we&rsquo;ll notify you when support
-                  is added.
-                </p>
-              </Box>
+              <Alert
+                variant="warning"
+                title={`Payouts are not available in ${countryDisplayName} yet`}
+                description="You can still continue and we'll notify you when support is added."
+              />
             )}
           </Box>
 
@@ -407,9 +398,10 @@ export function PersonalDetailsStep({ geoCountry }: { geoCountry?: string }) {
           <Box flexDirection="column" rowGap="s">
             <SubmitButton loading={submitting} />
             {submitError && (
-              <p className="text-sm text-red-500 dark:text-red-500">
-                Something went wrong, please try again.
-              </p>
+              <Alert
+                variant="danger"
+                title="Something went wrong, please try again."
+              />
             )}
           </Box>
         </Box>

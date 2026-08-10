@@ -29,6 +29,7 @@ from shared import (
     SERVER_DIR,
     console,
     is_docker_running,
+    read_secrets,
     run_command,
 )
 
@@ -343,12 +344,8 @@ def _ensure_env_file() -> None:
 
 
 def _load_central_secrets() -> dict[str, str]:
-    """Load secrets from central file if it exists."""
-    if not SECRETS_FILE.exists():
-        return {}
-    from dotenv import dotenv_values
-
-    return {k: v for k, v in dotenv_values(SECRETS_FILE).items() if v}
+    """Load secrets that carry a value, so blanks don't override template defaults."""
+    return {k: v for k, v in read_secrets().items() if v}
 
 
 def _ensure_server_env() -> None:

@@ -168,7 +168,7 @@ export const Pipeline = () => {
           paddingHorizontal={{ base: '2xl', md: '5xl' }}
           rowGap="xl"
           borderWidth={1}
-          borderColor="border-secondary"
+          borderColor="border-primary"
         >
           {/* Customer */}
           <Box

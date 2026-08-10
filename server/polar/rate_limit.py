@@ -256,6 +256,27 @@ _BASE_RULES: dict[str, Sequence[Rule]] = {
             zone="feedback-submit",
         ),
     ],
+    # Each call is an LLM run Polar pays for, so it's capped well below the
+    # catch-all. All groups listed — an unmatched one falls through to `api`.
+    "^/v1/compass/assistant": [
+        Rule(minute=60, hour=500, zone="compass-assistant"),
+        Rule(group=RateLimitGroup.web, minute=60, hour=500, zone="compass-assistant"),
+        Rule(
+            group=RateLimitGroup.elevated, minute=60, hour=500, zone="compass-assistant"
+        ),
+        Rule(
+            group=RateLimitGroup.restricted,
+            minute=60,
+            hour=500,
+            zone="compass-assistant",
+        ),
+        Rule(
+            group=RateLimitGroup.pending_auth,
+            minute=60,
+            hour=500,
+            zone="compass-assistant",
+        ),
+    ],
 }
 
 _SANDBOX_RULES: dict[str, Sequence[Rule]] = {

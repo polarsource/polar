@@ -170,6 +170,10 @@ class EmbedCheckout {
     iframe.style.backgroundColor = 'rgba(0, 0, 0, 0.5)'
     iframe.style.colorScheme = 'normal'
 
+    // Opt the overlay out of smooth-scroll libraries (Lenis) on the embedding
+    // page, which would otherwise scroll it behind the checkout.
+    iframe.setAttribute('data-lenis-prevent', '')
+
     // eslint-disable-next-line @typescript-eslint/ban-ts-comment
     // @ts-ignore
     const origins = __POLAR_CHECKOUT_EMBED_SCRIPT_ALLOWED_ORIGINS__

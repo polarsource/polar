@@ -1193,6 +1193,51 @@ class TestDelete:
             member_id=member.id,
         )
 
+    async def test_delete_enqueues_benefit_grant_deletions(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+    ) -> None:
+        """Deleting a member enqueues benefit grant deletions for that member.
+
+        Regression test: ``delete()`` previously omitted the
+        ``enqueue_member_grant_deletions`` call that ``delete_by_customer()``
+        already performed, leaving member-scoped benefit grants (e.g. GitHub
+        repository access) orphaned after deletion.
+        """
+        enqueue_member_mock: MagicMock = mocker.patch(
+            "polar.benefit.grant.service.BenefitGrantService"
+            ".enqueue_member_grant_deletions"
+        )
+
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="customer@example.com",
+        )
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@example.com",
+            name="Owner",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner)
+        member = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="member@example.com",
+            name="Member",
+            role=MemberRole.member,
+        )
+        await save_fixture(member)
+
+        await member_service.delete(session, member)
+
+        enqueue_member_mock.assert_called_once_with(session, member.id)
+
     async def test_cannot_delete_only_owner(
         self,
         save_fixture: SaveFixture,

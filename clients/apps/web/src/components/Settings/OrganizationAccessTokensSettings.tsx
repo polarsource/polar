@@ -237,10 +237,10 @@ const AccessTokenItem = ({
 
   return (
     <div className="flex flex-col gap-y-4">
-      <div className="flex flex-row items-center justify-between">
-        <div className="flex flex-row">
-          <div className="gap-y flex flex-col">
-            <h3 className="text-md">{token.comment}</h3>
+      <div className="flex flex-col gap-y-2 md:flex-row md:items-center md:justify-between md:gap-x-4">
+        <div className="flex min-w-0 flex-row">
+          <div className="flex min-w-0 flex-col">
+            <h3 className="text-md truncate">{token.comment}</h3>
             {!minimal && (
               <p className="dark:text-polar-400 text-sm text-gray-500">
                 {token.expires_at ? (
@@ -282,7 +282,7 @@ const AccessTokenItem = ({
             )}
           </div>
         </div>{' '}
-        <div className="dark:text-polar-400 flex flex-row items-center gap-2 text-gray-500">
+        <div className="dark:text-polar-400 flex shrink-0 flex-row items-center justify-end gap-2 text-gray-500">
           <Button onClick={showUpdateModal} size="sm">
             Update
           </Button>

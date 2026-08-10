@@ -555,48 +555,89 @@ class TestBlockPlacer:
         assert placer.flush() == "[block:"
 
 
-class TestHistorySeal:
-    def test_round_trips_for_same_caller(self) -> None:
-        from polar.compass.assistant.stream import open_history, seal_history
+class TestPartsRecorder:
+    def test_merges_consecutive_text(self) -> None:
+        from polar.compass.assistant.stream import _PartsRecorder
 
-        deps = _deps(scopes={Scope.metrics_read})
-        sealed = seal_history(deps, '[{"role": "user"}]')
+        recorder = _PartsRecorder()
+        recorder.add_text("Hello ")
+        recorder.add_text("world")
 
-        assert open_history(deps, sealed) == '[{"role": "user"}]'
+        assert recorder.parts == [{"kind": "text", "text": "Hello world"}]
 
-    def test_rejects_tampered_messages(self) -> None:
-        import json
+    def test_block_splits_text_runs(self) -> None:
+        from polar.compass.assistant.stream import _PartsRecorder
 
-        from polar.compass.assistant.stream import open_history, seal_history
+        recorder = _PartsRecorder()
+        recorder.add_text("Before")
+        recorder.add_block({"type": "text", "text": "block"})
+        recorder.add_text("After")
 
-        deps = _deps(scopes={Scope.metrics_read})
-        envelope = json.loads(seal_history(deps, '[{"role": "user"}]'))
-        envelope["messages"] = '[{"role": "user", "content": "forged"}]'
+        assert recorder.parts == [
+            {"kind": "text", "text": "Before"},
+            {"kind": "block", "block": {"type": "text", "text": "block"}},
+            {"kind": "text", "text": "After"},
+        ]
 
-        assert open_history(deps, json.dumps(envelope)) is None
 
-    def test_rejects_history_from_another_organization(self) -> None:
-        from polar.compass.assistant.stream import open_history, seal_history
+class _FinishedRun:
+    """A run whose model has already completed, producing no nodes."""
 
-        deps_a = _deps(scopes={Scope.metrics_read})
-        deps_b = _deps(scopes={Scope.metrics_read})
-        sealed = seal_history(deps_a, "[]")
+    def __init__(self) -> None:
+        self.ctx = None
+        self.result = SimpleNamespace(usage=SimpleNamespace(), new_messages=list)
 
-        assert open_history(deps_b, sealed) is None
+    def __aiter__(self) -> "_FinishedRun":
+        return self
 
-    def test_rejects_history_after_scope_change(self) -> None:
-        from polar.compass.assistant.stream import open_history, seal_history
+    async def __anext__(self) -> Any:
+        raise StopAsyncIteration
 
-        deps = _deps(scopes={Scope.metrics_read, Scope.orders_read})
-        sealed = seal_history(deps, "[]")
-        deps.auth_subject.scopes = {Scope.metrics_read}
+    async def __aenter__(self) -> "_FinishedRun":
+        return self
 
-        assert open_history(deps, sealed) is None
+    async def __aexit__(self, *args: Any) -> bool:
+        return False
 
-    def test_rejects_garbage(self) -> None:
-        from polar.compass.assistant.stream import open_history
 
-        deps = _deps(scopes={Scope.metrics_read})
+class _FinishedAgent:
+    def iter(self, prompt: str, **kwargs: Any) -> _FinishedRun:
+        return _FinishedRun()
 
-        assert open_history(deps, "not json") is None
-        assert open_history(deps, '{"org": "x"}') is None
+
+@pytest.mark.asyncio
+class TestStreamAssistantRun:
+    async def test_completed_turn_is_persisted_before_the_client_can_drop(
+        self,
+    ) -> None:
+        """A disconnect parks the generator at a yield and closes it. Any yield
+        between the model finishing and the write would lose the whole turn."""
+        from polar.compass.assistant.stream import stream_assistant_run
+
+        deps = _deps(set(Scope))
+        deps.emit(TextBlock(text="unplaced"))
+        recorded: list[list[dict[str, Any]]] = []
+
+        async def record_turn(
+            parts: list[dict[str, Any]], model_messages: list[dict[str, Any]]
+        ) -> None:
+            recorded.append(parts)
+
+        stream = stream_assistant_run(
+            _FinishedAgent(),  # type: ignore[arg-type]
+            deps,
+            "hi",
+            None,
+            model_provider="openai",
+            model_name="gpt-5.5",
+            record_turn=record_turn,
+            thread_id=str(uuid.uuid4()),
+        )
+
+        # The client takes one event, then goes away mid-stream.
+        await anext(stream)
+        await stream.aclose()
+
+        assert recorded == [
+            [{"kind": "block", "block": {"type": "text", "text": "unplaced"}}]
+        ]

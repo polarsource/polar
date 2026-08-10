@@ -1,4 +1,5 @@
 from polar.kit.encryption import EncryptedString
+from polar.merchant_migration.repository import MerchantMigrationRepository
 from polar.merchant_migration.service import (
     SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT,
     StripeSourceCredentials,
@@ -8,7 +9,21 @@ from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
+from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
+
+
+async def assert_no_migrations(
+    session: AsyncSession, organization: Organization
+) -> None:
+    """A rejected create must leave nothing behind, not even an unusable row."""
+    repository = MerchantMigrationRepository.from_session(session)
+    migrations = await repository.get_all(
+        repository.get_base_statement().where(
+            MerchantMigration.organization_id == organization.id
+        )
+    )
+    assert len(migrations) == 0
 
 
 async def build_stripe_credentials(

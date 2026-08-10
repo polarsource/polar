@@ -42,6 +42,12 @@ variable "advertise_routes" {
   type        = string
 }
 
+variable "advertise_exit_node" {
+  description = "Advertise this router as a Tailscale exit node"
+  type        = bool
+  default     = false
+}
+
 variable "tailscale_version" {
   description = "Tailscale version to install"
   type        = string

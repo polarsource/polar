@@ -25,8 +25,8 @@ export default function BrandPage() {
         <BrandHero />
         <LogoSection />
         <ColorSection />
-        <TypographySection />
         <IllustrationSection />
+        <TypographySection />
         <VoiceSection />
         <MarketingSection />
       </main>

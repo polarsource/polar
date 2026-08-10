@@ -102,6 +102,11 @@ async def download(
     if file is None or not file.is_uploaded:
         raise ResourceNotFound()
 
+    if file.flagged_malicious_at is not None:
+        raise NotPermitted(
+            "This file has been flagged as malicious and cannot be downloaded."
+        )
+
     if file.service == FileServiceTypes.support_case_attachment:
         raise NotPermitted(
             "Support case attachments cannot be downloaded through the files API."

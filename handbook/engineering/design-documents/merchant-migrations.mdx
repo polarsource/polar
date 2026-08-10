@@ -286,7 +286,7 @@ We can't reuse Polar's platform Stripe service (it's bound to the global platfor
 
 On top of the generic ones in Appendix A. What's unique to Stripe:
 
-- **Manual:** source account is a Connect platform - only platform-account customers/PMs are copyable; anything on connected accounts is excluded.
+- **Manual:** source account has Connect accounts - only platform-account customers/PMs are copyable; anything on connected accounts is excluded. A platform with no connected accounts is not flagged: Stripe answers the list call with an empty list for a non-platform, so the call succeeding proves nothing.
 - **Blocker:** India / RBI account - card data can't cross the border, so the PAN copy can't run (bidirectional).
 - **Blocker:** tiered/graduated pricing (`billing_scheme=tiered`) can't be represented.
 - **Blocker:** metered pricing (`usage_type=metered`) - to be implemented later (Stripe now requires a Billing Meter; legacy usage records are gone).

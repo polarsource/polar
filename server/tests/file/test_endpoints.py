@@ -7,6 +7,7 @@ from httpx import AsyncClient, ReadError
 from polar.file.repository import FileRepository
 from polar.file.s3 import S3_SERVICES
 from polar.integrations.aws.s3.exceptions import S3FileError
+from polar.kit.utils import utc_now
 from polar.models import Organization, UserOrganization
 from polar.models.file import FileServiceTypes
 from polar.postgres import AsyncSession
@@ -223,6 +224,28 @@ class TestDownload:
         response = await client.get(f"/v1/files/{file.id}/download")
 
         assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_flagged_malicious_not_permitted(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        file = await create_support_case_attachment_file(
+            save_fixture,
+            organization,
+            name="malware.zip",
+            service=FileServiceTypes.downloadable,
+        )
+        file.flagged_malicious_at = utc_now()
+        await save_fixture(file)
+
+        response = await client.get(f"/v1/files/{file.id}/download")
+
+        assert response.status_code == 403
+        assert "download" not in response.json()
 
     @pytest.mark.auth(
         AuthSubjectFixture(subject="user"),

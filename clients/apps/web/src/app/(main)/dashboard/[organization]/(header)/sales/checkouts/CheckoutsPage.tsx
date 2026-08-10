@@ -5,160 +5,72 @@ import CheckoutStatusSelect from '@/components/CheckoutStatusSelect/CheckoutStat
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import ProductSelect from '@/components/Products/ProductSelect'
 import { useCheckouts } from '@/hooks/queries/checkouts'
+import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { useDebouncedCallback } from '@/hooks/utils'
-import {
-  DataTablePaginationState,
-  DataTableSortingState,
-  getAPIParams,
-  serializeSearchParams,
-} from '@/utils/datatable'
-import { schemas } from '@polar-sh/client'
+import { getAPIParams } from '@/utils/datatable'
+import { enums, schemas } from '@polar-sh/client'
 import {
   DataTable,
   DataTableColumnDef,
   DataTableColumnHeader,
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { Input } from '@polar-sh/orbit'
+import { Input, Text } from '@polar-sh/orbit'
 import { useRouter } from 'next/navigation'
+import {
+  parseAsArrayOf,
+  parseAsString,
+  parseAsStringLiteral,
+  useQueryStates,
+} from 'nuqs'
 import React from 'react'
+
+const filterParsers = {
+  product_id: parseAsArrayOf(parseAsString),
+  customer_id: parseAsString,
+  status: parseAsStringLiteral(enums.checkoutStatusValues),
+  query: parseAsString,
+}
 
 interface ClientPageProps {
   organization: schemas['Organization']
-  pagination: DataTablePaginationState
-  sorting: DataTableSortingState
-  productId?: string[]
-  customerId?: string
-  status?: schemas['CheckoutStatus']
-  query?: string
 }
 
-const ClientPage: React.FC<ClientPageProps> = ({
-  organization,
-  pagination,
-  sorting,
-  productId,
-  customerId,
-  status,
-  query,
-}) => {
-  const getSearchParams = (
-    pagination: DataTablePaginationState,
-    sorting: DataTableSortingState,
-    productId?: string[],
-    customerId?: string,
-    status?: string,
-    query?: string,
-  ) => {
-    const params = serializeSearchParams(pagination, sorting)
-    if (productId) {
-      productId.forEach((id) => {
-        params.append('product_id', id)
-      })
-    }
-    if (customerId) {
-      params.append('customer_id', customerId)
-    }
-    if (status) {
-      params.append('status', status)
-    }
-    if (query) {
-      params.append('query', query)
-    }
-    return params
-  }
-
+const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
   const router = useRouter()
 
-  const setPagination = (
-    updaterOrValue:
-      | DataTablePaginationState
-      | ((old: DataTablePaginationState) => DataTablePaginationState),
-  ) => {
-    const updatedPagination =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(pagination)
-        : updaterOrValue
+  const { pagination, setPagination, sorting, setSorting, resetPage } =
+    useDataTableQueryState({
+      defaultSorting: [{ id: 'created_at', desc: true }],
+      defaultPageSize: 50,
+    })
 
-    router.push(
-      `/dashboard/${organization.slug}/sales/checkouts?${getSearchParams(
-        updatedPagination,
-        sorting,
-        productId,
-        customerId,
-        status,
-        query,
-      )}`,
-    )
+  const [
+    { product_id: productId, customer_id: customerId, status, query },
+    setFilters,
+  ] = useQueryStates(filterParsers)
+
+  const onProductSelect = (value: string[]) => {
+    setFilters({ product_id: value.length > 0 ? value : null })
+    resetPage()
   }
 
-  const setSorting = (
-    updaterOrValue:
-      | DataTableSortingState
-      | ((old: DataTableSortingState) => DataTableSortingState),
-  ) => {
-    const updatedSorting =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(sorting)
-        : updaterOrValue
-
-    router.push(
-      `/dashboard/${organization.slug}/sales/checkouts?${getSearchParams(
-        pagination,
-        updatedSorting,
-        productId,
-        customerId,
-        status,
-        query,
-      )}`,
-    )
+  const onStatusSelect = (value: schemas['CheckoutStatus'] | null) => {
+    setFilters({ status: value })
+    resetPage()
   }
 
-  const setStatus = (status: string) => {
-    router.push(
-      `/dashboard/${organization.slug}/sales/checkouts?${getSearchParams(
-        pagination,
-        sorting,
-        productId,
-        customerId,
-        status,
-        query,
-      )}`,
-    )
-  }
-
-  const setProductId = (productId: string[]) => {
-    router.push(
-      `/dashboard/${organization.slug}/sales/checkouts?${getSearchParams(
-        pagination,
-        sorting,
-        productId,
-        customerId,
-        status,
-        query,
-      )}`,
-    )
-  }
-
-  const setQuery = useDebouncedCallback((query: string) => {
-    router.push(
-      `/dashboard/${organization.slug}/sales/checkouts?${getSearchParams(
-        pagination,
-        sorting,
-        productId,
-        customerId,
-        status,
-        query,
-      )}`,
-    )
+  const onQueryChange = useDebouncedCallback((value: string) => {
+    setFilters({ query: value || null })
+    resetPage()
   }, 500)
 
   const checkoutsHook = useCheckouts(organization.id, {
     ...getAPIParams(pagination, sorting),
-    ...(productId ? { product_id: productId } : {}),
-    ...(customerId ? { customer_id: customerId } : {}),
-    ...(status ? { status } : {}),
-    ...(query ? { query } : {}),
+    product_id: productId ?? undefined,
+    customer_id: customerId ?? undefined,
+    status: status ?? undefined,
+    query: query ?? undefined,
   })
 
   const checkouts = checkoutsHook.data?.items || []
@@ -169,14 +81,17 @@ const ClientPage: React.FC<ClientPageProps> = ({
     {
       accessorKey: 'created_at',
       enableSorting: true,
+      size: 160,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Date" />
       ),
       cell: (props) => (
-        <FormattedDateTime
-          datetime={props.getValue() as string}
-          resolution="time"
-        />
+        <Text as="span" tabularNums>
+          <FormattedDateTime
+            datetime={props.getValue() as string}
+            resolution="time"
+          />
+        </Text>
       ),
     },
     {
@@ -249,15 +164,16 @@ const ClientPage: React.FC<ClientPageProps> = ({
               <Input
                 type="text"
                 placeholder="Filter by email"
-                onChange={(e) => setQuery(e.target.value)}
+                defaultValue={query ?? ''}
+                onChange={(e) => onQueryChange(e.target.value)}
               />
             </div>
-            <CheckoutStatusSelect value={status || ''} onChange={setStatus} />
+            <CheckoutStatusSelect value={status} onChange={onStatusSelect} />
             <ProductSelect
               organization={organization}
               includeArchived
               value={productId || []}
-              onChange={setProductId}
+              onChange={onProductSelect}
             />
           </div>
         </div>

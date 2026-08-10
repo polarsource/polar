@@ -4,18 +4,18 @@ import { Box } from '@polar-sh/orbit/Box'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import Link from 'next/link'
 import { StripeMark } from './StripeMark'
-import { MIGRATION_STEPS, currentStepKey, stepPosition } from './steps'
+import { currentPosition, MIGRATION_STEPS } from './steps'
 
 function summary(migration: schemas['MerchantMigration']): string {
   if (!migration.source_connected) {
     return 'Connect Stripe to begin'
   }
-  const index = stepPosition(currentStepKey(migration))
-  const def = MIGRATION_STEPS[index]
-  if (!def) {
+  const position = currentPosition(migration)
+  if (position.kind === 'completed') {
     return 'Completed'
   }
-  return `Step ${index + 1} of ${MIGRATION_STEPS.length} · ${def.title}`
+  const def = MIGRATION_STEPS[position.index]
+  return `Step ${position.index + 1} of ${MIGRATION_STEPS.length} · ${def.title}`
 }
 
 export function MigrationCard({

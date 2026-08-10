@@ -67,8 +67,15 @@ class MerchantMigrationRecordRepository(
     async def list_by_migration(
         self, migration_id: UUID
     ) -> Sequence[MerchantMigrationRecord]:
-        statement = self.get_base_statement().where(
-            MerchantMigrationRecord.merchant_migration_id == migration_id
+        # Stable order so in-memory pagination stays consistent as import updates
+        # record statuses (which would otherwise reshuffle the scan order).
+        statement = (
+            self.get_base_statement()
+            .where(MerchantMigrationRecord.merchant_migration_id == migration_id)
+            .order_by(
+                MerchantMigrationRecord.created_at,
+                MerchantMigrationRecord.id,
+            )
         )
         return await self.get_all(statement)
 

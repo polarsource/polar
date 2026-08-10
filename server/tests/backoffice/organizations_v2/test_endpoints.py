@@ -457,3 +457,64 @@ class TestEditFeatures:
         assert response.status_code == 303
         assert organization.feature_settings["sso_enabled"] is True
         assert organization.sso_enforced is True
+
+
+@pytest.mark.asyncio
+class TestEditOrganization:
+    async def test_syncs_customer_slug_when_slug_changes(
+        self,
+        mocker: MockerFixture,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.slug = "existing-org-slug"
+        await save_fixture(organization)
+
+        enqueue_update_customer_slug_mock = mocker.patch(
+            "polar.backoffice.organizations_v2.endpoints"
+            ".polar_self_service.enqueue_update_customer_slug"
+        )
+
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/edit",
+            data={
+                "name": organization.name,
+                "slug": "new-org-slug",
+                "customer_invoice_prefix": organization.customer_invoice_prefix,
+            },
+        )
+
+        assert response.status_code == 303
+        assert organization.slug == "new-org-slug"
+        enqueue_update_customer_slug_mock.assert_called_once_with(
+            organization_id=organization.id, slug="new-org-slug"
+        )
+
+    async def test_does_not_sync_customer_slug_when_slug_unchanged(
+        self,
+        mocker: MockerFixture,
+        backoffice_client: httpx.AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        organization.slug = "existing-org-slug"
+        await save_fixture(organization)
+
+        enqueue_update_customer_slug_mock = mocker.patch(
+            "polar.backoffice.organizations_v2.endpoints"
+            ".polar_self_service.enqueue_update_customer_slug"
+        )
+
+        response = await backoffice_client.post(
+            f"/organizations/{organization.id}/edit",
+            data={
+                "name": "A New Organization Name",
+                "slug": organization.slug,
+                "customer_invoice_prefix": organization.customer_invoice_prefix,
+            },
+        )
+
+        assert response.status_code == 303
+        assert organization.name == "A New Organization Name"
+        enqueue_update_customer_slug_mock.assert_not_called()

@@ -12,6 +12,7 @@ import { Pill } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { ContextCard } from '../Shared/ContextCard'
 import { DetailRow } from '../Shared/DetailRow'
+import { CustomerTimeline } from './CustomerTimeline'
 import { useSubscriptions } from '@/hooks/queries'
 import { getSubscriptionStatusBorderColor } from '../Subscriptions/utils'
 
@@ -138,6 +139,8 @@ export const CustomerContextView = ({
           </div>
         </ContextCard>
       ) : null}
+
+      <CustomerTimeline organization={organization} customer={customer} />
 
       {!customer.deleted_at && Object.keys(customer.metadata).length > 0 && (
         <ContextCard>

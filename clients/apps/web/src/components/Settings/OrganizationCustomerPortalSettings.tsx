@@ -82,6 +82,7 @@ const OrganizationCustomerPortalSettings: React.FC<
       >
         <SettingsGroup>
           <SettingsGroupItem
+            layout="inline"
             title="Show metered usage"
             description="Show customer usage in the portal (API endpoints unaffected)"
           >
@@ -104,6 +105,7 @@ const OrganizationCustomerPortalSettings: React.FC<
           </SettingsGroupItem>
 
           <SettingsGroupItem
+            layout="inline"
             title="Enable subscription seat management"
             description="Allow customers to assign and manage seats for their subscriptions."
           >
@@ -126,6 +128,7 @@ const OrganizationCustomerPortalSettings: React.FC<
           </SettingsGroupItem>
 
           <SettingsGroupItem
+            layout="inline"
             title="Allow email address changes"
             description="Allow customers to change the email address associated with their account."
           >
@@ -148,6 +151,7 @@ const OrganizationCustomerPortalSettings: React.FC<
           </SettingsGroupItem>
 
           <SettingsGroupItem
+            layout="inline"
             title="Enable subscription plan changes"
             description="Allow customers to change their subscription plan from the portal."
           >
@@ -170,6 +174,7 @@ const OrganizationCustomerPortalSettings: React.FC<
           </SettingsGroupItem>
 
           <SettingsGroupItem
+            layout="inline"
             title="Enable subscription pausing"
             description="Allow customers to pause and resume their subscriptions from the portal."
           >

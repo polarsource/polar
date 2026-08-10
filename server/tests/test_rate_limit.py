@@ -302,3 +302,22 @@ class TestEmailUpdateZone:
         rule = _select_rule(rules, path, group)
         assert rule is not None
         assert rule.zone == "email-update"
+
+
+@pytest.mark.parametrize("rules", [_PRODUCTION_RULES, _SANDBOX_RULES])
+@pytest.mark.parametrize("group", list(RateLimitGroup))
+class TestCompassAssistantZone:
+    """Every call costs an LLM run, so no caller may reach the catch-all "api"
+    zone. Rules are selected by exact group match and an unmatched group falls
+    through rather than being denied, so every group needs its own rule."""
+
+    def test_resolves_to_compass_zone(
+        self, rules: dict[str, Sequence[Rule]], group: RateLimitGroup
+    ) -> None:
+        rule = _select_rule(rules, "/v1/compass/assistant", group)
+
+        assert rule is not None, f"No rule selected for group={group.value!r}"
+        assert rule.zone == "compass-assistant", (
+            f"Group {group.value!r} resolved to zone {rule.zone!r} — it would "
+            f"fall through to the catch-all allowance"
+        )

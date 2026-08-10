@@ -13,19 +13,36 @@ from polar.postgres import AsyncReadSession, get_db_read_session, get_db_session
 from polar.routing import APIRouter
 
 from .auth import MerchantMigrationRead, MerchantMigrationWrite
+from .pan_transfer import (
+    PanStepNotActionable,
+    PanStepNotFound,
+    PanStepNotOwned,
+    PanTransferAlreadyStarted,
+    PanTransferNotReady,
+    PanTransferNotStarted,
+    PanTransferUnavailable,
+)
 from .schemas import MerchantMigration as MerchantMigrationSchema
 from .schemas import (
     MerchantMigrationCreate,
+    MerchantMigrationImportReport,
+    MerchantMigrationImportRequest,
     MerchantMigrationRecordItem,
+    PanTransferChecklist,
+    PanTransferStepComplete,
     PrecheckEntity,
+    PrecheckReasonLevel,
     PrecheckRecordStatus,
     PrecheckReport,
 )
 from .service import (
+    CatalogImportBlocked,
+    CatalogImportNotReady,
     InvalidSourceCredentials,
     MerchantMigrationNotEnabled,
     MerchantMigrationNotFound,
     MissingStripeScopes,
+    SourceAccountNotMigratable,
     SourceKeyModeMismatch,
     SourceNotConnected,
     SourceVerificationUnavailable,
@@ -71,9 +88,10 @@ async def list(
     responses={
         400: {
             "description": "The Stripe API key is invalid, wrong mode, or missing "
-            "permissions.",
+            "permissions, or the account it belongs to can't be migrated.",
             "model": InvalidSourceCredentials.schema()
             | MissingStripeScopes.schema()
+            | SourceAccountNotMigratable.schema()
             | SourceKeyModeMismatch.schema()
             | UnsupportedMigrationSource.schema(),
         },
@@ -142,6 +160,136 @@ async def precheck(
     return await merchant_migration_service.run_precheck(session, auth_subject, id)
 
 
+@router.post(
+    "/{id}/import",
+    response_model=MerchantMigrationImportReport,
+    summary="Import Merchant Migration Catalog",
+    responses={
+        400: {
+            "description": "The source is not connected or isn't supported.",
+            "model": SourceNotConnected.schema() | UnsupportedMigrationSource.schema(),
+        },
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+        409: {
+            "description": "The pre-check hasn't run yet, or it reports a blocker.",
+            "model": CatalogImportNotReady.schema() | CatalogImportBlocked.schema(),
+        },
+    },
+)
+async def import_catalog(
+    id: UUID4,
+    auth_subject: MerchantMigrationWrite,
+    body: MerchantMigrationImportRequest | None = None,
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigrationImportReport:
+    return await merchant_migration_service.import_catalog(
+        session,
+        auth_subject,
+        id,
+        record_ids=body.record_ids if body is not None else None,
+        exclude_record_ids=body.exclude_record_ids if body is not None else None,
+    )
+
+
+@router.get(
+    "/{id}/pan-transfer",
+    response_model=PanTransferChecklist,
+    summary="Get Merchant Migration Card Transfer",
+    responses={
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+    },
+)
+async def pan_transfer(
+    id: UUID4,
+    auth_subject: MerchantMigrationWrite,
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> PanTransferChecklist:
+    return await merchant_migration_service.get_pan_transfer(session, auth_subject, id)
+
+
+@router.post(
+    "/{id}/pan-transfer",
+    response_model=PanTransferChecklist,
+    summary="Start Merchant Migration Card Transfer",
+    responses={
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+        409: {
+            "description": "The catalog isn't imported yet, the transfer already "
+            "started, or card transfers aren't configured.",
+            "model": PanTransferNotReady.schema()
+            | PanTransferAlreadyStarted.schema()
+            | PanTransferUnavailable.schema(),
+        },
+    },
+)
+async def start_pan_transfer(
+    id: UUID4,
+    auth_subject: MerchantMigrationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> PanTransferChecklist:
+    return await merchant_migration_service.start_pan_transfer(
+        session, auth_subject, id
+    )
+
+
+@router.post(
+    "/{id}/pan-transfer/steps/{key}/complete",
+    response_model=PanTransferChecklist,
+    summary="Complete Merchant Migration Card Transfer Step",
+    responses={
+        403: {
+            "description": "Not allowed to manage this organization, or the step "
+            "is completed by someone else.",
+            "model": NotPermitted.schema() | PanStepNotOwned.schema(),
+        },
+        404: {
+            "description": "Merchant migration or step not found.",
+            "model": MerchantMigrationNotFound.schema() | PanStepNotFound.schema(),
+        },
+        409: {
+            "description": "The card transfer hasn't started, or this isn't the "
+            "step to act on.",
+            "model": PanTransferNotStarted.schema() | PanStepNotActionable.schema(),
+        },
+    },
+)
+async def complete_pan_transfer_step(
+    id: UUID4,
+    key: str,
+    auth_subject: MerchantMigrationWrite,
+    body: PanTransferStepComplete | None = None,
+    session: AsyncSession = Depends(get_db_session),
+) -> PanTransferChecklist:
+    return await merchant_migration_service.complete_pan_step(
+        session,
+        auth_subject,
+        id,
+        key,
+        inputs=body.inputs if body is not None else {},
+    )
+
+
 @router.get(
     "/{id}/records",
     response_model=ListResource[MerchantMigrationRecordItem],
@@ -165,8 +313,9 @@ async def records(
     id: UUID4,
     auth_subject: MerchantMigrationWrite,
     pagination: PaginationParamsQuery,
-    entity: Annotated[PrecheckEntity, Query()],
+    entity: Annotated[PrecheckEntity | None, Query()] = None,
     status: Annotated[PrecheckRecordStatus | None, Query()] = None,
+    reason_level: Annotated[PrecheckReasonLevel | None, Query()] = None,
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[MerchantMigrationRecordItem]:
     items, count = await merchant_migration_service.list_records(
@@ -175,6 +324,7 @@ async def records(
         id,
         entity=entity,
         status=status,
+        reason_level=reason_level,
         pagination=pagination,
     )
     return ListResource.from_paginated_results(items, count, pagination)

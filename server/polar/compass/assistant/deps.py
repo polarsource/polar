@@ -1,9 +1,9 @@
 import uuid
 from dataclasses import dataclass, field
-from datetime import date
+from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
-from polar.auth.models import AuthSubject, Organization, User
+from polar.auth.models import AuthSubject, User
 from polar.postgres import AsyncReadSession
 from polar.redis import Redis
 
@@ -21,11 +21,12 @@ class AssistantDeps:
     """
 
     session: AsyncReadSession
-    auth_subject: AuthSubject[User | Organization]
+    auth_subject: AuthSubject[User]
     organization_id: uuid.UUID
     timezone: ZoneInfo
     today: date
     redis: Redis | None = None
+    history_last_at: datetime | None = None
     blocks: list[AssistantBlock] = field(default_factory=list)
     """Renderable blocks produced by tools during the run, in order. The
     endpoint streams them to the client interleaved with the model's text."""

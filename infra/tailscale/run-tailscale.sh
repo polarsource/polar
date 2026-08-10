@@ -4,7 +4,11 @@
 PID=$!
 
 ADVERTISE_ROUTES=${ADVERTISE_ROUTES:-10.208.0.0/16}
-until /render/tailscale up --authkey="${TAILSCALE_AUTHKEY}?ephemeral=true&preauthorized=true" --hostname="${RENDER_SERVICE_NAME}" --advertise-routes="$ADVERTISE_ROUTES" --advertise-tags="tag:render"; do
+EXIT_NODE_FLAG=""
+if [ "${ADVERTISE_EXIT_NODE}" = "true" ]; then
+  EXIT_NODE_FLAG="--advertise-exit-node"
+fi
+until /render/tailscale up --authkey="${TAILSCALE_AUTHKEY}?ephemeral=true&preauthorized=true" --hostname="${RENDER_SERVICE_NAME}" --advertise-routes="$ADVERTISE_ROUTES" --advertise-tags="tag:render" $EXIT_NODE_FLAG; do
   sleep 0.1
 done
 export ALL_PROXY=socks5://localhost:1055/

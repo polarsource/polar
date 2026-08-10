@@ -79,4 +79,14 @@ resource "aws_serverlessapplicationrepository_cloudformation_stack" "ssosync" {
     LogFormat               = "json"
     ScheduleExpression      = var.ssosync_schedule_expression
   }
+
+  lifecycle {
+    ignore_changes = [
+      parameters["GoogleCredentials"],
+      parameters["GoogleAdminEmail"],
+      parameters["SCIMEndpointAccessToken"],
+      parameters["SyncMethod"],
+      parameters["LogFormat"],
+    ]
+  }
 }

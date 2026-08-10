@@ -622,7 +622,7 @@ async def list_payouts(
         return "This organization has no payout account set up yet."
     items, count = await payout_service.list(
         cast(AsyncSession, deps.session),
-        cast(Any, deps.auth_subject),
+        deps.auth_subject,
         account_id=[account_id],
         pagination=_clamp(limit),
     )

@@ -1,4 +1,24 @@
+import uuid
+
+from sqlalchemy import func, select
 from sqlalchemy.exc import DBAPIError
+
+from polar.kit.db.postgres import AsyncReadSession, AsyncSession
+
+
+async def pg_advisory_xact_lock(
+    session: AsyncSession | AsyncReadSession, namespace: str, key: uuid.UUID
+) -> None:
+    """
+    Acquire a transaction-level exclusive advisory lock.
+
+    The lock is derived from a stable hash of ``namespace`` and ``key`` and is
+    released automatically when the transaction ends. Unlike ``FOR UPDATE``, it
+    doesn't require the target rows to exist, so concurrent transactions
+    serialize even when there are no rows yet to lock.
+    """
+    lock_key = func.hashtextextended(f"{namespace}:{key}", 0)
+    await session.execute(select(func.pg_advisory_xact_lock(lock_key)))
 
 
 def is_lock_not_available_error(e: DBAPIError) -> bool:

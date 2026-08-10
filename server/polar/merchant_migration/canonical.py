@@ -106,6 +106,9 @@ class CanonicalSubscription:
     line_item_count: int
     quantity: int
     payment_method: CanonicalPaymentMethod | None
+    # A discount/coupon on the source. Its amount isn't migrated yet, so importing
+    # at list price would overcharge; such subscriptions are skipped for now.
+    has_discount: bool = False
 
     type = MerchantMigrationRecordType.subscription
 
@@ -115,7 +118,9 @@ class CanonicalAccount:
     """Source-account-level facts the precheck needs but that aren't per-record."""
 
     country: str | None
-    is_connect_platform: bool
+    # The source is a Connect platform *and* has connected accounts, whose data
+    # can't be copied. A platform with none has nothing to leave behind.
+    has_connected_accounts: bool
 
 
 CanonicalRecord = CanonicalProduct | CanonicalCustomer | CanonicalSubscription
@@ -182,6 +187,7 @@ def deserialize(
                 )
                 if payment_method is not None
                 else None,
+                has_discount=data.get("has_discount", False),
             )
         case _:
             raise ValueError(f"Cannot deserialize record of type {type}")

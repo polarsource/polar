@@ -16,10 +16,12 @@ Usage:
 
 from uuid import UUID
 
+import dramatiq
 import typer
 from rich.console import Console
 from rich.table import Table
 
+from polar import tasks  # noqa: F401  -- registers dramatiq actors
 from polar.kit.db.postgres import create_async_sessionmaker
 from polar.models import Organization
 from polar.models.organization import OrganizationStatus
@@ -28,6 +30,8 @@ from polar.organization.service import (
     organization as organization_service,
 )
 from polar.postgres import AsyncSession, create_async_engine
+from polar.redis import create_redis
+from polar.worker import JobQueueManager
 from scripts.helper import configure_script_console_logging, typer_async
 
 cli = typer.Typer()
@@ -124,15 +128,20 @@ async def reset_organizations_for_review(
                 console.print("[yellow]Preview only — pass --execute to apply.")
                 return
 
-            for _, organization in targets:
-                assert organization is not None
-                await organization_service.reset_onboarding_for_review(
-                    session,
-                    organization,
-                    reset_by=reset_by,
-                )
+            async with create_redis("script") as redis:
+                async with JobQueueManager.open(dramatiq.get_broker(), redis):
+                    for _, organization in targets:
+                        assert organization is not None
+                        await organization_service.reset_onboarding_for_review(
+                            session,
+                            organization,
+                            reset_by=reset_by,
+                        )
 
-            await session.commit()
+                    await session.commit()
+                    # JobQueueManager.open() flushes on context exit, i.e. after
+                    # the commit above.
+
             console.print(
                 f"[green]Reset {len(targets)} organization(s) for onboarding review."
             )

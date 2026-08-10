@@ -33,7 +33,7 @@ const OrganizationDisputeSettings: React.FC<
   const form = useForm<schemas['OrganizationDisputeSettings']>({
     defaultValues: organization.dispute_settings,
   })
-  const { control, setError, setValue, reset } = form
+  const { control, setError, setValue, clearErrors, reset } = form
   const [enabled, setEnabled] = React.useState(
     organization.dispute_settings.auto_accept_below_amount !== null,
   )
@@ -96,7 +96,9 @@ const OrganizationDisputeSettings: React.FC<
               disabled={readOnly}
               onCheckedChange={(checked) => {
                 setEnabled(checked)
-                if (!checked) {
+                if (checked) {
+                  clearErrors('auto_accept_below_amount')
+                } else {
                   setValue('auto_accept_below_amount', null, {
                     shouldDirty: true,
                   })
@@ -118,8 +120,15 @@ const OrganizationDisputeSettings: React.FC<
                     value: MAX_AMOUNT,
                     message: `Enter an amount up to ${format(MAX_AMOUNT, 'usd')}.`,
                   },
-                  validate: (value) =>
-                    !value || value % 100 === 0 || 'Use whole dollars.',
+                  validate: (value) => {
+                    if (!enabled) {
+                      return true
+                    }
+                    if (!value) {
+                      return 'Set an amount, or turn this off.'
+                    }
+                    return value % 100 === 0 || 'Use whole dollars.'
+                  },
                 }}
                 render={({ field }) => (
                   <FormItem>

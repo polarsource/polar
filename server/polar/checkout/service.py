@@ -144,6 +144,14 @@ if typing.TYPE_CHECKING:
 log: Logger = structlog.get_logger()
 
 
+# Payment method types the platform supports at checkout. We pin these explicitly
+# on intent creation instead of relying on `automatic_payment_methods`, which lets
+# Stripe silently offer methods we don't support — notably Link Instant Bank
+# Payments substituting a `us_bank_account` under the card flow, whose confirmation
+# token is then rejected at intent creation (see issue #13407).
+SUPPORTED_PAYMENT_METHOD_TYPES = ["card", "link", "cashapp"]
+
+
 class CheckoutError(PolarError): ...
 
 
@@ -1216,7 +1224,7 @@ class CheckoutService:
                             payment_intent_params: PaymentIntentCreateParams = {
                                 "amount": checkout.total_amount,
                                 "currency": checkout.currency,
-                                "automatic_payment_methods": {"enabled": True},
+                                "payment_method_types": SUPPORTED_PAYMENT_METHOD_TYPES,
                                 "confirm": True,
                                 "confirmation_token": checkout_confirm.confirmation_token_id,
                                 "customer": stripe_customer_id,
@@ -1243,7 +1251,7 @@ class CheckoutService:
                             )
                         else:
                             setup_intent_params: SetupIntentCreateParams = {
-                                "automatic_payment_methods": {"enabled": True},
+                                "payment_method_types": SUPPORTED_PAYMENT_METHOD_TYPES,
                                 "confirm": True,
                                 "confirmation_token": checkout_confirm.confirmation_token_id,
                                 "customer": stripe_customer_id,

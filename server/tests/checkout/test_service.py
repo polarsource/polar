@@ -24,6 +24,7 @@ from polar.checkout.schemas import (
     CheckoutUpdatePublic,
 )
 from polar.checkout.service import (
+    SUPPORTED_PAYMENT_METHOD_TYPES,
     AlreadyActiveSubscriptionError,
     CheckoutCustomerDeleted,
     CheckoutCustomerExternalIdMismatch,
@@ -32,6 +33,7 @@ from polar.checkout.service import (
     ExpiredCheckoutError,
     NotConfirmedCheckout,
     NotOpenCheckout,
+    PaymentError,
     TrialAlreadyRedeemed,
 )
 from polar.checkout.service import checkout as checkout_service
@@ -4996,6 +4998,122 @@ class TestConfirm:
         )
         assert customer_session is not None
         assert customer_session.customer == checkout.customer
+
+    async def test_payment_intent_pins_supported_payment_method_types(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_one_time_fixed,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        stripe_service_mock.create_payment_intent.assert_called_once()
+        call_kwargs = stripe_service_mock.create_payment_intent.call_args[1]
+        assert call_kwargs["payment_method_types"] == SUPPORTED_PAYMENT_METHOD_TYPES
+        assert "us_bank_account" not in call_kwargs["payment_method_types"]
+        assert "automatic_payment_methods" not in call_kwargs
+
+    async def test_setup_intent_pins_supported_payment_method_types(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_discount_percentage_100: Checkout,
+    ) -> None:
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_setup_intent.return_value = SimpleNamespace(
+            client_secret="CLIENT_SECRET", status="succeeded"
+        )
+
+        await checkout_service.confirm(
+            session,
+            auth_subject,
+            checkout_discount_percentage_100,
+            CheckoutConfirmStripe.model_validate(
+                {
+                    "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                    "customer_name": "Customer Name",
+                    "customer_email": "customer@example.com",
+                    "customer_billing_address": {"country": "FR"},
+                }
+            ),
+        )
+
+        stripe_service_mock.create_setup_intent.assert_called_once()
+        call_kwargs = stripe_service_mock.create_setup_intent.call_args[1]
+        assert call_kwargs["payment_method_types"] == SUPPORTED_PAYMENT_METHOD_TYPES
+        assert "us_bank_account" not in call_kwargs["payment_method_types"]
+        assert "automatic_payment_methods" not in call_kwargs
+
+    async def test_unsupported_payment_method_raises_payment_error(
+        self,
+        stripe_service_mock: MagicMock,
+        session: AsyncSession,
+        auth_subject: AuthSubject[Anonymous],
+        checkout_one_time_fixed: Checkout,
+    ) -> None:
+        """
+        A confirmation token that carries an unsupported payment method (e.g. a
+        `us_bank_account` substituted by Link Instant Bank Payments under the card
+        flow) is rejected by Stripe at intent creation. We surface it as a handled
+        PaymentError rather than letting the raw StripeError bubble up.
+        """
+        stripe_service_mock.create_customer.return_value = SimpleNamespace(
+            id="STRIPE_CUSTOMER_ID"
+        )
+        stripe_service_mock.create_payment_intent.side_effect = (
+            stripe_lib.InvalidRequestError(
+                "The PaymentMethod provided (us_bank_account) is not allowed for "
+                "this PaymentIntent.",
+                param="payment_method",
+                code="payment_method_not_available",
+            )
+        )
+
+        with pytest.raises(PaymentError):
+            await checkout_service.confirm(
+                session,
+                auth_subject,
+                checkout_one_time_fixed,
+                CheckoutConfirmStripe.model_validate(
+                    {
+                        "confirmation_token_id": "CONFIRMATION_TOKEN_ID",
+                        "customer_name": "Customer Name",
+                        "customer_email": "customer@example.com",
+                        "customer_billing_address": {"country": "FR"},
+                    }
+                ),
+            )
+
+        stripe_service_mock.create_payment_intent.assert_called_once()
+        assert (
+            stripe_service_mock.create_payment_intent.call_args[1][
+                "payment_method_types"
+            ]
+            == SUPPORTED_PAYMENT_METHOD_TYPES
+        )
 
     @pytest.mark.parametrize(
         ("customer_billing_address", "expected_tax_metadata"),

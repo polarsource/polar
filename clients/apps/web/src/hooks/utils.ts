@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const useDebouncedCallback = <T extends (...args: any[]) => any>(
@@ -8,7 +14,7 @@ export const useDebouncedCallback = <T extends (...args: any[]) => any>(
   const timeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
   const callbackRef = useRef(callback)
 
-  useEffect(() => {
+  useLayoutEffect(() => {
     callbackRef.current = callback
   }, [callback])
 
@@ -16,9 +22,10 @@ export const useDebouncedCallback = <T extends (...args: any[]) => any>(
     () => () => {
       if (timeout.current != null) {
         clearTimeout(timeout.current)
+        timeout.current = undefined
       }
     },
-    [delay],
+    [],
   )
 
   return useCallback(

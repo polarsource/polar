@@ -1,0 +1,34 @@
+server/tests/merchant_migration/test_precheck.py
+  s_81f519e3bb364f::t_31490d925efca5 302-310
+  s_81f519e3bb364f::t_22ad4ce7eadd47 491-526
+server/polar/merchant_migration/schemas.py
+  s_81f519e3bb364f::t_4d2fa7fa464732 92-95
+server/polar/merchant_migration/precheck.py
+  s_81f519e3bb364f::t_91523e642fbf35 609-611
+  s_81f519e3bb364f::t_78544541863e6a 154-155
+  s_81f519e3bb364f::t_007061ac89d1b3 168
+  s_81f519e3bb364f::t_c1482df8e310e8 663-665
+  s_81f519e3bb364f::t_27b74be83433fc 143
+  s_81f519e3bb364f::t_1e59ac285fb7cd 556,878-880
+  s_81f519e3bb364f::t_b7e36fccf29392 551,553-555,557-559
+  s_81f519e3bb364f::t_8429e8fd3861f3 347-358
+  s_81f519e3bb364f::t_76b716c15dc3c9 865-869
+clients/packages/client/src/v1.ts
+  s_81f519e3bb364f::t_5ffbcfe801a143 23144
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.20",
+  "base_commit_sha": "73102e55849ee91aef918f69c89e4bf62d520893",
+  "prompts": {},
+  "sessions": {
+    "s_81f519e3bb364f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ac6e6895-3b5c-40c8-8804-f6a4f5e8786b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

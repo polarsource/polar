@@ -1,0 +1,29 @@
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewTableView.tsx
+  s_81f519e3bb364f::t_14c8d33974ca70 51,77,202-210
+  s_81f519e3bb364f::t_e26ac432a57ab1 4,24,50,76,103-104,108,122-134
+  s_81f519e3bb364f::t_85d9941050fa58 135-136
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewStatusTabs.tsx
+  s_81f519e3bb364f::t_14c8d33974ca70 5-8,23,27,32-35
+clients/apps/web/src/hooks/queries/merchantMigrations.ts
+  s_81f519e3bb364f::t_e3e42d021152a7 167-171,184,186-194
+clients/apps/web/src/app/(main)/dashboard/[organization]/(header)/settings/migrations/review/ReviewTable.tsx
+  s_81f519e3bb364f::t_14c8d33974ca70 39,96
+  s_81f519e3bb364f::t_e26ac432a57ab1 107-115,117
+  s_81f519e3bb364f::t_7a64259f2db709 123-125
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "3d1e231415cfdfb02c06dd2d63d8498530ab2a3e",
+  "prompts": {},
+  "sessions": {
+    "s_81f519e3bb364f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ac6e6895-3b5c-40c8-8804-f6a4f5e8786b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

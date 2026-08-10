@@ -1,0 +1,21 @@
+clients/packages/orbit/src/components/datatable/DataTable.tsx
+  s_81f519e3bb364f::t_1f58743ab410dc 181-187,189-194,196-210,212-218,220-236
+  s_81f519e3bb364f::t_b1505e041331e7 174-180,211
+  s_81f519e3bb364f::t_41fcc084017043 237-238
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.21",
+  "base_commit_sha": "91343e8c6049f707de69c8c333e66906ce1ef1ca",
+  "prompts": {},
+  "sessions": {
+    "s_81f519e3bb364f": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "ac6e6895-3b5c-40c8-8804-f6a4f5e8786b",
+        "model": "claude-opus-5"
+      },
+      "human_author": "Petru Rares Sincraian <psincraian@outlook.com>"
+    }
+  }
+}

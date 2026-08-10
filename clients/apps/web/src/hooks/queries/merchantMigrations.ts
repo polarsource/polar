@@ -3,7 +3,6 @@ import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
-import { merchantMigrationRecordSummaryKey } from './merchantMigrationCounts'
 import { defaultRetry } from './retry'
 
 export const useMerchantMigrations = (organizationId: string) =>
@@ -51,7 +50,9 @@ const invalidateMigrationRecords = (id: string) => {
   const client = getQueryClient()
   client.invalidateQueries({ queryKey: ['merchantMigration', { id }] })
   client.invalidateQueries({ queryKey: ['merchantMigrationRecords', { id }] })
-  client.invalidateQueries({ queryKey: merchantMigrationRecordSummaryKey(id) })
+  client.invalidateQueries({
+    queryKey: ['merchantMigrationRecordSummary', { id }],
+  })
 }
 
 export const useRunMerchantMigrationPrecheck = (id: string) =>
@@ -215,6 +216,21 @@ export const useMigrationRecords = (
               limit: params.limit,
             },
           },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!id,
+  })
+
+// One read for every count the UI shows: asking per number made the server
+// re-read and re-classify the whole staged catalog once per count.
+export const useMerchantMigrationRecordSummary = (id: string) =>
+  useQuery({
+    queryKey: ['merchantMigrationRecordSummary', { id }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/merchant-migrations/{id}/records/summary', {
+          params: { path: { id } },
         }),
       ),
     retry: defaultRetry,

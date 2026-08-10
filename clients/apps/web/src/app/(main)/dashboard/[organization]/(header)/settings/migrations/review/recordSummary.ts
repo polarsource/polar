@@ -1,8 +1,6 @@
-import { api } from '@/utils/client'
-import { schemas, unwrap } from '@polar-sh/client'
-import { useQuery } from '@tanstack/react-query'
+import { useMerchantMigrationRecordSummary } from '@/hooks/queries/merchantMigrations'
+import { schemas } from '@polar-sh/client'
 import { useMemo } from 'react'
-import { defaultRetry } from './retry'
 
 export type CountEntity = 'subscriptions' | 'products' | 'customers'
 
@@ -19,25 +17,8 @@ const empty = (entity: CountEntity): EntityCount => ({
   selectable: 0,
 })
 
-export const merchantMigrationRecordSummaryKey = (id: string) => [
-  'merchantMigrationRecordSummary',
-  { id },
-]
-
-// One read for every count the UI shows: asking per number made the server
-// re-read and re-classify the whole staged catalog once per count.
-export const useMerchantMigrationRecordSummary = (id: string) => {
-  const query = useQuery({
-    queryKey: merchantMigrationRecordSummaryKey(id),
-    queryFn: () =>
-      unwrap(
-        api.GET('/v1/merchant-migrations/{id}/records/summary', {
-          params: { path: { id } },
-        }),
-      ),
-    retry: defaultRetry,
-    enabled: !!id,
-  })
+export const useRecordSummary = (id: string) => {
+  const query = useMerchantMigrationRecordSummary(id)
 
   const derived = useMemo(() => {
     const counts = Object.fromEntries(

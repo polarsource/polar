@@ -1,9 +1,5 @@
 'use client'
 
-import {
-  CountEntity,
-  EntityCount,
-} from '@/hooks/queries/merchantMigrationCounts'
 import { schemas } from '@polar-sh/client'
 import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -16,6 +12,7 @@ import {
   ReviewFilter,
   ReviewStatusTabs,
 } from './ReviewStatusTabs'
+import { CountEntity, EntityCount } from './recordSummary'
 import { buildReviewColumns } from './reviewColumns'
 import {
   headerCheckState,

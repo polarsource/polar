@@ -1,4 +1,4 @@
-import { CountEntity } from '@/hooks/queries/merchantMigrationCounts'
+import { CountEntity } from './recordSummary'
 import { SegmentedControl } from '@polar-sh/orbit'
 import { entityLabelPlural, ReviewScope } from './reviewRows'
 

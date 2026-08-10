@@ -5,10 +5,10 @@ import {
   useMigrationRecords,
   useRunMerchantMigrationPrecheck,
 } from '@/hooks/queries/merchantMigrations'
-import { useMerchantMigrationRecordSummary } from '@/hooks/queries/merchantMigrationCounts'
 import { Alert, Spinner } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useCallback, useState } from 'react'
+import { useRecordSummary } from './recordSummary'
 import { ReviewScope } from './reviewRows'
 import {
   importPayload,
@@ -40,7 +40,7 @@ export function ReviewTable({ migrationId }: { migrationId: string }) {
     attentionCount,
     isLoading: countsLoading,
     isError: countsError,
-  } = useMerchantMigrationRecordSummary(migrationId)
+  } = useRecordSummary(migrationId)
   const importCatalog = useImportMerchantMigrationCatalog(migrationId)
   const rerunPrecheck = useRunMerchantMigrationPrecheck(migrationId)
 

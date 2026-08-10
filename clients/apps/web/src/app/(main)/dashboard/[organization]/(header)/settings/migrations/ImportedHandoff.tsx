@@ -1,7 +1,6 @@
 'use client'
 
 import { useStartPanTransfer } from '@/hooks/queries/merchantMigrations'
-import type { useMerchantMigrationRecordSummary } from '@/hooks/queries/merchantMigrationCounts'
 import { ButtonGroup, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
@@ -10,8 +9,9 @@ import {
   nothingImported,
   plural,
 } from './review/importSummary'
+import type { useRecordSummary } from './review/recordSummary'
 
-type ImportOutcome = ReturnType<typeof useMerchantMigrationRecordSummary>
+type ImportOutcome = ReturnType<typeof useRecordSummary>
 
 interface Props {
   migrationId: string

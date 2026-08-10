@@ -23634,11 +23634,7 @@ export interface components {
     MerchantMigrationRecordStatus: 'pending' | 'imported' | 'skipped' | 'failed'
     /**
      * MerchantMigrationRecordSummary
-     * @description Every count the review UI needs, in one read.
-     *
-     *     Each count is a filter over the same classified record set, so asking for
-     *     them separately would re-read and re-classify the whole catalog once per
-     *     number.
+     * @description Every count the review UI needs, from one classification pass.
      */
     MerchantMigrationRecordSummary: {
       /**
@@ -23648,16 +23644,13 @@ export interface components {
       entities: components['schemas']['MerchantMigrationRecordSummaryEntity'][]
       /**
        * Action Required
-       * @description How many records the merchant has to act on, across entities.
+       * @description How many records the pre-check flagged for the merchant to fix, across entities. Classification only, so a flagged record that has since been imported still counts.
        */
       action_required: number
     }
     /**
      * MerchantMigrationRecordSummaryEntity
      * @description The pre-check's per-entity counts, plus where the ledger has got to.
-     *
-     *     Inherits the pre-check vocabulary rather than restating it, so "importable"
-     *     means the same thing here as it does in `PrecheckReport`.
      */
     MerchantMigrationRecordSummaryEntity: {
       /** @description The source entity type. */

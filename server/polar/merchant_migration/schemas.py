@@ -141,7 +141,11 @@ class MerchantMigrationRecordSummary(Schema):
         description="Per-entity counts, for the listable entities only."
     )
     action_required: int = Field(
-        description="How many records the merchant has to act on, across entities."
+        description=(
+            "How many records the pre-check flagged for the merchant to fix, "
+            "across entities. Classification only, so a flagged record that has "
+            "since been imported still counts."
+        )
     )
 
 

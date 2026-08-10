@@ -115,7 +115,9 @@ export function ImportedHandoff({
         ]}
       />
 
-      {remaining && (
+      {/* Suppressed when nothing landed: "before you start" would point at a
+          disabled CTA, while the copy above sends them back to import. */}
+      {remaining && !nothingLanded && (
         <Text variant="caption" color="muted">
           {remaining} {outcome.selectableTotal === 1 ? 'was' : 'were'} not
           imported. You can still import{' '}

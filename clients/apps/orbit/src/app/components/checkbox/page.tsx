@@ -25,10 +25,21 @@ function BasicDemo() {
 function StatesDemo() {
   return (
     <Box alignItems="center" columnGap="xl">
-      <Checkbox checked={false} />
-      <Checkbox checked />
-      <Checkbox checked="indeterminate" />
-      <Checkbox checked disabled />
+      <Checkbox />
+      <Checkbox defaultChecked />
+      <Checkbox defaultChecked="indeterminate" />
+      <Checkbox defaultChecked disabled />
+    </Box>
+  )
+}
+
+function EmphasizedDemo() {
+  return (
+    <Box alignItems="center" columnGap="xl">
+      <Checkbox emphasized />
+      <Checkbox emphasized defaultChecked />
+      <Checkbox emphasized defaultChecked="indeterminate" />
+      <Checkbox emphasized defaultChecked disabled />
     </Box>
   )
 }
@@ -36,15 +47,11 @@ function StatesDemo() {
 function LabelDemo() {
   const [checked, setChecked] = useState(false)
   return (
-    <Box as="label" alignItems="center" columnGap="s" cursor="pointer">
-      <Checkbox
-        checked={checked}
-        onCheckedChange={(c) => setChecked(c === true)}
-      />
-      <Text variant="label" as="span">
-        Send me product updates
-      </Text>
-    </Box>
+    <Checkbox
+      label="Send me product updates"
+      checked={checked}
+      onCheckedChange={(c) => setChecked(c === true)}
+    />
   )
 }
 
@@ -52,15 +59,21 @@ const basicCode = `const [checked, setChecked] = useState(true)
 
 <Checkbox checked={checked} onCheckedChange={setChecked} />`
 
-const statesCode = `<Checkbox checked={false} />
-<Checkbox checked />
-<Checkbox checked="indeterminate" />
-<Checkbox checked disabled />`
+const statesCode = `<Checkbox />
+<Checkbox defaultChecked />
+<Checkbox defaultChecked="indeterminate" />
+<Checkbox defaultChecked disabled />`
 
-const labelCode = `<Box as="label" alignItems="center" columnGap="s">
-  <Checkbox checked={checked} onCheckedChange={setChecked} />
-  <Text variant="label" as="span">Send me product updates</Text>
-</Box>`
+const emphasizedCode = `<Checkbox emphasized />
+<Checkbox emphasized defaultChecked />
+<Checkbox emphasized defaultChecked="indeterminate" />
+<Checkbox emphasized defaultChecked disabled />`
+
+const labelCode = `<Checkbox
+  label="Send me product updates"
+  checked={checked}
+  onCheckedChange={setChecked}
+/>`
 
 const checkboxProps: PropRow[] = [
   {
@@ -78,6 +91,19 @@ const checkboxProps: PropRow[] = [
     name: 'onCheckedChange',
     type: "(checked: boolean | 'indeterminate') => void",
     description: 'Called when the checked state changes.',
+  },
+  {
+    name: 'label',
+    type: 'string',
+    description:
+      'Renders the checkbox inside a clickable label with the given content, handling layout and spacing internally.',
+  },
+  {
+    name: 'emphasized',
+    type: 'boolean',
+    default: 'false',
+    description:
+      'Renders the checkbox in the accent color instead of the monochromatic default.',
   },
   {
     name: 'disabled',
@@ -148,8 +174,17 @@ export default function CheckboxPage() {
       </Section>
 
       <Section
+        title="Emphasized"
+        description="Pass emphasized to render the checkbox in the accent color. Use it sparingly, when the selection deserves extra attention."
+      >
+        <Example code={emphasizedCode}>
+          <EmphasizedDemo />
+        </Example>
+      </Section>
+
+      <Section
         title="With a label"
-        description="Wrap the control and its Text in a Box rendered as a label so the whole row is clickable."
+        description="Pass label to render the control inside a clickable label. Layout and spacing are handled by the component."
       >
         <Example code={labelCode} align="start">
           <LabelDemo />

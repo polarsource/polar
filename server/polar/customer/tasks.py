@@ -41,7 +41,15 @@ async def customer_state_changed(customer_id: uuid.UUID) -> None:
         await customer_service.state_changed(session, RedisMiddleware.get(), customer)
 
 
-@actor(actor_name="customer.resolve_first_user_event_at", priority=TaskPriority.LOW)
+def _customer_resolve_first_user_event_at_debounce_key(customer_id: uuid.UUID) -> str:
+    return f"customer.resolve_first_user_event_at:{customer_id}"
+
+
+@actor(
+    actor_name="customer.resolve_first_user_event_at",
+    priority=TaskPriority.LOW,
+    debounce_key=_customer_resolve_first_user_event_at_debounce_key,
+)
 async def customer_resolve_first_user_event_at(customer_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = CustomerRepository.from_session(session)

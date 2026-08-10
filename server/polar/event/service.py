@@ -1037,18 +1037,13 @@ class EventService:
 
         customers: set[Customer] = set()
         organization_ids: set[uuid.UUID] = set()
-        first_user_event_at: dict[uuid.UUID, datetime] = {}
+        customers_with_user_events: set[uuid.UUID] = set()
         for event in events:
             organization_ids.add(event.organization_id)
             if event.customer and not event.customer.is_deleted:
                 customers.add(event.customer)
                 if event.source == EventSource.user:
-                    earliest = first_user_event_at.get(event.customer.id)
-                    if earliest is None or event.timestamp < earliest:
-                        first_user_event_at[event.customer.id] = event.timestamp
-
-        customer_repository = CustomerRepository.from_session(session)
-        await customer_repository.lower_first_user_event_at(first_user_event_at)
+                    customers_with_user_events.add(event.customer.id)
 
         span = trace.get_current_span()
         span.set_attribute(
@@ -1064,6 +1059,9 @@ class EventService:
 
         for customer in customers:
             enqueue_job("customer_meter.update_customer", customer.id)
+
+        for customer_id in customers_with_user_events:
+            enqueue_job("customer.resolve_first_user_event_at", customer_id)
 
         tinybird_events = events_to_tinybird(events, ancestors_by_event)
         enqueue_job("tinybird.ingest", tinybird_events)

@@ -1,3 +1,4 @@
+from datetime import timedelta
 from unittest.mock import call
 
 import pytest
@@ -118,6 +119,55 @@ async def test_update_without_external_id_change_does_not_resolve(
         call("customer.resolve_first_user_event_at", customer.id)
         not in enqueue_job_mock.call_args_list
     )
+
+
+@pytest.mark.asyncio
+class TestLowerFirstUserEventAt:
+    async def test_fills_a_null(
+        self,
+        session: AsyncSession,
+        repository: CustomerRepository,
+        customer: Customer,
+    ) -> None:
+        timestamp = customer.created_at - timedelta(days=1)
+
+        await repository.lower_first_user_event_at({customer.id: timestamp})
+
+        await session.refresh(customer)
+        assert customer.first_user_event_at == timestamp
+
+    async def test_only_moves_earlier(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        repository: CustomerRepository,
+        customer: Customer,
+    ) -> None:
+        earliest = customer.created_at - timedelta(days=10)
+        customer.first_user_event_at = earliest
+        await save_fixture(customer)
+
+        await repository.lower_first_user_event_at(
+            {customer.id: customer.created_at - timedelta(days=1)}
+        )
+
+        await session.refresh(customer)
+        assert customer.first_user_event_at == earliest
+
+    async def test_does_not_touch_modified_at(
+        self,
+        session: AsyncSession,
+        repository: CustomerRepository,
+        customer: Customer,
+    ) -> None:
+        modified_at = customer.modified_at
+
+        await repository.lower_first_user_event_at(
+            {customer.id: customer.created_at - timedelta(days=1)}
+        )
+
+        await session.refresh(customer)
+        assert customer.modified_at == modified_at
 
 
 @pytest.mark.asyncio

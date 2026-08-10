@@ -2038,8 +2038,38 @@ class TestIngested:
 
 @pytest.mark.asyncio
 class TestIngestedFirstUserEventAt:
-    async def test_event_predating_the_customer(
+    async def test_enqueues_for_user_events(
         self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        customer: Customer,
+    ) -> None:
+        events = [
+            await create_event(
+                save_fixture,
+                organization=organization,
+                customer=customer,
+                source=EventSource.user,
+            )
+            for _ in range(2)
+        ]
+
+        await event_service.ingested(session, [event.id for event in events])
+
+        resolve_calls = [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args[0] == "customer.resolve_first_user_event_at"
+        ]
+        assert resolve_calls == [
+            call("customer.resolve_first_user_event_at", customer.id)
+        ]
+
+    async def test_matches_by_external_customer_id(
+        self,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -2047,22 +2077,22 @@ class TestIngestedFirstUserEventAt:
         customer = await create_customer(
             save_fixture, organization=organization, external_id="EXTERNAL_ID"
         )
-        timestamp = customer.created_at - timedelta(days=30)
         event = await create_event(
             save_fixture,
             organization=organization,
             external_customer_id="EXTERNAL_ID",
             source=EventSource.user,
-            timestamp=timestamp,
         )
 
         await event_service.ingested(session, [event.id])
 
-        await session.refresh(customer)
-        assert customer.first_user_event_at == timestamp
+        enqueue_job_mock.assert_any_call(
+            "customer.resolve_first_user_event_at", customer.id
+        )
 
-    async def test_system_events_ignored(
+    async def test_system_events_do_not_enqueue(
         self,
+        enqueue_job_mock: MagicMock,
         save_fixture: SaveFixture,
         session: AsyncSession,
         organization: Organization,
@@ -2073,86 +2103,15 @@ class TestIngestedFirstUserEventAt:
             organization=organization,
             customer=customer,
             source=EventSource.system,
-            timestamp=customer.created_at - timedelta(days=1),
         )
 
         await event_service.ingested(session, [event.id])
 
-        await session.refresh(customer)
-        assert customer.first_user_event_at is None
-
-    async def test_only_moves_earlier(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        earliest = customer.created_at - timedelta(days=10)
-        customer.first_user_event_at = earliest
-        await save_fixture(customer)
-
-        event = await create_event(
-            save_fixture,
-            organization=organization,
-            customer=customer,
-            source=EventSource.user,
-            timestamp=customer.created_at - timedelta(days=1),
-        )
-
-        await event_service.ingested(session, [event.id])
-
-        await session.refresh(customer)
-        assert customer.first_user_event_at == earliest
-
-    async def test_keeps_the_batch_minimum(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        earliest = customer.created_at - timedelta(days=10)
-        events = [
-            await create_event(
-                save_fixture,
-                organization=organization,
-                customer=customer,
-                source=EventSource.user,
-                timestamp=timestamp,
-            )
-            for timestamp in (
-                customer.created_at - timedelta(days=1),
-                earliest,
-                customer.created_at - timedelta(days=5),
-            )
+        assert not [
+            call
+            for call in enqueue_job_mock.call_args_list
+            if call.args[0] == "customer.resolve_first_user_event_at"
         ]
-
-        await event_service.ingested(session, [event.id for event in events])
-
-        await session.refresh(customer)
-        assert customer.first_user_event_at == earliest
-
-    async def test_does_not_touch_modified_at(
-        self,
-        save_fixture: SaveFixture,
-        session: AsyncSession,
-        organization: Organization,
-        customer: Customer,
-    ) -> None:
-        modified_at = customer.modified_at
-        event = await create_event(
-            save_fixture,
-            organization=organization,
-            customer=customer,
-            source=EventSource.user,
-            timestamp=customer.created_at - timedelta(days=1),
-        )
-
-        await event_service.ingested(session, [event.id])
-
-        await session.refresh(customer)
-        assert customer.modified_at == modified_at
 
 
 @pytest.mark.asyncio

@@ -35,12 +35,20 @@ import structlog
 import typer
 from rich.console import Console
 from rich.progress import Progress
-from sqlalchemy import select
+from sqlalchemy import Table, func, literal, select
 
 from polar.customer.repository import CustomerRepository
-from polar.integrations.tinybird import service as tinybird_service
+from polar.integrations.tinybird.client import client as tinybird_client
+from polar.integrations.tinybird.service import (
+    _compile,
+    _parse_datetime,
+    _parse_uuid,
+    event_types_by_customer_id_table,
+    event_types_by_external_customer_id_table,
+)
 from polar.kit.db.postgres import AsyncSession, create_async_sessionmaker
 from polar.models import Organization
+from polar.models.event import EventSource
 from polar.postgres import create_async_engine
 from scripts.helper import (
     configure_script_console_logging,
@@ -55,6 +63,80 @@ configure_script_console_logging()
 
 # Bounds the parameter count of a single UPDATE ... FROM (VALUES ...).
 CHUNK_SIZE = 1000
+
+# Bounds one Tinybird response. The client allows 30s and holds the rows in memory.
+PAGE_SIZE = 50_000
+
+
+async def _first_seen_by_key(
+    table: Table, key: str, organization_id: UUID, *, uuid_key: bool
+) -> dict[str, datetime]:
+    """
+    Page through one aggregating view, keyed on the column after `organization_id`.
+
+    Keyset rather than OFFSET: the key is the second column of the sorting key, so
+    each page scans the remaining range instead of re-aggregating from the start.
+    """
+    key_column = table.c[key]
+    results: dict[str, datetime] = {}
+    last: str | None = None
+
+    while True:
+        conditions = [
+            table.c.organization_id == str(organization_id),
+            table.c.source == EventSource.user,
+        ]
+        if last is not None:
+            conditions.append(
+                key_column > (func.toUUID(last) if uuid_key else literal(last))
+            )
+
+        statement = (
+            select(key_column, func.minMerge(table.c.first_seen).label("first_seen"))
+            .where(*conditions)
+            .group_by(key_column)
+            .order_by(key_column)
+            .limit(PAGE_SIZE)
+        )
+        sql, template = _compile(statement)
+        rows = await tinybird_client.query(sql, db_statement=template)
+
+        if not rows:
+            break
+
+        for row in rows:
+            results[str(row[key])] = _parse_datetime(row["first_seen"])
+
+        if len(rows) < PAGE_SIZE:
+            break
+
+        last = str(rows[-1][key])
+
+    return results
+
+
+async def get_first_user_event_at_by_organization(
+    organization_id: UUID,
+) -> tuple[dict[UUID, datetime], dict[str, datetime]]:
+    """
+    Earliest `user` event timestamp for every customer of an organization.
+
+    Returns one mapping keyed by customer id and one keyed by external customer id.
+    """
+    by_customer_id = await _first_seen_by_key(
+        event_types_by_customer_id_table, "customer_id", organization_id, uuid_key=True
+    )
+    by_external_customer_id = await _first_seen_by_key(
+        event_types_by_external_customer_id_table,
+        "external_customer_id",
+        organization_id,
+        uuid_key=False,
+    )
+
+    return (
+        {_parse_uuid(key): value for key, value in by_customer_id.items()},
+        by_external_customer_id,
+    )
 
 
 def _chunks(timestamps: dict[UUID, datetime], size: int) -> list[dict[UUID, datetime]]:
@@ -73,7 +155,7 @@ async def backfill_organization(
     (
         by_customer_id,
         by_external_customer_id,
-    ) = await tinybird_service.get_first_user_event_at_by_organization(organization_id)
+    ) = await get_first_user_event_at_by_organization(organization_id)
 
     if not by_customer_id and not by_external_customer_id:
         return 0

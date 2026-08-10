@@ -1,6 +1,8 @@
+from collections.abc import AsyncGenerator
+from datetime import datetime
 from uuid import UUID
 
-from sqlalchemy import Select
+from sqlalchemy import Select, select
 from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.orm import contains_eager, joinedload
 
@@ -14,8 +16,13 @@ from polar.kit.repository import (
     RepositorySortingMixin,
     SortingClause,
 )
-from polar.models import Dispute, Order, Payment
+from polar.models import Dispute, Order, Organization, Payment
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
+from polar.models.support_case import (
+    DisputeSupportCase,
+    SupportCaseMessage,
+    SupportCaseMessageType,
+)
 
 from .sorting import DisputeSortProperty
 
@@ -129,6 +136,44 @@ class DisputeRepository(
             .options(contains_eager(Dispute.payment))
             .where(Payment.organization_id.in_(org_ids))
         )
+
+    async def stream_auto_accept_candidates(
+        self, *, before: datetime
+    ) -> AsyncGenerator[Dispute, None]:
+        """Disputes whose announced deadline has passed, on an opted-in
+        organization."""
+        feature_settings = Organization.feature_settings
+        announced = (
+            select(SupportCaseMessage.id)
+            .join(
+                DisputeSupportCase,
+                DisputeSupportCase.id == SupportCaseMessage.case_id,
+            )
+            .where(
+                DisputeSupportCase.dispute_id == Dispute.id,
+                SupportCaseMessage.type
+                == SupportCaseMessageType.dispute_auto_accept_scheduled,
+                SupportCaseMessage.created_at < before,
+            )
+            .exists()
+        )
+        statement = (
+            self.get_base_statement()
+            .join(Order, Dispute.order_id == Order.id)
+            .join(Organization, Order.organization_id == Organization.id)
+            .where(
+                Dispute.status == DisputeStatus.needs_response,
+                announced,
+                feature_settings["disputes_enabled"].as_boolean().is_(True),
+                feature_settings["dispute_auto_accept_enabled"].as_boolean().is_(True),
+                Organization.dispute_settings["auto_accept_below_amount"]
+                .as_integer()
+                .isnot(None),
+            )
+            .order_by(Dispute.created_at.asc())
+        )
+        async for dispute in self.stream(statement):
+            yield dispute
 
     def get_eager_options(self) -> Options:
         return (

@@ -10,7 +10,13 @@ from polar.dispute.dispute_case import DISPUTE_GREETING
 from polar.dispute.tasks import auto_accept, enqueue_auto_accepts, post_dispute_greeting
 from polar.kit.utils import utc_now
 from polar.models import Customer, Dispute, Organization, Product
-from polar.models.support_case import SupportCaseMessageAuthorKind
+from polar.models.support_case import (
+    DisputeSupportCase,
+    SupportCaseAudience,
+    SupportCaseMessage,
+    SupportCaseMessageAuthorKind,
+    SupportCaseMessageType,
+)
 from polar.postgres import AsyncSession
 from polar.support_case.repository import SupportCaseMessageRepository
 from tests.fixtures.database import SaveFixture
@@ -32,7 +38,7 @@ async def _dispute(
     customer: Customer,
     product: Product,
     *,
-    created_at: datetime | None = None,
+    announced_at: datetime | None = None,
     processor_id: str = "STRIPE_DISPUTE_ID",
 ) -> Dispute:
     order = await create_order(save_fixture, customer=customer, product=product)
@@ -40,9 +46,17 @@ async def _dispute(
     dispute = await create_dispute(
         save_fixture, order, payment, payment_processor_id=processor_id
     )
-    if created_at is not None:
-        dispute.created_at = created_at
-        await save_fixture(dispute)
+    case = DisputeSupportCase(dispute=dispute, organization=organization)
+    await save_fixture(case)
+    if announced_at is not None:
+        message = SupportCaseMessage(
+            case=case,
+            type=SupportCaseMessageType.dispute_auto_accept_scheduled,
+            author_kind=SupportCaseMessageAuthorKind.system,
+            audience=[SupportCaseAudience.merchant],
+            created_at=announced_at,
+        )
+        await save_fixture(message)
     return dispute
 
 
@@ -131,7 +145,7 @@ class TestEnqueueAutoAccepts:
             organization,
             customer,
             product,
-            created_at=utc_now() - timedelta(hours=48),
+            announced_at=utc_now() - timedelta(hours=48),
         )
         await _dispute(
             save_fixture, organization, customer, product, processor_id="STRIPE_FRESH"
@@ -167,8 +181,35 @@ class TestEnqueueAutoAccepts:
             organization,
             customer,
             product,
-            created_at=utc_now() - timedelta(hours=48),
+            announced_at=utc_now() - timedelta(hours=48),
         )
+
+        mocker.patch(
+            "polar.dispute.tasks.AsyncSessionMaker",
+            side_effect=lambda: _session_maker(session),
+        )
+        enqueue_mock = mocker.patch("polar.dispute.tasks.enqueue_job")
+
+        await _enqueue_auto_accepts()
+
+        enqueue_mock.assert_not_called()
+
+    async def test_skips_disputes_never_announced(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        organization.feature_settings = {
+            "disputes_enabled": True,
+            "dispute_auto_accept_enabled": True,
+        }
+        organization.dispute_settings = {"auto_accept_below_amount": 2500}
+        await save_fixture(organization)
+        await _dispute(save_fixture, organization, customer, product)
 
         mocker.patch(
             "polar.dispute.tasks.AsyncSessionMaker",

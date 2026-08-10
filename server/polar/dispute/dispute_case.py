@@ -158,7 +158,10 @@ class DisputeCaseService:
             body=(
                 "This dispute is below the threshold you set, so we plan to "
                 f"accept it on your behalf on {deadline:%d %B %Y at %H:%M} UTC. "
-                "Reply here before then and we'll leave it to you."
+                "You lose the disputed amount and the dispute fee, and the "
+                "dispute closes. To handle it yourself instead, reply here "
+                "before then — any reply stops us, and you can still accept it "
+                "later from the dispute page."
             ),
             audience=[SupportCaseAudience.merchant],
         )

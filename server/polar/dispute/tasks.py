@@ -69,7 +69,7 @@ async def auto_accept(dispute_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = DisputeRepository.from_session(session)
         dispute = await repository.get_by_id(
-            dispute_id, options=repository.get_eager_options()
+            dispute_id, options=repository.get_eager_options(), for_update=True
         )
         if dispute is None:
             return

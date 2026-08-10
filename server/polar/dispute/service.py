@@ -21,6 +21,7 @@ from polar.integrations.stripe.utils import get_expandable_id
 from polar.kit.math import polar_round
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
+from polar.kit.utils import utc_now
 from polar.models import Dispute, Order, Payment
 from polar.models.dispute import DisputeAlertProcessor, DisputeStatus
 from polar.models.support_case import DisputeSupportCase
@@ -163,7 +164,7 @@ class DisputeService:
         if not await self.auto_accept_applies(session, dispute):
             return
         await dispute_case_service.announce_auto_accept(
-            session, case, deadline=dispute.created_at + DISPUTE_AUTO_ACCEPT_DELAY
+            session, case, deadline=utc_now() + DISPUTE_AUTO_ACCEPT_DELAY
         )
 
     async def auto_accept_applies(

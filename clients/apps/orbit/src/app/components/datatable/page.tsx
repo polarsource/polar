@@ -117,7 +117,7 @@ const dataTableProps: PropRow[] = [
     name: 'selection',
     type: 'DataTableSelection<TData>',
     description:
-      'Enables multi-row selection with a hover-revealed checkbox column.',
+      'Enables multi-row selection with a hover-revealed checkbox column. Pass getItemLabel so row checkboxes announce a specific item.',
   },
   {
     name: 'getSubRows',

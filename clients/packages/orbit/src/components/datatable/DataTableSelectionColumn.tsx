@@ -13,6 +13,8 @@ export interface DataTableSelection<TData> {
   isSelected: (item: TData) => boolean
   toggle: (item: TData, options?: { shiftKey?: boolean }) => void
   setPageSelected: (selected: boolean) => void
+  /** Human-readable name for a row, used in checkbox accessible labels. */
+  getItemLabel?: (item: TData) => string
 }
 
 const selectionRevealClassName = (alwaysVisible: boolean) =>
@@ -20,6 +22,20 @@ const selectionRevealClassName = (alwaysVisible: boolean) =>
     'opacity-0 transition-opacity group-hover/row:opacity-100 focus-visible:opacity-100 data-[state=checked]:opacity-100 data-[state=indeterminate]:opacity-100 pointer-coarse:opacity-100',
     alwaysVisible && 'opacity-100',
   )
+
+const headerAriaLabel = (count: number) =>
+  count > 0
+    ? `Select all rows on this page, ${count} selected`
+    : 'Select all rows on this page'
+
+const rowAriaLabel = <TData,>(
+  selection: DataTableSelection<TData>,
+  item: TData,
+  rowIndex: number,
+) => {
+  const label = selection.getItemLabel?.(item)
+  return label ? `Select ${label}` : `Select row ${rowIndex + 1}`
+}
 
 export const createSelectionColumn = <TData,>(
   selection: DataTableSelection<TData>,
@@ -33,7 +49,7 @@ export const createSelectionColumn = <TData,>(
       onClick={() => selection.setPageSelected(selection.pageState !== 'all')}
     >
       <Checkbox
-        aria-label="Select all rows on this page"
+        aria-label={headerAriaLabel(selection.count)}
         checked={
           selection.pageState === 'some'
             ? 'indeterminate'
@@ -52,7 +68,7 @@ export const createSelectionColumn = <TData,>(
       }}
     >
       <Checkbox
-        aria-label="Select row"
+        aria-label={rowAriaLabel(selection, row.original, row.index)}
         checked={selection.isSelected(row.original)}
         className={selectionRevealClassName(selection.count > 0)}
       />

@@ -459,6 +459,7 @@ class TestEditFeatures:
         assert organization.sso_enforced is True
 
 
+@pytest.mark.asyncio
 class TestEditOrganization:
     async def test_syncs_customer_slug_when_slug_changes(
         self,

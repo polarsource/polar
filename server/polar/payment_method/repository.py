@@ -97,6 +97,23 @@ class PaymentMethodRepository(
         )
         return await self.get_one_or_none(statement)
 
+    async def list_by_processor_id(
+        self,
+        processor: PaymentProcessor,
+        processor_id: str,
+        *,
+        options: Options = (),
+    ) -> Sequence[PaymentMethod]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                PaymentMethod.processor == processor,
+                PaymentMethod.processor_id == processor_id,
+            )
+            .options(*options)
+        )
+        return await self.get_all(statement)
+
     async def list_by_customer(
         self,
         customer_id: UUID,

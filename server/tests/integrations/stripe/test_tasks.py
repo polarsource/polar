@@ -392,6 +392,51 @@ class TestPaymentMethodDetached:
         assert refreshed_customer is not None
         assert refreshed_customer.default_payment_method_id is None
 
+    async def test_soft_deletes_all_matching_payment_methods(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        customer_organization_second: Customer,
+    ) -> None:
+        # Given: Two customers (across different organizations) each with a local
+        # payment method sharing the same Stripe processor_id (legacy data)
+        for owner in (customer, customer_organization_second):
+            payment_method = await create_payment_method(
+                save_fixture,
+                owner,
+                processor_id="pm_detach_shared",
+                method_metadata={"brand": "visa", "last4": "4242"},
+            )
+            owner.default_payment_method = payment_method
+            await save_fixture(owner)
+
+        patch_stripe_event(
+            mocker,
+            build_stripe_card_payment_method(payment_method_id="pm_detach_shared"),
+        )
+        mocker.patch(
+            "polar.payment_method.service.stripe_service.delete_payment_method",
+            side_effect=stripe_lib.InvalidRequestError("already detached", param=None),
+        )
+
+        # When: Process webhook
+        await payment_method_detached(uuid.uuid4())
+
+        # Then: All matching payment methods are soft-deleted, no MultipleResultsFound
+        pm_repo = PaymentMethodRepository.from_session(session)
+        remaining = await pm_repo.list_by_processor_id(
+            PaymentProcessor.stripe, "pm_detach_shared"
+        )
+        assert remaining == []
+
+        customer_repo = CustomerRepository.from_session(session)
+        for owner in (customer, customer_organization_second):
+            refreshed_customer = await customer_repo.get_by_id(owner.id)
+            assert refreshed_customer is not None
+            assert refreshed_customer.default_payment_method_id is None
+
     async def test_unknown_payment_method_is_noop(
         self,
         mocker: MockerFixture,
@@ -458,6 +503,58 @@ class TestPaymentMethodAutomaticallyUpdated:
             "exp_month": 6,
             "exp_year": 2032,
         }
+
+    async def test_updates_all_matching_payment_methods(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        customer_organization_second: Customer,
+    ) -> None:
+        # Given: Two customers (across different organizations) each with a local
+        # payment method sharing the same Stripe processor_id (legacy data)
+        for owner in (customer, customer_organization_second):
+            await create_payment_method(
+                save_fixture,
+                owner,
+                processor_id="pm_update_shared",
+                method_metadata={
+                    "brand": "visa",
+                    "last4": "4242",
+                    "exp_month": 12,
+                    "exp_year": 2026,
+                },
+            )
+
+        patch_stripe_event(
+            mocker,
+            build_stripe_card_payment_method(
+                payment_method_id="pm_update_shared",
+                customer_id="cus_test",
+                brand="mastercard",
+                last4="9999",
+                exp_month=6,
+                exp_year=2032,
+            ),
+        )
+
+        # When: Process webhook
+        await payment_method_automatically_updated(uuid.uuid4())
+
+        # Then: All matching payment methods are updated, no MultipleResultsFound
+        repository = PaymentMethodRepository.from_session(session)
+        payment_methods = await repository.list_by_processor_id(
+            PaymentProcessor.stripe, "pm_update_shared"
+        )
+        assert len(payment_methods) == 2
+        for payment_method in payment_methods:
+            assert payment_method.method_metadata == {
+                "brand": "mastercard",
+                "last4": "9999",
+                "exp_month": 6,
+                "exp_year": 2032,
+            }
 
     async def test_unknown_payment_method_is_noop(
         self,

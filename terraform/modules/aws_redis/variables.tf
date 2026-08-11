@@ -13,6 +13,18 @@ variable "subnet_ids" {
   type        = list(string)
 }
 
+variable "snapshot_retention_days" {
+  description = "Days to retain automatic daily snapshots. 0 disables backups."
+  type        = number
+  default     = 7
+}
+
+variable "num_cache_clusters" {
+  description = "Number of nodes (primary + replicas). More than one enables multi-AZ with automatic failover."
+  type        = number
+  default     = 1
+}
+
 variable "node_type" {
   description = "ElastiCache node type."
   type        = string

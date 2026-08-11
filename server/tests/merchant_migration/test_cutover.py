@@ -222,7 +222,7 @@ class TestRun:
         assert adapter.stopped == []
         assert paused_subscription.status == SubscriptionStatus.active
 
-    async def test_already_active_is_left_alone(
+    async def test_a_second_run_stops_nothing_twice(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -232,7 +232,48 @@ class TestRun:
     ) -> None:
         paused_subscription.status = SubscriptionStatus.active
         await save_fixture(paused_subscription)
+        adapter = _FakeSourceAdapter(
+            canonical_subscription(
+                status=CanonicalSubscriptionStatus.canceled,
+                stopped_for_migration=True,
+            )
+        )
+
+        outcome = await SubscriptionCutover(session, migration, adapter).run(record)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.stopped == []
+
+    async def test_resumed_by_hand_still_stops_the_source(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        record: MerchantMigrationRecord,
+        paused_subscription: Subscription,
+    ) -> None:
+        """A customer can resume a paused subscription from their portal. Taking
+        "active on Polar" as proof the source stopped would bill them twice."""
+        paused_subscription.status = SubscriptionStatus.active
+        await save_fixture(paused_subscription)
         adapter = _FakeSourceAdapter(canonical_subscription())
+
+        outcome = await SubscriptionCutover(session, migration, adapter).run(record)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.moved
+        assert adapter.stopped == ["sub_1"]
+
+    async def test_source_already_gone_needs_no_reconciling(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        migration: MerchantMigration,
+        record: MerchantMigrationRecord,
+        paused_subscription: Subscription,
+    ) -> None:
+        paused_subscription.status = SubscriptionStatus.active
+        await save_fixture(paused_subscription)
+        adapter = _FakeSourceAdapter(None)
 
         outcome = await SubscriptionCutover(session, migration, adapter).run(record)
 

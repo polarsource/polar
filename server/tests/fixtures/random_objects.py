@@ -939,8 +939,10 @@ async def create_customer(
     billing_address: Address | None = None,
     tax_id: TaxID | None = None,
     user_metadata: dict[str, Any] = {},
+    created_at: datetime | None = None,
 ) -> Customer:
     customer = Customer(
+        created_at=created_at or utc_now(),
         external_id=external_id,
         email=email,
         email_verified=email_verified,

@@ -3642,6 +3642,50 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/customers/growth': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Customer Growth
+     * @description Get new and cumulative customer counts over time.
+     *
+     *     **Scopes**: `customers:read` `customers:write`
+     */
+    get: operations['customers:growth']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customers/top': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Top Customers
+     * @description Rank the organization's customers by paid net revenue.
+     *
+     *     **Scopes**: `customers:read` `customers:write`
+     */
+    get: operations['customers:top']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/customers/{id}': {
     parameters: {
       query?: never
@@ -16790,6 +16834,25 @@ export interface components {
     CustomerEmailUpdateVerifyResponse: {
       /** Token */
       token: string
+    }
+    /** CustomerGrowthPeriod */
+    CustomerGrowthPeriod: {
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The start of the period.
+       */
+      timestamp: string
+      /**
+       * New Customers
+       * @description The number of customers created during the period.
+       */
+      new_customers: number
+      /**
+       * Total Customers
+       * @description The cumulative number of customers at the end of the period.
+       */
+      total_customers: number
     }
     /**
      * CustomerIndividual
@@ -35430,6 +35493,43 @@ export interface components {
       /** Id Token */
       id_token?: string | null
     }
+    /** TopCustomer */
+    TopCustomer: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      id: string
+      /**
+       * Email
+       * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
+       */
+      email: string | null
+      /**
+       * Name
+       * @description The name of the customer.
+       * @example John Doe
+       */
+      name: string | null
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      avatar_url: string | null
+      /**
+       * Order Count
+       * @description The number of paid orders in the period.
+       */
+      order_count: number
+      /**
+       * Net Revenue
+       * @description The net revenue from this customer in the period, in cents, with refunded amounts subtracted.
+       */
+      net_revenue: number
+    }
     /** Transaction */
     Transaction: {
       /**
@@ -48211,6 +48311,82 @@ export interface operations {
         }
         content: {
           'text/csv': string
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:growth': {
+    parameters: {
+      query: {
+        /** @description The organization ID to compute growth for. */
+        organization_id: string
+        /** @description The start of the period. */
+        start: string
+        /** @description The end of the period. */
+        end: string
+        /** @description The interval between each period. */
+        interval: components['schemas']['TimeInterval']
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerGrowthPeriod'][]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:top': {
+    parameters: {
+      query: {
+        /** @description The organization ID to rank customers for. */
+        organization_id: string
+        /** @description Only count orders created at or after this timestamp. */
+        start?: string | null
+        /** @description Only count orders created before this timestamp. */
+        end?: string | null
+        /** @description How many customers to rank. */
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TopCustomer'][]
         }
       }
       /** @description Validation Error */

@@ -130,10 +130,8 @@ export const BenefitPage = ({ benefit, organization }: BenefitPageProps) => {
               />
               <Box minWidth={0} flexDirection="column">
                 <Text truncate>{grant.customer.name ?? '—'}</Text>
-                {!(
-                  grant.customer.type === 'team' &&
-                  grant.customer.email == null
-                ) && (
+                {(grant.customer.email ||
+                  grant.customer.type === 'individual') && (
                   <Text variant="caption" color="muted" truncate>
                     {grant.customer.email ?? '—'}
                   </Text>

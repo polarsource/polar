@@ -87,6 +87,33 @@ class TestCustomerResolveFirstUserEventAt:
         await session.refresh(customer)
         assert customer.first_user_event_at is None
 
+    async def test_skips_soft_deleted_customer(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        customer = await create_customer(
+            save_fixture, organization=organization, external_id="EXTERNAL_ID"
+        )
+        get_first_user_event_at_mock = mocker.patch(
+            "polar.customer.tasks.tinybird_service.get_first_user_event_at",
+            return_value=customer.created_at - timedelta(days=30),
+        )
+        await customer_service.delete(session, customer)
+        await session.flush()
+        mocker.patch(
+            "polar.customer.tasks.AsyncSessionMaker",
+            side_effect=lambda: _session_maker(session),
+        )
+
+        await customer_resolve_first_user_event_at(customer.id)
+
+        get_first_user_event_at_mock.assert_not_awaited()
+        await session.refresh(customer)
+        assert customer.first_user_event_at is None
+
     async def test_falls_back_to_postgres(
         self,
         mocker: MockerFixture,

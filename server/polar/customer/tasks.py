@@ -54,10 +54,13 @@ def _customer_resolve_first_user_event_at_debounce_key(customer_id: uuid.UUID) -
 async def customer_resolve_first_user_event_at(customer_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = CustomerRepository.from_session(session)
-        customer = await repository.get_by_id(customer_id)
+        customer = await repository.get_by_id(customer_id, include_deleted=True)
 
         if customer is None:
             raise CustomerDoesNotExist(customer_id)
+
+        if customer.is_deleted:
+            return
 
         first_user_event_at = await tinybird_service.get_first_user_event_at(
             organization_id=customer.organization_id,

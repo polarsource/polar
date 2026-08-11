@@ -85,12 +85,7 @@ async def backfill(
         stmt = (
             update(Organization)
             .where(Organization.id.in_(subquery))
-            .values(
-                dispute_settings={
-                    "auto_accept_below_amount": None,
-                    "auto_accept_currency": None,
-                }
-            )
+            .values(dispute_settings={"auto_accept_below_amount": None})
         )
         rows_updated = await run_batched_update(
             stmt, batch_size=batch_size, sleep_seconds=sleep_seconds

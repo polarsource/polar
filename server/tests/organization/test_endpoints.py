@@ -22,6 +22,7 @@ from polar.models.organization_sso_connection import (
 )
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole, UserOrganization
+from polar.organization.schemas import DISPUTE_AUTO_ACCEPT_MAX_AMOUNT
 from polar.payout_account.service import PayoutAccountServiceError
 from polar.postgres import AsyncSession
 from polar.user_organization.service import (
@@ -609,6 +610,157 @@ class TestUpdateOrganization:
         response = await client.post(f"/v1/organizations/{uuid.uuid4()}/submit-review")
 
         assert response.status_code == 404
+
+
+@pytest.mark.asyncio
+class TestUpdateDisputeSettings:
+    async def _enable(
+        self,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        *,
+        disputes: bool = True,
+        auto_accept: bool = True,
+    ) -> None:
+        organization.feature_settings = {
+            "disputes_enabled": disputes,
+            "dispute_auto_accept_enabled": auto_accept,
+        }
+        await save_fixture(organization)
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await self._enable(save_fixture, organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"dispute_settings": {"auto_accept_below_amount": 2500}},
+        )
+
+        assert response.status_code == 200
+        dispute_settings = response.json()["dispute_settings"]
+        assert dispute_settings["auto_accept_below_amount"] == 2500
+
+    @pytest.mark.auth
+    async def test_flag_disabled(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await self._enable(save_fixture, organization, auto_accept=False)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"dispute_settings": {"auto_accept_below_amount": 2500}},
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_disputes_disabled(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await self._enable(save_fixture, organization, disputes=False)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"dispute_settings": {"auto_accept_below_amount": 2500}},
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_above_ceiling(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await self._enable(save_fixture, organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={
+                "dispute_settings": {
+                    "auto_accept_below_amount": DISPUTE_AUTO_ACCEPT_MAX_AMOUNT + 1,
+                },
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_clear(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await self._enable(save_fixture, organization)
+        organization.dispute_settings = {"auto_accept_below_amount": 2500}
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"dispute_settings": {"auto_accept_below_amount": None}},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["dispute_settings"]["auto_accept_below_amount"] is None
+
+    @pytest.mark.auth
+    async def test_empty_object_keeps_threshold(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await self._enable(save_fixture, organization)
+        organization.dispute_settings = {"auto_accept_below_amount": 2500}
+        await save_fixture(organization)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"dispute_settings": {}},
+        )
+
+        assert response.status_code == 200
+        assert response.json()["dispute_settings"]["auto_accept_below_amount"] == 2500
+
+    @pytest.mark.auth
+    async def test_flag_not_self_grantable(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        await self._enable(save_fixture, organization, auto_accept=False)
+
+        response = await client.patch(
+            f"/v1/organizations/{organization.id}",
+            json={"feature_settings": {"dispute_auto_accept_enabled": True}},
+        )
+
+        assert response.status_code == 200
+        assert (
+            response.json()["feature_settings"]["dispute_auto_accept_enabled"] is False
+        )
 
 
 @pytest.mark.asyncio

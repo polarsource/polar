@@ -113,6 +113,7 @@
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",
     "@types/web": "^0.0.345",
+    "@typescript/native": "npm:typescript@7.0.2",
     "@vitejs/plugin-react": "^5.2.0",
     "@vitest/ui": "^4.1.4",
     "autoprefixer": "^10.5.0",
@@ -121,7 +122,7 @@
     "remark": "^15.0.1",
     "remark-mdx": "^3.1.1",
     "tailwindcss": "^4.2.2",
-    "typescript": "5.9.3",
+    "typescript": "npm:@typescript/typescript6@6.0.2",
     "vite-tsconfig-paths": "^5.1.4",
     "vitest": "^4.1.4"
   }

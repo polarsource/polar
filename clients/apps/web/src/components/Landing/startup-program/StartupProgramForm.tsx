@@ -89,6 +89,7 @@ interface FormState {
   lastName: string
   role: string
   email: string
+  linkedin: string
 }
 
 const INITIAL: FormState = {
@@ -110,6 +111,7 @@ const INITIAL: FormState = {
   lastName: '',
   role: '',
   email: '',
+  linkedin: '',
 }
 
 type SubmitStatus = 'idle' | 'submitting' | 'success' | 'error'
@@ -349,6 +351,16 @@ export const StartupProgramForm = () => {
           onChange={(e) => set('email')(e.target.value)}
           placeholder="you@company.com"
           required
+        />
+      </Field>
+
+      <Field label="LinkedIn Profile" htmlFor="linkedin">
+        <Input
+          id="linkedin"
+          type="url"
+          value={form.linkedin}
+          onChange={(e) => set('linkedin')(e.target.value)}
+          placeholder="https://linkedin.com/in/janedoe"
         />
       </Field>
 

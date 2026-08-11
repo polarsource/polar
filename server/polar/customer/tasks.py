@@ -3,9 +3,11 @@ from typing import Literal
 
 from sqlalchemy.orm import joinedload
 
+from polar.event.repository import EventRepository
 from polar.event.service import event as event_service
 from polar.event.system import CustomerUpdatedFields, SystemEvent, build_system_event
 from polar.exceptions import PolarTaskError
+from polar.integrations.tinybird import service as tinybird_service
 from polar.models import Customer
 from polar.models.webhook_endpoint import CustomerWebhookEventType, WebhookEventType
 from polar.worker import AsyncSessionMaker, RedisMiddleware, TaskPriority, actor
@@ -38,6 +40,44 @@ async def customer_state_changed(customer_id: uuid.UUID) -> None:
             raise CustomerDoesNotExist(customer_id)
 
         await customer_service.state_changed(session, RedisMiddleware.get(), customer)
+
+
+def _customer_resolve_first_user_event_at_debounce_key(customer_id: uuid.UUID) -> str:
+    return f"customer.resolve_first_user_event_at:{customer_id}"
+
+
+@actor(
+    actor_name="customer.resolve_first_user_event_at",
+    priority=TaskPriority.LOW,
+    debounce_key=_customer_resolve_first_user_event_at_debounce_key,
+)
+async def customer_resolve_first_user_event_at(customer_id: uuid.UUID) -> None:
+    async with AsyncSessionMaker() as session:
+        repository = CustomerRepository.from_session(session)
+        customer = await repository.get_by_id(customer_id, include_deleted=True)
+
+        if customer is None:
+            raise CustomerDoesNotExist(customer_id)
+
+        if customer.is_deleted:
+            return
+
+        first_user_event_at = await tinybird_service.get_first_user_event_at(
+            organization_id=customer.organization_id,
+            customer_id=customer.id,
+            external_customer_id=customer.external_id,
+        )
+
+        if first_user_event_at is None:
+            event_repository = EventRepository.from_session(session)
+            first_user_event_at = await event_repository.get_first_user_event_timestamp(
+                customer
+            )
+
+        if first_user_event_at is not None:
+            await repository.lower_first_user_event_at(
+                {customer.id: first_user_event_at}
+            )
 
 
 def _customer_webhook_debounce_key(

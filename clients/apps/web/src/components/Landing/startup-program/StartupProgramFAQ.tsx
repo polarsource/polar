@@ -81,13 +81,15 @@ export const StartupProgramFAQ = () => {
       />
       <Box
         display="grid"
-        gridTemplateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }}
+        gridTemplateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }}
         gap={{ base: 'xl', md: '3xl' }}
       >
         <Text as="h2" variant="heading-l" wrap="balance">
-          Questions and answers
+          Questions and
+          <br />
+          answers
         </Text>
-        <Box display="block" gridColumn={{ md: 'span 2' }}>
+        <Box flexDirection="column">
           <Accordion type="multiple" className="flex flex-col">
             {FAQS.map((faq, i) => (
               <AccordionItem

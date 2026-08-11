@@ -37,6 +37,7 @@ from polar.integrations.plain.service import (
     plain_thread_url,
 )
 from polar.integrations.plain.service import plain as plain_service
+from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.integrations.stripe.service import StripeAccountRejectReason
 from polar.integrations.stripe.service import stripe as stripe_service
 from polar.kit.pagination import count_subquery
@@ -3162,7 +3163,8 @@ async def edit_organization(
         data = await request.form()
         try:
             form = UpdateOrganizationBasicForm.model_validate_form(data)
-            if form.slug != organization.slug:
+            slug_changed = form.slug != organization.slug
+            if slug_changed:
                 existing_slug = await repository.get_by_slug(
                     form.slug, include_deleted=True
                 )
@@ -3187,6 +3189,14 @@ async def edit_organization(
                 organization,
                 update_dict=form_dict,
             )
+
+            # Keep the Polar-for-Polar billing customer's slug in sync with the
+            # organization slug (the org slug is the customer's slug).
+            if slug_changed:
+                polar_self_service.enqueue_update_customer_slug(
+                    organization_id=organization.id, slug=organization.slug
+                )
+
             redirect_url = (
                 str(
                     request.url_for(

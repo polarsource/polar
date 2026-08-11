@@ -128,7 +128,11 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
     <>
       <div className="dark:divide-polar-800 flex h-full flex-col divide-y divide-gray-200">
         <div className="flex flex-row items-center justify-between gap-6 px-4 py-4">
-          <div>Customers</div>
+          <Link
+            href={withQuerystring(`/dashboard/${organization.slug}/customers`)}
+          >
+            Customers
+          </Link>
           <div className="flex flex-row items-center gap-4">
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

@@ -16,6 +16,7 @@ import { useDeleteCustomer } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
+import { getCustomerActivityStart } from '@/utils/customer'
 import { useDateRange } from '@/utils/date'
 import { usePushRouteWithoutCache } from '@/utils/router'
 
@@ -247,7 +248,7 @@ interface ClientPageProps {
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
   const { startDate, endDate, setStartDate, setEndDate } = useDateRange({
-    defaultStartDate: startOfDay(new Date(customer.created_at)),
+    defaultStartDate: startOfDay(getCustomerActivityStart(customer)),
     defaultEndDate: endOfToday(),
   })
 

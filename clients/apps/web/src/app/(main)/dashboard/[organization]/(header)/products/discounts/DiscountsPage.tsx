@@ -107,19 +107,15 @@ const ClientPage: React.FC<ClientPageProps> = ({
     )
   }
 
-  const debouncedQueryChange = useDebouncedCallback(
-    (query: string) => {
-      router.push(
-        `/dashboard/${organization.slug}/products/discounts?${getSearchParams(
-          { ...pagination, pageIndex: 0 },
-          sorting,
-          query,
-        )}`,
-      )
-    },
-    500,
-    [pagination, sorting, query, router],
-  )
+  const debouncedQueryChange = useDebouncedCallback((query: string) => {
+    router.push(
+      `/dashboard/${organization.slug}/products/discounts?${getSearchParams(
+        { ...pagination, pageIndex: 0 },
+        sorting,
+        query,
+      )}`,
+    )
+  }, 500)
 
   const onQueryChange = useCallback(
     (query: string) => {

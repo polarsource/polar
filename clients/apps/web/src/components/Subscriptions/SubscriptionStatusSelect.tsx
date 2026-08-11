@@ -28,6 +28,8 @@ export const subscriptionStatusFilterValues = [
 export type SubscriptionStatusFilter =
   (typeof subscriptionStatusFilterValues)[number]
 
+export const DEFAULT_SUBSCRIPTION_STATUS: SubscriptionStatusFilter = 'active'
+
 interface SubscriptionStatusSelectProps {
   value: SubscriptionStatusFilter
   onChange: (value: SubscriptionStatusFilter) => void

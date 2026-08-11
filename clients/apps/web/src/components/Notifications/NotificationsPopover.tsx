@@ -2,6 +2,7 @@ import { useNotifications, useNotificationsMarkRead } from '@/hooks/queries'
 import { useOutsideClick } from '@/utils/useOutsideClick'
 import AutorenewOutlined from '@mui/icons-material/AutorenewOutlined'
 import BoltOutlined from '@mui/icons-material/BoltOutlined'
+import GppMaybeOutlined from '@mui/icons-material/GppMaybeOutlined'
 import ShoppingBagOutlined from '@mui/icons-material/ShoppingBagOutlined'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -297,6 +298,27 @@ const MaintainerAccountCreditsGranted = ({
   )
 }
 
+const MaintainerFileFlaggedMalicious = ({
+  n,
+}: {
+  n: schemas['MaintainerFileFlaggedMaliciousNotification']
+}) => {
+  const { payload } = n
+  return (
+    <Item n={n} iconClasses="bg-red-200 text-red-500">
+      {{
+        text: (
+          <>
+            <span className="font-bold">{payload.file_name}</span> was flagged
+            as malicious by our automated malware scanning
+          </>
+        ),
+        icon: <GppMaybeOutlined fontSize="small" />,
+      }}
+    </Item>
+  )
+}
+
 const Notification = ({
   n,
 }: {
@@ -315,6 +337,9 @@ const Notification = ({
 
     case 'MaintainerAccountCreditsGrantedNotification':
       return <MaintainerAccountCreditsGranted n={n} />
+
+    case 'MaintainerFileFlaggedMaliciousNotification':
+      return <MaintainerFileFlaggedMalicious n={n} />
   }
 }
 

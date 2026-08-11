@@ -48,7 +48,8 @@
     "MINTLIFY_ASSISTANT_API_KEY",
     "ATTIO_API_KEY",
     "ATTIO_STARTUP_LIST_ID",
-    "CI"
+    "CI",
+    "TZ"
   ],
   "tasks": {
     "test": {

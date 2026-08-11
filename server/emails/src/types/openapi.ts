@@ -1119,6 +1119,18 @@ export interface components {
       /** Formatted Amount */
       readonly formatted_amount: string
     }
+    /** MaintainerFileFlaggedMaliciousNotificationPayload */
+    MaintainerFileFlaggedMaliciousNotificationPayload: {
+      /** File Name */
+      file_name: string
+      /** Organization Name */
+      organization_name: string
+      /**
+       * Organization Slug
+       * @default null
+       */
+      organization_slug: string | null
+    }
     /** MaintainerNewPaidSubscriptionNotificationPayload */
     MaintainerNewPaidSubscriptionNotificationPayload: {
       /** Subscriber Name */
@@ -1288,6 +1300,16 @@ export interface components {
        */
       template: 'notification_credits_granted'
       props: components['schemas']['MaintainerAccountCreditsGrantedNotificationPayload']
+    }
+    /** NotificationFileFlaggedMaliciousEmail */
+    NotificationFileFlaggedMaliciousEmail: {
+      /**
+       * Template
+       * @default notification_file_flagged_malicious
+       * @constant
+       */
+      template: 'notification_file_flagged_malicious'
+      props: components['schemas']['MaintainerFileFlaggedMaliciousNotificationPayload']
     }
     /** NotificationNewSaleEmail */
     NotificationNewSaleEmail: {
@@ -1707,6 +1729,8 @@ export interface components {
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
+      /** @description Settings related to disputes */
+      dispute_settings: components['schemas']['OrganizationDisputeSettings']
       /**
        * Embed Hosts
        * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
@@ -2078,6 +2102,14 @@ export interface components {
       subscription: components['schemas']['CustomerPortalSubscriptionSettings']
       customer?: components['schemas']['CustomerPortalCustomerSettings']
     }
+    /**
+     * OrganizationDisputeSettings
+     * @description `auto_accept_below_amount` is in Polar's settlement currency (USD).
+     */
+    OrganizationDisputeSettings: {
+      /** Auto Accept Below Amount */
+      auto_accept_below_amount: number | null
+    }
     /** OrganizationFeatureSettings */
     OrganizationFeatureSettings: {
       /**
@@ -2152,6 +2184,12 @@ export interface components {
        * @default false
        */
       sso_enabled: boolean
+      /**
+       * Dispute Auto Accept Enabled
+       * @description If this organization can set a threshold below which Polar concedes disputes on its behalf. Requires `disputes_enabled`.
+       * @default false
+       */
+      dispute_auto_accept_enabled: boolean
       /**
        * Compass Enabled
        * @description If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard

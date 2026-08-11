@@ -6,12 +6,12 @@ import urllib.request
 
 from shared import (
     ROOT_DIR,
-    SECRETS_FILE,
     SERVER_DIR,
     Context,
     run_command,
     step_spinner,
     step_status,
+    update_secrets,
 )
 
 NAME = "Waiting for services to be ready"
@@ -78,27 +78,6 @@ def wait_for_tinybird_and_get_token(timeout: int = 90) -> str | None:
     return None
 
 
-def _update_secrets_file(key: str, value: str) -> None:
-    """Update a key in the central secrets file."""
-    SECRETS_FILE.parent.mkdir(parents=True, exist_ok=True)
-
-    existing = {}
-    if SECRETS_FILE.exists():
-        for line in SECRETS_FILE.read_text().split("\n"):
-            if "=" in line and not line.startswith("#"):
-                k, v = line.split("=", 1)
-                existing[k.strip()] = v.strip().strip("\"'")
-
-    existing[key] = value
-
-    with open(SECRETS_FILE, "w") as f:
-        f.write("# Polar Development Secrets\n")
-        f.write("# Shared across Git worktrees\n\n")
-        for k, v in existing.items():
-            delimiter = "'" if '"' in v else '"'
-            f.write(f"{k}={delimiter}{v}{delimiter}\n")
-
-
 def run(ctx: Context) -> bool:
     """Wait for PostgreSQL, Redis, and optionally Tinybird to be ready."""
     with step_spinner("Waiting for PostgreSQL..."):
@@ -122,9 +101,13 @@ def run(ctx: Context) -> bool:
         with step_spinner("Waiting for Tinybird..."):
             token = wait_for_tinybird_and_get_token(timeout=90)
             if token:
-                _update_secrets_file("POLAR_TINYBIRD_API_TOKEN", token)
-                _update_secrets_file("POLAR_TINYBIRD_READ_TOKEN", token)
-                _update_secrets_file("POLAR_TINYBIRD_CLICKHOUSE_TOKEN", token)
+                update_secrets(
+                    {
+                        "POLAR_TINYBIRD_API_TOKEN": token,
+                        "POLAR_TINYBIRD_READ_TOKEN": token,
+                        "POLAR_TINYBIRD_CLICKHOUSE_TOKEN": token,
+                    }
+                )
                 run_command([str(ROOT_DIR / "dev" / "setup-environment")], capture=True)
                 step_status(True, "Tinybird", "ready (token configured)")
             else:

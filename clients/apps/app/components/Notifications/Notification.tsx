@@ -2,6 +2,7 @@ import { Box } from '@/components/Shared/Box'
 import { useTheme } from '@/design-system/useTheme'
 import {
   MaintainerAccountCreditsGrantedNotificationPayload,
+  MaintainerFileFlaggedMaliciousNotificationPayload,
   MaintainerNewPaidSubscriptionNotificationPayload,
   MaintainerNewProductSaleNotificationPayload,
   MaintainerSubscriptionRenewalNotificationPayload,
@@ -21,6 +22,7 @@ export interface NotificationProps {
     | MaintainerNewProductSaleNotificationPayload
     | MaintainerAccountCreditsGrantedNotificationPayload
     | MaintainerSubscriptionRenewalNotificationPayload
+    | MaintainerFileFlaggedMaliciousNotificationPayload
 }
 
 export const Notification = ({
@@ -55,6 +57,10 @@ export const Notification = ({
         )
       case 'MaintainerAccountCreditsGrantedNotification':
         return <MaterialIcons name="bolt" size={20} color={theme.colors.text} />
+      case 'MaintainerFileFlaggedMaliciousNotification':
+        return (
+          <MaterialIcons name="gpp-maybe" size={20} color={theme.colors.text} />
+        )
       default:
         return (
           <MaterialIcons
@@ -76,6 +82,8 @@ export const Notification = ({
         return 'Subscription Renewal'
       case 'MaintainerAccountCreditsGrantedNotification':
         return 'Credits Granted'
+      case 'MaintainerFileFlaggedMaliciousNotification':
+        return 'File Flagged as Malicious'
       default:
         return 'New Notification'
     }
@@ -114,6 +122,10 @@ export const Notification = ({
           currency: creditsCurrency,
         } = payload as MaintainerAccountCreditsGrantedNotificationPayload
         return `${organization_name} has received ${formatCurrency('compact')(amount, creditsCurrency || 'usd')} in fee credits!`
+      case 'MaintainerFileFlaggedMaliciousNotification':
+        const { file_name } =
+          payload as MaintainerFileFlaggedMaliciousNotificationPayload
+        return `${file_name} was flagged as malicious by our automated malware scanning`
       default:
         return 'A new notification has been created'
     }

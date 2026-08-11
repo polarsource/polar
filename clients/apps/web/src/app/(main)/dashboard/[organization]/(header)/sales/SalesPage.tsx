@@ -3,11 +3,12 @@
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { DateRange } from '@/components/Metrics/DateRangePicker'
 import { MiniMetricChartBox } from '@/components/Metrics/MiniMetricChartBox'
+import ExportOrdersModal from '@/components/Orders/ExportOrdersModal'
 import { OrderStatus } from '@/components/Orders/OrderStatus'
 import { useMetrics } from '@/hooks/queries/metrics'
 import { useOrders } from '@/hooks/queries/orders'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
-import { getServerURL } from '@/utils/api'
+import { useModal } from '@/components/Modal/useModal'
 import { useDateRange } from '@/utils/date'
 import { getAPIParams } from '@/utils/datatable'
 import { dateRangeToInterval } from '@/utils/metrics'
@@ -24,7 +25,6 @@ import {
 } from '@polar-sh/orbit'
 import { Status } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
-import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter } from 'next/navigation'
 import {
   parseAsArrayOf,
@@ -32,7 +32,7 @@ import {
   parseAsStringLiteral,
   useQueryStates,
 } from 'nuqs'
-import React, { useEffect, useState } from 'react'
+import React from 'react'
 import SalesFilters from './SalesFilters'
 
 const filterParsers = {
@@ -46,9 +46,6 @@ interface ClientPageProps {
 }
 
 const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
-  const [selectedOrderState, setSelectedOrderState] =
-    useState<RowSelectionState>({})
-
   const router = useRouter()
 
   const { pagination, setPagination, sorting, setSorting, resetPage } =
@@ -94,7 +91,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     {
       accessorKey: 'created_at',
       enableSorting: true,
-      size: 120,
+      size: 160,
       header: ({ column }) => (
         <DataTableColumnHeader column={column} title="Date" />
       ),
@@ -224,14 +221,6 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
       : []),
   ]
 
-  const selectedOrder = orders.find((order) => selectedOrderState[order.id])
-
-  useEffect(() => {
-    if (selectedOrder) {
-      router.push(`/dashboard/${organization.slug}/sales/${selectedOrder.id}`)
-    }
-  }, [selectedOrder, router, organization])
-
   const { data: metricsData } = useMetrics({
     organization_id: organization.id,
     startDate,
@@ -241,15 +230,11 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
     metrics: ['orders', 'revenue', 'average_order_value'],
   })
 
-  const onExport = () => {
-    const productIds =
-      productId?.map((id) => `&product_id=${id}`).join('') || ''
-    const url = new URL(
-      `${getServerURL()}/v1/orders/export?organization_id=${organization.id}${productIds}`,
-    )
-
-    window.open(url, '_blank')
-  }
+  const {
+    isShown: isExportModalShown,
+    show: showExportModal,
+    hide: hideExportModal,
+  } = useModal()
 
   return (
     <DashboardBody wide>
@@ -262,7 +247,7 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
           onStatusSelect={onStatusSelect}
           dateRange={{ from: startDate, to: endDate }}
           onDateChange={onDateChange}
-          onExport={onExport}
+          onExport={showExportModal}
         />
         <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
           <MiniMetricChartBox
@@ -292,15 +277,22 @@ const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
             sorting={sorting}
             onSortingChange={setSorting}
             isLoading={ordersHook.isLoading}
-            onRowSelectionChange={(row) => {
-              setSelectedOrderState(row)
-            }}
-            rowSelection={selectedOrderState}
+            onRowClick={(row) =>
+              router.push(
+                `/dashboard/${organization.slug}/sales/${row.original.id}`,
+              )
+            }
             getRowId={(row) => row.id.toString()}
-            enableRowSelection
           />
         )}
       </div>
+      <ExportOrdersModal
+        organization={organization}
+        productId={productId ?? undefined}
+        status={status}
+        isShown={isExportModalShown}
+        hide={hideExportModal}
+      />
     </DashboardBody>
   )
 }

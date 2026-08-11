@@ -44,6 +44,7 @@ const OrganizationNotificationSettings: React.FC<
   return (
     <SettingsGroup>
       <SettingsGroupItem
+        layout="inline"
         title="New One-Time Purchases"
         description="Receive a notification when a one-time purchase is made"
       >
@@ -56,6 +57,7 @@ const OrganizationNotificationSettings: React.FC<
       </SettingsGroupItem>
 
       <SettingsGroupItem
+        layout="inline"
         title="New Subscriptions"
         description="Receive a notification when new subscriptions are created"
       >
@@ -68,6 +70,7 @@ const OrganizationNotificationSettings: React.FC<
       </SettingsGroupItem>
 
       <SettingsGroupItem
+        layout="inline"
         title="Subscription Renewals"
         description="Receive a notification each time a subscription renewal payment is collected"
       >
@@ -84,6 +87,7 @@ const OrganizationNotificationSettings: React.FC<
 
       {canManage === true && (
         <SettingsGroupItem
+          layout="inline"
           title="Prevented Chargebacks"
           description="Receive a notification when a refund is issued to prevent a chargeback"
         >

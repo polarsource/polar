@@ -1,25 +1,45 @@
-import React, { useCallback, useRef, useState } from 'react'
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  useState,
+} from 'react'
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export const useDebouncedCallback = <T extends (...args: any[]) => any>(
   callback: T,
   delay: number,
-  dependencies?: unknown[],
 ) => {
-  const timeout = React.useRef<NodeJS.Timeout>(undefined)
+  const timeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined)
+  const callbackRef = useRef(callback)
 
-  return React.useCallback(
+  useLayoutEffect(() => {
+    callbackRef.current = callback
+  }, [callback])
+
+  useEffect(
+    () => () => {
+      if (timeout.current != null) {
+        clearTimeout(timeout.current)
+        timeout.current = undefined
+      }
+    },
+    [],
+  )
+
+  return useCallback(
     (...args: Parameters<T>): ReturnType<T> | void => {
       if (timeout.current != null) {
         clearTimeout(timeout.current)
       }
 
       timeout.current = setTimeout(() => {
-        callback(...args)
+        timeout.current = undefined
+        callbackRef.current(...args)
       }, delay)
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [callback, delay, ...(dependencies ? dependencies : [])],
+    [delay],
   )
 }
 

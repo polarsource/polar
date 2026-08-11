@@ -3,7 +3,7 @@ from enum import StrEnum
 from typing import TYPE_CHECKING, Self
 from uuid import UUID
 
-from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, Index, String, Uuid
+from sqlalchemy import TIMESTAMP, BigInteger, ForeignKey, Index, String, Uuid, text
 from sqlalchemy.orm import Mapped, declared_attr, mapped_column, relationship
 
 from polar.kit.db.models import RecordModel
@@ -44,16 +44,29 @@ class BillingEntry(RecordModel):
             "order_item_id",
             "product_price_id",
         ),
+        # Pending static (non-metered) entries are rare next to the pending
+        # metered ones, so a partial index keeps the static line-item lookup off
+        # the full pending scan for high-volume subscriptions.
+        Index(
+            "ix_billing_entry_pending_static",
+            "subscription_id",
+            postgresql_where=text(
+                "deleted_at IS NULL AND order_item_id IS NULL AND type != 'metered'"
+            ),
+        ),
     )
 
     start_timestamp: Mapped[datetime] = mapped_column(
         TIMESTAMP(timezone=True), nullable=False, index=True
     )
     end_timestamp: Mapped[datetime] = mapped_column(
-        TIMESTAMP(timezone=True), nullable=False, index=True
+        TIMESTAMP(timezone=True), nullable=False
     )
     type: Mapped[BillingEntryType] = mapped_column(
-        StringEnum(BillingEntryType), nullable=False, index=True
+        StringEnum(BillingEntryType), nullable=False
+    )
+    deleted_at: Mapped[datetime | None] = mapped_column(
+        TIMESTAMP(timezone=True), nullable=True, default=None
     )
     direction: Mapped[BillingEntryDirection] = mapped_column(
         StringEnum(BillingEntryDirection), nullable=False
@@ -78,7 +91,6 @@ class BillingEntry(RecordModel):
         Uuid,
         ForeignKey("subscriptions.id", ondelete="cascade"),
         nullable=True,
-        index=True,
     )
     discount_id: Mapped[UUID | None] = mapped_column(
         Uuid, ForeignKey("discounts.id", ondelete="restrict"), nullable=True

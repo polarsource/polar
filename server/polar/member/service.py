@@ -188,6 +188,12 @@ class MemberService:
 
         enqueue_job("customer_seat.revoke_seats_for_member", member_id=member.id)
 
+        from polar.benefit.grant.service import (
+            benefit_grant as benefit_grant_service,
+        )
+
+        await benefit_grant_service.enqueue_member_grant_deletions(session, member.id)
+
         deleted_member = await repository.soft_delete(member)
         log.info(
             "member.delete.success",

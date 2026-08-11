@@ -6,7 +6,6 @@ import {
   OnChangeFn,
   PaginationState,
   Row,
-  RowSelectionState,
   SortingState,
   flexRender,
   getCoreRowModel,
@@ -25,6 +24,12 @@ import {
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import { DataTablePagination } from './DataTablePagination'
+import {
+  createSelectionColumn,
+  DataTableSelection,
+  SELECTION_COLUMN_ID,
+  SELECTION_COLUMN_WIDTH,
+} from './DataTableSelectionColumn'
 
 export interface ReactQueryLoading {
   isFetching: boolean
@@ -50,10 +55,9 @@ interface DataTableProps<TData, TValue> {
   isLoading: boolean | ReactQueryLoading
   getCellColSpan?: (cell: Cell<TData, unknown>) => number
   getRowId?: (originalRow: TData, index: number, parent?: Row<TData>) => string
-  rowSelection?: RowSelectionState
-  enableRowSelection?: boolean
-  onRowSelectionChange?: OnChangeFn<RowSelectionState>
+  selection?: DataTableSelection<TData>
   onRowClick?: (row: Row<TData>) => void
+  isRowActive?: (row: Row<TData>) => boolean
 }
 
 export type DataTableColumnDef<TData, TValue = unknown> = ColumnDef<
@@ -87,15 +91,25 @@ export function DataTable<TData, TValue>({
   isLoading,
   getCellColSpan,
   getRowId,
-  rowSelection,
-  enableRowSelection,
-  onRowSelectionChange,
+  selection,
   onRowClick,
+  isRowActive,
 }: DataTableProps<TData, TValue>) {
+  const allColumns = React.useMemo(
+    () =>
+      selection
+        ? [
+            createSelectionColumn(selection) as ColumnDef<TData, TValue>,
+            ...columns,
+          ]
+        : columns,
+    [selection, columns],
+  )
+
   // eslint-disable-next-line react-hooks/incompatible-library
   const table = useReactTable({
     data,
-    columns,
+    columns: allColumns,
     getCoreRowModel: getCoreRowModel(),
     manualPagination: true,
     manualSorting: true,
@@ -106,13 +120,9 @@ export function DataTable<TData, TValue>({
     getSubRows,
     getExpandedRowModel: getExpandedRowModel(),
     getRowId,
-    enableRowSelection,
-    onRowSelectionChange,
-    enableMultiRowSelection: false,
     state: {
       pagination,
       sorting,
-      rowSelection,
     },
   })
 
@@ -136,15 +146,23 @@ export function DataTable<TData, TValue>({
               <TableRow
                 key={headerGroup.id}
                 className={twMerge(
-                  'dark:bg-polar-800 bg-gray-50',
+                  'dark:bg-polar-800 group/row bg-gray-50',
                   headerClassName,
                 )}
               >
                 {headerGroup.headers.map((header) => {
+                  const isSelectColumn =
+                    header.column.id === SELECTION_COLUMN_ID
+
                   return (
                     <TableHead
                       key={header.id}
-                      style={{ width: header.column.getSize() }}
+                      className={isSelectColumn ? 'w-12' : undefined}
+                      style={
+                        isSelectColumn
+                          ? { width: SELECTION_COLUMN_WIDTH }
+                          : { width: header.column.getSize() }
+                      }
                     >
                       {header.isPlaceholder
                         ? null
@@ -162,7 +180,7 @@ export function DataTable<TData, TValue>({
             {calcLoading ? (
               <TableRow>
                 <TableCell
-                  colSpan={columns.length}
+                  colSpan={allColumns.length}
                   className="h-24 text-center"
                 >
                   Loading...
@@ -174,39 +192,36 @@ export function DataTable<TData, TValue>({
                   table.getRowModel().rows.map((row) => (
                     <TableRow
                       key={row.id}
-                      className={
-                        enableRowSelection || onRowClick
-                          ? row.getCanSelect()
-                            ? 'cursor-pointer'
-                            : ''
-                          : undefined
-                      }
+                      className={twMerge(
+                        'group/row',
+                        onRowClick && 'cursor-pointer',
+                      )}
                       data-state={
-                        enableRowSelection
-                          ? row.getIsSelected()
-                            ? 'selected'
-                            : undefined
+                        isRowActive?.(row) ||
+                        selection?.isSelected(row.original)
+                          ? 'selected'
                           : undefined
                       }
-                      onClick={
-                        onRowClick
-                          ? () => onRowClick(row)
-                          : enableRowSelection
-                            ? row.getToggleSelectedHandler()
-                            : undefined
-                      }
+                      onClick={onRowClick ? () => onRowClick(row) : undefined}
                     >
                       {row.getVisibleCells().map((cell) => {
                         const colSpan = getCellColSpan
                           ? getCellColSpan(cell)
                           : 1
+                        const isSelectColumn =
+                          cell.column.id === SELECTION_COLUMN_ID
 
                         return (
                           <React.Fragment key={cell.id}>
                             {colSpan ? (
                               <TableCell
                                 colSpan={colSpan}
-                                style={{ width: cell.column.getSize() }}
+                                className={isSelectColumn ? 'w-12' : undefined}
+                                style={
+                                  isSelectColumn
+                                    ? { width: SELECTION_COLUMN_WIDTH }
+                                    : { width: cell.column.getSize() }
+                                }
                               >
                                 {flexRender(
                                   cell.column.columnDef.cell,
@@ -222,7 +237,7 @@ export function DataTable<TData, TValue>({
                 ) : (
                   <TableRow>
                     <TableCell
-                      colSpan={columns.length}
+                      colSpan={allColumns.length}
                       className="h-24 text-center"
                     >
                       No Results

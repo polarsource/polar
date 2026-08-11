@@ -69,6 +69,26 @@ events_table = Table(
     Column("ancestors", String),
 )
 
+event_types_by_customer_id_table = Table(
+    "event_types_by_customer_id",
+    metadata,
+    Column("organization_id", String),
+    Column("customer_id", String),
+    Column("name", String),
+    Column("source", String),
+    Column("first_seen", DateTime),
+)
+
+event_types_by_external_customer_id_table = Table(
+    "event_types_by_external_customer_id",
+    metadata,
+    Column("organization_id", String),
+    Column("external_customer_id", String),
+    Column("name", String),
+    Column("source", String),
+    Column("first_seen", DateTime),
+)
+
 DENORMALIZED_COLUMNS: dict[str, Any] = {
     "_cost.amount": events_table.c.cost_amount,
     "_cost.currency": events_table.c.cost_currency,
@@ -344,6 +364,55 @@ async def count_user_events_by_organization(
         params["after"] = _format_ingested_at(after)
     rows = await client.endpoint("user_events_count_endpoint", params)
     return {UUID(row["organization_id"]): row["count"] for row in rows}
+
+
+async def get_first_user_event_at(
+    *,
+    organization_id: UUID,
+    customer_id: UUID,
+    external_customer_id: str | None,
+) -> datetime | None:
+    """
+    Earliest `user` event timestamp for a customer, from the aggregating views.
+
+    Both views are keyed on `(organization_id, <customer key>, name, source)`, so each
+    lookup stays on the sorting key prefix.
+    """
+    statements = [
+        select(func.minMerge(event_types_by_customer_id_table.c.first_seen))
+        .where(
+            event_types_by_customer_id_table.c.organization_id == str(organization_id),
+            event_types_by_customer_id_table.c.customer_id == str(customer_id),
+            event_types_by_customer_id_table.c.source == EventSource.user,
+        )
+        .group_by(event_types_by_customer_id_table.c.organization_id)
+    ]
+    if external_customer_id is not None:
+        statements.append(
+            select(
+                func.minMerge(event_types_by_external_customer_id_table.c.first_seen)
+            )
+            .where(
+                event_types_by_external_customer_id_table.c.organization_id
+                == str(organization_id),
+                event_types_by_external_customer_id_table.c.external_customer_id
+                == external_customer_id,
+                event_types_by_external_customer_id_table.c.source == EventSource.user,
+            )
+            .group_by(event_types_by_external_customer_id_table.c.organization_id)
+        )
+
+    timestamps: list[datetime] = []
+    for statement in statements:
+        sql, template = _compile(statement)
+        rows = await client.query(sql, db_statement=template)
+        timestamps.extend(
+            _parse_datetime(value)
+            for row in rows
+            if (value := next(iter(row.values()), None)) is not None
+        )
+
+    return min(timestamps, default=None)
 
 
 def _finite(value: Any, default: float = 0.0) -> float:

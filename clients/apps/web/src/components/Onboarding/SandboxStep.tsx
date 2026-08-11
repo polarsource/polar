@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks'
 import { useCreateOrganization } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { Box } from '@polar-sh/orbit/Box'
-import { Button } from '@polar-sh/orbit'
+import { Alert, Button } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
@@ -33,17 +33,16 @@ function SubmitButton({
 
   return (
     <>
-      {error && (
-        <p className="text-sm text-red-500 dark:text-red-500">{error}</p>
-      )}
-      <Button
-        type="submit"
-        loading={loading}
-        disabled={orgName.length === 0 || orgSlug.length === 0 || !terms}
-        fullWidth
-      >
-        Create Sandbox Organization
-      </Button>
+      {error && <Alert variant="danger" title={error} />}
+      <Box alignSelf="start">
+        <Button
+          type="submit"
+          loading={loading}
+          disabled={orgName.length === 0 || orgSlug.length === 0 || !terms}
+        >
+          Create Sandbox Organization
+        </Button>
+      </Box>
     </>
   )
 }
@@ -107,7 +106,6 @@ export function SandboxStep() {
     <OnboardingShell
       title="Create a sandbox organization"
       subtitle="Set up a test organization to explore Polar with mock payments."
-      apiStep="sandbox"
     >
       <Form {...form}>
         <Box

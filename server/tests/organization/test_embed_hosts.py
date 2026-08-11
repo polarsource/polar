@@ -118,8 +118,10 @@ class TestValidateHostPattern:
             "   ",
             "*",
             "*.",
+            "*.*",
             "*example.com",
             "a.*.com",
+            "example.*",
             "example.com/path",
             "example.com?a=1",
             "example.com#fragment",
@@ -132,6 +134,35 @@ class TestValidateHostPattern:
     def test_rejected(self, value: str) -> None:
         with pytest.raises(InvalidEmbedHost):
             validate_host_pattern(value)
+
+    @pytest.mark.parametrize(
+        "value",
+        [
+            "exa_mple.com",
+            "*.exa_mple.com",
+            "example..com",
+            ".example.com",
+            "data:",
+            "example.com:",
+            "[::1]:",
+            "example.com:3000:4000",
+        ],
+    )
+    def test_outside_the_host_grammar_rejected(self, value: str) -> None:
+        with pytest.raises(InvalidEmbedHost):
+            validate_host_pattern(value)
+
+    @pytest.mark.parametrize(
+        ("value", "expected"),
+        [
+            ("example.com.", "example.com."),
+            ("my-shop.example.com", "my-shop.example.com"),
+            ("[::1]", "[::1]"),
+            ("[::1]:3000", "[::1]:3000"),
+        ],
+    )
+    def test_within_the_host_grammar(self, value: str, expected: str) -> None:
+        assert validate_host_pattern(value) == expected
 
     @pytest.mark.parametrize("value", ["*.com", "*.co.uk", "*.CO.UK", "*.io"])
     def test_wildcard_on_registry_suffix_rejected(self, value: str) -> None:

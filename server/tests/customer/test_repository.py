@@ -1,3 +1,6 @@
+from datetime import timedelta
+from unittest.mock import call
+
 import pytest
 from pytest_mock import MockerFixture
 
@@ -60,6 +63,111 @@ async def test_create_context(
             raise RuntimeError("Simulated error")
 
     enqueue_job_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_create_context_with_external_id_resolves_first_user_event_at(
+    mocker: MockerFixture,
+    session: AsyncSession,
+    repository: CustomerRepository,
+    organization: Organization,
+) -> None:
+    enqueue_job_mock = mocker.patch("polar.customer.repository.enqueue_job")
+
+    async with repository.create_context(
+        Customer(
+            email="customer@example.com",
+            organization=organization,
+            external_id="EXTERNAL_ID",
+        )
+    ) as customer:
+        await session.flush()
+
+    enqueue_job_mock.assert_any_call(
+        "customer.resolve_first_user_event_at", customer.id
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_setting_external_id_resolves_first_user_event_at(
+    mocker: MockerFixture,
+    customer: Customer,
+    repository: CustomerRepository,
+) -> None:
+    enqueue_job_mock = mocker.patch("polar.customer.repository.enqueue_job")
+
+    customer.external_id = "EXTERNAL_ID"
+    await repository.update(customer)
+
+    enqueue_job_mock.assert_any_call(
+        "customer.resolve_first_user_event_at", customer.id
+    )
+
+
+@pytest.mark.asyncio
+async def test_update_without_external_id_change_does_not_resolve(
+    mocker: MockerFixture,
+    customer: Customer,
+    repository: CustomerRepository,
+) -> None:
+    enqueue_job_mock = mocker.patch("polar.customer.repository.enqueue_job")
+
+    customer.name = "New Name"
+    await repository.update(customer)
+
+    assert (
+        call("customer.resolve_first_user_event_at", customer.id)
+        not in enqueue_job_mock.call_args_list
+    )
+
+
+@pytest.mark.asyncio
+class TestLowerFirstUserEventAt:
+    async def test_fills_a_null(
+        self,
+        session: AsyncSession,
+        repository: CustomerRepository,
+        customer: Customer,
+    ) -> None:
+        timestamp = customer.created_at - timedelta(days=1)
+
+        await repository.lower_first_user_event_at({customer.id: timestamp})
+
+        await session.refresh(customer)
+        assert customer.first_user_event_at == timestamp
+
+    async def test_only_moves_earlier(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        repository: CustomerRepository,
+        customer: Customer,
+    ) -> None:
+        earliest = customer.created_at - timedelta(days=10)
+        customer.first_user_event_at = earliest
+        await save_fixture(customer)
+
+        await repository.lower_first_user_event_at(
+            {customer.id: customer.created_at - timedelta(days=1)}
+        )
+
+        await session.refresh(customer)
+        assert customer.first_user_event_at == earliest
+
+    async def test_does_not_touch_modified_at(
+        self,
+        session: AsyncSession,
+        repository: CustomerRepository,
+        customer: Customer,
+    ) -> None:
+        modified_at = customer.modified_at
+
+        await repository.lower_first_user_event_at(
+            {customer.id: customer.created_at - timedelta(days=1)}
+        )
+
+        await session.refresh(customer)
+        assert customer.modified_at == modified_at
 
 
 @pytest.mark.asyncio

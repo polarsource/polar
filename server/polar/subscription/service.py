@@ -89,7 +89,11 @@ from polar.models import (
 )
 from polar.models.billing_entry import BillingEntryDirection, BillingEntryType
 from polar.models.order import OrderBillingReasonInternal
-from polar.models.product_price import ProductPrice, ProductPriceSeatUnit
+from polar.models.product_price import (
+    ProductPrice,
+    ProductPriceFixed,
+    ProductPriceSeatUnit,
+)
 from polar.models.subscription import CustomerCancellationReason, SubscriptionStatus
 from polar.models.webhook_endpoint import WebhookEventType
 from polar.notifications.notification import (
@@ -657,6 +661,59 @@ class SubscriptionService:
         await self.enqueue_benefits_grants(session, subscription)
 
         return subscription
+
+    async def create_imported(
+        self,
+        session: AsyncSession,
+        *,
+        product: Product,
+        price: ProductPriceFixed,
+        customer: Customer,
+        current_period_start: datetime | None,
+        current_period_end: datetime | None,
+        user_metadata: dict[str, Any],
+    ) -> Subscription:
+        """Create a subscription migrated from another provider. It starts paused
+        so nothing bills until the merchant cuts over, and grants no benefits."""
+        assert product.recurring_interval is not None
+        recurring_interval = product.recurring_interval
+        recurring_interval_count = product.recurring_interval_count or 1
+        start = current_period_start or utc_now()
+        next_period = recurring_interval.get_next_period(
+            start, start.day, recurring_interval_count
+        )
+        # A source end that predates the start would invert the period, which
+        # would then feed the renewal maths at cutover.
+        end = (
+            current_period_end
+            if current_period_end and current_period_end > start
+            else next_period
+        )
+
+        subscription = Subscription(
+            status=SubscriptionStatus.paused,
+            paused_at=utc_now(),
+            started_at=start,
+            anchor_day=start.day,
+            current_period_start=start,
+            current_period_end=end,
+            cancel_at_period_end=False,
+            recurring_interval=recurring_interval,
+            recurring_interval_count=recurring_interval_count,
+            meter_interval=product.meter_interval,
+            meter_interval_count=product.meter_interval_count,
+            organization=product.organization,
+            product=product,
+            customer=customer,
+            subscription_product_prices=[SubscriptionProductPrice.from_price(price)],
+            currency=price.price_currency,
+            user_metadata=user_metadata,
+            pending_update=None,
+        )
+        subscription.initialize_meter_period(start)
+
+        repository = SubscriptionRepository.from_session(session)
+        return await repository.create(subscription, flush=True)
 
     async def create_or_update_from_checkout(
         self,

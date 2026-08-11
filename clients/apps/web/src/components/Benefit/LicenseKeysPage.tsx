@@ -24,7 +24,6 @@ import { Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@polar-sh/orbit'
-import { RowSelectionState } from '@tanstack/react-table'
 import { useRouter, useSearchParams } from 'next/navigation'
 import { useCallback, useState } from 'react'
 import { InlineModal, InlineModalHeader } from '@polar-sh/orbit'
@@ -45,10 +44,9 @@ export const LicenseKeysPage = ({
   const deepLinkedLicenseKeyId = searchParams['license_key_id']
 
   const [statusLoading, setStatusLoading] = useState(false)
-  const [selectedLicenseKeys, setSelectedLicenseKeys] =
-    useState<RowSelectionState>(
-      deepLinkedLicenseKeyId ? { [deepLinkedLicenseKeyId]: true } : {},
-    )
+  const [selectedLicenseKeyId, setSelectedLicenseKeyId] = useState<
+    string | null
+  >(deepLinkedLicenseKeyId ?? null)
 
   const { data: licenseKeys, isLoading } = useOrganizationLicenseKeys({
     organization_id: organization.id,
@@ -60,7 +58,7 @@ export const LicenseKeysPage = ({
   })
 
   const { data: selectedLicenseKey } = useLicenseKey(
-    Object.keys(selectedLicenseKeys)[0],
+    selectedLicenseKeyId ?? undefined,
   )
 
   const getSearchParams = (
@@ -194,9 +192,9 @@ export const LicenseKeysPage = ({
 
   const closeLicenseKeyModal = useCallback(() => {
     hideLicenseKeyModal()
-    setSelectedLicenseKeys({})
+    setSelectedLicenseKeyId(null)
     setDeepLinkParam(null)
-  }, [hideLicenseKeyModal, setSelectedLicenseKeys, setDeepLinkParam])
+  }, [hideLicenseKeyModal, setSelectedLicenseKeyId, setDeepLinkParam])
 
   const LicenseKeyContextView = selectedLicenseKey ? (
     <Box flexDirection="column" overflowY="auto">
@@ -298,19 +296,12 @@ export const LicenseKeysPage = ({
             sorting={sorting}
             setPagination={setPagination}
             setSorting={setSorting}
-            onSelectLicenseKeyChange={(updaterOrValue) => {
-              const nextSelection =
-                typeof updaterOrValue === 'function'
-                  ? updaterOrValue(selectedLicenseKeys)
-                  : updaterOrValue
-              setSelectedLicenseKeys(nextSelection)
-              const nextId = Object.keys(nextSelection)[0] ?? null
-              setDeepLinkParam(nextId)
-              if (nextId) {
-                showLicenseKeyModal()
-              }
+            onSelectLicenseKey={(licenseKey) => {
+              setSelectedLicenseKeyId(licenseKey.id)
+              setDeepLinkParam(licenseKey.id)
+              showLicenseKeyModal()
             }}
-            selectedLicenseKey={selectedLicenseKeys}
+            selectedLicenseKeyId={selectedLicenseKeyId}
           />
           <InlineModal
             modalContent={LicenseKeyContextView ?? null}

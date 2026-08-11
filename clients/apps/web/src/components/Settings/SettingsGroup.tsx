@@ -1,4 +1,4 @@
-import { twMerge } from 'tailwind-merge'
+import { Box } from '@polar-sh/orbit/Box'
 
 export const SettingsGroup: React.FC<React.PropsWithChildren> = ({
   children,
@@ -8,40 +8,60 @@ export const SettingsGroup: React.FC<React.PropsWithChildren> = ({
   </div>
 )
 
+const layouts = {
+  split: {
+    row: {
+      flexDirection: { base: 'column', md: 'row' },
+      columnGap: '3xl',
+      alignItems: { md: 'start' },
+      justifyContent: { md: 'between' },
+    },
+    label: { width: '100%', maxWidth: { md: '50%' } },
+    control: { width: '100%', justifyContent: { md: 'end' } },
+  },
+  stacked: {
+    row: { flexDirection: 'column', columnGap: '3xl' },
+    label: { width: '100%', maxWidth: { md: '50%' } },
+    control: { width: '100%' },
+  },
+  inline: {
+    row: {
+      flexDirection: 'row',
+      columnGap: { base: 'l', md: '3xl' },
+      alignItems: 'start',
+      justifyContent: 'between',
+    },
+    label: { minWidth: 0, flex: 1, maxWidth: { md: '50%' } },
+    control: { flexShrink: 0, justifyContent: 'end' },
+  },
+} as const
+
 export interface SettingsGroupItemProps {
   title: React.ReactNode
   description?: React.ReactNode
-  vertical?: boolean
+  layout?: keyof typeof layouts
 }
 
 export const SettingsGroupItem: React.FC<
   React.PropsWithChildren<SettingsGroupItemProps>
-> = ({ children, title, description, vertical }) => (
-  <div
-    className={twMerge(
-      'flex gap-x-12 gap-y-4 p-4',
-      vertical
-        ? 'flex-col'
-        : 'flex-col md:flex-row md:items-start md:justify-between',
-    )}
-  >
-    <div className="flex w-full flex-col md:max-w-1/2">
-      <h3 className="text-sm font-medium">{title}</h3>
-      {description && (
-        <p className="dark:text-polar-500 text-xs text-gray-500">
-          {description}
-        </p>
-      )}
-    </div>
-    {children && (
-      <div
-        className={twMerge(
-          'flex w-full flex-row gap-y-2 md:w-full',
-          vertical ? '' : 'md:justify-end',
+> = ({ children, title, description, layout = 'split' }) => {
+  const { row, label, control } = layouts[layout]
+
+  return (
+    <Box padding="l" rowGap="l" {...row}>
+      <Box flexDirection="column" {...label}>
+        <h3 className="text-sm font-medium">{title}</h3>
+        {description && (
+          <p className="dark:text-polar-500 text-xs text-gray-500">
+            {description}
+          </p>
         )}
-      >
-        {children}
-      </div>
-    )}
-  </div>
-)
+      </Box>
+      {children && (
+        <Box flexDirection="row" rowGap="s" {...control}>
+          {children}
+        </Box>
+      )}
+    </Box>
+  )
+}

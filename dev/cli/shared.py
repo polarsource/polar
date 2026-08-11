@@ -13,6 +13,10 @@ from rich.padding import Padding
 from rich.spinner import Spinner
 from rich.text import Text
 
+from secrets_io import SECRETS_FILE, read_secrets, update_secrets
+
+__all__ = ["SECRETS_FILE", "read_secrets", "update_secrets"]
+
 console = Console()
 ROOT_DIR = Path(__file__).parent.parent.parent.resolve()
 SERVER_DIR = ROOT_DIR / "server"
@@ -23,7 +27,6 @@ DEFAULT_DB_PORT = 5432
 DEFAULT_REDIS_PORT = 6379
 DEFAULT_MINIO_PORT = 9000
 DEFAULT_TINYBIRD_PORT = 7181
-SECRETS_FILE = Path.home() / ".config" / "polar" / "secrets.env"
 
 
 @dataclass

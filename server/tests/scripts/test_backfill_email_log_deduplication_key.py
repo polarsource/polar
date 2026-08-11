@@ -83,16 +83,20 @@ class TestBackfillEmailLogDeduplicationKey:
             save_fixture,
             template="subscription_renewal_reminder",
             email_props={
-                "subscription": {"id": subscription_id},
-                "renewal_date": "November 7, 2026",
+                "subscription": {
+                    "id": subscription_id,
+                    "current_period_end": "2026-11-07T00:00:00Z",
+                },
             },
         )
         trial = await _create_email_log(
             save_fixture,
             template="subscription_trial_conversion_reminder",
             email_props={
-                "subscription": {"id": subscription_id},
-                "conversion_date": "March 17, 2026",
+                "subscription": {
+                    "id": subscription_id,
+                    "trial_end": "2026-03-17T12:34:56Z",
+                },
             },
         )
 

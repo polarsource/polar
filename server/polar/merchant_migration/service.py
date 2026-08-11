@@ -8,32 +8,71 @@ from polar.auth.models import AuthSubject, Organization, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import assert_organization_permission
 from polar.config import settings
-from polar.exceptions import PolarError
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.encryption import EncryptedString
 from polar.kit.pagination import PaginationParams
-from polar.models import MerchantMigration
+from polar.models import MerchantMigration, MerchantMigrationRecord
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
+from polar.models.merchant_migration_record import (
+    MerchantMigrationRecordStatus,
+    MerchantMigrationRecordType,
+)
 from polar.organization.repository import OrganizationRepository
 from polar.postgres import AsyncReadSession
+from polar.product.repository import ProductRepository
 
+from . import pan_transfer
 from .adapters import SourceAdapter, StripeAdapter
 from .canonical import CanonicalRecord, deserialize
-from .precheck import classify_records, precheck_engine
+from .errors import MerchantMigrationError
+from .importer import CatalogImporter
+from .pan_transfer import (
+    PanStepActor,
+    PanTransferAlreadyStarted,
+    PanTransferNotReady,
+    PanTransferNotStarted,
+    PanTransferStep,
+    PanTransferUnavailable,
+)
+from .precheck import (
+    account_blockers,
+    classify_records,
+    import_blockers,
+    precheck_engine,
+)
 from .repository import (
     MerchantMigrationRecordRepository,
     MerchantMigrationRepository,
 )
 from .schemas import (
     MerchantMigrationCreate,
+    MerchantMigrationImportReport,
     MerchantMigrationRecordItem,
+    MerchantMigrationRecordSummary,
+    MerchantMigrationRecordSummaryEntity,
+    PanTransferChecklist,
     PrecheckEntity,
+    PrecheckIssue,
+    PrecheckReasonLevel,
     PrecheckRecordStatus,
     PrecheckReport,
 )
+
+IMPORTABLE_STEPS = {
+    MerchantMigrationStep.pre_check,
+    MerchantMigrationStep.create_catalog,
+}
+
+# Entities whose records map 1:1 to a ledger row, so a listing item can carry its
+# record id for selection. Prices live inside a product record and are excluded.
+_ENTITY_RECORD_TYPE = {
+    PrecheckEntity.products: MerchantMigrationRecordType.product,
+    PrecheckEntity.customers: MerchantMigrationRecordType.customer,
+    PrecheckEntity.subscriptions: MerchantMigrationRecordType.subscription,
+}
 
 SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT = {
     "table": "merchant_migrations",
@@ -52,9 +91,6 @@ class StripeSourceCredentials(TypedDict):
     api_key_encrypted: str
     stripe_user_id: str | None
     livemode: bool
-
-
-class MerchantMigrationError(PolarError): ...
 
 
 class MerchantMigrationNotFound(MerchantMigrationError):
@@ -106,6 +142,37 @@ class SourceVerificationUnavailable(MerchantMigrationError):
         )
 
 
+class CatalogImportNotReady(MerchantMigrationError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Run the pre-check before importing the catalog.",
+            409,
+        )
+
+
+class BlockedByPrecheck(MerchantMigrationError):
+    """Precheck blockers as an API error: the codes stay machine-readable while
+    the merchant reads the joined messages."""
+
+    def __init__(
+        self, summary: str, blockers: list[PrecheckIssue], status_code: int
+    ) -> None:
+        self.blockers = [issue.code for issue in blockers]
+        super().__init__(
+            f"{summary} " + " ".join(issue.message for issue in blockers), status_code
+        )
+
+
+class CatalogImportBlocked(BlockedByPrecheck):
+    def __init__(self, blockers: list[PrecheckIssue]) -> None:
+        super().__init__("The migration can't be imported:", blockers, 409)
+
+
+class SourceAccountNotMigratable(BlockedByPrecheck):
+    def __init__(self, blockers: list[PrecheckIssue]) -> None:
+        super().__init__("This account can't be migrated:", blockers, 400)
+
+
 class SourceKeyModeMismatch(MerchantMigrationError):
     def __init__(self, *, expect_live: bool) -> None:
         mode = "live" if expect_live else "test"
@@ -114,6 +181,41 @@ class SourceKeyModeMismatch(MerchantMigrationError):
             f"(e.g. `rk_{mode}_…`), so the migration runs against {mode} data.",
             400,
         )
+
+
+def _summarize_entities(
+    items: Sequence[MerchantMigrationRecordItem], entities: Sequence[PrecheckEntity]
+) -> list[MerchantMigrationRecordSummaryEntity]:
+    """Tally every entity in one pass over the classified rows."""
+    tallies = {
+        entity: {"total": 0, "importable": 0, "imported": 0, "selectable": 0}
+        for entity in entities
+    }
+    for item in items:
+        tally = tallies.get(item.entity)
+        if tally is None:
+            continue
+        tally["total"] += 1
+        if item.import_status == MerchantMigrationRecordStatus.imported:
+            tally["imported"] += 1
+        if item.status != PrecheckRecordStatus.importable:
+            continue
+        tally["importable"] += 1
+        # Only pending rows move; the importer skips every other ledger status.
+        if item.import_status == MerchantMigrationRecordStatus.pending:
+            tally["selectable"] += 1
+
+    return [
+        MerchantMigrationRecordSummaryEntity(
+            entity=entity,
+            total=tally["total"],
+            importable=tally["importable"],
+            skipped=tally["total"] - tally["importable"],
+            imported=tally["imported"],
+            selectable=tally["selectable"],
+        )
+        for entity, tally in tallies.items()
+    ]
 
 
 def _is_live_key(api_key: str) -> bool:
@@ -189,6 +291,12 @@ class MerchantMigrationService:
         if missing_scopes:
             raise MissingStripeScopes(missing_scopes)
 
+        # An account we can never migrate is rejected here rather than at the
+        # import, so the merchant hears it while they're still connecting the key.
+        blockers = account_blockers(await adapter.get_source_account())
+        if blockers:
+            raise SourceAccountNotMigratable(blockers)
+
         # Pre-generate the id so the credentials (encrypted with it as context) can
         # be set before the row is inserted — one INSERT instead of INSERT+UPDATE.
         migration = MerchantMigration(
@@ -214,16 +322,17 @@ class MerchantMigrationService:
         """Read the connected source, normalize it, and report whether it can be
         imported. Advances the migration from source setup to the precheck step.
         """
-        migration = await self._get_manageable(session, auth_subject, migration_id)
-
-        organization = await OrganizationRepository.from_session(session).get_by_id(
-            migration.organization_id
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
         )
-        if organization is None:
-            raise MerchantMigrationNotFound()
+
+        organization = await self._get_organization(session, migration)
 
         adapter = await self._build_adapter(migration)
         source_account = await adapter.get_source_account()
+        existing_product_names = await ProductRepository.from_session(
+            session
+        ).get_active_names_by_organization(organization.id)
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         report = await precheck_engine.run(
             self._stage_records(
@@ -231,24 +340,172 @@ class MerchantMigrationService:
             ),
             organization,
             source_account,
+            existing_product_names,
         )
 
-        repository = MerchantMigrationRepository.from_session(session)
-        await repository.update(
-            migration, update_dict={"step": MerchantMigrationStep.pre_check}
-        )
+        # Re-running the precheck to refresh the ledger must not regress a
+        # migration that has already moved on.
+        if migration.step == MerchantMigrationStep.source_setup:
+            repository = MerchantMigrationRepository.from_session(session)
+            await repository.update(
+                migration, update_dict={"step": MerchantMigrationStep.pre_check}
+            )
         return report
 
-    async def _get_manageable(
+    async def import_catalog(
         self,
         session: AsyncSession,
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
+        *,
+        record_ids: Sequence[UUID] | None = None,
+        exclude_record_ids: Sequence[UUID] | None = None,
+    ) -> MerchantMigrationImportReport:
+        """Create the Polar catalog from the staged importable records, then
+        advance the migration to the create-catalog step. Idempotent: re-running
+        only imports records still pending in the ledger."""
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
+        if migration.step not in IMPORTABLE_STEPS:
+            raise CatalogImportNotReady()
+
+        organization = await self._get_organization(session, migration)
+
+        # The pre-check reports blockers but doesn't stop the import, and both the
+        # org and the source account can change after it ran.
+        adapter = await self._build_adapter(migration)
+        blockers = import_blockers(organization, await adapter.get_source_account())
+        if blockers:
+            raise CatalogImportBlocked(blockers)
+
+        report = await CatalogImporter(
+            session,
+            migration,
+            organization,
+            auth_subject,
+            record_ids=set(record_ids) if record_ids is not None else None,
+            exclude_record_ids=(
+                set(exclude_record_ids) if exclude_record_ids is not None else None
+            ),
+        ).run()
+
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.update(
+            migration, update_dict={"step": MerchantMigrationStep.create_catalog}
+        )
+        report.step = MerchantMigrationStep.create_catalog
+        return report
+
+    async def get_pan_transfer(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> PanTransferChecklist:
+        """The card-move checklist. Returns an empty one before it's started, so
+        the client can show the method and the destination account up front."""
+        migration = await self._get_manageable(session, auth_subject, migration_id)
+        return self._checklist(migration)
+
+    async def start_pan_transfer(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> PanTransferChecklist:
+        """Move the migration onto the card step and lay out its checklist. The
+        catalog has to exist first: the checklist verifies cards against imported
+        subscriptions, and there's nothing to verify against without them."""
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
+        if migration.pan_transfer_steps:
+            raise PanTransferAlreadyStarted()
+        if migration.step != MerchantMigrationStep.create_catalog:
+            raise PanTransferNotReady()
+        # The first step tells the merchant which Stripe account to send the cards
+        # to. Without it configured we'd mark that step done while showing them
+        # nothing, and they'd address the transfer to no one.
+        if not settings.MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID:
+            raise PanTransferUnavailable()
+
+        steps = pan_transfer.build(migration.pan_transfer_method)
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.update(
+            migration,
+            update_dict={
+                "step": MerchantMigrationStep.copy_cards,
+                "pan_transfer_steps": steps,
+            },
+        )
+        return self._checklist(migration, steps)
+
+    async def complete_pan_step(
+        self,
+        session: AsyncSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+        key: str,
+        *,
+        inputs: dict[str, str],
+    ) -> PanTransferChecklist:
+        """Complete a merchant-owned step. Steps owned by Polar Ops, Stripe or the
+        source provider are moved from the backoffice, not here."""
+        migration = await self._get_manageable(
+            session, auth_subject, migration_id, for_update=True
+        )
+        if not migration.pan_transfer_steps:
+            raise PanTransferNotStarted()
+
+        steps = pan_transfer.complete(
+            migration.pan_transfer_method,
+            list(migration.pan_transfer_steps),
+            key,
+            actor=PanStepActor.merchant,
+            inputs=inputs,
+        )
+        repository = MerchantMigrationRepository.from_session(session)
+        await repository.update(migration, update_dict={"pan_transfer_steps": steps})
+        return self._checklist(migration, steps)
+
+    def _checklist(
+        self,
+        migration: MerchantMigration,
+        # `Sequence`, not `list`: this class defines a `list` method, which would
+        # shadow the builtin in an annotation evaluated in the class body.
+        steps: Sequence[PanTransferStep] | None = None,
+    ) -> PanTransferChecklist:
+        if steps is None:
+            steps = migration.pan_transfer_steps
+        current = pan_transfer.current(steps)
+        return PanTransferChecklist(
+            method=migration.pan_transfer_method,
+            started=bool(steps),
+            current_step_key=current.key if current is not None else None,
+            destination_account_id=(
+                settings.MERCHANT_MIGRATION_DESTINATION_STRIPE_ACCOUNT_ID or None
+            ),
+            steps=steps,
+        )
+
+    async def _get_manageable(
+        self,
+        # Widened for the read paths: `AsyncSession` is a `NewType` over
+        # `AsyncReadSession`, so the write callers still type-check.
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+        *,
+        for_update: bool = False,
     ) -> MerchantMigration:
         repository = MerchantMigrationRepository.from_session(session)
         statement = repository.get_readable_statement(auth_subject).where(
             MerchantMigration.id == migration_id
         )
+        if for_update:
+            # Serialized so a double-click or retry can't create duplicates.
+            statement = statement.with_for_update(of=MerchantMigration)
         migration = await repository.get_one_or_none(statement)
         if migration is None:
             raise MerchantMigrationNotFound()
@@ -260,30 +517,125 @@ class MerchantMigrationService:
         )
         return migration
 
+    async def _get_organization(
+        self, session: AsyncReadSession, migration: MerchantMigration
+    ) -> Organization:
+        organization = await OrganizationRepository.from_session(session).get_by_id(
+            migration.organization_id
+        )
+        if organization is None:
+            raise MerchantMigrationNotFound()
+        return organization
+
     async def list_records(
         self,
-        session: AsyncSession,
+        session: AsyncReadSession,
         auth_subject: AuthSubject[User | Organization],
         migration_id: UUID,
         *,
-        entity: PrecheckEntity,
+        entity: PrecheckEntity | None,
         status: PrecheckRecordStatus | None,
+        reason_level: PrecheckReasonLevel | None = None,
+        import_status: MerchantMigrationRecordStatus | None = None,
         pagination: PaginationParams,
     ) -> tuple[Sequence[MerchantMigrationRecordItem], int]:
-        """Return the records of one entity type from the staged ledger,
-        classified importable/skipped and paginated in memory. Reads what
-        ``run_precheck`` persisted, so it never re-reads the source."""
+        """Return staged records classified importable/skipped and paginated in
+        memory. ``entity`` scopes to one type; ``None`` returns products, customers
+        and subscriptions together. ``status`` filters to importable or skipped;
+        ``reason_level`` filters to rows the merchant has to act on
+        (`action_required`) or only needs to know about (`info`);
+        ``import_status`` filters on the ledger outcome, which excludes price rows
+        since they have none. Reads what ``run_precheck`` persisted."""
         migration = await self._get_manageable(session, auth_subject, migration_id)
+        entities = [entity] if entity is not None else list(_ENTITY_RECORD_TYPE)
+        items = await self._classify_staged(session, migration, entities)
+
+        if status is not None:
+            items = [item for item in items if item.status == status]
+        if reason_level is not None:
+            items = [item for item in items if item.reason_level == reason_level]
+        if import_status is not None:
+            items = [item for item in items if item.import_status == import_status]
+
+        start = (pagination.page - 1) * pagination.limit
+        return items[start : start + pagination.limit], len(items)
+
+    async def _classify_staged(
+        self,
+        session: AsyncReadSession,
+        migration: MerchantMigration,
+        entities: Sequence[PrecheckEntity],
+        # `Sequence`, not `list`: this class's own `list` method shadows it.
+    ) -> Sequence[MerchantMigrationRecordItem]:
+        """Load the staged catalog once and classify the requested entities.
+
+        The expensive half of both listing and summarising, shared rather than
+        repeated per caller.
+        """
+        organization = await self._get_organization(session, migration)
 
         record_repository = MerchantMigrationRecordRepository.from_session(session)
         staged = await record_repository.list_by_migration(migration.id)
         records = [deserialize(record.type, record.canonical) for record in staged]
-        items = classify_records(records, entity)
-        if status is not None:
-            items = [item for item in items if item.status == status]
+        # Only product classification consults it.
+        existing_product_names: set[str] = set()
+        if PrecheckEntity.products in entities:
+            existing_product_names = await ProductRepository.from_session(
+                session
+            ).get_active_names_by_organization(migration.organization_id)
 
-        start = (pagination.page - 1) * pagination.limit
-        return items[start : start + pagination.limit], len(items)
+        items: list[MerchantMigrationRecordItem] = []
+        for entity_type in entities:
+            entity_items = classify_records(
+                records,
+                entity_type,
+                organization.default_presentment_currency,
+                existing_product_names,
+            )
+            self._attach_record_ids(entity_items, staged, entity_type)
+            items.extend(entity_items)
+        return items
+
+    async def summarize_records(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        migration_id: UUID,
+    ) -> MerchantMigrationRecordSummary:
+        """Every count the review UI needs, from a single classification pass."""
+        migration = await self._get_manageable(session, auth_subject, migration_id)
+        entities = list(_ENTITY_RECORD_TYPE)
+        items = await self._classify_staged(session, migration, entities)
+
+        return MerchantMigrationRecordSummary(
+            entities=_summarize_entities(items, entities),
+            action_required=sum(
+                1
+                for item in items
+                if item.reason_level == PrecheckReasonLevel.action_required
+            ),
+        )
+
+    def _attach_record_ids(
+        self,
+        items: Sequence[MerchantMigrationRecordItem],
+        staged: Sequence[MerchantMigrationRecord],
+        entity: PrecheckEntity,
+    ) -> None:
+        """Give each item its ledger record id, so a row can be selected for
+        import. The 1:1 entities (products/customers/subscriptions) map to their
+        staged records in order — both derive from the same `staged` fetch. Prices
+        aren't their own record (they live in a product), so they keep a null id.
+        """
+        record_type = _ENTITY_RECORD_TYPE.get(entity)
+        if record_type is None:
+            return
+        staged_of_type = [record for record in staged if record.type == record_type]
+        if len(staged_of_type) != len(items):
+            return
+        for item, record in zip(items, staged_of_type, strict=True):
+            item.record_id = record.id
+            item.import_status = record.status
 
     async def _stage_records(
         self,

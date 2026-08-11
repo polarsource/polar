@@ -1,6 +1,16 @@
+import { renderToStaticMarkup } from 'react-dom/server'
 import { Heading, Markdown, Section } from 'react-email'
 import { schemas } from '../types'
 import { Check, Discord, Download, Gauge, GitHub, Key } from './Icons'
+
+const BenefitNote = ({ note }: { note: string }) => {
+  try {
+    renderToStaticMarkup(<Markdown>{note}</Markdown>)
+  } catch {
+    return <div className="whitespace-pre-wrap">{note}</div>
+  }
+  return <Markdown>{note}</Markdown>
+}
 
 const BenefitIcon = ({
   benefit: { type },
@@ -41,7 +51,7 @@ const Benefit = ({ benefit }: { benefit: schemas['Benefit'] }) => {
           </Heading>
           {type === 'custom' && properties.note && (
             <div className="mt-[8px] text-[14px] leading-[24px] text-gray-500">
-              <Markdown>{properties.note}</Markdown>
+              <BenefitNote note={properties.note} />
             </div>
           )}
         </div>

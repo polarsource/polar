@@ -16,6 +16,7 @@ import { useMeterQuantities } from '@/hooks/queries/meters'
 import { Events } from '@/components/Events/Events'
 import { ParsedMetricPeriod } from '@/hooks/queries/metrics'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
+import { getCustomerActivityStart } from '@/utils/customer'
 import ArrowBackOutlined from '@mui/icons-material/ArrowBackOutlined'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -322,10 +323,10 @@ const CustomerMeterActivityCards = ({
       currentMonthEnd: endOfMonth(new UTCDate()),
       lastMonthStart: startOfMonth(subMonths(new UTCDate(), 1)),
       lastMonthEnd: endOfMonth(subMonths(new UTCDate(), 1)),
-      allTimeStart: new UTCDate(customer.created_at),
+      allTimeStart: new UTCDate(getCustomerActivityStart(customer).getTime()),
       allTimeEnd: new UTCDate(),
     }),
-    [customer.created_at],
+    [customer],
   )
 
   const { data: figuresQuantities } = useMeterQuantities(meter.id, {

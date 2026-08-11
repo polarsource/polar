@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 import structlog
 from sqlalchemy.orm import selectinload
 
-from polar.auth.models import AuthSubject, Organization, User
+from polar.auth.models import AuthSubject, User
 from polar.auth.permission import OrganizationPermission
 from polar.authz.service import get_accessible_org_ids
 from polar.authz.types import AccessibleOrganizationID
@@ -95,7 +95,7 @@ class CompassService:
     async def list_insights(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User],
         *,
         timezone: ZoneInfo,
         organization_id: Sequence[uuid.UUID] | None = None,
@@ -211,7 +211,7 @@ class CompassService:
     async def _product_pricing(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User],
         org_id: uuid.UUID,
         detectors: Sequence[Detector],
         *,
@@ -311,7 +311,7 @@ class CompassService:
     async def _customer_costs(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User],
         org_id: uuid.UUID,
         detectors: Sequence[Detector],
         *,
@@ -449,7 +449,7 @@ class CompassService:
     async def _cost_anomalies(
         self,
         session: AsyncReadSession,
-        auth_subject: AuthSubject[User | Organization],
+        auth_subject: AuthSubject[User],
         org_id: uuid.UUID,
         detectors: Sequence[Detector],
         *,

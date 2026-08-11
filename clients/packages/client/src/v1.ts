@@ -3186,6 +3186,88 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/compass/threads': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Assistant Threads
+     * @description List the caller's assistant conversation threads, most recent first.
+     *
+     *     **Scopes**: `metrics:read`
+     */
+    get: operations['compass:list_threads']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/compass/threads/{id}': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Assistant Thread
+     * @description Get a thread. Its messages are fetched separately, page by page.
+     *
+     *     **Scopes**: `metrics:read`
+     */
+    get: operations['compass:get_thread']
+    put?: never
+    post?: never
+    /**
+     * Delete Assistant Thread
+     * @description Delete a thread and its conversation history.
+     *
+     *     **Scopes**: `metrics:write`
+     */
+    delete: operations['compass:delete_thread']
+    options?: never
+    head?: never
+    /**
+     * Update Assistant Thread
+     * @description Rename a thread.
+     *
+     *     **Scopes**: `metrics:write`
+     */
+    patch: operations['compass:update_thread']
+    trace?: never
+  }
+  '/v1/compass/threads/{id}/messages': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * List Assistant Thread Messages
+     * @description List a thread's turns, for rehydrating the UI.
+     *
+     *     Paged newest-first: page 1 is the tail of the conversation and higher
+     *     pages walk back through it. Within a page, turns read oldest-first the
+     *     way they're rendered.
+     *
+     *     **Scopes**: `metrics:read`
+     */
+    get: operations['compass:list_thread_messages']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/license-keys/': {
     parameters: {
       query?: never
@@ -3552,6 +3634,50 @@ export interface paths {
      *     **Scopes**: `customers:read` `customers:write`
      */
     get: operations['customers:export']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customers/growth': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Customer Growth
+     * @description Get new and cumulative customer counts over time.
+     *
+     *     **Scopes**: `customers:read` `customers:write`
+     */
+    get: operations['customers:growth']
+    put?: never
+    post?: never
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/customers/top': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Top Customers
+     * @description Rank the organization's customers by paid net revenue.
+     *
+     *     **Scopes**: `customers:read` `customers:write`
+     */
+    get: operations['customers:top']
     put?: never
     post?: never
     delete?: never
@@ -5142,6 +5268,90 @@ export interface paths {
      * @description **Scopes**: `organizations:write`
      */
     post: operations['merchant-migrations:precheck']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/merchant-migrations/{id}/import': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Import Merchant Migration Catalog
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:import_catalog']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/merchant-migrations/{id}/pan-transfer': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Merchant Migration Card Transfer
+     * @description **Scopes**: `organizations:write`
+     */
+    get: operations['merchant-migrations:pan_transfer']
+    put?: never
+    /**
+     * Start Merchant Migration Card Transfer
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:start_pan_transfer']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/merchant-migrations/{id}/pan-transfer/steps/{key}/complete': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    get?: never
+    put?: never
+    /**
+     * Complete Merchant Migration Card Transfer Step
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:complete_pan_transfer_step']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
+  '/v1/merchant-migrations/{id}/records/summary': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Summarize Merchant Migration Records
+     * @description **Scopes**: `organizations:write`
+     */
+    get: operations['merchant-migrations:records_summary']
+    put?: never
+    post?: never
     delete?: never
     options?: never
     head?: never
@@ -7697,6 +7907,38 @@ export interface components {
       error: 'AppealNotRejectedError'
       /** Detail */
       detail: string
+    }
+    /**
+     * AssistantBlockPart
+     * @description A renderable block, at the position the model placed it.
+     */
+    AssistantBlockPart: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'block'
+      /** Block */
+      block:
+        | components['schemas']['TextBlock']
+        | components['schemas']['MetricChartBlock']
+        | components['schemas']['InsightCardsBlock']
+        | components['schemas']['EntityListBlock']
+        | components['schemas']['DataTableBlock']
+        | components['schemas']['CustomerCardBlock']
+    }
+    /**
+     * AssistantTextPart
+     * @description A run of assistant prose, as it was streamed.
+     */
+    AssistantTextPart: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      kind: 'text'
+      /** Text */
+      text: string
     }
     /**
      * AttachedCustomField
@@ -11906,6 +12148,28 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** CatalogImportBlocked */
+    CatalogImportBlocked: {
+      /**
+       * Error
+       * @example CatalogImportBlocked
+       * @constant
+       */
+      error: 'CatalogImportBlocked'
+      /** Detail */
+      detail: string
+    }
+    /** CatalogImportNotReady */
+    CatalogImportNotReady: {
+      /**
+       * Error
+       * @example CatalogImportNotReady
+       * @constant
+       */
+      error: 'CatalogImportNotReady'
+      /** Detail */
+      detail: string
+    }
     /** ChannelNamePreviewRequest */
     ChannelNamePreviewRequest: {
       /** Organization Id */
@@ -14389,6 +14653,76 @@ export interface components {
       allow_trial?: false | null
     }
     /**
+     * ColumnFormat
+     * @enum {string}
+     */
+    ColumnFormat: 'text' | 'currency' | 'datetime' | 'badge' | 'avatar'
+    /**
+     * CompassThreadMessageSchema
+     * @description One completed turn: the user's prompt and the rendered answer.
+     */
+    CompassThreadMessageSchema: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /** Prompt */
+      prompt: string
+      /** Parts */
+      parts: (
+        | components['schemas']['AssistantTextPart']
+        | components['schemas']['AssistantBlockPart']
+      )[]
+    }
+    /**
+     * CompassThreadSchema
+     * @description An assistant conversation thread.
+     */
+    CompassThreadSchema: {
+      /**
+       * Created At
+       * Format: date-time
+       * @description Creation timestamp of the object.
+       */
+      created_at: string
+      /**
+       * Modified At
+       * @description Last modification timestamp of the object.
+       */
+      modified_at: string | null
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the object.
+       */
+      id: string
+      /**
+       * Organization Id
+       * Format: uuid4
+       */
+      organization_id: string
+      /** Title */
+      title: string
+    }
+    /** CompassThreadUpdate */
+    CompassThreadUpdate: {
+      /** Title */
+      title?: string | null
+    }
+    /**
      * ConfidenceLevel
      * @description How much we trust an insight, derived from sample size and baseline variance.
      *
@@ -16179,6 +16513,28 @@ export interface components {
       | 'too_expensive'
       | 'unused'
       | 'other'
+    /**
+     * CustomerCardBlock
+     * @description A single customer's identity header, above their orders/subscriptions.
+     */
+    CustomerCardBlock: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'customer_card'
+      /** Email */
+      email: string
+      /** Name */
+      name: string | null
+      /** Avatar Url */
+      avatar_url: string | null
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+    }
     CustomerCreate:
       | components['schemas']['CustomerIndividualCreate']
       | components['schemas']['CustomerTeamCreate']
@@ -16479,6 +16835,25 @@ export interface components {
       /** Token */
       token: string
     }
+    /** CustomerGrowthPeriod */
+    CustomerGrowthPeriod: {
+      /**
+       * Timestamp
+       * Format: date-time
+       * @description The start of the period.
+       */
+      timestamp: string
+      /**
+       * New Customers
+       * @description The number of customers created during the period.
+       */
+      new_customers: number
+      /**
+       * Total Customers
+       * @description The cumulative number of customers at the end of the period.
+       */
+      total_customers: number
+    }
     /**
      * CustomerIndividual
      * @description A customer in an organization.
@@ -16560,6 +16935,11 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
+      /**
+       * First User Event At
+       * @description Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+       */
+      first_user_event_at: string | null
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -18172,6 +18552,11 @@ export interface components {
        */
       deleted_at: string | null
       /**
+       * First User Event At
+       * @description Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+       */
+      first_user_event_at: string | null
+      /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
@@ -18494,6 +18879,11 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
+      /**
+       * First User Event At
+       * @description Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+       */
+      first_user_event_at: string | null
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -19059,6 +19449,11 @@ export interface components {
        */
       deleted_at: string | null
       /**
+       * First User Event At
+       * @description Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+       */
+      first_user_event_at: string | null
+      /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
@@ -19353,6 +19748,44 @@ export interface components {
       | '-created_at'
       | 'balance'
       | '-balance'
+    /**
+     * DataTableBlock
+     * @description Tabular entities (orders, subscriptions, customers, ...).
+     */
+    DataTableBlock: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'data_table'
+      /**
+       * Entity
+       * @description What the rows are, e.g. `subscriptions`.
+       */
+      entity: string
+      /**
+       * Title
+       * @description Heading rendered above the table.
+       */
+      title: string | null
+      /** Columns */
+      columns: components['schemas']['DataTableColumn'][]
+      /** Rows */
+      rows: {
+        [key: string]: string | number | null
+      }[]
+      /** Total Count */
+      total_count: number
+    }
+    /** DataTableColumn */
+    DataTableColumn: {
+      /** Key */
+      key: string
+      /** Label */
+      label: string
+      /** @default text */
+      format: components['schemas']['ColumnFormat']
+    }
     /** DiscordGuild */
     DiscordGuild: {
       /** Name */
@@ -20503,6 +20936,17 @@ export interface components {
        */
       case_id: string | null
     }
+    /** DisputeAutoAcceptNotEnabled */
+    DisputeAutoAcceptNotEnabled: {
+      /**
+       * Error
+       * @example DisputeAutoAcceptNotEnabled
+       * @constant
+       */
+      error: 'DisputeAutoAcceptNotEnabled'
+      /** Detail */
+      detail: string
+    }
     /** DisputeCustomer */
     DisputeCustomer: {
       /**
@@ -20581,6 +21025,11 @@ export interface components {
        * @description Timestamp for when the customer was soft deleted.
        */
       deleted_at: string | null
+      /**
+       * First User Event At
+       * @description Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+       */
+      first_user_event_at: string | null
       /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
@@ -20789,6 +21238,36 @@ export interface components {
       email: string
       /** Return To */
       return_to?: string | null
+    }
+    /**
+     * EntityListBlock
+     * @description A few entities as a compact list; same shape as the table so the
+     *     client formats values (currency, dates) identically in both.
+     */
+    EntityListBlock: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'entity_list'
+      /**
+       * Entity
+       * @description What the items are, e.g. `orders`.
+       */
+      entity: string
+      /**
+       * Title
+       * @description Heading rendered above the list.
+       */
+      title: string | null
+      /** Columns */
+      columns: components['schemas']['DataTableColumn'][]
+      /** Rows */
+      rows: {
+        [key: string]: string | number | null
+      }[]
+      /** Total Count */
+      total_count: number
     }
     Event:
       | components['schemas']['SystemEvent']
@@ -21632,6 +22111,19 @@ export interface components {
       drivers?: components['schemas']['InsightDriver'][]
     }
     /**
+     * InsightCardsBlock
+     * @description Compass insights, rendered with the same card as the feed.
+     */
+    InsightCardsBlock: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'insight_cards'
+      /** Insights */
+      insights: components['schemas']['Insight'][]
+    }
+    /**
      * InsightCategory
      * @description Buckets an insight by which aspect of the business it speaks to.
      * @enum {string}
@@ -22132,6 +22624,11 @@ export interface components {
        */
       deleted_at: string | null
       /**
+       * First User Event At
+       * @description Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+       */
+      first_user_event_at: string | null
+      /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
@@ -22381,6 +22878,18 @@ export interface components {
     ListResource_Checkout_: {
       /** Items */
       items: components['schemas']['Checkout'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[CompassThreadMessageSchema] */
+    ListResource_CompassThreadMessageSchema_: {
+      /** Items */
+      items: components['schemas']['CompassThreadMessageSchema'][]
+      pagination: components['schemas']['Pagination']
+    }
+    /** ListResource[CompassThreadSchema] */
+    ListResource_CompassThreadSchema_: {
+      /** Items */
+      items: components['schemas']['CompassThreadSchema'][]
       pagination: components['schemas']['Pagination']
     }
     /** ListResource[CustomField] */
@@ -22721,6 +23230,34 @@ export interface components {
       currency: string
       /** Formatted Amount */
       readonly formatted_amount: string
+    }
+    /** MaintainerFileFlaggedMaliciousNotification */
+    MaintainerFileFlaggedMaliciousNotification: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'MaintainerFileFlaggedMaliciousNotification'
+      payload: components['schemas']['MaintainerFileFlaggedMaliciousNotificationPayload']
+    }
+    /** MaintainerFileFlaggedMaliciousNotificationPayload */
+    MaintainerFileFlaggedMaliciousNotificationPayload: {
+      /** File Name */
+      file_name: string
+      /** Organization Name */
+      organization_name: string
+      /** Organization Slug */
+      organization_slug?: string | null
     }
     /** MaintainerNewPaidSubscriptionNotification */
     MaintainerNewPaidSubscriptionNotification: {
@@ -23146,6 +23683,44 @@ export interface components {
        */
       api_key: string
     }
+    /** MerchantMigrationImportReport */
+    MerchantMigrationImportReport: {
+      /** @description The migration step after the import. */
+      step: components['schemas']['MerchantMigrationStep']
+      /**
+       * Results
+       * @description Per-entity counts of what was imported vs skipped.
+       */
+      results: components['schemas']['MerchantMigrationImportResult'][]
+    }
+    /** MerchantMigrationImportRequest */
+    MerchantMigrationImportRequest: {
+      /**
+       * Record Ids
+       * @description The ledger record ids to import (from the records listing). When omitted, every importable record is imported (subject to `exclude_record_ids`). Records not selected stay pending.
+       */
+      record_ids?: string[] | null
+      /**
+       * Exclude Record Ids
+       * @description Import every importable record except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
+       */
+      exclude_record_ids?: string[] | null
+    }
+    /** MerchantMigrationImportResult */
+    MerchantMigrationImportResult: {
+      /** @description The source entity type. */
+      entity: components['schemas']['PrecheckEntity']
+      /**
+       * Imported
+       * @description How many were created or reused in Polar.
+       */
+      imported: number
+      /**
+       * Skipped
+       * @description How many were left on the source (not importable).
+       */
+      skipped: number
+    }
     /** MerchantMigrationNotEnabled */
     MerchantMigrationNotEnabled: {
       /**
@@ -23170,6 +23745,11 @@ export interface components {
     }
     /** MerchantMigrationRecordItem */
     MerchantMigrationRecordItem: {
+      /**
+       * Record Id
+       * @description The ledger record id, used to select this row for import. Null for price rows, which are imported together with their product.
+       */
+      record_id: string | null
       /** @description The source entity type. */
       entity: components['schemas']['PrecheckEntity']
       /**
@@ -23184,21 +23764,96 @@ export interface components {
       title: string
       /**
        * Subtitle
-       * @description Secondary detail (interval, amount, country, status).
+       * @description Secondary detail (lifecycle status, country).
        */
       subtitle: string | null
+      /**
+       * Amount
+       * @description Recurring price in the currency's smallest unit (cents for USD), for priced rows.
+       */
+      amount: number | null
+      /**
+       * Currency
+       * @description ISO currency for `amount`.
+       */
+      currency: string | null
+      /**
+       * Recurring Interval
+       * @description Billing interval for `amount` (e.g. `month`, `year`).
+       */
+      recurring_interval: string | null
       /** @description Whether this record will be imported or stays on the source. */
       status: components['schemas']['PrecheckRecordStatus']
+      /** @description The ledger status of this record: `pending` (not imported yet), `imported`, `skipped` or `failed`. Null for price rows, which import with their product. */
+      import_status:
+        | components['schemas']['MerchantMigrationRecordStatus']
+        | null
       /**
        * Reason
-       * @description Why the record is skipped, if it is.
+       * @description Why the record is skipped, or what to know about it if it isn't.
        */
       reason: string | null
       /**
        * Reason Code
-       * @description Stable code for the skip reason, if any.
+       * @description Stable code for `reason`, if any.
        */
       reason_code: string | null
+      /** @description How urgent `reason` is: `action_required` when the merchant has to fix something, `info` when there is nothing to fix. Null without a reason. */
+      reason_level: components['schemas']['PrecheckReasonLevel'] | null
+    }
+    /**
+     * MerchantMigrationRecordStatus
+     * @enum {string}
+     */
+    MerchantMigrationRecordStatus: 'pending' | 'imported' | 'skipped' | 'failed'
+    /**
+     * MerchantMigrationRecordSummary
+     * @description Every count the review UI needs, from one classification pass.
+     */
+    MerchantMigrationRecordSummary: {
+      /**
+       * Entities
+       * @description Per-entity counts, for the listable entities only.
+       */
+      entities: components['schemas']['MerchantMigrationRecordSummaryEntity'][]
+      /**
+       * Action Required
+       * @description How many records the pre-check flagged for the merchant to fix, across entities. Classification only, so a flagged record that has since been imported still counts.
+       */
+      action_required: number
+    }
+    /**
+     * MerchantMigrationRecordSummaryEntity
+     * @description The pre-check's per-entity counts, plus where the ledger has got to.
+     */
+    MerchantMigrationRecordSummaryEntity: {
+      /** @description The source entity type. */
+      entity: components['schemas']['PrecheckEntity']
+      /**
+       * Total
+       * @description How many were read from the source.
+       */
+      total: number
+      /**
+       * Importable
+       * @description How many will be imported into Polar.
+       */
+      importable: number
+      /**
+       * Skipped
+       * @description How many won't be imported and stay on the source.
+       */
+      skipped: number
+      /**
+       * Imported
+       * @description How many are already in Polar.
+       */
+      imported: number
+      /**
+       * Selectable
+       * @description How many an import would actually move: importable by the pre-check and still pending in the ledger.
+       */
+      selectable: number
     }
     /**
      * MerchantMigrationSourcePlatform
@@ -23606,6 +24261,44 @@ export interface components {
       display_name: string
       /** @description Type of the metric, useful to know the unit or format of the value. */
       type: components['schemas']['MetricType']
+    }
+    /**
+     * MetricChartBlock
+     * @description A single metric's series over the requested window.
+     */
+    MetricChartBlock: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'metric_chart'
+      /**
+       * Metric
+       * @description Metric slug, e.g. `monthly_recurring_revenue`.
+       */
+      metric: string
+      /**
+       * Label
+       * @description Human-readable metric name.
+       */
+      label: string
+      /**
+       * Unit
+       * @description Metric unit type, e.g. `currency` or `scalar`.
+       */
+      unit: string
+      /** Points */
+      points: components['schemas']['MetricChartPoint'][]
+    }
+    /** MetricChartPoint */
+    MetricChartPoint: {
+      /**
+       * Timestamp
+       * Format: date-time
+       */
+      timestamp: string
+      /** Value */
+      value: number
     }
     /**
      * MetricDashboardCreate
@@ -24178,6 +24871,7 @@ export interface components {
         | components['schemas']['MaintainerNewProductSaleNotification']
         | components['schemas']['MaintainerSubscriptionRenewalNotification']
         | components['schemas']['MaintainerAccountCreditsGrantedNotification']
+        | components['schemas']['MaintainerFileFlaggedMaliciousNotification']
       )[]
       /** Last Read Notification Id */
       last_read_notification_id: string | null
@@ -24845,11 +25539,37 @@ export interface components {
        */
       deleted_at: string | null
       /**
+       * First User Event At
+       * @description Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+       */
+      first_user_event_at: string | null
+      /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
       avatar_url: string | null
     }
+    /**
+     * OrderExportColumn
+     * @enum {string}
+     */
+    OrderExportColumn:
+      | 'email'
+      | 'created_at'
+      | 'product'
+      | 'net_amount'
+      | 'currency'
+      | 'status'
+      | 'invoice_number'
+      | 'customer_name'
+      | 'billing_name'
+      | 'billing_country'
+      | 'subtotal_amount'
+      | 'discount_amount'
+      | 'tax_amount'
+      | 'total_amount'
+      | 'refunded_amount'
+      | 'billing_reason'
     /**
      * OrderFinalize
      * @description Schema to finalize a draft order and trigger an off-session charge.
@@ -25703,6 +26423,8 @@ export interface components {
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
+      /** @description Settings related to disputes */
+      dispute_settings: components['schemas']['OrganizationDisputeSettings']
       /**
        * Embed Hosts
        * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
@@ -26736,6 +27458,22 @@ export interface components {
        */
       previous_annual_revenue?: number | null
     }
+    /**
+     * OrganizationDisputeSettings
+     * @description `auto_accept_below_amount` is in Polar's settlement currency (USD).
+     */
+    OrganizationDisputeSettings: {
+      /** Auto Accept Below Amount */
+      auto_accept_below_amount: number | null
+    }
+    /** OrganizationDisputeSettingsUpdate */
+    OrganizationDisputeSettingsUpdate: {
+      /**
+       * Auto Accept Below Amount
+       * @description Concede disputes below this amount, in USD cents, without asking the organization. A dispute charged in another currency converts at the rate its payment settled at. `null` turns it off. The disputed amount and the processor's dispute fee are still deducted.
+       */
+      auto_accept_below_amount?: number | null
+    }
     /** OrganizationEmbedStatus */
     OrganizationEmbedStatus: {
       /**
@@ -26837,6 +27575,12 @@ export interface components {
        * @default false
        */
       sso_enabled: boolean
+      /**
+       * Dispute Auto Accept Enabled
+       * @description If this organization can set a threshold below which Polar concedes disputes on its behalf. Requires `disputes_enabled`.
+       * @default false
+       */
+      dispute_auto_accept_enabled: boolean
       /**
        * Compass Enabled
        * @description If this organization has the split product navigation (Billing / Compass / Customers) enabled in the dashboard
@@ -26983,6 +27727,8 @@ export interface components {
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
+      /** @description Settings related to disputes */
+      dispute_settings: components['schemas']['OrganizationDisputeSettings']
       /**
        * Embed Hosts
        * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
@@ -28296,6 +29042,9 @@ export interface components {
       customer_portal_settings?:
         | components['schemas']['OrganizationCustomerPortalSettings']
         | null
+      dispute_settings?:
+        | components['schemas']['OrganizationDisputeSettingsUpdate']
+        | null
       /** Embed Hosts */
       embed_hosts?: string[] | null
       /** @description Default presentment currency for the organization */
@@ -28431,6 +29180,8 @@ export interface components {
       customer_email_settings: components['schemas']['OrganizationCustomerEmailSettings']
       /** @description Settings related to the customer portal */
       customer_portal_settings: components['schemas']['OrganizationCustomerPortalSettings']
+      /** @description Settings related to disputes */
+      dispute_settings: components['schemas']['OrganizationDisputeSettings']
       /**
        * Embed Hosts
        * @description Hosts allowed to embed this organization's checkout. An entry is a host and an optional port, without a scheme: HTTPS is always allowed, and HTTP too for local hosts — `localhost`, any `.localhost` or `.local` name, and loopback or private addresses. `*.example.com` matches any subdomain, but not `example.com` itself. An app origin such as `chrome-extension://abcdef` carries its scheme, having no host to match on.
@@ -28721,6 +29472,199 @@ export interface components {
       total_count: number
       /** Max Page */
       max_page: number
+    }
+    /**
+     * PanStepActor
+     * @description Who is asking to move a step, which decides what they're allowed to move.
+     * @enum {string}
+     */
+    PanStepActor: 'merchant' | 'ops' | 'system'
+    /**
+     * PanStepKind
+     * @description What the owner has to do, which is what the frontend renders.
+     * @enum {string}
+     */
+    PanStepKind: 'auto' | 'input' | 'confirm'
+    /** PanStepNotActionable */
+    PanStepNotActionable: {
+      /**
+       * Error
+       * @example PanStepNotActionable
+       * @constant
+       */
+      error: 'PanStepNotActionable'
+      /** Detail */
+      detail: string
+    }
+    /** PanStepNotFound */
+    PanStepNotFound: {
+      /**
+       * Error
+       * @example PanStepNotFound
+       * @constant
+       */
+      error: 'PanStepNotFound'
+      /** Detail */
+      detail: string
+    }
+    /** PanStepNotOwned */
+    PanStepNotOwned: {
+      /**
+       * Error
+       * @example PanStepNotOwned
+       * @constant
+       */
+      error: 'PanStepNotOwned'
+      /** Detail */
+      detail: string
+    }
+    /**
+     * PanStepOwner
+     * @description Who moves a step forward.
+     * @enum {string}
+     */
+    PanStepOwner: 'merchant' | 'polar_ops' | 'polar_app' | 'stripe' | 'provider'
+    /**
+     * PanStepStatus
+     * @enum {string}
+     */
+    PanStepStatus: 'blocked' | 'pending' | 'in_progress' | 'completed'
+    /** PanTransferAlreadyStarted */
+    PanTransferAlreadyStarted: {
+      /**
+       * Error
+       * @example PanTransferAlreadyStarted
+       * @constant
+       */
+      error: 'PanTransferAlreadyStarted'
+      /** Detail */
+      detail: string
+    }
+    /** PanTransferChecklist */
+    PanTransferChecklist: {
+      /** @description How the cards move: `pan_copy` for a Stripe source (account to account), `pan_import` for any other vault. */
+      method: components['schemas']['PanTransferMethod']
+      /**
+       * Started
+       * @description Whether the card transfer has been started. Steps are empty until it is.
+       */
+      started: boolean
+      /**
+       * Current Step Key
+       * @description The one step that can be acted on now. Null once every step is done.
+       */
+      current_step_key: string | null
+      /**
+       * Destination Account Id
+       * @description The Stripe account the cards move into. The merchant needs it to address the copy or import to Polar.
+       */
+      destination_account_id: string | null
+      /**
+       * Steps
+       * @description The ordered checklist. Titles and guidance live in the client, keyed by `key`.
+       */
+      steps: components['schemas']['PanTransferStep'][]
+    }
+    /**
+     * PanTransferMethod
+     * @description How the cards reach Polar's Stripe account.
+     * @enum {string}
+     */
+    PanTransferMethod: 'pan_copy' | 'pan_import'
+    /** PanTransferNotReady */
+    PanTransferNotReady: {
+      /**
+       * Error
+       * @example PanTransferNotReady
+       * @constant
+       */
+      error: 'PanTransferNotReady'
+      /** Detail */
+      detail: string
+    }
+    /** PanTransferNotStarted */
+    PanTransferNotStarted: {
+      /**
+       * Error
+       * @example PanTransferNotStarted
+       * @constant
+       */
+      error: 'PanTransferNotStarted'
+      /** Detail */
+      detail: string
+    }
+    /**
+     * PanTransferStep
+     * @description One checklist step, as persisted on `MerchantMigration.pan_transfer_steps`.
+     *
+     *     The row is self-contained: owner and kind are copied off the template so both
+     *     the stored JSONB and the API response can be read without resolving a
+     *     template. The template stays authoritative for the rules that gate a
+     *     transition (`auto_complete`, the accepted inputs), so a step whose key no
+     *     longer has a template can't be completed.
+     */
+    PanTransferStep: {
+      /**
+       * Key
+       * @description Stable identifier. The client keys its copy off it.
+       */
+      key: string
+      /** @description Who moves this step forward. */
+      owner: components['schemas']['PanStepOwner']
+      /** @description What the owner does, so the client knows what to render. */
+      kind: components['schemas']['PanStepKind']
+      /** @description Where the step is. Only one step is actionable at a time. */
+      status: components['schemas']['PanStepStatus']
+      /**
+       * Inputs
+       * @description Values collected on this step.
+       */
+      inputs: {
+        [key: string]: string
+      }
+      /**
+       * Note
+       * @description Free text from Polar Ops, shown to the merchant. How a weeks-long wait on Stripe or the provider gets explained without a support thread.
+       */
+      note: string | null
+      /**
+       * Expected At
+       * @description When Ops expects this step to land.
+       */
+      expected_at: string | null
+      /**
+       * Started At
+       * @description When the step became actionable.
+       */
+      started_at: string | null
+      /**
+       * Completed At
+       * @description When the step was completed.
+       */
+      completed_at: string | null
+      /** @description Who completed the step. */
+      completed_by: components['schemas']['PanStepActor'] | null
+    }
+    /** PanTransferStepComplete */
+    PanTransferStepComplete: {
+      /**
+       * Inputs
+       * @description Values the step collects. Which keys it accepts depends on the step; unknown keys are rejected.
+       */
+      inputs?: {
+        [key: string]: string
+      }
+    }
+    /** PanTransferUnavailable */
+    PanTransferUnavailable: {
+      /**
+       * Error
+       * @example PanTransferUnavailable
+       * @constant
+       */
+      error: 'PanTransferUnavailable'
+      /** Detail */
+      detail: string
     }
     /** PauseResumeNotAllowed */
     PauseResumeNotAllowed: {
@@ -29379,6 +30323,11 @@ export interface components {
      * @enum {string}
      */
     PrecheckIssueLevel: 'blocker' | 'warning'
+    /**
+     * PrecheckReasonLevel
+     * @enum {string}
+     */
+    PrecheckReasonLevel: 'action_required' | 'info'
     /**
      * PrecheckRecordStatus
      * @enum {string}
@@ -31759,6 +32708,17 @@ export interface components {
        */
       users: components['schemas']['SlackWorkspaceUser'][]
     }
+    /** SourceAccountNotMigratable */
+    SourceAccountNotMigratable: {
+      /**
+       * Error
+       * @example SourceAccountNotMigratable
+       * @constant
+       */
+      error: 'SourceAccountNotMigratable'
+      /** Detail */
+      detail: string
+    }
     /** SourceKeyModeMismatch */
     SourceKeyModeMismatch: {
       /**
@@ -32731,6 +33691,11 @@ export interface components {
        */
       deleted_at: string | null
       /**
+       * First User Event At
+       * @description Timestamp of the first event ingested for this customer. Can predate `created_at`, and is null if no event was ever ingested.
+       */
+      first_user_event_at: string | null
+      /**
        * Avatar Url
        * @example https://www.gravatar.com/avatar/xxx?d=404
        */
@@ -32826,6 +33791,33 @@ export interface components {
       /** Recurring Interval Count */
       recurring_interval_count?: number
     }
+    /**
+     * SubscriptionExportColumn
+     * @enum {string}
+     */
+    SubscriptionExportColumn:
+      | 'email'
+      | 'started_at'
+      | 'product'
+      | 'amount'
+      | 'currency'
+      | 'status'
+      | 'recurring_interval'
+      | 'customer_name'
+      | 'billing_name'
+      | 'billing_country'
+      | 'net_amount'
+      | 'discount'
+      | 'seats'
+      | 'current_period_start'
+      | 'current_period_end'
+      | 'cancel_at_period_end'
+      | 'canceled_at'
+      | 'ends_at'
+      | 'ended_at'
+      | 'cancellation_reason'
+      | 'trial_start'
+      | 'trial_end'
     /** SubscriptionLocked */
     SubscriptionLocked: {
       /**
@@ -34254,6 +35246,9 @@ export interface components {
       | 'dispute_lost'
       | 'dispute_prevented'
       | 'merchant_accepted'
+      | 'dispute_auto_accept_scheduled'
+      | 'dispute_auto_accept_canceled'
+      | 'dispute_auto_accepted'
     /**
      * SupportCaseSortProperty
      * @enum {string}
@@ -34519,6 +35514,19 @@ export interface components {
       jurisdiction_count: number
     }
     /**
+     * TextBlock
+     * @description Plain narrated text.
+     */
+    TextBlock: {
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'text'
+      /** Text */
+      text: string
+    }
+    /**
      * TimeInterval
      * @enum {string}
      */
@@ -34540,6 +35548,43 @@ export interface components {
       scope: string
       /** Id Token */
       id_token?: string | null
+    }
+    /** TopCustomer */
+    TopCustomer: {
+      /**
+       * Id
+       * Format: uuid4
+       * @description The ID of the customer.
+       * @example 992fae2a-2a17-4b7a-8d9e-e287cf90131b
+       */
+      id: string
+      /**
+       * Email
+       * @description The email address of the customer. This must be unique within the organization.
+       * @example customer@example.com
+       */
+      email: string | null
+      /**
+       * Name
+       * @description The name of the customer.
+       * @example John Doe
+       */
+      name: string | null
+      /**
+       * Avatar Url
+       * @example https://www.gravatar.com/avatar/xxx?d=404
+       */
+      avatar_url: string | null
+      /**
+       * Order Count
+       * @description The number of paid orders in the period.
+       */
+      order_count: number
+      /**
+       * Net Revenue
+       * @description The net revenue from this customer in the period, in cents, with refunded amounts subtracted.
+       */
+      net_revenue: number
     }
     /** Transaction */
     Transaction: {
@@ -38209,13 +39254,15 @@ export interface operations {
           'application/json': components['schemas']['Organization']
         }
       }
-      /** @description You don't have the permission to update this organization. */
+      /** @description You don't have the permission to update this organization, or dispute auto-accept isn't enabled for it. */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['NotPermitted']
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['DisputeAutoAcceptNotEnabled']
         }
       }
       /** @description Organization not found. */
@@ -40211,6 +41258,26 @@ export interface operations {
       query?: {
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
+        /** @description Filter by product ID. */
+        product_id?: string | string[] | null
+        /** @description Filter by subscription status. */
+        status?:
+          | components['schemas']['SubscriptionStatus']
+          | components['schemas']['SubscriptionStatus'][]
+          | null
+        /** @description Filter by subscriptions that are set to cancel at period end. */
+        cancel_at_period_end?: boolean | null
+        /** @description Only include subscriptions started after this date. Must include a UTC offset. */
+        started_after?: string | null
+        /** @description Only include subscriptions started before this date. Must include a UTC offset. */
+        started_before?: string | null
+        /** @description Time zone used to render dates in the CSV. */
+        timezone?: string
+        /** @description Columns to include in the CSV, in order. Defaults to email, started_at, product, amount, currency, status and recurring_interval. */
+        columns?:
+          | components['schemas']['SubscriptionExportColumn']
+          | components['schemas']['SubscriptionExportColumn'][]
+          | null
       }
       header?: never
       path?: never
@@ -42494,6 +43561,22 @@ export interface operations {
         organization_id?: string | string[] | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
+        /** @description Filter by order status. */
+        status?:
+          | components['schemas']['OrderStatus']
+          | components['schemas']['OrderStatus'][]
+          | null
+        /** @description Only include orders created after this date. Must include a UTC offset. */
+        created_after?: string | null
+        /** @description Only include orders created before this date. Must include a UTC offset. */
+        created_before?: string | null
+        /** @description Time zone used to render dates in the CSV. */
+        timezone?: string
+        /** @description Columns to include in the CSV, in order. Defaults to email, created_at, product, net_amount, currency, status and invoice_number. */
+        columns?:
+          | components['schemas']['OrderExportColumn']
+          | components['schemas']['OrderExportColumn'][]
+          | null
       }
       header?: never
       path?: never
@@ -46034,6 +47117,213 @@ export interface operations {
       }
     }
   }
+  'compass:list_threads': {
+    parameters: {
+      query: {
+        /** @description Organization whose threads to list. */
+        organization_id: string
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_CompassThreadSchema_']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'compass:get_thread': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The thread ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CompassThreadSchema']
+        }
+      }
+      /** @description Thread not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'compass:delete_thread': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The thread ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Thread deleted. */
+      204: {
+        headers: {
+          [name: string]: unknown
+        }
+        content?: never
+      }
+      /** @description Thread not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'compass:update_thread': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        /** @description The thread ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CompassThreadUpdate']
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CompassThreadSchema']
+        }
+      }
+      /** @description Thread not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'compass:list_thread_messages': {
+    parameters: {
+      query?: {
+        /** @description Page number, defaults to 1. */
+        page?: number
+        /** @description Size of a page, defaults to 10. Maximum is 100. */
+        limit?: number
+      }
+      header?: never
+      path: {
+        /** @description The thread ID. */
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ListResource_CompassThreadMessageSchema_']
+        }
+      }
+      /** @description Thread not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'license_keys:list': {
     parameters: {
       query?: {
@@ -47077,6 +48367,82 @@ export interface operations {
         }
         content: {
           'text/csv': string
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:growth': {
+    parameters: {
+      query: {
+        /** @description The organization ID to compute growth for. */
+        organization_id: string
+        /** @description The start of the period. */
+        start: string
+        /** @description The end of the period. */
+        end: string
+        /** @description The interval between each period. */
+        interval: components['schemas']['TimeInterval']
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CustomerGrowthPeriod'][]
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'customers:top': {
+    parameters: {
+      query: {
+        /** @description The organization ID to rank customers for. */
+        organization_id: string
+        /** @description Only count orders created at or after this timestamp. */
+        start?: string | null
+        /** @description Only count orders created before this timestamp. */
+        end?: string | null
+        /** @description How many customers to rank. */
+        limit?: number
+      }
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['TopCustomer'][]
         }
       }
       /** @description Validation Error */
@@ -51143,7 +52509,7 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigration']
         }
       }
-      /** @description The Stripe API key is invalid, wrong mode, or missing permissions. */
+      /** @description The Stripe API key is invalid, wrong mode, or missing permissions, or the account it belongs to can't be migrated. */
       400: {
         headers: {
           [name: string]: unknown
@@ -51152,6 +52518,7 @@ export interface operations {
           'application/json':
             | components['schemas']['InvalidSourceCredentials']
             | components['schemas']['MissingStripeScopes']
+            | components['schemas']['SourceAccountNotMigratable']
             | components['schemas']['SourceKeyModeMismatch']
             | components['schemas']['UnsupportedMigrationSource']
         }
@@ -51285,11 +52652,333 @@ export interface operations {
       }
     }
   }
+  'merchant-migrations:import_catalog': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'application/json':
+          | components['schemas']['MerchantMigrationImportRequest']
+          | null
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationImportReport']
+        }
+      }
+      /** @description The source is not connected or isn't supported. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['SourceNotConnected']
+            | components['schemas']['UnsupportedMigrationSource']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description The pre-check hasn't run yet, or it reports a blocker. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['CatalogImportNotReady']
+            | components['schemas']['CatalogImportBlocked']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:pan_transfer': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PanTransferChecklist']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:start_pan_transfer': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PanTransferChecklist']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description The catalog isn't imported yet, the transfer already started, or card transfers aren't configured. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['PanTransferNotReady']
+            | components['schemas']['PanTransferAlreadyStarted']
+            | components['schemas']['PanTransferUnavailable']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:complete_pan_transfer_step': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+        key: string
+      }
+      cookie?: never
+    }
+    requestBody?: {
+      content: {
+        'application/json':
+          | components['schemas']['PanTransferStepComplete']
+          | null
+      }
+    }
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['PanTransferChecklist']
+        }
+      }
+      /** @description Not allowed to manage this organization, or the step is completed by someone else. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['NotPermitted']
+            | components['schemas']['PanStepNotOwned']
+        }
+      }
+      /** @description Merchant migration or step not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['MerchantMigrationNotFound']
+            | components['schemas']['PanStepNotFound']
+        }
+      }
+      /** @description The card transfer hasn't started, or this isn't the step to act on. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['PanTransferNotStarted']
+            | components['schemas']['PanStepNotActionable']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:records_summary': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationRecordSummary']
+        }
+      }
+      /** @description The source is not connected or isn't supported. */
+      400: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['SourceNotConnected']
+            | components['schemas']['UnsupportedMigrationSource']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'merchant-migrations:records': {
     parameters: {
-      query: {
-        entity: components['schemas']['PrecheckEntity']
+      query?: {
+        entity?: components['schemas']['PrecheckEntity'] | null
         status?: components['schemas']['PrecheckRecordStatus'] | null
+        reason_level?: components['schemas']['PrecheckReasonLevel'] | null
+        import_status?:
+          | components['schemas']['MerchantMigrationRecordStatus']
+          | null
         /** @description Page number, defaults to 1. */
         page?: number
         /** @description Size of a page, defaults to 10. Maximum is 100. */
@@ -62842,6 +64531,12 @@ export const aggregationFunctionValues: ReadonlyArray<
 export const appealDecisionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AppealDecision']
 > = ['approved', 'rejected']
+export const assistantBlockPartKindValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['AssistantBlockPart']['kind']
+> = ['block']
+export const assistantTextPartKindValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['AssistantTextPart']['kind']
+> = ['text']
 export const authorizeResponseOrganizationSub_typeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['AuthorizeResponseOrganization']['sub_type']
 > = ['organization']
@@ -63077,6 +64772,9 @@ export const checkoutSortPropertyValues: ReadonlyArray<
 export const checkoutStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CheckoutStatus']
 > = ['open', 'expired', 'confirmed', 'succeeded', 'failed']
+export const columnFormatValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['ColumnFormat']
+> = ['text', 'currency', 'datetime', 'badge', 'avatar']
 export const confidenceLevelValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['ConfidenceLevel']
 > = ['low', 'medium', 'high']
@@ -63692,6 +65390,9 @@ export const customerCancellationReasonValues: ReadonlyArray<
   'unused',
   'other',
 ]
+export const customerCardBlockTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['CustomerCardBlock']['type']
+> = ['customer_card']
 export const customerCreatedEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerCreatedEvent']['name']
 > = ['customer.created']
@@ -63802,6 +65503,9 @@ export const customerUpdatedEventNameValues: ReadonlyArray<
 export const customerWalletSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['CustomerWalletSortProperty']
 > = ['created_at', '-created_at', 'balance', '-balance']
+export const dataTableBlockTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['DataTableBlock']['type']
+> = ['data_table']
 export const discountDurationValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DiscountDuration']
 > = ['once', 'forever', 'repeating']
@@ -63861,6 +65565,9 @@ export const downloadableFileCreateServiceValues: ReadonlyArray<
 export const downloadableFileReadServiceValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['DownloadableFileRead']['service']
 > = ['downloadable']
+export const entityListBlockTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['EntityListBlock']['type']
+> = ['entity_list']
 export const eventNamesSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['EventNamesSortProperty']
 > = [
@@ -63932,6 +65639,9 @@ export const filterOperatorValues: ReadonlyArray<
 export const identityVerificationStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['IdentityVerificationStatus']
 > = ['unverified', 'pending', 'verified', 'failed']
+export const insightCardsBlockTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['InsightCardsBlock']['type']
+> = ['insight_cards']
 export const insightCategoryValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['InsightCategory']
 > = ['revenue', 'retention', 'growth', 'risk', 'cost', 'product']
@@ -63956,6 +65666,9 @@ export const licenseKeyStatusValues: ReadonlyArray<
 export const maintainerAccountCreditsGrantedNotificationTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MaintainerAccountCreditsGrantedNotification']['type']
 > = ['MaintainerAccountCreditsGrantedNotification']
+export const maintainerFileFlaggedMaliciousNotificationTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MaintainerFileFlaggedMaliciousNotification']['type']
+> = ['MaintainerFileFlaggedMaliciousNotification']
 export const maintainerNewPaidSubscriptionNotificationTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MaintainerNewPaidSubscriptionNotification']['type']
 > = ['MaintainerNewPaidSubscriptionNotification']
@@ -63977,6 +65690,9 @@ export const memberRoleValues: ReadonlyArray<
 export const memberSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberSortProperty']
 > = ['created_at', '-created_at']
+export const merchantMigrationRecordStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationRecordStatus']
+> = ['pending', 'imported', 'skipped', 'failed']
 export const merchantMigrationSourcePlatformValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationSourcePlatform']
 > = ['stripe', 'lemon_squeezy', 'paddle']
@@ -64003,6 +65719,9 @@ export const meterSortPropertyValues: ReadonlyArray<
 export const meterUnitValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MeterUnit']
 > = ['scalar', 'token', 'custom']
+export const metricChartBlockTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MetricChartBlock']['type']
+> = ['metric_chart']
 export const metricTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MetricType']
 > = ['scalar', 'currency', 'currency_sub_cent', 'percentage']
@@ -64056,6 +65775,26 @@ export const orderBillingReasonInternalValues: ReadonlyArray<
   'subscription_cycle_after_trial',
   'subscription_cancel',
   'subscription_update',
+]
+export const orderExportColumnValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['OrderExportColumn']
+> = [
+  'email',
+  'created_at',
+  'product',
+  'net_amount',
+  'currency',
+  'status',
+  'invoice_number',
+  'customer_name',
+  'billing_name',
+  'billing_country',
+  'subtotal_amount',
+  'discount_amount',
+  'tax_amount',
+  'total_amount',
+  'refunded_amount',
+  'billing_reason',
 ]
 export const orderPaidEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrderPaidEvent']['name']
@@ -65495,6 +67234,21 @@ export const organizationWithRoleCountryAnyOf0Values: ReadonlyArray<
   'ZM',
   'ZW',
 ]
+export const panStepActorValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PanStepActor']
+> = ['merchant', 'ops', 'system']
+export const panStepKindValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PanStepKind']
+> = ['auto', 'input', 'confirm']
+export const panStepOwnerValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PanStepOwner']
+> = ['merchant', 'polar_ops', 'polar_app', 'stripe', 'provider']
+export const panStepStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PanStepStatus']
+> = ['blocked', 'pending', 'in_progress', 'completed']
+export const panTransferMethodValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PanTransferMethod']
+> = ['pan_copy', 'pan_import']
 export const paymentProcessorValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PaymentProcessor']
 > = ['stripe']
@@ -65580,6 +67334,9 @@ export const precheckEntityValues: ReadonlyArray<
 export const precheckIssueLevelValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckIssueLevel']
 > = ['blocker', 'warning']
+export const precheckReasonLevelValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['PrecheckReasonLevel']
+> = ['action_required', 'info']
 export const precheckRecordStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckRecordStatus']
 > = ['importable', 'skipped']
@@ -66035,6 +67792,32 @@ export const subscriptionCreatedEventNameValues: ReadonlyArray<
 export const subscriptionCycledEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionCycledEvent']['name']
 > = ['subscription.cycled']
+export const subscriptionExportColumnValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['SubscriptionExportColumn']
+> = [
+  'email',
+  'started_at',
+  'product',
+  'amount',
+  'currency',
+  'status',
+  'recurring_interval',
+  'customer_name',
+  'billing_name',
+  'billing_country',
+  'net_amount',
+  'discount',
+  'seats',
+  'current_period_start',
+  'current_period_end',
+  'cancel_at_period_end',
+  'canceled_at',
+  'ends_at',
+  'ended_at',
+  'cancellation_reason',
+  'trial_start',
+  'trial_end',
+]
 export const subscriptionPastDueEventNameValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SubscriptionPastDueEvent']['name']
 > = ['subscription.past_due']
@@ -66130,6 +67913,9 @@ export const supportCaseMessageTypeValues: ReadonlyArray<
   'dispute_lost',
   'dispute_prevented',
   'merchant_accepted',
+  'dispute_auto_accept_scheduled',
+  'dispute_auto_accept_canceled',
+  'dispute_auto_accepted',
 ]
 export const supportCaseSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['SupportCaseSortProperty']
@@ -66233,6 +68019,9 @@ export const taxJurisdictionSortPropertyValues: ReadonlyArray<
   'country',
   '-country',
 ]
+export const textBlockTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['TextBlock']['type']
+> = ['text']
 export const timeIntervalValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['TimeInterval']
 > = ['year', 'month', 'week', 'day', 'hour']

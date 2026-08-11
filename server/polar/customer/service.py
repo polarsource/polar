@@ -30,6 +30,7 @@ from polar.kit.email import EmailNotValidError, unalias_email
 from polar.kit.metadata import MetadataQuery, apply_metadata_clause
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
+from polar.kit.time_queries import TimeInterval, is_under_limits
 from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
 from polar.member.service import member_service
@@ -132,6 +133,61 @@ class CustomerService:
 
         return await repository.paginate(
             statement, limit=pagination.limit, page=pagination.page
+        )
+
+    async def get_growth(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: uuid.UUID,
+        start: datetime,
+        end: datetime,
+        interval: TimeInterval,
+    ) -> Sequence[tuple[datetime, int, int]]:
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization_id,
+            OrganizationPermission.customers_read,
+        )
+
+        if not is_under_limits(start.date(), end.date(), interval):
+            raise PolarRequestValidationError(
+                [
+                    {
+                        "type": "value_error",
+                        "loc": ("query", "interval"),
+                        "msg": "The interval is too small for the given date range.",
+                        "input": interval,
+                    }
+                ]
+            )
+
+        repository = CustomerRepository.from_session(session)
+        return await repository.get_growth_per_period(
+            organization_id, start=start, end=end, interval=interval
+        )
+
+    async def get_top_by_revenue(
+        self,
+        session: AsyncReadSession,
+        auth_subject: AuthSubject[User | Organization],
+        *,
+        organization_id: uuid.UUID,
+        start: datetime | None = None,
+        end: datetime | None = None,
+        limit: int = 10,
+    ) -> Sequence[tuple[uuid.UUID, str | None, str | None, int, int]]:
+        await assert_organization_permission(
+            session,
+            auth_subject,
+            organization_id,
+            OrganizationPermission.customers_read,
+        )
+        order_repository = OrderRepository.from_session(session)
+        return await order_repository.get_revenue_by_customer(
+            organization_id, start=start, end=end, limit=limit
         )
 
     async def get(
@@ -279,6 +335,7 @@ class CustomerService:
         email: str,
         name: str | None = None,
         billing_address: Address | None = None,
+        stripe_customer_id: str | None = None,
         send_webhooks: bool = False,
     ) -> Customer:
         """Create a customer for a known organization (internal flows)."""
@@ -300,6 +357,7 @@ class CustomerService:
             email=email,
             name=name,
             billing_address=billing_address,
+            stripe_customer_id=stripe_customer_id,
             organization=organization,
         )
 
@@ -909,7 +967,7 @@ class CustomerService:
     ) -> CustomerState:
         # 👋 Whenever you change the state schema,
         # please also update the cache key with a version number.
-        cache_key = f"polar:customer_state:v6:{customer.id}"
+        cache_key = f"polar:customer_state:v7:{customer.id}"
 
         if cache:
             raw_state = await redis.get(cache_key)

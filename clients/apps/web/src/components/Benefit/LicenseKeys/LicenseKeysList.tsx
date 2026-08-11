@@ -10,7 +10,6 @@ import { Status } from '@polar-sh/orbit'
 import {
   OnChangeFn,
   PaginationState,
-  RowSelectionState,
   SortingState,
 } from '@tanstack/react-table'
 
@@ -23,8 +22,8 @@ export interface LicenseKeysListProps {
   setSorting: OnChangeFn<SortingState>
   sorting: DataTableSortingState
   isLoading: boolean
-  selectedLicenseKey: RowSelectionState
-  onSelectLicenseKeyChange?: OnChangeFn<RowSelectionState>
+  selectedLicenseKeyId: string | null
+  onSelectLicenseKey: (licenseKey: schemas['LicenseKeyRead']) => void
 }
 
 export const LicenseKeysList = ({
@@ -36,8 +35,8 @@ export const LicenseKeysList = ({
   setSorting,
   sorting,
   isLoading,
-  selectedLicenseKey,
-  onSelectLicenseKeyChange,
+  selectedLicenseKeyId,
+  onSelectLicenseKey,
 }: LicenseKeysListProps) => {
   const columns: DataTableColumnDef<schemas['LicenseKeyRead']>[] = [
     {
@@ -108,9 +107,8 @@ export const LicenseKeysList = ({
       sorting={sorting}
       onSortingChange={setSorting}
       isLoading={isLoading}
-      enableRowSelection={true}
-      onRowSelectionChange={onSelectLicenseKeyChange}
-      rowSelection={selectedLicenseKey}
+      onRowClick={(row) => onSelectLicenseKey(row.original)}
+      isRowActive={(row) => row.original.id === selectedLicenseKeyId}
       getRowId={(row) => row.id}
     />
   )

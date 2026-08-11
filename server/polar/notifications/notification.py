@@ -20,6 +20,7 @@ class NotificationType(StrEnum):
     maintainer_new_product_sale = "MaintainerNewProductSaleNotification"
     maintainer_subscription_renewal = "MaintainerSubscriptionRenewalNotification"
     maintainer_account_credits_granted = "MaintainerAccountCreditsGrantedNotification"
+    maintainer_file_flagged_malicious = "MaintainerFileFlaggedMaliciousNotification"
 
 
 class NotificationPayloadBase(BaseModel):
@@ -227,17 +228,37 @@ class MaintainerAccountCreditsGrantedNotification(NotificationBase):
     payload: MaintainerAccountCreditsGrantedNotificationPayload
 
 
+class MaintainerFileFlaggedMaliciousNotificationPayload(NotificationPayloadBase):
+    file_name: str
+    organization_name: str
+    organization_slug: str | None = None
+
+    def subject(self) -> str:
+        return f"Security alert: {self.file_name} was flagged as malicious"
+
+    @classmethod
+    def template_name(cls) -> str:
+        return "notification_file_flagged_malicious"
+
+
+class MaintainerFileFlaggedMaliciousNotification(NotificationBase):
+    type: Literal[NotificationType.maintainer_file_flagged_malicious]
+    payload: MaintainerFileFlaggedMaliciousNotificationPayload
+
+
 NotificationPayload = (
     MaintainerNewPaidSubscriptionNotificationPayload
     | MaintainerNewProductSaleNotificationPayload
     | MaintainerSubscriptionRenewalNotificationPayload
     | MaintainerAccountCreditsGrantedNotificationPayload
+    | MaintainerFileFlaggedMaliciousNotificationPayload
 )
 
 Notification = Annotated[
     MaintainerNewPaidSubscriptionNotification
     | MaintainerNewProductSaleNotification
     | MaintainerSubscriptionRenewalNotification
-    | MaintainerAccountCreditsGrantedNotification,
+    | MaintainerAccountCreditsGrantedNotification
+    | MaintainerFileFlaggedMaliciousNotification,
     Discriminator(discriminator="type"),
 ]

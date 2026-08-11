@@ -1,3 +1,4 @@
+import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { schemas, unwrap } from '@polar-sh/client'
@@ -44,6 +45,16 @@ export const useCreateMerchantMigration = (organizationId: string) =>
     },
   })
 
+// The listing and its counts live behind separate keys but are one unit.
+const invalidateMigrationRecords = (id: string) => {
+  const client = getQueryClient()
+  client.invalidateQueries({ queryKey: ['merchantMigration', { id }] })
+  client.invalidateQueries({ queryKey: ['merchantMigrationRecords', { id }] })
+  client.invalidateQueries({
+    queryKey: ['merchantMigrationRecordSummary', { id }],
+  })
+}
+
 export const useRunMerchantMigrationPrecheck = (id: string) =>
   useMutation({
     mutationFn: () =>
@@ -53,20 +64,134 @@ export const useRunMerchantMigrationPrecheck = (id: string) =>
         }),
       ),
     onSuccess: () => {
-      getQueryClient().invalidateQueries({
-        queryKey: ['merchantMigration', { id }],
-      })
-      getQueryClient().invalidateQueries({
-        queryKey: ['merchantMigrationRecords'],
-      })
+      invalidateMigrationRecords(id)
     },
+  })
+
+interface ImportOptions {
+  recordIds?: string[]
+  excludeRecordIds?: string[]
+}
+
+// Not `unwrap` like its neighbours: that reads `message`, the API reports
+// `detail`, and these surface the server's wording to the merchant. Takes the
+// request, not its result: a rejected fetch (offline, DNS) would otherwise put
+// the browser's own wording on screen instead of the fallback.
+const dataOrThrow = async <T>(
+  request: Promise<{ data?: T; error?: { detail?: unknown } }>,
+  fallback: string,
+): Promise<T> => {
+  const result = await request.catch(() => null)
+  if (!result || result.error || result.data === undefined) {
+    throw new Error(extractApiErrorMessage(result?.error ?? {}, fallback))
+  }
+  return result.data
+}
+
+export const useImportMerchantMigrationCatalog = (id: string) =>
+  useMutation({
+    mutationFn: (options: ImportOptions = {}) =>
+      dataOrThrow(
+        api.POST('/v1/merchant-migrations/{id}/import', {
+          params: { path: { id } },
+          body: {
+            ...(options.recordIds ? { record_ids: options.recordIds } : {}),
+            ...(options.excludeRecordIds
+              ? { exclude_record_ids: options.excludeRecordIds }
+              : {}),
+          },
+        }),
+        'Something went wrong. Please try again.',
+      ),
+    onSuccess: () => {
+      invalidateMigrationRecords(id)
+    },
+  })
+
+const panTransferKey = (id: string) => ['merchantMigrationPanTransfer', { id }]
+
+export const usePanTransfer = (id: string) =>
+  useQuery({
+    queryKey: panTransferKey(id),
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/merchant-migrations/{id}/pan-transfer', {
+          params: { path: { id } },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!id,
+  })
+
+// The list card draws its own position from the migration, so it goes stale
+// alongside the detail view on every write.
+const invalidateMigration = (id: string) => {
+  getQueryClient().invalidateQueries({
+    queryKey: ['merchantMigration', { id }],
+  })
+  getQueryClient().invalidateQueries({ queryKey: ['merchantMigrations'] })
+}
+
+// Written straight into the cache: waiting for a refetch leaves the finished
+// step on screen with its button live, long enough to submit it twice.
+const syncPanTransfer = (
+  id: string,
+  checklist: schemas['PanTransferChecklist'],
+) => {
+  getQueryClient().setQueryData(panTransferKey(id), checklist)
+  invalidateMigration(id)
+}
+
+// A step can move from the backoffice or another tab, so a conflict means our
+// view is stale. Refetch the migration too: the page picks its view from it,
+// and otherwise the start button stays live and keeps failing the same way.
+const panTransferHandlers = (id: string) => ({
+  onSuccess: (checklist: schemas['PanTransferChecklist']) =>
+    syncPanTransfer(id, checklist),
+  onError: () => {
+    getQueryClient().invalidateQueries({ queryKey: panTransferKey(id) })
+    invalidateMigration(id)
+  },
+})
+
+export const useStartPanTransfer = (id: string) =>
+  useMutation({
+    mutationFn: () =>
+      dataOrThrow(
+        api.POST('/v1/merchant-migrations/{id}/pan-transfer', {
+          params: { path: { id } },
+        }),
+        "We couldn't start the card transfer.",
+      ),
+    ...panTransferHandlers(id),
+  })
+
+export const useCompletePanTransferStep = (id: string) =>
+  useMutation({
+    mutationFn: ({
+      key,
+      inputs,
+    }: {
+      key: string
+      inputs: Record<string, string>
+    }) =>
+      dataOrThrow(
+        api.POST(
+          '/v1/merchant-migrations/{id}/pan-transfer/steps/{key}/complete',
+          { params: { path: { id, key } }, body: { inputs } },
+        ),
+        "We couldn't save this step.",
+      ),
+    ...panTransferHandlers(id),
   })
 
 export const useMigrationRecords = (
   id: string,
   params: {
-    entity: schemas['PrecheckEntity']
+    entity?: schemas['PrecheckEntity']
     status?: schemas['PrecheckRecordStatus']
+    reasonLevel?: schemas['PrecheckReasonLevel']
+    importStatus?: schemas['MerchantMigrationRecordStatus']
     page: number
     limit: number
   },
@@ -79,12 +204,33 @@ export const useMigrationRecords = (
           params: {
             path: { id },
             query: {
-              entity: params.entity,
+              ...(params.entity ? { entity: params.entity } : {}),
               ...(params.status ? { status: params.status } : {}),
+              ...(params.reasonLevel
+                ? { reason_level: params.reasonLevel }
+                : {}),
+              ...(params.importStatus
+                ? { import_status: params.importStatus }
+                : {}),
               page: params.page,
               limit: params.limit,
             },
           },
+        }),
+      ),
+    retry: defaultRetry,
+    enabled: !!id,
+  })
+
+// One read for every count the UI shows: asking per number made the server
+// re-read and re-classify the whole staged catalog once per count.
+export const useMerchantMigrationRecordSummary = (id: string) =>
+  useQuery({
+    queryKey: ['merchantMigrationRecordSummary', { id }],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/merchant-migrations/{id}/records/summary', {
+          params: { path: { id } },
         }),
       ),
     retry: defaultRetry,

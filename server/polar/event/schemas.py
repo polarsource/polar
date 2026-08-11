@@ -717,27 +717,6 @@ class EventName(Schema):
     last_seen: datetime = Field(description="The last time the event occurred.")
 
 
-class EventAggregations(Schema):
-    """Aggregated values from all descendant events."""
-
-    descendant_count: int = Field(
-        description="Total number of descendant events (not including the event itself)."
-    )
-    sums: dict[str, Decimal] = Field(
-        description="Aggregated sums for requested metadata fields. Keys are field paths (e.g., 'cost_amount'), values are the summed totals.",
-        default_factory=dict,
-    )
-
-
-class EventWithAggregations(Schema):
-    """An event with aggregated values from its descendants."""
-
-    event: Event = Field(description="The event.")
-    aggregations: EventAggregations = Field(
-        description="Aggregated values from all descendant events."
-    )
-
-
 class EventStatistics(Schema):
     """Aggregate statistics for events grouped by root event name."""
 

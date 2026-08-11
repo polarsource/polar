@@ -1,7 +1,7 @@
 'use client'
 
 import { Spinner } from '@polar-sh/orbit'
-import { useCustomers } from '@/hooks/queries'
+import { useCustomers, useCustomersByIds } from '@/hooks/queries'
 import { useInViewport } from '@/hooks/utils'
 import Close from '@mui/icons-material/Close'
 import Search from '@mui/icons-material/Search'
@@ -44,14 +44,19 @@ export const CustomerSelector = ({
     [data],
   )
 
+  const selectedCustomerQueries = useCustomersByIds(selectedCustomerIds ?? [])
+
   const selectedCustomers = useMemo(() => {
     if (!selectedCustomerIds || selectedCustomerIds.length === 0) {
       return []
     }
-    return allCustomers.filter((customer) =>
-      selectedCustomerIds.includes(customer.id),
-    )
-  }, [allCustomers, selectedCustomerIds])
+    return selectedCustomerIds.flatMap((id, index) => {
+      const customer =
+        allCustomers.find((candidate) => candidate.id === id) ??
+        selectedCustomerQueries[index]?.data
+      return customer ? [customer] : []
+    })
+  }, [allCustomers, selectedCustomerIds, selectedCustomerQueries])
 
   const { ref: loadingRef, inViewport } = useInViewport<HTMLDivElement>()
 

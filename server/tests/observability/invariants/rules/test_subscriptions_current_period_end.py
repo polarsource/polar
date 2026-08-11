@@ -11,6 +11,7 @@ from polar.observability.invariants.rules.subscriptions_current_period_end impor
     SubscriptionsCurrentPeriodEndInvariantError,
 )
 from polar.postgres import AsyncSession
+from polar.subscription.repository import SubscriptionRepository
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_subscription
 
@@ -27,12 +28,41 @@ async def test_failure(
     product: Product,
     customer: Customer,
 ) -> None:
+    stale = utc_now() - timedelta(days=1)
     subscription = await create_subscription(
         save_fixture,
         status=SubscriptionStatus.active,
         product=product,
         customer=customer,
-        current_period_end=utc_now() - timedelta(days=1),
+        current_period_end=stale,
+        created_at=stale,
+        modified_at=stale,
+    )
+
+    with pytest.raises(SubscriptionsCurrentPeriodEndInvariantError) as exc_info:
+        await invariant.check()
+    assert exc_info.value.context == {
+        "count": 1,
+        "subscriptions": {"ids": [subscription.id], "has_more": False},
+    }
+
+
+@pytest.mark.asyncio
+async def test_failure_never_updated_subscription(
+    invariant: SubscriptionsCurrentPeriodEndInvariant,
+    save_fixture: SaveFixture,
+    product: Product,
+    customer: Customer,
+) -> None:
+    """A subscription that never cycled has a NULL modified_at, which must not hide it."""
+    stale = utc_now() - timedelta(days=1)
+    subscription = await create_subscription(
+        save_fixture,
+        status=SubscriptionStatus.active,
+        product=product,
+        customer=customer,
+        current_period_end=stale,
+        created_at=stale,
     )
 
     with pytest.raises(SubscriptionsCurrentPeriodEndInvariantError) as exc_info:
@@ -50,13 +80,16 @@ async def test_failure_over_limit(
     product: Product,
     customer: Customer,
 ) -> None:
+    stale = utc_now() - timedelta(days=1)
     for _ in range(15):
         await create_subscription(
             save_fixture,
             status=SubscriptionStatus.active,
             product=product,
             customer=customer,
-            current_period_end=utc_now() - timedelta(days=1),
+            current_period_end=stale,
+            created_at=stale,
+            modified_at=stale,
         )
 
     with pytest.raises(SubscriptionsCurrentPeriodEndInvariantError) as exc_info:
@@ -87,5 +120,50 @@ async def test_success(
         customer=customer,
         current_period_end=utc_now() - timedelta(minutes=1),
     )
+
+    await invariant.check()
+
+
+@pytest.mark.asyncio
+async def test_success_just_created_subscription(
+    invariant: SubscriptionsCurrentPeriodEndInvariant,
+    save_fixture: SaveFixture,
+    product: Product,
+    customer: Customer,
+) -> None:
+    """The dunning recovery race: overdue by days, but written seconds ago."""
+    await create_subscription(
+        save_fixture,
+        status=SubscriptionStatus.active,
+        product=product,
+        customer=customer,
+        current_period_end=utc_now() - timedelta(days=7),
+    )
+
+    await invariant.check()
+
+
+@pytest.mark.asyncio
+async def test_success_just_updated_subscription(
+    session: AsyncSession,
+    invariant: SubscriptionsCurrentPeriodEndInvariant,
+    save_fixture: SaveFixture,
+    product: Product,
+    customer: Customer,
+) -> None:
+    """The grace relies on any write bumping modified_at."""
+    stale = utc_now() - timedelta(days=7)
+    subscription = await create_subscription(
+        save_fixture,
+        status=SubscriptionStatus.active,
+        product=product,
+        customer=customer,
+        current_period_end=stale,
+        created_at=stale,
+        modified_at=stale,
+    )
+
+    repository = SubscriptionRepository.from_session(session)
+    await repository.update(subscription, update_dict={"user_metadata": {"key": "1"}})
 
     await invariant.check()

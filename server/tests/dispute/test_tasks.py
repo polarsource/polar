@@ -1,19 +1,63 @@
 import contextlib
 from collections.abc import AsyncIterator
+from datetime import datetime, timedelta
+from unittest.mock import AsyncMock
 
 import pytest
 from pytest_mock import MockerFixture
 
 from polar.dispute.dispute_case import DISPUTE_GREETING
-from polar.dispute.tasks import post_dispute_greeting
-from polar.models import Customer, Organization, Product
-from polar.models.support_case import SupportCaseMessageAuthorKind
+from polar.dispute.tasks import auto_accept, enqueue_auto_accepts, post_dispute_greeting
+from polar.kit.utils import utc_now
+from polar.models import Customer, Dispute, Organization, Product
+from polar.models.support_case import (
+    DisputeSupportCase,
+    SupportCaseAudience,
+    SupportCaseMessage,
+    SupportCaseMessageAuthorKind,
+    SupportCaseMessageType,
+)
 from polar.postgres import AsyncSession
 from polar.support_case.repository import SupportCaseMessageRepository
 from tests.fixtures.database import SaveFixture
-from tests.fixtures.random_objects import create_dispute_case
+from tests.fixtures.random_objects import (
+    create_dispute,
+    create_dispute_case,
+    create_order,
+    create_payment,
+)
 
 _post_dispute_greeting = post_dispute_greeting.__wrapped__  # type: ignore[attr-defined]
+_enqueue_auto_accepts = enqueue_auto_accepts.__wrapped__  # type: ignore[attr-defined]
+_auto_accept = auto_accept.__wrapped__  # type: ignore[attr-defined]
+
+
+async def _dispute(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    customer: Customer,
+    product: Product,
+    *,
+    announced_at: datetime | None = None,
+    processor_id: str = "STRIPE_DISPUTE_ID",
+) -> Dispute:
+    order = await create_order(save_fixture, customer=customer, product=product)
+    payment = await create_payment(save_fixture, organization, order=order)
+    dispute = await create_dispute(
+        save_fixture, order, payment, payment_processor_id=processor_id
+    )
+    case = DisputeSupportCase(dispute=dispute, organization=organization)
+    await save_fixture(case)
+    if announced_at is not None:
+        message = SupportCaseMessage(
+            case=case,
+            type=SupportCaseMessageType.dispute_auto_accept_scheduled,
+            author_kind=SupportCaseMessageAuthorKind.system,
+            audience=[SupportCaseAudience.merchant],
+            created_at=announced_at,
+        )
+        await save_fixture(message)
+    return dispute
 
 
 @contextlib.asynccontextmanager
@@ -76,3 +120,128 @@ class TestPostDisputeGreeting:
             message for message in messages if message.body == DISPUTE_GREETING
         ]
         assert len(greetings) == 1
+
+
+@pytest.mark.asyncio
+class TestEnqueueAutoAccepts:
+    async def test_enqueues_only_aged_opted_in_disputes(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        organization.feature_settings = {
+            "disputes_enabled": True,
+            "dispute_auto_accept_enabled": True,
+        }
+        organization.dispute_settings = {"auto_accept_below_amount": 2500}
+        await save_fixture(organization)
+
+        aged = await _dispute(
+            save_fixture,
+            organization,
+            customer,
+            product,
+            announced_at=utc_now() - timedelta(hours=48),
+        )
+        await _dispute(
+            save_fixture, organization, customer, product, processor_id="STRIPE_FRESH"
+        )
+
+        mocker.patch(
+            "polar.dispute.tasks.AsyncSessionMaker",
+            side_effect=lambda: _session_maker(session),
+        )
+        enqueue_mock = mocker.patch("polar.dispute.tasks.enqueue_job")
+
+        await _enqueue_auto_accepts()
+
+        enqueue_mock.assert_called_once_with("dispute.auto_accept", aged.id)
+
+    async def test_skips_organizations_without_a_threshold(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        organization.feature_settings = {
+            "disputes_enabled": True,
+            "dispute_auto_accept_enabled": True,
+        }
+        organization.dispute_settings = {"auto_accept_below_amount": None}
+        await save_fixture(organization)
+        await _dispute(
+            save_fixture,
+            organization,
+            customer,
+            product,
+            announced_at=utc_now() - timedelta(hours=48),
+        )
+
+        mocker.patch(
+            "polar.dispute.tasks.AsyncSessionMaker",
+            side_effect=lambda: _session_maker(session),
+        )
+        enqueue_mock = mocker.patch("polar.dispute.tasks.enqueue_job")
+
+        await _enqueue_auto_accepts()
+
+        enqueue_mock.assert_not_called()
+
+    async def test_skips_disputes_never_announced(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        organization.feature_settings = {
+            "disputes_enabled": True,
+            "dispute_auto_accept_enabled": True,
+        }
+        organization.dispute_settings = {"auto_accept_below_amount": 2500}
+        await save_fixture(organization)
+        await _dispute(save_fixture, organization, customer, product)
+
+        mocker.patch(
+            "polar.dispute.tasks.AsyncSessionMaker",
+            side_effect=lambda: _session_maker(session),
+        )
+        enqueue_mock = mocker.patch("polar.dispute.tasks.enqueue_job")
+
+        await _enqueue_auto_accepts()
+
+        enqueue_mock.assert_not_called()
+
+
+@pytest.mark.asyncio
+class TestAutoAccept:
+    async def test_noop_when_no_longer_eligible(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        dispute = await _dispute(save_fixture, organization, customer, product)
+        mocker.patch(
+            "polar.dispute.tasks.AsyncSessionMaker",
+            side_effect=lambda: _session_maker(session),
+        )
+        accept_mock = mocker.patch(
+            "polar.dispute.tasks.dispute_service.accept", new_callable=AsyncMock
+        )
+
+        await _auto_accept(dispute.id)
+
+        accept_mock.assert_not_awaited()

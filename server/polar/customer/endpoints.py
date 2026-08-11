@@ -1,5 +1,6 @@
 import json
-from collections.abc import AsyncGenerator
+from collections.abc import AsyncGenerator, Sequence
+from datetime import datetime
 
 from fastapi import Depends, Query
 from pydantic import TypeAdapter
@@ -14,7 +15,9 @@ from polar.kit.csv import CSVStreamingResponse, IterableCSVWriter
 from polar.kit.metadata import MetadataQuery, get_metadata_query_openapi_schema
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
+from polar.kit.time_queries import TimeInterval
 from polar.models import Customer, PaymentMethod
+from polar.models.customer import _avatar_url_for_email
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.payment_method.schemas import PaymentMethodTypeAdapter
@@ -31,12 +34,14 @@ from . import auth, sorting
 from .repository import CustomerRepository
 from .schemas.customer import (
     CustomerCreate,
+    CustomerGrowthPeriod,
     CustomerID,
     CustomerPaymentMethod,
     CustomerPaymentMethodTypeAdapter,
     CustomerUpdate,
     CustomerUpdateExternalID,
     ExternalCustomerID,
+    TopCustomer,
 )
 from .schemas.customer import (
     CustomerResponse as CustomerSchema,
@@ -45,6 +50,10 @@ from .schemas.state import CustomerState
 from .service import customer as customer_service
 
 _CustomerAdapter: TypeAdapter[CustomerSchema] = TypeAdapter(CustomerSchema)
+
+# Bound before the `list` endpoint function below shadows the builtin
+TopCustomerList = list[TopCustomer]
+CustomerGrowthPeriodList = list[CustomerGrowthPeriod]
 
 router = APIRouter(
     prefix="/customers",
@@ -169,6 +178,83 @@ async def export(
             )
 
     return CSVStreamingResponse(create_csv(), "polar-customers.csv")
+
+
+@router.get(
+    "/growth",
+    summary="Customer Growth",
+    response_model=CustomerGrowthPeriodList,
+    tags=[APITag.private],
+)
+async def growth(
+    auth_subject: auth.CustomerRead,
+    organization_id: OrganizationID = Query(
+        description="The organization ID to compute growth for."
+    ),
+    start: datetime = Query(description="The start of the period."),
+    end: datetime = Query(description="The end of the period."),
+    interval: TimeInterval = Query(description="The interval between each period."),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> Sequence[CustomerGrowthPeriod]:
+    """Get new and cumulative customer counts over time."""
+    periods = await customer_service.get_growth(
+        session,
+        auth_subject,
+        organization_id=organization_id,
+        start=start,
+        end=end,
+        interval=interval,
+    )
+    return [
+        CustomerGrowthPeriod(
+            timestamp=timestamp,
+            new_customers=new_customers,
+            total_customers=total_customers,
+        )
+        for timestamp, new_customers, total_customers in periods
+    ]
+
+
+@router.get(
+    "/top",
+    summary="Top Customers",
+    response_model=TopCustomerList,
+    tags=[APITag.private],
+)
+async def top(
+    auth_subject: auth.CustomerRead,
+    organization_id: OrganizationID = Query(
+        description="The organization ID to rank customers for."
+    ),
+    start: datetime | None = Query(
+        None, description="Only count orders created at or after this timestamp."
+    ),
+    end: datetime | None = Query(
+        None, description="Only count orders created before this timestamp."
+    ),
+    limit: int = Query(10, ge=1, le=50, description="How many customers to rank."),
+    session: AsyncReadSession = Depends(get_db_read_session),
+) -> TopCustomerList:
+    """Rank the organization's customers by paid net revenue."""
+    ranked = await customer_service.get_top_by_revenue(
+        session,
+        auth_subject,
+        organization_id=organization_id,
+        start=start,
+        end=end,
+        limit=limit,
+    )
+    return [
+        TopCustomer(
+            id=customer_id,
+            email=email,
+            name=name,
+            avatar_url=_avatar_url_for_email(email) if email else None,
+            order_count=order_count,
+            net_revenue=net_revenue,
+        )
+        for customer_id, email, name, order_count, net_revenue in ranked
+    ]
 
 
 @router.get(

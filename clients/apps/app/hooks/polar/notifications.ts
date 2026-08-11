@@ -98,6 +98,8 @@ export type MaintainerAccountCreditsGrantedNotificationPayload =
   schemas['MaintainerAccountCreditsGrantedNotificationPayload']
 export type MaintainerSubscriptionRenewalNotificationPayload =
   schemas['MaintainerSubscriptionRenewalNotificationPayload']
+export type MaintainerFileFlaggedMaliciousNotificationPayload =
+  schemas['MaintainerFileFlaggedMaliciousNotificationPayload']
 
 export const useListNotifications = (): UseQueryResult<
   schemas['NotificationsList'],

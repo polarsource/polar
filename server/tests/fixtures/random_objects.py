@@ -939,8 +939,10 @@ async def create_customer(
     billing_address: Address | None = None,
     tax_id: TaxID | None = None,
     user_metadata: dict[str, Any] = {},
+    created_at: datetime | None = None,
 ) -> Customer:
     customer = Customer(
+        created_at=created_at or utc_now(),
         external_id=external_id,
         email=email,
         email_verified=email_verified,
@@ -1156,6 +1158,8 @@ async def create_subscription(
     scheduler_locked_at: datetime | None = None,
     seats: int | None = None,
     past_due_at: datetime | None = None,
+    created_at: datetime | None = None,
+    modified_at: datetime | None = None,
 ) -> Subscription:
     currency_prices = PriceSet.from_product(product, currency)
     prices = prices or currency_prices.prices
@@ -1193,6 +1197,8 @@ async def create_subscription(
             canceled_at = now
 
     subscription = Subscription(
+        created_at=created_at or utc_now(),
+        modified_at=modified_at,
         recurring_interval=recurring_interval,
         recurring_interval_count=recurring_interval_count,
         status=status,

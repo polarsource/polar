@@ -12,12 +12,11 @@ import argparse
 import functools
 import http.server
 import json
-import os
 import pathlib
 import queue
 import random
-import shutil
 import string
+import sys
 import typing
 import urllib.parse
 import webbrowser
@@ -29,12 +28,12 @@ from yaspin import yaspin
 from yaspin.spinners import Spinners
 
 ROOT_PATH = pathlib.Path(__file__).parent.parent
-SECRETS_FILE_PATH = pathlib.Path(
-    os.environ.get(
-        "POLAR_SECRETS_FILE",
-        pathlib.Path.home() / ".config" / "polar" / "secrets.env",
-    )
-)
+
+# One implementation of the secrets file rules, shared with the dev CLI.
+sys.path.insert(0, str(ROOT_PATH / "dev" / "cli"))
+import secrets_io
+
+SECRETS_FILE_PATH = secrets_io.SECRETS_FILE
 SETUP_PAGE = """
 <form id="setup-form" action="https://github.com/settings/apps/new" method="post">
  Register a GitHub App Manifest: <input type="text" name="manifest" id="manifest"><br>
@@ -213,33 +212,19 @@ def _register_github_app(code: str) -> dict[str, typing.Any]:
 
 
 def _load_central_secrets() -> dict[str, str]:
-    """Load secrets from central file if it exists."""
-    if SECRETS_FILE_PATH.exists():
-        return {k: v for k, v in dotenv_values(SECRETS_FILE_PATH).items() if v}
-    return {}
+    """Load secrets that carry a value, so blanks don't override template defaults."""
+    return {k: v for k, v in secrets_io.read_secrets().items() if v}
 
 
 def _ensure_secrets_file() -> bool:
     """Create secrets file from template if it doesn't exist. Returns True if created."""
-    if SECRETS_FILE_PATH.exists():
-        return False
-
-    SECRETS_FILE_PATH.parent.mkdir(parents=True, exist_ok=True)
-    template_path = ROOT_PATH / "dev" / "secrets.env.template"
-    if template_path.exists():
-        shutil.copy(template_path, SECRETS_FILE_PATH)
-    else:
-        with open(SECRETS_FILE_PATH, "w") as f:
-            f.write("# Polar Development Secrets\n")
-            f.write("# See dev/secrets.env.template for all options\n")
-    return True
+    return secrets_io.ensure_secrets_file()
 
 
 def _save_github_app_to_secrets(github_app: dict[str, typing.Any]) -> None:
     """Save GitHub App credentials to central secrets file."""
     _ensure_secrets_file()
-    secrets = _load_central_secrets()
-    secrets.update(
+    secrets_io.update_secrets(
         {
             "POLAR_GITHUB_APP_NAMESPACE": github_app["slug"],
             "POLAR_GITHUB_CLIENT_ID": github_app["client_id"],
@@ -258,13 +243,6 @@ def _save_github_app_to_secrets(github_app: dict[str, typing.Any]) -> None:
             "NEXT_PUBLIC_GITHUB_APP_NAMESPACE": github_app["slug"],
         }
     )
-
-    with open(SECRETS_FILE_PATH, "w") as f:
-        f.write("# Polar Development Secrets\n")
-        f.write("# Shared across Git worktrees. See dev/secrets.env.template\n\n")
-        for key, value in secrets.items():
-            delimiter = "'" if '"' in str(value) else '"'
-            f.write(f"{key}={delimiter}{value}{delimiter}\n")
 
 
 def _write_env_file(

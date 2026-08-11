@@ -12,6 +12,12 @@ from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
 from polar.models import Organization, ProductMedia, User
 from polar.models.file import File, FileServiceTypes, ProductMediaFile
+from polar.notifications.notification import (
+    MaintainerFileFlaggedMaliciousNotificationPayload,
+    NotificationType,
+)
+from polar.notifications.service import PartialNotification
+from polar.notifications.service import notifications as notifications_service
 from polar.postgres import AsyncReadSession, AsyncSession, sql
 
 from .repository import FileRepository
@@ -219,6 +225,19 @@ class FileService:
             organization_id=file.organization_id,
             service=file.service,
             scan_result_details=scan_result_details,
+        )
+        organization = file.organization
+        await notifications_service.send_to_org_members(
+            session,
+            org_id=file.organization_id,
+            notif=PartialNotification(
+                type=NotificationType.maintainer_file_flagged_malicious,
+                payload=MaintainerFileFlaggedMaliciousNotificationPayload(
+                    file_name=file.name,
+                    organization_name=organization.name,
+                    organization_slug=organization.slug,
+                ),
+            ),
         )
         return file
 

@@ -1,7 +1,12 @@
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
-import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
+import {
+  useInfiniteQuery,
+  useMutation,
+  useQueries,
+  useQuery,
+} from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
 export const useCustomers = (
@@ -39,6 +44,64 @@ export const useCustomers = (
     },
   })
 
+export const useTopCustomers = (
+  organizationId: string,
+  parameters?: { start?: Date; end?: Date; limit?: number },
+) =>
+  useQuery({
+    queryKey: [
+      'customers',
+      organizationId,
+      'top',
+      parameters?.start?.toISOString(),
+      parameters?.end?.toISOString(),
+      parameters?.limit,
+    ],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customers/top', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              start: parameters?.start?.toISOString(),
+              end: parameters?.end?.toISOString(),
+              limit: parameters?.limit,
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+  })
+
+export const useCustomerGrowth = (
+  organizationId: string,
+  parameters: { start: Date; end: Date; interval: schemas['TimeInterval'] },
+) =>
+  useQuery({
+    queryKey: [
+      'customers',
+      organizationId,
+      'growth',
+      parameters.start.toISOString(),
+      parameters.end.toISOString(),
+      parameters.interval,
+    ],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customers/growth', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              start: parameters.start.toISOString(),
+              end: parameters.end.toISOString(),
+              interval: parameters.interval,
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+  })
+
 export const useCustomer = (id: string | null) =>
   useQuery({
     queryKey: ['customers', 'id', id],
@@ -55,6 +118,22 @@ export const useCustomer = (id: string | null) =>
     },
     retry: defaultRetry,
     enabled: !!id,
+  })
+
+export const useCustomersByIds = (ids: string[]) =>
+  useQueries({
+    queries: ids.map((id) => ({
+      queryKey: ['customers', 'id', id],
+      queryFn: () =>
+        unwrap(
+          api.GET('/v1/customers/{id}', {
+            params: {
+              path: { id },
+            },
+          }),
+        ),
+      retry: defaultRetry,
+    })),
   })
 
 export const useCreateCustomer = (organizationId: string) =>

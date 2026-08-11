@@ -1,25 +1,60 @@
+import { StaticImage } from '@/components/Image/StaticImage'
+import { Section } from '@/components/Landing/Section'
+import { SectionHeader } from '@/components/Landing/SectionHeader'
 import ArrowOutwardOutlined from '@mui/icons-material/ArrowOutwardOutlined'
+import { Button, Grid, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
+import { HowWeWork } from './HowWeWork'
 import { investors } from './investors'
 import { TeamCarouselWrapper } from './TeamCarouselWrapper'
+import { TextRings } from '@/components/Landing/graphics/TextRings'
 
 // ── Data ──────────────────────────────────────────────────────────────────────
 
 const JOBS = [
+  {
+    category: 'Design',
+    roles: [
+      {
+        role: 'Senior Product Designer',
+        location: 'Remote, Europe',
+        experience: '8+ Years Experience',
+        link: 'https://jobs.ashbyhq.com/polar/ec140cc5-fe50-4c7a-9131-3dd718d2b02d',
+      },
+    ],
+  },
   {
     category: 'Product & Engineering',
     roles: [
       {
         role: 'Senior Platform Engineer',
         location: 'Remote, Europe',
-        experience: '5-8+ Years',
+        experience: '5-8+ Years Experience',
         link: 'https://jobs.ashbyhq.com/polar/8a82633e-e7b9-42f4-92e1-33032a56097a',
       },
       {
         role: 'Senior Product Engineer',
         location: 'Remote, Europe',
-        experience: '7+ Years',
+        experience: '7+ Years Experience',
         link: 'https://jobs.ashbyhq.com/polar/955c6935-6d03-46e5-b649-a8b958a52962',
+      },
+    ],
+  },
+  {
+    category: 'Merchant Operations',
+    roles: [
+      {
+        role: 'Risk & Compliance Specialist',
+        link: 'https://jobs.ashbyhq.com/polar/87773c6c-4cd4-4948-9779-20fdc8f8ea7b',
+        location: 'Remote, United States',
+        experience: '2+ Years Experience',
+      },
+      {
+        role: 'Merchant Support Specialist',
+        link: 'https://jobs.ashbyhq.com/polar/2f3744b5-f33b-4611-bdfa-d99700dfa0e7',
+        location: 'Remote, United States',
+        experience: '2+ Years Experience',
       },
     ],
   },
@@ -29,121 +64,219 @@ const JOBS = [
 
 export default function CompanyPage() {
   return (
-    <div className="dark:bg-polar-950 min-h-screen bg-white text-gray-900 dark:text-white">
+    <Box
+      flexDirection="column"
+      minHeight="100vh"
+      backgroundColor="background-primary"
+      color="text-primary"
+    >
       {/* Hero */}
-      <section className="flex flex-col items-center gap-8 pt-12 pb-24 text-center md:px-4">
-        <h1 className="font-display leading-tighter max-w-2xl text-5xl font-medium text-balance md:text-7xl">
-          Small team, big ambitions.
-        </h1>
-        <p className="max-w-xl text-lg text-balance">
-          We&apos;re building the billing layer for the next generation of AI
-          products. Come build it with us.
-        </p>
-        <a
-          href="#open-roles"
-          className="mt-2 inline-flex items-center rounded-full bg-gray-900 px-6 py-3 text-sm font-semibold text-white transition-opacity hover:opacity-80 dark:bg-white dark:text-gray-900"
-        >
-          Join Us
-        </a>
-      </section>
+      <Box
+        as="section"
+        flexDirection="column"
+        alignItems="center"
+        rowGap="2xl"
+        paddingTop="3xl"
+        paddingBottom="5xl"
+        paddingHorizontal={{ md: 'l' }}
+        textAlign="center"
+      >
+        <Box display="block" maxWidth="42rem">
+          <Text variant="heading-xl" as="h1">
+            Small team, big ambitions.
+          </Text>
+        </Box>
+        <Box display="block" maxWidth="36rem">
+          <Text variant="heading-xxs" wrap="balance">
+            We&apos;re building the billing layer for the next generation of AI
+            products. Come build it with us.
+          </Text>
+        </Box>
+        <Box display="block" marginTop="s">
+          <a href="#open-roles">
+            <Button size="lg">Join Us</Button>
+          </a>
+        </Box>
+      </Box>
 
       <TeamCarouselWrapper />
 
       {/* About */}
-      <section className="mx-auto flex w-full max-w-xl flex-col gap-8 py-24 md:px-6">
-        <h2 className="font-display text-2xl font-medium md:text-4xl">
-          billing = fn(events)
-        </h2>
-        <div className="flex flex-col gap-4 text-lg leading-relaxed">
-          <p>
-            Modern software is priced around usage. Yet billing systems remain
-            static.
-          </p>
-          <p>
-            We believe analytics & billing belong in the same platform —
-            real-time event ingestion powering instant unit economics and
-            analytics, leading to deterministic and versioned billing as code.
-          </p>
-          <p>
-            We&apos;re building Polar to become the standard Events → Analytics
-            → Billing stack for the next generation of software.
-          </p>
-          <p>
-            We&apos;re a small team with big ambitions, working with high
-            ownership and autonomy. Polar is open source and built in the open
-            with our community.
-          </p>
-        </div>
-      </section>
+      <Section>
+        <Box display="block" paddingVertical="5xl">
+          <SectionHeader
+            align="start"
+            title="billing = fn(events)"
+            description={
+              <Box flexDirection="column" rowGap="xl">
+                <Text variant="heading-xs">
+                  Modern software is priced around usage. Yet billing systems
+                  remain static.
+                </Text>
+                <Text variant="heading-xxs" color="muted">
+                  We believe analytics & billing belong in the same platform.
+                  Real-time event ingestion powers instant unit economics and
+                  analytics, leading to deterministic and versioned billing as
+                  code.
+                </Text>
+                <Text variant="heading-xxs" color="muted">
+                  We&apos;re building Polar to become the standard Events →
+                  Analytics → Billing stack for the next generation of software.
+                </Text>
+                <Text variant="heading-xxs" color="muted">
+                  We&apos;re a small team with big ambitions, working with high
+                  ownership and autonomy. Polar is open source and built in the
+                  open with our community.
+                </Text>
+              </Box>
+            }
+          />
+        </Box>
+      </Section>
+
+      <Section>
+        <StaticImage
+          src="/assets/landing/company/polar.jpg"
+          alt="Polar graphic"
+          width={1920}
+          height={1080}
+          className="object-cover"
+          sizes="(min-width: 768px) 40rem, 100vw"
+        />
+      </Section>
+
+      <Section>
+        <HowWeWork />
+      </Section>
+
+      {/* Design */}
+      <Section>
+        <Box flexDirection="column" rowGap="4xl">
+          <SectionHeader
+            title="We take design as seriously as uptime"
+            description={
+              <Box flexDirection="column" alignItems="start" rowGap="2xl">
+                <Text variant="heading-xs" color="muted" wrap="pretty">
+                  Design at Polar spans the entire stack. Great developer
+                  ergonomics, docs that respect your time, dashboards that make
+                  usage billing legible & checkouts your customers trust.
+                </Text>
+                <Link href="/brand">
+                  <Button size="lg">Explore the brand</Button>
+                </Link>
+              </Box>
+            }
+          />
+          <Link href="/brand">
+            <Grid
+              templateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }}
+              gap="4xl"
+            >
+              <Box backgroundColor="background-secondary">
+                <TextRings />
+              </Box>
+              <Box position="relative" overflow="hidden" aspectRatio="1 / 1">
+                <StaticImage
+                  src="/assets/brand/marketing/billboard_01.jpg"
+                  alt="Polar billboard reading 'Your customers 10x'd their usage overnight. Polar already invoiced for it.'"
+                  fill
+                  className="object-cover"
+                  sizes="(min-width: 768px) 40rem, 100vw"
+                />
+              </Box>
+            </Grid>
+          </Link>
+        </Box>
+      </Section>
 
       {/* Open roles */}
-      <section id="open-roles">
-        <div className="mx-auto max-w-xl py-16 md:px-6">
-          <h2 className="font-display mb-16 text-3xl font-medium">
-            Open Roles
-          </h2>
-          <div className="flex flex-col gap-16">
+      <Section id="open-roles">
+        <Box flexDirection="column" rowGap="4xl">
+          <SectionHeader
+            title="Open Roles"
+            description="We're a small, senior team working remotely across the world. High ownership, high pace and a direct line to the people using what you build."
+          />
+          <Box flexDirection="column" rowGap="3xl">
             {JOBS.map(({ category, roles }) => (
-              <div key={category} className="flex flex-col gap-4">
-                <h3 className="text-lg">{category}</h3>
-                <div className="flex flex-col">
+              <Box key={category} flexDirection="column" rowGap="xl">
+                <Text variant="heading-s" as="h3">
+                  {category}
+                </Text>
+                <Box flexDirection="column">
                   {roles.map((job) => (
                     <Link
                       key={job.link}
                       href={job.link}
                       target="_blank"
-                      className="dark:border-polar-800 group flex flex-row items-baseline justify-between gap-4 border-t border-gray-100 py-6"
+                      className="group"
                     >
-                      <div className="flex flex-1 flex-col gap-1">
-                        <span className="font-medium group-hover:underline">
-                          {job.role}
-                        </span>
-                        <div className="dark:text-polar-500 flex flex-row gap-x-2 text-gray-500">
-                          {job.experience && (
-                            <>
-                              <span>{job.experience}</span>
-                              <span>·</span>
-                            </>
-                          )}
-                          <span>{job.location}</span>
-                        </div>
-                      </div>
-                      <div className="flex gap-2">
+                      <Box
+                        alignItems="baseline"
+                        justifyContent="between"
+                        columnGap="l"
+                        paddingVertical="xl"
+                        borderTopWidth={1}
+                        borderStyle="solid"
+                        borderColor="border-primary"
+                      >
+                        <Box flexDirection="column" rowGap="xs" flex={1}>
+                          <Text variant="body" as="span">
+                            <span className="group-hover:underline">
+                              {job.role}
+                            </span>
+                          </Text>
+                          <Box columnGap="s">
+                            {job.experience && (
+                              <>
+                                <Text as="span" color="muted" variant="body">
+                                  {job.experience}
+                                </Text>
+                                <Text as="span" color="muted" variant="body">
+                                  ·
+                                </Text>
+                              </>
+                            )}
+                            <Text as="span" color="muted" variant="body">
+                              {job.location}
+                            </Text>
+                          </Box>
+                        </Box>
                         <ArrowOutwardOutlined fontSize="inherit" />
-                      </div>
+                      </Box>
                     </Link>
                   ))}
-                </div>
-              </div>
+                </Box>
+              </Box>
             ))}
-          </div>
-        </div>
-      </section>
+          </Box>
+        </Box>
+      </Section>
 
       {/* Investors */}
-      <section>
-        <div className="mx-auto max-w-xl py-16 md:px-6">
-          <div className="mb-12 flex flex-col gap-3">
-            <h2 className="font-display text-3xl font-medium">
-              Investors, Angels & Advisors
-            </h2>
-            <p className="text-lg">
-              The incredible people and early stage firms who have had our back
-              through thick and thin — supporting us from Day 1.
-            </p>
-          </div>
-          <div className="grid grid-cols-2 gap-6">
+      <Section>
+        <Box flexDirection="column" rowGap="4xl">
+          <SectionHeader
+            title="Investors, Angels & Advisors"
+            description="The incredible people and early stage firms who have had our back through thick and thin, supporting us from Day 1."
+          />
+          <Grid
+            templateColumns={{ base: 'repeat(2, 1fr)', md: 'repeat(4, 1fr)' }}
+            columnGap="4xl"
+            rowGap="xl"
+          >
             {investors.map((investor) => (
-              <div key={investor.name} className="flex flex-col gap-0.5">
-                <span className="font-medium">{investor.name}</span>
-                <span className="dark:text-polar-500 text-gray-500">
+              <Box key={investor.name} flexDirection="column">
+                <Text variant="body" as="span">
+                  {investor.name}
+                </Text>
+                <Text variant="body" as="span" color="muted">
                   {investor.company}
-                </span>
-              </div>
+                </Text>
+              </Box>
             ))}
-          </div>
-        </div>
-      </section>
-    </div>
+          </Grid>
+        </Box>
+      </Section>
+    </Box>
   )
 }

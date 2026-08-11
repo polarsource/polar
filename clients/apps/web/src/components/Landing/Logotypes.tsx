@@ -4,6 +4,7 @@ import { JSX } from 'react'
 import {
   Confidence,
   FastAPICloud,
+  MiddayWordmark,
   // Goals,
   StillaAIWordmark,
   Tailwind,
@@ -33,6 +34,10 @@ const items = [
   {
     icon: <Confidence size={32} />,
     link: 'https://confidence.spotify.com',
+  },
+  {
+    icon: <MiddayWordmark size={32} />,
+    link: 'https://midday.ai',
   },
 ]
 

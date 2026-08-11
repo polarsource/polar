@@ -347,6 +347,18 @@ async def get(
                         ):
                             text("Unvoid")
 
+                    if order.invoice_path is not None:
+                        with button(
+                            hx_get=str(
+                                request.url_for(
+                                    "orders:regenerate_invoice", id=order.id
+                                )
+                            ),
+                            hx_target="#modal",
+                            outline=True,
+                        ):
+                            text("Regenerate Invoice")
+
             with tag.div(classes="grid grid-cols-1 lg:grid-cols-2 gap-4"):
                 # Order Details
                 with tag.div(classes="card card-border w-full shadow-sm"):
@@ -1047,3 +1059,64 @@ async def unvoid(
                     variant="primary",
                 ):
                     text("Unvoid Order")
+
+
+@router.api_route(
+    "/{id}/regenerate-invoice",
+    name="orders:regenerate_invoice",
+    methods=["GET", "POST"],
+)
+async def regenerate_invoice(
+    request: Request,
+    id: UUID4,
+    session: AsyncSession = Depends(get_db_session),
+) -> Any:
+    order_repository = OrderRepository.from_session(session)
+    order = await order_repository.get_by_id(
+        id,
+        options=order_repository.get_eager_options(),
+    )
+
+    if order is None:
+        raise HTTPException(status_code=404)
+
+    if order.invoice_path is None:
+        await add_toast(request, "This order has no invoice to regenerate.", "error")
+        return HXRedirectResponse(
+            request, str(request.url_for("orders:get", id=id)), 303
+        )
+
+    if request.method == "POST":
+        try:
+            await order_service.trigger_invoice_generation(session, order, force=True)
+            await add_toast(
+                request,
+                "Invoice regeneration scheduled. "
+                "The PDF will refresh in a few seconds.",
+                "success",
+            )
+            return HXRedirectResponse(
+                request, str(request.url_for("orders:get", id=id)), 303
+            )
+        except Exception as e:
+            await add_toast(request, f"Failed to regenerate invoice: {e}", "error")
+
+    with modal("Regenerate invoice", open=True):
+        with tag.div(classes="flex flex-col gap-4"):
+            with tag.p():
+                text(
+                    "This re-renders the invoice PDF from the current billing "
+                    "details, tax data and template. The invoice number is kept; "
+                    "only the PDF file is replaced. Use this to pick up fixes that "
+                    "don't change the order itself (e.g. the seller tax number)."
+                )
+            with tag.div(classes="modal-action"):
+                with tag.form(method="dialog"):
+                    with button(ghost=True):
+                        text("Cancel")
+                with button(
+                    hx_post=str(request.url_for("orders:regenerate_invoice", id=id)),
+                    hx_target="#modal",
+                    variant="primary",
+                ):
+                    text("Regenerate Invoice")

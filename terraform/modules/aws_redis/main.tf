@@ -11,14 +11,18 @@ resource "aws_security_group" "this" {
   tags        = var.tags
 }
 
-resource "aws_elasticache_cluster" "this" {
-  cluster_id         = var.name
-  engine             = "redis"
-  engine_version     = var.engine_version
-  node_type          = var.node_type
-  num_cache_nodes    = 1
-  port               = var.port
-  subnet_group_name  = aws_elasticache_subnet_group.this.name
-  security_group_ids = [aws_security_group.this.id]
-  tags               = var.tags
+resource "aws_elasticache_replication_group" "this" {
+  replication_group_id       = var.name
+  description                = "${var.name} Redis"
+  engine                     = "redis"
+  engine_version             = var.engine_version
+  node_type                  = var.node_type
+  num_cache_clusters         = var.num_cache_clusters
+  multi_az_enabled           = var.num_cache_clusters > 1
+  automatic_failover_enabled = var.num_cache_clusters > 1
+  port                       = var.port
+  snapshot_retention_limit   = var.snapshot_retention_days
+  subnet_group_name          = aws_elasticache_subnet_group.this.name
+  security_group_ids         = [aws_security_group.this.id]
+  tags                       = var.tags
 }

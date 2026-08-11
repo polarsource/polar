@@ -20,9 +20,11 @@ module "lambda_worker_ecr" {
 module "redis" {
   source = "../modules/aws_redis"
 
-  name       = "polar-sandbox-worker"
-  vpc_id     = module.vpc.vpc_id
-  subnet_ids = module.vpc.private_subnet_ids
+  name               = "polar-sandbox-worker"
+  vpc_id             = module.vpc.vpc_id
+  subnet_ids         = module.vpc.private_subnet_ids
+  node_type          = "cache.t4g.small"
+  num_cache_clusters = 2
 }
 
 resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {

@@ -537,7 +537,7 @@ class OrderService:
         return order
 
     async def trigger_invoice_generation(
-        self, session: AsyncSession, order: Order
+        self, session: AsyncSession, order: Order, *, force: bool = False
     ) -> None:
         if order.status in (OrderStatus.draft, OrderStatus.void):
             raise OrderNotEligibleForInvoice(order)
@@ -546,7 +546,8 @@ class OrderService:
             raise MissingInvoiceBillingDetails(order)
 
         if (
-            order.invoice_path is not None
+            not force
+            and order.invoice_path is not None
             and order.invoice_checksum == invoice_service.compute_order_checksum(order)
         ):
             log.info(
@@ -557,12 +558,15 @@ class OrderService:
             )
             return
 
-        log.info("order.invoice_generation.scheduled", order_id=order.id)
-        enqueue_job("order.invoice", order_id=order.id)
+        log.info("order.invoice_generation.scheduled", order_id=order.id, force=force)
+        enqueue_job("order.invoice", order_id=order.id, force=force)
 
-    async def generate_invoice(self, session: AsyncSession, order: Order) -> Order:
+    async def generate_invoice(
+        self, session: AsyncSession, order: Order, *, force: bool = False
+    ) -> Order:
         if (
-            order.invoice_path is not None
+            not force
+            and order.invoice_path is not None
             and order.invoice_checksum == invoice_service.compute_order_checksum(order)
         ):
             log.info(

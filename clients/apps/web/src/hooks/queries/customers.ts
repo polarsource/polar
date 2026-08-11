@@ -44,6 +44,64 @@ export const useCustomers = (
     },
   })
 
+export const useTopCustomers = (
+  organizationId: string,
+  parameters?: { start?: Date; end?: Date; limit?: number },
+) =>
+  useQuery({
+    queryKey: [
+      'customers',
+      organizationId,
+      'top',
+      parameters?.start?.toISOString(),
+      parameters?.end?.toISOString(),
+      parameters?.limit,
+    ],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customers/top', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              start: parameters?.start?.toISOString(),
+              end: parameters?.end?.toISOString(),
+              limit: parameters?.limit,
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+  })
+
+export const useCustomerGrowth = (
+  organizationId: string,
+  parameters: { start: Date; end: Date; interval: schemas['TimeInterval'] },
+) =>
+  useQuery({
+    queryKey: [
+      'customers',
+      organizationId,
+      'growth',
+      parameters.start.toISOString(),
+      parameters.end.toISOString(),
+      parameters.interval,
+    ],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/customers/growth', {
+          params: {
+            query: {
+              organization_id: organizationId,
+              start: parameters.start.toISOString(),
+              end: parameters.end.toISOString(),
+              interval: parameters.interval,
+            },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+  })
+
 export const useCustomer = (id: string | null) =>
   useQuery({
     queryKey: ['customers', 'id', id],

@@ -1,5 +1,11 @@
 # @polar-sh/checkout
 
+## 0.4.1
+
+### Patch Changes
+
+- 0a573c3: Prevent smooth-scroll libraries (Lenis) on the embedding page from scrolling behind the checkout overlay
+
 ## 0.4.0
 
 ### Minor Changes
@@ -59,7 +65,7 @@
   The theme should now be passed in an object when calling `PolarEmbedCheckout.create`:
 
   ```ts
-  PolarEmbedCheckout.create('__CHECKOUT_LINK__', { theme: 'dark' })
+  PolarEmbedCheckout.create("__CHECKOUT_LINK__", { theme: "dark" });
   ```
 
 ## 0.1.15

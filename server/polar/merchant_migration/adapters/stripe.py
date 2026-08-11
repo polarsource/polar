@@ -30,6 +30,20 @@ SKIPPED_SUBSCRIPTION_STATUSES = frozenset(
     {"canceled", "incomplete", "incomplete_expired"}
 )
 
+# Written to `cancellation_details.comment` when the cutover stops a source
+# subscription, and matched when reading one back. A cutover that crashes
+# between the Stripe cancellation and its own commit retries against a
+# subscription it already cancelled; without this marker the retry would read
+# that as the customer having churned and strand the subscription unbilled.
+CANCELLATION_COMMENT_PREFIX = "Migrated to Polar"
+
+# Expansions the cutover needs on a single subscription read.
+_SUBSCRIPTION_EXPAND = [
+    "default_payment_method",
+    "customer.invoice_settings.default_payment_method",
+    "customer.default_source",
+]
+
 
 class StripeAdapter:
     def __init__(self, access_token: str) -> None:
@@ -178,11 +192,7 @@ class StripeAdapter:
             params={
                 "status": "all",
                 "limit": PAGE_SIZE,
-                "expand": [
-                    "data.default_payment_method",
-                    "data.customer.invoice_settings.default_payment_method",
-                    "data.customer.default_source",
-                ],
+                "expand": [f"data.{path}" for path in _SUBSCRIPTION_EXPAND],
             }
         )
         async for subscription in subscriptions.auto_paging_iter():
@@ -191,6 +201,47 @@ class StripeAdapter:
             if not subscription["items"]["data"]:
                 continue
             yield self._map_subscription(subscription)
+
+    async def get_subscription(self, source_id: str) -> CanonicalSubscription | None:
+        try:
+            subscription = await self._client.v1.subscriptions.retrieve_async(
+                source_id, params={"expand": _SUBSCRIPTION_EXPAND}
+            )
+        except stripe_lib.InvalidRequestError as e:
+            # The merchant deleted it on Stripe since the import.
+            if e.code == "resource_missing":
+                return None
+            raise
+        if not subscription["items"]["data"]:
+            return None
+        return self._map_subscription(subscription)
+
+    async def stop_source_subscription(self, source_id: str, *, reference: str) -> None:
+        """Cancel the subscription on Stripe, right now.
+
+        No proration and no final invoice: the customer already paid the source
+        through the end of the period, and Polar picks the billing up from there.
+        Cancelling one Stripe has already cancelled is treated as done, so a
+        retry converges instead of failing.
+        """
+        comment = f"{CANCELLATION_COMMENT_PREFIX} (migration {reference})"
+        try:
+            await self._client.v1.subscriptions.cancel_async(
+                source_id,
+                params={"cancellation_details": {"comment": comment}},
+            )
+        except stripe_lib.InvalidRequestError:
+            if await self._is_stopped(source_id):
+                return
+            raise
+
+    async def _is_stopped(self, source_id: str) -> bool:
+        try:
+            subscription = await self._client.v1.subscriptions.retrieve_async(source_id)
+        except stripe_lib.InvalidRequestError as e:
+            # Gone entirely: it certainly isn't billing anyone.
+            return e.code == "resource_missing"
+        return subscription.status == "canceled"
 
     def _map_price(self, price: stripe_lib.Price) -> CanonicalPrice:
         return CanonicalPrice(
@@ -232,7 +283,17 @@ class StripeAdapter:
             payment_method=self._resolve_payment_method(subscription),
             has_discount=bool(subscription.get("discounts"))
             or subscription.get("discount") is not None,
+            cancel_at_period_end=bool(subscription.cancel_at_period_end),
+            trial_end=self._to_datetime(subscription.trial_end),
+            stopped_for_migration=self._stopped_for_migration(subscription),
         )
+
+    def _stopped_for_migration(self, subscription: stripe_lib.Subscription) -> bool:
+        if subscription.status != "canceled":
+            return False
+        details = subscription.cancellation_details
+        comment = details.comment if details is not None else None
+        return bool(comment and comment.startswith(CANCELLATION_COMMENT_PREFIX))
 
     def _map_customer(self, customer: stripe_lib.Customer) -> CanonicalCustomer:
         address = customer.address

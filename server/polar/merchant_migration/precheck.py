@@ -594,6 +594,17 @@ class PriceDisplay:
         return cls(price.amount, price.currency, product.recurring_interval)
 
 
+def subscription_import_reason(
+    subscription: CanonicalSubscription,
+) -> Reason | None:
+    """Why a subscription can't be taken on its own terms, ignoring what its
+    product and customer do. The cutover re-reads the source weeks later and
+    holds it to the same bar as the import did."""
+    return _drop_reason(
+        precheck_engine._check_subscription(subscription), SUBSCRIPTION_DROP_CODES
+    )
+
+
 def _drop_reason(issues: Iterable[PrecheckIssue], codes: set[str]) -> Reason | None:
     for issue in issues:
         if issue.code in codes:
@@ -992,9 +1003,7 @@ def plan_subscription_imports(
     }
     plans: dict[str, Reason | None] = {}
     for subscription in subscriptions:
-        skip = _drop_reason(
-            precheck_engine._check_subscription(subscription), SUBSCRIPTION_DROP_CODES
-        )
+        skip = subscription_import_reason(subscription)
         if skip is None and subscription.price_source_id not in importable_prices:
             skip = Reason(
                 "subscription_product_not_importable", _SUBSCRIPTION_PRODUCT_REASON

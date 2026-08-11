@@ -121,6 +121,20 @@ class SubscriptionRepository(
         )
         return await self.get_all(statement)
 
+    async def list_ids_requiring_payment_method(
+        self, payment_method_id: UUID
+    ) -> Sequence[UUID]:
+        statement = (
+            self.get_base_statement()
+            .with_only_columns(Subscription.id)
+            .where(
+                Subscription.payment_method_id == payment_method_id,
+                Subscription.requires_payment_method.is_(True),
+            )
+        )
+        result = await self.session.execute(statement)
+        return result.scalars().all()
+
     def get_billable_by_organization_statement(
         self, organization_id: UUID, *, options: Options = ()
     ) -> Select[tuple[Subscription]]:

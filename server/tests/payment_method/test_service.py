@@ -123,7 +123,7 @@ class TestDelete:
             SubscriptionStatus.past_due,
         ],
     )
-    async def test_delete_payment_method_with_billable_subscription_raises_exception(
+    async def test_delete_payment_method_with_renewing_subscription_raises_exception(
         self,
         status: SubscriptionStatus,
         session: AsyncSession,
@@ -153,7 +153,107 @@ class TestDelete:
             await payment_method_service.delete(session, payment_method)
 
         assert subscription.id in exc_info.value.subscription_ids
-        assert "Cannot delete payment method" in str(exc_info.value)
+
+        await session.refresh(payment_method)
+        assert payment_method.deleted_at is None
+
+    @pytest.mark.parametrize(
+        "status",
+        [SubscriptionStatus.trialing, SubscriptionStatus.active],
+    )
+    async def test_delete_payment_method_with_subscription_ending_at_period_end_succeeds(
+        self,
+        status: SubscriptionStatus,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        payment_method = PaymentMethod(
+            processor=PaymentProcessor.stripe,
+            processor_id="pm_test_ending",
+            type="card",
+            method_metadata={"brand": "visa", "last4": "4242"},
+            customer=customer,
+        )
+        await save_fixture(payment_method)
+
+        subscription = await create_subscription(
+            save_fixture,
+            status=status,
+            product=product,
+            customer=customer,
+            cancel_at_period_end=True,
+        )
+        subscription.payment_method = payment_method
+        await save_fixture(subscription)
+
+        await payment_method_service.delete(session, payment_method)
+
+        await session.flush()
+        await session.refresh(payment_method)
+        assert payment_method.deleted_at is not None
+
+    async def test_delete_payment_method_with_past_due_subscription_ending_raises_exception(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        payment_method = PaymentMethod(
+            processor=PaymentProcessor.stripe,
+            processor_id="pm_test_past_due",
+            type="card",
+            method_metadata={"brand": "visa", "last4": "4242"},
+            customer=customer,
+        )
+        await save_fixture(payment_method)
+
+        subscription = await create_subscription(
+            save_fixture,
+            status=SubscriptionStatus.past_due,
+            product=product,
+            customer=customer,
+            cancel_at_period_end=True,
+        )
+        subscription.payment_method = payment_method
+        await save_fixture(subscription)
+
+        with pytest.raises(PaymentMethodInUseByActiveSubscription):
+            await payment_method_service.delete(session, payment_method)
+
+        await session.refresh(payment_method)
+        assert payment_method.deleted_at is None
+
+    async def test_delete_payment_method_with_metered_subscription_ending_raises_exception(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product_recurring_metered: Product,
+    ) -> None:
+        payment_method = PaymentMethod(
+            processor=PaymentProcessor.stripe,
+            processor_id="pm_test_metered",
+            type="card",
+            method_metadata={"brand": "visa", "last4": "4242"},
+            customer=customer,
+        )
+        await save_fixture(payment_method)
+
+        subscription = await create_subscription(
+            save_fixture,
+            status=SubscriptionStatus.active,
+            product=product_recurring_metered,
+            customer=customer,
+            cancel_at_period_end=True,
+        )
+        subscription.payment_method = payment_method
+        await save_fixture(subscription)
+
+        with pytest.raises(PaymentMethodInUseByActiveSubscription):
+            await payment_method_service.delete(session, payment_method)
 
         await session.refresh(payment_method)
         assert payment_method.deleted_at is None

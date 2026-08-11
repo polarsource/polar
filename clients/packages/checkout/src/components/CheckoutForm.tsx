@@ -33,7 +33,7 @@ import {
   StripeElementsOptions,
   StripePaymentElementChangeEvent,
 } from '@stripe/stripe-js'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { UseFormReturn, WatchObserver } from 'react-hook-form'
 import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
@@ -45,6 +45,8 @@ import PolarLogo from './PolarLogo'
 import { CheckoutBanner } from './CheckoutBanner'
 
 const WALLET_PAYMENT_METHODS = ['apple_pay', 'google_pay', 'link']
+
+type ContactField = 'customer_email' | 'customer_name'
 
 const XIcon = ({ className }: { className?: string }) => {
   return (
@@ -185,6 +187,19 @@ const BaseCheckoutForm = ({
   )
   const debouncedWatcher = useDebouncedCallback(watcher, 500, [watcher])
 
+  const capturedContact = useRef<Partial<Record<ContactField, string>>>({})
+  const captureContact = useCallback(
+    (name: ContactField, value: string) => {
+      const contact = value.trim()
+      if (!contact || capturedContact.current[name] === contact) {
+        return
+      }
+      capturedContact.current[name] = contact
+      update({ [name]: contact }).catch(() => clearErrors(name))
+    },
+    [update, clearErrors],
+  )
+
   const discountCode = watch('discount_code')
 
   useEffect(() => {
@@ -308,6 +323,12 @@ const BaseCheckoutForm = ({
                         autoComplete="email"
                         {...field}
                         value={field.value || ''}
+                        onBlur={(e) => {
+                          field.onBlur()
+                          if (e.target.validity.valid) {
+                            captureContact('customer_email', e.target.value)
+                          }
+                        }}
                         disabled={checkout.customer_id !== null}
                       />
                     </FormControl>
@@ -334,6 +355,10 @@ const BaseCheckoutForm = ({
                           autoComplete="name"
                           {...field}
                           value={field.value || ''}
+                          onBlur={(e) => {
+                            field.onBlur()
+                            captureContact('customer_name', e.target.value)
+                          }}
                         />
                       </FormControl>
                       <FormMessage />

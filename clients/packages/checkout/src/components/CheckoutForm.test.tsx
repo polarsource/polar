@@ -1,6 +1,6 @@
 import type { schemas } from '@polar-sh/client'
 import type { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useEffect } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
@@ -615,6 +615,63 @@ describe('CheckoutForm', () => {
       expect(lastElementsOptions()).toMatchObject({
         customerSessionClientSecret: 'cs_secret_abc',
       })
+    })
+  })
+
+  describe('contact capture', () => {
+    const renderForm = () => {
+      const update = vi.fn(async () => createCheckout())
+      render(
+        <FormWrapper
+          checkout={createCheckout()}
+          {...defaultProps}
+          update={update}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+      return update
+    }
+
+    const fill = (label: string, value: string) => {
+      const input = screen.getByLabelText(label)
+      fireEvent.change(input, { target: { value } })
+      fireEvent.blur(input)
+    }
+
+    it('stores the email once the buyer leaves the field', () => {
+      const update = renderForm()
+
+      fill('Email', 'buyer@example.com')
+
+      expect(update).toHaveBeenCalledWith({
+        customer_email: 'buyer@example.com',
+      })
+    })
+
+    it('stores the cardholder name once the buyer leaves the field', () => {
+      const update = renderForm()
+
+      fill('Cardholder name', 'Buyer Example')
+
+      expect(update).toHaveBeenCalledWith({ customer_name: 'Buyer Example' })
+    })
+
+    it('waits for an address the browser reads as one', () => {
+      const update = renderForm()
+
+      fill('Email', 'buyer@')
+
+      expect(update).not.toHaveBeenCalled()
+    })
+
+    it('stores an unchanged value once', () => {
+      const update = renderForm()
+
+      fill('Email', 'buyer@example.com')
+      fireEvent.blur(screen.getByLabelText('Email'))
+
+      expect(update).toHaveBeenCalledTimes(1)
     })
   })
 })

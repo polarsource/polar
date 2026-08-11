@@ -60,9 +60,11 @@ export const ProductOrders = ({
                   />
                   <div className="flex flex-col overflow-hidden">
                     <span className="truncate">{customer.name ?? '—'}</span>
-                    <span className="dark:text-polar-500 truncate text-xs text-gray-500">
-                      {customer.email ?? '—'}
-                    </span>
+                    {(customer.email || customer.type === 'individual') && (
+                      <span className="dark:text-polar-500 truncate text-xs text-gray-500">
+                        {customer.email ?? '—'}
+                      </span>
+                    )}
                   </div>
                 </div>
               )

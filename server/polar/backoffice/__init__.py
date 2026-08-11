@@ -15,6 +15,7 @@ from .external_events.endpoints import router as external_events_router
 from .feedbacks.endpoints import router as feedbacks_router
 from .impersonation.endpoints import router as impersonation_router
 from .layout import layout
+from .merchant_migrations.endpoints import router as merchant_migrations_router
 from .middlewares import SecurityHeadersMiddleware, TagflowMiddleware
 from .orders.endpoints import router as orders_router
 from .organizations_v2.endpoints import router as organizations_v2_router
@@ -55,6 +56,7 @@ app.include_router(organizations_v2_router)  # Primary organizations interface
 app.include_router(customers_router, prefix="/customers")
 app.include_router(benefits_router, prefix="/benefits")
 app.include_router(products_router, prefix="/products")
+app.include_router(merchant_migrations_router, prefix="/merchant-migrations")
 app.include_router(email_logs_router, prefix="/email-logs")
 app.include_router(external_events_router, prefix="/external-events")
 app.include_router(tasks_router, prefix="/tasks")

@@ -219,8 +219,12 @@ class StripeAdapter:
     async def stop_source_subscription(self, source_id: str, *, reference: str) -> None:
         """Cancel the subscription on Stripe, right now.
 
-        No proration and no final invoice: the customer already paid the source
-        through the end of the period, and Polar picks the billing up from there.
+        No proration and no final invoice, so the customer keeps the period they
+        already paid the source for and gets no surprise charge or refund out of
+        the move. That only holds because the caller takes the subscription on
+        with the source's own period end, and bills nothing before it — cancel
+        at period end instead if that ever stops being true.
+
         Cancelling one Stripe has already cancelled is treated as done, so a
         retry converges instead of failing.
         """
@@ -289,6 +293,16 @@ class StripeAdapter:
         )
 
     def _stopped_for_migration(self, subscription: stripe_lib.Subscription) -> bool:
+        """The prefix, deliberately, and not the per-migration reference.
+
+        The two ways to be wrong here are not symmetric. Failing to recognise
+        our own cancellation strands a customer billed by nobody, so the match
+        stays as loose as it can be. Recognising someone else's — a second
+        migration on the same account, a hand-written comment — only means we
+        take over a subscription whose source billing is provably already
+        stopped, which is the outcome we were driving at anyway. The reference
+        is there for a human reading the Stripe dashboard.
+        """
         if subscription.status != "canceled":
             return False
         details = subscription.cancellation_details

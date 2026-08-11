@@ -17,10 +17,10 @@ export interface BulkActionBarProps {
   children: React.ReactNode
 }
 
-// A cluster that grows into the page toolbar beside the search field, rather
-// than a bar that replaces it. It borrows the search field's height and radius
-// so the toolbar reads as one row, and fills instead of outlining so an active
-// selection is legible at a glance.
+// Controls that grow into the page toolbar beside the search field, rather
+// than a bar that replaces it. They sit on the page rather than on a surface
+// of their own: "1 selected" already states the mode, so a card around it only
+// adds a grey slab for the eye to parse. A hairline divides them from search.
 export const BulkActionBar = ({
   count,
   pageState,
@@ -48,11 +48,16 @@ export const BulkActionBar = ({
         aria-label="Bulk actions"
         alignItems="center"
         columnGap="xs"
-        paddingHorizontal="xs"
         height={40}
-        borderRadius="m"
-        backgroundColor="background-card"
       >
+        <Box
+          display={{ base: 'none', md: 'block' }}
+          height={20}
+          marginRight="l"
+          borderLeftWidth={1}
+          borderStyle="solid"
+          borderColor="border-primary"
+        />
         <BulkSelectionMenu
           count={count}
           pageState={pageState}

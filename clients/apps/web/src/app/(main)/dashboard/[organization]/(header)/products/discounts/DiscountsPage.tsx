@@ -362,14 +362,14 @@ const ClientPage: React.FC<ClientPageProps> = ({
     <DashboardBody wide>
       <div className="flex flex-col gap-8">
         <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <div className="flex flex-col gap-4 md:flex-row md:items-center">
-            <Input
-              className="w-full md:max-w-64"
-              preSlot={<Search fontSize="small" />}
-              placeholder="Search Discounts"
-              value={query}
-              onChange={(e) => onQueryChange(e.target.value)}
-            />
+          <Input
+            className="w-full md:max-w-64"
+            preSlot={<Search fontSize="small" />}
+            placeholder="Search Discounts"
+            value={query}
+            onChange={(e) => onQueryChange(e.target.value)}
+          />
+          {selection.count > 0 ? (
             <BulkActionBar
               count={selection.count}
               pageSelectedCount={selection.pageSelectedCount}
@@ -381,15 +381,16 @@ const ClientPage: React.FC<ClientPageProps> = ({
                 Delete
               </Button>
             </BulkActionBar>
-          </div>
-          <Button
-            type="button"
-            wrapperClassNames="flex flex-row items-center gap-x-2"
-            onClick={() => setShowNewModal(true)}
-          >
-            <AddOutlined fontSize="small" />
-            <span>New Discount</span>
-          </Button>
+          ) : (
+            <Button
+              type="button"
+              wrapperClassNames="flex flex-row items-center gap-x-2"
+              onClick={() => setShowNewModal(true)}
+            >
+              <AddOutlined fontSize="small" />
+              <span>New Discount</span>
+            </Button>
+          )}
         </div>
         {discounts && pageCount !== undefined && (
           <DataTable

@@ -110,13 +110,11 @@ class MerchantMigrationRecordRepository(
         return await self.get_all(statement)
 
     async def count_linked_payment_methods(self, migration_id: UUID) -> tuple[int, int]:
-        """``(with a method to charge, total)`` over the imported subscriptions:
-        what the card check reports back to the merchant.
+        """``(with a method to charge, total)`` over the imported subscriptions.
 
-        Any linked method counts, not only cards. ACH and SEPA move with the
-        copy and Polar can charge them, so a subscription carrying one needs no
-        chasing — `CanonicalPaymentMethodType.requires_reentry` is where the
-        types that genuinely can't move are named.
+        Any linked method counts, not only cards: ACH and SEPA move with the copy
+        and Polar can charge them. `CanonicalPaymentMethodType.requires_reentry`
+        names the types that genuinely can't move.
         """
         statement = (
             self._imported_subscriptions_statement(migration_id)

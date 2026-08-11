@@ -547,8 +547,15 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         self, prices: Sequence["SubscriptionProductPrice"], discount: "Discount | None"
     ) -> None:
         amount = sum(price.amount for price in prices)
-        if discount is not None:
-            amount -= discount.get_discount_amount(amount, self.currency)
+        # Only apply the discount when it's applicable to the product these prices
+        # belong to. A discount restricted to another product must not reduce the
+        # stored amount, otherwise the displayed price disagrees with what's billed.
+        # `product_price.product` is eagerly loaded (identity map), so this doesn't
+        # emit SQL from within the flush-time event listeners that call this.
+        if discount is not None and prices:
+            product = prices[0].product_price.product
+            if discount.is_applicable(product, self.currency):
+                amount -= discount.get_discount_amount(amount, self.currency)
 
         # Preserve the net/gross ratio across the amount change. The customer's
         # effective tax rate is fixed (single tax code, stable address) and recurring

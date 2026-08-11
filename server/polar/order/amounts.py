@@ -135,7 +135,9 @@ async def compute_order_amounts(
     subtotal_amount = sum(item.amount for item in items)
 
     discount_amount = 0
-    if discount is not None:
+    if discount is not None and discount.is_applicable(
+        subscription.product, subscription.currency
+    ):
         # Discount only applies to cycle and meter items, as prorations
         # use "last month's" discount and so this month's discount
         # shouldn't apply to those.

@@ -97,6 +97,7 @@ from polar.order.service import order as order_service
 from polar.product.guard import is_fixed_price, is_seat_price, is_static_price
 from polar.product.price_set import PriceSet
 from polar.subscription.service import SubscriptionService
+from polar.subscription.service import subscription as subscription_service
 from polar.tax.calculation import (
     CalculationExpiredError,
     TaxabilityReason,
@@ -1298,6 +1299,67 @@ class TestCreateSubscriptionOrder:
         assert billing_entry.order_item is not None
         assert billing_entry.order_item.order_id == order.id
 
+    async def test_cycle_discount_ineligible_product(
+        self,
+        calculate_tax_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        organization: Organization,
+        payment_method: PaymentMethod,
+    ) -> None:
+        other_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+        )
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=5000,
+            duration=DiscountDuration.forever,
+            organization=organization,
+            products=[other_product],
+        )
+        customer = await create_customer(
+            save_fixture,
+            organization=organization,
+            billing_address=Address(country=CountryAlpha2("FR")),
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+            discount=discount,
+        )
+        price = product.prices[0]
+        assert is_fixed_price(price)
+
+        preview = await subscription_service.calculate_charge_preview(
+            session, subscription
+        )
+        assert preview.discount_amount == 0
+        assert preview.subtotal_amount == price.price_amount
+        assert preview.net_amount == price.price_amount
+
+        await create_billing_entry(
+            save_fixture,
+            type=BillingEntryType.cycle,
+            customer=subscription.customer,
+            product_price=price,
+            amount=price.price_amount,
+            currency=price.price_currency,
+            subscription=subscription,
+        )
+
+        order = await order_service.create_subscription_order(
+            session, subscription, OrderBillingReasonInternal.subscription_cycle
+        )
+
+        assert order.discount_amount == 0
+        assert order.net_amount == order.subtotal_amount == price.price_amount
+
     async def test_cycle_free_order(
         self,
         enqueue_job_mock: MagicMock,
@@ -1580,16 +1642,15 @@ class TestCreateSubscriptionOrder:
                             # BillingEntries don't include discounts
                             BillingEntryType.proration,
                             # INCLUDES discount
-                            (BillingEntryDirection.credit, 1125, 375),
+                            (BillingEntryDirection.credit, 1125, 750),
                             datetime(2025, 9, 16, tzinfo=UTC),
                             datetime(2026, 10, 1, tzinfo=UTC),
                         ),
                         (
                             "p-pro",
                             BillingEntryType.proration,
-                            # 9000 x 50% (half a month) discount: (100 - 25)% x 4500 = 1125
-                            # INCLUDES discount
-                            (BillingEntryDirection.debit, 3375, 1125),
+                            # 9000 x 50% (half a month), with no eligible discount
+                            (BillingEntryDirection.debit, 4500, 0),
                             datetime(2025, 9, 16, tzinfo=UTC),
                             datetime(2025, 10, 1, tzinfo=UTC),
                         ),
@@ -1597,18 +1658,19 @@ class TestCreateSubscriptionOrder:
                             "p-pro",
                             BillingEntryType.cycle,
                             # EXCLUDES discount
-                            (BillingEntryDirection.debit, 9000, 1800),
+                            (BillingEntryDirection.debit, 9000, 0),
                             datetime(2025, 10, 1, tzinfo=UTC),
                             datetime(2025, 11, 1, tzinfo=UTC),
                         ),
                     ],
-                    expected_discount=0 + 2250,
-                    # (4500 - 1125) - (1500 - 375) = 2250
-                    expected_subtotal=2250 + 9000,
-                    # Tax: 2250 x 20% = 450 ; (9000 - 2250) x 25% = 1440
-                    expected_tax=450 + 1350,
+                    # The discount is restricted to p-basic, but the subscription
+                    # has switched to p-pro, so it no longer applies to the renewal.
+                    expected_discount=0,
+                    # 4500 - 1125 = 3375
+                    expected_subtotal=3375 + 9000,
+                    expected_tax=2475,  # (3375 + 9000) x 20%
                 ),
-                id="discount-applies-only-to-first-product",
+                id="restricted-discount-not-applied-after-switch",
             ),
             pytest.param(
                 # $10 off every month for 3 months
@@ -1632,16 +1694,15 @@ class TestCreateSubscriptionOrder:
                             BillingEntryType.proration,
                             # 3000 x 50% (half a month)
                             # INCLUDES discount
-                            (BillingEntryDirection.credit, 500, 1000),
+                            (BillingEntryDirection.credit, 1000, 1000),
                             datetime(2025, 9, 16, tzinfo=UTC),
                             datetime(2026, 10, 1, tzinfo=UTC),
                         ),
                         (
                             "p-pro",
                             BillingEntryType.proration,
-                            # 9000 x 50% (half a month)
-                            # INCLUDES discount
-                            (BillingEntryDirection.debit, 2750, 1750),
+                            # 9000 x 50% (half a month), with no eligible discount
+                            (BillingEntryDirection.debit, 4500, 0),
                             datetime(2025, 9, 16, tzinfo=UTC),
                             datetime(2025, 10, 1, tzinfo=UTC),
                         ),
@@ -1649,18 +1710,19 @@ class TestCreateSubscriptionOrder:
                             "p-pro",
                             BillingEntryType.cycle,
                             # EXCLUDES discount
-                            (BillingEntryDirection.debit, 9000, 1000),
+                            (BillingEntryDirection.debit, 9000, 0),
                             datetime(2025, 10, 1, tzinfo=UTC),
                             datetime(2025, 11, 1, tzinfo=UTC),
                         ),
                     ],
-                    expected_discount=1000,
-                    # (4500 - 1750) - (1500 - 1000) = 2250
-                    expected_subtotal=2250 + 9000,
-                    expected_tax=450 + 1600,  # 2250 x 20% = 450 ; 8000 x 20% = 1600
-                    # You paid 2000 for the month. Now you get 1000 back (50% the month).
+                    # The discount is restricted to p-basic, but the subscription
+                    # has switched to p-pro, so it no longer applies to the renewal.
+                    expected_discount=0,
+                    # 4500 - 1000 = 3500
+                    expected_subtotal=3500 + 9000,
+                    expected_tax=2500,  # (3500 + 9000) x 20%
                 ),
-                id="fixed-discount-on-first-product",
+                id="restricted-fixed-discount-not-applied-after-switch",
             ),
             pytest.param(
                 # Switch from yearly to monthly after 3 months and 1 day
@@ -1759,6 +1821,15 @@ class TestCreateSubscriptionOrder:
                 subscription=subscription,
             )
             entries.append(entry)
+
+        # The subscription's current product is the one it cycles on; product
+        # eligibility of the discount is evaluated against it.
+        cycle_product_key = next(
+            product_key
+            for product_key, entry_type, *_ in setup.history
+            if entry_type == BillingEntryType.cycle
+        )
+        subscription.product = products[cycle_product_key]
 
         if setup.discount:
             discount = await create_discount(

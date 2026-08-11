@@ -23379,6 +23379,59 @@ export interface components {
       /** Order Url */
       readonly order_url: string | null
     }
+    /** MaintainerSubscriptionRenewalNotification */
+    MaintainerSubscriptionRenewalNotification: {
+      /**
+       * Id
+       * Format: uuid4
+       */
+      id: string
+      /**
+       * Created At
+       * Format: date-time
+       */
+      created_at: string
+      /**
+       * @description discriminator enum property added by openapi-typescript
+       * @enum {string}
+       */
+      type: 'MaintainerSubscriptionRenewalNotification'
+      payload: components['schemas']['MaintainerSubscriptionRenewalNotificationPayload']
+    }
+    /** MaintainerSubscriptionRenewalNotificationPayload */
+    MaintainerSubscriptionRenewalNotificationPayload: {
+      /** Product Name */
+      product_name: string
+      /** Product Price Amount */
+      product_price_amount: number
+      /**
+       * Customer Name
+       * @default
+       */
+      customer_name: string
+      /** Customer Email */
+      customer_email?: string | null
+      /** Organization Slug */
+      organization_slug?: string | null
+      /** Subscription Id */
+      subscription_id?: string | null
+      /** Recurring Interval */
+      recurring_interval: string
+      /**
+       * Recurring Interval Count
+       * @default 1
+       */
+      recurring_interval_count: number
+      /**
+       * Currency
+       * @default usd
+       */
+      currency: string
+      /** Formatted Price Amount */
+      readonly formatted_price_amount: string
+      /** Formatted Recurring Interval */
+      readonly formatted_recurring_interval: string
+    }
     /** ManualRetryLimitExceeded */
     ManualRetryLimitExceeded: {
       /**
@@ -24816,6 +24869,7 @@ export interface components {
       notifications: (
         | components['schemas']['MaintainerNewPaidSubscriptionNotification']
         | components['schemas']['MaintainerNewProductSaleNotification']
+        | components['schemas']['MaintainerSubscriptionRenewalNotification']
         | components['schemas']['MaintainerAccountCreditsGrantedNotification']
         | components['schemas']['MaintainerFileFlaggedMaliciousNotification']
       )[]
@@ -28012,6 +28066,8 @@ export interface components {
       new_subscription: boolean
       /** Chargeback Prevention */
       chargeback_prevention: boolean
+      /** Subscription Renewal */
+      subscription_renewal?: boolean
     }
     /** OrganizationOrder */
     OrganizationOrder: {
@@ -65619,6 +65675,9 @@ export const maintainerNewPaidSubscriptionNotificationTypeValues: ReadonlyArray<
 export const maintainerNewProductSaleNotificationTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MaintainerNewProductSaleNotification']['type']
 > = ['MaintainerNewProductSaleNotification']
+export const maintainerSubscriptionRenewalNotificationTypeValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MaintainerSubscriptionRenewalNotification']['type']
+> = ['MaintainerSubscriptionRenewalNotification']
 export const memberCreateRoleValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberCreate']['role']
 > = ['member', 'billing_manager']

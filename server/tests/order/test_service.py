@@ -6677,3 +6677,97 @@ class TestFinalizeOrder:
             )
             == 1
         )
+
+
+@pytest.mark.asyncio
+class TestSubscriptionRenewalNotification:
+    @pytest.mark.parametrize(
+        "billing_reason",
+        [
+            OrderBillingReasonInternal.subscription_cycle,
+            OrderBillingReasonInternal.subscription_cycle_after_trial,
+        ],
+    )
+    async def test_enqueued_for_renewal_orders(
+        self,
+        billing_reason: OrderBillingReasonInternal,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=billing_reason,
+        )
+
+        await order_service._on_order_paid(session, order)
+
+        assert (
+            call("order.subscription_renewal_notification", order.id)
+            in enqueue_job_mock.call_args_list
+        )
+
+    @pytest.mark.parametrize(
+        "billing_reason",
+        [
+            OrderBillingReasonInternal.subscription_create,
+            OrderBillingReasonInternal.subscription_update,
+            OrderBillingReasonInternal.subscription_cancel,
+        ],
+    )
+    async def test_not_enqueued_for_other_subscription_orders(
+        self,
+        billing_reason: OrderBillingReasonInternal,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        order = await create_order(
+            save_fixture,
+            product=product,
+            customer=customer,
+            subscription=subscription,
+            billing_reason=billing_reason,
+        )
+
+        await order_service._on_order_paid(session, order)
+
+        assert (
+            call("order.subscription_renewal_notification", order.id)
+            not in enqueue_job_mock.call_args_list
+        )
+
+    async def test_not_enqueued_for_one_time_purchase(
+        self,
+        enqueue_job_mock: MagicMock,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+        customer: Customer,
+    ) -> None:
+        order = await create_order(
+            save_fixture,
+            product=product_one_time,
+            customer=customer,
+            billing_reason=OrderBillingReasonInternal.purchase,
+        )
+
+        await order_service._on_order_paid(session, order)
+
+        assert (
+            call("order.subscription_renewal_notification", order.id)
+            not in enqueue_job_mock.call_args_list
+        )

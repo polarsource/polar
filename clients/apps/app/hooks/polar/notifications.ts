@@ -96,6 +96,8 @@ export type MaintainerNewProductSaleNotificationPayload =
   schemas['MaintainerNewProductSaleNotificationPayload']
 export type MaintainerAccountCreditsGrantedNotificationPayload =
   schemas['MaintainerAccountCreditsGrantedNotificationPayload']
+export type MaintainerFileFlaggedMaliciousNotificationPayload =
+  schemas['MaintainerFileFlaggedMaliciousNotificationPayload']
 
 export const useListNotifications = (): UseQueryResult<
   schemas['NotificationsList'],

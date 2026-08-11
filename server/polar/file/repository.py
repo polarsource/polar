@@ -1,6 +1,7 @@
 from uuid import UUID
 
 from sqlalchemy import Select
+from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -33,7 +34,11 @@ class FileRepository(
         return statement
 
     async def get_by_path(self, path: str) -> File | None:
-        statement = self.get_base_statement().where(File.path == path)
+        statement = (
+            self.get_base_statement()
+            .where(File.path == path)
+            .options(joinedload(File.organization))
+        )
         return await self.get_one_or_none(statement)
 
     async def paginate_by_organization(

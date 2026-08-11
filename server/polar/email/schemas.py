@@ -16,6 +16,7 @@ from polar.kit.currency import format_currency
 from polar.kit.visibility import Visibility
 from polar.notifications.notification import (
     MaintainerAccountCreditsGrantedNotificationPayload,
+    MaintainerFileFlaggedMaliciousNotificationPayload,
     MaintainerNewPaidSubscriptionNotificationPayload,
     MaintainerNewProductSaleNotificationPayload,
 )
@@ -59,6 +60,7 @@ class EmailTemplate(StrEnum):
     notification_new_sale = "notification_new_sale"
     notification_new_subscription = "notification_new_subscription"
     notification_credits_granted = "notification_credits_granted"
+    notification_file_flagged_malicious = "notification_file_flagged_malicious"
     chargeback_prevention_refund = "chargeback_prevention_refund"
     polar_self_subscription_cancellation = "polar_self_subscription_cancellation"
     polar_self_subscription_confirmation = "polar_self_subscription_confirmation"
@@ -457,6 +459,13 @@ class NotificationCreditsGrantedEmail(BaseModel):
     props: MaintainerAccountCreditsGrantedNotificationPayload
 
 
+class NotificationFileFlaggedMaliciousEmail(BaseModel):
+    template: Literal[EmailTemplate.notification_file_flagged_malicious] = (
+        EmailTemplate.notification_file_flagged_malicious
+    )
+    props: MaintainerFileFlaggedMaliciousNotificationPayload
+
+
 class ChargebackPreventionRefundProps(EmailProps):
     order_number: str
     customer_name: str
@@ -590,6 +599,7 @@ Email = Annotated[
     | NotificationNewSaleEmail
     | NotificationNewSubscriptionEmail
     | NotificationCreditsGrantedEmail
+    | NotificationFileFlaggedMaliciousEmail
     | ChargebackPreventionRefundEmail
     | PolarSelfSubscriptionCancellationEmail
     | PolarSelfSubscriptionConfirmationEmail

@@ -1119,6 +1119,18 @@ export interface components {
       /** Formatted Amount */
       readonly formatted_amount: string
     }
+    /** MaintainerFileFlaggedMaliciousNotificationPayload */
+    MaintainerFileFlaggedMaliciousNotificationPayload: {
+      /** File Name */
+      file_name: string
+      /** Organization Name */
+      organization_name: string
+      /**
+       * Organization Slug
+       * @default null
+       */
+      organization_slug: string | null
+    }
     /** MaintainerNewPaidSubscriptionNotificationPayload */
     MaintainerNewPaidSubscriptionNotificationPayload: {
       /** Subscriber Name */
@@ -1245,6 +1257,16 @@ export interface components {
        */
       template: 'notification_credits_granted'
       props: components['schemas']['MaintainerAccountCreditsGrantedNotificationPayload']
+    }
+    /** NotificationFileFlaggedMaliciousEmail */
+    NotificationFileFlaggedMaliciousEmail: {
+      /**
+       * Template
+       * @default notification_file_flagged_malicious
+       * @constant
+       */
+      template: 'notification_file_flagged_malicious'
+      props: components['schemas']['MaintainerFileFlaggedMaliciousNotificationPayload']
     }
     /** NotificationNewSaleEmail */
     NotificationNewSaleEmail: {

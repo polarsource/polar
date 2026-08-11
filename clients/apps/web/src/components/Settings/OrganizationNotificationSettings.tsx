@@ -75,7 +75,7 @@ const OrganizationNotificationSettings: React.FC<
         description="Receive a notification each time a subscription renewal payment is collected"
       >
         <Switch
-          checked={settings.subscription_renewal ?? false}
+          checked={settings.subscription_renewal}
           onCheckedChange={(checked) =>
             update((previous) => ({
               ...previous,

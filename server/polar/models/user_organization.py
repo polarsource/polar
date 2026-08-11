@@ -1,5 +1,5 @@
 from enum import StrEnum
-from typing import NotRequired, TypedDict
+from typing import TypedDict
 from uuid import UUID
 
 from sqlalchemy import ForeignKey, Index, Uuid
@@ -22,7 +22,7 @@ class OrganizationNotificationSettings(TypedDict):
     new_order: bool
     new_subscription: bool
     chargeback_prevention: bool
-    subscription_renewal: NotRequired[bool]
+    subscription_renewal: bool
 
 
 _default_notification_settings: OrganizationNotificationSettings = {

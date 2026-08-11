@@ -1,6 +1,5 @@
 import uuid
 from datetime import timedelta
-from typing import cast
 from unittest.mock import ANY, AsyncMock, MagicMock
 
 import pytest
@@ -898,31 +897,24 @@ class TestOrderSubscriptionRenewalNotification:
 
         assert await self._notifications_for(session, member) == []
 
-    async def test_skips_member_whose_setting_is_absent(
+    async def test_member_setting_is_always_present(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
         product: Product,
         organization: Organization,
     ) -> None:
-        # Rows written before this setting existed have no key at all; they must
-        # fall back to the opt-in default rather than raising or notifying.
+        # The setting is a required key, so a membership always carries it and
+        # the notification path can index it directly.
         member = await create_user(save_fixture)
-        await _add_member(
-            save_fixture,
-            organization,
-            member,
-            notification_settings=cast(
-                OrganizationNotificationSettings,
-                {
-                    "new_order": True,
-                    "new_subscription": True,
-                    "chargeback_prevention": True,
-                },
-            ),
-        )
+        await _add_member(save_fixture, organization, member)
         order = await self._create_renewal_order(save_fixture, product, organization)
 
         await order_subscription_renewal_notification(order.id)
 
+        result = await session.execute(
+            select(UserOrganization).where(UserOrganization.user_id == member.id)
+        )
+        user_organization = result.scalar_one()
+        assert "subscription_renewal" in user_organization.notification_settings
         assert await self._notifications_for(session, member) == []

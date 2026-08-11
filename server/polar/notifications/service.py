@@ -89,9 +89,7 @@ class NotificationsService:
 
         for member in members:
             if key is not None:
-                # `subscription_renewal` is absent on rows written before it
-                # existed, and it's opt-in, so a missing key means "don't send".
-                if not member.notification_settings.get(key, False):
+                if not member.notification_settings[key]:
                     continue
 
             await self.send_to_user(

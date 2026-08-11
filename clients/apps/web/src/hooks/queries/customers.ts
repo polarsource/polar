@@ -51,8 +51,8 @@ export const useTopCustomers = (
   useQuery({
     queryKey: [
       'customers',
-      'top',
       organizationId,
+      'top',
       parameters?.start?.toISOString(),
       parameters?.end?.toISOString(),
       parameters?.limit,
@@ -80,8 +80,8 @@ export const useCustomerGrowth = (
   useQuery({
     queryKey: [
       'customers',
-      'growth',
       organizationId,
+      'growth',
       parameters.start.toISOString(),
       parameters.end.toISOString(),
       parameters.interval,

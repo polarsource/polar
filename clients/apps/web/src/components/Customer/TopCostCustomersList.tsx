@@ -9,13 +9,12 @@ import {
   ToplistValue,
 } from '@/components/Shared/Toplist'
 import { CustomerStatItem, useEventCustomerStats } from '@/hooks/queries/events'
+import { toISODate } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Avatar } from '@polar-sh/orbit'
+import { Alert, Avatar } from '@polar-sh/orbit'
 import { Coins } from 'lucide-react'
 import { useMemo } from 'react'
-
-const isoDate = (date: Date) => date.toISOString().slice(0, 10)
 
 const cost = (stat: CustomerStatItem) =>
   parseFloat(String(stat.totals?.['_cost_amount'] ?? '0'))
@@ -31,12 +30,15 @@ export const TopCostCustomersList = ({
   start,
   end,
 }: TopCostCustomersListProps) => {
-  const { data, isLoading } = useEventCustomerStats(organization.id, {
-    start_date: isoDate(start),
-    end_date: isoDate(end),
-    aggregate_fields: ['_cost.amount'],
-    limit: 5,
-  })
+  const { data, isLoading, isError, refetch } = useEventCustomerStats(
+    organization.id,
+    {
+      start_date: toISODate(start),
+      end_date: toISODate(end),
+      aggregate_fields: ['_cost.amount'],
+      limit: 5,
+    },
+  )
 
   const stats = useMemo(
     () => (data?.items ?? []).filter((stat) => cost(stat) > 0).slice(0, 5),
@@ -45,6 +47,16 @@ export const TopCostCustomersList = ({
 
   if (isLoading) {
     return <ToplistSkeleton rows={3} />
+  }
+
+  if (isError) {
+    return (
+      <Alert
+        variant="danger"
+        title="Could not load cost statistics"
+        actions={[{ text: 'Retry', onClick: () => refetch() }]}
+      />
+    )
   }
 
   if (stats.length === 0) {

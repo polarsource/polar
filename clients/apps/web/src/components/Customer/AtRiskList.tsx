@@ -11,7 +11,7 @@ import {
 import { useSubscriptions } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Avatar } from '@polar-sh/orbit'
+import { Alert, Avatar } from '@polar-sh/orbit'
 import { ShieldCheck } from 'lucide-react'
 import { useMemo } from 'react'
 
@@ -32,19 +32,27 @@ interface AtRiskListProps {
 }
 
 export const AtRiskList = ({ organization }: AtRiskListProps) => {
-  const { data: pastDue, isLoading: pastDueLoading } = useSubscriptions(
-    organization.id,
-    { status: ['past_due'], limit: 10, sorting: ['-amount'] },
-  )
-  const { data: canceling, isLoading: cancelingLoading } = useSubscriptions(
-    organization.id,
-    {
-      status: ['active', 'trialing'],
-      cancel_at_period_end: true,
-      limit: 10,
-      sorting: ['current_period_end'],
-    },
-  )
+  const {
+    data: pastDue,
+    isLoading: pastDueLoading,
+    isError: pastDueError,
+    refetch: refetchPastDue,
+  } = useSubscriptions(organization.id, {
+    status: ['past_due'],
+    limit: 10,
+    sorting: ['-amount'],
+  })
+  const {
+    data: canceling,
+    isLoading: cancelingLoading,
+    isError: cancelingError,
+    refetch: refetchCanceling,
+  } = useSubscriptions(organization.id, {
+    status: ['active', 'trialing'],
+    cancel_at_period_end: true,
+    limit: 10,
+    sorting: ['current_period_end'],
+  })
 
   const atRisk = useMemo<AtRiskItem[]>(() => {
     const pastDueItems = (pastDue?.items ?? []).map((subscription) => ({
@@ -63,6 +71,24 @@ export const AtRiskList = ({ organization }: AtRiskListProps) => {
 
   if (pastDueLoading || cancelingLoading) {
     return <ToplistSkeleton rows={3} />
+  }
+
+  if (pastDueError || cancelingError) {
+    return (
+      <Alert
+        variant="danger"
+        title="Could not load at-risk subscriptions"
+        actions={[
+          {
+            text: 'Retry',
+            onClick: () => {
+              refetchPastDue()
+              refetchCanceling()
+            },
+          },
+        ]}
+      />
+    )
   }
 
   if (atRisk.length === 0) {

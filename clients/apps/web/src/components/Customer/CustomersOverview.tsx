@@ -2,6 +2,7 @@
 
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import { ToplistHeader } from '@/components/Shared/Toplist'
+import { useHasPermission } from '@/hooks/permissions'
 import { CHART_RANGES, ChartRange, getChartRangeParams } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
 import { Grid, SegmentedControl, Text } from '@polar-sh/orbit'
@@ -22,6 +23,7 @@ export const CustomersOverview = ({ organization }: CustomersOverviewProps) => {
     () => getChartRangeParams(range, organization.created_at),
     [range, organization.created_at],
   )
+  const canReadAnalytics = useHasPermission(organization.id, 'analytics:read')
 
   return (
     <MasterDetailLayoutContent
@@ -48,7 +50,11 @@ export const CustomersOverview = ({ organization }: CustomersOverviewProps) => {
           interval={interval}
         />
         <Grid
-          templateColumns={{ base: '1fr', md: '1fr', xl: '1fr 1fr 1fr' }}
+          templateColumns={{
+            base: '1fr',
+            md: '1fr',
+            xl: canReadAnalytics ? '1fr 1fr 1fr' : '1fr 1fr',
+          }}
           gap="3xl"
         >
           <Box flexDirection="column" rowGap="l">
@@ -63,17 +69,19 @@ export const CustomersOverview = ({ organization }: CustomersOverviewProps) => {
             <ToplistHeader title="At Risk" caption="Past due & canceling" />
             <AtRiskList organization={organization} />
           </Box>
-          <Box flexDirection="column" rowGap="l">
-            <ToplistHeader
-              title="Cost Drivers"
-              caption="Ingested cost events"
-            />
-            <TopCostCustomersList
-              organization={organization}
-              start={startDate}
-              end={endDate}
-            />
-          </Box>
+          {canReadAnalytics && (
+            <Box flexDirection="column" rowGap="l">
+              <ToplistHeader
+                title="Cost Drivers"
+                caption="Ingested cost events"
+              />
+              <TopCostCustomersList
+                organization={organization}
+                start={startDate}
+                end={endDate}
+              />
+            </Box>
+          )}
         </Grid>
       </Box>
     </MasterDetailLayoutContent>

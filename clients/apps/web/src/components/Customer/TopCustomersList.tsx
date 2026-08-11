@@ -11,7 +11,7 @@ import {
 import { useTopCustomers } from '@/hooks/queries'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Avatar } from '@polar-sh/orbit'
+import { Alert, Avatar } from '@polar-sh/orbit'
 import { TrendingUp } from 'lucide-react'
 
 interface TopCustomersListProps {
@@ -25,7 +25,12 @@ export const TopCustomersList = ({
   start,
   end,
 }: TopCustomersListProps) => {
-  const { data: topCustomers, isLoading } = useTopCustomers(organization.id, {
+  const {
+    data: topCustomers,
+    isLoading,
+    isError,
+    refetch,
+  } = useTopCustomers(organization.id, {
     start,
     end,
     limit: 5,
@@ -33,6 +38,16 @@ export const TopCustomersList = ({
 
   if (isLoading) {
     return <ToplistSkeleton rows={5} />
+  }
+
+  if (isError) {
+    return (
+      <Alert
+        variant="danger"
+        title="Could not load top customers"
+        actions={[{ text: 'Retry', onClick: () => refetch() }]}
+      />
+    )
   }
 
   if (!topCustomers || topCustomers.length === 0) {

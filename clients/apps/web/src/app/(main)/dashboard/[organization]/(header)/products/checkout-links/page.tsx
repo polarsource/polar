@@ -24,20 +24,22 @@ export default async function Page(props: {
     params.organization,
   )
 
-  // Fetch the newest checkout link
   const productId = searchParams.productId
+  const productIds = Array.isArray(productId)
+    ? productId
+    : productId?.split(',')
+  const sorting = searchParams.sorting === '-label' ? '-label' : 'label'
   const { data } = await api.GET('/v1/checkout-links/', {
     params: {
       query: {
         organization_id: organization.id,
-        ...(productId && { product_id: productId }),
+        ...(productIds && { product_id: productIds }),
         limit: 1,
-        sorting: ['-created_at'],
+        sorting: [sorting],
       },
     },
   })
 
-  // If there's a newest checkout link, redirect to it on desktop (on mobile, show the list)
   if (data?.items && data.items.length > 0) {
     const queryString = new URLSearchParams(
       searchParams as Record<string, string>,

@@ -183,13 +183,7 @@ class LicenseKeyService:
         if already_applied:
             return
 
-        enqueue_job(
-            "benefit.revoke" if revoke else "benefit.grant",
-            customer_id=grant.customer_id,
-            benefit_id=grant.benefit_id,
-            member_id=grant.member_id,
-            **grant.scope,
-        )
+        enqueue_job("license_key.sync_benefit_grant", license_key_id=license_key.id)
 
     async def validate(
         self,

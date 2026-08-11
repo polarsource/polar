@@ -169,7 +169,7 @@ class TestUpdate:
     @pytest.mark.parametrize(
         "status", [LicenseKeyStatus.granted, LicenseKeyStatus.disabled]
     )
-    async def test_non_revoked_status_enqueues_grant(
+    async def test_non_revoked_status_enqueues_sync(
         self,
         status: LicenseKeyStatus,
         mocker: MockerFixture,
@@ -196,14 +196,10 @@ class TestUpdate:
 
         assert license_key.status == status
         enqueue_job_mock.assert_called_once_with(
-            "benefit.grant",
-            customer_id=grant.customer_id,
-            benefit_id=grant.benefit_id,
-            member_id=grant.member_id,
-            subscription_id=grant.subscription_id,
+            "license_key.sync_benefit_grant", license_key_id=license_key.id
         )
 
-    async def test_revoked_status_enqueues_revoke(
+    async def test_revoked_status_enqueues_sync(
         self,
         mocker: MockerFixture,
         session: AsyncSession,
@@ -214,7 +210,7 @@ class TestUpdate:
         customer: Customer,
     ) -> None:
         enqueue_job_mock = mocker.patch("polar.license_key.service.enqueue_job")
-        license_key, grant = await _license_key_and_grant(
+        license_key, _ = await _license_key_and_grant(
             session, redis, save_fixture, customer, organization, product
         )
 
@@ -226,11 +222,7 @@ class TestUpdate:
 
         assert license_key.status == LicenseKeyStatus.revoked
         enqueue_job_mock.assert_called_once_with(
-            "benefit.revoke",
-            customer_id=grant.customer_id,
-            benefit_id=grant.benefit_id,
-            member_id=grant.member_id,
-            subscription_id=grant.subscription_id,
+            "license_key.sync_benefit_grant", license_key_id=license_key.id
         )
 
     async def test_status_already_matching_grant_does_not_enqueue(

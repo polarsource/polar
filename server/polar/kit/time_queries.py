@@ -30,7 +30,9 @@ class TimeInterval(StrEnum):
 
 
 def get_timestamp_series_cte(
-    start_timestamp: datetime, end_timestamp: datetime, interval: TimeInterval
+    start_timestamp: datetime | SQLColumnExpression[datetime],
+    end_timestamp: datetime | SQLColumnExpression[datetime],
+    interval: TimeInterval,
 ) -> CTE:
     return cte(
         select(

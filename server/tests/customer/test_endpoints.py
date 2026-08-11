@@ -1,5 +1,5 @@
 import uuid
-from datetime import timedelta
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from httpx import AsyncClient
@@ -348,6 +348,52 @@ class TestCustomerGrowth:
         assert len(json) == 3
         assert [period["new_customers"] for period in json] == [0, 2, 1]
         assert [period["total_customers"] for period in json] == [1, 3, 4]
+
+    @pytest.mark.auth
+    async def test_unaligned_bounds_include_boundary_buckets(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization_second: Organization,
+        user: User,
+    ) -> None:
+        await save_fixture(
+            UserOrganization(
+                user=user,
+                organization=organization_second,
+                role=OrganizationRole.owner,
+            )
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization_second,
+            email="june@example.com",
+            created_at=datetime(2026, 6, 25, tzinfo=UTC),
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization_second,
+            email="august@example.com",
+            created_at=datetime(2026, 8, 3, tzinfo=UTC),
+        )
+
+        # Bounds deliberately not aligned to month starts: the buckets
+        # containing both `start` and `end` must still be present.
+        response = await client.get(
+            "/v1/customers/growth",
+            params={
+                "organization_id": str(organization_second.id),
+                "start": datetime(2026, 6, 20, tzinfo=UTC).isoformat(),
+                "end": datetime(2026, 8, 5, tzinfo=UTC).isoformat(),
+                "interval": "month",
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert len(json) == 3
+        assert [period["new_customers"] for period in json] == [1, 0, 1]
+        assert [period["total_customers"] for period in json] == [1, 1, 2]
 
 
 @pytest.mark.asyncio

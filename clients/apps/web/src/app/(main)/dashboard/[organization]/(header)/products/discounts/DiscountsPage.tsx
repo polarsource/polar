@@ -378,11 +378,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
               onPageSelectedChange={selection.setPageSelected}
               onClear={selection.clear}
             >
-              <Button
-                size="sm"
-                variant="destructive"
-                onClick={showBulkDeleteModal}
-              >
+              <Button variant="destructive" onClick={showBulkDeleteModal}>
                 Delete
               </Button>
             </BulkActionBar>

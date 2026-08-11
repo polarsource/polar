@@ -19,6 +19,9 @@ export interface BulkSelectionMenuProps {
   pageSize: number
   onPageSelectedChange: (selected: boolean) => void
   onClear: () => void
+  // Matches the row the controls land in: 'default' beside the page toolbar's
+  // 40px search field, 'sm' inside a compact surface like the dock.
+  size?: 'default' | 'sm'
 }
 
 // The count is the subject of the whole bar, so it doubles as the control that
@@ -31,6 +34,7 @@ export const BulkSelectionMenu = ({
   pageSize,
   onPageSelectedChange,
   onClear,
+  size = 'default',
 }: BulkSelectionMenuProps) => {
   const offPageCount = count - pageSelectedCount
 
@@ -38,7 +42,7 @@ export const BulkSelectionMenu = ({
     <DropdownMenu>
       <DropdownMenuTrigger className="focus:outline-none" asChild>
         <Button
-          size="sm"
+          size={size}
           variant="secondary"
           wrapperClassNames="flex flex-row items-center gap-x-1"
         >

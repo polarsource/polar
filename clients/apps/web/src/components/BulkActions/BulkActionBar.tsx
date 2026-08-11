@@ -1,7 +1,6 @@
 'use client'
 
 import type { SelectionPageState } from '@/hooks/useSelection'
-import CloseOutlined from '@mui/icons-material/CloseOutlined'
 import { Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'motion/react'
@@ -19,8 +18,9 @@ export interface BulkActionBarProps {
 }
 
 // A cluster that grows into the page toolbar beside the search field, rather
-// than a bar that replaces it. Nothing is removed while rows are selected and
-// the toolbar keeps its shape.
+// than a bar that replaces it. It borrows the search field's height and radius
+// so the toolbar reads as one row, and fills instead of outlining so an active
+// selection is legible at a glance.
 export const BulkActionBar = ({
   count,
   pageState,
@@ -38,21 +38,20 @@ export const BulkActionBar = ({
 
   return (
     <motion.div
+      style={{ transformOrigin: 'left center' }}
       initial={{ opacity: 0, scale: 0.96 }}
       animate={{ opacity: 1, scale: 1 }}
-      transition={{ duration: 0.15, ease: 'easeOut' }}
+      transition={{ duration: 0.15, ease: [0.23, 1, 0.32, 1] }}
     >
       <Box
         as="nav"
         aria-label="Bulk actions"
         alignItems="center"
         columnGap="xs"
-        padding="xs"
-        borderRadius="full"
+        paddingHorizontal="xs"
+        height={40}
+        borderRadius="m"
         backgroundColor="background-card"
-        borderWidth={1}
-        borderStyle="solid"
-        borderColor="border-primary"
       >
         <BulkSelectionMenu
           count={count}
@@ -63,14 +62,6 @@ export const BulkActionBar = ({
           onClear={onClear}
         />
         {children}
-        <Button
-          size="icon"
-          variant="ghost"
-          aria-label="Clear selection"
-          onClick={onClear}
-        >
-          <CloseOutlined fontSize="small" />
-        </Button>
       </Box>
     </motion.div>
   )

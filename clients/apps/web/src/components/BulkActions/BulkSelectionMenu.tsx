@@ -19,7 +19,6 @@ export interface BulkSelectionMenuProps {
   pageSize: number
   onPageSelectedChange: (selected: boolean) => void
   onClear: () => void
-  emphasis?: 'solid' | 'plain'
 }
 
 // The count is the subject of the whole bar, so it doubles as the control that
@@ -32,7 +31,6 @@ export const BulkSelectionMenu = ({
   pageSize,
   onPageSelectedChange,
   onClear,
-  emphasis = 'plain',
 }: BulkSelectionMenuProps) => {
   const offPageCount = count - pageSelectedCount
 
@@ -41,7 +39,7 @@ export const BulkSelectionMenu = ({
       <DropdownMenuTrigger className="focus:outline-none" asChild>
         <Button
           size="sm"
-          variant={emphasis === 'solid' ? 'default' : 'ghost'}
+          variant="ghost"
           wrapperClassNames="flex flex-row items-center gap-x-1"
         >
           <span role="status" aria-live="polite">

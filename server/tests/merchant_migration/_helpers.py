@@ -10,6 +10,7 @@ from polar.merchant_migration.canonical import (
     serialize,
 )
 from polar.merchant_migration.pan_transfer import (
+    STEP_MOVE_SUBSCRIPTIONS,
     PanStepActor,
     PanStepOwner,
     PanTransferMethod,
@@ -167,6 +168,11 @@ def steps_at(key: str) -> list[PanTransferStep]:
         steps = pan_transfer.complete(
             method, steps, current.key, actor=_actor_for(current.owner), inputs={}
         )
+
+
+def cutover_ready_steps() -> list[PanTransferStep]:
+    """Everything the merchant and Ops have to do is done; the move is next."""
+    return steps_at(STEP_MOVE_SUBSCRIPTIONS)
 
 
 def _actor_for(owner: PanStepOwner) -> PanStepActor:

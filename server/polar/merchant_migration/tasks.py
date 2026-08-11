@@ -14,3 +14,15 @@ async def merchant_migration_verify_cards(
         await merchant_migration_service.run_card_verification(
             session, merchant_migration_id, offset=offset
         )
+
+
+@actor(actor_name="merchant_migration.cutover", priority=TaskPriority.LOW)
+async def merchant_migration_cutover(merchant_migration_id: UUID) -> None:
+    """Hand billing over to Polar, one subscription per run.
+
+    Each run is its own transaction because the run cancels a subscription on the
+    merchant's provider: work already done must never be replayed by a retry of
+    work that came after it.
+    """
+    async with AsyncSessionMaker() as session:
+        await merchant_migration_service.run_cutover(session, merchant_migration_id)

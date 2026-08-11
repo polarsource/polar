@@ -636,10 +636,12 @@ def _item(
     reason = skip or note
     price = price or PriceDisplay()
     return MerchantMigrationRecordItem(
-        # record_id and import_status come from the ledger via
-        # `_attach_record_ids`; the classifier itself has none.
+        # record_id, import_status and the cutover outcome come from the ledger
+        # via `_attach_record_ids`; the classifier itself has none.
         record_id=None,
         import_status=None,
+        cutover_status=None,
+        cutover_error=None,
         entity=entity,
         source_id=source_id,
         title=title,

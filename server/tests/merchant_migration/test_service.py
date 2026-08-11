@@ -17,6 +17,7 @@ from polar.kit import encryption
 from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
 from polar.kit.utils import utc_now
+from polar.merchant_migration import pan_transfer
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
@@ -29,6 +30,7 @@ from polar.merchant_migration.canonical import (
     CanonicalSubscriptionStatus,
 )
 from polar.merchant_migration.pan_transfer import (
+    PanTransferMethod,
     PanTransferStep,
 )
 from polar.merchant_migration.repository import (
@@ -44,6 +46,7 @@ from polar.merchant_migration.schemas import (
 from polar.merchant_migration.service import (
     CatalogImportBlocked,
     CatalogImportNotReady,
+    CutoverNotStarted,
     InvalidSourceCredentials,
     MissingStripeScopes,
     SourceAccountNotMigratable,
@@ -68,6 +71,7 @@ from polar.models.merchant_migration import (
     MerchantMigrationStep,
 )
 from polar.models.merchant_migration_record import (
+    MerchantMigrationCutoverStatus,
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
 )
@@ -82,6 +86,8 @@ from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
     assert_no_migrations,
     build_connected_migration,
+    canonical_subscription,
+    cutover_ready_steps,
     stage_subscription_record,
     steps_at,
 )
@@ -1435,12 +1441,12 @@ async def _migration_at(
     save_fixture: SaveFixture,
     organization: Organization,
     *,
-    steps: list[PanTransferStep],
-    step: MerchantMigrationStep,
+    steps: list[PanTransferStep] | None = None,
+    step: MerchantMigrationStep = MerchantMigrationStep.activate_subscriptions,
 ) -> MerchantMigration:
     """A migration whose checklist sits at a given step."""
     migration = await build_connected_migration(save_fixture, organization)
-    migration.pan_transfer_steps = steps
+    migration.pan_transfer_steps = steps if steps is not None else cutover_ready_steps()
     migration.step = step
     await save_fixture(migration)
     return migration
@@ -1484,6 +1490,192 @@ async def _importable_subscription(
 
 def _step(migration: MerchantMigration, key: str) -> PanTransferStep:
     return next(step for step in migration.pan_transfer_steps if step.key == key)
+
+
+@pytest.mark.asyncio
+class TestRunCutover:
+    async def test_moves_each_subscription_then_finishes(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        migration = await _migration_at(save_fixture, organization)
+        subscriptions = [
+            await _importable_subscription(
+                save_fixture,
+                organization,
+                product,
+                email=f"imported{index}@example.com",
+                stripe_customer_id=f"cus_{index}",
+            )
+            for index in range(2)
+        ]
+        records = [
+            await stage_subscription_record(
+                save_fixture,
+                migration,
+                organization,
+                subscription,
+                source_id=f"sub_{index}",
+            )
+            for index, subscription in enumerate(subscriptions)
+        ]
+        adapter = _FakeAdapter(source_subscription=canonical_subscription())
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
+        )
+        mocker.patch(
+            "polar.merchant_migration.cutover.stripe_service.create_setup_intent",
+            new=mocker.AsyncMock(return_value=mocker.MagicMock(status="succeeded")),
+        )
+
+        # One subscription per run: the chain hands over rather than batching an
+        # irreversible operation.
+        for _ in range(3):
+            await service.run_cutover(session, migration.id)
+
+        assert all(
+            record.cutover_status == MerchantMigrationCutoverStatus.moved
+            for record in records
+        )
+        assert len(adapter.stopped) == 2
+        assert all(
+            subscription.status == SubscriptionStatus.active
+            for subscription in subscriptions
+        )
+        assert _step(migration, "move_subscriptions").status == "completed"
+        assert migration.step == MerchantMigrationStep.cleanup
+
+    async def test_records_the_reason_a_subscription_stayed(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        migration = await _migration_at(save_fixture, organization)
+        subscription = await _importable_subscription(
+            save_fixture, organization, product
+        )
+        record = await stage_subscription_record(
+            save_fixture, migration, organization, subscription
+        )
+        adapter = _FakeAdapter(source_subscription=None)
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
+        )
+
+        await service.run_cutover(session, migration.id)
+        await service.run_cutover(session, migration.id)
+
+        assert record.cutover_status == MerchantMigrationCutoverStatus.skipped
+        assert record.cutover_error is not None
+        assert subscription.status == SubscriptionStatus.paused
+        # The run is over even though a subscription stayed behind; the note
+        # tells the merchant so they can retry.
+        assert _step(migration, "move_subscriptions").status == "completed"
+        assert "stayed on your source" in (
+            _step(migration, "move_subscriptions").note or ""
+        )
+
+    async def test_refuses_before_the_merchant_confirms(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """A stale job must never reach the merchant's own provider."""
+        migration = await _migration_at(
+            save_fixture,
+            organization,
+            steps=pan_transfer.build(PanTransferMethod.pan_copy),
+            step=MerchantMigrationStep.copy_cards,
+        )
+        subscription = await _importable_subscription(
+            save_fixture, organization, product
+        )
+        record = await stage_subscription_record(
+            save_fixture, migration, organization, subscription
+        )
+        adapter = _FakeAdapter(source_subscription=canonical_subscription())
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
+        )
+
+        await service.run_cutover(session, migration.id)
+
+        assert record.cutover_status is None
+        assert adapter.stopped == []
+
+    async def test_refuses_when_the_organization_cannot_renew(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """Activating what the organization can't bill would leave subscriptions
+        live and uncollected."""
+        organization.capabilities = {
+            **organization.capabilities,
+            "subscription_renewals": False,
+        }
+        await save_fixture(organization)
+        migration = await _migration_at(save_fixture, organization)
+        subscription = await _importable_subscription(
+            save_fixture, organization, product
+        )
+        record = await stage_subscription_record(
+            save_fixture, migration, organization, subscription
+        )
+        adapter = _FakeAdapter(source_subscription=canonical_subscription())
+        mocker.patch(
+            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
+        )
+
+        await service.run_cutover(session, migration.id)
+
+        assert record.cutover_status is None
+        assert adapter.stopped == []
+
+
+@pytest.mark.asyncio
+class TestCompletePanStep:
+    @pytest.mark.auth
+    async def test_confirming_the_cutover_schedules_the_move(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        """The merchant's confirmation is the trigger; nothing else starts it."""
+        migration = await _migration_at(
+            save_fixture,
+            organization,
+            steps=steps_at("cutover"),
+            step=MerchantMigrationStep.copy_cards,
+        )
+        enqueue_job_mock = mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        checklist = await service.complete_pan_step(
+            session, auth_subject, migration.id, "cutover", inputs={}
+        )
+
+        assert checklist.current_step_key == "move_subscriptions"
+        assert migration.step == MerchantMigrationStep.activate_subscriptions
+        enqueue_job_mock.assert_called_once_with(
+            "merchant_migration.cutover", merchant_migration_id=migration.id
+        )
 
 
 @pytest.mark.asyncio
@@ -1541,3 +1733,118 @@ class TestRunCardVerification:
         assert uncovered.payment_method_id is None
         assert _step(migration, "verify_cards").status == "completed"
         assert "1 of 2" in (_step(migration, "resolve_uncovered").note or "")
+
+
+@pytest.mark.asyncio
+class TestCutoverReport:
+    @pytest.mark.auth
+    async def test_counts_by_outcome(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        migration = await _migration_at(save_fixture, organization)
+        for index, status in enumerate(
+            (
+                MerchantMigrationCutoverStatus.moved,
+                MerchantMigrationCutoverStatus.skipped,
+                None,
+            )
+        ):
+            subscription = await _importable_subscription(
+                save_fixture,
+                organization,
+                product,
+                email=f"imported{index}@example.com",
+                stripe_customer_id=f"cus_{index}",
+            )
+            record = await stage_subscription_record(
+                save_fixture,
+                migration,
+                organization,
+                subscription,
+                source_id=f"sub_{index}",
+            )
+            record.cutover_status = status
+            await save_fixture(record)
+
+        report = await service.get_cutover_report(session, auth_subject, migration.id)
+
+        assert report.started is True
+        assert report.completed is False
+        assert report.total == 3
+        assert report.moved == 1
+        assert report.skipped == 1
+        assert report.pending == 1
+
+    @pytest.mark.auth
+    async def test_retry_looks_at_what_stayed_behind(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        migration = await _migration_at(save_fixture, organization)
+        moved_subscription = await _importable_subscription(
+            save_fixture, organization, product, stripe_customer_id="cus_moved"
+        )
+        skipped_subscription = await _importable_subscription(
+            save_fixture,
+            organization,
+            product,
+            email="skipped@example.com",
+            stripe_customer_id="cus_skipped",
+        )
+        moved = await stage_subscription_record(
+            save_fixture,
+            migration,
+            organization,
+            moved_subscription,
+            source_id="sub_moved",
+        )
+        moved.cutover_status = MerchantMigrationCutoverStatus.moved
+        await save_fixture(moved)
+        skipped = await stage_subscription_record(
+            save_fixture,
+            migration,
+            organization,
+            skipped_subscription,
+            source_id="sub_skipped",
+        )
+        skipped.cutover_status = MerchantMigrationCutoverStatus.skipped
+        skipped.cutover_error = "No copied card has landed yet."
+        await save_fixture(skipped)
+
+        report = await service.retry_cutover(session, auth_subject, migration.id)
+
+        assert skipped.cutover_status is None
+        assert skipped.cutover_error is None
+        # What already moved stays moved: it must never be cut over twice.
+        assert moved.cutover_status == MerchantMigrationCutoverStatus.moved
+        assert report.pending == 1
+
+    @pytest.mark.auth
+    async def test_retry_refused_before_the_cutover_step(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        auth_subject: AuthSubject[User],
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _migration_at(
+            save_fixture,
+            organization,
+            steps=pan_transfer.build(PanTransferMethod.pan_copy),
+            step=MerchantMigrationStep.copy_cards,
+        )
+
+        with pytest.raises(CutoverNotStarted):
+            await service.retry_cutover(session, auth_subject, migration.id)

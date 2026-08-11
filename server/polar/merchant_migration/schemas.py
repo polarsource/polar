@@ -9,7 +9,10 @@ from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
 )
-from polar.models.merchant_migration_record import MerchantMigrationRecordStatus
+from polar.models.merchant_migration_record import (
+    MerchantMigrationCutoverStatus,
+    MerchantMigrationRecordStatus,
+)
 
 from .pan_transfer import PanTransferMethod, PanTransferStep
 
@@ -122,6 +125,17 @@ class MerchantMigrationRecordItem(Schema):
             "reason."
         )
     )
+    cutover_status: MerchantMigrationCutoverStatus | None = Field(
+        description=(
+            "What the cutover did with this subscription: `moved` (Polar bills "
+            "it now), `skipped` (left on the source, see `cutover_error`) or "
+            "`failed` (retryable). Null when the cutover hasn't reached it, and "
+            "for every entity other than subscriptions."
+        )
+    )
+    cutover_error: str | None = Field(
+        description="Why the cutover skipped or failed this subscription."
+    )
 
 
 class MerchantMigrationRecordSummaryEntity(PrecheckEntitySummary):
@@ -182,6 +196,25 @@ class MerchantMigrationImportReport(Schema):
     results: list[MerchantMigrationImportResult] = Field(
         description="Per-entity counts of what was imported vs skipped."
     )
+
+
+class MerchantMigrationCutoverReport(Schema):
+    """Where the cutover has got to, for the imported subscriptions."""
+
+    started: bool = Field(description="Whether the merchant has triggered the cutover.")
+    completed: bool = Field(
+        description="Whether Polar has finished going through every subscription."
+    )
+    total: int = Field(description="Imported subscriptions the cutover looks at.")
+    pending: int = Field(description="Not looked at yet.")
+    moved: int = Field(description="Now billed by Polar, and stopped on the source.")
+    skipped: int = Field(
+        description=(
+            "Left on the source, each with a reason on its record. Retryable "
+            "once the merchant has dealt with the reason."
+        )
+    )
+    failed: int = Field(description="Hit an unexpected error. Safe to retry as-is.")
 
 
 class PanTransferStepComplete(Schema):

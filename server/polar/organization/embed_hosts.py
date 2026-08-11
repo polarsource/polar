@@ -204,8 +204,8 @@ def validate_host_pattern(value: str) -> str:
     if pattern is None:
         raise InvalidEmbedHost(
             value,
-            "write a host and an optional port, with no path. A host is made of "
-            "letters, digits and hyphens",
+            "write a host and an optional port, with no path. Between the dots, "
+            "only letters, digits and hyphens",
         )
 
     # Nobody's site sits directly under a registry suffix, so this is a slip.

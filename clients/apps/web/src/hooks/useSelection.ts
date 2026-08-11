@@ -11,6 +11,8 @@ export interface Selection<T> {
   toggle: (item: T, options?: { shiftKey?: boolean }) => void
   setPageSelected: (selected: boolean) => void
   pageState: SelectionPageState
+  pageSelectedCount: number
+  pageSize: number
   clear: () => void
 }
 
@@ -113,21 +115,22 @@ export function useSelection<T>({
     return Array.from(state.map, ([id, item]) => onPage.get(id) ?? item)
   }, [state, items, ids])
 
-  const pageState = useMemo((): SelectionPageState => {
-    if (ids.length === 0) {
-      return 'none'
-    }
+  const pageSelectedCount = useMemo(() => {
     let selectedCount = 0
     for (const id of ids) {
       if (state.map.has(id)) {
         selectedCount++
       }
     }
-    if (selectedCount === 0) {
+    return selectedCount
+  }, [ids, state])
+
+  const pageState = useMemo((): SelectionPageState => {
+    if (ids.length === 0 || pageSelectedCount === 0) {
       return 'none'
     }
-    return selectedCount === ids.length ? 'all' : 'some'
-  }, [ids, state])
+    return pageSelectedCount === ids.length ? 'all' : 'some'
+  }, [ids, pageSelectedCount])
 
   return useMemo(
     () => ({
@@ -137,8 +140,19 @@ export function useSelection<T>({
       toggle,
       setPageSelected,
       pageState,
+      pageSelectedCount,
+      pageSize: ids.length,
       clear,
     }),
-    [selected, isSelected, toggle, setPageSelected, pageState, clear],
+    [
+      selected,
+      isSelected,
+      toggle,
+      setPageSelected,
+      pageState,
+      pageSelectedCount,
+      ids,
+      clear,
+    ],
   )
 }

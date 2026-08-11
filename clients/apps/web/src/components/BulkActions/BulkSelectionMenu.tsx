@@ -17,14 +17,9 @@ export interface BulkSelectionMenuProps {
   pageSize: number
   onPageSelectedChange: (selected: boolean) => void
   onClear: () => void
-  // Matches the row the controls land in: 'default' beside the page toolbar's
-  // 40px search field, 'sm' inside a compact surface like the dock.
   size?: 'default' | 'sm'
 }
 
-// The count is the subject of the whole bar, so it doubles as the control that
-// changes the selection's scope. Collapsing "Select all" and "Clear" into one
-// menu removes the pair of near-identical text buttons they used to be.
 export const BulkSelectionMenu = ({
   count,
   pageSelectedCount,

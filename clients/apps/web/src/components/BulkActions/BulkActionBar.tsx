@@ -3,7 +3,6 @@
 import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'motion/react'
 import { BulkSelectionMenu } from './BulkSelectionMenu'
-import { useEscapeToClear } from './useEscapeToClear'
 
 export interface BulkActionBarProps {
   count: number
@@ -14,10 +13,6 @@ export interface BulkActionBarProps {
   children: React.ReactNode
 }
 
-// Controls that grow into the page toolbar beside the search field, rather
-// than a bar that replaces it. They sit on the page rather than on a surface
-// of their own: "1 selected" already states the mode, so a card around it only
-// adds a grey slab for the eye to parse.
 export const BulkActionBar = ({
   count,
   pageSelectedCount,
@@ -26,8 +21,6 @@ export const BulkActionBar = ({
   onClear,
   children,
 }: BulkActionBarProps) => {
-  useEscapeToClear(onClear, count > 0)
-
   if (count === 0) {
     return null
   }

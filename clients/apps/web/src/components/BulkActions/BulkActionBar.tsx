@@ -1,7 +1,6 @@
 'use client'
 
 import type { SelectionPageState } from '@/hooks/useSelection'
-import { Button } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'motion/react'
 import { BulkSelectionMenu } from './BulkSelectionMenu'
@@ -20,7 +19,7 @@ export interface BulkActionBarProps {
 // Controls that grow into the page toolbar beside the search field, rather
 // than a bar that replaces it. They sit on the page rather than on a surface
 // of their own: "1 selected" already states the mode, so a card around it only
-// adds a grey slab for the eye to parse. A hairline divides them from search.
+// adds a grey slab for the eye to parse.
 export const BulkActionBar = ({
   count,
   pageState,
@@ -47,17 +46,9 @@ export const BulkActionBar = ({
         as="nav"
         aria-label="Bulk actions"
         alignItems="center"
-        columnGap="xs"
+        columnGap="s"
         height={40}
       >
-        <Box
-          display={{ base: 'none', md: 'block' }}
-          height={20}
-          marginRight="l"
-          borderLeftWidth={1}
-          borderStyle="solid"
-          borderColor="border-primary"
-        />
         <BulkSelectionMenu
           count={count}
           pageState={pageState}

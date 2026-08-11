@@ -1,4 +1,4 @@
-import { cva, type VariantProps } from 'class-variance-authority'
+import { cva } from 'class-variance-authority'
 import React from 'react'
 import { twMerge } from 'tailwind-merge'
 import {
@@ -15,8 +15,6 @@ const buttonVariants = cva(
           'bg-black dark:bg-white dark:text-black text-white hover:opacity-85 transition-opacity duration-100 hover:bg-black dark:hover:bg-white',
         destructive:
           'bg-red-500 dark:bg-red-600 text-white hover:bg-red-400 dark:hover:bg-red-500',
-        destructiveGhost:
-          'bg-transparent text-red-500 hover:bg-red-500/10 dark:text-red-500 dark:hover:bg-red-500/15',
         outline:
           'text-black dark:text-white hover:bg-gray-200 dark:bg-transparent dark:hover:bg-polar-700 border-transparent hover:border-gray-200 border dark:border-polar-700 bg-transparent border-gray-100',
         secondary:
@@ -41,14 +39,11 @@ const buttonVariants = cva(
   },
 )
 
-// Orbit's own variants (underline, destructiveGhost, …) are a superset of the
-// shadcn ones, so the variant/size union has to come from this file's cva.
-export type ButtonProps = Omit<ShadcnButtonProps, 'variant' | 'size'> &
-  VariantProps<typeof buttonVariants> & {
-    wrapperClassNames?: string
-    loading?: boolean
-    fullWidth?: boolean
-  }
+export type ButtonProps = ShadcnButtonProps & {
+  wrapperClassNames?: string
+  loading?: boolean
+  fullWidth?: boolean
+}
 
 const Button = ({
   ref,

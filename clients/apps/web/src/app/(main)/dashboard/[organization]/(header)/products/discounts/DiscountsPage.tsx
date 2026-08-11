@@ -24,7 +24,6 @@ import {
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
 import AddOutlined from '@mui/icons-material/AddOutlined'
-import DeleteOutlined from '@mui/icons-material/DeleteOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
@@ -381,12 +380,10 @@ const ClientPage: React.FC<ClientPageProps> = ({
             >
               <Button
                 size="sm"
-                variant="destructiveGhost"
-                wrapperClassNames="flex flex-row items-center gap-x-1.5"
+                variant="destructive"
                 onClick={showBulkDeleteModal}
               >
-                <DeleteOutlined fontSize="inherit" />
-                <span>Delete</span>
+                Delete
               </Button>
             </BulkActionBar>
           </div>

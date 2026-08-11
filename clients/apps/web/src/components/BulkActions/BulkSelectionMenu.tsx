@@ -39,7 +39,7 @@ export const BulkSelectionMenu = ({
       <DropdownMenuTrigger className="focus:outline-none" asChild>
         <Button
           size="sm"
-          variant="ghost"
+          variant="secondary"
           wrapperClassNames="flex flex-row items-center gap-x-1"
         >
           <span role="status" aria-live="polite">

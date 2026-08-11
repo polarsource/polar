@@ -70,7 +70,7 @@ const CreateDiscountModalContent = ({
 
   return (
     <div className="flex flex-col overflow-y-auto">
-      <InlineModalHeader className="pb-2" hide={hideModal}>
+      <InlineModalHeader hide={hideModal}>
         <h2 className="text-lg">Create Discount</h2>
       </InlineModalHeader>
       <div className="flex flex-col gap-y-6 px-8 pb-10">

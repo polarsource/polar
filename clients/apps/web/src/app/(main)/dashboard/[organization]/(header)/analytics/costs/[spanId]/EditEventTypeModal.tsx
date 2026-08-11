@@ -8,7 +8,7 @@ import {
 import { useToast } from '@/components/Toast/use-toast'
 import { useUpdateEventType } from '@/hooks/queries/event_types'
 import { apiErrorToast, setValidationErrors } from '@/utils/api/errors'
-import { Button } from '@polar-sh/orbit'
+import { Button, InlineModalHeader } from '@polar-sh/orbit'
 import { Input } from '@polar-sh/orbit'
 import {
   Form,
@@ -79,16 +79,16 @@ export const EditEventTypeModal = ({
 
   return (
     <SyntaxHighlighterProvider>
-      <div className="flex flex-col gap-y-6 overflow-y-auto px-8 py-10">
-        <div>
-          <h2 className="text-xl">Edit Event Type</h2>
-          <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
+      <div className="flex flex-col overflow-y-auto">
+        <InlineModalHeader className="pb-2" hide={hide}>
+          <h2 className="text-lg">Edit Event Type</h2>
+        </InlineModalHeader>
+
+        <div className="flex flex-col gap-y-6 px-8 pb-10">
+          <p className="dark:text-polar-500 text-sm text-gray-500">
             {/* eslint-disable-next-line react/no-unescaped-entities */}
             Update the display label for event type "{eventName}"
           </p>
-        </div>
-
-        <div className="flex flex-col gap-y-6">
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}

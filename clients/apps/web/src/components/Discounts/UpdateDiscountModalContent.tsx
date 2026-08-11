@@ -106,13 +106,15 @@ const UpdateDiscountModalContent = ({
 
   return (
     <div className="flex flex-col overflow-y-auto">
-      <InlineModalHeader className="pb-2" hide={hideModal}>
-        <h2 className="text-lg">Update Discount</h2>
+      <InlineModalHeader hide={hideModal}>
+        <div className="flex flex-col gap-1">
+          <h2 className="text-lg">Update Discount</h2>
+          <p className="dark:text-polar-500 text-sm font-normal text-gray-500">
+            Amount and options cannot be changed.
+          </p>
+        </div>
       </InlineModalHeader>
       <div className="flex flex-col gap-y-6 px-8 pb-10">
-        <p className="dark:text-polar-500 text-sm text-gray-500">
-          Amount and options cannot be changed.
-        </p>
         <Form {...form}>
           <form
             className="flex flex-col gap-y-6"

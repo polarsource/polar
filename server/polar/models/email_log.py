@@ -28,7 +28,9 @@ class EmailLog(RecordModel):
     from_email_addr: Mapped[str] = mapped_column(String, nullable=False)
     from_name: Mapped[str] = mapped_column(String, nullable=False)
     subject: Mapped[str] = mapped_column(String, nullable=False)
-    email_template: Mapped[str | None] = mapped_column(String, nullable=True)
+    email_template: Mapped[str | None] = mapped_column(
+        String, nullable=True, index=True
+    )
     email_props: Mapped[dict[str, Any]] = mapped_column(
         JSONB, nullable=False, default=dict
     )

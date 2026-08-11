@@ -19,6 +19,7 @@ from polar.integrations.chargeback_stop import tasks as chargeback_stop
 from polar.integrations.polar import tasks as polar_self
 from polar.integrations.stripe import tasks as stripe
 from polar.integrations.tinybird import tasks as tinybird
+from polar.merchant_migration import tasks as merchant_migration
 from polar.meter import tasks as meter
 from polar.notifications import tasks as notifications
 from polar.oauth2 import tasks as oauth2
@@ -61,6 +62,7 @@ __all__ = [
     "feedback",
     "file",
     "invariants",
+    "merchant_migration",
     "meter",
     "notifications",
     "oauth2",

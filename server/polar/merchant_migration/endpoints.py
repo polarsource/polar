@@ -7,7 +7,10 @@ from polar.exceptions import NotPermitted, ResourceNotFound
 from polar.kit.db.postgres import AsyncSession
 from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.models import MerchantMigration
-from polar.models.merchant_migration_record import MerchantMigrationRecordStatus
+from polar.models.merchant_migration_record import (
+    MerchantMigrationCutoverStatus,
+    MerchantMigrationRecordStatus,
+)
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.postgres import AsyncReadSession, get_db_read_session, get_db_session
@@ -26,6 +29,7 @@ from .pan_transfer import (
 from .schemas import MerchantMigration as MerchantMigrationSchema
 from .schemas import (
     MerchantMigrationCreate,
+    MerchantMigrationCutoverReport,
     MerchantMigrationImportReport,
     MerchantMigrationImportRequest,
     MerchantMigrationRecordItem,
@@ -40,6 +44,7 @@ from .schemas import (
 from .service import (
     CatalogImportBlocked,
     CatalogImportNotReady,
+    CutoverNotStarted,
     InvalidSourceCredentials,
     MerchantMigrationNotEnabled,
     MerchantMigrationNotFound,
@@ -293,6 +298,60 @@ async def complete_pan_transfer_step(
 
 
 @router.get(
+    "/{id}/cutover",
+    response_model=MerchantMigrationCutoverReport,
+    summary="Get Merchant Migration Cutover",
+    responses={
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+    },
+)
+async def cutover(
+    id: UUID4,
+    auth_subject: MerchantMigrationWrite,
+    # The primary: the client polls this as the cutover runs, and replica lag
+    # would report subscriptions as still pending after they've moved.
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigrationCutoverReport:
+    return await merchant_migration_service.get_cutover_report(
+        session, auth_subject, id
+    )
+
+
+@router.post(
+    "/{id}/cutover",
+    response_model=MerchantMigrationCutoverReport,
+    summary="Retry Merchant Migration Cutover",
+    responses={
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+        409: {
+            "description": "The cutover step hasn't been confirmed yet.",
+            "model": CutoverNotStarted.schema(),
+        },
+    },
+)
+async def retry_cutover(
+    id: UUID4,
+    auth_subject: MerchantMigrationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigrationCutoverReport:
+    return await merchant_migration_service.retry_cutover(session, auth_subject, id)
+
+
+@router.get(
     "/{id}/records/summary",
     response_model=MerchantMigrationRecordSummary,
     summary="Summarize Merchant Migration Records",
@@ -349,6 +408,7 @@ async def records(
     status: Annotated[PrecheckRecordStatus | None, Query()] = None,
     reason_level: Annotated[PrecheckReasonLevel | None, Query()] = None,
     import_status: Annotated[MerchantMigrationRecordStatus | None, Query()] = None,
+    cutover_status: Annotated[MerchantMigrationCutoverStatus | None, Query()] = None,
     # The primary, like the summary above: it supplies the selection ceiling
     # and these rows supply the checkboxes, so a split would let replica lag
     # show a tickable row the count doesn't include.
@@ -362,6 +422,7 @@ async def records(
         status=status,
         reason_level=reason_level,
         import_status=import_status,
+        cutover_status=cutover_status,
         pagination=pagination,
     )
     return ListResource.from_paginated_results(items, count, pagination)

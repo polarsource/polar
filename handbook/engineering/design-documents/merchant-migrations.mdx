@@ -70,13 +70,17 @@ In this phase, some actions are done by the merchant, their billing provider, St
 
 Once we have the catalog and payment methods, we should be able to start moving subscriptions. Cutover only becomes available once the PAN checklist prep steps are complete; triggering it runs the final steps below.
 
-Subscriptions keep their real status (`active`/`trialing`) but are held from billing with a `migration_billing_paused` flag, so the renewal scheduler skips them. The org must be in a renewal-enabled status (REVIEW or ACTIVE). Before activating each subscription we run some checks to prevent double charging the customer:
+Imported subscriptions are created `paused` (we considered a separate `migration_billing_paused` flag alongside the real status, but reusing `paused` means the renewal scheduler already skips them for free). The org must be in a renewal-enabled status (REVIEW or ACTIVE). Weeks can pass between the import and the cutover, so every check reads the source again rather than trusting what was staged. Per subscription:
 
-1. Check the subscription is still active on the current billing provider.
-2. Confirm the renewal date is far enough out (24h safety window), so we don't clash with the old billing provider renewal.
-3. Confirm the card is valid on Polar (with a SetupIntent).
+1. Re-read it on the source. It must still be `active`/`trialing`, on the same price, single line item, no coupon, still charged automatically, and not already set to cancel at period end.
+2. Confirm the renewal date is far enough out (24h safety window), so we don't clash with the old billing provider renewal. The period we activate with is the one the source reports now, not the one captured at import.
+3. Confirm the card is valid on Polar (a zero-amount `SetupIntent`, cards only — a bank debit needs a mandate the copy doesn't carry, so we accept it as-is).
 4. Cancel the subscription on the old billing provider.
-5. Clear the `migration_billing_paused` flag (the status stays as-is).
+5. Activate on Polar, keeping the source's period so the first Polar charge lands on the renewal the customer already expects.
+
+Only step 4 is irreversible, and every check is read-only, so a subscription that fails one is left billing on the source and paused on Polar, with a reason on its ledger row. A trial carries over as `trialing` until its end date.
+
+**Retries.** One subscription per job, each in its own transaction. The cancellation is stamped with a marker (Stripe: `cancellation_details.comment`) so a run that dies between cancelling on the source and committing finishes the move on retry instead of reading its own cancellation as the customer having churned. `MerchantMigrationRecord.cutover_status` (`moved`/`skipped`/`failed`, null = not reached) is the ledger; retrying re-opens everything that isn't `moved`.
 
 Polar will bill the next billing cycle. If for some reason the payment fails on the next billing cycle, the subscription will enter the normal dunning state where we send an email to the customer.
 

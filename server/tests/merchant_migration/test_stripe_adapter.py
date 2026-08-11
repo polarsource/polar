@@ -4,7 +4,11 @@ import pytest
 import stripe as stripe_lib
 from pytest_mock import MockerFixture
 
-from polar.merchant_migration.adapters.stripe import StripeAdapter
+from polar.merchant_migration.adapters.stripe import (
+    CANCELLATION_COMMENT_PREFIX,
+    StripeAdapter,
+)
+from polar.merchant_migration.canonical import CanonicalSubscriptionStatus
 
 
 def _adapter(mocker: MockerFixture) -> tuple[StripeAdapter, Any]:
@@ -192,3 +196,147 @@ class TestGetSourceAccount:
 
         assert account.country is None
         assert account.has_connected_accounts is False
+
+
+def _stripe_subscription(
+    *,
+    status: str = "active",
+    cancel_at_period_end: bool = False,
+    trial_end: int | None = None,
+    cancellation_comment: str | None = None,
+    items: list[dict[str, Any]] | None = None,
+) -> stripe_lib.Subscription:
+    return stripe_lib.Subscription.construct_from(
+        {
+            "id": "sub_1",
+            "customer": "cus_1",
+            "status": status,
+            "collection_method": "charge_automatically",
+            "cancel_at_period_end": cancel_at_period_end,
+            "pause_collection": None,
+            "trial_end": trial_end,
+            "default_payment_method": None,
+            "discounts": [],
+            "cancellation_details": (
+                {"comment": cancellation_comment} if cancellation_comment else None
+            ),
+            "items": {
+                "data": items
+                if items is not None
+                else [
+                    {
+                        "price": {"id": "price_1"},
+                        "quantity": 1,
+                        "current_period_start": 1_700_000_000,
+                        "current_period_end": 1_702_000_000,
+                    }
+                ]
+            },
+        },
+        None,
+    )
+
+
+@pytest.mark.asyncio
+class TestGetSubscription:
+    async def test_reads_the_current_state(self, mocker: MockerFixture) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(cancel_at_period_end=True)
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.status == CanonicalSubscriptionStatus.active
+        assert subscription.cancel_at_period_end is True
+        assert subscription.current_period_end is not None
+
+    async def test_deleted_subscription_is_gone(self, mocker: MockerFixture) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            side_effect=stripe_lib.InvalidRequestError(
+                "No such subscription", "id", code="resource_missing"
+            )
+        )
+
+        assert await adapter.get_subscription("sub_1") is None
+
+    async def test_other_errors_propagate(self, mocker: MockerFixture) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            side_effect=stripe_lib.InvalidRequestError("nope", "id", code="other")
+        )
+
+        with pytest.raises(stripe_lib.InvalidRequestError):
+            await adapter.get_subscription("sub_1")
+
+    async def test_our_own_cancellation_is_recognised(
+        self, mocker: MockerFixture
+    ) -> None:
+        """Otherwise a retry would read it as the customer having churned."""
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(
+                status="canceled",
+                cancellation_comment="Migrated to Polar (migration abc)",
+            )
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.stopped_for_migration is True
+
+    async def test_a_customer_cancellation_is_not(self, mocker: MockerFixture) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(
+                status="canceled", cancellation_comment="Too expensive"
+            )
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.stopped_for_migration is False
+
+
+@pytest.mark.asyncio
+class TestStopSourceSubscription:
+    async def test_cancels_with_a_traceable_comment(
+        self, mocker: MockerFixture
+    ) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.cancel_async = mocker.AsyncMock()
+
+        await adapter.stop_source_subscription("sub_1", reference="abc")
+
+        _, kwargs = client.v1.subscriptions.cancel_async.call_args
+        comment = kwargs["params"]["cancellation_details"]["comment"]
+        assert comment.startswith(CANCELLATION_COMMENT_PREFIX)
+        assert "abc" in comment
+
+    async def test_already_cancelled_is_done(self, mocker: MockerFixture) -> None:
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.cancel_async = mocker.AsyncMock(
+            side_effect=stripe_lib.InvalidRequestError("already canceled", "id")
+        )
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(status="canceled")
+        )
+
+        await adapter.stop_source_subscription("sub_1", reference="abc")
+
+    async def test_a_real_failure_propagates(self, mocker: MockerFixture) -> None:
+        """The caller must not activate on Polar while the source keeps billing."""
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.cancel_async = mocker.AsyncMock(
+            side_effect=stripe_lib.InvalidRequestError("bad request", "id")
+        )
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(status="active")
+        )
+
+        with pytest.raises(stripe_lib.InvalidRequestError):
+            await adapter.stop_source_subscription("sub_1", reference="abc")

@@ -117,6 +117,13 @@ function CompletedSummary({
           </Text>
         </Box>
       ))}
+      {/* Steps Polar runs report what they did here, so the outcome of the
+          card check and the cutover outlives the open step. */}
+      {step.note && (
+        <Text variant="caption" color="muted">
+          {step.note}
+        </Text>
+      )}
     </Box>
   )
 }

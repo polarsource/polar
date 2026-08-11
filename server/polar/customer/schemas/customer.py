@@ -268,6 +268,34 @@ CustomerResponse = Annotated[
 ]
 
 
+class CustomerGrowthPeriod(Schema):
+    timestamp: datetime = Field(description="The start of the period.")
+    new_customers: int = Field(
+        description="The number of customers created during the period."
+    )
+    total_customers: int = Field(
+        description="The cumulative number of customers at the end of the period."
+    )
+
+
+class TopCustomer(Schema):
+    id: UUID4 = Field(
+        description="The ID of the customer.", examples=[CUSTOMER_ID_EXAMPLE]
+    )
+    email: str | None = Field(description=_email_description, examples=[_email_example])
+    name: str | None = Field(description=_name_description, examples=[_name_example])
+    avatar_url: str | None = Field(
+        examples=["https://www.gravatar.com/avatar/xxx?d=404"],
+    )
+    order_count: int = Field(description="The number of paid orders in the period.")
+    net_revenue: int = Field(
+        description=(
+            "The net revenue from this customer in the period, in cents, "
+            "with refunded amounts subtracted."
+        )
+    )
+
+
 _is_default_description = (
     "Whether this payment method is the customer's default payment method."
 )

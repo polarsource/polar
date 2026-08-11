@@ -1,18 +1,22 @@
 import uuid
+from datetime import timedelta
 
 import pytest
 from httpx import AsyncClient
 
+from polar.kit.utils import utc_now
 from polar.member.repository import MemberRepository
 from polar.models import (
     Benefit,
     Customer,
     Organization,
     Product,
+    User,
     UserOrganization,
 )
 from polar.models.customer import _avatar_url_for_email
 from polar.models.subscription import SubscriptionStatus
+from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncSession
 from polar.tax.tax_id import TaxIDFormat
 from tests.fixtures.auth import AuthSubjectFixture
@@ -21,6 +25,7 @@ from tests.fixtures.random_objects import (
     create_active_subscription,
     create_benefit_grant,
     create_customer,
+    create_order,
     create_payment_method,
     create_subscription,
 )
@@ -228,6 +233,228 @@ class TestListCustomers:
             str(customer_past_due.id),
             str(customer_inactive.id),
         } <= ids
+
+
+@pytest.mark.asyncio
+class TestCustomerGrowth:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(
+            "/v1/customers/growth",
+            params={
+                "organization_id": str(organization.id),
+                "start": utc_now().isoformat(),
+                "end": utc_now().isoformat(),
+                "interval": "day",
+            },
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_member(
+        self,
+        client: AsyncClient,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(
+            "/v1/customers/growth",
+            params={
+                "organization_id": str(organization_second.id),
+                "start": utc_now().isoformat(),
+                "end": utc_now().isoformat(),
+                "interval": "day",
+            },
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_interval_too_small_for_range(
+        self,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(
+            "/v1/customers/growth",
+            params={
+                "organization_id": str(organization.id),
+                "start": (utc_now() - timedelta(days=30)).isoformat(),
+                "end": utc_now().isoformat(),
+                "interval": "hour",
+            },
+        )
+
+        assert response.status_code == 422
+
+    @pytest.mark.auth
+    async def test_valid(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization_second: Organization,
+        user: User,
+    ) -> None:
+        # `organization_second` is used because the authenticated client's
+        # fixture chain seeds a customer in the default `organization`.
+        await save_fixture(
+            UserOrganization(
+                user=user,
+                organization=organization_second,
+                role=OrganizationRole.owner,
+            )
+        )
+        now = utc_now()
+        await create_customer(
+            save_fixture,
+            organization=organization_second,
+            email="old@example.com",
+            created_at=now - timedelta(days=10),
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization_second,
+            email="yesterday1@example.com",
+            created_at=now - timedelta(days=1),
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization_second,
+            email="yesterday2@example.com",
+            created_at=now - timedelta(days=1),
+        )
+        await create_customer(
+            save_fixture,
+            organization=organization_second,
+            email="today@example.com",
+            created_at=now,
+        )
+
+        response = await client.get(
+            "/v1/customers/growth",
+            params={
+                "organization_id": str(organization_second.id),
+                "start": (now - timedelta(days=2)).isoformat(),
+                "end": now.isoformat(),
+                "interval": "day",
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert len(json) == 3
+        assert [period["new_customers"] for period in json] == [0, 2, 1]
+        assert [period["total_customers"] for period in json] == [1, 3, 4]
+
+
+@pytest.mark.asyncio
+class TestTopCustomers:
+    async def test_anonymous(
+        self, client: AsyncClient, organization: Organization
+    ) -> None:
+        response = await client.get(
+            "/v1/customers/top", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 401
+
+    @pytest.mark.auth
+    async def test_not_member(
+        self,
+        client: AsyncClient,
+        organization_second: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        response = await client.get(
+            "/v1/customers/top",
+            params={"organization_id": str(organization_second.id)},
+        )
+
+        assert response.status_code == 403
+
+    @pytest.mark.auth
+    async def test_ranked_by_net_revenue(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        best = await create_customer(
+            save_fixture, organization=organization, email="best@example.com"
+        )
+        runner_up = await create_customer(
+            save_fixture, organization=organization, email="runner.up@example.com"
+        )
+        await create_customer(
+            save_fixture, organization=organization, email="no.orders@example.com"
+        )
+        await create_order(
+            save_fixture, customer=best, product=product, subtotal_amount=10_000
+        )
+        await create_order(
+            save_fixture,
+            customer=best,
+            product=product,
+            subtotal_amount=5_000,
+            refunded_amount=2_000,
+        )
+        await create_order(
+            save_fixture, customer=runner_up, product=product, subtotal_amount=4_000
+        )
+
+        response = await client.get(
+            "/v1/customers/top", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert [item["id"] for item in json] == [str(best.id), str(runner_up.id)]
+        assert json[0]["net_revenue"] == 13_000
+        assert json[0]["order_count"] == 2
+        assert json[0]["email"] == "best@example.com"
+        assert json[0]["avatar_url"] == _avatar_url_for_email("best@example.com")
+        assert json[1]["net_revenue"] == 4_000
+        assert json[1]["order_count"] == 1
+
+    @pytest.mark.auth
+    async def test_start_filter(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        customer = await create_customer(save_fixture, organization=organization)
+        await create_order(
+            save_fixture,
+            customer=customer,
+            product=product,
+            subtotal_amount=10_000,
+            created_at=utc_now() - timedelta(days=30),
+        )
+        await create_order(
+            save_fixture, customer=customer, product=product, subtotal_amount=500
+        )
+
+        response = await client.get(
+            "/v1/customers/top",
+            params={
+                "organization_id": str(organization.id),
+                "start": (utc_now() - timedelta(days=7)).isoformat(),
+            },
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert len(json) == 1
+        assert json[0]["net_revenue"] == 500
+        assert json[0]["order_count"] == 1
 
 
 @pytest.mark.asyncio

@@ -10,6 +10,7 @@ from sqlalchemy import (
     Select,
     String,
     Uuid,
+    and_,
     cast,
     column,
     func,
@@ -30,6 +31,7 @@ from polar.kit.repository import (
     RepositorySoftDeletionIDMixin,
     RepositorySoftDeletionMixin,
 )
+from polar.kit.time_queries import TimeInterval, get_timestamp_series_cte
 from polar.models import Customer, Subscription
 from polar.models.customer import EXTERNAL_ID_METADATA_KEY
 from polar.models.subscription import SubscriptionStatus
@@ -312,6 +314,62 @@ class CustomerRepository(
         customer_ids = [r.id for r in rows]
         external_ids = [r.external_id for r in rows if r.external_id is not None]
         return customer_ids, external_ids
+
+    async def get_growth_per_period(
+        self,
+        organization_id: UUID,
+        *,
+        start: datetime,
+        end: datetime,
+        interval: TimeInterval,
+    ) -> Sequence[tuple[datetime, int, int]]:
+        """New and cumulative customer counts per interval bucket, zero-filled.
+
+        Buckets cover whole intervals: the first bucket counts every customer
+        created within it, even before `start`, matching the metrics layer.
+        """
+        timestamp_series = get_timestamp_series_cte(start, end, interval)
+        timestamp_column = timestamp_series.c.timestamp
+
+        bucket = interval.sql_date_trunc(timestamp_column).label("timestamp")
+        grouped = (
+            select(bucket, func.count(Customer.id).label("new_customers"))
+            .select_from(timestamp_series)
+            .join(
+                Customer,
+                isouter=True,
+                onclause=and_(
+                    interval.sql_date_trunc(Customer.created_at)
+                    == interval.sql_date_trunc(timestamp_column),
+                    Customer.organization_id == organization_id,
+                    Customer.deleted_at.is_(None),
+                ),
+            )
+            .group_by(bucket)
+            .subquery("customer_growth")
+        )
+
+        customers_before_start = (
+            select(func.count(Customer.id))
+            .where(
+                Customer.organization_id == organization_id,
+                Customer.deleted_at.is_(None),
+                Customer.created_at < interval.sql_date_trunc(start),
+            )
+            .scalar_subquery()
+        )
+
+        statement = select(
+            grouped.c.timestamp,
+            grouped.c.new_customers,
+            (
+                customers_before_start
+                + func.sum(grouped.c.new_customers).over(order_by=grouped.c.timestamp)
+            ).label("total_customers"),
+        ).order_by(grouped.c.timestamp)
+
+        result = await self.session.execute(statement)
+        return [(row[0], int(row[1]), int(row[2])) for row in result.all()]
 
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]

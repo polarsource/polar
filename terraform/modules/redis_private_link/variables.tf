@@ -24,6 +24,11 @@ variable "redis_port" {
   default     = 6379
 }
 
+variable "permissions_boundary_arn" {
+  description = "Permissions boundary applied to the target-refresh Lambda role."
+  type        = string
+}
+
 variable "allowed_principals" {
   description = "AWS principal ARNs allowed to connect to the endpoint service (Render's, from the private link dialog)."
   type        = list(string)

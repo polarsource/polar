@@ -36,11 +36,12 @@ resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
 module "redis_private_link" {
   source = "../modules/redis_private_link"
 
-  name       = "polar-sandbox-worker-redis"
-  vpc_id     = module.vpc.vpc_id
-  subnet_ids = module.vpc.private_subnet_ids
-  redis_host = module.redis.host
-  redis_port = module.redis.port
+  name                     = "polar-sandbox-worker-redis"
+  vpc_id                   = module.vpc.vpc_id
+  subnet_ids               = module.vpc.private_subnet_ids
+  redis_host               = module.redis.host
+  redis_port               = module.redis.port
+  permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 }
 
 resource "aws_vpc_security_group_ingress_rule" "redis_nlb" {

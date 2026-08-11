@@ -564,7 +564,10 @@ class Organization(OrganizationBase):
         backward compatibility with older SDK versions that require the field, but
         hidden from the schema so it's dropped from future SDK versions."""
         return OrganizationNotificationSettings(
-            new_order=True, new_subscription=True, chargeback_prevention=True
+            new_order=True,
+            new_subscription=True,
+            chargeback_prevention=True,
+            subscription_renewal=False,
         )
 
 

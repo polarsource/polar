@@ -28067,7 +28067,7 @@ export interface components {
       /** Chargeback Prevention */
       chargeback_prevention: boolean
       /** Subscription Renewal */
-      subscription_renewal?: boolean
+      subscription_renewal: boolean
     }
     /** OrganizationOrder */
     OrganizationOrder: {

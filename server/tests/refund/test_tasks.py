@@ -226,6 +226,7 @@ class TestSendChargebackPreventionNotice:
                 new_order=True,
                 new_subscription=True,
                 chargeback_prevention=False,
+                subscription_renewal=False,
             ),
         )
 
@@ -268,6 +269,7 @@ class TestSendChargebackPreventionNotice:
                 new_order=True,
                 new_subscription=True,
                 chargeback_prevention=False,
+                subscription_renewal=False,
             ),
         )
         await _add_member(
@@ -279,6 +281,7 @@ class TestSendChargebackPreventionNotice:
                 new_order=True,
                 new_subscription=True,
                 chargeback_prevention=True,
+                subscription_renewal=False,
             ),
         )
 

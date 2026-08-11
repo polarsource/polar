@@ -2,7 +2,7 @@ import { useCreateRefund } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { enums, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
-import { Button, InlineModalHeader } from '@polar-sh/orbit'
+import { Button, InlineModalHeader, Text } from '@polar-sh/orbit'
 import MoneyInput from '@polar-sh/ui/components/atoms/MoneyInput'
 import {
   Select,
@@ -88,7 +88,9 @@ export const RefundModal = ({ order, hide }: RefundModalProps) => {
   return (
     <div className="flex flex-col overflow-y-auto">
       <InlineModalHeader hide={hide}>
-        <h2 className="text-lg">Refund Order</h2>
+        <Text variant="heading-xxs" as="h2">
+          Refund Order
+        </Text>
       </InlineModalHeader>
       <div className="flex flex-col gap-8 px-8 pb-12">
         <p className="dark:text-polar-500 text-gray-500">

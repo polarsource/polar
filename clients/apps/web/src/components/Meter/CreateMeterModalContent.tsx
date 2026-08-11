@@ -1,7 +1,7 @@
 import { useCreateMeter } from '@/hooks/queries/meters'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { Button, InlineModalHeader } from '@polar-sh/orbit'
+import { Button, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
@@ -79,7 +79,9 @@ const CreateMeterModalContent = ({
   return (
     <div className="flex flex-col overflow-y-auto">
       <InlineModalHeader hide={hideModal}>
-        <h2 className="text-lg">Create Meter</h2>
+        <Text variant="heading-xxs" as="h2">
+          Create Meter
+        </Text>
       </InlineModalHeader>
       <div className="flex flex-col gap-y-6 px-8 pb-10">
         <div className="dark:text-polar-500 space-y-2 text-sm text-gray-500">

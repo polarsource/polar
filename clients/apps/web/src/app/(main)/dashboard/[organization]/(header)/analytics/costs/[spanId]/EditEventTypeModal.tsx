@@ -8,8 +8,7 @@ import {
 import { useToast } from '@/components/Toast/use-toast'
 import { useUpdateEventType } from '@/hooks/queries/event_types'
 import { apiErrorToast, setValidationErrors } from '@/utils/api/errors'
-import { Button, InlineModalHeader } from '@polar-sh/orbit'
-import { Input } from '@polar-sh/orbit'
+import { Button, InlineModalHeader, Input, Text } from '@polar-sh/orbit'
 import {
   Form,
   FormControl,
@@ -82,7 +81,9 @@ export const EditEventTypeModal = ({
       <div className="flex flex-col overflow-y-auto">
         <InlineModalHeader hide={hide}>
           <div className="flex flex-col gap-1">
-            <h2 className="text-lg">Edit Event Type</h2>
+            <Text variant="heading-xxs" as="h2">
+              Edit Event Type
+            </Text>
             <p className="dark:text-polar-500 text-sm font-normal text-gray-500">
               {/* eslint-disable-next-line react/no-unescaped-entities */}
               Update the display label for event type "{eventName}"

@@ -1,7 +1,7 @@
 import { useMeter, useUpdateMeter } from '@/hooks/queries/meters'
 import { setValidationErrors } from '@/utils/api/errors'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { Button, InlineModalHeader } from '@polar-sh/orbit'
+import { Button, InlineModalHeader, Text } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useRouter } from 'next/navigation'
 import { useCallback } from 'react'
@@ -70,7 +70,9 @@ export const MeterUpdateModal = ({
   return (
     <div className="flex flex-col overflow-y-auto">
       <InlineModalHeader hide={hide}>
-        <h2 className="text-lg">Edit Meter</h2>
+        <Text variant="heading-xxs" as="h2">
+          Edit Meter
+        </Text>
       </InlineModalHeader>
       <div className="flex flex-col gap-8 px-8 pb-12">
         <p className="dark:text-polar-500 text-gray-500">

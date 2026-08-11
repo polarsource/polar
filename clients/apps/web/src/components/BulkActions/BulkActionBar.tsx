@@ -41,12 +41,12 @@ export const BulkActionBar = ({
             {pageState === 'all' ? 'Deselect all' : 'Select all'}
           </Button>
         )}
-      </Box>
-      <Box alignItems="center" columnGap="s">
-        {children}
         <Button variant="ghost" onClick={onClear}>
           Clear
         </Button>
+      </Box>
+      <Box alignItems="center" columnGap="s">
+        {children}
       </Box>
     </Box>
   )

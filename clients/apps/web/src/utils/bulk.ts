@@ -3,11 +3,9 @@ export interface BulkResult<T, R = void> {
   failed: { item: T; error: unknown }[]
 }
 
-const neverAborted = new AbortController().signal
-
 export const runBulk = async <T, R = void>(
   items: readonly T[],
-  run: (item: T, signal: AbortSignal) => Promise<R>,
+  run: (item: T, signal?: AbortSignal) => Promise<R>,
   {
     concurrency = 8,
     signal,
@@ -19,21 +17,20 @@ export const runBulk = async <T, R = void>(
   }
 
   const limit = Math.max(1, Math.min(concurrency, items.length))
-  const runSignal = signal ?? neverAborted
   let cursor = 0
 
   const worker = async () => {
     while (cursor < items.length) {
-      if (runSignal.aborted) {
+      if (signal?.aborted) {
         return
       }
       const item = items[cursor]
       cursor += 1
       try {
-        const value = await run(item, runSignal)
+        const value = await run(item, signal)
         result.succeeded.push({ item, value })
       } catch (error) {
-        if (runSignal.aborted) {
+        if (signal?.aborted) {
           return
         }
         result.failed.push({ item, error })

@@ -69,14 +69,9 @@ async def link_payment_method(
 def _preferred(
     payment_methods: Sequence[PaymentMethod], default_id: UUID | None
 ) -> PaymentMethod:
-    """Never move a customer off a default they already have. Otherwise take the
-    newest card — Stripe lists newest first, and a card is the one type every
-    renewal path can charge off-session without a mandate.
-
-    A customer with no copied card still gets one of their other methods rather
-    than nothing: ACH and SEPA are migratable by design (only Bacs, Link and
-    legacy sources need re-entry, per `CanonicalPaymentMethodType`), so refusing
-    them here would strand those subscriptions on the old provider forever.
+    """Keep an existing default; otherwise the newest card, which Stripe lists
+    first. Falls back to any other method rather than nothing — ACH and SEPA are
+    chargeable and migratable, per `CanonicalPaymentMethodType.requires_reentry`.
     """
     for payment_method in payment_methods:
         if payment_method.id == default_id:

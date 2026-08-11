@@ -372,7 +372,6 @@ const ClientPage: React.FC<ClientPageProps> = ({
             />
             <BulkActionBar
               count={selection.count}
-              pageState={selection.pageState}
               pageSelectedCount={selection.pageSelectedCount}
               pageSize={selection.pageSize}
               onPageSelectedChange={selection.setPageSelected}

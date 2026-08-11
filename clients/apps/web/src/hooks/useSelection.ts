@@ -2,15 +2,12 @@
 
 import { useCallback, useMemo, useRef, useState } from 'react'
 
-export type SelectionPageState = 'none' | 'some' | 'all'
-
 export interface Selection<T> {
   selected: T[]
   count: number
   isSelected: (item: T) => boolean
   toggle: (item: T, options?: { shiftKey?: boolean }) => void
   setPageSelected: (selected: boolean) => void
-  pageState: SelectionPageState
   pageSelectedCount: number
   pageSize: number
   clear: () => void
@@ -125,13 +122,6 @@ export function useSelection<T>({
     return selectedCount
   }, [ids, state])
 
-  const pageState = useMemo((): SelectionPageState => {
-    if (ids.length === 0 || pageSelectedCount === 0) {
-      return 'none'
-    }
-    return pageSelectedCount === ids.length ? 'all' : 'some'
-  }, [ids, pageSelectedCount])
-
   return useMemo(
     () => ({
       selected,
@@ -139,7 +129,6 @@ export function useSelection<T>({
       isSelected,
       toggle,
       setPageSelected,
-      pageState,
       pageSelectedCount,
       pageSize: ids.length,
       clear,
@@ -149,7 +138,6 @@ export function useSelection<T>({
       isSelected,
       toggle,
       setPageSelected,
-      pageState,
       pageSelectedCount,
       ids,
       clear,

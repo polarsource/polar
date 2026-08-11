@@ -1,6 +1,5 @@
 'use client'
 
-import type { SelectionPageState } from '@/hooks/useSelection'
 import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'motion/react'
 import { BulkSelectionMenu } from './BulkSelectionMenu'
@@ -8,7 +7,6 @@ import { useEscapeToClear } from './useEscapeToClear'
 
 export interface BulkActionBarProps {
   count: number
-  pageState: SelectionPageState
   pageSelectedCount: number
   pageSize: number
   onPageSelectedChange: (selected: boolean) => void
@@ -22,7 +20,6 @@ export interface BulkActionBarProps {
 // adds a grey slab for the eye to parse.
 export const BulkActionBar = ({
   count,
-  pageState,
   pageSelectedCount,
   pageSize,
   onPageSelectedChange,
@@ -51,7 +48,6 @@ export const BulkActionBar = ({
       >
         <BulkSelectionMenu
           count={count}
-          pageState={pageState}
           pageSelectedCount={pageSelectedCount}
           pageSize={pageSize}
           onPageSelectedChange={onPageSelectedChange}

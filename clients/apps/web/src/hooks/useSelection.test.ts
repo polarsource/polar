@@ -29,13 +29,13 @@ describe('useSelection', () => {
     expect(result.current.selected.map(getId)).toEqual(['d'])
   })
 
-  it('keeps off-page selections while pageState reflects the visible page', () => {
+  it('keeps off-page selections while pageSelectedCount reflects the visible page', () => {
     const { result, rerender } = renderSelection()
 
     act(() => result.current.setPageSelected(true))
     rerender({ items: [row('e'), row('f')], resetKey: undefined })
 
-    expect(result.current.pageState).toBe('none')
+    expect(result.current.pageSelectedCount).toBe(0)
     expect(result.current.count).toBe(4)
   })
 

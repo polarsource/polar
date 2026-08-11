@@ -1,6 +1,5 @@
 'use client'
 
-import type { SelectionPageState } from '@/hooks/useSelection'
 import ExpandMoreOutlined from '@mui/icons-material/ExpandMoreOutlined'
 import { Button, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
@@ -14,7 +13,6 @@ import {
 
 export interface BulkSelectionMenuProps {
   count: number
-  pageState: SelectionPageState
   pageSelectedCount: number
   pageSize: number
   onPageSelectedChange: (selected: boolean) => void
@@ -29,7 +27,6 @@ export interface BulkSelectionMenuProps {
 // menu removes the pair of near-identical text buttons they used to be.
 export const BulkSelectionMenu = ({
   count,
-  pageState,
   pageSelectedCount,
   pageSize,
   onPageSelectedChange,
@@ -37,6 +34,7 @@ export const BulkSelectionMenu = ({
   size = 'default',
 }: BulkSelectionMenuProps) => {
   const offPageCount = count - pageSelectedCount
+  const pageFullySelected = pageSize > 0 && pageSelectedCount === pageSize
 
   return (
     <DropdownMenu>
@@ -57,7 +55,7 @@ export const BulkSelectionMenu = ({
         className="dark:bg-polar-800 bg-gray-50 shadow-lg"
       >
         <DropdownMenuItem
-          disabled={pageState === 'all' || pageSize === 0}
+          disabled={pageFullySelected || pageSize === 0}
           onClick={() => onPageSelectedChange(true)}
         >
           Select all on this page

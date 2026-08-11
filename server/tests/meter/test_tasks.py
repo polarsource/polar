@@ -184,7 +184,7 @@ class TestMeterBackfillEvents:
         assert call_args[1]["last_ingested_at"] is not None
         assert call_args[1]["last_event_id"] is not None
 
-    async def test_pagination_skips_events_with_duplicate_ingested_at(
+    async def test_pagination_processes_all_events_with_duplicate_ingested_at(
         self,
         mocker: MockerFixture,
         save_fixture: SaveFixture,

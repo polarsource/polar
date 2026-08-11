@@ -2,7 +2,7 @@ import { useUpdateCustomField } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { stripEmptyProperties } from '@/utils/object'
 import { isValidationError, schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, InlineModalHeader } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
 import { useForm } from 'react-hook-form'
@@ -63,14 +63,14 @@ const UpdateCustomFieldModalContent = ({
   )
 
   return (
-    <div className="flex flex-col gap-y-6 overflow-y-auto px-8 py-10">
-      <div>
+    <div className="flex flex-col overflow-y-auto">
+      <InlineModalHeader className="pb-2" hide={hideModal}>
         <h2 className="text-lg">Update Custom Field</h2>
-        <p className="dark:text-polar-500 mt-2 text-sm text-gray-500">
+      </InlineModalHeader>
+      <div className="flex flex-col gap-y-6 px-8 pb-10">
+        <p className="dark:text-polar-500 text-sm text-gray-500">
           Type cannot be changed.
         </p>
-      </div>
-      <div className="flex flex-col gap-y-6">
         <Form {...form}>
           <form
             className="flex flex-col gap-y-6"

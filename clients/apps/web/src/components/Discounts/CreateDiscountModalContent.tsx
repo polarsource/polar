@@ -1,7 +1,7 @@
 import { useCreateDiscount } from '@/hooks/queries'
 import { setValidationErrors } from '@/utils/api/errors'
 import { schemas } from '@polar-sh/client'
-import { Button } from '@polar-sh/orbit'
+import { Button, InlineModalHeader } from '@polar-sh/orbit'
 import { Form } from '@polar-sh/ui/components/ui/form'
 import { useCallback } from 'react'
 import { SubmitHandler, useForm } from 'react-hook-form'
@@ -69,11 +69,11 @@ const CreateDiscountModalContent = ({
   )
 
   return (
-    <div className="flex flex-col gap-y-6 overflow-y-auto px-8 py-10">
-      <div>
+    <div className="flex flex-col overflow-y-auto">
+      <InlineModalHeader className="pb-2" hide={hideModal}>
         <h2 className="text-lg">Create Discount</h2>
-      </div>
-      <div className="flex flex-col gap-y-6">
+      </InlineModalHeader>
+      <div className="flex flex-col gap-y-6 px-8 pb-10">
         <Form {...form}>
           <form
             className="flex flex-col gap-y-6"

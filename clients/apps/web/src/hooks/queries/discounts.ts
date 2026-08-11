@@ -1,4 +1,5 @@
 import { getQueryClient } from '@/utils/api/query'
+import { runBulk } from '@/utils/bulk'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
 import { useMutation, useQuery } from '@tanstack/react-query'
@@ -120,5 +121,31 @@ export const useDeleteDiscount = () =>
       invalidateDiscountsQueries({
         organizationId: variables.organization_id,
       })
+    },
+  })
+
+export const useDeleteDiscounts = () =>
+  useMutation({
+    mutationFn: (discounts: schemas['Discount'][]) =>
+      runBulk(discounts, async (discount) => {
+        const { error } = await api.DELETE('/v1/discounts/{id}', {
+          params: {
+            path: {
+              id: discount.id,
+            },
+          },
+        })
+        if (error) {
+          throw error
+        }
+      }),
+    onSuccess: (result, discounts) => {
+      if (result.succeeded.length === 0) {
+        return
+      }
+      const organizationId = discounts[0]?.organization_id
+      if (organizationId) {
+        invalidateDiscountsQueries({ organizationId })
+      }
     },
   })

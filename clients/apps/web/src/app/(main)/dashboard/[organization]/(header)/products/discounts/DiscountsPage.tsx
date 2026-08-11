@@ -1,5 +1,6 @@
 'use client'
 
+import { BulkActionBar } from '@/components/BulkActions/BulkActionBar'
 import CreateDiscountModalContent from '@/components/Discounts/CreateDiscountModalContent'
 import UpdateDiscountModalContent from '@/components/Discounts/UpdateDiscountModalContent'
 import { DashboardBody } from '@/components/Layout/DashboardLayout'
@@ -7,7 +8,12 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
-import { useDeleteDiscount, useDiscounts } from '@/hooks/queries'
+import {
+  useDeleteDiscount,
+  useDeleteDiscounts,
+  useDiscounts,
+} from '@/hooks/queries'
+import { useSelection } from '@/hooks/useSelection'
 import { useDebouncedCallback } from '@/hooks/utils'
 import {
   DataTablePaginationState,
@@ -38,6 +44,8 @@ import {
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useRouter } from 'next/navigation'
 import React, { useCallback, useState } from 'react'
+
+const getDiscountId = (discount: schemas['Discount']) => discount.id
 
 interface ClientPageProps {
   organization: schemas['Organization']
@@ -117,12 +125,28 @@ const ClientPage: React.FC<ClientPageProps> = ({
     )
   }, 500)
 
+  const discountsHook = useDiscounts(organization.id, {
+    ...getAPIParams(pagination, sorting),
+    query: _query,
+  })
+
+  const discounts = discountsHook.data?.items || []
+  const rowCount = discountsHook.data?.pagination.total_count ?? 0
+  const pageCount = discountsHook.data?.pagination.max_page ?? 1
+
+  const selection = useSelection({
+    items: discounts,
+    getId: getDiscountId,
+    resetKey: _query ?? '',
+  })
+
   const onQueryChange = useCallback(
     (query: string) => {
       setQuery(query)
       debouncedQueryChange(query)
+      selection.clear()
     },
-    [debouncedQueryChange],
+    [debouncedQueryChange, selection],
   )
 
   const handleCopyDiscountId = useCallback(
@@ -163,14 +187,31 @@ const ClientPage: React.FC<ClientPageProps> = ({
     hideDiscountModal()
   }, [discountToDelete, deleteDiscount, hideDiscountModal])
 
-  const discountsHook = useDiscounts(organization.id, {
-    ...getAPIParams(pagination, sorting),
-    query: _query,
-  })
+  const deleteDiscounts = useDeleteDiscounts()
 
-  const discounts = discountsHook.data?.items || []
-  const rowCount = discountsHook.data?.pagination.total_count ?? 0
-  const pageCount = discountsHook.data?.pagination.max_page ?? 1
+  const {
+    isShown: isBulkDeleteModalShown,
+    show: showBulkDeleteModal,
+    hide: hideBulkDeleteModal,
+  } = useModal()
+
+  const handleBulkDeleteDiscounts = useCallback(async () => {
+    const { succeeded, failed } = await deleteDiscounts.mutateAsync(
+      selection.selected,
+    )
+    if (failed.length > 0) {
+      toast({
+        title: 'Some Discounts Were Not Deleted',
+        description: `${String(succeeded.length)} deleted, ${String(failed.length)} failed`,
+      })
+    } else {
+      toast({
+        title: 'Discounts Deleted',
+        description: `${String(succeeded.length)} discounts successfully deleted`,
+      })
+    }
+    selection.clear()
+  }, [deleteDiscounts, selection])
 
   const columns: DataTableColumnDef<schemas['Discount']>[] = [
     {
@@ -320,23 +361,36 @@ const ClientPage: React.FC<ClientPageProps> = ({
   return (
     <DashboardBody wide>
       <div className="flex flex-col gap-8">
-        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
-          <Input
-            className="w-full md:max-w-64"
-            preSlot={<Search fontSize="small" />}
-            placeholder="Search Discounts"
-            value={query}
-            onChange={(e) => onQueryChange(e.target.value)}
-          />
-          <Button
-            type="button"
-            wrapperClassNames="flex flex-row items-center gap-x-2"
-            onClick={() => setShowNewModal(true)}
+        {selection.count > 0 ? (
+          <BulkActionBar
+            count={selection.count}
+            onClear={selection.clear}
+            pageState={selection.pageState}
+            onPageSelectedChange={selection.setPageSelected}
           >
-            <AddOutlined fontSize="small" />
-            <span>New Discount</span>
-          </Button>
-        </div>
+            <Button variant="destructive" onClick={showBulkDeleteModal}>
+              Delete
+            </Button>
+          </BulkActionBar>
+        ) : (
+          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+            <Input
+              className="w-full md:max-w-64"
+              preSlot={<Search fontSize="small" />}
+              placeholder="Search Discounts"
+              value={query}
+              onChange={(e) => onQueryChange(e.target.value)}
+            />
+            <Button
+              type="button"
+              wrapperClassNames="flex flex-row items-center gap-x-2"
+              onClick={() => setShowNewModal(true)}
+            >
+              <AddOutlined fontSize="small" />
+              <span>New Discount</span>
+            </Button>
+          </div>
+        )}
         {discounts && pageCount !== undefined && (
           <DataTable
             columns={columns}
@@ -348,6 +402,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
             sorting={sorting}
             onSortingChange={setSorting}
             isLoading={discountsHook.isLoading}
+            selection={selection}
+            getRowId={getDiscountId}
           />
         )}
       </div>
@@ -382,6 +438,17 @@ const ClientPage: React.FC<ClientPageProps> = ({
         onConfirm={handleDeleteDiscount}
         isShown={isDiscountModalShown}
         hide={hideDiscountModal}
+        destructiveText="Delete"
+        destructive
+      />
+      <ConfirmModal
+        title="Delete Discounts"
+        description={`Are you sure you want to delete ${selection.count} ${
+          selection.count === 1 ? 'discount' : 'discounts'
+        }? This action cannot be undone.`}
+        onConfirm={handleBulkDeleteDiscounts}
+        isShown={isBulkDeleteModalShown}
+        hide={hideBulkDeleteModal}
         destructiveText="Delete"
         destructive
       />

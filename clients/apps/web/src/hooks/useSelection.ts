@@ -1,6 +1,6 @@
 'use client'
 
-import { useCallback, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 export interface Selection<T> {
   selected: T[]
@@ -61,7 +61,9 @@ export function useSelection<T>({
   }
 
   const latest = useRef({ items, ids, getId })
-  latest.current = { items, ids, getId }
+  useEffect(() => {
+    latest.current = { items, ids, getId }
+  }, [items, ids, getId])
 
   const isSelected = useCallback(
     (item: T) => state.map.has(getId(item)),

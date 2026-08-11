@@ -290,6 +290,74 @@ describe('addTokenProp — margin "auto" special case', () => {
   })
 })
 
+describe('negative spacing tokens — margins', () => {
+  it('scalar negative margin resolves to a calc(* -1) style', () => {
+    const { stylexStyles } = resolveBoxStyles({ marginTop: '-l' }, 'scope')
+    expect(stylexStyles).toEqual([{ marginTop: 'calc(16px * -1)' }])
+  })
+
+  it('negative shorthand (mx) maps to margin-inline', () => {
+    const { stylexStyles } = resolveBoxStyles({ mx: '-xl' }, 'scope')
+    expect(stylexStyles).toEqual([{ marginInline: 'calc(24px * -1)' }])
+  })
+
+  it('responsive negative margin emits calc in the @media rule', () => {
+    const { responsiveCSS } = resolveBoxStyles(
+      { margin: { md: '-m' } },
+      'scope',
+    )
+    expect(responsiveCSS).toContain('@media (min-width: 768px)')
+    expect(responsiveCSS).toContain('margin: calc(12px * -1)')
+  })
+
+  it('mixes negative base with positive breakpoint override', () => {
+    const { stylexStyles, responsiveCSS } = resolveBoxStyles(
+      { marginBottom: { base: '-s', lg: 'l' } },
+      'scope',
+    )
+    expect(stylexStyles).toEqual([{ marginBottom: 'calc(8px * -1)' }])
+    expect(responsiveCSS).toContain('margin-bottom: 16px')
+  })
+})
+
+describe('spacing tokens — offsets (top/right/bottom/left/inset)', () => {
+  it('positive token resolves to the spacing value', () => {
+    const { inlineStyle } = resolveBoxStyles({ top: 'l' }, 'scope')
+    expect(inlineStyle.top).toBe('16px')
+  })
+
+  it('negative token resolves to calc(* -1)', () => {
+    const { inlineStyle } = resolveBoxStyles({ left: '-xl' }, 'scope')
+    expect(inlineStyle.left).toBe('calc(24px * -1)')
+  })
+
+  it('inset accepts a negative token', () => {
+    const { inlineStyle } = resolveBoxStyles({ inset: '-xs' }, 'scope')
+    expect(inlineStyle.inset).toBe('calc(4px * -1)')
+  })
+
+  it('numbers and arbitrary strings still pass through', () => {
+    const { inlineStyle } = resolveBoxStyles(
+      { top: -10, bottom: '50%', right: 'auto' },
+      'scope',
+    )
+    expect(inlineStyle.top).toBe('-10px')
+    expect(inlineStyle.bottom).toBe('50%')
+    expect(inlineStyle.right).toBe('auto')
+  })
+
+  it('non-token negative length (-5px) passes through unchanged', () => {
+    const { inlineStyle } = resolveBoxStyles({ top: '-5px' }, 'scope')
+    expect(inlineStyle.top).toBe('-5px')
+  })
+
+  it('responsive negative token offset emits calc in @media rule', () => {
+    const { responsiveCSS } = resolveBoxStyles({ top: { md: '-s' } }, 'scope')
+    expect(responsiveCSS).toContain('@media (min-width: 768px)')
+    expect(responsiveCSS).toContain('top: calc(8px * -1)')
+  })
+})
+
 describe('addArbitraryProp — scalar values go to inlineStyle', () => {
   it('width number → "Npx"', () => {
     const { inlineStyle } = resolveBoxStyles({ width: 100 }, 'scope')

@@ -42,13 +42,13 @@ export const boxProps: PropRow[] = [
   { name: 'flex', type: 'number | string' },
   {
     name: 'gap',
-    type: 'SpacingToken',
+    type: 'PositiveSpacingToken',
     description:
       'Also rowGap and columnGap. Tokens: none|xs|s|m|l|xl|2xl|3xl|4xl|5xl.',
   },
   {
     name: 'padding',
-    type: 'SpacingToken',
+    type: 'PositiveSpacingToken',
     description:
       'Plus paddingTop/Right/Bottom/Left, paddingHorizontal/Vertical and aliases p/px/py.',
   },
@@ -56,7 +56,7 @@ export const boxProps: PropRow[] = [
     name: 'margin',
     type: "SpacingToken | 'auto'",
     description:
-      'Plus per-side and axis variants and aliases m/mx/my. Accepts auto.',
+      "Plus per-side and axis variants and aliases m/mx/my. Accepts auto; SpacingToken includes negative tokens ('-xs' … '-5xl').",
   },
   {
     name: 'backgroundColor',
@@ -106,8 +106,9 @@ export const boxProps: PropRow[] = [
   },
   {
     name: 'top',
-    type: 'string | number',
-    description: 'Also right, bottom, left, inset and zIndex.',
+    type: 'OffsetValue',
+    description:
+      "Also right, bottom, left, inset and zIndex. Accepts spacing tokens (incl. negative, e.g. '-l'), arbitrary lengths and numbers (px).",
   },
   {
     name: 'transitionProperty',

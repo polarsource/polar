@@ -19,7 +19,7 @@ variable "snapshot_retention_days" {
   default     = 7
 }
 
-variable "num_cache_clusters" {
+variable "node_count" {
   description = "Number of nodes (primary + replicas). More than one enables multi-AZ with automatic failover."
   type        = number
   default     = 1

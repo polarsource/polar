@@ -17,9 +17,9 @@ resource "aws_elasticache_replication_group" "this" {
   engine                     = "redis"
   engine_version             = var.engine_version
   node_type                  = var.node_type
-  num_cache_clusters         = var.num_cache_clusters
-  multi_az_enabled           = var.num_cache_clusters > 1
-  automatic_failover_enabled = var.num_cache_clusters > 1
+  num_cache_clusters         = var.node_count
+  multi_az_enabled           = var.node_count > 1
+  automatic_failover_enabled = var.node_count > 1
   port                       = var.port
   snapshot_retention_limit   = var.snapshot_retention_days
   subnet_group_name          = aws_elasticache_subnet_group.this.name

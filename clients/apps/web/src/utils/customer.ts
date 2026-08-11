@@ -1,4 +1,3 @@
-/** A minimum, not a fallback: `first_user_event_at` can fall either side of `created_at`. */
 export const getCustomerActivityStart = (customer: {
   created_at: string
   first_user_event_at?: string | null

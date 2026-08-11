@@ -1,4 +1,5 @@
 import ipaddress
+import re
 from collections.abc import Iterable
 from dataclasses import dataclass
 from datetime import datetime, timedelta
@@ -18,6 +19,10 @@ _PORT_PROBE_SCHEME = "x-polar-probe"
 
 _LOCAL_SUFFIXES = (".localhost", ".local")
 
+# https://www.w3.org/TR/CSP3/#grammardef-host-source
+_HOST_LABEL = re.compile(r"[A-Za-z0-9-]+")
+_WRITTEN_PORT = re.compile(r":\d+$")
+
 # How far back we look for the hosts an organization embeds from.
 EMBED_ORIGIN_WINDOW = timedelta(days=90)
 
@@ -30,15 +35,26 @@ class InvalidEmbedHost(ValueError):
         super().__init__(f"{value!r} is not a valid embed host: {reason}")
 
 
+def _ip_address(host: str) -> ipaddress.IPv4Address | ipaddress.IPv6Address | None:
+    try:
+        return ipaddress.ip_address(host.strip("[]"))
+    except ValueError:
+        return None
+
+
 def is_local_host(host: str) -> bool:
     """Hosts a browser can only reach from the developer's own machine or LAN."""
     if host == "localhost" or host.endswith(_LOCAL_SUFFIXES):
         return True
-    try:
-        address = ipaddress.ip_address(host.strip("[]"))
-    except ValueError:
-        return False
-    return not address.is_global
+    address = _ip_address(host)
+    return address is not None and not address.is_global
+
+
+def _is_host_part(host: str) -> bool:
+    if _ip_address(host) is not None:
+        return True
+    labels = host.removesuffix(".").split(".")
+    return all(_HOST_LABEL.fullmatch(label) is not None for label in labels)
 
 
 @dataclass(frozen=True, slots=True)
@@ -136,6 +152,11 @@ def parse_host_pattern(value: str) -> HostPattern | None:
     if not host or "*" in host:
         return None
 
+    # The URL parser drops a portless colon, so `data:` would read as host `data`.
+    written = host.partition("]")[2] if host.startswith("[") else host
+    if ":" in _WRITTEN_PORT.sub("", written):
+        return None
+
     probe_scheme = scheme if scheme is not None else "https"
     probe_host = f"{_WILDCARD_LABEL}.{host}" if wildcard else host
     url = _parse_url(f"{probe_scheme}://{probe_host}")
@@ -154,6 +175,9 @@ def parse_host_pattern(value: str) -> HostPattern | None:
 
     parsed_host = url.host.removeprefix(f"{_WILDCARD_LABEL}.") if wildcard else url.host
     if len(parsed_host) > MAX_HOST_LENGTH:
+        return None
+
+    if not _is_host_part(parsed_host):
         return None
 
     return HostPattern(
@@ -178,7 +202,11 @@ def validate_host_pattern(value: str) -> str:
 
     pattern = parse_host_pattern(value)
     if pattern is None:
-        raise InvalidEmbedHost(value, "write a host and an optional port, with no path")
+        raise InvalidEmbedHost(
+            value,
+            "write a host and an optional port, with no path. A host is made of "
+            "letters, digits and hyphens",
+        )
 
     # Nobody's site sits directly under a registry suffix, so this is a slip.
     if pattern.wildcard and is_tld(pattern.host, search_private=False):

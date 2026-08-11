@@ -5338,6 +5338,30 @@ export interface paths {
     patch?: never
     trace?: never
   }
+  '/v1/merchant-migrations/{id}/cutover': {
+    parameters: {
+      query?: never
+      header?: never
+      path?: never
+      cookie?: never
+    }
+    /**
+     * Get Merchant Migration Cutover
+     * @description **Scopes**: `organizations:write`
+     */
+    get: operations['merchant-migrations:cutover']
+    put?: never
+    /**
+     * Retry Merchant Migration Cutover
+     * @description **Scopes**: `organizations:write`
+     */
+    post: operations['merchant-migrations:retry_cutover']
+    delete?: never
+    options?: never
+    head?: never
+    patch?: never
+    trace?: never
+  }
   '/v1/merchant-migrations/{id}/records/summary': {
     parameters: {
       query?: never
@@ -19748,6 +19772,17 @@ export interface components {
       | '-created_at'
       | 'balance'
       | '-balance'
+    /** CutoverNotStarted */
+    CutoverNotStarted: {
+      /**
+       * Error
+       * @example CutoverNotStarted
+       * @constant
+       */
+      error: 'CutoverNotStarted'
+      /** Detail */
+      detail: string
+    }
     /**
      * DataTableBlock
      * @description Tabular entities (orders, subscriptions, customers, ...).
@@ -23683,6 +23718,57 @@ export interface components {
        */
       api_key: string
     }
+    /**
+     * MerchantMigrationCutoverReport
+     * @description Where the cutover has got to, for the imported subscriptions.
+     */
+    MerchantMigrationCutoverReport: {
+      /**
+       * Started
+       * @description Whether the merchant has triggered the cutover.
+       */
+      started: boolean
+      /**
+       * Completed
+       * @description Whether Polar has finished going through every subscription.
+       */
+      completed: boolean
+      /**
+       * Total
+       * @description Imported subscriptions the cutover looks at.
+       */
+      total: number
+      /**
+       * Pending
+       * @description Not looked at yet.
+       */
+      pending: number
+      /**
+       * Moved
+       * @description Now billed by Polar, and stopped on the source.
+       */
+      moved: number
+      /**
+       * Skipped
+       * @description Left on the source, each with a reason on its record. Retryable once the merchant has dealt with the reason.
+       */
+      skipped: number
+      /**
+       * Failed
+       * @description Hit an unexpected error. Safe to retry as-is.
+       */
+      failed: number
+    }
+    /**
+     * MerchantMigrationCutoverStatus
+     * @description What the cutover did with an imported subscription.
+     *
+     *     Only subscription records ever carry one, and only once the cutover has
+     *     looked at them: ``None`` means "not attempted", which is also what every
+     *     other record type keeps forever.
+     * @enum {string}
+     */
+    MerchantMigrationCutoverStatus: 'moved' | 'skipped' | 'failed'
     /** MerchantMigrationImportReport */
     MerchantMigrationImportReport: {
       /** @description The migration step after the import. */
@@ -23800,6 +23886,15 @@ export interface components {
       reason_code: string | null
       /** @description How urgent `reason` is: `action_required` when the merchant has to fix something, `info` when there is nothing to fix. Null without a reason. */
       reason_level: components['schemas']['PrecheckReasonLevel'] | null
+      /** @description What the cutover did with this subscription: `moved` (Polar bills it now), `skipped` (left on the source, see `cutover_error`) or `failed` (retryable). Null when the cutover hasn't reached it, and for every entity other than subscriptions. */
+      cutover_status:
+        | components['schemas']['MerchantMigrationCutoverStatus']
+        | null
+      /**
+       * Cutover Error
+       * @description Why the cutover skipped or failed this subscription.
+       */
+      cutover_error: string | null
     }
     /**
      * MerchantMigrationRecordStatus
@@ -52910,6 +53005,113 @@ export interface operations {
       }
     }
   }
+  'merchant-migrations:cutover': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationCutoverReport']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
+  'merchant-migrations:retry_cutover': {
+    parameters: {
+      query?: never
+      header?: never
+      path: {
+        id: string
+      }
+      cookie?: never
+    }
+    requestBody?: never
+    responses: {
+      /** @description Successful Response */
+      200: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationCutoverReport']
+        }
+      }
+      /** @description Not allowed to manage this organization. */
+      403: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['NotPermitted']
+        }
+      }
+      /** @description Merchant migration not found. */
+      404: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description The cutover step hasn't been confirmed yet. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['CutoverNotStarted']
+        }
+      }
+      /** @description Validation Error */
+      422: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['HTTPValidationError']
+        }
+      }
+    }
+  }
   'merchant-migrations:records_summary': {
     parameters: {
       query?: never
@@ -52978,6 +53180,9 @@ export interface operations {
         reason_level?: components['schemas']['PrecheckReasonLevel'] | null
         import_status?:
           | components['schemas']['MerchantMigrationRecordStatus']
+          | null
+        cutover_status?:
+          | components['schemas']['MerchantMigrationCutoverStatus']
           | null
         /** @description Page number, defaults to 1. */
         page?: number
@@ -65690,6 +65895,9 @@ export const memberRoleValues: ReadonlyArray<
 export const memberSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberSortProperty']
 > = ['created_at', '-created_at']
+export const merchantMigrationCutoverStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationCutoverStatus']
+> = ['moved', 'skipped', 'failed']
 export const merchantMigrationRecordStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationRecordStatus']
 > = ['pending', 'imported', 'skipped', 'failed']

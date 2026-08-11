@@ -27,6 +27,7 @@ from tests.fixtures.database import SaveFixture
 from tests.merchant_migration._helpers import (
     assert_no_migrations,
     build_connected_migration,
+    cutover_ready_steps,
 )
 
 VALID_BODY = {
@@ -736,6 +737,67 @@ class TestCompletePanTransferStep:
             f"/v1/merchant-migrations/{migration.id}/pan-transfer/steps/start_copy/complete"
         )
         assert response.status_code == 409
+
+
+@pytest.mark.asyncio
+class TestCutover:
+    async def test_anonymous(
+        self, client: AsyncClient, save_fixture: SaveFixture, organization: Organization
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        response = await client.get(f"/v1/merchant-migrations/{migration.id}/cutover")
+        assert response.status_code == 401
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_reports_nothing_before_the_checklist_reaches_it(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+
+        response = await client.get(f"/v1/merchant-migrations/{migration.id}/cutover")
+
+        assert response.status_code == 200
+        json_body = response.json()
+        assert json_body["started"] is False
+        assert json_body["completed"] is False
+        assert json_body["total"] == 0
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_retry_refused_before_the_merchant_confirms(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/cutover")
+
+        assert response.status_code == 409
+
+    @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
+    async def test_retry_reopens_what_stayed_behind(
+        self,
+        client: AsyncClient,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        user_organization: UserOrganization,
+    ) -> None:
+        migration = await _create_migration(
+            save_fixture, organization, MerchantMigrationStep.activate_subscriptions
+        )
+        migration.pan_transfer_steps = cutover_ready_steps()
+        await save_fixture(migration)
+
+        response = await client.post(f"/v1/merchant-migrations/{migration.id}/cutover")
+
+        assert response.status_code == 200
+        assert response.json()["started"] is True
 
 
 async def _create_migration(

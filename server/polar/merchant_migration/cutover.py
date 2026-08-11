@@ -132,9 +132,7 @@ class SubscriptionCutover:
         if subscription is None:
             return _fail(_SUBSCRIPTION_GONE)
         if SubscriptionStatus.is_active(subscription.status):
-            # A previous run already moved it, or the merchant activated it by
-            # hand. Either way the source is no longer the one billing.
-            return _MOVED
+            return await self._reconcile_active(record)
         if subscription.status != SubscriptionStatus.paused:
             return _skip(_NOT_PAUSED)
 
@@ -181,6 +179,29 @@ class SubscriptionCutover:
             subscription_id=subscription.id,
             source_id=record.source_id,
         )
+        return _MOVED
+
+    async def _reconcile_active(
+        self, record: MerchantMigrationRecord
+    ) -> CutoverOutcome:
+        """The Polar subscription is already live. Make sure the source isn't.
+
+        Usually this is a previous run finishing twice, and the source is
+        already stopped. But a paused subscription can also be resumed by hand,
+        or by the customer from their portal, and then Polar and the source are
+        both billing the same person — so the source is stopped here rather than
+        taking "active on Polar" as proof that it isn't.
+        """
+        source = await self.adapter.get_subscription(record.source_id)
+        if source is not None and source.status != CanonicalSubscriptionStatus.canceled:
+            log.warning(
+                "merchant_migration.cutover.source_still_live",
+                migration_id=self.migration.id,
+                source_id=record.source_id,
+            )
+            await self.adapter.stop_source_subscription(
+                record.source_id, reference=str(self.migration.id)
+            )
         return _MOVED
 
     async def _load_subscription(

@@ -510,9 +510,9 @@ class MerchantMigrationService:
     ) -> PanTransferChecklist:
         """Move the checklist on, whoever is asking.
 
-        The single transition point on purpose: a step Polar owns is scheduled
-        by becoming current, so a caller that completed a step without going
-        through here would leave the next step sitting unscheduled forever.
+        The single transition point on purpose: a Polar-owned step is scheduled
+        by becoming current, so completing one without coming through here would
+        leave it unscheduled forever.
         """
         if not migration.pan_transfer_steps:
             raise PanTransferNotStarted()
@@ -649,9 +649,9 @@ class MerchantMigrationService:
         await self._advance_checklist(session, migration, steps)
 
     def _coverage_note(self, linked: int, total: int) -> str:
-        """Says "payment method", not "card": a copied ACH or SEPA mandate is
-        just as chargeable, and calling it uncovered would send the merchant
-        chasing customers who need nothing."""
+        """ "Payment method", not "card": a copied ACH or SEPA mandate is just as
+        chargeable, so calling it uncovered would send the merchant chasing
+        customers who need nothing."""
         uncovered = total - linked
         if uncovered == 0:
             return (

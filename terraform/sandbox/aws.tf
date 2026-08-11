@@ -33,6 +33,24 @@ resource "aws_vpc_security_group_ingress_rule" "redis_lambda" {
   ip_protocol                  = "tcp"
 }
 
+module "redis_private_link" {
+  source = "../modules/redis_private_link"
+
+  name       = "polar-sandbox-worker-redis"
+  vpc_id     = module.vpc.vpc_id
+  subnet_ids = module.vpc.private_subnet_ids
+  redis_host = module.redis.host
+  redis_port = module.redis.port
+}
+
+resource "aws_vpc_security_group_ingress_rule" "redis_nlb" {
+  security_group_id            = module.redis.security_group_id
+  referenced_security_group_id = module.redis_private_link.nlb_security_group_id
+  from_port                    = module.redis.port
+  to_port                      = module.redis.port
+  ip_protocol                  = "tcp"
+}
+
 locals {
   files_bucket_name        = "polar-sandbox-files"
   files_public_bucket_name = "polar-public-sandbox-files"

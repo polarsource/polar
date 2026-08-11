@@ -24,6 +24,7 @@ import {
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
 import AddOutlined from '@mui/icons-material/AddOutlined'
+import DeleteOutlined from '@mui/icons-material/DeleteOutlined'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import Search from '@mui/icons-material/Search'
 import { schemas } from '@polar-sh/client'
@@ -361,19 +362,8 @@ const ClientPage: React.FC<ClientPageProps> = ({
   return (
     <DashboardBody wide>
       <div className="flex flex-col gap-8">
-        {selection.count > 0 ? (
-          <BulkActionBar
-            count={selection.count}
-            onClear={selection.clear}
-            pageState={selection.pageState}
-            onPageSelectedChange={selection.setPageSelected}
-          >
-            <Button variant="destructive" onClick={showBulkDeleteModal}>
-              Delete
-            </Button>
-          </BulkActionBar>
-        ) : (
-          <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+        <div className="flex flex-col gap-6 md:flex-row md:items-center md:justify-between">
+          <div className="flex flex-col gap-4 md:flex-row md:items-center">
             <Input
               className="w-full md:max-w-64"
               preSlot={<Search fontSize="small" />}
@@ -381,16 +371,34 @@ const ClientPage: React.FC<ClientPageProps> = ({
               value={query}
               onChange={(e) => onQueryChange(e.target.value)}
             />
-            <Button
-              type="button"
-              wrapperClassNames="flex flex-row items-center gap-x-2"
-              onClick={() => setShowNewModal(true)}
+            <BulkActionBar
+              count={selection.count}
+              pageState={selection.pageState}
+              pageSelectedCount={selection.pageSelectedCount}
+              pageSize={selection.pageSize}
+              onPageSelectedChange={selection.setPageSelected}
+              onClear={selection.clear}
             >
-              <AddOutlined fontSize="small" />
-              <span>New Discount</span>
-            </Button>
+              <Button
+                size="sm"
+                variant="destructiveGhost"
+                wrapperClassNames="flex flex-row items-center gap-x-1.5"
+                onClick={showBulkDeleteModal}
+              >
+                <DeleteOutlined fontSize="inherit" />
+                <span>Delete</span>
+              </Button>
+            </BulkActionBar>
           </div>
-        )}
+          <Button
+            type="button"
+            wrapperClassNames="flex flex-row items-center gap-x-2"
+            onClick={() => setShowNewModal(true)}
+          >
+            <AddOutlined fontSize="small" />
+            <span>New Discount</span>
+          </Button>
+        </div>
         {discounts && pageCount !== undefined && (
           <DataTable
             columns={columns}

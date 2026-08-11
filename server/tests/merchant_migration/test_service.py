@@ -1,4 +1,6 @@
 from collections.abc import AsyncIterator
+from datetime import timedelta
+from typing import Any
 
 import pytest
 import stripe as stripe_lib
@@ -10,9 +12,11 @@ from polar.auth.models import AuthSubject
 from polar.config import settings
 from polar.customer.repository import CustomerRepository
 from polar.customer.service import customer as customer_service
+from polar.enums import PaymentProcessor
 from polar.kit import encryption
 from polar.kit.encryption import LocalKeyProvider
 from polar.kit.pagination import PaginationParams
+from polar.kit.utils import utc_now
 from polar.merchant_migration.canonical import (
     CanonicalAccount,
     CanonicalCollectionMethod,
@@ -23,6 +27,9 @@ from polar.merchant_migration.canonical import (
     CanonicalRecord,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
+)
+from polar.merchant_migration.pan_transfer import (
+    PanTransferStep,
 )
 from polar.merchant_migration.repository import (
     MerchantMigrationRecordRepository,
@@ -50,6 +57,7 @@ from polar.models import (
     Customer,
     MerchantMigration,
     Organization,
+    PaymentMethod,
     Product,
     Subscription,
     User,
@@ -69,9 +77,13 @@ from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from polar.product.service import product as product_service
 from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_customer, create_subscription
+from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
     assert_no_migrations,
     build_connected_migration,
+    stage_subscription_record,
+    steps_at,
 )
 
 
@@ -84,6 +96,7 @@ class _FakeAdapter:
         verify_error: Exception | None = None,
         account_id: str | None = "acct_test",
         source_account: CanonicalAccount | None = None,
+        source_subscription: CanonicalSubscription | None = None,
     ) -> None:
         self._records = records or []
         self._missing_scopes = missing_scopes or []
@@ -92,6 +105,8 @@ class _FakeAdapter:
         self._source_account = source_account or CanonicalAccount(
             country="US", has_connected_accounts=False
         )
+        self._source_subscription = source_subscription
+        self.stopped: list[str] = []
 
     async def verify_scopes(self) -> list[str]:
         if self._verify_error is not None:
@@ -107,6 +122,12 @@ class _FakeAdapter:
 
     async def get_source_account(self) -> CanonicalAccount:
         return self._source_account
+
+    async def get_subscription(self, source_id: str) -> CanonicalSubscription | None:
+        return self._source_subscription
+
+    async def stop_source_subscription(self, source_id: str, *, reference: str) -> None:
+        self.stopped.append(source_id)
 
 
 async def _enable_feature(
@@ -1408,3 +1429,115 @@ class TestSummarizeRecords:
         products = by_entity[PrecheckEntity.products]
         assert products.imported == 0
         assert products.selectable == 1
+
+
+async def _migration_at(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    *,
+    steps: list[PanTransferStep],
+    step: MerchantMigrationStep,
+) -> MerchantMigration:
+    """A migration whose checklist sits at a given step."""
+    migration = await build_connected_migration(save_fixture, organization)
+    migration.pan_transfer_steps = steps
+    migration.step = step
+    await save_fixture(migration)
+    return migration
+
+
+async def _importable_subscription(
+    save_fixture: SaveFixture,
+    organization: Organization,
+    product: Product,
+    *,
+    email: str = "imported@example.com",
+    stripe_customer_id: str = "cus_1",
+    with_card: bool = True,
+) -> Subscription:
+    customer = await create_customer(
+        save_fixture,
+        organization=organization,
+        email=email,
+        stripe_customer_id=stripe_customer_id,
+    )
+    payment_method: PaymentMethod | None = None
+    if with_card:
+        payment_method = PaymentMethod(
+            processor=PaymentProcessor.stripe,
+            processor_id=f"pm_{stripe_customer_id}",
+            type="card",
+            method_metadata={},
+            customer=customer,
+        )
+        await save_fixture(payment_method)
+    return await create_subscription(
+        save_fixture,
+        product=product,
+        customer=customer,
+        payment_method=payment_method,
+        status=SubscriptionStatus.paused,
+        current_period_start=utc_now() - timedelta(days=40),
+        current_period_end=utc_now() - timedelta(days=10),
+    )
+
+
+def _step(migration: MerchantMigration, key: str) -> PanTransferStep:
+    return next(step for step in migration.pan_transfer_steps if step.key == key)
+
+
+@pytest.mark.asyncio
+class TestRunCardVerification:
+    async def test_links_cards_and_reports_the_gap(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        migration = await _migration_at(
+            save_fixture,
+            organization,
+            steps=steps_at("verify_cards"),
+            step=MerchantMigrationStep.copy_cards,
+        )
+        covered = await _importable_subscription(
+            save_fixture,
+            organization,
+            product,
+            email="covered@example.com",
+            stripe_customer_id="cus_covered",
+            with_card=False,
+        )
+        uncovered = await _importable_subscription(
+            save_fixture,
+            organization,
+            product,
+            email="uncovered@example.com",
+            stripe_customer_id="cus_uncovered",
+            with_card=False,
+        )
+        await stage_subscription_record(
+            save_fixture, migration, organization, covered, source_id="sub_covered"
+        )
+        await stage_subscription_record(
+            save_fixture, migration, organization, uncovered, source_id="sub_uncovered"
+        )
+
+        async def _list(customer: str) -> AsyncIterator[Any]:
+            if customer != "cus_covered":
+                return
+            yield build_stripe_payment_method(type="card", customer=customer)
+
+        mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.list_payment_methods",
+            new=_list,
+        )
+
+        await service.run_card_verification(session, migration.id)
+
+        assert covered.payment_method_id is not None
+        assert uncovered.payment_method_id is None
+        assert _step(migration, "verify_cards").status == "completed"
+        assert "1 of 2" in (_step(migration, "resolve_uncovered").note or "")

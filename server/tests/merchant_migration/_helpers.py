@@ -2,12 +2,19 @@ from datetime import datetime, timedelta
 
 from polar.kit.encryption import EncryptedString
 from polar.kit.utils import utc_now
+from polar.merchant_migration import pan_transfer
 from polar.merchant_migration.canonical import (
     CanonicalCollectionMethod,
     CanonicalPaymentMethod,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
     serialize,
+)
+from polar.merchant_migration.pan_transfer import (
+    PanStepActor,
+    PanStepOwner,
+    PanTransferMethod,
+    PanTransferStep,
 )
 from polar.merchant_migration.repository import MerchantMigrationRepository
 from polar.merchant_migration.service import (
@@ -148,3 +155,27 @@ async def stage_subscription_record(
     )
     await save_fixture(record)
     return record
+
+
+def steps_at(key: str) -> list[PanTransferStep]:
+    """A PAN copy checklist walked until ``key`` is the step to act on."""
+    method = PanTransferMethod.pan_copy
+    steps = pan_transfer.build(method)
+    while True:
+        current = pan_transfer.current(steps)
+        assert current is not None, f"the checklist ran out before `{key}`"
+        if current.key == key:
+            return steps
+        steps = pan_transfer.complete(
+            method, steps, current.key, actor=_actor_for(current.owner), inputs={}
+        )
+
+
+def _actor_for(owner: PanStepOwner) -> PanStepActor:
+    match owner:
+        case PanStepOwner.merchant:
+            return PanStepActor.merchant
+        case PanStepOwner.polar_app:
+            return PanStepActor.system
+        case _:
+            return PanStepActor.ops

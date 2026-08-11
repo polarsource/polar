@@ -325,27 +325,35 @@ class CustomerRepository(
     ) -> Sequence[tuple[datetime, int, int]]:
         """New and cumulative customer counts per interval bucket, zero-filled.
 
-        Buckets cover whole intervals: the first bucket counts every customer
-        created within it, even before `start`, matching the metrics layer.
+        Both bounds are truncated to the interval before generating the
+        series, so the buckets containing `start` and `end` are always
+        included even when the raw bounds are not interval-aligned. Buckets
+        cover whole intervals: the first bucket counts every customer created
+        within it, even before `start`, matching the metrics layer.
         """
-        timestamp_series = get_timestamp_series_cte(start, end, interval)
+        timestamp_series = get_timestamp_series_cte(
+            interval.sql_date_trunc(start), interval.sql_date_trunc(end), interval
+        )
+        # Stepping one interval from a truncated start yields bucket starts,
+        # so the series values need no further truncation.
         timestamp_column = timestamp_series.c.timestamp
 
-        bucket = interval.sql_date_trunc(timestamp_column).label("timestamp")
         grouped = (
-            select(bucket, func.count(Customer.id).label("new_customers"))
+            select(
+                timestamp_column.label("timestamp"),
+                func.count(Customer.id).label("new_customers"),
+            )
             .select_from(timestamp_series)
             .join(
                 Customer,
                 isouter=True,
                 onclause=and_(
-                    interval.sql_date_trunc(Customer.created_at)
-                    == interval.sql_date_trunc(timestamp_column),
+                    interval.sql_date_trunc(Customer.created_at) == timestamp_column,
                     Customer.organization_id == organization_id,
                     Customer.deleted_at.is_(None),
                 ),
             )
-            .group_by(bucket)
+            .group_by(timestamp_column)
             .subquery("customer_growth")
         )
 

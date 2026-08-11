@@ -8,6 +8,11 @@ output "port" {
   value       = aws_elasticache_replication_group.this.port
 }
 
+output "arn" {
+  description = "ARN of the replication group."
+  value       = aws_elasticache_replication_group.this.arn
+}
+
 output "security_group_id" {
   description = "Security group attached to the cache."
   value       = aws_security_group.this.id

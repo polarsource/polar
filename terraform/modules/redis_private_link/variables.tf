@@ -18,6 +18,11 @@ variable "redis_host" {
   type        = string
 }
 
+variable "redis_arn" {
+  description = "Replication group ARN, used to scope the ElastiCache event trigger."
+  type        = string
+}
+
 variable "redis_port" {
   description = "Redis port."
   type        = number

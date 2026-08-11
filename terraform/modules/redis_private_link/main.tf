@@ -34,8 +34,11 @@ resource "aws_lb_target_group" "redis" {
   target_type = "ip"
 
   health_check {
-    protocol = "TCP"
-    port     = "traffic-port"
+    protocol            = "TCP"
+    port                = "traffic-port"
+    interval            = 10
+    healthy_threshold   = 2
+    unhealthy_threshold = 2
   }
 
   tags = var.tags
@@ -118,13 +121,14 @@ resource "aws_iam_role_policy" "refresh" {
 }
 
 resource "aws_lambda_function" "refresh" {
-  function_name    = "${var.name}-target-refresh"
-  role             = aws_iam_role.refresh.arn
-  runtime          = "python3.13"
-  handler          = "refresh.handler"
-  filename         = data.archive_file.refresh.output_path
-  source_code_hash = data.archive_file.refresh.output_base64sha256
-  timeout          = 30
+  function_name                  = "${var.name}-target-refresh"
+  role                           = aws_iam_role.refresh.arn
+  runtime                        = "python3.13"
+  handler                        = "refresh.handler"
+  filename                       = data.archive_file.refresh.output_path
+  source_code_hash               = data.archive_file.refresh.output_base64sha256
+  timeout                        = 30
+  reserved_concurrent_executions = 1
 
   environment {
     variables = {
@@ -154,4 +158,31 @@ resource "aws_lambda_permission" "refresh" {
   function_name = aws_lambda_function.refresh.function_name
   principal     = "events.amazonaws.com"
   source_arn    = aws_cloudwatch_event_rule.refresh.arn
+}
+
+resource "aws_cloudwatch_event_rule" "elasticache_events" {
+  name = "${var.name}-elasticache-events"
+
+  event_pattern = jsonencode({
+    source = ["aws.elasticache"]
+    resources = [
+      { prefix = var.redis_arn },
+      { prefix = replace(var.redis_arn, ":replicationgroup:", ":cluster:") },
+    ]
+  })
+
+  tags = var.tags
+}
+
+resource "aws_cloudwatch_event_target" "elasticache_events" {
+  rule = aws_cloudwatch_event_rule.elasticache_events.name
+  arn  = aws_lambda_function.refresh.arn
+}
+
+resource "aws_lambda_permission" "elasticache_events" {
+  statement_id  = "AllowElastiCacheEvents"
+  action        = "lambda:InvokeFunction"
+  function_name = aws_lambda_function.refresh.function_name
+  principal     = "events.amazonaws.com"
+  source_arn    = aws_cloudwatch_event_rule.elasticache_events.arn
 }

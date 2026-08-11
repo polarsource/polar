@@ -43,6 +43,7 @@ module "redis_private_link" {
   subnet_ids               = module.vpc.private_subnet_ids
   redis_host               = module.redis.host
   redis_port               = module.redis.port
+  redis_arn                = module.redis.arn
   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 }
 

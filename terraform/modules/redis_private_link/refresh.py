@@ -1,9 +1,22 @@
 import os
 import socket
+import time
 
 import boto3
 
 elbv2 = boto3.client("elbv2")
+
+
+def resolve(host, port):
+    for attempt in range(3):
+        try:
+            return {
+                info[4][0] for info in socket.getaddrinfo(host, port, socket.AF_INET)
+            }
+        except OSError:
+            if attempt == 2:
+                raise
+            time.sleep(2)
 
 
 def handler(event, context):
@@ -11,9 +24,7 @@ def handler(event, context):
     host = os.environ["REDIS_HOST"]
     port = int(os.environ["REDIS_PORT"])
 
-    resolved = {
-        info[4][0] for info in socket.getaddrinfo(host, port, socket.AF_INET)
-    }
+    resolved = resolve(host, port)
     descriptions = elbv2.describe_target_health(TargetGroupArn=target_group_arn)
     registered = {
         description["Target"]["Id"]

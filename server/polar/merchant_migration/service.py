@@ -478,6 +478,26 @@ class MerchantMigrationService:
         migration = await self._get_manageable(
             session, auth_subject, migration_id, for_update=True
         )
+        return await self.complete_step(
+            session, migration, key, actor=PanStepActor.merchant, inputs=inputs
+        )
+
+    async def complete_step(
+        self,
+        session: AsyncSession,
+        migration: MerchantMigration,
+        key: str,
+        *,
+        actor: PanStepActor,
+        inputs: dict[str, str],
+    ) -> PanTransferChecklist:
+        """Move the checklist on, whoever is asking.
+
+        The single transition point on purpose: a step Polar owns is scheduled
+        by becoming current, so a caller that completed a step without going
+        through here — Ops moving a Stripe-owned step from the backoffice, say —
+        would leave the next step sitting unscheduled forever.
+        """
         if not migration.pan_transfer_steps:
             raise PanTransferNotStarted()
 
@@ -485,7 +505,7 @@ class MerchantMigrationService:
             migration.pan_transfer_method,
             list(migration.pan_transfer_steps),
             key,
-            actor=PanStepActor.merchant,
+            actor=actor,
             inputs=inputs,
         )
         await self._advance_checklist(session, migration, steps)
@@ -567,7 +587,9 @@ class MerchantMigrationService:
         self, session: AsyncSession, migration: MerchantMigration
     ) -> None:
         record_repository = MerchantMigrationRecordRepository.from_session(session)
-        linked, total = await record_repository.count_linked_cards(migration.id)
+        linked, total = await record_repository.count_linked_payment_methods(
+            migration.id
+        )
         completed = await self._complete_polar_app_step(
             session, migration, STEP_VERIFY_CARDS
         )
@@ -583,17 +605,20 @@ class MerchantMigrationService:
         await self._advance_checklist(session, migration, steps)
 
     def _coverage_note(self, linked: int, total: int) -> str:
+        """Says "payment method", not "card": a copied ACH or SEPA mandate is
+        just as chargeable, and calling it uncovered would send the merchant
+        chasing customers who need nothing."""
         uncovered = total - linked
         if uncovered == 0:
             return (
-                f"All {total} imported subscriptions have a card on Polar. "
-                "Nothing to chase."
+                f"All {total} imported subscriptions have a payment method on "
+                "Polar. Nothing to chase."
             )
         return (
-            f"{linked} of {total} imported subscriptions have a card on Polar. "
-            f"{uncovered} don't: those customers need to enter their billing "
-            "details again, or another copy has to pick their cards up. "
-            "Subscriptions without a card stay on your old provider at cutover."
+            f"{linked} of {total} imported subscriptions have a payment method "
+            f"on Polar. {uncovered} don't: those customers need to enter their "
+            "billing details again, or another copy has to pick them up. "
+            "Subscriptions without one stay on your old provider at cutover."
         )
 
     async def _complete_polar_app_step(

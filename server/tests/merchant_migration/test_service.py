@@ -1431,6 +1431,12 @@ class TestSummarizeRecords:
         assert products.selectable == 1
 
 
+async def _no_payment_methods(customer: str) -> AsyncIterator[Any]:
+    """Nothing has landed on Polar's Stripe account for this customer yet."""
+    return
+    yield
+
+
 async def _migration_at(
     save_fixture: SaveFixture,
     organization: Organization,
@@ -1541,3 +1547,83 @@ class TestRunCardVerification:
         assert uncovered.payment_method_id is None
         assert _step(migration, "verify_cards").status == "completed"
         assert "1 of 2" in (_step(migration, "resolve_uncovered").note or "")
+
+    async def test_hands_over_to_the_next_batch(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """A catalog bigger than one slice keeps going rather than finishing
+        early on the subscriptions it happened to see."""
+        mocker.patch("polar.merchant_migration.service.CARD_VERIFICATION_BATCH_SIZE", 1)
+        migration = await _migration_at(
+            save_fixture,
+            organization,
+            steps=steps_at("verify_cards"),
+            step=MerchantMigrationStep.copy_cards,
+        )
+        for index in range(2):
+            subscription = await _importable_subscription(
+                save_fixture,
+                organization,
+                product,
+                email=f"batched{index}@example.com",
+                stripe_customer_id=f"cus_batched_{index}",
+                with_card=False,
+            )
+            await stage_subscription_record(
+                save_fixture,
+                migration,
+                organization,
+                subscription,
+                source_id=f"sub_batched_{index}",
+            )
+        mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.list_payment_methods",
+            new=_no_payment_methods,
+        )
+        enqueue_job_mock = mocker.patch("polar.merchant_migration.service.enqueue_job")
+
+        await service.run_card_verification(session, migration.id)
+
+        enqueue_job_mock.assert_called_once_with(
+            "merchant_migration.verify_cards",
+            merchant_migration_id=migration.id,
+            offset=1,
+        )
+        assert _step(migration, "verify_cards").status != "completed"
+
+    async def test_skips_subscriptions_that_already_have_one(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        """Cards keep landing, so this runs again and again; the ones already
+        linked must not cost a Stripe round trip each time."""
+        migration = await _migration_at(
+            save_fixture,
+            organization,
+            steps=steps_at("verify_cards"),
+            step=MerchantMigrationStep.copy_cards,
+        )
+        subscription = await _importable_subscription(
+            save_fixture, organization, product, stripe_customer_id="cus_linked"
+        )
+        await stage_subscription_record(
+            save_fixture, migration, organization, subscription
+        )
+        listing = mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.list_payment_methods",
+            new=mocker.MagicMock(side_effect=AssertionError("should not be listed")),
+        )
+
+        await service.run_card_verification(session, migration.id)
+
+        listing.assert_not_called()
+        assert _step(migration, "verify_cards").status == "completed"

@@ -1,3 +1,4 @@
+from datetime import UTC, datetime
 from typing import Any
 
 import pytest
@@ -251,6 +252,22 @@ class TestGetSubscription:
         assert subscription.status == CanonicalSubscriptionStatus.active
         assert subscription.cancel_at_period_end is True
         assert subscription.current_period_end is not None
+
+    async def test_reads_a_running_trial(self, mocker: MockerFixture) -> None:
+        """The cutover keeps the trial running rather than billing at once, so
+        it needs the end date back as an aware datetime."""
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(
+                status="trialing", trial_end=1_702_000_000
+            )
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.status == CanonicalSubscriptionStatus.trialing
+        assert subscription.trial_end == datetime(2023, 12, 8, 1, 46, 40, tzinfo=UTC)
 
     async def test_deleted_subscription_is_gone(self, mocker: MockerFixture) -> None:
         adapter, client = _adapter(mocker)

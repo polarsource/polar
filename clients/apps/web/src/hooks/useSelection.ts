@@ -8,7 +8,6 @@ export interface Selection<T> {
   selected: T[]
   count: number
   isSelected: (item: T) => boolean
-  /** Toggles a single item, or selects the range from the anchor with `shiftKey`. */
   toggle: (item: T, options?: { shiftKey?: boolean }) => void
   setPageSelected: (selected: boolean) => void
   pageState: SelectionPageState
@@ -16,40 +15,20 @@ export interface Selection<T> {
 }
 
 export interface UseSelectionOptions<T> {
-  /** The items currently rendered (the current page). */
   items: T[]
-  /** Must be referentially stable — hoist to module scope or wrap in `useCallback`. */
   getId: (item: T) => string
+  resetKey?: string
 }
 
-const resolveToggleTargets = <T>(
-  items: T[],
-  getId: (item: T) => string,
-  item: T,
-  anchorId: string | null,
-  shiftKey: boolean,
-): { targets: T[]; isRange: boolean; nextAnchorId: string | null } => {
-  const id = getId(item)
-  const index = items.findIndex((candidate) => getId(candidate) === id)
-  const anchorIndex =
-    anchorId === null
-      ? -1
-      : items.findIndex((candidate) => getId(candidate) === anchorId)
-  if (shiftKey && anchorIndex !== -1 && index !== -1) {
-    const start = Math.min(anchorIndex, index)
-    const end = Math.max(anchorIndex, index)
-    return {
-      targets: items.slice(start, end + 1),
-      isRange: true,
-      nextAnchorId: anchorId,
-    }
-  }
-  return {
-    targets: [item],
-    isRange: false,
-    nextAnchorId: index === -1 ? null : id,
-  }
+interface SelectionState<T> {
+  map: ReadonlyMap<string, T>
+  anchorId: string | null
 }
+
+const emptyState = <T>(): SelectionState<T> => ({
+  map: new Map(),
+  anchorId: null,
+})
 
 const applySelection = <T>(
   map: ReadonlyMap<string, T>,
@@ -68,75 +47,87 @@ const applySelection = <T>(
   return next
 }
 
-const derivePageState = <T>(
-  items: T[],
-  isSelected: (item: T) => boolean,
-): SelectionPageState => {
-  if (items.length === 0) {
-    return 'none'
-  }
-  const selectedCount = items.filter(isSelected).length
-  if (selectedCount === 0) {
-    return 'none'
-  }
-  return selectedCount === items.length ? 'all' : 'some'
-}
-
 export function useSelection<T>({
   items,
   getId,
+  resetKey,
 }: UseSelectionOptions<T>): Selection<T> {
-  const [selectedMap, setSelectedMap] = useState<ReadonlyMap<string, T>>(
-    () => new Map(),
-  )
-  const anchorRef = useRef<string | null>(null)
+  const [state, setState] = useState(emptyState<T>)
+  const ids = useMemo(() => items.map(getId), [items, getId])
+
+  const [previousResetKey, setPreviousResetKey] = useState(resetKey)
+  if (resetKey !== previousResetKey) {
+    setPreviousResetKey(resetKey)
+    setState(emptyState())
+  }
+
+  const latest = useRef({ items, ids, getId })
+  latest.current = { items, ids, getId }
 
   const isSelected = useCallback(
-    (item: T) => selectedMap.has(getId(item)),
-    [selectedMap, getId],
+    (item: T) => state.map.has(getId(item)),
+    [state, getId],
   )
 
-  const toggle = useCallback(
-    (item: T, options?: { shiftKey?: boolean }) => {
-      const { targets, isRange, nextAnchorId } = resolveToggleTargets(
-        items,
-        getId,
-        item,
-        anchorRef.current,
-        options?.shiftKey ?? false,
-      )
-      const id = getId(item)
-      setSelectedMap((previous) =>
-        applySelection(previous, targets, isRange || !previous.has(id), getId),
-      )
-      anchorRef.current = nextAnchorId
-    },
-    [items, getId],
-  )
+  const toggle = useCallback((item: T, options?: { shiftKey?: boolean }) => {
+    const { items, ids, getId } = latest.current
+    const id = getId(item)
+    const index = ids.indexOf(id)
 
-  const setPageSelected = useCallback(
-    (selected: boolean) => {
-      setSelectedMap((previous) =>
-        applySelection(previous, items, selected, getId),
-      )
-    },
-    [items, getId],
-  )
+    setState((previous) => {
+      const anchorIndex =
+        previous.anchorId === null ? -1 : ids.indexOf(previous.anchorId)
+      const isRange =
+        Boolean(options?.shiftKey) && anchorIndex !== -1 && index !== -1
+      const targets = isRange
+        ? items.slice(
+            Math.min(anchorIndex, index),
+            Math.max(anchorIndex, index) + 1,
+          )
+        : [item]
 
-  const clear = useCallback(() => {
-    setSelectedMap(new Map())
-    anchorRef.current = null
+      return {
+        map: applySelection(
+          previous.map,
+          targets,
+          !previous.map.has(id),
+          getId,
+        ),
+        anchorId: isRange ? previous.anchorId : index === -1 ? null : id,
+      }
+    })
   }, [])
 
-  const selected = useMemo(
-    () => Array.from(selectedMap.values()),
-    [selectedMap],
-  )
+  const setPageSelected = useCallback((selected: boolean) => {
+    const { items, getId } = latest.current
+    setState((previous) => ({
+      ...previous,
+      map: applySelection(previous.map, items, selected, getId),
+    }))
+  }, [])
 
-  const pageState = useMemo(
-    () => derivePageState(items, isSelected),
-    [items, isSelected],
-  )
+  const clear = useCallback(() => setState(emptyState()), [])
+
+  const selected = useMemo(() => {
+    const onPage = new Map(ids.map((id, index) => [id, items[index]]))
+    return Array.from(state.map, ([id, item]) => onPage.get(id) ?? item)
+  }, [state, items, ids])
+
+  const pageState = useMemo((): SelectionPageState => {
+    if (ids.length === 0) {
+      return 'none'
+    }
+    let selectedCount = 0
+    for (const id of ids) {
+      if (state.map.has(id)) {
+        selectedCount++
+      }
+    }
+    if (selectedCount === 0) {
+      return 'none'
+    }
+    return selectedCount === ids.length ? 'all' : 'some'
+  }, [ids, state])
 
   return useMemo(
     () => ({

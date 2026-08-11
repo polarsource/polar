@@ -112,6 +112,12 @@ export const useUpdateCheckoutLink = () =>
         ['checkout_link', variables.id],
         result.data,
       )
+      queryClient.invalidateQueries({
+        queryKey: [
+          'checkout_links',
+          { organizationId: result.data.organization_id },
+        ],
+      })
     },
   })
 

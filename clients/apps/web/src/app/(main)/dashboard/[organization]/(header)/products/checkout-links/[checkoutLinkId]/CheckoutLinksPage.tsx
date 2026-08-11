@@ -1,6 +1,7 @@
 'use client'
 
 import { CheckoutLinkPage } from '@/components/CheckoutLinks/CheckoutLinkPage'
+import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
@@ -64,57 +65,64 @@ const ClientPage: React.FC<ClientPageProps> = ({
   }
 
   return (
-    <MasterDetailLayoutContent
-      header={
-        <Box width="100%" alignItems="center" justifyContent="between" gap="l">
-          <Truncated>
-            <Text variant="heading-xs" as="p">
-              {(checkoutLink.label?.length ?? 0) > 0
-                ? checkoutLink.label
-                : 'Untitled'}
-            </Text>
-          </Truncated>
+    <DashboardBody title={null} wrapperClassName="max-w-(--breakpoint-sm)">
+      <MasterDetailLayoutContent
+        header={
+          <Box
+            width="100%"
+            alignItems="center"
+            justifyContent="between"
+            gap="l"
+          >
+            <Truncated>
+              <Text variant="heading-xs" as="p">
+                {(checkoutLink.label?.length ?? 0) > 0
+                  ? checkoutLink.label
+                  : 'Untitled'}
+              </Text>
+            </Truncated>
 
-          <Box flexShrink={0} alignItems="center" gap="s">
-            <DropdownMenu>
-              <DropdownMenuTrigger className="focus:outline-none" asChild>
-                <Button
-                  size="icon"
-                  variant="secondary"
-                  loading={isDeletePending}
+            <Box flexShrink={0} alignItems="center" gap="s">
+              <DropdownMenu>
+                <DropdownMenuTrigger className="focus:outline-none" asChild>
+                  <Button
+                    size="icon"
+                    variant="secondary"
+                    loading={isDeletePending}
+                  >
+                    <MoreVertOutlined fontSize="inherit" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent
+                  align="end"
+                  className="dark:bg-polar-800 bg-gray-50 shadow-lg"
                 >
-                  <MoreVertOutlined fontSize="inherit" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent
-                align="end"
-                className="dark:bg-polar-800 bg-gray-50 shadow-lg"
-              >
-                <DropdownMenuItem destructive onClick={showDeleteModal}>
-                  Delete Checkout Link
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
+                  <DropdownMenuItem destructive onClick={showDeleteModal}>
+                    Delete Checkout Link
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            </Box>
           </Box>
-        </Box>
-      }
-    >
-      <div className="flex h-full w-full flex-col">
-        <div className="flex w-full flex-col gap-8 pb-8">
-          <CheckoutLinkPage checkoutLink={checkoutLink} />
+        }
+      >
+        <div className="flex h-full w-full flex-col">
+          <div className="flex w-full flex-col gap-8 pb-8">
+            <CheckoutLinkPage checkoutLink={checkoutLink} />
+          </div>
         </div>
-      </div>
-      <ConfirmModal
-        title="Confirm Deletion of Checkout Link"
-        description="It will cause 404 responses in case the link is still in use anywhere."
-        onConfirm={onDelete}
-        isShown={isDeleteModalShown}
-        hide={hideDeleteModal}
-        confirmPrompt={checkoutLink.label ?? ''}
-        destructiveText="Delete"
-        destructive
-      />
-    </MasterDetailLayoutContent>
+        <ConfirmModal
+          title="Confirm Deletion of Checkout Link"
+          description="It will cause 404 responses in case the link is still in use anywhere."
+          onConfirm={onDelete}
+          isShown={isDeleteModalShown}
+          hide={hideDeleteModal}
+          confirmPrompt={checkoutLink.label ?? ''}
+          destructiveText="Delete"
+          destructive
+        />
+      </MasterDetailLayoutContent>
+    </DashboardBody>
   )
 }
 

@@ -60,6 +60,7 @@ async def list(
     organization_id: MultipleQueryFilter[OrganizationID] | None = Query(
         None, title="OrganizationID Filter", description="Filter by organization ID."
     ),
+    query: str | None = Query(None, description="Filter by label."),
     product_id: MultipleQueryFilter[ProductID] | None = Query(
         None, title="ProductID Filter", description="Filter by product ID."
     ),
@@ -70,6 +71,7 @@ async def list(
         session,
         auth_subject,
         organization_id=organization_id,
+        query=query,
         product_id=product_id,
         pagination=pagination,
         sorting=sorting,

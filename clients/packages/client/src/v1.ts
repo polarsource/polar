@@ -47619,6 +47619,8 @@ export interface operations {
       query?: {
         /** @description Filter by organization ID. */
         organization_id?: string | string[] | null
+        /** @description Filter by label. */
+        query?: string | null
         /** @description Filter by product ID. */
         product_id?: string | string[] | null
         /** @description Page number, defaults to 1. */

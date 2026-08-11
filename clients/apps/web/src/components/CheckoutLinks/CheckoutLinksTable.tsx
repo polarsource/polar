@@ -4,13 +4,14 @@ import { CheckoutLinkManagementModal } from '@/components/CheckoutLinks/Checkout
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
-import { useCheckoutLinks, useDeleteCheckoutLink } from '@/hooks/queries'
+import { useCheckoutLinksPage, useDeleteCheckoutLink } from '@/hooks/queries'
 import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
+import { useDebouncedCallback } from '@/hooks/utils'
 import { extractApiErrorMessage } from '@/utils/api/errors'
-import { sortingStateToQueryParam } from '@/utils/datatable'
+import { getAPIParams } from '@/utils/datatable'
 import LinkOutlined from '@mui/icons-material/LinkOutlined'
 import { schemas } from '@polar-sh/client'
-import { Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
+import { Alert, Button, DataTable, InlineModal, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import {
   parseAsArrayOf,
@@ -19,7 +20,7 @@ import {
   useQueryState,
   useQueryStates,
 } from 'nuqs'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   getCheckoutLinkLabel,
   getCheckoutLinkTableColumns,
@@ -45,6 +46,7 @@ export const CheckoutLinksTable = ({
     })
   const [{ productId: productIds, query }, setFilters] =
     useQueryStates(filterParsers)
+  const [searchQuery, setSearchQuery] = useState(query ?? '')
   const [shouldCreateCheckoutLink, setShouldCreateCheckoutLink] = useQueryState(
     'create_checkout_link',
     parseAsBoolean.withDefault(false),
@@ -57,63 +59,19 @@ export const CheckoutLinksTable = ({
   const managementModal = useModal()
   const deleteModal = useModal()
   const { mutateAsync: deleteCheckoutLink } = useDeleteCheckoutLink()
-  const checkoutLinksQuery = useCheckoutLinks(organization.id, {
+  const checkoutLinksQuery = useCheckoutLinksPage(organization.id, {
+    ...getAPIParams(pagination, sorting),
     product_id: productIds ?? undefined,
-    sorting: sortingStateToQueryParam(sorting),
-    limit: 100,
+    query: query ?? undefined,
   })
+  const checkoutLinks = checkoutLinksQuery.data?.items ?? []
+  const rowCount = checkoutLinksQuery.data?.pagination.total_count ?? 0
+  const pageCount = checkoutLinksQuery.data?.pagination.max_page ?? 1
 
-  const {
-    data,
-    fetchNextPage,
-    hasNextPage,
-    isError,
-    isFetchingNextPage,
-    isLoading,
-  } = checkoutLinksQuery
-
-  useEffect(() => {
-    if (hasNextPage && !isFetchingNextPage && !isError) {
-      void fetchNextPage()
-    }
-  }, [fetchNextPage, hasNextPage, isError, isFetchingNextPage])
-
-  const checkoutLinks = useMemo(
-    () => data?.pages.flatMap((page) => page.items) ?? [],
-    [data],
-  )
-
-  const filteredCheckoutLinks = useMemo(() => {
-    const normalizedQuery = query?.trim().toLocaleLowerCase() ?? ''
-    const direction = sorting[0]?.desc ? -1 : 1
-
-    return checkoutLinks
-      .filter((checkoutLink) =>
-        getCheckoutLinkLabel(checkoutLink)
-          .toLocaleLowerCase()
-          .includes(normalizedQuery),
-      )
-      .toSorted((first, second) => {
-        const labelComparison = getCheckoutLinkLabel(first).localeCompare(
-          getCheckoutLinkLabel(second),
-          undefined,
-          { sensitivity: 'base' },
-        )
-        return (
-          direction * (labelComparison || first.id.localeCompare(second.id))
-        )
-      })
-  }, [checkoutLinks, query, sorting])
-
-  const pageCount = Math.max(
-    1,
-    Math.ceil(filteredCheckoutLinks.length / pagination.pageSize),
-  )
-  const pageStart = pagination.pageIndex * pagination.pageSize
-  const paginatedCheckoutLinks = filteredCheckoutLinks.slice(
-    pageStart,
-    pageStart + pagination.pageSize,
-  )
+  const debouncedQueryChange = useDebouncedCallback((value: string) => {
+    void setFilters({ query: value || null })
+    resetPage()
+  }, 500)
 
   const hideManagementModal = useCallback(() => {
     managementModal.hide()
@@ -168,20 +126,21 @@ export const CheckoutLinksTable = ({
   )
 
   const hasNoCheckoutLinks =
-    !isLoading &&
-    !hasNextPage &&
+    !checkoutLinksQuery.isLoading &&
+    !checkoutLinksQuery.isError &&
     checkoutLinks.length === 0 &&
-    !productIds?.length
+    !productIds?.length &&
+    !query
 
   return (
     <Box flexDirection="column" rowGap="xl">
       <CheckoutLinksTableToolbar
         organization={organization}
         productIds={productIds ?? []}
-        query={query ?? ''}
+        query={searchQuery}
         onQueryChange={(value) => {
-          void setFilters({ query: value || null })
-          resetPage()
+          setSearchQuery(value)
+          debouncedQueryChange(value)
         }}
         onProductIdsChange={(value) => {
           void setFilters({ productId: value.length > 0 ? value : null })
@@ -190,7 +149,19 @@ export const CheckoutLinksTable = ({
         onCreate={showCreateModal}
       />
 
-      {hasNoCheckoutLinks ? (
+      {checkoutLinksQuery.isError ? (
+        <Alert
+          variant="danger"
+          title="We couldn't load your checkout links"
+          description="Something went wrong. Please try again."
+          actions={[
+            {
+              text: 'Try again',
+              onClick: () => void checkoutLinksQuery.refetch(),
+            },
+          ]}
+        />
+      ) : hasNoCheckoutLinks ? (
         <Box
           flexDirection="column"
           alignItems="center"
@@ -213,14 +184,14 @@ export const CheckoutLinksTable = ({
       ) : (
         <DataTable
           columns={columns}
-          data={paginatedCheckoutLinks}
-          rowCount={filteredCheckoutLinks.length}
+          data={checkoutLinks}
+          rowCount={rowCount}
           pageCount={pageCount}
           pagination={pagination}
           onPaginationChange={setPagination}
           sorting={sorting}
           onSortingChange={setSorting}
-          isLoading={isLoading || Boolean(hasNextPage && !isError)}
+          isLoading={checkoutLinksQuery.isLoading}
         />
       )}
 

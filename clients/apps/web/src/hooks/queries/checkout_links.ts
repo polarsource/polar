@@ -1,8 +1,18 @@
 import { getQueryClient } from '@/utils/api/query'
 import { api } from '@/utils/client'
 import { operations, schemas, unwrap } from '@polar-sh/client'
-import { useInfiniteQuery, useMutation } from '@tanstack/react-query'
+import { useInfiniteQuery, useMutation, useQuery } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
+
+const invalidateCheckoutLinksQueries = (organizationId: string) => {
+  const queryClient = getQueryClient()
+  queryClient.invalidateQueries({
+    queryKey: ['checkout_links', { organizationId }],
+  })
+  queryClient.invalidateQueries({
+    queryKey: ['checkout_links_page', { organizationId }],
+  })
+}
 
 export const useCheckoutLinks = (
   organizationId: string,
@@ -39,6 +49,29 @@ export const useCheckoutLinks = (
     retry: defaultRetry,
   })
 
+export const useCheckoutLinksPage = (
+  organizationId: string,
+  parameters?: Omit<
+    NonNullable<operations['checkout-links:list']['parameters']['query']>,
+    'organization_id'
+  >,
+) =>
+  useQuery({
+    queryKey: [
+      'checkout_links_page',
+      { organizationId, ...(parameters || {}) },
+    ],
+    queryFn: () =>
+      unwrap(
+        api.GET('/v1/checkout-links/', {
+          params: {
+            query: { organization_id: organizationId, ...(parameters || {}) },
+          },
+        }),
+      ),
+    retry: defaultRetry,
+  })
+
 export const useCreateCheckoutLink = () =>
   useMutation({
     mutationFn: (body: schemas['CheckoutLinkCreateProducts']) => {
@@ -51,9 +84,7 @@ export const useCreateCheckoutLink = () =>
         return
       }
 
-      getQueryClient().invalidateQueries({
-        queryKey: ['checkout_links', { organizationId: data.organization_id }],
-      })
+      invalidateCheckoutLinksQueries(data.organization_id)
     },
   })
 
@@ -112,12 +143,7 @@ export const useUpdateCheckoutLink = () =>
         ['checkout_link', variables.id],
         result.data,
       )
-      queryClient.invalidateQueries({
-        queryKey: [
-          'checkout_links',
-          { organizationId: result.data.organization_id },
-        ],
-      })
+      invalidateCheckoutLinksQueries(result.data.organization_id)
     },
   })
 
@@ -169,5 +195,6 @@ export const useDeleteCheckoutLink = () =>
       queryClient.invalidateQueries({
         queryKey: ['checkout_link', variables.id],
       })
+      invalidateCheckoutLinksQueries(variables.organization_id)
     },
   })

@@ -53,6 +53,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
         auth_subject: AuthSubject[User | Organization],
         *,
         organization_id: Sequence[uuid.UUID] | None = None,
+        query: str | None = None,
         product_id: Sequence[uuid.UUID] | None = None,
         pagination: PaginationParams,
         sorting: list[Sorting[CheckoutLinkSortProperty]] = [
@@ -70,6 +71,9 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
             statement = statement.where(
                 CheckoutLink.organization_id.in_(organization_id)
             )
+
+        if query is not None:
+            statement = statement.where(CheckoutLink.label.ilike(f"%{query}%"))
 
         if product_id is not None:
             statement = statement.join(
@@ -93,7 +97,7 @@ class CheckoutLinkService(ResourceServiceReader[CheckoutLink]):
                 order_by_clauses.append(
                     clause_function(CheckoutLink.allow_discount_codes)
                 )
-        statement = statement.order_by(*order_by_clauses)
+        statement = statement.order_by(*order_by_clauses, CheckoutLink.id.asc())
 
         statement = statement.options(
             *repository.get_eager_options(

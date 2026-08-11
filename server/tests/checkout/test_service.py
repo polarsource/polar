@@ -5866,20 +5866,6 @@ class TestConfirm:
         organization: Organization,
         product: Product,
     ) -> None:
-        """The new customer must be persisted to the database *before* the Stripe
-        PaymentIntent is created and the card is charged.
-
-        This is the safety property that prevents the duplicate-email race from
-        charging a card for a checkout that will fail: with the customer flushed
-        eagerly, the unique constraint on email surfaces a duplicate *before*
-        ``create_payment_intent`` runs (``confirm=True`` charges the card).
-
-        The path under test carries a discount *without* a per-customer limit, so
-        the per-customer lock query (which would itself autoflush the customer) is
-        skipped. The only thing ensuring the flush happens before the charge is
-        ``create_context(flush=True)`` — making this a meaningful regression test
-        for the race described in the bug report.
-        """
         discount = await create_discount(
             save_fixture,
             type=DiscountType.fixed,
@@ -5907,17 +5893,10 @@ class TestConfirm:
             client_secret="CLIENT_SECRET", status="succeeded"
         )
 
-        # When the payment intent is created, the card is charged (confirm=True).
-        # Verify the customer is already persisted in the DB at that point: a
-        # pending (un-flushed) customer would mean the unique constraint on email
-        # is not yet enforced, so a concurrent duplicate-email confirmation could
-        # also charge before either transaction fails.
         seen_customer_states: list[bool] = []
 
         async def _capture_intent(*args: Any, **kwargs: Any) -> Any:
             assert checkout.customer is not None
-            # `persistent` == the row has been INSERTed (flushed). `pending` ==
-            # only held in the session identity map, not yet in the DB.
             state = orm_inspect(checkout.customer)
             seen_customer_states.append(state.persistent)
             return SimpleNamespace(client_secret="CLIENT_SECRET", status="succeeded")
@@ -5940,7 +5919,6 @@ class TestConfirm:
 
         assert confirmed.status == CheckoutStatus.confirmed
         assert stripe_service_mock.create_payment_intent.called
-        # The customer must be persisted (flushed) before the card is charged.
         assert seen_customer_states == [True]
 
     async def test_existing_email_external_id_provided(

@@ -2776,7 +2776,7 @@ class CheckoutService:
         }
 
         if created:
-            async with repository.create_context(customer, flush=False) as customer:
+            async with repository.create_context(customer, flush=True) as customer:
                 await member_service.create_owner_member(
                     session, customer, checkout.organization
                 )

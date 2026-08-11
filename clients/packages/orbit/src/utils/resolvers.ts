@@ -10,6 +10,8 @@ import type {
   BreakpointKey,
   DurationToken,
   EasingToken,
+  NegativeSpacingToken,
+  PositiveSpacingToken,
   ShadowToken,
   SpacingToken,
 } from '../tokens/value.stylex'
@@ -77,7 +79,12 @@ import {
   visibilityStyles,
 } from './box-styles'
 import { textAlignStyles } from './text-styles'
-import type { BoxStyleProps, PseudoState, ResponsiveValue } from './types'
+import type {
+  BoxStyleProps,
+  OffsetValue,
+  PseudoState,
+  ResponsiveValue,
+} from './types'
 
 const PSEUDO_SELECTOR_MAP: Record<PseudoState, string> = {
   hover: ':hover',
@@ -176,14 +183,33 @@ function sizeValue(v: string | number): string {
   return typeof v === 'number' ? px(v) : v
 }
 
+// Offsets (top/right/bottom/left/inset) accept spacing tokens — positive or
+// negative — alongside arbitrary lengths. Non-token strings pass through.
+function offsetCss(v: OffsetValue): string {
+  if (typeof v === 'number') return px(v)
+  if (isPositiveSpacingToken(v)) return spacing[v] as string
+  if (isNegativeSpacingToken(v)) return negativeSpacingCss(v)
+  return v
+}
+
 // Token transforms — at runtime, defineVars values are CSS variable references (e.g. "var(--xhash)")
 // which are valid CSS values for use in scoped responsive <style> tags.
+function isPositiveSpacingToken(value: string): value is PositiveSpacingToken {
+  return Object.prototype.hasOwnProperty.call(spacing, value)
+}
+function isNegativeSpacingToken(value: string): value is NegativeSpacingToken {
+  return value.startsWith('-') && isPositiveSpacingToken(value.slice(1))
+}
+function negativeSpacingCss(token: NegativeSpacingToken): string {
+  return `calc(${spacing[token.slice(1) as PositiveSpacingToken]} * -1)`
+}
 function spacingCss(token: SpacingToken): string {
-  return spacing[token] as string
+  if (isNegativeSpacingToken(token)) return negativeSpacingCss(token)
+  return spacing[token as PositiveSpacingToken] as string
 }
 function marginCss(token: SpacingToken | 'auto'): string {
   if (token === 'auto') return 'auto'
-  return spacing[token] as string
+  return spacingCss(token)
 }
 function backgroundColorCss(token: BackgroundColorToken): string {
   return backgroundColors[token] as string
@@ -629,11 +655,11 @@ export function resolveBoxStyles(
 
   // --- Position ---
   addTokenProp(positionStyles, 'position', props.position, (v) => v)
-  addArbitraryProp('top', props.top, sizeValue)
-  addArbitraryProp('right', props.right, sizeValue)
-  addArbitraryProp('bottom', props.bottom, sizeValue)
-  addArbitraryProp('left', props.left, sizeValue)
-  addArbitraryProp('inset', props.inset, sizeValue)
+  addArbitraryProp('top', props.top, offsetCss)
+  addArbitraryProp('right', props.right, offsetCss)
+  addArbitraryProp('bottom', props.bottom, offsetCss)
+  addArbitraryProp('left', props.left, offsetCss)
+  addArbitraryProp('inset', props.inset, offsetCss)
   addArbitraryProp('zIndex', props.zIndex, (v) => v)
 
   // --- Motion ---

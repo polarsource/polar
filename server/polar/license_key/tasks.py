@@ -55,15 +55,14 @@ async def sync_benefit_grant(license_key_id: uuid.UUID) -> None:
         benefit = await benefit_repository.get_by_id(
             grant.benefit_id,
             options=benefit_repository.get_eager_options(),
-            include_deleted=True,
+            include_deleted=revoke,
         )
-        assert benefit is not None
-
         customer_repository = CustomerRepository.from_session(session)
         customer = await customer_repository.get_by_id(
-            grant.customer_id, include_deleted=True
+            grant.customer_id, include_deleted=revoke
         )
-        assert customer is not None
+        if benefit is None or customer is None:
+            return
 
         member = None
         if grant.member_id is not None:

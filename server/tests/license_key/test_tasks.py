@@ -213,3 +213,55 @@ class TestSyncBenefitGrant:
 
         revoke_benefit_mock.assert_called_once()
         assert revoke_benefit_mock.call_args.kwargs["member"].id == member.id
+
+    async def test_deleted_customer_is_not_re_granted(
+        self,
+        grant_benefit_mock: AsyncMock,
+        revoke_benefit_mock: AsyncMock,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        license_key, grant = await _license_key_and_grant(
+            session, redis, save_fixture, customer, organization, product
+        )
+        grant.set_revoked()
+        await save_fixture(grant)
+        customer.set_deleted_at()
+        await save_fixture(customer)
+
+        session.expunge_all()
+
+        await sync_benefit_grant(license_key.id)
+
+        grant_benefit_mock.assert_not_called()
+        revoke_benefit_mock.assert_not_called()
+
+    async def test_deleted_customer_is_still_revoked(
+        self,
+        grant_benefit_mock: AsyncMock,
+        revoke_benefit_mock: AsyncMock,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        license_key, _ = await _license_key_and_grant(
+            session, redis, save_fixture, customer, organization, product
+        )
+        license_key.status = LicenseKeyStatus.revoked
+        await save_fixture(license_key)
+        customer.set_deleted_at()
+        await save_fixture(customer)
+
+        session.expunge_all()
+
+        await sync_benefit_grant(license_key.id)
+
+        revoke_benefit_mock.assert_called_once()
+        grant_benefit_mock.assert_not_called()

@@ -382,11 +382,6 @@ class SubscriptionRepository(
             ),
         )
 
-        # Dedup: NOT EXISTS in email_logs for this subscription + template.
-        # Match the date in either the current long format ("FMMonth FMDD, YYYY",
-        # e.g. "March 7, 2026") or the legacy "MM/DD/YYYY" format (e.g.
-        # "03/07/2026") so logs written before the format change still suppress
-        # re-sends. See commit ba82dff7b for the format change.
         old_format_match = EmailLog.email_props[
             "renewal_date"
         ].as_string() == sa.func.to_char(Subscription.current_period_end, "MM/DD/YYYY")
@@ -441,11 +436,6 @@ class SubscriptionRepository(
         one_day_from_now = now + timedelta(days=1)
         three_days_from_now = now + timedelta(days=3)
 
-        # Dedup: NOT EXISTS in email_logs for this subscription + template.
-        # Match the date in either the current long format ("FMMonth FMDD, YYYY",
-        # e.g. "March 7, 2026") or the legacy "MM/DD/YYYY" format (e.g.
-        # "03/07/2026") so logs written before the format change still suppress
-        # re-sends. See commit ba82dff7b for the format change.
         old_format_match = EmailLog.email_props[
             "conversion_date"
         ].as_string() == sa.func.to_char(Subscription.trial_end, "MM/DD/YYYY")

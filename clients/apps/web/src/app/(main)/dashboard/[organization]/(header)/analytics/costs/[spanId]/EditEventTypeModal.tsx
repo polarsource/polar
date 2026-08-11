@@ -80,15 +80,17 @@ export const EditEventTypeModal = ({
   return (
     <SyntaxHighlighterProvider>
       <div className="flex flex-col overflow-y-auto">
-        <InlineModalHeader className="pb-2" hide={hide}>
-          <h2 className="text-lg">Edit Event Type</h2>
+        <InlineModalHeader hide={hide}>
+          <div className="flex flex-col gap-1">
+            <h2 className="text-lg">Edit Event Type</h2>
+            <p className="dark:text-polar-500 text-sm font-normal text-gray-500">
+              {/* eslint-disable-next-line react/no-unescaped-entities */}
+              Update the display label for event type "{eventName}"
+            </p>
+          </div>
         </InlineModalHeader>
 
         <div className="flex flex-col gap-y-6 px-8 pb-10">
-          <p className="dark:text-polar-500 text-sm text-gray-500">
-            {/* eslint-disable-next-line react/no-unescaped-entities */}
-            Update the display label for event type "{eventName}"
-          </p>
           <Form {...form}>
             <form
               onSubmit={form.handleSubmit(onSubmit)}

@@ -69,7 +69,7 @@ export const MeterUpdateModal = ({
 
   return (
     <div className="flex flex-col overflow-y-auto">
-      <InlineModalHeader className="pb-2" hide={hide}>
+      <InlineModalHeader hide={hide}>
         <h2 className="text-lg">Edit Meter</h2>
       </InlineModalHeader>
       <div className="flex flex-col gap-8 px-8 pb-12">

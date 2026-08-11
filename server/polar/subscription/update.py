@@ -80,10 +80,7 @@ def _generate_product_credit_proration_billing_entries(
     )
 
     discount_amounts = [0] * len(priced_entries)
-    # The credited prices belong to the current (pre-update) product, so gate the
-    # discount on its applicability there. A discount restricted to another product
-    # must not be applied to the credit, otherwise a switch away from an ineligible
-    # product refunds less than was charged.
+
     if subscription.discount and subscription.discount.is_applicable(
         subscription.product, subscription.currency
     ):

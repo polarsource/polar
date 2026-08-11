@@ -21,6 +21,7 @@ from sqlalchemy import (
     Uuid,
     cast,
     event,
+    select,
     type_coerce,
 )
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
@@ -37,7 +38,9 @@ from polar.kit.metadata import MetadataMixin
 from polar.kit.utils import utc_now
 from polar.product.guard import is_metered_price
 
+from .product_price import ProductPrice
 from .subscription_meter import SubscriptionMeter
+from .subscription_product_price import SubscriptionProductPrice
 
 if TYPE_CHECKING:
     from . import (
@@ -51,8 +54,6 @@ if TYPE_CHECKING:
         Organization,
         PaymentMethod,
         Product,
-        ProductPrice,
-        SubscriptionProductPrice,
         SubscriptionUpdate,
     )
 
@@ -460,6 +461,40 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     def _billable_expression(cls) -> ColumnElement[bool]:
         return type_coerce(
             cls.status.in_(SubscriptionStatus.billable_statuses()),
+            Boolean,
+        )
+
+    @hybrid_property
+    def requires_payment_method(self) -> bool:
+        """Whether a payment method is still needed to bill this subscription."""
+        if not self.billable:
+            return False
+        if SubscriptionStatus.is_active(self.status) and self.cancel_at_period_end:
+            return any(is_metered_price(price) for price in self.prices)
+        return True
+
+    @requires_payment_method.inplace.expression
+    @classmethod
+    def _requires_payment_method_expression(cls) -> ColumnElement[bool]:
+        has_metered_price = (
+            select(SubscriptionProductPrice.subscription_id)
+            .join(
+                ProductPrice,
+                ProductPrice.id == SubscriptionProductPrice.product_price_id,
+            )
+            .where(
+                SubscriptionProductPrice.subscription_id == cls.id,
+                ProductPrice.is_metered,
+            )
+            .exists()
+        )
+        return type_coerce(
+            cls.status.in_(SubscriptionStatus.billable_statuses())
+            & (
+                ~cls.status.in_(SubscriptionStatus.active_statuses())
+                | cls.cancel_at_period_end.is_(False)
+                | has_metered_price
+            ),
             Boolean,
         )
 

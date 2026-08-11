@@ -22,6 +22,7 @@ from polar.postgres import AsyncSession
 from polar.redis import Redis
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.license_key import TestLicenseKey
+from tests.fixtures.random_objects import create_member
 
 
 async def _license_key_and_grant(
@@ -134,7 +135,7 @@ class TestSyncBenefitGrant:
         grant_benefit_mock.assert_called_once()
         revoke_benefit_mock.assert_not_called()
 
-    async def test_does_not_resurrect_a_key_revoked_after_enqueue(
+    async def test_revoked_key_with_revoked_grant_is_left_alone(
         self,
         grant_benefit_mock: AsyncMock,
         revoke_benefit_mock: AsyncMock,
@@ -181,3 +182,34 @@ class TestSyncBenefitGrant:
 
         grant_benefit_mock.assert_not_called()
         revoke_benefit_mock.assert_not_called()
+
+    async def test_soft_deleted_member_still_targets_the_same_grant(
+        self,
+        grant_benefit_mock: AsyncMock,
+        revoke_benefit_mock: AsyncMock,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        license_key, grant = await _license_key_and_grant(
+            session, redis, save_fixture, customer, organization, product
+        )
+        member = await create_member(
+            save_fixture, customer=customer, organization=organization
+        )
+        grant.member_id = member.id
+        await save_fixture(grant)
+        license_key.status = LicenseKeyStatus.revoked
+        await save_fixture(license_key)
+        member.set_deleted_at()
+        await save_fixture(member)
+
+        session.expunge_all()
+
+        await sync_benefit_grant(license_key.id)
+
+        revoke_benefit_mock.assert_called_once()
+        assert revoke_benefit_mock.call_args.kwargs["member"].id == member.id

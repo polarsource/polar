@@ -1,0 +1,25 @@
+server/polar/models/email_log.py
+  s_c5054fbf0e66cc::t_47a6f92717e863 5
+  s_c5054fbf0e66cc::t_83eed9e9a76bd7 20-28
+server/tests/email/test_repository.py
+  s_c5054fbf0e66cc::t_21dfba8a82016c 1-58
+server/migrations/versions/2026-08-11-1505_add_unique_index_on_email_logs_.py
+  s_c5054fbf0e66cc::t_a1e80b55fa4f3a 19,21,23-38,42-48
+  s_c5054fbf0e66cc::t_475c97c01117ab 1-18,20,22,39-41
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "a92216ede19476a6c3ebf25c0bcffdd2664376bb",
+  "prompts": {},
+  "sessions": {
+    "s_c5054fbf0e66cc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "95ebc085-e848-42ce-bb3e-9edb7778fff4",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

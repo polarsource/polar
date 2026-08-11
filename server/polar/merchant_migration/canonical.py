@@ -109,6 +109,16 @@ class CanonicalSubscription:
     # A discount/coupon on the source. Its amount isn't migrated yet, so importing
     # at list price would overcharge; such subscriptions are skipped for now.
     has_discount: bool = False
+    # The customer already asked to stop: the source won't renew it. Nothing left
+    # for Polar to take over, so the cutover leaves it where it is.
+    cancel_at_period_end: bool = False
+    # When the source trial ends, so the cutover can keep the subscription
+    # trialing on Polar until then instead of billing it early.
+    trial_end: datetime | None = None
+    # This migration already stopped it on the source. Set when re-reading at
+    # cutover, so a retry after a crash finishes the move instead of reading its
+    # own cancellation as the customer having churned.
+    stopped_for_migration: bool = False
 
     type = MerchantMigrationRecordType.subscription
 
@@ -188,6 +198,9 @@ def deserialize(
                 if payment_method is not None
                 else None,
                 has_discount=data.get("has_discount", False),
+                cancel_at_period_end=data.get("cancel_at_period_end", False),
+                trial_end=_parse_datetime(data.get("trial_end")),
+                stopped_for_migration=data.get("stopped_for_migration", False),
             )
         case _:
             raise ValueError(f"Cannot deserialize record of type {type}")

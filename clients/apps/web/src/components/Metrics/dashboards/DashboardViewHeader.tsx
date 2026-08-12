@@ -9,6 +9,7 @@ import {
   useMetricDashboards,
   useUpdateMetricDashboard,
 } from '@/hooks/queries/metrics'
+import { useHasPermission } from '@/hooks/permissions'
 import { getServerURL } from '@/utils/api'
 import { METRIC_GROUPS, toISODate } from '@/utils/metrics'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
@@ -99,6 +100,10 @@ export function DashboardViewActions({
   className,
 }: DashboardViewActionsProps) {
   const { isShown: isEditShown, show: showEdit, hide: hideEdit } = useModal()
+  const canManageAnalytics = useHasPermission(
+    organization.id,
+    'analytics:manage',
+  )
 
   const { interval, startDate, endDate, productId } = useMetricsFilters(
     earliestDateISOString,
@@ -147,7 +152,7 @@ export function DashboardViewActions({
 
   return (
     <div className={twMerge('flex items-center', className)}>
-      {isCustomDashboard && currentDashboard ? (
+      {isCustomDashboard && currentDashboard && canManageAnalytics ? (
         <DashboardDotMenu
           organization={organization}
           dashboard={currentDashboard}
@@ -157,7 +162,7 @@ export function DashboardViewActions({
       ) : (
         <ExportMenu onExport={handleExport} />
       )}
-      {currentDashboard && (
+      {currentDashboard && canManageAnalytics ? (
         <Modal
           title="Edit Dashboard"
           isShown={isEditShown}
@@ -170,7 +175,7 @@ export function DashboardViewActions({
             />
           }
         />
-      )}
+      ) : null}
     </div>
   )
 }

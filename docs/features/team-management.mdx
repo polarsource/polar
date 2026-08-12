@@ -15,29 +15,29 @@ Team management lives under [**Settings → Members**](https://polar.sh/to/dashb
 
 ## Roles
 
-Every member of an organization has one of three roles:
+Every member of an organization has one of four roles:
 
 | Role | Description |
 | --- | --- |
 | **Owner** | There is always exactly one owner per organization. Has the same permissions as an admin. |
 | **Admin** | Full access to the organization — including managing members, finances, and organization settings. |
+| **Finance** | Manages sales and can view financial, customer, product, custom-field, and analytics data without changing organization settings or payouts. |
 | **Member** | Operational access to day-to-day work (products, customers, orders, analytics) but cannot manage other members, finances, or organization settings. |
 
 ### Permissions
 
 The exact permissions granted by each role:
 
-| Permission | Member | Admin | Owner |
-| --- | :---: | :---: | :---: |
-| View & manage products | ✓ | ✓ | ✓ |
-| View & manage customers | ✓ | ✓ | ✓ |
-| View & manage custom fields | ✓ | ✓ | ✓ |
-| View & manage sales (orders, subscriptions, refunds) | ✓ | ✓ | ✓ |
-| View & manage analytics | ✓ | ✓ | ✓ |
-| View other members | ✓ | ✓ | ✓ |
-| Invite, remove & change member roles | | ✓ | ✓ |
-| View & manage finances (balance, payouts) | | ✓ | ✓ |
-| Manage organization settings (including webhooks & API keys) | | ✓ | ✓ |
+| Permission | Member | Finance | Admin | Owner |
+| --- | :---: | :---: | :---: | :---: |
+| View products, customers, custom fields & analytics | ✓ | ✓ | ✓ | ✓ |
+| Manage products, customers, custom fields & analytics | ✓ | | ✓ | ✓ |
+| View & manage sales (orders, subscriptions, refunds) | ✓ | ✓ | ✓ | ✓ |
+| View other members | ✓ | | ✓ | ✓ |
+| Invite, remove & change member roles | | | ✓ | ✓ |
+| View finances (balance, transactions, payout history) | | ✓ | ✓ | ✓ |
+| Manage finances and payouts | | | ✓ | ✓ |
+| Manage organization settings (including webhooks & API keys) | | | ✓ | ✓ |
 
 `owner` and `admin` carry the same permissions — the owner is distinguished by the fact that every organization always has exactly one, not by additional capabilities.
 
@@ -67,7 +67,7 @@ Only **admins** and **owners** can change roles.
 1. Go to [**Settings → Members**](https://polar.sh/to/dashboard/settings/members).
 2. Click the **⋯** menu on the member's row.
 3. Choose **Change role**.
-4. Select **Admin** or **Member** and click **Save**.
+4. Select **Admin**, **Finance**, or **Member** and click **Save**.
 
 The role picker shows a side-by-side permissions matrix so you can confirm what each role grants before saving.
 

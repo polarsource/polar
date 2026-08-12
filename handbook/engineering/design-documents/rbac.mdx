@@ -108,7 +108,7 @@ A small helper inside the authorization policy layer already centralises today's
 - **Organization deletion** — delete the org. Gated by `organizations:delete` (split from `organizations:write`).
 - **Payout-account selection** — choose or change which `PayoutAccount` this org is paid out to (i.e. set `Organization.payout_account_id`). Gated by `organizations:manage_payout_account` (split from `organizations:write`). This is *not* the same as managing a Stripe Connect account; that remains gated by `PayoutAccount.admin_id`.
 
-Replacing the body of that helper with a permission check flips all three at once. The **Finance** policies (transactions, payouts, wallets, disputes) make the same `Account.admin_id` check directly without going through the helper, and switch to the corresponding permission check too (`transactions:*`, `payouts:*`, `wallets:*`, `disputes:read` — admin-only on the role-permission side). Billing-info edits on the org's `Account` (legal name, address, etc.) are not a separate Finance gate; they piggyback on `organizations:edit_settings`, which is admin-only by role-permission assignment.
+Replacing the body of that helper with a permission check flips all three at once. The **Finance** policies switch to the corresponding role-permission check too. The `finance` role receives `finance:read`, while `finance:manage` remains limited to `owner` and `admin`. Billing-info edits on the org's `Account` (legal name, address, etc.) piggyback on `organization:manage`, which is admin-only by role-permission assignment.
 
 The **payout-account** policies (operations on a specific `PayoutAccount` itself: onboarding link, dashboard link, delete) check `PayoutAccount.admin_id` and **do not move**. A `PayoutAccount` can be linked to multiple organizations (a real feature), so the legal Stripe-side owner is not a per-org concept; routing those checks through org-role would let any admin of any consuming org reach into a Stripe identity that isn't theirs.
 
@@ -170,11 +170,11 @@ The diagram changes nothing structurally from today; only the *content* of the p
 
 Endpoints whose authorization already routes through the central authorization helper gain permission-based behaviour automatically when that helper is updated (its body switches from an `Account.admin_id` check to the permission intersection check). This covers member listing, invite, removal, organization deletion, and finance/payout endpoints.
 
-A net-new endpoint changes a member's role: `PATCH /v1/organizations/{id}/members/{user_id}` with a `role` body, guarded by the `members:set_role` permission. Only `admin` and `member` are accepted in the body; transitions to or from `owner` are rejected by this endpoint and flow exclusively through the ownership-transfer path (today: backoffice `change_admin`, which mutates `Account.admin_id` and the role together; post-phase-6, the same backoffice flow mutates the role directly with the KYC gate inline). The members listing response gains a `role` field. The pre-existing `is_admin` boolean on that response becomes a transitional alias for `role ∈ {owner, admin}` and is removed once the dashboard has migrated.
+A net-new endpoint changes a member's role: `PATCH /v1/organizations/{id}/members/{user_id}` with a `role` body, guarded by the `members:set_role` permission. `admin`, `finance`, and `member` are accepted in the body; transitions to or from `owner` are rejected by this endpoint and flow exclusively through the ownership-transfer path. The members listing response gains a `role` field.
 
 ## Frontend
 
-The dashboard's auth context gains role information per organization, populated from the existing per-user organizations endpoint augmented to include `role`. Two small hooks live on top: one returns the user's role in a given org, and one answers a permission question (`hasPermission(perm, org)`). The permission hook reuses the same `scope → implied_permissions` and `role → permissions` tables the backend uses, generated from a single source. The backend remains the source of truth on every request.
+The dashboard's auth context gains role and permission information per organization, populated from the existing per-user organizations endpoint. A permission hook answers `hasPermission(perm, org)` from that server-provided permission set. The backend remains the source of truth on every request.
 
 The Settings → Members UI uses these hooks to render a role-change control on each row (gated by `members:set_role`), to disable destructive controls when the action would leave the org without anyone holding admin permissions, and to surface the policy denial message verbatim. The `owner` row renders the role-change control disabled (with a tooltip pointing to support) and its remove-member affordance disabled. Pages currently gated on the implicit "is admin" check (Finance) move to the new permission hook.
 
@@ -223,7 +223,7 @@ A pre-deploy verification asserts that every pre-existing `Account.admin_id` use
 
 ### Phase 4 — Frontend adopts role
 
-The dashboard reads `role` directly via the new hooks, gates UI controls on the permission helper, and displays policy denial messages from the backend. The permission tables consumed by the hook are generated from the backend source (the same Phase 1 tables) into a TypeScript artefact at build time, so the two cannot drift. The backend continues to return both `role` and the legacy `is_admin` field, so any browser tab still on the previous bundle is unaffected.
+The dashboard reads the role and resolved permissions returned by the backend, gates UI controls on the permission helper, and displays policy denial messages from the backend. Dashboard routes remain visible in navigation; server layouts render a restricted state when the user lacks the required permission.
 
 ### Phase 5 — Frontend cleanup
 

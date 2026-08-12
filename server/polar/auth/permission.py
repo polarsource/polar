@@ -53,7 +53,8 @@ class OrganizationPermission(StrEnum):
     # `analytics:read` / `analytics:manage`.
     events_ingest = "events:ingest"
 
-    # Finance — admin-only.
+    # Finance — read access is also granted to the finance role; management is
+    # reserved for admins and owners.
     finance_read = "finance:read"
     finance_manage = "finance:manage"
 

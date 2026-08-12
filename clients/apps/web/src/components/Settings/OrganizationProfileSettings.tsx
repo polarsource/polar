@@ -458,7 +458,7 @@ const OrganizationProfileSettings: React.FC<
       ...organization,
     },
   })
-  const { setError, reset } = form
+  const { setError } = form
 
   const { currentUser } = useAuth()
 
@@ -511,16 +511,16 @@ const OrganizationProfileSettings: React.FC<
       return
     }
 
-    reset({
+    // Refresh the router to get the updated organization data from the server
+    router.refresh()
+
+    return {
       ...data,
       default_presentment_currency:
         data.default_presentment_currency as schemas['PresentmentCurrency'],
       country: data.country as schemas['CountryAlpha2Input'] | undefined,
       socials: [...(data.socials || []), ...emptySocials],
-    })
-
-    // Refresh the router to get the updated organization data from the server
-    router.refresh()
+    }
   }
 
   useAutoSave({

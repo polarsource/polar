@@ -36,7 +36,7 @@ const OrganizationCustomerPortalSettings: React.FC<
       },
     },
   })
-  const { control, setError, reset } = form
+  const { control, setError } = form
 
   const updateOrganization = useUpdateOrganization()
   const onSave = async (
@@ -64,7 +64,7 @@ const OrganizationCustomerPortalSettings: React.FC<
       return
     }
 
-    reset(data.customer_portal_settings)
+    return data.customer_portal_settings
   }
 
   useAutoSave({

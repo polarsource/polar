@@ -28,7 +28,7 @@ const OrganizationSubscriptionSettings: React.FC<
   const form = useForm<schemas['OrganizationSubscriptionSettings']>({
     defaultValues: organization.subscription_settings,
   })
-  const { control, setError, reset } = form
+  const { control, setError } = form
 
   const updateOrganization = useUpdateOrganization()
   const onSave = async (
@@ -56,7 +56,7 @@ const OrganizationSubscriptionSettings: React.FC<
       return
     }
 
-    reset(data.subscription_settings)
+    return data.subscription_settings
   }
 
   useAutoSave({

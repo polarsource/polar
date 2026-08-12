@@ -54,7 +54,7 @@ const OrganizationPaymentSettings: React.FC<
       default_tax_behavior: organization.default_tax_behavior,
     },
   })
-  const { control, setError, reset } = form
+  const { control, setError } = form
 
   const updateOrganization = useUpdateOrganization()
   const onSave = async (body: FormSchema) => {
@@ -72,11 +72,11 @@ const OrganizationPaymentSettings: React.FC<
       return
     }
 
-    reset({
+    return {
       ...data,
       default_presentment_currency:
         data.default_presentment_currency as schemas['PresentmentCurrency'],
-    })
+    }
   }
 
   useAutoSave({

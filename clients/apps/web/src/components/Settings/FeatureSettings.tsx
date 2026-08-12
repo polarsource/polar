@@ -22,7 +22,7 @@ export default function FeatureSettings({
   const form = useForm<schemas['OrganizationFeatureSettings']>({
     defaultValues: organization.feature_settings || {},
   })
-  const { control, setError, reset } = form
+  const { control, setError } = form
 
   const updateOrganization = useUpdateOrganization()
   const onSave = async (
@@ -48,11 +48,9 @@ export default function FeatureSettings({
       })
 
       return
-    } else {
-      if (data?.feature_settings) {
-        reset(data.feature_settings)
-      }
     }
+
+    return data.feature_settings ?? undefined
   }
 
   useAutoSave({

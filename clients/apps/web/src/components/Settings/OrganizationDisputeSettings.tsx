@@ -33,7 +33,7 @@ const OrganizationDisputeSettings: React.FC<
   const form = useForm<schemas['OrganizationDisputeSettings']>({
     defaultValues: organization.dispute_settings,
   })
-  const { control, setError, setValue, clearErrors, reset } = form
+  const { control, setError, setValue, clearErrors } = form
   const [enabled, setEnabled] = React.useState(
     organization.dispute_settings.auto_accept_below_amount !== null,
   )
@@ -70,7 +70,7 @@ const OrganizationDisputeSettings: React.FC<
       return
     }
 
-    reset(data.dispute_settings)
+    return data.dispute_settings
   }
 
   useAutoSave({

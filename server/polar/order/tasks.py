@@ -310,6 +310,12 @@ async def process_stale_payment_lock(order_id: uuid.UUID) -> None:
             log.info("Order payment lock is not stale, skipping", order_id=order.id)
             return
 
+        log.warning(
+            "Releasing stale payment lock",
+            order_id=order.id,
+            payment_lock_acquired_at=order.payment_lock_acquired_at,
+        )
+
         # Treat stale payment locks as manual retry payment failures,
         # so the lock is released, but the dunning sequence is untouched.
         await order_service.handle_payment_failure(session, order, skip_dunning=True)

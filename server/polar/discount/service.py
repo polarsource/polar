@@ -266,9 +266,9 @@ class DiscountService(ResourceServiceReader[Discount]):
 
         if discount.redemptions_count > 0:
             forbidden_fields = (
-                {"amount", "currency", "amounts"}
+                {"amount", "currency", "amounts", "duration_in_months"}
                 if isinstance(discount, DiscountFixed)
-                else {"basis_points"}
+                else {"basis_points", "duration_in_months"}
             )
             for field in forbidden_fields:
                 if field in discount_update.model_fields_set:

@@ -306,6 +306,56 @@ class TestUpdate:
                 auth_subject=auth_subject,
             )
 
+    @pytest.mark.parametrize("type", [DiscountType.fixed, DiscountType.percentage])
+    @pytest.mark.auth
+    async def test_update_duration_in_months_with_redemptions(
+        self,
+        auth_subject: AuthSubject[User],
+        user_organization: UserOrganization,
+        type: DiscountType,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount: Discount
+        if type == DiscountType.fixed:
+            discount = await create_discount(
+                save_fixture,
+                type=DiscountType.fixed,
+                amounts={"usd": 5000},
+                duration=DiscountDuration.repeating,
+                duration_in_months=3,
+                organization=organization,
+            )
+        else:
+            discount = await create_discount(
+                save_fixture,
+                type=DiscountType.percentage,
+                basis_points=5000,
+                duration=DiscountDuration.repeating,
+                duration_in_months=3,
+                organization=organization,
+            )
+        checkout = await create_checkout(save_fixture, products=[product])
+        await create_discount_redemption(
+            save_fixture, discount=discount, checkout=checkout
+        )
+        await session.refresh(discount, ["organization", "redemptions_count"])
+
+        with pytest.raises(PolarRequestValidationError) as exc_info:
+            await discount_service.update(
+                session,
+                discount,
+                discount_update=DiscountUpdate(duration_in_months=1),
+                auth_subject=auth_subject,
+            )
+
+        assert exc_info.value.errors()[0]["loc"] == (
+            "body",
+            "duration_in_months",
+        )
+
     @pytest.mark.parametrize(
         "field",
         [

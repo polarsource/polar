@@ -2911,6 +2911,24 @@ class TestCheckoutLinkCreate:
 
         assert checkout.discount is None
 
+    async def test_query_prefill_customer_email_invalid(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        product_one_time: Product,
+    ) -> None:
+        checkout_link = await create_checkout_link(
+            save_fixture, products=[product_one_time]
+        )
+
+        checkout = await checkout_service.checkout_link_create(
+            session,
+            checkout_link,
+            query_prefill={"customer_email": "not-an-email"},
+        )
+
+        assert checkout.customer_email is None
+
     async def test_query_prefill_amount_custom_price(
         self,
         save_fixture: SaveFixture,

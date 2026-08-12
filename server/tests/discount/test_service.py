@@ -1448,6 +1448,32 @@ class TestCheckPerCustomerLimitReached:
             is False
         )
 
+    async def test_invalid_checkout_email_is_ignored(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        organization: Organization,
+        product: Product,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.fixed,
+            amounts={"usd": 1000},
+            duration=DiscountDuration.once,
+            organization=organization,
+            max_redemptions_per_customer=1,
+        )
+        current_checkout = await create_checkout(save_fixture, products=[product])
+        current_checkout.customer_email = "not-an-email"
+        await save_fixture(current_checkout)
+
+        assert (
+            await discount_service.check_per_customer_limit_reached(
+                session, discount, checkout=current_checkout
+            )
+            is False
+        )
+
 
 @pytest.mark.asyncio
 class TestRedeemDiscount:

@@ -17,6 +17,7 @@ _email_dns_resolver = caching_resolver()
 validate_email = functools.partial(
     _validate_email, check_deliverability=True, dns_resolver=_email_dns_resolver
 )
+validate_email_syntax = functools.partial(_validate_email, check_deliverability=False)
 
 
 def _validate_email_dns(email: str) -> str:
@@ -41,8 +42,14 @@ def unalias_email(email: str) -> str:
     For example, `pieter+123@polar.sh` becomes `pieter@polar.sh`. The domain is
     preserved as-is. Used to compare email addresses while ignoring sub-addressing.
     """
-    parsed = _validate_email(email, check_deliverability=False)
+    parsed = validate_email_syntax(email)
     return f"{parsed.local_part.split('+', 1)[0]}@{parsed.domain}"
 
 
-__all__ = ["EmailNotValidError", "EmailStrDNS", "unalias_email", "validate_email"]
+__all__ = [
+    "EmailNotValidError",
+    "EmailStrDNS",
+    "unalias_email",
+    "validate_email",
+    "validate_email_syntax",
+]

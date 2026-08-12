@@ -20,7 +20,7 @@ from polar.discount.repository import (
 )
 from polar.exceptions import PolarError, PolarRequestValidationError
 from polar.kit.db.locking import is_lock_not_available_error
-from polar.kit.email import unalias_email
+from polar.kit.email import EmailNotValidError, unalias_email
 from polar.kit.pagination import PaginationParams, paginate
 from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
@@ -483,12 +483,17 @@ class DiscountService(ResourceServiceReader[Discount]):
             else checkout.customer_email
         )
 
+        try:
+            customer_email = unalias_email(email).lower() if email else None
+        except EmailNotValidError:
+            customer_email = None
+
         repository = DiscountRedemptionRepository.from_session(session)
         count = await repository.count_redemptions_by_customer(
             discount.id,
             exclude_checkout_id=checkout.id,
             customer_id=customer_id,
-            customer_email=unalias_email(email).lower() if email else None,
+            customer_email=customer_email,
             payment_method_fingerprint=payment_method_fingerprint,
         )
         return count >= discount.max_redemptions_per_customer

@@ -43,7 +43,7 @@ class DiscountRepository(RepositoryBase[Discount], RepositoryIDMixin[Discount, U
             .where(
                 func.upper(Discount.code) == code.upper(),
                 Discount.organization_id == organization_id,
-                Discount.is_deleted.is_(False),
+                ~Discount.is_deleted,
             )
             .with_for_update(nowait=nowait)
             .options(raiseload(Discount.organization))

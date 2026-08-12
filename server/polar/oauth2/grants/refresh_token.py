@@ -69,7 +69,7 @@ class RefreshTokenGrant(_RefreshTokenGrant):
             .join(UserOrganization, UserOrganization.user_id == User.id)
             .where(
                 UserOrganization.organization_id == organization_id,
-                UserOrganization.is_deleted.is_(False),
+                ~UserOrganization.is_deleted,
             )
         )
         members = (

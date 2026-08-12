@@ -499,7 +499,7 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
                 cls.status.in_(SubscriptionStatus.billable_statuses())
                 & (
                     ~cls.status.in_(SubscriptionStatus.active_statuses())
-                    | cls.cancel_at_period_end.is_(False)
+                    | ~cls.cancel_at_period_end
                     | has_metered_price
                 )
             ),

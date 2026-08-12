@@ -2535,7 +2535,7 @@ class CheckoutService:
             .join(Product, onclause=Product.id == Subscription.product_id)
             .where(
                 Product.organization_id == organization.id,
-                Subscription.billable.is_(True),
+                Subscription.billable,
             )
         )
         if checkout.customer is not None:
@@ -2547,7 +2547,7 @@ class CheckoutService:
                 Customer, onclause=Customer.id == Subscription.customer_id
             ).where(
                 func.lower(Customer.email) == checkout.customer_email.lower(),
-                Customer.is_deleted.is_(False),
+                ~Customer.is_deleted,
             )
 
         result = await session.execute(statement)

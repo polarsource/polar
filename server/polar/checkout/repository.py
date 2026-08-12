@@ -77,7 +77,7 @@ class CheckoutRepository(
         statement = (
             update(Checkout)
             .where(
-                Checkout.is_deleted.is_(False),
+                ~Checkout.is_deleted,
                 Checkout.expires_at <= utc_now(),
                 Checkout.status == CheckoutStatus.open,
             )
@@ -91,7 +91,7 @@ class CheckoutRepository(
         statement = select(
             select(Checkout.id)
             .where(
-                Checkout.is_deleted.is_(False),
+                ~Checkout.is_deleted,
                 Checkout.organization_id == organization_id,
                 Checkout.embed_origin.is_not(None),
             )
@@ -110,7 +110,7 @@ class CheckoutRepository(
                 func.max(Checkout.created_at).label("last_seen_at"),
             )
             .where(
-                Checkout.is_deleted.is_(False),
+                ~Checkout.is_deleted,
                 Checkout.organization_id == organization_id,
                 Checkout.embed_origin.is_not(None),
                 Checkout.created_at >= since,

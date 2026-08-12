@@ -55,7 +55,7 @@ class FileRepository(
         """Get paginated files for an organization, optionally filtered by service type."""
         statement = self.get_base_statement().where(
             File.organization_id == organization_id,
-            File.is_uploaded.is_(True),
+            File.is_uploaded,
         )
 
         if service is not None:

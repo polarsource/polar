@@ -29,9 +29,9 @@ class MemberSessionRepository(
             .join(Member.customer)
             .where(
                 MemberSession.token == token_hash,
-                MemberSession.is_deleted.is_(False),
-                Member.is_deleted.is_(False),
-                Customer.can_authenticate.is_(True),
+                ~MemberSession.is_deleted,
+                ~Member.is_deleted,
+                Customer.can_authenticate,
             )
             .options(
                 contains_eager(MemberSession.member)

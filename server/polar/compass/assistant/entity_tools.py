@@ -401,7 +401,7 @@ async def list_products(
     count = await product_repository.count(
         product_repository.get_base_statement().where(
             Product.organization_id == deps.organization_id,
-            Product.is_archived.is_(False),
+            ~Product.is_archived,
         )
     )
     rows: list[Row] = [

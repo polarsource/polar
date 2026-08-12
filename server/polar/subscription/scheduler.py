@@ -174,9 +174,9 @@ class SubscriptionJobStore(_SubscriptionScheduleJobStore):
             .join(Customer, onclause=Customer.id == Subscription.customer_id)
             .join(Organization, onclause=Organization.id == Customer.organization_id)
             .where(
-                Customer.is_deleted.is_(False),
-                Organization.is_deleted.is_(False),
-                Organization.can_renew_subscriptions.is_(True),
+                ~Customer.is_deleted,
+                ~Organization.is_deleted,
+                Organization.can_renew_subscriptions,
                 Subscription.scheduler_locked_at.is_(None),
                 Subscription.active,
                 Subscription.current_period_end.is_not(None),
@@ -204,9 +204,9 @@ class SubscriptionResumeJobStore(_SubscriptionScheduleJobStore):
             .join(Customer, onclause=Customer.id == Subscription.customer_id)
             .join(Organization, onclause=Organization.id == Customer.organization_id)
             .where(
-                Customer.is_deleted.is_(False),
-                Organization.is_deleted.is_(False),
-                Organization.can_renew_subscriptions.is_(True),
+                ~Customer.is_deleted,
+                ~Organization.is_deleted,
+                Organization.can_renew_subscriptions,
                 Subscription.scheduler_locked_at.is_(None),
                 Subscription.status == SubscriptionStatus.paused,
                 Subscription.resumes_at.is_not(None),

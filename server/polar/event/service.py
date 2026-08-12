@@ -1243,7 +1243,7 @@ class EventService:
             allowed_customers: set[uuid.UUID] = set()
         else:
             statement = select(Customer.id).where(
-                Customer.is_deleted.is_(False),
+                ~Customer.is_deleted,
                 Customer.id.in_(customer_ids),
             )
             if is_user(auth_subject):
@@ -1286,7 +1286,7 @@ class EventService:
             allowed_members: set[uuid.UUID] = set()
         else:
             statement = select(Member.id).where(
-                Member.is_deleted.is_(False),
+                ~Member.is_deleted,
                 Member.id.in_(member_ids),
             )
             if is_user(auth_subject):

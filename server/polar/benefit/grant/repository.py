@@ -58,7 +58,7 @@ class BenefitGrantRepository(
             BenefitGrant.customer_id == customer.id,
             BenefitGrant.benefit_id == benefit.id,
             BenefitGrant.member_id == (member.id if member else None),
-            BenefitGrant.is_deleted.is_(False),
+            ~BenefitGrant.is_deleted,
             BenefitGrant.scope == scope,
         )
         if for_update:
@@ -70,8 +70,8 @@ class BenefitGrantRepository(
     ) -> Sequence[BenefitGrant]:
         statement = self.get_base_statement().where(
             BenefitGrant.scope == scope,
-            BenefitGrant.is_granted.is_(True),
-            BenefitGrant.is_deleted.is_(False),
+            BenefitGrant.is_granted,
+            ~BenefitGrant.is_deleted,
         )
         return await self.get_all(statement)
 
@@ -85,8 +85,8 @@ class BenefitGrantRepository(
             self.get_base_statement()
             .where(
                 BenefitGrant.benefit_id == benefit.id,
-                BenefitGrant.is_granted.is_(True),
-                BenefitGrant.is_deleted.is_(False),
+                BenefitGrant.is_granted,
+                ~BenefitGrant.is_deleted,
             )
             .options(*options)
         )
@@ -102,8 +102,8 @@ class BenefitGrantRepository(
             self.get_base_statement()
             .where(
                 BenefitGrant.customer_id == customer_id,
-                BenefitGrant.is_granted.is_(True),
-                BenefitGrant.is_deleted.is_(False),
+                BenefitGrant.is_granted,
+                ~BenefitGrant.is_deleted,
             )
             .options(*options)
         )
@@ -132,8 +132,8 @@ class BenefitGrantRepository(
             self.get_base_statement()
             .where(
                 BenefitGrant.member_id == member_id,
-                BenefitGrant.is_granted.is_(True),
-                BenefitGrant.is_deleted.is_(False),
+                BenefitGrant.is_granted,
+                ~BenefitGrant.is_deleted,
             )
             .options(*options)
         )
@@ -151,8 +151,8 @@ class BenefitGrantRepository(
             .where(
                 BenefitGrant.benefit_id == benefit.id,
                 BenefitGrant.customer_id == customer.id,
-                BenefitGrant.is_granted.is_(True),
-                BenefitGrant.is_deleted.is_(False),
+                BenefitGrant.is_granted,
+                ~BenefitGrant.is_deleted,
             )
             .options(*options)
         )
@@ -170,9 +170,9 @@ class BenefitGrantRepository(
             .where(
                 BenefitGrant.customer_id == customer.id,
                 Benefit.type == benefit_type,
-                BenefitGrant.is_granted.is_(False),
-                BenefitGrant.is_revoked.is_(False),
-                BenefitGrant.is_deleted.is_(False),
+                ~BenefitGrant.is_granted,
+                ~BenefitGrant.is_revoked,
+                ~BenefitGrant.is_deleted,
                 BenefitGrant.error.is_not(None),
                 BenefitGrant.error["type"].as_string() == error_type,
             )
@@ -191,9 +191,9 @@ class BenefitGrantRepository(
             .where(
                 BenefitGrant.member_id == member.id,
                 Benefit.type == benefit_type,
-                BenefitGrant.is_granted.is_(False),
-                BenefitGrant.is_revoked.is_(False),
-                BenefitGrant.is_deleted.is_(False),
+                ~BenefitGrant.is_granted,
+                ~BenefitGrant.is_revoked,
+                ~BenefitGrant.is_deleted,
                 BenefitGrant.error.is_not(None),
                 BenefitGrant.error["type"].as_string() == error_type,
             )
@@ -208,7 +208,7 @@ class BenefitGrantRepository(
         statement = self.get_base_statement().where(
             BenefitGrant.customer_id == customer.id,
             BenefitGrant.scope == scope,
-            BenefitGrant.is_deleted.is_(False),
+            ~BenefitGrant.is_deleted,
         )
         return await self.get_all(statement)
 
@@ -220,7 +220,7 @@ class BenefitGrantRepository(
         statement = self.get_base_statement().where(
             BenefitGrant.member_id == member.id,
             BenefitGrant.scope == scope,
-            BenefitGrant.is_deleted.is_(False),
+            ~BenefitGrant.is_deleted,
         )
         return await self.get_all(statement)
 
@@ -288,8 +288,8 @@ class BenefitGrantRepository(
             .where(
                 BenefitGrant.properties[key].as_string() == value,
                 Benefit.organization_id == organization_id,
-                BenefitGrant.is_granted.is_(True),
-                BenefitGrant.is_deleted.is_(False),
+                BenefitGrant.is_granted,
+                ~BenefitGrant.is_deleted,
             )
         )
         result = await self.session.execute(statement)
@@ -306,8 +306,8 @@ class BenefitGrantRepository(
         statement = self.get_base_statement().where(
             BenefitGrant.scope == scope,
             BenefitGrant.benefit_id.not_in(product_benefits_statement),
-            BenefitGrant.is_granted.is_(True),
-            BenefitGrant.is_deleted.is_(False),
+            BenefitGrant.is_granted,
+            ~BenefitGrant.is_deleted,
         )
         return await self.get_all(statement)
 

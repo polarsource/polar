@@ -37,7 +37,7 @@ class PaymentRepository(
         statement = (
             self.get_base_statement()
             .join(Order, Payment.order_id == Order.id)
-            .where(Order.is_deleted.is_(False), Order.customer_id == customer_id)
+            .where(~Order.is_deleted, Order.customer_id == customer_id)
         )
         if status is not None:
             statement = statement.where(Payment.status == status)

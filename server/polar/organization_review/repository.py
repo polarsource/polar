@@ -73,7 +73,7 @@ class OrganizationReviewRepository(
             select(OrganizationAgentReview)
             .where(
                 OrganizationAgentReview.organization_id == organization_id,
-                OrganizationAgentReview.is_deleted.is_(False),
+                ~OrganizationAgentReview.is_deleted,
             )
             .order_by(OrganizationAgentReview.reviewed_at.desc())
             .limit(1)
@@ -93,7 +93,7 @@ class OrganizationReviewRepository(
             select(OrganizationAgentReview)
             .where(
                 OrganizationAgentReview.organization_id == organization_id,
-                OrganizationAgentReview.is_deleted.is_(False),
+                ~OrganizationAgentReview.is_deleted,
             )
             .options(
                 selectinload(OrganizationAgentReview.review_feedbacks).joinedload(
@@ -114,9 +114,7 @@ class OrganizationReviewRepository(
                 Organization,
                 onclause=Organization.payout_account_id == PayoutAccount.id,
             )
-            .where(
-                Organization.id == organization_id, PayoutAccount.is_deleted.is_(False)
-            )
+            .where(Organization.id == organization_id, ~PayoutAccount.is_deleted)
             .options(joinedload(PayoutAccount.admin))
         )
         result = await self.session.execute(statement)
@@ -127,8 +125,8 @@ class OrganizationReviewRepository(
             select(Product)
             .where(
                 Product.organization_id == organization_id,
-                Product.is_archived.is_(False),
-                Product.is_deleted.is_(False),
+                ~Product.is_archived,
+                ~Product.is_deleted,
             )
             .options(selectinload(Product.prices))
         )
@@ -143,7 +141,7 @@ class OrganizationReviewRepository(
             .where(
                 Product.organization_id == organization_id,
                 ProductPrice.source == ProductPriceSource.ad_hoc,
-                ProductPrice.is_archived.is_(False),
+                ~ProductPrice.is_archived,
             )
         )
         result = await self.session.execute(statement)
@@ -162,7 +160,7 @@ class OrganizationReviewRepository(
             ),
         ).where(
             Payment.organization_id == organization_id,
-            Payment.is_deleted.is_(False),
+            ~Payment.is_deleted,
         )
         result = await self.session.execute(statement)
         row = result.one()
@@ -179,7 +177,7 @@ class OrganizationReviewRepository(
             Payment.organization_id == organization_id,
             Payment.status == PaymentStatus.succeeded,
             Payment.risk_score.is_not(None),
-            Payment.is_deleted.is_(False),
+            ~Payment.is_deleted,
         )
         result = await self.session.execute(statement)
         row = result.one()
@@ -209,10 +207,10 @@ class OrganizationReviewRepository(
             Dispute.payment_id.in_(
                 select(Payment.id).where(
                     Payment.organization_id == organization_id,
-                    Payment.is_deleted.is_(False),
+                    ~Payment.is_deleted,
                 )
             ),
-            Dispute.is_deleted.is_(False),
+            ~Dispute.is_deleted,
         )
         result = await self.session.execute(statement)
         row = result.one()
@@ -235,7 +233,7 @@ class OrganizationReviewRepository(
             .where(
                 UserOrganization.user_id == user_id,
                 Organization.id != exclude_organization_id,
-                Organization.is_deleted.is_(False),
+                ~Organization.is_deleted,
             )
             .options(joinedload(Organization.review))
         )
@@ -415,7 +413,7 @@ class OrganizationReviewRepository(
             .where(
                 Checkout.organization_id == organization_id,
                 Checkout.return_url.is_not(None),
-                Checkout.is_deleted.is_(False),
+                ~Checkout.is_deleted,
                 Checkout.created_at >= cutoff,
             )
             .distinct()
@@ -438,7 +436,7 @@ class OrganizationReviewRepository(
             .where(
                 Checkout.organization_id == organization_id,
                 Checkout._success_url.is_not(None),
-                Checkout.is_deleted.is_(False),
+                ~Checkout.is_deleted,
                 Checkout.created_at >= cutoff,
             )
             .distinct()
@@ -454,7 +452,7 @@ class OrganizationReviewRepository(
             select(CheckoutLink)
             .where(
                 CheckoutLink.organization_id == organization_id,
-                CheckoutLink.is_deleted.is_(False),
+                ~CheckoutLink.is_deleted,
             )
             .options(
                 selectinload(CheckoutLink.checkout_link_products)
@@ -469,7 +467,7 @@ class OrganizationReviewRepository(
         """Count organization access tokens."""
         statement = select(func.count(OrganizationAccessToken.id)).where(
             OrganizationAccessToken.organization_id == organization_id,
-            OrganizationAccessToken.is_deleted.is_(False),
+            ~OrganizationAccessToken.is_deleted,
         )
         result = await self.session.execute(statement)
         return result.scalar() or 0
@@ -480,7 +478,7 @@ class OrganizationReviewRepository(
         """Get webhook endpoints for the organization."""
         statement = select(WebhookEndpoint).where(
             WebhookEndpoint.organization_id == organization_id,
-            WebhookEndpoint.is_deleted.is_(False),
+            ~WebhookEndpoint.is_deleted,
         )
         result = await self.session.execute(statement)
         return list(result.scalars().all())

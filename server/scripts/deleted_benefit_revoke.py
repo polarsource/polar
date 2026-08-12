@@ -57,7 +57,7 @@ async def deleted_benefit_revoke() -> None:
     async with sessionmaker() as session:
         async with JobQueueManager.open(dramatiq.get_broker(), redis) as manager:
             statement = select(Benefit.id).where(
-                Benefit.is_deleted.is_(True),
+                Benefit.is_deleted,
                 Benefit.id.in_(
                     select(BenefitGrant.benefit_id).where(
                         BenefitGrant.granted_at.is_not(None)

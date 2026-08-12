@@ -139,7 +139,7 @@ class PaymentMethodRepository(
             select(Subscription.id)
             .where(
                 Subscription.payment_method_id == PaymentMethod.id,
-                Subscription.requires_payment_method.is_(True),
+                Subscription.requires_payment_method,
                 Subscription.deleted_at.is_(None),
             )
             .correlate(PaymentMethod)

@@ -91,7 +91,7 @@ class SubscriptionRepository(
             self.get_base_statement()
             .where(
                 Subscription.customer_id == customer_id,
-                Subscription.active.is_(True),
+                Subscription.active,
             )
             .options(*options)
         )
@@ -118,7 +118,7 @@ class SubscriptionRepository(
             self.get_base_statement()
             .where(
                 Subscription.payment_method_id == payment_method_id,
-                Subscription.requires_payment_method.is_(True),
+                Subscription.requires_payment_method,
                 Subscription.ended_at.is_(None),
             )
             .options(*options)
@@ -133,7 +133,7 @@ class SubscriptionRepository(
             .with_only_columns(Subscription.id)
             .where(
                 Subscription.payment_method_id == payment_method_id,
-                Subscription.requires_payment_method.is_(True),
+                Subscription.requires_payment_method,
                 Subscription.ended_at.is_(None),
             )
         )
@@ -166,7 +166,7 @@ class SubscriptionRepository(
     async def get_ids_by_product(self, product_id: UUID) -> Sequence[UUID]:
         statement = select(Subscription.id).where(
             Subscription.product_id == product_id,
-            Subscription.is_deleted.is_(False),
+            ~Subscription.is_deleted,
         )
         result = await self.session.execute(statement)
         return result.scalars().all()
@@ -186,7 +186,7 @@ class SubscriptionRepository(
                 Subscription.product_id == product_id,
                 Subscription.status.not_in(dead_statuses),
                 Subscription.ended_at.is_(None),
-                Subscription.is_deleted.is_(False),
+                ~Subscription.is_deleted,
             )
             .limit(1)
         )
@@ -222,7 +222,7 @@ class SubscriptionRepository(
                 Product.organization_id == organization_id,
                 Subscription.ended_at.is_not(None),
                 Subscription.ended_at >= since,
-                Subscription.is_deleted.is_(False),
+                ~Subscription.is_deleted,
             )
         )
         result = await self.session.execute(statement)
@@ -268,8 +268,8 @@ class SubscriptionRepository(
             select(Subscription.customer_id)
             .where(
                 Subscription.product_id == product_id,
-                Subscription.active.is_(True),
-                Subscription.is_deleted.is_(False),
+                Subscription.active,
+                ~Subscription.is_deleted,
             )
             .distinct()
         )
@@ -372,13 +372,13 @@ class SubscriptionRepository(
             customer = auth_subject.subject
             statement = statement.where(
                 Subscription.customer_id == customer.id,
-                Subscription.is_deleted.is_(False),
+                ~Subscription.is_deleted,
             )
         elif is_member(auth_subject):
             member = auth_subject.subject
             statement = statement.where(
                 Subscription.customer_id == member.customer_id,
-                Subscription.is_deleted.is_(False),
+                ~Subscription.is_deleted,
             )
 
         return statement
@@ -456,8 +456,8 @@ class SubscriptionRepository(
             self.get_base_statement()
             .where(
                 Subscription.status == SubscriptionStatus.active,
-                Subscription.cancel_at_period_end.is_(False),
-                Subscription.pause_at_period_end.is_(False),
+                ~Subscription.cancel_at_period_end,
+                ~Subscription.pause_at_period_end,
                 Subscription.current_period_end.isnot(None),
                 Subscription.current_period_end > now,
                 Subscription.current_period_end <= reminder_window_end,
@@ -529,7 +529,7 @@ class SubscriptionRepository(
             self.get_base_statement()
             .where(
                 Subscription.status == SubscriptionStatus.trialing,
-                Subscription.cancel_at_period_end.is_(False),
+                ~Subscription.cancel_at_period_end,
                 Subscription.trial_start.isnot(None),
                 Subscription.trial_end.isnot(None),
                 trial_window_condition,
@@ -554,8 +554,8 @@ class SubscriptionRepository(
                     (
                         Subscription.status == SubscriptionStatus.active,
                         case(
-                            (Subscription.cancel_at_period_end.is_(False), 4),
-                            (Subscription.cancel_at_period_end.is_(True), 5),
+                            (~Subscription.cancel_at_period_end, 4),
+                            (Subscription.cancel_at_period_end, 5),
                         ),
                     ),
                     (Subscription.status == SubscriptionStatus.paused, 6),
@@ -670,9 +670,9 @@ class SubscriptionProductPriceRepository(
                 Subscription.id == SubscriptionProductPrice.subscription_id,
             )
             .where(
-                ProductPrice.is_metered.is_(True),
+                ProductPrice.is_metered,
                 ProductPriceMeteredUnit.meter_id == meter_id,
-                Subscription.billable.is_(True),
+                Subscription.billable,
                 Subscription.customer_id == sa.any_(customer_ids_parameter),
             )
             # In case customer has several subscriptions, take the earliest one
@@ -821,7 +821,7 @@ class SubscriptionUpdateRepository(
             .where(
                 SubscriptionUpdate.subscription_id == subscription_id,
                 SubscriptionUpdate.applied_at.is_(None),
-                SubscriptionUpdate.is_deleted.is_(False),
+                ~SubscriptionUpdate.is_deleted,
             )
             .limit(1)
             .options(*options)

@@ -48,7 +48,7 @@ def _target_customer_ids() -> Select[tuple[uuid.UUID]]:
     # Only organizations that have migrated to the member model; an absent flag
     # evaluates to NULL and is excluded, skipping pre-migration organizations.
     member_model_organizations = select(Organization.id).where(
-        Organization.feature_settings["member_model_enabled"].as_boolean().is_(True)
+        Organization.feature_settings["member_model_enabled"].as_boolean()
     )
     return select(Customer.id).where(
         Customer.deleted_at.is_(None),

@@ -131,17 +131,15 @@ async def migrate_organizations(
                 Organization.status != OrganizationStatus.BLOCKED,
                 or_(
                     Organization.feature_settings["member_model_enabled"].is_(None),
-                    Organization.feature_settings["member_model_enabled"]
-                    .as_boolean()
-                    .is_(False),
+                    ~Organization.feature_settings["member_model_enabled"].as_boolean(),
                 ),
                 or_(
                     Organization.feature_settings["seat_based_pricing_enabled"].is_(
                         None
                     ),
-                    Organization.feature_settings["seat_based_pricing_enabled"]
-                    .as_boolean()
-                    .is_(False),
+                    ~Organization.feature_settings[
+                        "seat_based_pricing_enabled"
+                    ].as_boolean(),
                 ),
             )
             .order_by(Organization.next_review_threshold.asc())
@@ -305,16 +303,14 @@ async def repair(
             .where(
                 Organization.deleted_at.is_(None),
                 Organization.status != OrganizationStatus.BLOCKED,
-                Organization.feature_settings["member_model_enabled"]
-                .as_boolean()
-                .is_(True),
+                Organization.feature_settings["member_model_enabled"].as_boolean(),
                 or_(
                     Organization.feature_settings["seat_based_pricing_enabled"].is_(
                         None
                     ),
-                    Organization.feature_settings["seat_based_pricing_enabled"]
-                    .as_boolean()
-                    .is_(False),
+                    ~Organization.feature_settings[
+                        "seat_based_pricing_enabled"
+                    ].as_boolean(),
                 ),
             )
             .order_by(
@@ -342,16 +338,14 @@ async def repair(
             .where(
                 Organization.deleted_at.is_(None),
                 Organization.status != OrganizationStatus.BLOCKED,
-                Organization.feature_settings["member_model_enabled"]
-                .as_boolean()
-                .is_(True),
+                Organization.feature_settings["member_model_enabled"].as_boolean(),
                 or_(
                     Organization.feature_settings["seat_based_pricing_enabled"].is_(
                         None
                     ),
-                    Organization.feature_settings["seat_based_pricing_enabled"]
-                    .as_boolean()
-                    .is_(False),
+                    ~Organization.feature_settings[
+                        "seat_based_pricing_enabled"
+                    ].as_boolean(),
                 ),
             )
         )
@@ -480,14 +474,12 @@ async def prepare(
             .where(
                 Organization.deleted_at.is_(None),
                 Organization.status != OrganizationStatus.BLOCKED,
-                Organization.feature_settings["seat_based_pricing_enabled"]
-                .as_boolean()
-                .is_(True),
+                Organization.feature_settings[
+                    "seat_based_pricing_enabled"
+                ].as_boolean(),
                 or_(
                     Organization.feature_settings["member_model_enabled"].is_(None),
-                    Organization.feature_settings["member_model_enabled"]
-                    .as_boolean()
-                    .is_(False),
+                    ~Organization.feature_settings["member_model_enabled"].as_boolean(),
                 ),
             )
             .order_by(Organization.slug.asc())

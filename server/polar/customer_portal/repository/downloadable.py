@@ -59,12 +59,12 @@ class DownloadableRepository(RepositoryBase[Downloadable]):
             .join(Benefit)
             .where(
                 Downloadable.status == DownloadableStatus.granted,
-                Downloadable.is_deleted.is_(False),
-                File.is_deleted.is_(False),
+                ~Downloadable.is_deleted,
+                ~File.is_deleted,
                 File.is_uploaded == True,  # noqa: E712
                 File.is_enabled == True,  # noqa: E712
                 File.flagged_malicious_at.is_(None),
-                Benefit.is_deleted.is_(False),
+                ~Benefit.is_deleted,
             )
             .order_by(Downloadable.created_at.desc())
         )

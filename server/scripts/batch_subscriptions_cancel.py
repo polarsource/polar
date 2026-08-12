@@ -75,7 +75,7 @@ async def batch_subscriptions_cancel(
                 .join(Subscription.customer)
                 .where(
                     Customer.organization_id == organization_id,
-                    Subscription.billable.is_(True),
+                    Subscription.billable,
                 )
             )
 

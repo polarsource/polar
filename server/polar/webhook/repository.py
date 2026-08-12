@@ -39,7 +39,7 @@ class WebhookEventRepository(
             .where(
                 WebhookDelivery.id.is_(None),
                 WebhookEvent.payload.is_not(None),
-                WebhookEvent.skipped.is_(False),
+                ~WebhookEvent.skipped,
             )
         )
         if older_than is not None:
@@ -82,7 +82,7 @@ class WebhookEventRepository(
         statement = self.get_base_statement().where(
             WebhookEvent.webhook_endpoint_id == endpoint_id,
             WebhookEvent.succeeded.is_(None),
-            WebhookEvent.skipped.is_(False),
+            ~WebhookEvent.skipped,
         )
         return await self.get_all(statement)
 
@@ -109,7 +109,7 @@ class WebhookEventRepository(
                 isouter=True,
             )
             .where(
-                WebhookEvent.is_deleted.is_(False),
+                ~WebhookEvent.is_deleted,
                 WebhookEvent.webhook_endpoint_id == event.webhook_endpoint_id,
                 WebhookEvent.id != event.id,
                 WebhookDelivery.id.is_(None),
@@ -142,7 +142,7 @@ class WebhookDeliveryRepository(
     async def count_by_event(self, event_id: UUID) -> int:
         statement = select(func.count(WebhookDelivery.id)).where(
             WebhookDelivery.webhook_event_id == event_id,
-            WebhookDelivery.is_deleted.is_(False),
+            ~WebhookDelivery.is_deleted,
         )
         res = await self.session.execute(statement)
         return res.scalar_one()

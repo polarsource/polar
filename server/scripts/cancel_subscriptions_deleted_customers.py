@@ -55,9 +55,7 @@ async def cancel_subscriptions_deleted_customers() -> None:
             statement = select(Customer).where(
                 Customer.deleted_at.is_not(None),
                 Customer.id.in_(
-                    select(Subscription.customer_id).where(
-                        Subscription.active.is_(True)
-                    )
+                    select(Subscription.customer_id).where(Subscription.active)
                 ),
             )
             count_statement = statement.with_only_columns(func.count()).order_by(None)

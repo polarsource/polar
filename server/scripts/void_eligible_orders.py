@@ -72,7 +72,7 @@ def get_query() -> Select[tuple[Order]]:
     deleted_customers_subquery = (
         select(Order.id)
         .join(Customer, Order.customer_id == Customer.id)
-        .where(Customer.is_deleted.is_(True))
+        .where(Customer.is_deleted)
     )
 
     # Subquery 3: Orders linked to blocked organizations
@@ -83,7 +83,7 @@ def get_query() -> Select[tuple[Order]]:
         .where(
             or_(
                 Organization.status == OrganizationStatus.BLOCKED,
-                Organization.is_deleted.is_(True),
+                Organization.is_deleted,
             )
         )
     )

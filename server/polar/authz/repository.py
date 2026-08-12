@@ -32,7 +32,7 @@ def select_user_org_ids(
         .join(Organization, UserOrganization.organization_id == Organization.id)
         .where(
             UserOrganization.user_id == user_id,
-            UserOrganization.is_deleted.is_(False),
+            ~UserOrganization.is_deleted,
             Organization.can_authenticate,
         )
     )

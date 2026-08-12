@@ -43,7 +43,7 @@ class CheckoutLinkRepository(
             )
             .where(
                 CheckoutLink.client_secret == client_secret,
-                Organization.can_authenticate.is_(True),
+                Organization.can_authenticate,
             )
             .options(*options)
         )
@@ -103,7 +103,7 @@ class CheckoutLinkRepository(
             .where(
                 CheckoutLinkProduct.checkout_link_id == CheckoutLink.id,
                 Product.deleted_at.is_(None),
-                Product.is_archived.is_(False),
+                ~Product.is_archived,
                 ~grants_benefit,
             )
             .exists()

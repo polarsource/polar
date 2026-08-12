@@ -33,7 +33,7 @@ class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):
             select(OAuth2Client)
             .where(
                 OAuth2Client.user_id == auth_subject.subject.id,
-                OAuth2Client.is_deleted.is_(False),
+                ~OAuth2Client.is_deleted,
             )
             .order_by(OAuth2Client.created_at.desc())
         )
@@ -43,7 +43,7 @@ class OAuth2ClientService(ResourceServiceReader[OAuth2Client]):
         self, session: AsyncSession, client_id: str
     ) -> OAuth2Client | None:
         statement = select(OAuth2Client).where(
-            OAuth2Client.client_id == client_id, OAuth2Client.is_deleted.is_(False)
+            OAuth2Client.client_id == client_id, ~OAuth2Client.is_deleted
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()

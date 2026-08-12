@@ -14,14 +14,14 @@ class CustomerOrganizationService(ResourceServiceReader[Organization]):
         statement = (
             select(Organization)
             .where(
-                Organization.can_authenticate.is_(True),
+                Organization.can_authenticate,
                 Organization.slug == slug,
             )
             .options(
                 selectinload(
                     Organization.products.and_(
-                        Product.is_deleted.is_(False),
-                        Product.is_archived.is_(False),
+                        ~Product.is_deleted,
+                        ~Product.is_archived,
                         Product.visibility == Visibility.public,
                     )
                 ).options(

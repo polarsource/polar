@@ -65,7 +65,7 @@ async def remove_backfilled_events(
             .outerjoin(Meter, Meter.last_billed_event_id == Event.id)
             .where(
                 Event.name.in_([SystemEvent.order_paid, SystemEvent.order_refunded]),
-                Event.user_metadata["backfilled"].as_boolean().is_(True),
+                Event.user_metadata["backfilled"].as_boolean(),
                 Meter.id.is_(None),
             )
         )
@@ -93,9 +93,7 @@ async def remove_backfilled_events(
                                 Event.name.in_(
                                     [SystemEvent.order_paid, SystemEvent.order_refunded]
                                 ),
-                                Event.user_metadata["backfilled"]
-                                .as_boolean()
-                                .is_(True),
+                                Event.user_metadata["backfilled"].as_boolean(),
                                 Meter.id.is_(None),
                             )
                             .limit(batch_size)

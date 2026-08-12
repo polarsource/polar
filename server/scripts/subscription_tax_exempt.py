@@ -84,8 +84,8 @@ async def subscription_tax_exempt(
             select(Subscription)
             .join(Subscription.customer)
             .where(
-                Subscription.billable.is_(True),
-                Subscription.tax_exempted.is_(False),
+                Subscription.billable,
+                ~Subscription.tax_exempted,
             )
         )
         if id is not None:

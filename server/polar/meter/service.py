@@ -230,10 +230,10 @@ class MeterService:
             select(func.count(ProductPriceMeteredUnit.id))
             .join(Product)
             .where(
-                Product.is_archived.is_(False),
+                ~Product.is_archived,
                 ProductPriceMeteredUnit.meter_id == meter.id,
-                ProductPriceMeteredUnit.is_archived.is_(False),
-                ProductPriceMeteredUnit.is_deleted.is_(False),
+                ~ProductPriceMeteredUnit.is_archived,
+                ~ProductPriceMeteredUnit.is_deleted,
             )
         )
 
@@ -254,7 +254,7 @@ class MeterService:
             select(func.count(Benefit.id)).where(
                 Benefit.type == "meter_credit",
                 Benefit.properties["meter_id"].as_string() == str(meter.id),
-                Benefit.is_deleted.is_(False),
+                ~Benefit.is_deleted,
             )
         )
 
@@ -296,7 +296,7 @@ class MeterService:
 
         if clauses:
             statement = customer_repository.get_base_statement().where(
-                Customer.is_deleted.is_(False), or_(*clauses)
+                ~Customer.is_deleted, or_(*clauses)
             )
             async for customer in customer_repository.stream(statement):
                 enqueue_job("customer_meter.update_customer", customer.id)

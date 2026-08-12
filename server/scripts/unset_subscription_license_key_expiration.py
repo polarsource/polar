@@ -46,7 +46,7 @@ async def unset_subscription_license_key_expiration(
                 .where(
                     LicenseKey.expires_at.is_not(None),
                     LicenseKey.deleted_at.is_(None),
-                    BenefitGrant.is_deleted.is_(False),
+                    ~BenefitGrant.is_deleted,
                     Subscription.status.in_(SubscriptionStatus.billable_statuses()),
                 )
             )

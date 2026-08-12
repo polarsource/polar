@@ -132,7 +132,7 @@ class LicenseKeyService:
         query = select(LicenseKeyActivation).where(
             LicenseKeyActivation.id == activation_id,
             LicenseKeyActivation.license_key_id == license_key.id,
-            LicenseKeyActivation.is_deleted.is_(False),
+            ~LicenseKeyActivation.is_deleted,
         )
         result = await session.execute(query)
         record = result.scalar_one_or_none()
@@ -263,7 +263,7 @@ class LicenseKeyService:
     ) -> int:
         query = select(func.count(LicenseKeyActivation.id)).where(
             LicenseKeyActivation.license_key_id == license_key.id,
-            LicenseKeyActivation.is_deleted.is_(False),
+            ~LicenseKeyActivation.is_deleted,
         )
         res = await session.execute(query)
         count = res.scalar()

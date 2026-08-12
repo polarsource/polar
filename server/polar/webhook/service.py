@@ -921,8 +921,8 @@ class WebhookService:
         target: Organization,
     ) -> Sequence[WebhookEndpoint]:
         statement = select(WebhookEndpoint).where(
-            WebhookEndpoint.is_deleted.is_(False),
-            WebhookEndpoint.enabled.is_(True),
+            ~WebhookEndpoint.is_deleted,
+            WebhookEndpoint.enabled,
             WebhookEndpoint.events.bool_op("@>")(text(f"'[\"{event}\"]'")),
             WebhookEndpoint.organization_id == target.id,
         )

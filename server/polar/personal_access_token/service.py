@@ -43,7 +43,7 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
     ) -> PersonalAccessToken | None:
         statement = self._get_readable_order_statement(auth_subject).where(
             PersonalAccessToken.id == id,
-            PersonalAccessToken.is_deleted.is_(False),
+            ~PersonalAccessToken.is_deleted,
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()
@@ -57,8 +57,8 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
             .join(PersonalAccessToken.user)
             .where(
                 PersonalAccessToken.token == token_hash,
-                PersonalAccessToken.is_deleted.is_(False),
-                User.can_authenticate.is_(True),
+                ~PersonalAccessToken.is_deleted,
+                User.can_authenticate,
             )
             .options(contains_eager(PersonalAccessToken.user))
         )
@@ -135,7 +135,7 @@ class PersonalAccessTokenService(ResourceServiceReader[PersonalAccessToken]):
     ) -> Select[tuple[PersonalAccessToken]]:
         return select(PersonalAccessToken).where(
             PersonalAccessToken.user_id == auth_subject.subject.id,
-            PersonalAccessToken.is_deleted.is_(False),
+            ~PersonalAccessToken.is_deleted,
         )
 
 

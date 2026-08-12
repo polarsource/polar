@@ -44,10 +44,17 @@ async def send_expiration_reminder(payment_method_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = PaymentMethodRepository.from_session(session)
         payment_method = await repository.get_by_id(
-            payment_method_id, options=repository.get_eager_options()
+            payment_method_id,
+            options=repository.get_eager_options(),
+            include_deleted=True,
         )
         if payment_method is None:
             raise PaymentMethodDoesNotExist(payment_method_id)
+
+        if payment_method.deleted_at is not None:
+            # The payment method was deleted between the scan enqueuing this
+            # task and its execution. It's a normal race, so just discard.
+            return
 
         await payment_method_service.send_expiration_reminder_email(
             session, payment_method

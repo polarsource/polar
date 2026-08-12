@@ -811,7 +811,11 @@ class SubscriptionService:
         if checkout.discount is not None and trial_end is None:
             subscription.discount_applied_at = current_period_start
         subscription.checkout = checkout
-        subscription.user_metadata = checkout.user_metadata
+        # Upgrading an existing subscription keeps the keys the checkout doesn't carry
+        subscription.user_metadata = {
+            **(subscription.user_metadata or {}),
+            **checkout.user_metadata,
+        }
         subscription.custom_field_data = checkout.custom_field_data
         subscription.seats = checkout.seats
 

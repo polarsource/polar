@@ -49,10 +49,12 @@ export const OmniSearch = ({
     [generalRoutes, orgRoutes],
   )
 
-  const quickActions = useMemo(
-    () => (canManageProducts ? getQuickActions(organization.slug) : []),
-    [canManageProducts, organization.slug],
-  )
+  const quickActions = useMemo(() => {
+    if (!canManageProducts) {
+      return []
+    }
+    return getQuickActions(organization.slug)
+  }, [canManageProducts, organization.slug])
 
   const actionResults = useMemo(() => {
     if (!query.trim()) return []

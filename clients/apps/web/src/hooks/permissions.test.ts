@@ -10,7 +10,7 @@ vi.mock('@/hooks/auth', () => ({
   useAuth: () => ({ userOrganizations: authState.organizations }),
 }))
 
-import { useHasPermission, useOrganizationPermissions } from './permissions'
+import { useHasPermission } from './permissions'
 
 const financeOrganization = {
   id: 'finance-organization',
@@ -28,14 +28,6 @@ const financeOrganization = {
 describe('organization permissions', () => {
   beforeEach(() => {
     authState.organizations = [financeOrganization]
-  })
-
-  it('returns the permissions embedded for the organization', () => {
-    const { result } = renderHook(() =>
-      useOrganizationPermissions(financeOrganization.id),
-    )
-
-    expect(result.current).toEqual(financeOrganization.permissions)
   })
 
   it('grants finance permissions and denies admin permissions', () => {

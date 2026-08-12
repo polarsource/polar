@@ -156,7 +156,12 @@ class PolarSelfService:
         )
 
     def enqueue_update_member(
-        self, *, external_customer_id: str, external_id: str, name: str
+        self,
+        *,
+        external_customer_id: str,
+        external_id: str,
+        name: str,
+        role: MemberRole | None = None,
     ) -> None:
         if not self.is_configured:
             return
@@ -165,6 +170,7 @@ class PolarSelfService:
             external_customer_id=external_customer_id,
             external_id=external_id,
             name=name,
+            role=role.value if role is not None else None,
         )
 
     def enqueue_update_customer_slug(

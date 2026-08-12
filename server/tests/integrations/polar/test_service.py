@@ -38,6 +38,7 @@ from polar.integrations.polar.exceptions import (
     TransactionFeeBenefitError,
 )
 from polar.integrations.polar.service import polar_self
+from polar.models.member import MemberRole
 from polar.models.organization import Organization, SupportTier
 from polar.postgres import AsyncReadSession, AsyncSession
 
@@ -309,6 +310,47 @@ def list_grants_mock(mocker: MockerFixture) -> AsyncMock:
     client.list_customer_benefit_grants = AsyncMock(return_value=[])
     mocker.patch("polar.integrations.polar.service.get_client", return_value=client)
     return client.list_customer_benefit_grants
+
+
+class TestEnqueueUpdateMember:
+    def test_enqueues_with_role_value(
+        self, configured: None, mocker: MockerFixture
+    ) -> None:
+        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
+
+        polar_self.enqueue_update_member(
+            external_customer_id="org-123",
+            external_id="user-123",
+            name="Jane",
+            role=MemberRole.billing_manager,
+        )
+
+        enqueue.assert_called_once_with(
+            "polar_self.update_member",
+            external_customer_id="org-123",
+            external_id="user-123",
+            name="Jane",
+            role="billing_manager",
+        )
+
+    def test_enqueues_without_role(
+        self, configured: None, mocker: MockerFixture
+    ) -> None:
+        enqueue = mocker.patch("polar.integrations.polar.service.enqueue_job")
+
+        polar_self.enqueue_update_member(
+            external_customer_id="org-123",
+            external_id="user-123",
+            name="Jane",
+        )
+
+        enqueue.assert_called_once_with(
+            "polar_self.update_member",
+            external_customer_id="org-123",
+            external_id="user-123",
+            name="Jane",
+            role=None,
+        )
 
 
 class TestEnqueueTrackOrganizationReviewUsage:

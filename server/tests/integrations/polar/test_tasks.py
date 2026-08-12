@@ -245,6 +245,7 @@ class TestUpdateMember:
         mocker: MockerFixture,
     ) -> None:
         client = AsyncMock(spec=PolarSelfClient)
+        client.get_member_by_external_id.return_value = MagicMock(id="member-123")
         mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
 
         await update_member(
@@ -257,7 +258,73 @@ class TestUpdateMember:
             external_customer_id="org-123",
             external_id="user-123",
             name="Updated Name",
+            role=None,
         )
+
+    async def test_forwards_role(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        client = AsyncMock(spec=PolarSelfClient)
+        client.get_member_by_external_id.return_value = MagicMock(id="member-123")
+        mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
+
+        await update_member(
+            external_customer_id="org-123",
+            external_id="user-123",
+            name="Updated Name",
+            role="billing_manager",
+        )
+
+        client.update_member.assert_called_once_with(
+            external_customer_id="org-123",
+            external_id="user-123",
+            name="Updated Name",
+            role="billing_manager",
+        )
+
+    async def test_retries_when_member_is_not_ready(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        client = AsyncMock(spec=PolarSelfClient)
+        client.get_member_by_external_id.side_effect = ResourceNotFound(
+            404,
+            ResourceNotFoundData(error="ResourceNotFound", detail="Not found"),
+        )
+        mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
+        mocker.patch("polar.integrations.polar.tasks.can_retry", return_value=True)
+
+        with pytest.raises(Retry):
+            await update_member(
+                external_customer_id="org-123",
+                external_id="user-123",
+                name="Updated Name",
+                role="billing_manager",
+            )
+
+        client.update_member.assert_not_called()
+
+    async def test_noops_when_member_never_appears(
+        self,
+        mocker: MockerFixture,
+    ) -> None:
+        client = AsyncMock(spec=PolarSelfClient)
+        client.get_member_by_external_id.side_effect = ResourceNotFound(
+            404,
+            ResourceNotFoundData(error="ResourceNotFound", detail="Not found"),
+        )
+        mocker.patch("polar.integrations.polar.tasks.get_client", return_value=client)
+        mocker.patch("polar.integrations.polar.tasks.can_retry", return_value=False)
+
+        await update_member(
+            external_customer_id="org-123",
+            external_id="user-123",
+            name="Updated Name",
+            role="billing_manager",
+        )
+
+        client.update_member.assert_not_called()
 
 
 @pytest.mark.asyncio

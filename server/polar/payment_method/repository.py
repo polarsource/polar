@@ -121,9 +121,9 @@ class PaymentMethodRepository(
         options: Options = (),
     ) -> Sequence[PaymentMethod]:
         """
-        Find card payment methods expiring within the window that back a billable
-        subscription and have no sent `payment_method_expiration_reminder` email logged for
-        that expiration.
+        Find card payment methods expiring within the window that back a subscription
+        still needing one, and have no sent `payment_method_expiration_reminder` email
+        logged for that expiration.
         """
         periods = expiring_periods(now, window_end)
         if not periods:
@@ -135,11 +135,11 @@ class PaymentMethodRepository(
             *(and_(exp_year == year, exp_month == month) for year, month in periods)
         )
 
-        billable_subscription_subquery = (
+        requiring_subscription_subquery = (
             select(Subscription.id)
             .where(
                 Subscription.payment_method_id == PaymentMethod.id,
-                Subscription.billable.is_(True),
+                Subscription.requires_payment_method.is_(True),
                 Subscription.deleted_at.is_(None),
             )
             .correlate(PaymentMethod)
@@ -165,7 +165,7 @@ class PaymentMethodRepository(
             .where(
                 PaymentMethod.type == "card",
                 expiring_condition,
-                billable_subscription_subquery,
+                requiring_subscription_subquery,
                 ~already_sent_subquery,
             )
             .options(*options)

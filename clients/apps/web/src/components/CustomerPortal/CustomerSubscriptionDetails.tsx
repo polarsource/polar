@@ -5,7 +5,6 @@ import { SubscriptionStatusLabel } from '@/components/Subscriptions/utils'
 import {
   useCustomerClearPendingSubscriptionUpdate,
   useCustomerCancelSubscription,
-  useCustomerUncancelSubscription,
 } from '@/hooks/queries/customerPortal'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -22,6 +21,7 @@ import { useModal } from '../Modal/useModal'
 import { DetailRow } from '../Shared/DetailRow'
 import CustomerChangePlanModal from './CustomerChangePlanModal'
 import { CustomerSubscriptionHeader } from './CustomerSubscriptionHeader'
+import UncancelSubscriptionButton from './UncancelSubscriptionButton'
 
 const CustomerSubscriptionDetails = ({
   subscription,
@@ -61,7 +61,6 @@ const CustomerSubscriptionDetails = ({
   const showSubscriptionUpdates =
     organization.customer_portal_settings.subscription.update_plan === true
 
-  const uncancelSubscription = useCustomerUncancelSubscription(api)
   const clearPendingUpdate = useCustomerClearPendingSubscriptionUpdate(api)
   const router = useRouter()
 
@@ -225,16 +224,15 @@ const CustomerSubscriptionDetails = ({
           subscription.cancel_at_period_end &&
           subscription.current_period_end &&
           new Date(subscription.current_period_end) > new Date() && (
-            <Button
-              onClick={async () => {
-                await uncancelSubscription.mutateAsync({ id: subscription.id })
+            <UncancelSubscriptionButton
+              api={api}
+              subscription={subscription}
+              customerSessionToken={customerSessionToken}
+              onUncancelled={async () => {
                 await revalidate(`customer_portal`)
                 router.refresh()
               }}
-              loading={uncancelSubscription.isPending}
-            >
-              Uncancel
-            </Button>
+            />
           )}
 
         <Button className="hidden md:flex" onClick={showBenefitGrantsModal}>

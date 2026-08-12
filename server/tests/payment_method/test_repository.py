@@ -71,6 +71,7 @@ async def create_expiring_card(
     exp_year: int = 2026,
     type: str = "card",
     status: SubscriptionStatus = SubscriptionStatus.active,
+    cancel_at_period_end: bool = False,
 ) -> PaymentMethod:
     payment_method = await create_payment_method(
         save_fixture,
@@ -89,6 +90,7 @@ async def create_expiring_card(
             product=product,
             customer=customer,
             payment_method=payment_method,
+            cancel_at_period_end=cancel_at_period_end,
         )
     else:
         await create_subscription(
@@ -97,6 +99,7 @@ async def create_expiring_card(
             customer=customer,
             payment_method=payment_method,
             status=status,
+            cancel_at_period_end=cancel_at_period_end,
         )
     return payment_method
 
@@ -195,6 +198,41 @@ class TestGetCardsExpiring:
         result = await repository.get_cards_needing_expiration_reminder(NOW, WINDOW_END)
 
         assert result == []
+
+    async def test_excludes_card_whose_subscription_ends_at_period_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        await create_expiring_card(
+            save_fixture, customer, product, cancel_at_period_end=True
+        )
+
+        repository = PaymentMethodRepository.from_session(session)
+        result = await repository.get_cards_needing_expiration_reminder(NOW, WINDOW_END)
+
+        assert result == []
+
+    async def test_includes_card_whose_ending_subscription_is_metered(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product_recurring_metered: Product,
+    ) -> None:
+        payment_method = await create_expiring_card(
+            save_fixture,
+            customer,
+            product_recurring_metered,
+            cancel_at_period_end=True,
+        )
+
+        repository = PaymentMethodRepository.from_session(session)
+        result = await repository.get_cards_needing_expiration_reminder(NOW, WINDOW_END)
+
+        assert [pm.id for pm in result] == [payment_method.id]
 
     async def test_excludes_card_whose_subscription_is_soft_deleted(
         self,

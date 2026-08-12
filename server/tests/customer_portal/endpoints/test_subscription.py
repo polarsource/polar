@@ -22,6 +22,7 @@ from tests.fixtures.random_objects import (
     create_benefit,
     create_canceled_subscription,
     create_order,
+    create_payment_method,
     create_product,
     set_product_benefits,
 )
@@ -368,6 +369,29 @@ class TestSubscriptionUpdateUncancel:
         assert response.status_code == 410
 
     @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    async def test_uncancel_without_payment_method(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_canceled_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+        )
+
+        response = await client.patch(
+            f"/v1/customer-portal/subscriptions/{subscription.id}",
+            json=dict(
+                cancel_at_period_end=False,
+            ),
+        )
+
+        assert response.status_code == 409
+
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
     async def test_valid(
         self,
         save_fixture: SaveFixture,
@@ -375,6 +399,7 @@ class TestSubscriptionUpdateUncancel:
         product: Product,
         customer: Customer,
     ) -> None:
+        await create_payment_method(save_fixture, customer)
         subscription = await create_canceled_subscription(
             save_fixture,
             product=product,

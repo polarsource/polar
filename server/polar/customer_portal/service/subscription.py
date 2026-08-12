@@ -20,6 +20,7 @@ from polar.models import (
     SubscriptionMeter,
 )
 from polar.models.subscription import CustomerCancellationReason
+from polar.payment_method.service import payment_method as payment_method_service
 from polar.subscription.schemas import SubscriptionChargePreview
 from polar.subscription.service import (
     AlreadyCanceledSubscription,
@@ -63,6 +64,14 @@ class RevokeNotAllowed(CustomerSubscriptionError):
         super().__init__(
             "This subscription can only be revoked while it is past-due "
             "with no benefit grace period.",
+            409,
+        )
+
+
+class UncancelWithoutPaymentMethod(CustomerSubscriptionError):
+    def __init__(self) -> None:
+        super().__init__(
+            "Add a payment method before uncancelling this subscription.",
             409,
         )
 
@@ -293,6 +302,13 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         session: AsyncSession,
         subscription: Subscription,
     ) -> Subscription:
+        if subscription.can_uncancel():
+            payment_method = await payment_method_service.get_customer_payment_method(
+                session, subscription.customer
+            )
+            if payment_method is None:
+                raise UncancelWithoutPaymentMethod()
+
         async with SubscriptionUpdateContext(
             session, subscription, subscription_service
         ) as ctx:

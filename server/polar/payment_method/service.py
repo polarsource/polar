@@ -48,8 +48,8 @@ class PaymentMethodInUseByActiveSubscription(PaymentMethodError):
     def __init__(self, subscription_ids: list[uuid.UUID]) -> None:
         self.subscription_ids = subscription_ids
         message = (
-            "Cannot delete payment method. It is currently used by active "
-            "subscription and no alternative payment methods "
+            "This payment method is still needed to bill a subscription. "
+            "Add another one or cancel the subscription first."
         )
         super().__init__(message, 400)
 
@@ -165,11 +165,11 @@ class PaymentMethodService:
         )
 
         subscription_repository = SubscriptionRepository.from_session(session)
-        subscriptions = await subscription_repository.list_billable_by_payment_method(
+        subscriptions = await subscription_repository.list_requiring_payment_method(
             payment_method.id, options=(joinedload(Subscription.product),)
         )
         product_names = sorted({s.product.name for s in subscriptions})
-        # The card doesn't back anything billable, bail out
+        # The card doesn't back anything that will be charged, bail out
         if not product_names:
             return
 
@@ -230,16 +230,6 @@ class PaymentMethodService:
                 deduplication_key=deduplication_key,
             )
 
-    async def _get_billable_subscription_ids(
-        self, session: AsyncSession, payment_method: PaymentMethod
-    ) -> list[uuid.UUID]:
-        stmt = select(Subscription.id).where(
-            Subscription.payment_method_id == payment_method.id,
-            Subscription.billable.is_(True),
-        )
-        result = await session.execute(stmt)
-        return [row[0] for row in result.fetchall()]
-
     async def _get_alternative_payment_method(
         self,
         session: AsyncSession,
@@ -291,11 +281,14 @@ class PaymentMethodService:
         payment_method: PaymentMethod,
         force: bool = False,
     ) -> None:
-        billable_subscription_ids = await self._get_billable_subscription_ids(
-            session, payment_method
+        subscription_repository = SubscriptionRepository.from_session(session)
+        requiring_subscription_ids = list(
+            await subscription_repository.list_ids_requiring_payment_method(
+                payment_method.id
+            )
         )
 
-        if billable_subscription_ids:
+        if requiring_subscription_ids:
             alternative_payment_method = await self._get_alternative_payment_method(
                 session, payment_method
             )
@@ -305,11 +298,11 @@ class PaymentMethodService:
                     session,
                     from_payment_method=payment_method,
                     to_payment_method=alternative_payment_method,
-                    subscription_ids=billable_subscription_ids,
+                    subscription_ids=requiring_subscription_ids,
                 )
             elif not force:
                 # No alternative payment method available, raise exception
-                raise PaymentMethodInUseByActiveSubscription(billable_subscription_ids)
+                raise PaymentMethodInUseByActiveSubscription(requiring_subscription_ids)
 
         if payment_method.processor == PaymentProcessor.stripe:
             try:

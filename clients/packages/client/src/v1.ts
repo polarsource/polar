@@ -35931,6 +35931,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** UncancelWithoutPaymentMethod */
+    UncancelWithoutPaymentMethod: {
+      /**
+       * Error
+       * @example UncancelWithoutPaymentMethod
+       * @constant
+       */
+      error: 'UncancelWithoutPaymentMethod'
+      /** Detail */
+      detail: string
+    }
     /** UniqueAggregation */
     UniqueAggregation: {
       /**
@@ -50016,7 +50027,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Payment method is used by active subscription(s). */
+      /** @description Payment method is still needed to bill a subscription. */
       400: {
         headers: {
           [name: string]: unknown
@@ -51840,6 +51851,15 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['ResourceNotFound']
+        }
+      }
+      /** @description The subscription has no payment method to renew with. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json': components['schemas']['UncancelWithoutPaymentMethod']
         }
       }
       /** @description Validation Error */

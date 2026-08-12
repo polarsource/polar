@@ -1,8 +1,16 @@
+from datetime import timedelta
+
 import pytest
+from sqlalchemy import select
 
 from polar.enums import TaxBehavior
-from polar.models import Order, Subscription
+from polar.kit.utils import utc_now
+from polar.models import Customer, Order, Product, Subscription
+from polar.models.subscription import SubscriptionStatus
 from polar.models.subscription_product_price import SubscriptionProductPrice
+from polar.postgres import AsyncSession
+from tests.fixtures.database import SaveFixture
+from tests.fixtures.random_objects import create_subscription
 
 
 def _prices(*amounts: int) -> list[SubscriptionProductPrice]:
@@ -74,3 +82,116 @@ class TestUpdateAmountAndCurrency:
         subscription.update_amount_and_currency(_prices(3000), None)
         assert subscription.amount == 3000
         assert subscription.net_amount == 3000
+
+
+async def _matches_expression(
+    session: AsyncSession, subscription: Subscription
+) -> bool:
+    result = await session.execute(
+        select(Subscription.id).where(
+            Subscription.id == subscription.id,
+            Subscription.requires_payment_method.is_(True),
+        )
+    )
+    return result.scalar_one_or_none() is not None
+
+
+@pytest.mark.asyncio
+class TestRequiresPaymentMethod:
+    @pytest.mark.parametrize(
+        ("status", "cancel_at_period_end", "expected"),
+        [
+            (SubscriptionStatus.active, False, True),
+            (SubscriptionStatus.trialing, False, True),
+            (SubscriptionStatus.past_due, False, True),
+            (SubscriptionStatus.active, True, False),
+            (SubscriptionStatus.trialing, True, False),
+            # Its unpaid order is still being retried against the card.
+            (SubscriptionStatus.past_due, True, True),
+            (SubscriptionStatus.incomplete, False, False),
+            (SubscriptionStatus.canceled, False, False),
+            (SubscriptionStatus.unpaid, False, False),
+            (SubscriptionStatus.paused, False, False),
+        ],
+    )
+    async def test_status_and_scheduled_cancellation(
+        self,
+        status: SubscriptionStatus,
+        cancel_at_period_end: bool,
+        expected: bool,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=status,
+            cancel_at_period_end=cancel_at_period_end,
+        )
+
+        assert subscription.requires_payment_method is expected
+        assert await _matches_expression(session, subscription) is expected
+
+    @pytest.mark.parametrize("cancel_at_period_end", [True, False])
+    async def test_metered_subscription_always_requires_one(
+        self,
+        cancel_at_period_end: bool,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product_recurring_metered: Product,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            cancel_at_period_end=cancel_at_period_end,
+        )
+
+        assert subscription.requires_payment_method is True
+        assert await _matches_expression(session, subscription) is True
+
+    @pytest.mark.parametrize("scheduled_resume", [True, False])
+    async def test_paused_subscription_follows_the_scheduled_resume(
+        self,
+        scheduled_resume: bool,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+        subscription.paused_at = utc_now()
+        subscription.resumes_at = (
+            utc_now() + timedelta(days=30) if scheduled_resume else None
+        )
+        await save_fixture(subscription)
+
+        assert subscription.requires_payment_method is scheduled_resume
+        assert await _matches_expression(session, subscription) is scheduled_resume
+
+    async def test_metered_subscription_revoked(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product_recurring_metered: Product,
+    ) -> None:
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            status=SubscriptionStatus.canceled,
+        )
+
+        assert subscription.requires_payment_method is False
+        assert await _matches_expression(session, subscription) is False

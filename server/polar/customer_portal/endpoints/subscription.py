@@ -36,6 +36,7 @@ from ..service.subscription import (
     CustomerSubscriptionSortProperty,
     PauseResumeNotAllowed,
     RevokeNotAllowed,
+    UncancelWithoutPaymentMethod,
     UpdateSubscriptionPlanNotAllowed,
     UpdateSubscriptionSeatsNotAllowed,
 )
@@ -234,6 +235,10 @@ async def preview_change(
             | PauseResumeNotAllowed.schema(),
         },
         404: SubscriptionNotFound,
+        409: {
+            "description": "The subscription has no payment method to renew with.",
+            "model": UncancelWithoutPaymentMethod.schema(),
+        },
     },
 )
 async def update(

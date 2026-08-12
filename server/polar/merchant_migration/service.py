@@ -32,7 +32,7 @@ from polar.worker import enqueue_job
 
 from . import pan_transfer
 from .adapters import SourceAdapter, StripeAdapter
-from .canonical import CanonicalRecord, deserialize
+from .canonical import CanonicalRecord, CanonicalSubscription, deserialize
 from .cards import link_payment_method
 from .cutover import SubscriptionCutover
 from .errors import MerchantMigrationError
@@ -591,7 +591,14 @@ class MerchantMigrationService:
             # Already covered, or gone from Polar: nothing to link either way.
             if subscription is None or subscription.payment_method_id is not None:
                 continue
-            payment_method = await link_payment_method(session, subscription.customer)
+            staged = deserialize(record.type, record.canonical)
+            payment_method = await link_payment_method(
+                session,
+                subscription.customer,
+                source_method=staged.payment_method
+                if isinstance(staged, CanonicalSubscription)
+                else None,
+            )
             if payment_method is None:
                 continue
             await subscription_repository.update(

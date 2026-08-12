@@ -19,13 +19,22 @@ from polar.models import Customer, PaymentMethod
 from polar.payment_method.service import payment_method as payment_method_service
 from polar.postgres import AsyncSession
 
+from .canonical import CanonicalPaymentMethod
+
 CARD_TYPE = "card"
 
 
 async def link_payment_method(
-    session: AsyncSession, customer: Customer
+    session: AsyncSession,
+    customer: Customer,
+    *,
+    source_method: CanonicalPaymentMethod | None = None,
 ) -> PaymentMethod | None:
     """Mirror the cards on Polar's Stripe account onto the Polar customer.
+
+    ``source_method`` is the method the source subscription was charging; the
+    copy of it wins, so a customer with several stored cards keeps being charged
+    on the one they were already being charged on.
 
     Returns the payment method to charge, or None while nothing has landed for
     this customer yet. Idempotent: re-running picks up cards that arrived since,
@@ -56,7 +65,9 @@ async def link_payment_method(
     if not payment_methods:
         return None
 
-    preferred = _preferred(payment_methods, customer.default_payment_method_id)
+    preferred = _preferred(
+        payment_methods, customer.default_payment_method_id, source_method
+    )
     # The renewal falls back to the customer default when a subscription has no
     # method of its own, so an imported customer should have one.
     if customer.default_payment_method_id is None:
@@ -67,12 +78,19 @@ async def link_payment_method(
 
 
 def _preferred(
-    payment_methods: Sequence[PaymentMethod], default_id: UUID | None
+    payment_methods: Sequence[PaymentMethod],
+    default_id: UUID | None,
+    source_method: CanonicalPaymentMethod | None,
 ) -> PaymentMethod:
-    """Keep an existing default; otherwise the newest card, which Stripe lists
-    first. Falls back to any other method rather than nothing — ACH and SEPA are
-    chargeable and migratable, per `CanonicalPaymentMethodType.requires_reentry`.
+    """The copy of what the source was charging, else an existing default, else
+    the newest card, which Stripe lists first. Falls back to any other method
+    rather than nothing — ACH and SEPA are chargeable and migratable, per
+    `CanonicalPaymentMethodType.requires_reentry`.
     """
+    if source_method is not None:
+        for payment_method in payment_methods:
+            if _is_copy_of(payment_method, source_method):
+                return payment_method
     for payment_method in payment_methods:
         if payment_method.id == default_id:
             return payment_method
@@ -80,3 +98,22 @@ def _preferred(
         if payment_method.type == CARD_TYPE:
             return payment_method
     return payment_methods[0]
+
+
+def _is_copy_of(
+    payment_method: PaymentMethod, source_method: CanonicalPaymentMethod
+) -> bool:
+    """A copy keeps the card but not its id, so match on what survives. Within
+    one customer's handful of cards, brand + last4 + expiry doesn't collide."""
+    details = {
+        "last4": source_method.last4,
+        "brand": source_method.brand,
+        "exp_month": source_method.exp_month,
+        "exp_year": source_method.exp_year,
+    }
+    known = {key: value for key, value in details.items() if value is not None}
+    if not known or payment_method.type != source_method.type.value:
+        return False
+    return all(
+        payment_method.method_metadata.get(key) == value for key, value in known.items()
+    )

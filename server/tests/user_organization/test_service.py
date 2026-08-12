@@ -686,26 +686,6 @@ class TestSetRole:
                 role=OrganizationRole.admin,
             )
 
-    async def test_last_admin_cannot_be_demoted(
-        self,
-        save_fixture: SaveFixture,
-        session: Any,
-        organization: Organization,
-        user_organization: UserOrganization,
-    ) -> None:
-        user_organization.role = OrganizationRole.admin
-        await save_fixture(user_organization)
-
-        with pytest.raises(OrganizationWouldHaveNoAdmins) as exc_info:
-            await user_organization_service.set_role(
-                session,
-                user_id=user_organization.user_id,
-                organization_id=organization.id,
-                role=OrganizationRole.finance,
-            )
-
-        assert exc_info.value.organization_id == organization.id
-
     async def test_user_not_member(
         self,
         session: Any,

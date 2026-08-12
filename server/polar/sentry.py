@@ -6,6 +6,7 @@ import sentry_sdk
 from dramatiq import get_broker
 from sentry_sdk.integrations.argv import ArgvIntegration
 from sentry_sdk.integrations.atexit import AtexitIntegration
+from sentry_sdk.integrations.aws_lambda import AwsLambdaIntegration
 from sentry_sdk.integrations.dedupe import DedupeIntegration
 from sentry_sdk.integrations.dramatiq import DramatiqIntegration as _DramatiqIntegration
 from sentry_sdk.integrations.dramatiq import SentryMiddleware
@@ -47,7 +48,7 @@ def before_send(event: Event, hint: Hint) -> Event | None:
     return event
 
 
-def configure_sentry() -> None:
+def configure_sentry(*, aws_lambda: bool = False) -> None:
     sentry_sdk.init(
         dsn=settings.SENTRY_DSN,
         traces_sample_rate=None,  # `0` still opts in to trace continuation
@@ -74,6 +75,7 @@ def configure_sentry() -> None:
             StarletteIntegration(transaction_style="endpoint"),
             FastApiIntegration(transaction_style="endpoint"),
             DramatiqIntegration(),
+            *([AwsLambdaIntegration()] if aws_lambda else []),
         ],
     )
 

@@ -2,6 +2,7 @@ import asyncio
 from typing import Any
 
 import logfire
+import sentry_sdk
 import structlog
 
 from polar.config import settings
@@ -22,7 +23,7 @@ from ._sqs import (
     set_message_visibility,
 )
 
-configure_sentry()
+configure_sentry(aws_lambda=True)
 configure_logfire("worker")
 configure_logging(logfire=True)
 
@@ -58,6 +59,7 @@ def handler(event: dict[str, Any], context: Any) -> dict[str, Any]:
                     )
                 )
             except Exception as exc:
+                sentry_sdk.capture_exception(exc)
                 log.error(
                     "polar.worker.sqs_task_failed",
                     message_id=message_id,
@@ -135,6 +137,7 @@ def _apply_retry_backoff(record: dict[str, Any], exception: BaseException) -> bo
             backoff_seconds=delay_seconds,
         )
         return True
-    except Exception:
+    except Exception as exc:
+        sentry_sdk.capture_exception(exc)
         log.error("polar.worker.sqs_backoff_failed", exc_info=True)
         return True

@@ -1,0 +1,17 @@
+---
+{
+  "schema_version": "authorship/3.0.0",
+  "git_ai_version": "1.6.22",
+  "base_commit_sha": "a2fcf72dacdbb016e4448ca430a33b33a950db9c",
+  "prompts": {},
+  "sessions": {
+    "s_c5054fbf0e66cc": {
+      "agent_id": {
+        "tool": "claude",
+        "id": "95ebc085-e848-42ce-bb3e-9edb7778fff4",
+        "model": "claude-opus-4-8"
+      },
+      "human_author": "Joel Bonander <joel@polar.sh>"
+    }
+  }
+}

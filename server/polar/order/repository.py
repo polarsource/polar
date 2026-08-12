@@ -65,10 +65,6 @@ class OrderRepository(
         """Customers ranked by paid net revenue: (customer, order count, net
         revenue in cents), descending.
 
-        Returns the `Customer` entities so callers can derive display fields
-        (e.g. `avatar_url`, which falls back to the owner member's email for
-        team customers) from a single source of truth.
-
         Partially refunded orders count with the refunded portion subtracted,
         so the ranking reflects money actually kept.
 

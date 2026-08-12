@@ -3536,6 +3536,28 @@ class TestUpdate:
         assert checkout.customer_tax_id_number is None
         assert checkout.customer_billing_name is None
 
+    async def test_disabling_business_customer_clears_billing_name_sent_in_request(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        checkout_one_time_custom: Checkout,
+    ) -> None:
+        checkout_one_time_custom.is_business_customer = True
+        checkout_one_time_custom.customer_billing_name = "ACME Inc."
+        await save_fixture(checkout_one_time_custom)
+
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_custom,
+            CheckoutUpdate(
+                is_business_customer=False,
+                customer_billing_name="ACME Inc.",
+            ),
+        )
+
+        assert checkout.is_business_customer is False
+        assert checkout.customer_billing_name is None
+
     async def test_silent_calculate_tax_error(
         self,
         session: AsyncSession,
@@ -3960,6 +3982,34 @@ class TestUpdate:
         assert checkout.discount == discount_percentage_100
         assert checkout.is_payment_form_required is False
         assert checkout.is_business_customer is False
+
+    async def test_full_discount_clears_business_tax_fields(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        checkout_one_time_fixed: Checkout,
+        discount_percentage_100: Discount,
+    ) -> None:
+        checkout_one_time_fixed.is_business_customer = True
+        checkout_one_time_fixed.customer_billing_name = "ACME Inc."
+        checkout_one_time_fixed.customer_billing_address = AddressInput.model_validate(
+            {"country": "FR"}
+        )
+        checkout_one_time_fixed.customer_tax_id = (
+            "FR61954506077",
+            TaxIDFormat.eu_vat,
+        )
+        await save_fixture(checkout_one_time_fixed)
+
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_fixed,
+            CheckoutUpdatePublic(discount_code=discount_percentage_100.code),
+        )
+
+        assert checkout.is_business_customer is False
+        assert checkout.customer_tax_id is None
+        assert checkout.customer_billing_name is None
 
     async def test_full_discount_resets_payment_method(
         self,

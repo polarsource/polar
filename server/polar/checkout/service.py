@@ -2224,12 +2224,12 @@ class CheckoutService:
         # Turning off business purchase must clear the business billing fields.
         # Otherwise a stale tax ID keeps reverse-charge (0% VAT) treatment on the
         # order and invoice even though the checkout is no longer a business purchase.
+        # `customer_billing_name` is cleared after the field-copy loop below, since
+        # that loop would otherwise re-apply it from the same request.
         disabling_business_customer = (
             checkout_update.is_business_customer is False
             and "is_business_customer" in checkout_update.model_fields_set
         )
-        if disabling_business_customer:
-            checkout.customer_billing_name = None
 
         if disabling_business_customer or (
             checkout_update.customer_tax_id is None
@@ -2312,6 +2312,9 @@ class CheckoutService:
         ).items():
             setattr(checkout, attr, value)
 
+        if disabling_business_customer:
+            checkout.customer_billing_name = None
+
         # `None` locale would opt in to browser-based language detection.
         # If people haven't opted in to this yet, we hardcode the default locale
         # to `en-US` to keep the current behavior
@@ -2349,6 +2352,8 @@ class CheckoutService:
             checkout.payment_method_type = None
             if not checkout.require_billing_address:
                 checkout.is_business_customer = False
+                checkout.customer_tax_id = None
+                checkout.customer_billing_name = None
 
     async def _update_price(
         self,

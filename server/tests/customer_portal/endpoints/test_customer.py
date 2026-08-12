@@ -195,6 +195,39 @@ class TestDeletePaymentMethod:
         await session.refresh(payment_method)
         assert payment_method.deleted_at is not None
 
+    @pytest.mark.auth(CUSTOMER_AUTH_SUBJECT)
+    @pytest.mark.keep_session_state
+    async def test_delete_payment_method_with_subscription_ending_at_period_end_succeeds(
+        self,
+        client: AsyncClient,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        # Create a payment method
+        payment_method = await create_payment_method(save_fixture, customer)
+
+        # Create a subscription set to cancel at period end using this payment method
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.active,
+            cancel_at_period_end=True,
+        )
+        subscription.payment_method = payment_method
+        await save_fixture(subscription)
+
+        response = await client.delete(
+            f"/v1/customer-portal/customers/me/payment-methods/{payment_method.id}"
+        )
+        assert response.status_code == 204
+
+        # Verify payment method is soft deleted
+        await session.refresh(payment_method)
+        assert payment_method.deleted_at is not None
+
 
 @pytest.mark.asyncio
 class TestUpdateDefaultPaymentMethod:

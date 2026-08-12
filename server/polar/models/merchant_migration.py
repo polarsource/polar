@@ -73,9 +73,7 @@ class MerchantMigration(RecordModel):
     pan_transfer_steps: Mapped[list[PanTransferStep]] = mapped_column(
         PanTransferStepsType, nullable=False, default=list
     )
-    # Background precheck/import operation state (status, cursor, selection,
-    # error). Unused until the jobs PR wires start_precheck / start_import.
-    # Nullable so this column can deploy alone.
+    # Background precheck/import state. Null until a run starts.
     operation: Mapped[MerchantMigrationOperation | None] = mapped_column(
         MerchantMigrationOperationType, nullable=True, default=None
     )

@@ -32,7 +32,7 @@ async def email_send(
     if html_content is None:
         assert template is not None
         assert props_json is not None
-        html_content = render_from_json(template, props_json)
+        html_content = await render_from_json(template, props_json)
 
     processor_id: str | None = None
     status = EmailLogStatus.sent

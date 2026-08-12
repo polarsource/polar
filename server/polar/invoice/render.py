@@ -1,10 +1,9 @@
-import asyncio
 import os
 import sys
 import traceback
-from asyncio.subprocess import PIPE
 from pathlib import Path
 
+import anyio
 from pydantic import BaseModel
 
 from .generator import Invoice, InvoiceGenerator
@@ -51,21 +50,21 @@ async def render_invoice_pdf(
     payload = InvoiceRenderRequest(
         invoice=invoice, heading_title=heading_title
     ).model_dump_json()
-    process = await asyncio.create_subprocess_exec(
-        sys.executable,
-        "-m",
-        "polar.invoice.render",
-        stdin=PIPE,
-        stdout=PIPE,
-        stderr=PIPE,
+    process = await anyio.run_process(
+        [sys.executable, "-m", "polar.invoice.render"],
+        input=payload.encode("utf-8"),
+        check=False,
         cwd=SERVER_DIRECTORY,
         env=build_invoice_renderer_env(),
     )
-    stdout, stderr = await process.communicate(payload.encode("utf-8"))
     if process.returncode != 0:
-        error = stderr.decode("utf-8").strip() or "unknown invoice renderer error"
+        assert process.stderr is not None
+        error = (
+            process.stderr.decode("utf-8").strip() or "unknown invoice renderer error"
+        )
         raise InvoiceRenderError(f"Invoice renderer failed: {error}")
-    return stdout
+    assert process.stdout is not None
+    return process.stdout
 
 
 def main() -> int:

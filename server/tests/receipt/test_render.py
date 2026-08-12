@@ -1,7 +1,8 @@
 import datetime
+import subprocess
 import sys
-from collections.abc import Mapping
 
+import anyio
 import pytest
 
 from polar.invoice.generator import InvoiceItem
@@ -67,75 +68,45 @@ async def test_render_receipt_pdf(receipt: Receipt) -> None:
     assert pdf.startswith(b"%PDF")
 
 
-class StubProcess:
-    def __init__(self, stdout: bytes, stderr: bytes, returncode: int) -> None:
-        self.stdout = stdout
-        self.stderr = stderr
-        self.returncode = returncode
-
-    async def communicate(self, input: bytes) -> tuple[bytes, bytes]:
-        self.input = input
-        return self.stdout, self.stderr
-
-
 @pytest.mark.asyncio
 async def test_render_receipt_pdf_raises_on_subprocess_failure(
     receipt: Receipt, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    process = StubProcess(b"", b"boom", 1)
+    async def run_process(
+        command: list[str], **kwargs: object
+    ) -> subprocess.CompletedProcess[bytes]:
+        assert command == [sys.executable, "-m", "polar.receipt.render"]
+        assert kwargs["input"]
+        assert kwargs["check"] is False
+        assert kwargs["cwd"] == SERVER_DIRECTORY
+        return subprocess.CompletedProcess(command, 1, stdout=b"", stderr=b"boom")
 
-    async def create_subprocess_exec(*args: object, **kwargs: object) -> StubProcess:
-        kwargs_dict = kwargs if isinstance(kwargs, Mapping) else {}
-        assert args == (sys.executable, "-m", "polar.receipt.render")
-        assert kwargs_dict["cwd"] == SERVER_DIRECTORY
-        return process
-
-    monkeypatch.setattr(
-        "polar.receipt.render.asyncio.create_subprocess_exec", create_subprocess_exec
-    )
+    monkeypatch.setattr("polar.receipt.render.anyio.run_process", run_process)
 
     with pytest.raises(ReceiptRenderError, match="Receipt renderer failed: boom"):
         await render_receipt_pdf(receipt)
-
-
-class HangingProcess:
-    """Simulates a subprocess that hangs forever on communicate."""
-
-    def __init__(self) -> None:
-        self.killed = False
-        self.returncode: int | None = None
-
-    async def communicate(self, input: bytes) -> tuple[bytes, bytes]:
-        # Hang forever.
-        import asyncio
-
-        await asyncio.sleep(3600)
-        return b"", b""
-
-    def kill(self) -> None:
-        self.killed = True
-        self.returncode = -9
-
-    async def wait(self) -> int:
-        return self.returncode or 0
 
 
 @pytest.mark.asyncio
 async def test_render_receipt_pdf_timeout(
     receipt: Receipt, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    process = HangingProcess()
+    cancelled = False
 
-    async def create_subprocess_exec(*args: object, **kwargs: object) -> HangingProcess:
-        return process
+    async def run_process(
+        command: list[str], **kwargs: object
+    ) -> subprocess.CompletedProcess[bytes]:
+        nonlocal cancelled
+        try:
+            await anyio.sleep_forever()
+            raise AssertionError("unreachable")
+        finally:
+            cancelled = True
 
-    monkeypatch.setattr(
-        "polar.receipt.render.asyncio.create_subprocess_exec", create_subprocess_exec
-    )
+    monkeypatch.setattr("polar.receipt.render.anyio.run_process", run_process)
     monkeypatch.setattr("polar.receipt.render.RENDER_TIMEOUT_SECONDS", 0.1)
-    monkeypatch.setattr("polar.receipt.render.KILL_WAIT_SECONDS", 0.1)
 
     with pytest.raises(ReceiptRenderError, match="timed out"):
         await render_receipt_pdf(receipt)
 
-    assert process.killed
+    assert cancelled

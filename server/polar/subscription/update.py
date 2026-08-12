@@ -80,7 +80,6 @@ def _generate_product_credit_proration_billing_entries(
     )
 
     discount_amounts = [0] * len(priced_entries)
-
     if subscription.discount and subscription.discount.is_applicable(
         subscription.product, subscription.currency
     ):

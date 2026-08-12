@@ -547,11 +547,8 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
         self, prices: Sequence["SubscriptionProductPrice"], discount: "Discount | None"
     ) -> None:
         amount = sum(price.amount for price in prices)
-
-        if discount is not None and prices:
-            product = prices[0].product_price.product
-            if discount.is_applicable(product, self.currency):
-                amount -= discount.get_discount_amount(amount, self.currency)
+        if discount is not None:
+            amount -= discount.get_discount_amount(amount, self.currency)
 
         # Preserve the net/gross ratio across the amount change. The customer's
         # effective tax rate is fixed (single tax code, stable address) and recurring

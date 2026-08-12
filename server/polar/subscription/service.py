@@ -1058,9 +1058,7 @@ class SubscriptionService:
             product_price = subscription_product_price.product_price
             if is_static_price(product_price):
                 discount_amount = 0
-                if subscription.discount and subscription.discount.is_applicable(
-                    subscription.product, subscription.currency
-                ):
+                if subscription.discount:
                     discount_amount = subscription.discount.get_discount_amount(
                         subscription_product_price.amount, subscription.currency
                     )

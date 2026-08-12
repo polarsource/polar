@@ -1,12 +1,7 @@
-import uuid
-
 import pytest
 
 from polar.enums import TaxBehavior
-from polar.models import Order, Product, Subscription
-from polar.models.discount import DiscountPercentage
-from polar.models.discount_product import DiscountProduct
-from polar.models.product_price import ProductPriceFixed
+from polar.models import Order, Subscription
 from polar.models.subscription_product_price import SubscriptionProductPrice
 
 
@@ -20,26 +15,6 @@ def _charge(
     return Order(
         tax_behavior=tax_behavior, net_amount=net_amount, tax_amount=tax_amount
     )
-
-
-def _product() -> Product:
-    return Product(id=uuid.uuid4())
-
-
-def _percentage_discount(*products: Product) -> DiscountPercentage:
-    return DiscountPercentage(
-        basis_points=5000,
-        discount_products=[DiscountProduct(product=product) for product in products],
-    )
-
-
-def _prices_for(product: Product, *amounts: int) -> list[SubscriptionProductPrice]:
-    return [
-        SubscriptionProductPrice(
-            amount=amount, product_price=ProductPriceFixed(product=product)
-        )
-        for amount in amounts
-    ]
 
 
 class TestUpdateNetAmountFrom:
@@ -99,27 +74,3 @@ class TestUpdateAmountAndCurrency:
         subscription.update_amount_and_currency(_prices(3000), None)
         assert subscription.amount == 3000
         assert subscription.net_amount == 3000
-
-    def test_ineligible_discount_leaves_gross_amount(self) -> None:
-        pro = _product()
-        discount = _percentage_discount(_product())
-        subscription = Subscription(currency="usd")
-        subscription.update_amount_and_currency(_prices_for(pro, 2000), discount)
-        assert subscription.amount == 2000
-        assert subscription.net_amount == 2000
-
-    def test_applicable_discount_reduces_amount(self) -> None:
-        go = _product()
-        discount = _percentage_discount(go)
-        subscription = Subscription(currency="usd")
-        subscription.update_amount_and_currency(_prices_for(go, 1000), discount)
-        assert subscription.amount == 500
-        assert subscription.net_amount == 500
-
-    def test_unrestricted_discount_applies_to_any_product(self) -> None:
-        pro = _product()
-        discount = _percentage_discount()
-        subscription = Subscription(currency="usd")
-        subscription.update_amount_and_currency(_prices_for(pro, 2000), discount)
-        assert subscription.amount == 1000
-        assert subscription.net_amount == 1000

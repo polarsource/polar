@@ -10,14 +10,18 @@ from polar.benefit.strategies.license_keys.schemas import (
     BenefitLicenseKeysCreateProperties,
 )
 from polar.config import settings
-from polar.exceptions import NotPermitted
+from polar.exceptions import BadRequest, NotPermitted
 from polar.kit.db.postgres import (
     AsyncSessionMaker,
     create_async_engine,
     create_async_sessionmaker,
 )
 from polar.license_key.repository import LicenseKeyRepository
-from polar.license_key.schemas import LicenseKeyActivate, LicenseKeyUpdate
+from polar.license_key.schemas import (
+    LicenseKeyActivate,
+    LicenseKeyUpdate,
+    LicenseKeyValidate,
+)
 from polar.license_key.service import license_key as license_key_service
 from polar.models import (
     Account,
@@ -117,6 +121,87 @@ class TestConcurrentActivation:
 
             assert results.count(True) == 1
             assert activation_count == 1
+        finally:
+            async with sessionmaker() as cleanup_session:
+                await cleanup_session.execute(
+                    delete(Organization).where(Organization.id == organization.id)
+                )
+                await cleanup_session.execute(
+                    delete(Account).where(Account.id == account.id)
+                )
+                await cleanup_session.execute(delete(User).where(User.id == user.id))
+                await cleanup_session.commit()
+            await engine.dispose()
+
+
+async def _attempt_validation(
+    sessionmaker: AsyncSessionMaker, license_key_id: UUID
+) -> bool:
+    async with sessionmaker() as session:
+        repository = LicenseKeyRepository.from_session(session)
+        license_key = await repository.get_by_id(license_key_id)
+        assert license_key is not None
+        try:
+            await license_key_service.validate(
+                session,
+                license_key=license_key,
+                validate=LicenseKeyValidate(
+                    key=license_key.key,
+                    organization_id=license_key.organization_id,
+                    increment_usage=1,
+                    conditions={},
+                ),
+            )
+        except BadRequest:
+            await session.rollback()
+            return False
+        await session.commit()
+        return True
+
+
+@pytest.mark.asyncio
+class TestConcurrentValidation:
+    async def test_usage_limit_enforced_under_concurrency(self, worker_id: str) -> None:
+        engine = create_async_engine(
+            dsn=get_database_url(worker_id),
+            application_name=f"test_{worker_id}_lk_validate_concurrency",
+            pool_size=8,
+            pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+        )
+        sessionmaker = create_async_sessionmaker(engine)
+
+        async with sessionmaker() as setup_session:
+            save_fixture = save_fixture_factory(setup_session)
+            user = await create_user(save_fixture)
+            account = await create_account(save_fixture, user)
+            organization = await create_organization(save_fixture, account)
+            customer = await create_customer(save_fixture, organization=organization)
+            benefit = await create_benefit(save_fixture, organization=organization)
+            license_key = LicenseKey(
+                organization_id=organization.id,
+                customer_id=customer.id,
+                benefit_id=benefit.id,
+                key="testing-concurrent-validation",
+                status=LicenseKeyStatus.granted,
+                limit_usage=3,
+            )
+            setup_session.add(license_key)
+            await setup_session.commit()
+
+        try:
+            results = await asyncio.gather(
+                *(_attempt_validation(sessionmaker, license_key.id) for _ in range(5))
+            )
+
+            async with sessionmaker() as session:
+                usage = (
+                    await session.execute(
+                        select(LicenseKey.usage).where(LicenseKey.id == license_key.id)
+                    )
+                ).scalar_one()
+
+            assert results.count(True) == 3
+            assert usage == 3
         finally:
             async with sessionmaker() as cleanup_session:
                 await cleanup_session.execute(

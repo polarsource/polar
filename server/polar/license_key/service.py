@@ -198,6 +198,17 @@ class LicenseKeyService:
             customer_id=license_key.customer_id,
             benefit_id=license_key.benefit_id,
         )
+        await session.refresh(
+            license_key,
+            attribute_names=[
+                "status",
+                "expires_at",
+                "usage",
+                "limit_usage",
+                "validations",
+            ],
+            with_for_update=True,
+        )
         if not license_key.is_active():
             bound_logger.info("license_key.validate.invalid_status")
             raise ResourceNotFound("License key is no longer active.")

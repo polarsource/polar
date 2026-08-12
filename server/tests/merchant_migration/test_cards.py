@@ -11,7 +11,7 @@ from polar.merchant_migration.canonical import (
     CanonicalPaymentMethod,
     CanonicalPaymentMethodType,
 )
-from polar.merchant_migration.cards import link_payment_method
+from polar.merchant_migration.cards import AmbiguousCopiedCard, link_payment_method
 from polar.models import Customer, Organization, PaymentMethod
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
@@ -306,3 +306,30 @@ class TestKeepsTheCardTheSourceCharged:
 
         assert payment_method is not None
         assert payment_method.processor_id == "pm_copied"
+
+    async def test_two_indistinguishable_copies_raise(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        imported_customer: Customer,
+    ) -> None:
+        """Same brand, last4 and expiry on both copies. Nothing left to tell them
+        apart, and charging the wrong one is worse than not charging."""
+        _listing(
+            mocker,
+            [
+                _stripe_payment_method("pm_copy_a", **_card("2222")),
+                _stripe_payment_method("pm_copy_b", **_card("2222")),
+            ],
+        )
+
+        with pytest.raises(AmbiguousCopiedCard):
+            await link_payment_method(
+                session,
+                imported_customer,
+                source_method=CanonicalPaymentMethod(
+                    source_id="pm_on_the_source",
+                    type=CanonicalPaymentMethodType.card,
+                    **_card("2222"),  # type: ignore[arg-type]
+                ),
+            )

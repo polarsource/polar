@@ -44,6 +44,7 @@ module "redis_private_link" {
   redis_host               = module.redis.host
   redis_port               = module.redis.port
   redis_arn                = module.redis.arn
+  allowed_principals       = ["arn:aws:iam::557508356783:root"]
   permissions_boundary_arn = data.aws_iam_policy.permission_boundary.arn
 }
 

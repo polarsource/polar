@@ -151,10 +151,6 @@ def up(
         bool,
         typer.Option("--skip-integrations", help="Skip GitHub/Stripe setup prompts"),
     ] = False,
-    skip_tinybird: Annotated[
-        bool,
-        typer.Option("--skip-tinybird", help="Skip starting and waiting for Tinybird"),
-    ] = False,
     database_name: Annotated[
         str | None,
         typer.Option(
@@ -185,7 +181,6 @@ def up(
     ctx = Context(
         clean=clean,
         skip_integrations=skip_integrations,
-        skip_tinybird=skip_tinybird,
         database_name=database_name,
     )
     steps = discover_steps()

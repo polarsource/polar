@@ -41,14 +41,9 @@ def run(ctx: Context) -> bool:
         return True
 
     compose_cmd = ["docker", "compose"]
-    # Include tinybird profile by default; exclude it when skip_tinybird is set
-    if not ctx.skip_tinybird:
-        compose_cmd.extend(["--profile", "tinybird"])
     compose_cmd.extend(["up", "-d"])
 
-    service_name = "PostgreSQL, Redis, Minio"
-    if not ctx.skip_tinybird:
-        service_name += ", Tinybird"
+    service_name = "PostgreSQL, Redis, Minio, Tinybird"
 
     with step_spinner(f"Starting {service_name}..."):
         result = run_command(

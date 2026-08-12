@@ -13,27 +13,33 @@ plain `dev docker up` returns once containers are created.
 ## Basic commands
 
 **Start in background (the default):**
+
 ```bash
 dev docker up -d
 ```
 
 **Start and block until app services are healthy:**
+
 ```bash
 dev docker up -d --wait
 ```
+
 `--wait` returns only once api answers `/healthz` and web responds. Prefer it in
 scripts and tooling so "up finished" means "actually serving" rather than "the
 container was created" — on first boot the app keeps compiling and migrating for
 a while after the container starts.
 
 **Start in the foreground and stream logs:**
+
 ```bash
 dev docker up --no-detach
 ```
+
 Shared infra still starts detached; only the app stack is attached, so Ctrl+C
 stops the app stack.
 
 **Start specific services:**
+
 ```bash
 dev docker up -d api            # api (+ shared infra)
 dev docker up -d web            # web (+ shared infra)
@@ -42,16 +48,15 @@ dev docker up -d api worker     # api and worker
 
 ## Options
 
-| Flag | Description |
-|------|-------------|
-| `-d` / `--detach` | Detached / background (default) |
-| `--no-detach` | Foreground; stream app logs until you stop it |
-| `--wait` | Block until app services are healthy (detached only) |
-| `-b` / `--build` | Rebuild images before starting |
-| `--pull` | Refresh base images before building (see below) |
-| `--monitoring` | Include Prometheus and Grafana in shared infra |
-| `--skip-tinybird` | Don't start Tinybird |
-| `-i N` | Target instance N explicitly (usually auto-detected) |
+| Flag              | Description                                          |
+| ----------------- | ---------------------------------------------------- |
+| `-d` / `--detach` | Detached / background (default)                      |
+| `--no-detach`     | Foreground; stream app logs until you stop it        |
+| `--wait`          | Block until app services are healthy (detached only) |
+| `-b` / `--build`  | Rebuild images before starting                       |
+| `--pull`          | Refresh base images before building (see below)      |
+| `--monitoring`    | Include Prometheus and Grafana in shared infra       |
+| `-i N`            | Target instance N explicitly (usually auto-detected) |
 
 ## Rebuilding with fresh bases
 

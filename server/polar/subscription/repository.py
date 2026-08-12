@@ -727,10 +727,10 @@ class SubscriptionProductPriceRepository(
             )
             .distinct(CustomerSeat.customer_id)
             # In case a customer holds several claimed seats across
-            # different subscriptions, take the most recently claimed one.
+            # different subscriptions, take the oldest claimed one.
             # Without this tiebreaker, PostgreSQL's DISTINCT ON picks an
             # arbitrary row, leading to non-deterministic metered pricing.
-            .order_by(CustomerSeat.customer_id, CustomerSeat.claimed_at.desc())
+            .order_by(CustomerSeat.customer_id, CustomerSeat.claimed_at.asc())
             .options(
                 joinedload(CustomerSeat.subscription).options(
                     joinedload(Subscription.customer).raiseload(Customer.owner),

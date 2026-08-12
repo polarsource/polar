@@ -210,14 +210,14 @@ class TestSubscriptionProductPriceRepository:
         )
         assert result[customer_without_subscription.id] is None
 
-    async def test_get_by_customers_and_meter_multiple_seats_picks_most_recently_claimed(
+    async def test_get_by_customers_and_meter_multiple_seats_picks_oldest_claimed(
         self,
         save_fixture: SaveFixture,
         session: AsyncSession,
         meter: Meter,
         organization: Organization,
     ) -> None:
-        """When a customer holds multiple claimed seats, the most recently
+        """When a customer holds multiple claimed seats, the oldest
         claimed seat's subscription determines the metered price.
 
         This guards against non-deterministic DISTINCT ON behavior: without
@@ -261,7 +261,7 @@ class TestSubscriptionProductPriceRepository:
             save_fixture, product=product_b, customer=billing_manager_b
         )
 
-        # The seat claimed later (on subscription_b) must win.
+        # The seat claimed earlier (on subscription_a) must win.
         earlier_claimed_at = utc_now() - timedelta(days=2)
         later_claimed_at = utc_now() - timedelta(days=1)
         await create_customer_seat(
@@ -278,7 +278,7 @@ class TestSubscriptionProductPriceRepository:
             status=SeatStatus.claimed,
             claimed_at=later_claimed_at,
         )
-        subscription_b_id = subscription_b.id
+        subscription_a_id = subscription_a.id
         session.expunge_all()
 
         repository = SubscriptionProductPriceRepository.from_session(session)
@@ -286,15 +286,15 @@ class TestSubscriptionProductPriceRepository:
 
         customer_price = result[seat_holder.id]
         assert customer_price is not None
-        # The most recently claimed seat's subscription is selected.
+        # The oldest claimed seat's subscription is selected.
         assert (
             customer_price.subscription_product_price.subscription_id
-            == subscription_b_id
+            == subscription_a_id
         )
-        # And the unit amount reflects subscription_b's metered price.
+        # And the unit amount reflects subscription_a's metered price.
         product_price = customer_price.subscription_product_price.product_price
         assert is_metered_price(product_price)
-        assert product_price.unit_amount == Decimal(200)
+        assert product_price.unit_amount == Decimal(100)
 
 
 async def _create_sent_reminder_log(

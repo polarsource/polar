@@ -440,3 +440,8 @@ variable "turnstile_secret" {
   type        = string
   sensitive   = true
 }
+
+variable "redis_private_link_host" {
+  description = "DNS name of the Render private link to the test worker Redis"
+  type        = string
+}

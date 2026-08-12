@@ -62,7 +62,7 @@ locals {
   read_replica = [for r in data.render_postgres.db.read_replicas : r if r.name == "polar-read"][0]
 
   # Redis connection info
-  redis_host = render_redis.redis_sandbox.id
+  redis_host = var.redis_private_link_host
   redis_port = "6379"
 
   # Forwarded allow IPs: Cloudflare ranges + Render proxy

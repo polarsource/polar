@@ -295,6 +295,20 @@ class SeatService:
                 source_id, "Order must be paid before assigning seats"
             )
 
+        # Lock the container's `seats` row and re-read it before checking
+        # availability. A concurrent subscription seat update (customer-portal
+        # PATCH /subscriptions/{id}) locks the same subscription row with
+        # FOR UPDATE while validating the new seat count; without this lock,
+        # `get_available_seats_count_for_container` below would read a stale
+        # `seats` value from the identity map, letting a seat assignment slip
+        # in between the subscription update's validation and its commit and
+        # over-provision seats. FOR UPDATE serializes the two paths on the
+        # same row (same pattern as payout/service.py:cancel and
+        # organization_review/tasks).
+        await session.refresh(
+            container, attribute_names=["seats"], with_for_update=True
+        )
+
         repository = CustomerSeatRepository.from_session(session)
         available_seats = await repository.get_available_seats_count_for_container(
             container

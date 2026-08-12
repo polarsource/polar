@@ -158,7 +158,10 @@ class CustomerService:
                     {
                         "type": "value_error",
                         "loc": ("query", "interval"),
-                        "msg": "The interval is too small for the given date range.",
+                        "msg": (
+                            "The interval is too small for the given date range. "
+                            "Use a larger interval or reduce the date range."
+                        ),
                         "input": interval,
                     }
                 ]

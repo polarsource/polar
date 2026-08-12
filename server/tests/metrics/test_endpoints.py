@@ -34,6 +34,29 @@ class TestGetMetrics:
         )
 
         assert response.status_code == 422
+        msg = response.json()["detail"][0]["msg"]
+        assert "too small" in msg.lower()
+        assert "too big" not in msg.lower()
+
+    @pytest.mark.auth(
+        AuthSubjectFixture(scopes={Scope.metrics_read}),
+    )
+    async def test_export_over_limits(
+        self, client: AsyncClient, user_organization: UserOrganization
+    ) -> None:
+        response = await client.get(
+            "/v1/metrics/export",
+            params={
+                "start_date": "2023-01-01",
+                "end_date": "2024-12-31",
+                "interval": "day",
+            },
+        )
+
+        assert response.status_code == 422
+        msg = response.json()["detail"][0]["msg"]
+        assert "too small" in msg.lower()
+        assert "too big" not in msg.lower()
 
     @pytest.mark.auth(
         AuthSubjectFixture(scopes={Scope.metrics_read}),

@@ -86,6 +86,27 @@ class TestGetMeterQuantities:
 
         assert response.status_code == 404
 
+    @pytest.mark.auth
+    async def test_interval_too_small_for_range(
+        self,
+        client: AsyncClient,
+        user_organization: UserOrganization,
+        meter: Meter,
+    ) -> None:
+        response = await client.get(
+            f"/v1/meters/{meter.id}/quantities",
+            params={
+                "start_timestamp": "2024-01-01T00:00:00Z",
+                "end_timestamp": "2024-01-31T00:00:00Z",
+                "interval": "hour",
+            },
+        )
+
+        assert response.status_code == 422
+        msg = response.json()["detail"][0]["msg"]
+        assert "too small" in msg.lower()
+        assert "too big" not in msg.lower()
+
 
 @pytest.mark.asyncio
 class TestCreateMeter:

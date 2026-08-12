@@ -1,11 +1,7 @@
-"""Linking the moved cards back to the imported customers and subscriptions.
+"""Reading the moved cards back onto the imported customers.
 
-PAN copy (and PAN import) land the cards on Polar's own Stripe account under the
-source's `cus_…` id, but with fresh `pm_…` ids. Until those are read back and
-stored as Polar payment methods, an imported subscription has nothing to charge.
-
-This is the `verify_cards` checklist step, and the same check the cutover runs
-again per subscription before it stops billing on the source.
+A copy lands them under the source's `cus_…` id but with fresh `pm_…` ids, so
+they stay invisible to Polar until stored as payment methods of our own.
 """
 
 from collections.abc import Sequence
@@ -30,16 +26,10 @@ async def link_payment_method(
     *,
     source_method: CanonicalPaymentMethod | None = None,
 ) -> PaymentMethod | None:
-    """Mirror the cards on Polar's Stripe account onto the Polar customer.
+    """The method to charge, or None while nothing has landed for this customer.
 
-    ``source_method`` is the method the source subscription was charging; the
-    copy of it wins, so a customer with several stored cards keeps being charged
-    on the one they were already being charged on.
-
-    Returns the payment method to charge, or None while nothing has landed for
-    this customer yet. Idempotent: re-running picks up cards that arrived since,
-    which is what makes it safe to run once per checklist step and again at
-    cutover.
+    ``source_method`` is what the source subscription was charging; its copy
+    wins. Idempotent, so it can run again as more cards arrive.
     """
     if customer.stripe_customer_id is None:
         return None
@@ -52,8 +42,7 @@ async def link_payment_method(
             )
         ]
     except stripe_lib.InvalidRequestError:
-        # The customer isn't on Polar's Stripe account: the copy hasn't reached
-        # them. Not an error — it's the answer the checklist is asking for.
+        # No such customer on our account: the copy hasn't reached them.
         return None
 
     payment_methods = [
@@ -68,8 +57,7 @@ async def link_payment_method(
     preferred = _preferred(
         payment_methods, customer.default_payment_method_id, source_method
     )
-    # The renewal falls back to the customer default when a subscription has no
-    # method of its own, so an imported customer should have one.
+    # What the renewal charges when a subscription has no method of its own.
     if customer.default_payment_method_id is None:
         await CustomerRepository.from_session(session).update(
             customer, update_dict={"default_payment_method_id": preferred.id}
@@ -82,11 +70,8 @@ def _preferred(
     default_id: UUID | None,
     source_method: CanonicalPaymentMethod | None,
 ) -> PaymentMethod:
-    """The copy of what the source was charging, else an existing default, else
-    the newest card, which Stripe lists first. Falls back to any other method
-    rather than nothing — ACH and SEPA are chargeable and migratable, per
-    `CanonicalPaymentMethodType.requires_reentry`.
-    """
+    """Ordered by how much each candidate says about what to charge. Any stored
+    method beats nothing: ACH and SEPA migrate too, per `requires_reentry`."""
     if source_method is not None:
         for payment_method in payment_methods:
             if _is_copy_of(payment_method, source_method):
@@ -103,8 +88,7 @@ def _preferred(
 def _is_copy_of(
     payment_method: PaymentMethod, source_method: CanonicalPaymentMethod
 ) -> bool:
-    """A copy keeps the card but not its id, so match on what survives. Within
-    one customer's handful of cards, brand + last4 + expiry doesn't collide."""
+    """A copy keeps the card but not its id, so match on what survives."""
     details = {
         "last4": source_method.last4,
         "brand": source_method.brand,

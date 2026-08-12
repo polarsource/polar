@@ -102,7 +102,7 @@ locals {
   read_replica = [for r in render_postgres.db.read_replicas : r if r.name == "polar-read-test"][0]
 
   # Redis connection info
-  redis_host = local.test_enabled ? render_redis.redis[0].id : ""
+  redis_host = local.test_enabled ? var.redis_private_link_host : ""
   redis_port = "6379"
 
   # Forwarded allow IPs: Cloudflare ranges + Render proxy
@@ -149,7 +149,7 @@ module "test" {
     database_pool_size     = "10"
     postgres_database      = local.db_name
     postgres_read_database = local.db_name
-    redis_db               = "0"
+    redis_db               = "1"
     plan                   = "pro"
   }
 

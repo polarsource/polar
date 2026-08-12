@@ -16,11 +16,13 @@ Now you can use `dev` from anywhere in the repo.
 ## Privacy & Analytics
 
 The CLI collects anonymous usage analytics to help improve the tool. This includes:
+
 - Command name and flags used (secrets/tokens are automatically redacted)
 - Operating system
 - Git user name and email (for identification)
 
 To disable analytics, set either environment variable:
+
 - `DEV_CLI_NO_ANALYTICS=1` — Polar-specific opt-out
 - `DO_NOT_TRACK=1` — Standard privacy flag
 
@@ -107,7 +109,6 @@ def run(ctx: Context) -> bool:
     """Execute the step. Return True on success."""
     # ctx.clean - if --clean flag was passed
     # ctx.skip_integrations - if --skip-integrations was passed
-    # ctx.skip_tinybird - if --skip-tinybird was passed
     # ctx.database_name - if --database-name was passed
     step_status(True, "Did something", "details")
     return True

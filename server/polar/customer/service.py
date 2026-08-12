@@ -537,16 +537,50 @@ class CustomerService:
         if errors:
             raise PolarRequestValidationError(errors)
 
-        # Validate tax_id
-        tax_id = customer_update.tax_id or (
-            customer.tax_id[0] if customer.tax_id else None
-        )
-        if tax_id is not None:
-            billing_address = (
-                customer_update.billing_address
-                if "billing_address" in customer_update.model_fields_set
-                and customer_update.billing_address is not None
-                else customer.billing_address
+        if "tax_id" in customer_update.model_fields_set:
+            if customer_update.tax_id is None:
+                # Explicitly clearing the tax ID.
+                customer.tax_id = None
+            else:
+                # A new tax ID value was provided; validate it against the
+                # (possibly updated) billing address country.
+                billing_address = self._get_billing_address_for_tax_id_validation(
+                    customer, customer_update
+                )
+                if billing_address is None:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "missing",
+                                "loc": ("body", "billing_address"),
+                                "msg": "Country is required to validate tax ID.",
+                                "input": None,
+                            }
+                        ]
+                    )
+                try:
+                    customer.tax_id = validate_tax_id(
+                        customer_update.tax_id, billing_address.country
+                    )
+                except InvalidTaxID as e:
+                    raise PolarRequestValidationError(
+                        [
+                            {
+                                "type": "invalid",
+                                "loc": ("body", "tax_id"),
+                                "msg": "Invalid tax ID.",
+                                "input": customer_update.tax_id,
+                            }
+                        ]
+                    ) from e
+        elif (
+            "billing_address" in customer_update.model_fields_set
+            and customer.tax_id is not None
+        ):
+            # Billing address changed while an existing tax ID is set:
+            # re-validate the existing tax ID against the new country.
+            billing_address = self._get_billing_address_for_tax_id_validation(
+                customer, customer_update
             )
             if billing_address is None:
                 raise PolarRequestValidationError(
@@ -560,7 +594,9 @@ class CustomerService:
                     ]
                 )
             try:
-                customer.tax_id = validate_tax_id(tax_id, billing_address.country)
+                customer.tax_id = validate_tax_id(
+                    customer.tax_id[0], billing_address.country
+                )
             except InvalidTaxID as e:
                 raise PolarRequestValidationError(
                     [
@@ -707,6 +743,21 @@ class CustomerService:
         customer = await repository.update(customer, update_dict=update_dict)
 
         return customer
+
+    def _get_billing_address_for_tax_id_validation(
+        self,
+        customer: Customer,
+        customer_update: CustomerUpdate | CustomerUpdateExternalID,
+    ) -> Address | None:
+        # Resolve the billing address used for tax ID validation: prefer the
+        # value from this update payload (if explicitly provided and non-null),
+        # otherwise fall back to the customer's existing billing address.
+        if (
+            "billing_address" in customer_update.model_fields_set
+            and customer_update.billing_address is not None
+        ):
+            return customer_update.billing_address
+        return customer.billing_address
 
     def _is_anonymized(self, customer: Customer) -> bool:
         if customer.user_metadata.get("__anonymized_at") is not None:

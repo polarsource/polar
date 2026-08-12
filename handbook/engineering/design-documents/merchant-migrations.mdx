@@ -140,7 +140,7 @@ We want to start with the following sources, and extend them to more if needed.
 
 |                   | How we read it     | How cards move | Notes                           |
 | ----------------- | ------------------ | -------------- | ------------------------------- |
-| **Stripe**        | Stripe App (OAuth) | PAN copy       | Read scopes + `subscription_write` for the cutover pause |
+| **Stripe**        | Restricted API key (`rk_…`) | PAN copy       | Read scopes + `subscription_write` for the cutover pause |
 | **Lemon Squeezy** | API key            | (pending)      |                                 |
 | **Paddle**        | API key            | PAN import     | They use Ixopay as a card vault |
 
@@ -151,11 +151,11 @@ We want to start with the following sources, and extend them to more if needed.
 The idea is to create a new `migration` module (I'm up for new name suggestions) with similar structure as we have now, with an `adapters` submodule.
 
 ### Main classes
-- **`MigrationJob`** one row per migration run for an org. The root: source platform and current step.
-- **`MigrationRecord`** one row per imported thing (customer, product, subscription, order, …), mapping `source_id → target_id` with a status. It's our idempotency layer, scoped per org, so we can trigger multiple migrations safely.
+- **`MerchantMigration`** one row per migration run for an org. The root: source platform and current step.
+- **`MerchantMigrationRecord`** one row per imported thing (customer, product, subscription, order, …), mapping `source_id → target_id` with a status. It's our idempotency layer, scoped per org, so we can trigger multiple migrations safely.
 - **`SourceAdapter`** we will have one for every billing provider (e.g. `StripeAdapter`). Its main responsibility is to read the current billing provider API and provide a generic representation the migration service can work with. `extract()` must be incremental as customer data can be huge. It also stops billing on the source at cutover via `stop_source_subscription()`, the adapter's only write.
-- **`PanTransferStep`** the checklist for moving cards (step, owner, status, kind, inputs - see Appendix B). Stored as a JSONB column on `MigrationJob`: a list of step objects.
-- **`MigrationService`** the main orchestrator.
+- **`PanTransferStep`** the checklist for moving cards (step, owner, status, kind, inputs - see Appendix B). Stored as a JSONB column on `MerchantMigration`: a list of step objects.
+- **`MerchantMigrationService`** the main orchestrator.
 - **`CanonicalRecord`** to have everything normalized in memory first (variants: `CanonicalProduct` / `Customer` / `Subscription`). The precheck engine reads these and returns a `PrecheckReport` (Appendix A); Appendix C shows the flow end to end.
 
 ## Background jobs: precheck & catalog import
@@ -260,16 +260,16 @@ The merchant walks the checklist as a guided, one-step-at-a-time wizard and can 
 This shows how the classes communicate. Precheck/import run as background batches in production (see *Background jobs*); the snippet is the logical flow.
 
 ```python
-# 1. read + normalize from the source
-#    Stripe: mint a short-lived access token from the stored OAuth refresh token
-token = await stripe_oauth.refresh(job.source_refresh_token)  # rotates; persist token.refresh_token
-records = [r async for r in StripeAdapter(api_key=token.access_token).extract()]
+# 1. read + normalize from the source (Stripe: merchant-pasted restricted key)
+records = [r async for r in StripeAdapter(api_key=job.source_credentials["api_key"]).extract()]
 # records = [CanonicalProduct(...), CanonicalCustomer(...), CanonicalSubscription(...)]
 
 # 2. precheck (no writes), then stage each record in the ledger
 report = precheck.run(records, org)        # PrecheckReport(can_start=True, blockers=0, ...)
 for r in records:
-    repo.upsert(MigrationRecord(job_id=job.id, source_id=r.source_id, canonical=r))
+    repo.upsert(MerchantMigrationRecord(
+        merchant_migration_id=job.id, source_id=r.source_id, canonical=r
+    ))
 
 # 3. import through the existing services (subscriptions created paused)
 await product_service.import_from_canonical(canonical_product)

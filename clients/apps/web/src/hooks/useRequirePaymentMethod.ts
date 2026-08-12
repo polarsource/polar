@@ -5,10 +5,6 @@ import { useQueryClient } from '@tanstack/react-query'
 import { useTheme } from 'next-themes'
 import { useCallback } from 'react'
 
-/**
- * Runs an action that will charge the customer, asking for a card first when
- * none is on file.
- */
 export const useRequirePaymentMethod = (
   api: Client,
   customerSessionToken: string,

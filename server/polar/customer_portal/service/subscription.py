@@ -294,6 +294,19 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                 allowed_visibilities=frozenset({Visibility.public}),
             )
 
+    async def resume(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> Subscription:
+        if subscription.can_resume():
+            await self._require_payment_method(session, subscription, "resuming")
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            return await subscription_service.resume(session, ctx, subscription)
+
     async def uncancel(
         self,
         session: AsyncSession,
@@ -310,19 +323,6 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                 ctx,
                 subscription,
             )
-
-    async def resume(
-        self,
-        session: AsyncSession,
-        subscription: Subscription,
-    ) -> Subscription:
-        if subscription.can_resume():
-            await self._require_payment_method(session, subscription, "resuming")
-
-        async with SubscriptionUpdateContext(
-            session, subscription, subscription_service
-        ) as ctx:
-            return await subscription_service.resume(session, ctx, subscription)
 
     async def cancel(
         self,

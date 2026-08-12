@@ -33,14 +33,14 @@ A migration is divided into two things:
 
 ## Migration process
 
-The migration is split into 3 phases. The **setup** phase, where the merchant creates a new migration, checks that everything is OK, and creates the catalog on the Polar side (precheck and catalog import run as background jobs — see *Background jobs: precheck & catalog import*). The **migration** phase, where we copy the PAN information from the current billing provider to Polar's account, and Polar moves each subscription one by one. The **cleanup** phase: once enough subscriptions are moved, the merchant stops billing on the old provider and removes the old integration (code, keys).
+The migration is split into 3 phases. The **setup** phase, where the merchant creates a new migration, checks that everything is OK, and creates the catalog on the Polar side (precheck and catalog import are background jobs — see below). The **migration** phase, where we copy the PAN information from the current billing provider to Polar's account, and Polar moves each subscription one by one. The **cleanup** phase: once enough subscriptions are moved, the merchant stops billing on the old provider and removes the old integration (code, keys).
 
 ```mermaid
 flowchart TB
   subgraph S["Setup phase"]
     A["Source setup<br/>Connect Stripe via restricted key; LS/Paddle via API key"]
-    B["Pre-check<br/>Background: extract + stage + classify"]
-    C["Create catalog & subscriptions<br/>Background: sequential product → customer → subscription batches (paused)"]
+    B["Pre-check<br/>Background job"]
+    C["Create catalog & subscriptions<br/>Background job; subscriptions paused"]
     A --> B --> C
   end
   subgraph M["Migration phase"]
@@ -80,7 +80,7 @@ Imported subscriptions are created `paused` (we considered a separate `migration
 
 Only step 4 is irreversible, and every check is read-only, so a subscription that fails one is left billing on the source and paused on Polar, with a reason on its ledger row. A trial carries over as `trialing` until its end date.
 
-**Retries.** One subscription per job, each in its own transaction (same one-task-one-transaction rule as import batches; see *Background jobs* and [ADR-0003](/engineering/decisions/0003-request-scoped-unit-of-work)). The cancellation is stamped with a marker (Stripe: `cancellation_details.comment`) so a run that dies between cancelling on the source and committing finishes the move on retry instead of reading its own cancellation as the customer having churned. `MerchantMigrationRecord.cutover_status` (`moved`/`skipped`/`failed`, null = not reached) is the ledger; retrying re-opens everything that isn't `moved`. When cutover workers are wired, reuse the import operation's `can_retry()` final-attempt write and stall-on-GET check for orchestration-level failure.
+**Retries.** One subscription per job, each in its own transaction ([ADR-0003](/engineering/decisions/0003-request-scoped-unit-of-work)). The cancellation is stamped with a marker (Stripe: `cancellation_details.comment`) so a run that dies between cancelling on the source and committing finishes the move on retry instead of reading its own cancellation as the customer having churned. `MerchantMigrationRecord.cutover_status` (`moved`/`skipped`/`failed`, null = not reached) is the ledger; retrying re-opens everything that isn't `moved`.
 
 Polar will bill the next billing cycle. If for some reason the payment fails on the next billing cycle, the subscription will enter the normal dunning state where we send an email to the customer.
 
@@ -192,8 +192,8 @@ No separate Job table. `MerchantMigration` holds a single JSONB **operation** (n
 | Precheck in flight | `pre_check` | `{status: running, cursor: …}` |
 | Precheck finished — review records | `pre_check` | `{status: done}` |
 | Precheck failed | `pre_check` | `{status: failed, error: …, cursor: …}` |
-| Import just enqueued | `create_catalog` | `{status: pending, …}` |
-| Import in flight | `create_catalog` | `{status: running, cursor: …}` |
+| Import just enqueued | `create_catalog` | `{status: pending, selection: {exclude_record_ids: […]}, …}` |
+| Import in flight | `create_catalog` | `{status: running, cursor: …, selection: …}` |
 | Import finished | `create_catalog` | `{status: done}` |
 | Partial re-import | `create_catalog` | `{status: pending\|running}` again, then `done` |
 
@@ -341,27 +341,26 @@ The merchant walks the checklist as a guided, one-step-at-a-time wizard and can 
 
 ## Appendix C: An implementation example
 
-This shows how the classes communicate. Extraction and import are **batched in background workers** in production (see *Background jobs: precheck & catalog import*); the snippet below is the logical flow, not the HTTP request body.
+This shows how the classes communicate. Precheck/import run as background batches in production (see *Background jobs*); the snippet is the logical flow.
 
 ```python
-# 1. read + normalize from the source (incremental; each extract_batch pages + stages)
+# 1. read + normalize from the source
 #    Stripe: mint a short-lived access token from the stored OAuth refresh token
 token = await stripe_oauth.refresh(job.source_refresh_token)  # rotates; persist token.refresh_token
 records = [r async for r in StripeAdapter(api_key=token.access_token).extract()]
 # records = [CanonicalProduct(...), CanonicalCustomer(...), CanonicalSubscription(...)]
 
-# 2. precheck against the staged ledger, then classify (precheck.classify task)
+# 2. precheck (no writes), then stage each record in the ledger
 report = precheck.run(records, org)        # PrecheckReport(can_start=True, blockers=0, ...)
 for r in records:
     repo.upsert(MigrationRecord(job_id=job.id, source_id=r.source_id, canonical=r))
 
-# 3. import through the existing services in sequential type batches
-#    (products → customers → subscriptions; cursor on the migration operation)
+# 3. import through the existing services (subscriptions created paused)
 await product_service.import_from_canonical(canonical_product)
 await subscription_service.import_from_canonical(canonical_subscription)
 ```
 
-Card move (PAN copy) and the subscription migration are described under *Moving cards* and *Switching subscriptions*. Cutover workers follow the same one-entity-per-job and ledger patterns as the import batches.
+Card move (PAN copy) and the subscription migration are described under *Moving cards* and *Switching subscriptions*.
 
 ## Appendix D: Stripe → Polar
 

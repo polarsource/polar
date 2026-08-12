@@ -10,7 +10,10 @@ from polar.merchant_migration.canonical import (
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
 )
-from polar.merchant_migration.repository import MerchantMigrationRecordRepository
+from polar.merchant_migration.repository import (
+    MerchantMigrationRecordRepository,
+    MerchantMigrationRepository,
+)
 from polar.models import MerchantMigration, Organization
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
@@ -183,3 +186,63 @@ class TestUpsert:
         assert reused.merchant_migration_id == second_migration.id
         all_records = await repository.get_all(repository.get_base_statement())
         assert len(all_records) == 1
+
+
+@pytest.mark.asyncio
+class TestGetOpsStatement:
+    async def test_returns_migrations_across_organizations(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        organization_second: Organization,
+    ) -> None:
+        await _create_migration(save_fixture, organization)
+        await _create_migration(save_fixture, organization_second)
+        repository = MerchantMigrationRepository.from_session(session)
+
+        migrations = await repository.get_all(repository.get_ops_statement())
+
+        assert {migration.organization_id for migration in migrations} == {
+            organization.id,
+            organization_second.id,
+        }
+        # The organization is eager-loaded: the ops listing reads `.name` per row.
+        assert all(migration.organization is not None for migration in migrations)
+
+
+@pytest.mark.asyncio
+class TestGetOpsById:
+    async def test_loads_the_organization(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRepository.from_session(session)
+
+        found = await repository.get_ops_by_id(migration.id)
+
+        assert found is not None
+        assert found.organization.id == organization.id
+
+    async def test_for_update_skips_the_organization_join(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+    ) -> None:
+        """`FOR UPDATE` can't cross an outer join, so the locking read drops it."""
+        migration = await _create_migration(save_fixture, organization)
+        repository = MerchantMigrationRepository.from_session(session)
+
+        found = await repository.get_ops_by_id(migration.id, for_update=True)
+
+        assert found is not None
+        assert found.id == migration.id
+
+    async def test_unknown_id_is_none(self, session: AsyncSession) -> None:
+        repository = MerchantMigrationRepository.from_session(session)
+
+        assert await repository.get_ops_by_id(MerchantMigration.generate_id()) is None

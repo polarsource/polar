@@ -22059,6 +22059,17 @@ export interface components {
      * @enum {string}
      */
     IdentityVerificationStatus: 'unverified' | 'pending' | 'verified' | 'failed'
+    /** InactiveSubscription */
+    InactiveSubscription: {
+      /**
+       * Error
+       * @example InactiveSubscription
+       * @constant
+       */
+      error: 'InactiveSubscription'
+      /** Detail */
+      detail: string
+    }
     /**
      * Insight
      * @description A computed, narrated reading of the business with a drill-down.
@@ -41441,13 +41452,15 @@ export interface operations {
           'application/json': components['schemas']['PaymentFailed']
         }
       }
-      /** @description Subscription is already canceled or will be at the end of the period. */
+      /** @description Subscription is already canceled or will be at the end of the period, or is not active. */
       403: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['AlreadyCanceledSubscription']
+          'application/json':
+            | components['schemas']['AlreadyCanceledSubscription']
+            | components['schemas']['InactiveSubscription']
         }
       }
       /** @description Subscription not found. */

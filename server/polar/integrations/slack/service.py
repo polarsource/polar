@@ -367,20 +367,20 @@ class SlackAppService:
 
         grant_repository = BenefitGrantRepository.from_session(session)
         for benefit in benefits:
-            grant = await grant_repository.get_by_property_and_organization(
+            grants = await grant_repository.list_by_property_and_organization(
                 integration.organization_id,
                 "channel_id",
                 channel_id,
                 benefit_id=benefit.id,
                 for_update=True,
             )
-            if grant is None:
-                continue
-
-            properties = dict(grant.properties or {})
-            if isinstance(connected_team_id, str):
-                properties["connected_team_id"] = connected_team_id
-            await grant_repository.update(grant, update_dict={"properties": properties})
+            for grant in grants:
+                properties = dict(grant.properties or {})
+                if isinstance(connected_team_id, str):
+                    properties["connected_team_id"] = connected_team_id
+                await grant_repository.update(
+                    grant, update_dict={"properties": properties}
+                )
 
     async def _handle_channel_id_changed(
         self,
@@ -401,19 +401,19 @@ class SlackAppService:
 
         grant_repository = BenefitGrantRepository.from_session(session)
         for benefit in benefits:
-            grant = await grant_repository.get_by_property_and_organization(
+            grants = await grant_repository.list_by_property_and_organization(
                 integration.organization_id,
                 "channel_id",
                 old_channel_id,
                 benefit_id=benefit.id,
                 for_update=True,
             )
-            if grant is None:
-                continue
-
-            properties = dict(grant.properties or {})
-            properties["channel_id"] = new_channel_id
-            await grant_repository.update(grant, update_dict={"properties": properties})
+            for grant in grants:
+                properties = dict(grant.properties or {})
+                properties["channel_id"] = new_channel_id
+                await grant_repository.update(
+                    grant, update_dict={"properties": properties}
+                )
 
     async def _validate_credentials(
         self,

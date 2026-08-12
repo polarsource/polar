@@ -1,21 +1,21 @@
-import { Grid, Text } from "@polar-sh/orbit";
-import { Box } from "@polar-sh/orbit/Box";
-import type { PropsWithChildren, ReactNode } from "react";
+import { Grid, Text } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
+import type { PropsWithChildren, ReactNode } from 'react'
 
 interface ChapterMarkerProps {
-  index: string;
-  name: string;
+  index?: string
+  name: string
 }
 
-const ChapterMarker = ({ index, name }: ChapterMarkerProps) => (
+const ChapterMarker = ({ name }: ChapterMarkerProps) => (
   <Box alignItems="start">
     <Text variant="heading-m">{name}</Text>
   </Box>
-);
+)
 
 interface ChapterHeadlineProps {
-  title: string;
-  subtitle: string;
+  title: string
+  subtitle: string
 }
 
 export const ChapterHeadline = ({ title, subtitle }: ChapterHeadlineProps) => (
@@ -27,17 +27,17 @@ export const ChapterHeadline = ({ title, subtitle }: ChapterHeadlineProps) => (
       {subtitle}
     </Text>
   </Box>
-);
+)
 
 export type ChapterProps = PropsWithChildren<{
-  id?: string;
-  index?: string;
-  name?: string;
-  title: string;
-  subtitle: string;
-  description?: ReactNode;
-  cta?: ReactNode;
-}>;
+  id?: string
+  index?: string
+  name?: string
+  title: string
+  subtitle: string
+  description?: ReactNode
+  cta?: ReactNode
+}>
 
 /**
  * A full-width narrative chapter: a hairline top border, a header row with
@@ -61,21 +61,21 @@ export const Chapter = ({
     id={id}
     width="100%"
     flexDirection="column"
-    rowGap={{ base: "3xl", md: "5xl" }}
-    paddingVertical={{ base: "4xl", md: "5xl" }}
-    marginVertical={{ base: "none", md: "2xl" }}
+    rowGap={{ base: '3xl', md: '5xl' }}
+    paddingVertical={{ base: '4xl', md: '5xl' }}
+    marginVertical={{ base: 'none', md: '2xl' }}
     borderTopWidth={1}
     borderStyle="solid"
     borderColor="border-primary"
   >
     <Grid
-      templateColumns={{ base: "1fr", lg: "repeat(2, 1fr)" }}
-      gap={{ base: "2xl", lg: "l" }}
+      templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
+      gap={{ base: '2xl', lg: 'l' }}
     >
-      {index && name ? (
+      {name ? (
         <ChapterMarker index={index} name={name} />
       ) : (
-        <Box display={{ base: "none", lg: "flex" }} />
+        <Box display={{ base: 'none', lg: 'flex' }} />
       )}
       <Box flexDirection="column" rowGap="2xl" alignItems="start">
         <ChapterHeadline title={title} subtitle={subtitle} />
@@ -95,4 +95,4 @@ export const Chapter = ({
     </Grid>
     {children}
   </Box>
-);
+)

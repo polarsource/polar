@@ -11,8 +11,7 @@ import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'motion/react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { useEffect, useState } from 'react'
-import { twMerge } from 'tailwind-merge'
+import { useState } from 'react'
 import { NavLink } from './NavLink'
 import { NavMenu, NavMenuLink, navMenus } from './desktopNavigation'
 
@@ -20,15 +19,7 @@ export const LandingPageDesktopNavigation = () => {
   const posthog = usePostHog()
   const { isShown: isModalShown, hide: hideModal, show: showModal } = useModal()
   const pathname = usePathname()
-  const [isScrolled, setIsScrolled] = useState(false)
   const [openMenuId, setOpenMenuId] = useState<string | null>(null)
-
-  useEffect(() => {
-    const handleScroll = () => setIsScrolled(window.scrollY > 0)
-    handleScroll()
-    window.addEventListener('scroll', handleScroll, { passive: true })
-    return () => window.removeEventListener('scroll', handleScroll)
-  }, [])
 
   const onLoginClick = () => {
     posthog.capture('global:user:login:click')
@@ -48,9 +39,6 @@ export const LandingPageDesktopNavigation = () => {
       alignItems="center"
       paddingVertical="xl"
       backgroundColor="background-primary"
-      borderBottomWidth={isScrolled && !openMenu ? 1 : 0}
-      borderStyle="solid"
-      borderColor="border-primary"
       onMouseLeave={closeMenu}
       onBlur={(event) => {
         if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
@@ -66,46 +54,34 @@ export const LandingPageDesktopNavigation = () => {
       <Box
         position="relative"
         width="100%"
-        paddingHorizontal="2xl"
+        paddingHorizontal="3xl"
         alignItems="center"
         justifyContent="between"
       >
-        <Link href="/">
-          <PolarLogotype logoVariant="logotype" size={100} />
-        </Link>
-
-        <Box
-          as="ul"
-          position="absolute"
-          left="50%"
-          transform="translateX(-50%)"
-          alignItems="center"
-          columnGap={{ base: 'l', lg: '2xl' }}
-        >
-          {navMenus.map((menu) => (
-            <Box as="li" key={menu.id}>
-              <NavMenuTrigger
-                menu={menu}
-                isOpen={openMenuId === menu.id}
-                onOpen={() => setOpenMenuId(menu.id)}
-                pathname={pathname}
-              />
+        <Box alignItems="center" columnGap="4xl">
+          <Link href="/">
+            <PolarLogotype logoVariant="logotype" size={100} />
+          </Link>
+          <Box as="ul" alignItems="center" columnGap="xl">
+            {navMenus.map((menu) => (
+              <Box as="li" key={menu.id}>
+                <NavMenuTrigger
+                  menu={menu}
+                  isOpen={openMenuId === menu.id}
+                  onOpen={() => setOpenMenuId(menu.id)}
+                  pathname={pathname}
+                />
+              </Box>
+            ))}
+            <Box as="li" onMouseEnter={closeMenu}>
+              <NavLink href="/#pricing">Pricing</NavLink>
             </Box>
-          ))}
-          <Box as="li" onMouseEnter={closeMenu}>
-            <NavLink className="font-medium" href="/#pricing">
-              Pricing
-            </NavLink>
-          </Box>
-          <Box as="li" onMouseEnter={closeMenu}>
-            <NavLink className="font-medium" href="/blog">
-              Blog
-            </NavLink>
-          </Box>
-          <Box as="li" onMouseEnter={closeMenu}>
-            <NavLink className="font-medium" href="/company">
-              Company
-            </NavLink>
+            <Box as="li" onMouseEnter={closeMenu}>
+              <NavLink href="/blog">Blog</NavLink>
+            </Box>
+            <Box as="li" onMouseEnter={closeMenu}>
+              <NavLink href="/company">Company</NavLink>
+            </Box>
           </Box>
         </Box>
 
@@ -144,20 +120,18 @@ const NavMenuTrigger = ({
   isOpen: boolean
   onOpen: () => void
   pathname: string
-}) => (
-  <button
-    type="button"
-    aria-expanded={isOpen}
-    onMouseEnter={onOpen}
-    onFocus={onOpen}
-    className={twMerge(
-      'dark:text-polar-500 cursor-pointer font-medium text-gray-500 transition-colors hover:text-black focus:outline-none dark:hover:text-white',
-      (isOpen || menu.isActive?.(pathname)) && 'text-black dark:text-white',
-    )}
-  >
-    {menu.title}
-  </button>
-)
+}) => {
+  return (
+    <Box aria-expanded={isOpen} onMouseEnter={onOpen} onFocus={onOpen}>
+      <Text
+        variant="heading-xxs"
+        color={menu.isActive?.(pathname) ? 'default' : 'muted'}
+      >
+        {menu.title}
+      </Text>
+    </Box>
+  )
+}
 
 const NavMenuPanel = ({
   menu,
@@ -188,7 +162,7 @@ const NavMenuPanel = ({
     >
       <Grid
         width="100%"
-        paddingHorizontal="2xl"
+        paddingHorizontal="3xl"
         templateColumns="repeat(4, 1fr)"
         gap="4xl"
       >

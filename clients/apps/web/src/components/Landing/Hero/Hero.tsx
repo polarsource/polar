@@ -1,5 +1,6 @@
 'use client'
 
+import GetStartedButton from '@/components/Auth/GetStartedButton'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { motion } from 'motion/react'
@@ -28,13 +29,16 @@ export const Hero = () => {
             templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
             gap={{ base: '2xl', lg: 'l' }}
           >
-            <Box flexDirection="column" rowGap="xs">
-              <Text variant="heading-xl" as="h1" wrap="balance">
-                — Meet Polar
-              </Text>
-              <Text variant="heading-xl" as="p" color="muted" wrap="balance">
-                The financial substrate turning usage into revenue
-              </Text>
+            <Box flexDirection="column" alignItems="start" rowGap="3xl">
+              <Box flexDirection="column" rowGap="m">
+                <Text variant="heading-xl" as="h1" wrap="balance">
+                  Meet Polar
+                </Text>
+                <Text variant="heading-xl" as="p" color="muted" wrap="balance">
+                  The financial substrate turning usage into revenue
+                </Text>
+              </Box>
+              <GetStartedButton size="lg" text="Get Started" />
             </Box>
           </Grid>
           <FeatureCards />

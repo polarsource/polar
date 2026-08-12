@@ -1,5 +1,5 @@
 import { AppealCaseUnreadBadge } from '@/components/Organization/HumanReviewCase/AppealCaseUnreadBadge'
-import { useHasPermission } from '@/hooks/permissions'
+import { useOrganizationPermissions } from '@/hooks/permissions'
 import { PolarHog, usePostHog } from '@/hooks/posthog'
 import AllInclusiveOutlined from '@mui/icons-material/AllInclusiveOutlined'
 import AttachMoneyOutlined from '@mui/icons-material/AttachMoneyOutlined'
@@ -26,8 +26,11 @@ export type SubRoute = {
   readonly link: string
   readonly icon?: React.ReactNode
   readonly if?: boolean | (() => boolean)
+  readonly permission?: OrganizationPermission
   readonly extra?: React.ReactNode
 }
+
+type OrganizationPermission = schemas['OrganizationPermission']
 
 export type Route = {
   readonly id: string
@@ -35,6 +38,7 @@ export type Route = {
   readonly icon?: React.ReactElement
   readonly link: string
   readonly if: boolean | undefined
+  readonly permission?: OrganizationPermission
   readonly subs?: SubRoute[]
   readonly selectedExactMatchOnly?: boolean
   readonly selectedMatchFallback?: boolean
@@ -96,6 +100,29 @@ const applyIsActive = (path: string): ((r: Route) => RouteWithActive) => {
   }
 }
 
+export const filterRoutesByPermissions = (
+  routes: Route[],
+  permissions: readonly OrganizationPermission[],
+  allowAll = false,
+): Route[] =>
+  routes
+    .filter(
+      (route) =>
+        allowAll ||
+        (route.if &&
+          (!route.permission || permissions.includes(route.permission))),
+    )
+    .map((route) => ({
+      ...route,
+      subs: route.subs?.filter(
+        (child) =>
+          allowAll ||
+          ((typeof child.if === 'undefined' ||
+            (typeof child.if === 'function' ? child.if() : child.if)) &&
+            (!child.permission || permissions.includes(child.permission))),
+      ),
+    }))
+
 export const useResolveRoutes = (
   routesResolver: (
     org?: schemas['Organization'],
@@ -106,50 +133,22 @@ export const useResolveRoutes = (
 ): RouteWithActive[] => {
   const path = usePathname()
   const posthog = usePostHog()
+  const permissions = useOrganizationPermissions(org?.id)
 
   return useMemo(() => {
-    return (
-      routesResolver(org, posthog)
-        .filter((o) => allowAll || o.if)
-        // Filter out child routes if they have an if-function and it evaluates to false
-        .map((route) => {
-          if (route.subs && Array.isArray(route.subs)) {
-            return {
-              ...route,
-              subs: route.subs.filter(
-                (child) =>
-                  typeof child.if === 'undefined' ||
-                  (typeof child.if === 'function' ? child.if() : child.if),
-              ),
-            }
-          }
-          return route
-        })
-        .map(applyIsActive(path))
-    )
-  }, [org, path, allowAll, routesResolver, posthog])
-}
-
-type RouteOptions = {
-  canManageBilling: boolean
-}
-
-const useRouteOptions = (org?: schemas['Organization']): RouteOptions => {
-  const canManageBilling =
-    useHasPermission(org?.id, 'organization:manage') === true
-  return { canManageBilling }
+    return filterRoutesByPermissions(
+      routesResolver(org, posthog),
+      permissions,
+      allowAll,
+    ).map(applyIsActive(path))
+  }, [org, path, allowAll, routesResolver, posthog, permissions])
 }
 
 export const useDashboardRoutes = (
   org?: schemas['Organization'],
   allowAll?: boolean,
 ): RouteWithActive[] => {
-  const options = useRouteOptions(org)
-  return useResolveRoutes(
-    (org) => dashboardRoutesList(org, options),
-    org,
-    allowAll,
-  )
+  return useResolveRoutes((org) => dashboardRoutesList(org), org, allowAll)
 }
 
 export const useGeneralRoutes = (
@@ -163,12 +162,7 @@ export const useOrganizationRoutes = (
   org?: schemas['Organization'],
   allowAll?: boolean,
 ): RouteWithActive[] => {
-  const options = useRouteOptions(org)
-  return useResolveRoutes(
-    (org) => organizationRoutesList(org, options),
-    org,
-    allowAll,
-  )
+  return useResolveRoutes((org) => organizationRoutesList(org), org, allowAll)
 }
 
 export const useAccountRoutes = (): RouteWithActive[] => {
@@ -199,6 +193,7 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
       return currentRoute.startsWith(`/dashboard/${org?.slug}/compass`)
     },
     if: !!org?.feature_settings?.compass_enabled,
+    permission: 'analytics:read',
   },
   {
     id: 'new-products',
@@ -209,6 +204,7 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
       return currentRoute.startsWith(`/dashboard/${org?.slug}/products`)
     },
     if: true,
+    permission: 'products:read',
     subs: [
       {
         title: 'Catalogue',
@@ -219,21 +215,25 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
         title: 'Checkout Links',
         link: `/dashboard/${org?.slug}/products/checkout-links`,
         icon: <LinkOutlined fontSize="inherit" />,
+        permission: 'products:manage',
       },
       {
         title: 'Discounts',
         link: `/dashboard/${org?.slug}/products/discounts`,
         icon: <DiscountOutlined fontSize="inherit" />,
+        permission: 'products:manage',
       },
       {
         title: 'Benefits',
         link: `/dashboard/${org?.slug}/products/benefits`,
         icon: <DiamondOutlined fontSize="inherit" />,
+        permission: 'products:manage',
       },
       {
         title: 'Meters',
         link: `/dashboard/${org?.slug}/products/meters`,
         icon: <DonutLargeOutlined fontSize="inherit" />,
+        permission: 'products:manage',
       },
     ],
   },
@@ -246,6 +246,7 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
       return currentRoute.startsWith(`/dashboard/${org?.slug}/customers`)
     },
     if: true,
+    permission: 'customers:read',
   },
   {
     id: 'analytics',
@@ -253,6 +254,7 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
     icon: <TrendingUp fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/analytics`,
     if: true,
+    permission: 'analytics:read',
     subs: [
       {
         title: 'Metrics',
@@ -277,6 +279,7 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
       return currentRoute.startsWith(`/dashboard/${org?.slug}/sales`)
     },
     if: true,
+    permission: 'sales:read',
     subs: [
       {
         title: 'Orders',
@@ -298,6 +301,7 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
         link: `/dashboard/${org?.slug}/sales/disputes`,
         icon: <GavelOutlined fontSize="inherit" />,
         if: !!org?.feature_settings?.disputes_enabled,
+        permission: 'organization:manage',
       },
     ],
   },
@@ -305,11 +309,10 @@ const generalRoutesList = (org?: schemas['Organization']): Route[] => [
 
 const dashboardRoutesList = (
   org: schemas['Organization'] | undefined,
-  options: RouteOptions,
 ): Route[] => [
   ...accountRoutesList(),
   ...generalRoutesList(org),
-  ...organizationRoutesList(org, options),
+  ...organizationRoutesList(org),
 ]
 
 const accountRoutesList = (): Route[] => [
@@ -346,13 +349,13 @@ const orgFinanceSubRoutesList = (org?: schemas['Organization']): SubRoute[] => [
   {
     title: 'Account',
     link: `/dashboard/${org?.slug}/finance/account`,
+    permission: 'organization:manage',
     extra: org ? <AppealCaseUnreadBadge organization={org} /> : undefined,
   },
 ]
 
 const organizationRoutesList = (
   org: schemas['Organization'] | undefined,
-  options: RouteOptions,
 ): Route[] => [
   {
     id: 'finance',
@@ -360,6 +363,7 @@ const organizationRoutesList = (
     link: `/dashboard/${org?.slug}/finance`,
     icon: <AttachMoneyOutlined fontSize="inherit" />,
     if: true,
+    permission: 'finance:read',
     subs: orgFinanceSubRoutesList(org),
     extra: org ? <AppealCaseUnreadBadge organization={org} /> : undefined,
   },
@@ -377,29 +381,34 @@ const organizationRoutesList = (
       {
         title: 'Billing',
         link: `/dashboard/${org?.slug}/settings/billing`,
-        if: options.canManageBilling,
+        permission: 'organization:manage',
       },
       {
         title: 'Members',
         link: `/dashboard/${org?.slug}/settings/members`,
+        permission: 'members:read',
       },
       {
         title: 'Webhooks',
         link: `/dashboard/${org?.slug}/settings/webhooks`,
+        permission: 'organization:manage',
       },
       {
         title: 'Custom Fields',
         link: `/dashboard/${org?.slug}/settings/custom-fields`,
+        permission: 'custom_fields:manage',
       },
       {
         title: 'Single Sign-On',
         link: `/dashboard/${org?.slug}/settings/sso`,
         if: !!org?.feature_settings?.sso_enabled,
+        permission: 'organization:manage',
       },
       {
         title: 'Migrations',
         link: `/dashboard/${org?.slug}/settings/migrations`,
         if: !!org?.feature_settings?.merchant_migration_enabled,
+        permission: 'organization:manage',
       },
     ],
   },

@@ -21,11 +21,13 @@ interface UsePayoutAccountSetupResult {
 export const usePayoutAccountSetup = (
   organization: schemas['Organization'],
   returnPath: string,
+  enabled = true,
 ): UsePayoutAccountSetupResult => {
   const { data: payoutAccount } = usePayoutAccount(
     organization.payout_account_id ?? undefined,
+    enabled,
   )
-  const { data: payoutAccountsList } = usePayoutAccounts()
+  const { data: payoutAccountsList } = usePayoutAccounts(enabled)
   const hasReusableAccounts = (payoutAccountsList?.items?.length ?? 0) > 0
 
   const {
@@ -52,7 +54,7 @@ export const usePayoutAccountSetup = (
     }
   }, [hasReusableAccounts, openManage, openCreate])
 
-  const modals = (
+  const modals = enabled ? (
     <>
       <Modal
         title="Create Payout Account"
@@ -80,7 +82,7 @@ export const usePayoutAccountSetup = (
         }
       />
     </>
-  )
+  ) : null
 
   return {
     payoutAccount,

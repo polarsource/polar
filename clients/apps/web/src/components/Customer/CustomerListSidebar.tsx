@@ -5,6 +5,7 @@ import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { Spinner } from '@polar-sh/orbit'
 import { useCustomers } from '@/hooks/queries'
+import { useHasPermission } from '@/hooks/permissions'
 import { useInViewport } from '@/hooks/utils'
 import { getServerURL } from '@/utils/api'
 
@@ -40,6 +41,10 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
 }) => {
   const pathname = usePathname()
   const searchParams = useSearchParams()
+  const canManageCustomers = useHasPermission(
+    organization.id,
+    'customers:manage',
+  )
 
   const [sorting, setSorting] = useQueryState(
     'sorting',
@@ -201,13 +206,15 @@ export const CustomerListSidebar: React.FC<CustomerListSidebarProps> = ({
               </DropdownMenuContent>
             </DropdownMenu>
 
-            <Button
-              size="icon"
-              className="h-6 w-6"
-              onClick={showCreateCustomerModal}
-            >
-              <AddOutlined fontSize="small" />
-            </Button>
+            {canManageCustomers ? (
+              <Button
+                size="icon"
+                className="h-6 w-6"
+                onClick={showCreateCustomerModal}
+              >
+                <AddOutlined fontSize="small" />
+              </Button>
+            ) : null}
           </div>
         </div>
         <div className="flex flex-row items-center gap-3 px-4 py-2">

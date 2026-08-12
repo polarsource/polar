@@ -4,6 +4,7 @@ import {
   useGeneralRoutes,
   useOrganizationRoutes,
 } from '@/components/Dashboard/navigation'
+import { useHasPermission } from '@/hooks/permissions'
 import { getServerURL } from '@/utils/api'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -35,6 +36,7 @@ export const OmniSearch = ({
   organization,
 }: OmniSearchProps) => {
   const router = useRouter()
+  const canManageProducts = useHasPermission(organization.id, 'products:manage')
   const [query, setQuery] = useState('')
   const [results, setResults] = useState<SearchResult[]>([])
   const [loading, setLoading] = useState(false)
@@ -48,8 +50,8 @@ export const OmniSearch = ({
   )
 
   const quickActions = useMemo(
-    () => getQuickActions(organization.slug),
-    [organization.slug],
+    () => (canManageProducts ? getQuickActions(organization.slug) : []),
+    [canManageProducts, organization.slug],
   )
 
   const actionResults = useMemo(() => {

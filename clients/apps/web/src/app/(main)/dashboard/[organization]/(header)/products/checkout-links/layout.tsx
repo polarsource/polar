@@ -1,3 +1,4 @@
+import OrganizationPermissionGuard from '@/components/Auth/OrganizationPermissionGuard'
 import { CheckoutLinkListSidebar } from '@/components/CheckoutLinks/CheckoutLinkListSidebar'
 import { MasterDetailLayout } from '@/components/Layout/MasterDetailLayout'
 import { getServerSideAPI } from '@/utils/client/serverside'
@@ -17,11 +18,17 @@ export default async function Layout(
   )
 
   return (
-    <MasterDetailLayout
-      listView={<CheckoutLinkListSidebar organization={organization} />}
-      wrapperClassName="max-w-(--breakpoint-sm)!"
+    <OrganizationPermissionGuard
+      organizationSlug={params.organization}
+      permission="products:manage"
+      standalone
     >
-      {props.children}
-    </MasterDetailLayout>
+      <MasterDetailLayout
+        listView={<CheckoutLinkListSidebar organization={organization} />}
+        wrapperClassName="max-w-(--breakpoint-sm)!"
+      >
+        {props.children}
+      </MasterDetailLayout>
+    </OrganizationPermissionGuard>
   )
 }

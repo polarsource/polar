@@ -27,6 +27,7 @@ const billingRoutesList = (org?: schemas['Organization']): Route[] => [
     checkIsActive: (path) =>
       path.startsWith(`/dashboard/${org?.slug}/products`),
     if: true,
+    permission: 'products:read',
     subs: [
       {
         title: 'Catalogue',
@@ -37,21 +38,25 @@ const billingRoutesList = (org?: schemas['Organization']): Route[] => [
         title: 'Meters',
         link: `/dashboard/${org?.slug}/products/meters`,
         icon: <DonutLargeOutlined fontSize="inherit" />,
+        permission: 'products:manage',
       },
       {
         title: 'Checkout Links',
         link: `/dashboard/${org?.slug}/products/checkout-links`,
         icon: <LinkOutlined fontSize="inherit" />,
+        permission: 'products:manage',
       },
       {
         title: 'Discounts',
         link: `/dashboard/${org?.slug}/products/discounts`,
         icon: <DiscountOutlined fontSize="inherit" />,
+        permission: 'products:manage',
       },
       {
         title: 'Benefits',
         link: `/dashboard/${org?.slug}/products/benefits`,
         icon: <DiamondOutlined fontSize="inherit" />,
+        permission: 'products:manage',
       },
     ],
   },
@@ -62,6 +67,7 @@ const billingRoutesList = (org?: schemas['Organization']): Route[] => [
     link: `/dashboard/${org?.slug}/sales`,
     checkIsActive: (path) => path.startsWith(`/dashboard/${org?.slug}/sales`),
     if: true,
+    permission: 'sales:read',
     subs: [
       {
         title: 'Orders',
@@ -83,6 +89,7 @@ const billingRoutesList = (org?: schemas['Organization']): Route[] => [
         link: `/dashboard/${org?.slug}/sales/disputes`,
         icon: <GavelOutlined fontSize="inherit" />,
         if: !!org?.feature_settings?.disputes_enabled,
+        permission: 'organization:manage',
       },
     ],
   },
@@ -92,6 +99,7 @@ const billingRoutesList = (org?: schemas['Organization']): Route[] => [
     icon: <AttachMoneyOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/finance`,
     if: true,
+    permission: 'finance:read',
     extra: org ? <AppealCaseUnreadBadge organization={org} /> : undefined,
     subs: [
       { title: 'Income', link: `/dashboard/${org?.slug}/finance/income` },
@@ -100,6 +108,7 @@ const billingRoutesList = (org?: schemas['Organization']): Route[] => [
       {
         title: 'Account',
         link: `/dashboard/${org?.slug}/finance/account`,
+        permission: 'organization:manage',
         extra: org ? <AppealCaseUnreadBadge organization={org} /> : undefined,
       },
     ],
@@ -122,6 +131,7 @@ const insightsRoutesList = (org?: schemas['Organization']): Route[] => [
     link: `/dashboard/${org?.slug}/compass`,
     checkIsActive: (path) => path.startsWith(`/dashboard/${org?.slug}/compass`),
     if: !!org?.feature_settings?.compass_enabled,
+    permission: 'analytics:read',
   },
   {
     id: 'metrics',
@@ -129,6 +139,7 @@ const insightsRoutesList = (org?: schemas['Organization']): Route[] => [
     icon: <SignalCellularAltOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/analytics/metrics`,
     if: true,
+    permission: 'analytics:read',
   },
   {
     id: 'costs',
@@ -136,6 +147,7 @@ const insightsRoutesList = (org?: schemas['Organization']): Route[] => [
     icon: <TrendingDown fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/analytics/costs`,
     if: true,
+    permission: 'analytics:read',
   },
   {
     id: 'events',
@@ -143,6 +155,7 @@ const insightsRoutesList = (org?: schemas['Organization']): Route[] => [
     icon: <BoltOutlined fontSize="inherit" />,
     link: `/dashboard/${org?.slug}/analytics/events`,
     if: true,
+    permission: 'analytics:read',
   },
   {
     id: 'customers',
@@ -152,6 +165,7 @@ const insightsRoutesList = (org?: schemas['Organization']): Route[] => [
     checkIsActive: (path) =>
       path.startsWith(`/dashboard/${org?.slug}/customers`),
     if: true,
+    permission: 'customers:read',
   },
 ]
 

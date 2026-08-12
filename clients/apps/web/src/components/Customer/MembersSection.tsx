@@ -2,6 +2,7 @@
 
 import { useModal } from '@/components/Modal/useModal'
 import { useCopyMemberLoginLink } from '@/hooks/useCopyMemberLoginLink'
+import { useHasPermission } from '@/hooks/permissions'
 import { useMembers } from '@/hooks/queries/members'
 import { useMultipleCustomerSeats } from '@/hooks/queries/seats'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
@@ -56,6 +57,10 @@ export const MembersSection = ({
   subscriptions,
   orders,
 }: MembersSectionProps) => {
+  const canManageCustomers = useHasPermission(
+    organization.id,
+    'customers:manage',
+  )
   const { data: membersData, isLoading } = useMembers(customer.id)
   const copyMemberLoginLink = useCopyMemberLoginLink(organization.slug)
 
@@ -192,32 +197,33 @@ export const MembersSection = ({
             id: 'actions',
             header: () => null,
             size: 60,
-            cell: ({ row: { original } }) => (
-              <Box justifyContent="end" onClick={(e) => e.stopPropagation()}>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button className="h-8 w-8" variant="ghost" size="icon">
-                      <MoreVertOutlined fontSize="inherit" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    <DropdownMenuItem
-                      onClick={() => {
-                        setSelectedMember(original)
-                        showEditMemberModal()
-                      }}
-                    >
-                      Edit member
-                    </DropdownMenuItem>
-                    <DropdownMenuItem
-                      onClick={() => copyMemberLoginLink(original.email)}
-                    >
-                      Copy login link
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </Box>
-            ),
+            cell: ({ row: { original } }) =>
+              canManageCustomers ? (
+                <Box justifyContent="end" onClick={(e) => e.stopPropagation()}>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button className="h-8 w-8" variant="ghost" size="icon">
+                        <MoreVertOutlined fontSize="inherit" />
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end">
+                      <DropdownMenuItem
+                        onClick={() => {
+                          setSelectedMember(original)
+                          showEditMemberModal()
+                        }}
+                      >
+                        Edit member
+                      </DropdownMenuItem>
+                      <DropdownMenuItem
+                        onClick={() => copyMemberLoginLink(original.email)}
+                      >
+                        Copy login link
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </Box>
+              ) : null,
           },
         ]}
         isLoading={isLoading}

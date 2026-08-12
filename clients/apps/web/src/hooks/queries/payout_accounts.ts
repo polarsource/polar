@@ -3,7 +3,10 @@ import { unwrap } from '@polar-sh/client'
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
 import { defaultRetry } from './retry'
 
-export const usePayoutAccount = (payoutAccountId: string | undefined) =>
+export const usePayoutAccount = (
+  payoutAccountId: string | undefined,
+  enabled = true,
+) =>
   useQuery({
     queryKey: ['payoutAccount', payoutAccountId],
     queryFn: () =>
@@ -13,14 +16,15 @@ export const usePayoutAccount = (payoutAccountId: string | undefined) =>
         }),
       ),
     retry: defaultRetry,
-    enabled: !!payoutAccountId,
+    enabled: enabled && !!payoutAccountId,
   })
 
-export const usePayoutAccounts = () =>
+export const usePayoutAccounts = (enabled = true) =>
   useQuery({
     queryKey: ['payoutAccounts'],
     queryFn: () => unwrap(api.GET('/v1/payout-accounts/')),
     retry: defaultRetry,
+    enabled,
   })
 
 export const useSyncPayoutAccount = (payoutAccountId: string) => {

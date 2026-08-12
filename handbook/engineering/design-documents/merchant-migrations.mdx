@@ -166,26 +166,35 @@ Cutover stays as specified under *Switching subscriptions* (one subscription per
 
 ### Operation status JSON
 
-No separate Job table. `MerchantMigration` holds a single JSONB **operation** (null when idle). `MerchantMigrationRecord` remains the per-entity ledger and source of progress counts.
+No separate Job table. `MerchantMigration` holds a single JSONB **operation** (null only before any background work has started — typically while still on `source_setup`). `MerchantMigrationRecord` remains the per-entity ledger and source of progress counts.
 
 | Field | Purpose |
 | --- | --- |
-| `status` | `running` \| `failed` |
+| `status` | `pending` \| `running` \| `done` \| `failed` |
 | `error` | Set when `failed` |
-| `cursor` | Opaque resume point for the current chain (Stripe page cursor, or last processed record id / type phase). Persisted on the migration so a reenqueue only needs `migration_id`. |
+| `cursor` | Opaque resume point for the current chain (Stripe page cursor, or last processed record id / type phase). Persisted on the migration so a reenqueue only needs `migration_id`. Cleared or ignored once `done`. |
 | `last_progress_at` | Bumped each successful batch; used to detect stalled ops |
 
-**`step` names the phase; `operation` says whether that phase is still working.** Starting an operation advances `step` to that phase immediately — they stay aligned. There is no separate `kind` on the operation (it would always duplicate `step`). Clearing `operation` means the phase finished (or never started background work); `step` stays put until the merchant moves on.
+**`step` names the phase; `operation.status` says where we are in that phase.** Starting an operation advances `step` to that phase immediately — they stay aligned. There is no separate `kind` on the operation (it would always duplicate `step`). Do **not** clear `operation` on success — set `status=done` so idle vs finished is explicit.
+
+| `operation.status` | Meaning |
+| --- | --- |
+| `pending` | Enqueued; worker has not started (or not yet claimed) the first batch |
+| `running` | A batch is in progress / chain is active |
+| `done` | This step’s background work finished successfully |
+| `failed` | Task exhausted retries or stall detected; merchant can retry |
 
 | Moment | `step` | `operation` |
 | --- | --- | --- |
 | Connected, not started | `source_setup` | `null` |
+| Precheck just enqueued | `pre_check` | `{status: pending, cursor: null}` |
 | Precheck in flight | `pre_check` | `{status: running, cursor: …}` |
-| Precheck done — review records | `pre_check` | `null` |
+| Precheck finished — review records | `pre_check` | `{status: done}` |
 | Precheck failed | `pre_check` | `{status: failed, error: …, cursor: …}` |
+| Import just enqueued | `create_catalog` | `{status: pending, …}` |
 | Import in flight | `create_catalog` | `{status: running, cursor: …}` |
-| Import done | `create_catalog` | `null` |
-| Partial re-import | `create_catalog` | `{status: running, …}` again |
+| Import finished | `create_catalog` | `{status: done}` |
+| Partial re-import | `create_catalog` | `{status: pending\|running}` again, then `done` |
 
 Import selection (`record_ids` / `exclude_record_ids`) is applied when the import starts (mark or filter pending rows once). Workers then only process `pending` selected rows — no need to keep the full selection list on the operation.
 
@@ -195,18 +204,18 @@ One Dramatiq task = one DB transaction. Prefer one self-reenqueuing actor per ch
 
 ```mermaid
 flowchart TB
-  StartPrecheck["POST /precheck → 202\nstep=pre_check, operation=running"] --> Precheck["precheck batch\nextract + stage; cursor on operation"]
+  StartPrecheck["POST /precheck → 202\nstep=pre_check, operation=pending"] --> Precheck["precheck batch\nstatus=running; cursor on operation"]
   Precheck -->|"more pages"| Precheck
-  Precheck -->|"done"| Classify["classify\nclear operation"]
+  Precheck -->|"done"| Classify["classify\noperation.status=done"]
 
-  StartImport["POST /import → 202\nstep=create_catalog, operation=running"] --> Import["import batch\nproducts → customers → subscriptions\ncursor encodes type + position"]
+  StartImport["POST /import → 202\nstep=create_catalog, operation=pending"] --> Import["import batch\nproducts → customers → subscriptions\ncursor encodes type + position"]
   Import -->|"more"| Import
-  Import -->|"done"| Finalize["clear operation\nstep stays create_catalog"]
+  Import -->|"done"| Finalize["operation.status=done\nstep stays create_catalog"]
 ```
 
-**Precheck** — start endpoint locks the migration (`FOR UPDATE`), sets `step=pre_check` and `operation` (`status=running`, empty cursor), enqueues the first batch. Each batch pages `adapter.extract()`, upserts ledger rows, writes the next `cursor` + `last_progress_at`, reenqueues. When extract is exhausted, classify with `PrecheckEngine`, clear `operation` (step stays `pre_check` for review).
+**Precheck** — start endpoint locks the migration (`FOR UPDATE`), sets `step=pre_check` and `operation` (`status=pending`, empty cursor), enqueues the first batch. The first worker flips `status=running`, pages `adapter.extract()`, upserts ledger rows, writes the next `cursor` + `last_progress_at`, reenqueues. When extract is exhausted, classify with `PrecheckEngine`, set `operation.status=done` (step stays `pre_check` for review).
 
-**Import** — same blockers as today; apply selection; set `step=create_catalog` and `operation` (`status=running`); enqueue. Each batch imports up to N pending selected records for the current type (products, then customers, then subscriptions — cursor carries which type and where). When nothing remains, clear `operation` (step stays `create_catalog`). A later partial re-import sets `operation` again without changing `step`.
+**Import** — same blockers as today; apply selection; set `step=create_catalog` and `operation` (`status=pending`); enqueue. Batches flip to `running` and import up to N pending selected records for the current type (products, then customers, then subscriptions — cursor carries which type and where). When nothing remains, set `operation.status=done` (step stays `create_catalog`). A later partial re-import sets `operation` back to `pending`/`running`, then `done` again, without changing `step`.
 
 Actors live in `polar/merchant_migration/tasks.py`. Batch size ~25–50; tune later.
 
@@ -216,7 +225,7 @@ Actors live in `polar/merchant_migration/tasks.py`. Batch size ~25–50; tune la
 | --- | --- |
 | **Record** | Mark ledger row `failed` + `error`; the batch continues. Does not fail the operation. |
 | **Task** | On catchable errors: if `can_retry()`, re-raise; if not, set `operation.status=failed` + `error` in the same session, then re-raise/return. |
-| **Stall** | On `GET` of the migration (while the client polls): if `operation` is `running` and `last_progress_at` is older than a stall threshold (15–30 min), mark `failed`. Stale tasks that wake later no-op when they see `failed` or a cleared operation. |
+| **Stall** | On `GET` of the migration (while the client polls): if `operation.status` is `pending` or `running` and `last_progress_at` is older than a stall threshold (15–30 min; for `pending`, also use `started_at` / enqueue time if we store one), mark `failed`. Stale tasks that wake later no-op when they see `failed` or `done`. |
 
 Unrecoverable start errors (blockers, wrong step, concurrent op) fail immediately with **409** / the existing status-coded errors — no enqueue.
 
@@ -224,7 +233,7 @@ Unrecoverable start errors (blockers, wrong step, concurrent op) fail immediatel
 
 | Endpoint | Behavior |
 | --- | --- |
-| `POST /{id}/precheck` | Enqueue; **202** + migration (with `operation`). **409** if an operation is already running. |
+| `POST /{id}/precheck` | Enqueue; **202** + migration (with `operation`). **409** if `operation.status` is already `pending` or `running`. |
 | `POST /{id}/import` | Same; body still takes selection. |
 | `GET /{id}` | Includes `operation`; may apply the stall check above. |
 | `/records` + `/records/summary` | Unchanged; clients poll these for counts. |
@@ -233,7 +242,7 @@ Drop the sync import report as the mutation response body. Progress is the ledge
 
 ### UI (high level)
 
-The dashboard should reflect that precheck/import are background work: the merchant can leave and come back. Poll the migration (and record summary) while `operation` is running; within the current `step`, show in-progress vs idle vs failed + retry. Detailed UI is out of scope for this design.
+The dashboard should reflect that precheck/import are background work: the merchant can leave and come back. Poll the migration (and record summary) while `operation.status` is `pending` or `running`; within the current `step`, branch on `pending`/`running`/`done`/`failed` (+ retry). Detailed UI is out of scope for this design.
 
 ### Implementation follow-up
 

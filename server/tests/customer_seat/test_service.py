@@ -1,11 +1,15 @@
 import asyncio
 import uuid
 from datetime import UTC, datetime, timedelta
+from typing import Any
 from unittest.mock import patch
 
 import pytest
+from pytest_mock import MockerFixture
+from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject
+from polar.customer.repository import CustomerRepository
 from polar.customer_seat.service import (
     CustomerNotFound,
     FeatureNotEnabled,
@@ -336,6 +340,54 @@ class TestAssignSeat:
             seat.customer.organization_id
             == subscription_with_seats.product.organization_id
         )
+
+    @pytest.mark.asyncio
+    async def test_assign_seat_customer_creation_race(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        subscription_with_seats: Subscription,
+    ) -> None:
+        existing = await create_customer(
+            save_fixture,
+            organization=subscription_with_seats.product.organization,
+            email="race@example.com",
+        )
+
+        create_call_count = 0
+
+        async def mock_create(self: Any, model: Any, flush: bool = False) -> None:
+            nonlocal create_call_count
+            create_call_count += 1
+            raise IntegrityError(
+                "duplicate", params=None, orig=Exception("unique violation")
+            )
+
+        mocker.patch.object(CustomerRepository, "create", mock_create)
+
+        original_get = CustomerRepository.get_by_email_and_organization
+        get_call_count = 0
+
+        async def mock_get(
+            self: Any, email: str, organization_id: uuid.UUID
+        ) -> Customer | None:
+            nonlocal get_call_count
+            get_call_count += 1
+            if get_call_count == 1:
+                return None
+            return await original_get(self, email, organization_id)
+
+        mocker.patch.object(
+            CustomerRepository, "get_by_email_and_organization", mock_get
+        )
+
+        seat = await seat_service.assign_seat(
+            session, subscription_with_seats, email="race@example.com"
+        )
+
+        assert seat.customer_id == existing.id
+        assert create_call_count == 1
 
     @pytest.mark.asyncio
     async def test_assign_seat_token_expiration(

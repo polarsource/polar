@@ -7,6 +7,7 @@ from typing import Any
 
 import structlog
 from sqlalchemy import inspect as sa_inspect
+from sqlalchemy.exc import IntegrityError
 
 from polar.auth.models import AuthSubject
 from polar.authz.service import get_accessible_org_ids
@@ -839,15 +840,22 @@ class SeatService:
                 customer_id, organization_id
             )
 
-        if not customer and not email:
-            raise CustomerNotFound(external_customer_id or str(customer_id))
-        elif not customer:
+        if not customer:
+            if not email:
+                raise CustomerNotFound(external_customer_id or str(customer_id))
             customer = Customer(
                 organization_id=organization_id,
                 email=email,
             )
-            session.add(customer)
-            await session.flush()
+            try:
+                async with session.begin_nested():
+                    customer = await customer_repository.create(customer, flush=True)
+            except IntegrityError:
+                customer = await customer_repository.get_by_email_and_organization(
+                    email, organization_id
+                )
+                if customer is None:
+                    raise
         return customer
 
     async def _get_or_create_member_for_seat(

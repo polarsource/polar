@@ -165,6 +165,32 @@ class TestBenefitRevoke:
 
         revoke_benefit_mock.assert_called_once()
 
+    async def test_soft_deleted_benefit(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        subscription: Subscription,
+        customer: Customer,
+        benefit_organization: Benefit,
+        session: AsyncSession,
+    ) -> None:
+        revoke_benefit_mock = mocker.patch.object(
+            benefit_grant_service,
+            "revoke_benefit",
+            spec=BenefitGrantService.revoke_benefit,
+        )
+
+        benefit_organization.set_deleted_at()
+        await save_fixture(benefit_organization)
+
+        await benefit_revoke(
+            customer.id,
+            benefit_organization.id,
+            subscription_id=subscription.id,
+        )
+
+        revoke_benefit_mock.assert_called_once()
+
     async def test_retry(
         self,
         mocker: MockerFixture,

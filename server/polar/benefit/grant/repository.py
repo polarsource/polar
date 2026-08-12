@@ -3,6 +3,7 @@ from typing import Unpack
 from uuid import UUID
 
 from sqlalchemy import Select, func, select
+from sqlalchemy.orm import joinedload
 
 from polar.authz.types import AccessibleOrganizationID
 from polar.kit.repository import (
@@ -49,6 +50,8 @@ class BenefitGrantRepository(
         customer: Customer,
         benefit: Benefit,
         member: Member | None = None,
+        *,
+        for_update: bool = False,
         **scope: Unpack[BenefitGrantScope],
     ) -> BenefitGrant | None:
         statement = self.get_base_statement().where(
@@ -58,6 +61,8 @@ class BenefitGrantRepository(
             BenefitGrant.is_deleted.is_(False),
             BenefitGrant.scope == scope,
         )
+        if for_update:
+            statement = statement.with_for_update(of=BenefitGrant)
         return await self.get_one_or_none(statement)
 
     async def list_granted_by_scope(
@@ -314,3 +319,10 @@ class BenefitGrantRepository(
                 return BenefitGrant.granted_at
             case BenefitGrantSortProperty.revoked_at:
                 return BenefitGrant.revoked_at
+
+    def get_eager_options(self) -> Options:
+        return (
+            joinedload(BenefitGrant.customer),
+            joinedload(BenefitGrant.benefit).joinedload(Benefit.organization),
+            joinedload(BenefitGrant.member),
+        )

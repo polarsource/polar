@@ -823,12 +823,8 @@ class TestUpdateBenefitGrant:
         grant.set_granted()
         await save_fixture(grant)
 
-        # load
-        grant_loaded = await benefit_grant_service.get(session, grant.id, loaded=True)
-        assert grant_loaded
-
         updated_grant = await benefit_grant_service.update_benefit_grant(
-            session, redis, grant_loaded
+            session, redis, grant
         )
 
         assert updated_grant.id == grant.id
@@ -858,12 +854,8 @@ class TestUpdateBenefitGrant:
             error_message
         )
 
-        # load
-        grant_loaded = await benefit_grant_service.get(session, grant.id, loaded=True)
-        assert grant_loaded
-
         updated_grant = await benefit_grant_service.update_benefit_grant(
-            session, redis, grant_loaded
+            session, redis, grant
         )
 
         assert not updated_grant.is_granted
@@ -897,11 +889,8 @@ class TestUpdateBenefitGrant:
             error_message, grant_properties=grant_properties
         )
 
-        grant_loaded = await benefit_grant_service.get(session, grant.id, loaded=True)
-        assert grant_loaded
-
         updated_grant = await benefit_grant_service.update_benefit_grant(
-            session, redis, grant_loaded
+            session, redis, grant
         )
 
         assert not updated_grant.is_granted
@@ -1158,12 +1147,8 @@ class TestDeleteBenefitGrant:
         grant.set_granted()
         await save_fixture(grant)
 
-        # load
-        grant_loaded = await benefit_grant_service.get(session, grant.id)
-        assert grant_loaded
-
         updated_grant = await benefit_grant_service.delete_benefit_grant(
-            session, redis, grant_loaded
+            session, redis, grant
         )
 
         assert updated_grant.id == grant.id
@@ -1191,12 +1176,8 @@ class TestDeleteBenefitGrant:
         grant.set_granted()
         await save_fixture(grant)
 
-        # load
-        grant_loaded = await benefit_grant_service.get(session, grant.id)
-        assert grant_loaded
-
         updated_grant = await benefit_grant_service.delete_benefit_grant(
-            session, redis, grant_loaded
+            session, redis, grant
         )
 
         assert updated_grant.id == grant.id
@@ -1250,12 +1231,8 @@ class TestDeleteBenefitGrant:
         await member_repository.soft_delete(member)
         await session.flush()
 
-        # load the grant as the task does
-        grant_loaded = await benefit_grant_service.get(session, grant.id)
-        assert grant_loaded
-
         updated_grant = await benefit_grant_service.delete_benefit_grant(
-            session, redis, grant_loaded
+            session, redis, grant
         )
 
         assert updated_grant.id == grant.id

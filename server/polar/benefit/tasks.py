@@ -5,6 +5,7 @@ from typing import Literal, Unpack
 import structlog
 from dramatiq import Retry
 
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.repository import BenefitRepository
 from polar.customer.repository import CustomerRepository
 from polar.exceptions import PolarTaskError
@@ -192,7 +193,11 @@ async def benefit_revoke(
 
         benefit_repository = BenefitRepository.from_session(session)
         benefit = await benefit_repository.get_by_id(
-            benefit_id, options=benefit_repository.get_eager_options()
+            benefit_id,
+            # It's common for a benefit to be removed from a product and deleted quickly
+            # in a row, so we allow deleted benefits to be processed for revocation tasks
+            include_deleted=True,
+            options=benefit_repository.get_eager_options(),
         )
         if benefit is None:
             if get_message_timestamp() < datetime.datetime(
@@ -248,8 +253,11 @@ async def benefit_revoke(
 @actor(actor_name="benefit.update", priority=TaskPriority.MEDIUM)
 async def benefit_update(benefit_grant_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
-        benefit_grant = await benefit_grant_service.get(
-            session, benefit_grant_id, loaded=True
+        benefit_grant_repository = BenefitGrantRepository.from_session(session)
+        benefit_grant = await benefit_grant_repository.get_by_id(
+            benefit_grant_id,
+            options=benefit_grant_repository.get_eager_options(),
+            for_update=True,
         )
         if benefit_grant is None:
             raise BenefitGrantDoesNotExist(benefit_grant_id)
@@ -280,8 +288,11 @@ async def enqueue_benefit_grant_cycles(**scope: Unpack[BenefitGrantScopeArgs]) -
 @actor(actor_name="benefit.cycle", priority=TaskPriority.MEDIUM)
 async def benefit_cycle(benefit_grant_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
-        benefit_grant = await benefit_grant_service.get(
-            session, benefit_grant_id, loaded=True
+        benefit_grant_repository = BenefitGrantRepository.from_session(session)
+        benefit_grant = await benefit_grant_repository.get_by_id(
+            benefit_grant_id,
+            options=benefit_grant_repository.get_eager_options(),
+            for_update=True,
         )
         if benefit_grant is None:
             raise BenefitGrantDoesNotExist(benefit_grant_id)
@@ -331,8 +342,11 @@ async def benefit_revoke_customer(customer_id: uuid.UUID) -> None:
 @actor(actor_name="benefit.delete_grant", priority=TaskPriority.MEDIUM)
 async def benefit_delete_grant(benefit_grant_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
-        benefit_grant = await benefit_grant_service.get(
-            session, benefit_grant_id, loaded=True
+        benefit_grant_repository = BenefitGrantRepository.from_session(session)
+        benefit_grant = await benefit_grant_repository.get_by_id(
+            benefit_grant_id,
+            options=benefit_grant_repository.get_eager_options(),
+            for_update=True,
         )
         if benefit_grant is None:
             raise BenefitGrantDoesNotExist(benefit_grant_id)

@@ -1,6 +1,6 @@
 import builtins
 from collections.abc import Sequence
-from typing import Any, Literal, TypeVar, Unpack, overload
+from typing import Literal, Unpack
 from uuid import UUID
 
 import dramatiq
@@ -19,7 +19,6 @@ from polar.event.system import BenefitGrantMetadata, SystemEvent, build_system_e
 from polar.eventstream.service import publish as eventstream_publish
 from polar.exceptions import PolarError
 from polar.kit.pagination import PaginationParams, paginate
-from polar.kit.services import ResourceServiceReader
 from polar.kit.sorting import Sorting
 from polar.logging import Logger
 from polar.member.repository import MemberRepository
@@ -34,7 +33,7 @@ from polar.models import (
 )
 from polar.models.benefit_grant import BenefitGrantScope
 from polar.models.webhook_endpoint import WebhookEventType
-from polar.postgres import AsyncSession, sql
+from polar.postgres import AsyncSession
 from polar.redis import Redis
 from polar.webhook.service import webhook as webhook_service
 from polar.worker import can_retry, enqueue_job
@@ -51,67 +50,11 @@ from .sorting import BenefitGrantSortProperty
 
 log: Logger = structlog.get_logger()
 
-BG = TypeVar("BG", bound=BenefitGrant)
-
 
 class BenefitGrantError(PolarError): ...
 
 
-class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
-    @overload
-    async def get(
-        self,
-        session: AsyncSession,
-        id: UUID,
-        allow_deleted: bool = False,
-        loaded: bool = False,
-        *,
-        class_: None = None,
-        options: Sequence[sql.ExecutableOption] | None = None,
-    ) -> BenefitGrant | None: ...
-
-    @overload
-    async def get(
-        self,
-        session: AsyncSession,
-        id: UUID,
-        allow_deleted: bool = False,
-        loaded: bool = False,
-        *,
-        class_: type[BG] | None = None,
-        options: Sequence[sql.ExecutableOption] | None = None,
-    ) -> BG | None: ...
-
-    async def get(
-        self,
-        session: AsyncSession,
-        id: UUID,
-        allow_deleted: bool = False,
-        loaded: bool = False,
-        *,
-        class_: Any = None,
-        options: Sequence[sql.ExecutableOption] | None = None,
-    ) -> Any | None:
-        if class_ is None:
-            class_ = BenefitGrant
-
-        query = select(class_).where(class_.id == id)
-        if not allow_deleted:
-            query = query.where(class_.is_deleted.is_(False))
-
-        if loaded:
-            query = query.options(
-                joinedload(BenefitGrant.customer),
-                joinedload(BenefitGrant.benefit).joinedload(Benefit.organization),
-                joinedload(BenefitGrant.member),
-            )
-
-        if options is not None:
-            query = query.options(*options)
-
-        res = await session.execute(query)
-        return res.unique().scalar_one_or_none()
-
+class BenefitGrantService:
     async def list(
         self,
         session: AsyncSession,
@@ -214,7 +157,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         repository = BenefitGrantRepository.from_session(session)
         grant = await repository.get_by_benefit_and_scope(
-            customer, benefit, member=member, **scope
+            customer, benefit, member=member, for_update=True, **scope
         )
 
         if grant is None:
@@ -303,7 +246,7 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
 
         repository = BenefitGrantRepository.from_session(session)
         grant = await repository.get_by_benefit_and_scope(
-            customer, benefit, member=member, **scope
+            customer, benefit, member=member, for_update=True, **scope
         )
 
         if grant is None:
@@ -739,11 +682,14 @@ class BenefitGrantService(ResourceServiceReader[BenefitGrant]):
         ],
         previous_grant_properties: BenefitGrantProperties,
     ) -> None:
-        loaded = await self.get(session, grant.id, loaded=True)
+        repository = BenefitGrantRepository.from_session(session)
+        loaded = await repository.get_by_id(
+            grant.id, options=repository.get_eager_options()
+        )
         assert loaded is not None
         loaded.previous_properties = previous_grant_properties
         await webhook_service.send(session, benefit.organization, event_type, loaded)
         enqueue_job("customer.state_changed", grant.customer_id)
 
 
-benefit_grant = BenefitGrantService(BenefitGrant)
+benefit_grant = BenefitGrantService()

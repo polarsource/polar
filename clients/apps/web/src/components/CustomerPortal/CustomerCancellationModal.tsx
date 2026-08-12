@@ -174,7 +174,7 @@ const CustomerCancellationModal = ({
                   <FormItem>
                     <FormControl>
                       <RadioGroup
-                        value={field.value ?? 'other'}
+                        value={field.value ?? undefined}
                         onValueChange={onReasonSelect}
                       >
                         <CancellationReasonRadio

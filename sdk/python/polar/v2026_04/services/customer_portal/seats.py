@@ -4,22 +4,22 @@ import typing
 
 from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.v2026_04.errors import (
-    AssignSeat400Error,
-    AssignSeat401Error,
-    AssignSeat403Error,
-    AssignSeat404Error,
+    CustomerPortalSeatsAssignSeat400Error,
+    CustomerPortalSeatsAssignSeat401Error,
+    CustomerPortalSeatsAssignSeat403Error,
+    CustomerPortalSeatsAssignSeat404Error,
+    CustomerPortalSeatsListClaimedSubscriptions401Error,
+    CustomerPortalSeatsListSeats401Error,
+    CustomerPortalSeatsListSeats403Error,
+    CustomerPortalSeatsListSeats404Error,
+    CustomerPortalSeatsResendInvitation400Error,
+    CustomerPortalSeatsResendInvitation401Error,
+    CustomerPortalSeatsResendInvitation403Error,
+    CustomerPortalSeatsResendInvitation404Error,
+    CustomerPortalSeatsRevokeSeat401Error,
+    CustomerPortalSeatsRevokeSeat403Error,
+    CustomerPortalSeatsRevokeSeat404Error,
     HTTPValidationError,
-    ListClaimedSubscriptions401Error,
-    ListSeats401Error,
-    ListSeats403Error,
-    ListSeats404Error,
-    ResendInvitation400Error,
-    ResendInvitation401Error,
-    ResendInvitation403Error,
-    ResendInvitation404Error,
-    RevokeSeat401Error,
-    RevokeSeat403Error,
-    RevokeSeat404Error,
 )
 from polar.v2026_04.inputs import (
     CustomerSeatAssign,
@@ -47,9 +47,9 @@ class SeatsSync(SyncServiceBase):
             order_id: Order ID
 
         Raises:
-            ListSeats401Error: Authentication required
-            ListSeats403Error: Not permitted or seat-based pricing not enabled
-            ListSeats404Error: Subscription or order not found
+            CustomerPortalSeatsListSeats401Error: Authentication required
+            CustomerPortalSeatsListSeats403Error: Not permitted or seat-based pricing not enabled
+            CustomerPortalSeatsListSeats404Error: Subscription or order not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -66,9 +66,9 @@ class SeatsSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            401: ListSeats401Error,
-            403: ListSeats403Error,
-            404: ListSeats404Error,
+            401: CustomerPortalSeatsListSeats401Error,
+            403: CustomerPortalSeatsListSeats403Error,
+            404: CustomerPortalSeatsListSeats404Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, SeatsList, method_errors)
@@ -82,10 +82,10 @@ class SeatsSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            AssignSeat400Error: No available seats or customer already has a seat
-            AssignSeat401Error: Authentication required
-            AssignSeat403Error: Not permitted or seat-based pricing not enabled
-            AssignSeat404Error: Subscription, order, or customer not found
+            CustomerPortalSeatsAssignSeat400Error: No available seats or customer already has a seat
+            CustomerPortalSeatsAssignSeat401Error: Authentication required
+            CustomerPortalSeatsAssignSeat403Error: Not permitted or seat-based pricing not enabled
+            CustomerPortalSeatsAssignSeat404Error: Subscription, order, or customer not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -100,10 +100,10 @@ class SeatsSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            400: AssignSeat400Error,
-            401: AssignSeat401Error,
-            403: AssignSeat403Error,
-            404: AssignSeat404Error,
+            400: CustomerPortalSeatsAssignSeat400Error,
+            401: CustomerPortalSeatsAssignSeat401Error,
+            403: CustomerPortalSeatsAssignSeat403Error,
+            404: CustomerPortalSeatsAssignSeat404Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerSeat, method_errors)
@@ -117,9 +117,9 @@ class SeatsSync(SyncServiceBase):
             seat_id:
 
         Raises:
-            RevokeSeat401Error: Authentication required
-            RevokeSeat403Error: Not permitted or seat-based pricing not enabled
-            RevokeSeat404Error: Seat not found
+            CustomerPortalSeatsRevokeSeat401Error: Authentication required
+            CustomerPortalSeatsRevokeSeat403Error: Not permitted or seat-based pricing not enabled
+            CustomerPortalSeatsRevokeSeat404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -135,9 +135,9 @@ class SeatsSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            401: RevokeSeat401Error,
-            403: RevokeSeat403Error,
-            404: RevokeSeat404Error,
+            401: CustomerPortalSeatsRevokeSeat401Error,
+            403: CustomerPortalSeatsRevokeSeat403Error,
+            404: CustomerPortalSeatsRevokeSeat404Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerSeat, method_errors)
@@ -151,10 +151,10 @@ class SeatsSync(SyncServiceBase):
             seat_id:
 
         Raises:
-            ResendInvitation400Error: Seat is not pending or already claimed
-            ResendInvitation401Error: Authentication required
-            ResendInvitation403Error: Not permitted or seat-based pricing not enabled
-            ResendInvitation404Error: Seat not found
+            CustomerPortalSeatsResendInvitation400Error: Seat is not pending or already claimed
+            CustomerPortalSeatsResendInvitation401Error: Authentication required
+            CustomerPortalSeatsResendInvitation403Error: Not permitted or seat-based pricing not enabled
+            CustomerPortalSeatsResendInvitation404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -170,10 +170,10 @@ class SeatsSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            400: ResendInvitation400Error,
-            401: ResendInvitation401Error,
-            403: ResendInvitation403Error,
-            404: ResendInvitation404Error,
+            400: CustomerPortalSeatsResendInvitation400Error,
+            401: CustomerPortalSeatsResendInvitation401Error,
+            403: CustomerPortalSeatsResendInvitation403Error,
+            404: CustomerPortalSeatsResendInvitation404Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerSeat, method_errors)
@@ -194,7 +194,7 @@ class SeatsSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
 
         Raises:
-            ListClaimedSubscriptions401Error: Authentication required
+            CustomerPortalSeatsListClaimedSubscriptions401Error: Authentication required
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -211,7 +211,7 @@ class SeatsSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            401: ListClaimedSubscriptions401Error,
+            401: CustomerPortalSeatsListClaimedSubscriptions401Error,
             422: HTTPValidationError,
         }
         return parse_response_json(
@@ -237,7 +237,7 @@ class SeatsSync(SyncServiceBase):
             A generator that yields items of type CustomerSubscription.
 
         Raises:
-            ListClaimedSubscriptions401Error: Authentication required
+            CustomerPortalSeatsListClaimedSubscriptions401Error: Authentication required
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -269,9 +269,9 @@ class SeatsAsync(AsyncServiceBase):
             order_id: Order ID
 
         Raises:
-            ListSeats401Error: Authentication required
-            ListSeats403Error: Not permitted or seat-based pricing not enabled
-            ListSeats404Error: Subscription or order not found
+            CustomerPortalSeatsListSeats401Error: Authentication required
+            CustomerPortalSeatsListSeats403Error: Not permitted or seat-based pricing not enabled
+            CustomerPortalSeatsListSeats404Error: Subscription or order not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -288,9 +288,9 @@ class SeatsAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            401: ListSeats401Error,
-            403: ListSeats403Error,
-            404: ListSeats404Error,
+            401: CustomerPortalSeatsListSeats401Error,
+            403: CustomerPortalSeatsListSeats403Error,
+            404: CustomerPortalSeatsListSeats404Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, SeatsList, method_errors)
@@ -304,10 +304,10 @@ class SeatsAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            AssignSeat400Error: No available seats or customer already has a seat
-            AssignSeat401Error: Authentication required
-            AssignSeat403Error: Not permitted or seat-based pricing not enabled
-            AssignSeat404Error: Subscription, order, or customer not found
+            CustomerPortalSeatsAssignSeat400Error: No available seats or customer already has a seat
+            CustomerPortalSeatsAssignSeat401Error: Authentication required
+            CustomerPortalSeatsAssignSeat403Error: Not permitted or seat-based pricing not enabled
+            CustomerPortalSeatsAssignSeat404Error: Subscription, order, or customer not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -322,10 +322,10 @@ class SeatsAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            400: AssignSeat400Error,
-            401: AssignSeat401Error,
-            403: AssignSeat403Error,
-            404: AssignSeat404Error,
+            400: CustomerPortalSeatsAssignSeat400Error,
+            401: CustomerPortalSeatsAssignSeat401Error,
+            403: CustomerPortalSeatsAssignSeat403Error,
+            404: CustomerPortalSeatsAssignSeat404Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerSeat, method_errors)
@@ -339,9 +339,9 @@ class SeatsAsync(AsyncServiceBase):
             seat_id:
 
         Raises:
-            RevokeSeat401Error: Authentication required
-            RevokeSeat403Error: Not permitted or seat-based pricing not enabled
-            RevokeSeat404Error: Seat not found
+            CustomerPortalSeatsRevokeSeat401Error: Authentication required
+            CustomerPortalSeatsRevokeSeat403Error: Not permitted or seat-based pricing not enabled
+            CustomerPortalSeatsRevokeSeat404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -357,9 +357,9 @@ class SeatsAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            401: RevokeSeat401Error,
-            403: RevokeSeat403Error,
-            404: RevokeSeat404Error,
+            401: CustomerPortalSeatsRevokeSeat401Error,
+            403: CustomerPortalSeatsRevokeSeat403Error,
+            404: CustomerPortalSeatsRevokeSeat404Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerSeat, method_errors)
@@ -373,10 +373,10 @@ class SeatsAsync(AsyncServiceBase):
             seat_id:
 
         Raises:
-            ResendInvitation400Error: Seat is not pending or already claimed
-            ResendInvitation401Error: Authentication required
-            ResendInvitation403Error: Not permitted or seat-based pricing not enabled
-            ResendInvitation404Error: Seat not found
+            CustomerPortalSeatsResendInvitation400Error: Seat is not pending or already claimed
+            CustomerPortalSeatsResendInvitation401Error: Authentication required
+            CustomerPortalSeatsResendInvitation403Error: Not permitted or seat-based pricing not enabled
+            CustomerPortalSeatsResendInvitation404Error: Seat not found
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -392,10 +392,10 @@ class SeatsAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            400: ResendInvitation400Error,
-            401: ResendInvitation401Error,
-            403: ResendInvitation403Error,
-            404: ResendInvitation404Error,
+            400: CustomerPortalSeatsResendInvitation400Error,
+            401: CustomerPortalSeatsResendInvitation401Error,
+            403: CustomerPortalSeatsResendInvitation403Error,
+            404: CustomerPortalSeatsResendInvitation404Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerSeat, method_errors)
@@ -416,7 +416,7 @@ class SeatsAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
 
         Raises:
-            ListClaimedSubscriptions401Error: Authentication required
+            CustomerPortalSeatsListClaimedSubscriptions401Error: Authentication required
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -433,7 +433,7 @@ class SeatsAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            401: ListClaimedSubscriptions401Error,
+            401: CustomerPortalSeatsListClaimedSubscriptions401Error,
             422: HTTPValidationError,
         }
         return parse_response_json(
@@ -459,7 +459,7 @@ class SeatsAsync(AsyncServiceBase):
             An async generator that yields items of type CustomerSubscription.
 
         Raises:
-            ListClaimedSubscriptions401Error: Authentication required
+            CustomerPortalSeatsListClaimedSubscriptions401Error: Authentication required
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.

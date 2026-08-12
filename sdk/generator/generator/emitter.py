@@ -8,7 +8,7 @@ from typing import Literal
 
 from jinja2 import Environment, FileSystemLoader, Template
 
-from generator.ir import APIIR, APIVersion, LiteralType
+from generator.ir import APIIR, APIVersion, ErrorResponse, LiteralType, Service
 
 _LOOP_DIRECTORY_PATTERN = re.compile(r"^\[\[([\w\.]+)\]\]$")
 
@@ -154,6 +154,33 @@ class EmitterBase(abc.ABC):
         if isinstance(template, str):
             template = self._load_template(template)
         return template.render(**context)
+
+    def _collect_all_errors(self, api: APIVersion) -> list[ErrorResponse]:
+        """Collect all unique error responses from all services and methods."""
+        errors: list[ErrorResponse] = []
+        errors_by_name: dict[str, ErrorResponse] = {}
+
+        def _collect_error_names_from_service(service: Service) -> None:
+            for method in service.methods:
+                for error in method.errors:
+                    existing = errors_by_name.get(error.name)
+                    if existing is None:
+                        errors.append(error)
+                        errors_by_name[error.name] = error
+                    elif existing.type != error.type:
+                        raise ValueError(
+                            f"Conflicting error definitions for {error.name!r}: "
+                            f"{existing.type!r} != {error.type!r}. Disambiguate the "
+                            "generated error class names in ir.py."
+                        )
+
+            for sub_service in service.services:
+                _collect_error_names_from_service(sub_service)
+
+        for service in api.services:
+            _collect_error_names_from_service(service)
+
+        return errors
 
     def _get_webhook_event_types(self, api: APIVersion) -> list[str]:
         event_types: set[str] = set()

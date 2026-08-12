@@ -13,12 +13,12 @@ import type {
 } from "../models";
 
 import {
-  Finalize402Error,
-  Finalize403Error,
   HTTPValidationError,
   MissingInvoiceBillingDetails,
   OrderNotDraft,
   OrderNotEligibleForInvoice,
+  OrdersFinalize402Error,
+  OrdersFinalize403Error,
   ResourceNotFound,
 } from "../errors";
 
@@ -256,8 +256,8 @@ export const finalizeOrders = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {Finalize402Error} The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
-   * @throws {Finalize403Error} Off-session charges are not enabled for this organization, or its account can't currently accept payments.
+   * @throws {OrdersFinalize402Error} The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
+   * @throws {OrdersFinalize403Error} Off-session charges are not enabled for this organization, or its account can't currently accept payments.
    * @throws {ResourceNotFound} Order not found.
    * @throws {OrderNotDraft} The order is not in `draft` status.
    * @throws {HTTPValidationError} Validation Error
@@ -276,8 +276,8 @@ export const finalizeOrders = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request);
     return client.parseResponse<Order>(response, "json", {
-      402: Finalize402Error,
-      403: Finalize403Error,
+      402: OrdersFinalize402Error,
+      403: OrdersFinalize403Error,
       404: ResourceNotFound,
       412: OrderNotDraft,
       422: HTTPValidationError,

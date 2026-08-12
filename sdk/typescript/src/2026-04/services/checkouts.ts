@@ -13,13 +13,13 @@ import type {
 } from "../models";
 
 import {
-  ClientConfirm403Error,
-  ClientUpdate403Error,
+  CheckoutsClientConfirm403Error,
+  CheckoutsClientUpdate403Error,
+  CheckoutsUpdate403Error,
   ExpiredCheckoutError,
   HTTPValidationError,
   PaymentError,
   ResourceNotFound,
-  Update403Error,
 } from "../errors";
 
 export const listCheckouts = (client: ClientBase) => {
@@ -180,7 +180,7 @@ export const updateCheckouts = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {Update403Error} The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
+   * @throws {CheckoutsUpdate403Error} The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
    * @throws {ResourceNotFound} Checkout session not found.
    * @throws {HTTPValidationError} Validation Error
    */
@@ -198,7 +198,7 @@ export const updateCheckouts = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request);
     return client.parseResponse<Checkout>(response, "json", {
-      403: Update403Error,
+      403: CheckoutsUpdate403Error,
       404: ResourceNotFound,
       422: HTTPValidationError,
     });
@@ -247,7 +247,7 @@ export const clientUpdateCheckouts = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {ClientUpdate403Error} The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
+   * @throws {CheckoutsClientUpdate403Error} The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
    * @throws {ResourceNotFound} Checkout session not found.
    * @throws {ExpiredCheckoutError} The checkout session is expired.
    * @throws {HTTPValidationError} Validation Error
@@ -266,7 +266,7 @@ export const clientUpdateCheckouts = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request);
     return client.parseResponse<CheckoutPublic>(response, "json", {
-      403: ClientUpdate403Error,
+      403: CheckoutsClientUpdate403Error,
       404: ResourceNotFound,
       410: ExpiredCheckoutError,
       422: HTTPValidationError,
@@ -286,7 +286,7 @@ export const clientConfirmCheckouts = (client: ClientBase) => {
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {PaymentError} The payment failed.
-   * @throws {ClientConfirm403Error} The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
+   * @throws {CheckoutsClientConfirm403Error} The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
    * @throws {ResourceNotFound} Checkout session not found.
    * @throws {ExpiredCheckoutError} The checkout session is expired.
    * @throws {HTTPValidationError} Validation Error
@@ -309,7 +309,7 @@ export const clientConfirmCheckouts = (client: ClientBase) => {
     const response = await client.sendRequest(request);
     return client.parseResponse<CheckoutPublicConfirmed>(response, "json", {
       400: PaymentError,
-      403: ClientConfirm403Error,
+      403: CheckoutsClientConfirm403Error,
       404: ResourceNotFound,
       410: ExpiredCheckoutError,
       422: HTTPValidationError,

@@ -71,13 +71,15 @@ export const CustomerMetricsOverview = ({
     customer_id: [customer.id],
   })
 
+  const [previousStartDate, previousEndDate] = getPreviousDateRange(
+    dateRange.startDate,
+    dateRange.endDate,
+  )
+
   const { data: previousPeriodMetrics } = useMetrics(
     {
-      startDate: getPreviousDateRange(
-        dateRange.startDate,
-        dateRange.endDate,
-      )[0],
-      endDate: getPreviousDateRange(dateRange.startDate, dateRange.endDate)[1],
+      startDate: previousStartDate,
+      endDate: previousEndDate,
       organization_id: organization.id,
       interval: interval,
       customer_id: [customer.id],

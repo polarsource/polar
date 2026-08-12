@@ -59,9 +59,6 @@ export const useAtRisk = (
     items,
     isLoading: pastDueLoading || cancelingLoading,
     isError: pastDueError || cancelingError,
-    refetch: () => {
-      refetchPastDue()
-      refetchCanceling()
-    },
+    refetch: () => Promise.all([refetchPastDue(), refetchCanceling()]),
   }
 }

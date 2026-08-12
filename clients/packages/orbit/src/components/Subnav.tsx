@@ -3,17 +3,13 @@ import { Box } from './Box'
 import { Text } from './Text'
 
 export interface SubnavProps extends PropsWithChildren {
-  /**
-   * Accessible name for the navigation landmark, distinguishing it from the
-   * page's primary navigation for assistive technology.
-   */
+  /** Accessible name for the navigation landmark. */
   label?: string
 }
 
 /**
  * A horizontal row of links for switching between the sections of a page.
- * Compose it with `SubnavItem`, passing your router's link element as the
- * item's child so client-side navigation is preserved.
+ * Compose with `SubnavItem`, passing your router's link element as the child.
  */
 export const Subnav = ({ label = 'Secondary', children }: SubnavProps) => (
   <Box as="nav" aria-label={label}>
@@ -24,25 +20,12 @@ export const Subnav = ({ label = 'Secondary', children }: SubnavProps) => (
 )
 
 export interface SubnavItemProps {
-  /**
-   * Marks the item as the section currently shown. The active item is
-   * emphasised, underlined, and exposed to assistive technology via
-   * `aria-current`.
-   */
+  /** Marks the item as the section currently shown (sets `aria-current`). */
   active?: boolean
-  /**
-   * The link (or button) for the section. Styling is inherited, so any
-   * anchor-like element works — a framework `<Link>`, a plain `<a>`, or a
-   * `<button>` with its chrome reset.
-   */
+  /** The link element for the section; color and typography are inherited. */
   children: ReactNode
 }
 
-// The item styles the list element and lets the link inherit color and
-// typography, so it stays agnostic of which link component the consumer's
-// router provides. The round indicator dot, centered under the label, is
-// always rendered — transparent unless active — so activating an item never
-// shifts layout.
 export const SubnavItem = ({ active, children }: SubnavItemProps) => (
   <Box
     as="li"

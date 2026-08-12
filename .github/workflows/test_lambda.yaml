@@ -28,7 +28,7 @@ jobs:
       lambda: ${{ steps.filter.outputs.lambda }}
     steps:
       - uses: actions/checkout@v7.0.1
-      - uses: dorny/paths-filter@v4.0.2
+      - uses: dorny/paths-filter@v4.0.3
         id: filter
         with:
           list-files: json

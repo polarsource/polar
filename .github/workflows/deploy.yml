@@ -132,11 +132,11 @@ jobs:
           echo "test_enabled=${enabled:-false}"
 
       # Four paths-filter invocations: one per component per env. We can't
-      # combine them because dorny/paths-filter@v4.0.2 uses a single base for
+      # combine them because dorny/paths-filter@v4.0.3 uses a single base for
       # all filters in one invocation, but our design requires the frontend
       # filter to diff against the frontend tag, not the backend tag.
       - name: Detect backend changes since last sandbox backend deploy
-        uses: dorny/paths-filter@v4.0.2
+        uses: dorny/paths-filter@v4.0.3
         id: filter-backend-sandbox
         with:
           base: ${{ steps.bases.outputs.backend-sandbox }}
@@ -150,7 +150,7 @@ jobs:
               - 'server/migrations/**'
 
       - name: Detect frontend changes since last sandbox frontend deploy
-        uses: dorny/paths-filter@v4.0.2
+        uses: dorny/paths-filter@v4.0.3
         id: filter-frontend-sandbox
         with:
           base: ${{ steps.bases.outputs.frontend-sandbox }}
@@ -161,7 +161,7 @@ jobs:
               - '.github/workflows/deploy-environment.yml'
 
       - name: Detect backend changes since last production backend deploy
-        uses: dorny/paths-filter@v4.0.2
+        uses: dorny/paths-filter@v4.0.3
         id: filter-backend-production
         with:
           base: ${{ steps.bases.outputs.backend-production }}
@@ -175,7 +175,7 @@ jobs:
               - 'server/migrations/**'
 
       - name: Detect frontend changes since last production frontend deploy
-        uses: dorny/paths-filter@v4.0.2
+        uses: dorny/paths-filter@v4.0.3
         id: filter-frontend-production
         with:
           base: ${{ steps.bases.outputs.frontend-production }}
@@ -202,7 +202,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
 
       - name: Set up Docker Buildx
-        uses: useblacksmith/setup-docker-builder@v2.0.1
+        uses: useblacksmith/setup-docker-builder@v2.1.0
 
       - name: Log in to the Container registry
         uses: docker/login-action@v4.6.0
@@ -257,7 +257,7 @@ jobs:
       - uses: actions/checkout@v7.0.1
 
       - name: Set up Docker Buildx
-        uses: useblacksmith/setup-docker-builder@v2.0.1
+        uses: useblacksmith/setup-docker-builder@v2.1.0
 
       - name: Sync AUP to server
         run: cp "clients/apps/web/src/app/(main)/(website)/(landing)/(mdx)/legal/acceptable-use-policy/page.mdx" "server/polar/organization_review/acceptable-use-policy.mdx"

@@ -14,6 +14,7 @@ from polar.models.customer_seat import SeatStatus
 from polar.models.email_log import EmailLog, EmailLogStatus
 from polar.models.subscription import Subscription, SubscriptionStatus
 from polar.postgres import AsyncSession
+from polar.product.guard import is_metered_price
 from polar.subscription.repository import (
     SubscriptionProductPriceRepository,
     SubscriptionRepository,
@@ -208,6 +209,92 @@ class TestSubscriptionProductPriceRepository:
             == seat_subscription.id
         )
         assert result[customer_without_subscription.id] is None
+
+    async def test_get_by_customers_and_meter_multiple_seats_picks_oldest_claimed(
+        self,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        meter: Meter,
+        organization: Organization,
+    ) -> None:
+        """When a customer holds multiple claimed seats, the oldest
+        claimed seat's subscription determines the metered price.
+
+        This guards against non-deterministic DISTINCT ON behavior: without
+        a tiebreaker on claimed_at, PostgreSQL may return any of the
+        customer's claimed seats, billing the wrong subscription.
+        """
+        seat_holder = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="seat-holder@example.com",
+        )
+        billing_manager_a = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing-manager-a@example.com",
+        )
+        billing_manager_b = await create_customer(
+            save_fixture,
+            organization=organization,
+            email="billing-manager-b@example.com",
+        )
+
+        # Two products with distinct metered unit prices for the same meter,
+        # so the selected subscription is observable through the price amount.
+        product_a = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(100), None, "usd")],
+        )
+        product_b = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.month,
+            prices=[(meter, Decimal(200), None, "usd")],
+        )
+        subscription_a = await create_active_subscription(
+            save_fixture, product=product_a, customer=billing_manager_a
+        )
+        subscription_b = await create_active_subscription(
+            save_fixture, product=product_b, customer=billing_manager_b
+        )
+
+        # The seat claimed earlier (on subscription_a) must win.
+        earlier_claimed_at = utc_now() - timedelta(days=2)
+        later_claimed_at = utc_now() - timedelta(days=1)
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription_a,
+            customer=seat_holder,
+            status=SeatStatus.claimed,
+            claimed_at=earlier_claimed_at,
+        )
+        await create_customer_seat(
+            save_fixture,
+            subscription=subscription_b,
+            customer=seat_holder,
+            status=SeatStatus.claimed,
+            claimed_at=later_claimed_at,
+        )
+        subscription_a_id = subscription_a.id
+        session.expunge_all()
+
+        repository = SubscriptionProductPriceRepository.from_session(session)
+        result = await repository.get_by_customers_and_meter([seat_holder.id], meter.id)
+
+        customer_price = result[seat_holder.id]
+        assert customer_price is not None
+        # The oldest claimed seat's subscription is selected.
+        assert (
+            customer_price.subscription_product_price.subscription_id
+            == subscription_a_id
+        )
+        # And the unit amount reflects subscription_a's metered price.
+        product_price = customer_price.subscription_product_price.product_price
+        assert is_metered_price(product_price)
+        assert product_price.unit_amount == Decimal(100)
 
 
 async def _create_sent_reminder_log(

@@ -1,6 +1,7 @@
 export interface BulkResult<T, R = void> {
   succeeded: { item: T; value: R }[]
   failed: { item: T; error: unknown }[]
+  cancelled: T[]
 }
 
 export const runBulk = async <T, R = void>(
@@ -11,7 +12,11 @@ export const runBulk = async <T, R = void>(
     signal,
   }: { concurrency?: number; signal?: AbortSignal } = {},
 ): Promise<BulkResult<T, R>> => {
-  const result: BulkResult<T, R> = { succeeded: [], failed: [] }
+  const result: BulkResult<T, R> = {
+    succeeded: [],
+    failed: [],
+    cancelled: [],
+  }
   if (items.length === 0) {
     return result
   }
@@ -31,6 +36,7 @@ export const runBulk = async <T, R = void>(
         result.succeeded.push({ item, value })
       } catch (error) {
         if (signal?.aborted) {
+          result.cancelled.push(item)
           return
         }
         result.failed.push({ item, error })
@@ -39,5 +45,10 @@ export const runBulk = async <T, R = void>(
   }
 
   await Promise.all(Array.from({ length: limit }, worker))
+
+  if (cursor < items.length) {
+    result.cancelled.push(...items.slice(cursor))
+  }
+
   return result
 }

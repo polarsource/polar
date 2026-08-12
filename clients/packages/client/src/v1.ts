@@ -5264,7 +5264,7 @@ export interface paths {
     get?: never
     put?: never
     /**
-     * Run Merchant Migration Pre-check
+     * Start Merchant Migration Pre-check
      * @description **Scopes**: `organizations:write`
      */
     post: operations['merchant-migrations:precheck']
@@ -5284,7 +5284,7 @@ export interface paths {
     get?: never
     put?: never
     /**
-     * Import Merchant Migration Catalog
+     * Start Merchant Migration Catalog Import
      * @description **Scopes**: `organizations:write`
      */
     post: operations['merchant-migrations:import_catalog']
@@ -23679,6 +23679,8 @@ export interface components {
       source: {
         [key: string]: unknown
       } | null
+      /** @description Background precheck/import progress for the current step. Null until the first background run is started. */
+      operation: components['schemas']['MerchantMigrationOperation'] | null
     }
     /** MerchantMigrationCreate */
     MerchantMigrationCreate: {
@@ -23696,16 +23698,6 @@ export interface components {
        */
       api_key: string
     }
-    /** MerchantMigrationImportReport */
-    MerchantMigrationImportReport: {
-      /** @description The migration step after the import. */
-      step: components['schemas']['MerchantMigrationStep']
-      /**
-       * Results
-       * @description Per-entity counts of what was imported vs skipped.
-       */
-      results: components['schemas']['MerchantMigrationImportResult'][]
-    }
     /** MerchantMigrationImportRequest */
     MerchantMigrationImportRequest: {
       /**
@@ -23718,21 +23710,6 @@ export interface components {
        * @description Import every importable record except these — the opt-out selection for large catalogs. Ignored when `record_ids` is set.
        */
       exclude_record_ids?: string[] | null
-    }
-    /** MerchantMigrationImportResult */
-    MerchantMigrationImportResult: {
-      /** @description The source entity type. */
-      entity: components['schemas']['PrecheckEntity']
-      /**
-       * Imported
-       * @description How many were created or reused in Polar.
-       */
-      imported: number
-      /**
-       * Skipped
-       * @description How many were left on the source (not importable).
-       */
-      skipped: number
     }
     /** MerchantMigrationNotEnabled */
     MerchantMigrationNotEnabled: {
@@ -23756,6 +23733,58 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /**
+     * MerchantMigrationOperation
+     * @description In-flight or finished background work for the current ``step``.
+     */
+    MerchantMigrationOperation: {
+      /** @description pending → running → done, or failed. */
+      status: components['schemas']['MerchantMigrationOperationStatus']
+      /**
+       * Cursor
+       * @description Opaque resume point for the batch chain. Shape depends on the step (extract phase + Stripe page cursor, or import type + last record id).
+       */
+      cursor?: {
+        [key: string]: unknown
+      } | null
+      /** @description Import only: the compact selection from the start request. */
+      selection?:
+        | components['schemas']['MerchantMigrationOperationSelection']
+        | null
+      /**
+       * Error
+       * @description Safe failure message when status is failed.
+       */
+      error?: string | null
+      /**
+       * Last Progress At
+       * @description Bumped on enqueue and each successful batch; used for stall detection.
+       */
+      last_progress_at?: string | null
+    }
+    /**
+     * MerchantMigrationOperationSelection
+     * @description Compact import selection. Opt-in (``record_ids``) or opt-out
+     *     (``exclude_record_ids``); never both. Workers filter batch queries with this
+     *     rather than marking every ledger row up front.
+     */
+    MerchantMigrationOperationSelection: {
+      /**
+       * Record Ids
+       * @description Import only these ledger record ids.
+       */
+      record_ids?: string[] | null
+      /**
+       * Exclude Record Ids
+       * @description Import every pending importable record except these.
+       */
+      exclude_record_ids?: string[] | null
+    }
+    /**
+     * MerchantMigrationOperationStatus
+     * @enum {string}
+     */
+    MerchantMigrationOperationStatus: 'pending' | 'running' | 'done' | 'failed'
     /** MerchantMigrationRecordItem */
     MerchantMigrationRecordItem: {
       /**
@@ -25200,6 +25229,17 @@ export interface components {
        * @constant
        */
       error: 'OffSessionChargesNotEnabled'
+      /** Detail */
+      detail: string
+    }
+    /** OperationInProgress */
+    OperationInProgress: {
+      /**
+       * Error
+       * @example OperationInProgress
+       * @constant
+       */
+      error: 'OperationInProgress'
       /** Detail */
       detail: string
     }
@@ -30312,41 +30352,17 @@ export interface components {
      * @enum {string}
      */
     PrecheckEntity: 'products' | 'prices' | 'customers' | 'subscriptions'
-    /** PrecheckEntitySummary */
-    PrecheckEntitySummary: {
-      /** @description The source entity type. */
-      entity: components['schemas']['PrecheckEntity']
+    /** PrecheckNotAllowed */
+    PrecheckNotAllowed: {
       /**
-       * Total
-       * @description How many were read from the source.
+       * Error
+       * @example PrecheckNotAllowed
+       * @constant
        */
-      total: number
-      /**
-       * Importable
-       * @description How many will be imported into Polar.
-       */
-      importable: number
-      /**
-       * Skipped
-       * @description How many won't be imported and stay on the source.
-       */
-      skipped: number
+      error: 'PrecheckNotAllowed'
+      /** Detail */
+      detail: string
     }
-    /** PrecheckIssue */
-    PrecheckIssue: {
-      level: components['schemas']['PrecheckIssueLevel']
-      /** Code */
-      code: string
-      /** Message */
-      message: string
-      /** Source Id */
-      source_id: string | null
-    }
-    /**
-     * PrecheckIssueLevel
-     * @enum {string}
-     */
-    PrecheckIssueLevel: 'blocker' | 'warning'
     /**
      * PrecheckReasonLevel
      * @enum {string}
@@ -30357,18 +30373,6 @@ export interface components {
      * @enum {string}
      */
     PrecheckRecordStatus: 'importable' | 'skipped'
-    /** PrecheckReport */
-    PrecheckReport: {
-      /** Can Start */
-      can_start: boolean
-      /** Issues */
-      issues: components['schemas']['PrecheckIssue'][]
-      /**
-       * Entities
-       * @description Per-entity counts of what will be imported vs stay on the source.
-       */
-      entities: components['schemas']['PrecheckEntitySummary'][]
-    }
     /**
      * PresentmentCurrency
      * @enum {string}
@@ -52639,12 +52643,12 @@ export interface operations {
     requestBody?: never
     responses: {
       /** @description Successful Response */
-      200: {
+      202: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['PrecheckReport']
+          'application/json': components['schemas']['MerchantMigration']
         }
       }
       /** @description The source is not connected or isn't supported. */
@@ -52674,6 +52678,18 @@ export interface operations {
         }
         content: {
           'application/json': components['schemas']['MerchantMigrationNotFound']
+        }
+      }
+      /** @description A background operation is already running, or the migration isn't ready for precheck. */
+      409: {
+        headers: {
+          [name: string]: unknown
+        }
+        content: {
+          'application/json':
+            | components['schemas']['OperationInProgress']
+            | components['schemas']['PrecheckNotAllowed']
+            | components['schemas']['CatalogImportNotReady']
         }
       }
       /** @description Validation Error */
@@ -52705,12 +52721,12 @@ export interface operations {
     }
     responses: {
       /** @description Successful Response */
-      200: {
+      202: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['MerchantMigrationImportReport']
+          'application/json': components['schemas']['MerchantMigration']
         }
       }
       /** @description The source is not connected or isn't supported. */
@@ -52742,7 +52758,7 @@ export interface operations {
           'application/json': components['schemas']['MerchantMigrationNotFound']
         }
       }
-      /** @description The pre-check hasn't run yet, or it reports a blocker. */
+      /** @description The pre-check hasn't run yet, a blocker applies, or a background operation is already running. */
       409: {
         headers: {
           [name: string]: unknown
@@ -52751,6 +52767,7 @@ export interface operations {
           'application/json':
             | components['schemas']['CatalogImportNotReady']
             | components['schemas']['CatalogImportBlocked']
+            | components['schemas']['OperationInProgress']
         }
       }
       /** @description Validation Error */
@@ -65725,6 +65742,9 @@ export const memberRoleValues: ReadonlyArray<
 export const memberSortPropertyValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MemberSortProperty']
 > = ['created_at', '-created_at']
+export const merchantMigrationOperationStatusValues: ReadonlyArray<
+  FlattenedDeepRequired<components>['schemas']['MerchantMigrationOperationStatus']
+> = ['pending', 'running', 'done', 'failed']
 export const merchantMigrationRecordStatusValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['MerchantMigrationRecordStatus']
 > = ['pending', 'imported', 'skipped', 'failed']
@@ -67366,9 +67386,6 @@ export const pledgeStateValues: ReadonlyArray<
 export const precheckEntityValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckEntity']
 > = ['products', 'prices', 'customers', 'subscriptions']
-export const precheckIssueLevelValues: ReadonlyArray<
-  FlattenedDeepRequired<components>['schemas']['PrecheckIssueLevel']
-> = ['blocker', 'warning']
 export const precheckReasonLevelValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['PrecheckReasonLevel']
 > = ['action_required', 'info']

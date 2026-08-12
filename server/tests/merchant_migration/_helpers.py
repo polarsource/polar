@@ -1,10 +1,16 @@
+from collections.abc import Sequence
+from uuid import UUID
+
+from polar.auth.models import AuthSubject
 from polar.kit.encryption import EncryptedString
+from polar.merchant_migration.operation import MerchantMigrationOperationStatus
 from polar.merchant_migration.repository import MerchantMigrationRepository
 from polar.merchant_migration.service import (
     SOURCE_CREDENTIALS_ENCRYPTION_CONTEXT,
     StripeSourceCredentials,
 )
-from polar.models import MerchantMigration, Organization
+from polar.merchant_migration.service import merchant_migration as service
+from polar.models import MerchantMigration, Organization, User
 from polar.models.merchant_migration import (
     MerchantMigrationSourcePlatform,
     MerchantMigrationStep,
@@ -62,3 +68,64 @@ async def build_connected_migration(
     )
     await save_fixture(migration)
     return migration
+
+
+async def drain_precheck(
+    session: AsyncSession, migration_id: UUID
+) -> MerchantMigration:
+    """Run precheck batches until the operation is terminal."""
+    for _ in range(1000):
+        await service.process_precheck_batch(session, migration_id)
+        repository = MerchantMigrationRepository.from_session(session)
+        migration = await repository.get_by_id(migration_id)
+        assert migration is not None
+        assert migration.operation is not None
+        if migration.operation.is_terminal:
+            return migration
+    raise AssertionError("precheck did not finish")
+
+
+async def drain_import(session: AsyncSession, migration_id: UUID) -> MerchantMigration:
+    """Run import batches until the operation is terminal."""
+    for _ in range(1000):
+        await service.process_import_batch(session, migration_id)
+        repository = MerchantMigrationRepository.from_session(session)
+        migration = await repository.get_by_id(migration_id)
+        assert migration is not None
+        assert migration.operation is not None
+        if migration.operation.is_terminal:
+            return migration
+    raise AssertionError("import did not finish")
+
+
+async def run_precheck(
+    session: AsyncSession,
+    auth_subject: AuthSubject[User | Organization],
+    migration_id: UUID,
+) -> MerchantMigration:
+    """Start and drain precheck — the sync stand-in for old tests."""
+    migration = await service.start_precheck(session, auth_subject, migration_id)
+    assert migration.operation is not None
+    assert migration.operation.status == MerchantMigrationOperationStatus.pending
+    return await drain_precheck(session, migration_id)
+
+
+async def run_import(
+    session: AsyncSession,
+    auth_subject: AuthSubject[User | Organization],
+    migration_id: UUID,
+    *,
+    record_ids: Sequence[UUID] | None = None,
+    exclude_record_ids: Sequence[UUID] | None = None,
+) -> MerchantMigration:
+    """Start and drain import — the sync stand-in for old tests."""
+    migration = await service.start_import(
+        session,
+        auth_subject,
+        migration_id,
+        record_ids=record_ids,
+        exclude_record_ids=exclude_record_ids,
+    )
+    assert migration.operation is not None
+    assert migration.operation.status == MerchantMigrationOperationStatus.pending
+    return await drain_import(session, migration_id)

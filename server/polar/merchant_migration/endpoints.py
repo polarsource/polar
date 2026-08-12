@@ -14,6 +14,7 @@ from polar.postgres import AsyncReadSession, get_db_read_session, get_db_session
 from polar.routing import APIRouter
 
 from .auth import MerchantMigrationRead, MerchantMigrationWrite
+from .operation import OperationInProgress
 from .pan_transfer import (
     PanStepNotActionable,
     PanStepNotFound,
@@ -26,7 +27,6 @@ from .pan_transfer import (
 from .schemas import MerchantMigration as MerchantMigrationSchema
 from .schemas import (
     MerchantMigrationCreate,
-    MerchantMigrationImportReport,
     MerchantMigrationImportRequest,
     MerchantMigrationRecordItem,
     MerchantMigrationRecordSummary,
@@ -35,7 +35,6 @@ from .schemas import (
     PrecheckEntity,
     PrecheckReasonLevel,
     PrecheckRecordStatus,
-    PrecheckReport,
 )
 from .service import (
     CatalogImportBlocked,
@@ -44,6 +43,7 @@ from .service import (
     MerchantMigrationNotEnabled,
     MerchantMigrationNotFound,
     MissingStripeScopes,
+    PrecheckNotAllowed,
     SourceAccountNotMigratable,
     SourceKeyModeMismatch,
     SourceNotConnected,
@@ -127,7 +127,8 @@ async def create(
 async def get(
     id: UUID4,
     auth_subject: MerchantMigrationRead,
-    session: AsyncReadSession = Depends(get_db_read_session),
+    # Write session: stall detection may mark a stuck operation failed.
+    session: AsyncSession = Depends(get_db_session),
 ) -> MerchantMigration:
     migration = await merchant_migration_service.get(session, auth_subject, id)
     if migration is None:
@@ -137,35 +138,9 @@ async def get(
 
 @router.post(
     "/{id}/precheck",
-    response_model=PrecheckReport,
-    summary="Run Merchant Migration Pre-check",
-    responses={
-        400: {
-            "description": "The source is not connected or isn't supported.",
-            "model": SourceNotConnected.schema() | UnsupportedMigrationSource.schema(),
-        },
-        403: {
-            "description": "Not allowed to manage this organization.",
-            "model": NotPermitted.schema(),
-        },
-        404: {
-            "description": "Merchant migration not found.",
-            "model": MerchantMigrationNotFound.schema(),
-        },
-    },
-)
-async def precheck(
-    id: UUID4,
-    auth_subject: MerchantMigrationWrite,
-    session: AsyncSession = Depends(get_db_session),
-) -> PrecheckReport:
-    return await merchant_migration_service.run_precheck(session, auth_subject, id)
-
-
-@router.post(
-    "/{id}/import",
-    response_model=MerchantMigrationImportReport,
-    summary="Import Merchant Migration Catalog",
+    response_model=MerchantMigrationSchema,
+    status_code=202,
+    summary="Start Merchant Migration Pre-check",
     responses={
         400: {
             "description": "The source is not connected or isn't supported.",
@@ -180,8 +155,46 @@ async def precheck(
             "model": MerchantMigrationNotFound.schema(),
         },
         409: {
-            "description": "The pre-check hasn't run yet, or it reports a blocker.",
-            "model": CatalogImportNotReady.schema() | CatalogImportBlocked.schema(),
+            "description": "A background operation is already running, or the "
+            "migration isn't ready for precheck.",
+            "model": OperationInProgress.schema()
+            | PrecheckNotAllowed.schema()
+            | CatalogImportNotReady.schema(),
+        },
+    },
+)
+async def precheck(
+    id: UUID4,
+    auth_subject: MerchantMigrationWrite,
+    session: AsyncSession = Depends(get_db_session),
+) -> MerchantMigration:
+    return await merchant_migration_service.start_precheck(session, auth_subject, id)
+
+
+@router.post(
+    "/{id}/import",
+    response_model=MerchantMigrationSchema,
+    status_code=202,
+    summary="Start Merchant Migration Catalog Import",
+    responses={
+        400: {
+            "description": "The source is not connected or isn't supported.",
+            "model": SourceNotConnected.schema() | UnsupportedMigrationSource.schema(),
+        },
+        403: {
+            "description": "Not allowed to manage this organization.",
+            "model": NotPermitted.schema(),
+        },
+        404: {
+            "description": "Merchant migration not found.",
+            "model": MerchantMigrationNotFound.schema(),
+        },
+        409: {
+            "description": "The pre-check hasn't run yet, a blocker applies, or a "
+            "background operation is already running.",
+            "model": CatalogImportNotReady.schema()
+            | CatalogImportBlocked.schema()
+            | OperationInProgress.schema(),
         },
     },
 )
@@ -190,8 +203,8 @@ async def import_catalog(
     auth_subject: MerchantMigrationWrite,
     body: MerchantMigrationImportRequest | None = None,
     session: AsyncSession = Depends(get_db_session),
-) -> MerchantMigrationImportReport:
-    return await merchant_migration_service.import_catalog(
+) -> MerchantMigration:
+    return await merchant_migration_service.start_import(
         session,
         auth_subject,
         id,
@@ -314,9 +327,6 @@ async def complete_pan_transfer_step(
 async def records_summary(
     id: UUID4,
     auth_subject: MerchantMigrationWrite,
-    # The primary, not the replica: the receipt reads these counts back the
-    # moment the import commits, so replica lag would report it as having
-    # landed nothing.
     session: AsyncSession = Depends(get_db_session),
 ) -> MerchantMigrationRecordSummary:
     return await merchant_migration_service.summarize_records(session, auth_subject, id)
@@ -349,9 +359,6 @@ async def records(
     status: Annotated[PrecheckRecordStatus | None, Query()] = None,
     reason_level: Annotated[PrecheckReasonLevel | None, Query()] = None,
     import_status: Annotated[MerchantMigrationRecordStatus | None, Query()] = None,
-    # The primary, like the summary above: it supplies the selection ceiling
-    # and these rows supply the checkboxes, so a split would let replica lag
-    # show a tickable row the count doesn't include.
     session: AsyncSession = Depends(get_db_session),
 ) -> ListResource[MerchantMigrationRecordItem]:
     items, count = await merchant_migration_service.list_records(

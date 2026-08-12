@@ -1,5 +1,4 @@
-from collections.abc import AsyncIterator
-from typing import Protocol
+from typing import Any, Protocol
 
 from ..canonical import CanonicalAccount, CanonicalRecord, CanonicalSubscription
 
@@ -7,15 +6,19 @@ from ..canonical import CanonicalAccount, CanonicalRecord, CanonicalSubscription
 class SourceAdapter(Protocol):
     """Reads one billing provider into provider-agnostic CanonicalRecords.
 
-    ``extract`` is an async iterator because source data can be huge and must be
-    streamed, not materialized. Credential validation is provider-specific and
-    lives on the concrete adapter (e.g. ``StripeAdapter.verify_scopes``), not here.
+    ``extract_batch`` pages the source under a cursor so precheck can run as
+    Dramatiq batches. Credential validation is provider-specific and lives on
+    the concrete adapter (e.g. ``StripeAdapter.verify_scopes``), not here.
 
     Everything here reads, except ``stop_source_subscription``: the one write the
     migration makes on the merchant's own provider, at cutover.
     """
 
-    def extract(self) -> AsyncIterator[CanonicalRecord]: ...
+    async def extract_batch(
+        self, *, cursor: dict[str, Any] | None, limit: int
+    ) -> tuple[list[CanonicalRecord], dict[str, Any] | None]:
+        """Return up to ``limit`` records and the next cursor (None when done)."""
+        ...
 
     async def get_source_account(self) -> CanonicalAccount: ...
 

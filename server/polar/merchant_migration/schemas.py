@@ -11,6 +11,7 @@ from polar.models.merchant_migration import (
 )
 from polar.models.merchant_migration_record import MerchantMigrationRecordStatus
 
+from .operation import MerchantMigrationOperation
 from .pan_transfer import PanTransferMethod, PanTransferStep
 
 
@@ -167,23 +168,6 @@ class MerchantMigrationImportRequest(Schema):
     )
 
 
-class MerchantMigrationImportResult(Schema):
-    entity: PrecheckEntity = Field(description="The source entity type.")
-    imported: int = Field(description="How many were created or reused in Polar.")
-    skipped: int = Field(
-        description="How many were left on the source (not importable)."
-    )
-
-
-class MerchantMigrationImportReport(Schema):
-    step: MerchantMigrationStep = Field(
-        description="The migration step after the import."
-    )
-    results: list[MerchantMigrationImportResult] = Field(
-        description="Per-entity counts of what was imported vs skipped."
-    )
-
-
 class PanTransferStepComplete(Schema):
     inputs: dict[str, str] = Field(
         default_factory=dict,
@@ -233,5 +217,11 @@ class MerchantMigration(IDSchema, TimestampedSchema):
         description=(
             "Non-secret metadata about the connected source. The shape varies by "
             "provider (e.g. Stripe exposes `stripe_user_id`, `livemode`)."
+        ),
+    )
+    operation: MerchantMigrationOperation | None = Field(
+        description=(
+            "Background precheck/import progress for the current step. Null until "
+            "the first background run is started."
         ),
     )

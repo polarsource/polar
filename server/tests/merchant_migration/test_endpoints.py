@@ -1,4 +1,4 @@
-from collections.abc import AsyncIterator
+from typing import Any
 
 import pytest
 import stripe as stripe_lib
@@ -27,6 +27,8 @@ from tests.fixtures.database import SaveFixture
 from tests.merchant_migration._helpers import (
     assert_no_migrations,
     build_connected_migration,
+    drain_import,
+    drain_precheck,
 )
 
 VALID_BODY = {
@@ -289,7 +291,7 @@ class TestPrecheck:
         assert response.status_code == 401
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
-    async def test_runs_and_returns_report(
+    async def test_starts_and_returns_202(
         self,
         client: AsyncClient,
         session: AsyncSession,
@@ -299,44 +301,65 @@ class TestPrecheck:
         mocker: MockerFixture,
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
-
-        adapter = mocker.MagicMock()
-        adapter.extract.return_value = _empty_extract()
-        adapter.get_source_account = mocker.AsyncMock(
-            return_value=CanonicalAccount(country="US", has_connected_accounts=False)
-        )
-        mocker.patch(
-            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
-        )
+        enqueue = mocker.patch("polar.merchant_migration.service.enqueue_job")
+        _mock_adapter(mocker)
 
         response = await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
-        assert response.status_code == 200
+        assert response.status_code == 202
         json_body = response.json()
-        assert json_body["can_start"] is True
-        assert json_body["issues"] == []
+        assert json_body["step"] == "pre_check"
+        assert json_body["operation"]["status"] == "pending"
+        enqueue.assert_called_once_with("merchant_migration.precheck", migration.id)
 
 
-async def _empty_extract() -> AsyncIterator[object]:
-    return
-    yield
+def _catalog_records() -> list[CanonicalRecord]:
+    return [
+        CanonicalProduct(
+            source_id="prod_1:month:1",
+            product_source_id="prod_1",
+            name="Pro",
+            recurring_interval="month",
+            recurring_interval_count=1,
+            prices=[
+                CanonicalPrice(
+                    source_id="price_1",
+                    currency="usd",
+                    amount=1000,
+                    pricing_scheme=CanonicalPricingScheme.fixed,
+                )
+            ],
+        )
+    ]
 
 
-async def _catalog_extract() -> AsyncIterator[CanonicalRecord]:
-    yield CanonicalProduct(
-        source_id="prod_1:month:1",
-        product_source_id="prod_1",
-        name="Pro",
-        recurring_interval="month",
-        recurring_interval_count=1,
-        prices=[
-            CanonicalPrice(
-                source_id="price_1",
-                currency="usd",
-                amount=1000,
-                pricing_scheme=CanonicalPricingScheme.fixed,
-            )
-        ],
+def _catalog_with_customer_records() -> list[CanonicalRecord]:
+    return [
+        *_catalog_records(),
+        CanonicalCustomer(
+            source_id="cus_1",
+            email="alice@example.com",
+            name="Alice",
+            country="US",
+        ),
+    ]
+
+
+async def _extract_batch_from(
+    records: list[CanonicalRecord],
+) -> tuple[list[CanonicalRecord], dict[str, Any] | None]:
+    return records, None
+
+
+def _mock_adapter(
+    mocker: MockerFixture,
+    records: list[CanonicalRecord] | None = None,
+) -> None:
+    adapter = mocker.MagicMock()
+    adapter.extract_batch = mocker.AsyncMock(return_value=(list(records or []), None))
+    adapter.get_source_account = mocker.AsyncMock(
+        return_value=CanonicalAccount(country="US", has_connected_accounts=False)
     )
+    mocker.patch("polar.merchant_migration.service.StripeAdapter", return_value=adapter)
 
 
 @pytest.mark.asyncio
@@ -362,17 +385,12 @@ class TestRecords:
         mocker: MockerFixture,
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
-        adapter = mocker.MagicMock()
-        adapter.extract.return_value = _catalog_extract()
-        adapter.get_source_account = mocker.AsyncMock(
-            return_value=CanonicalAccount(country="US", has_connected_accounts=False)
-        )
-        mocker.patch(
-            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
-        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        _mock_adapter(mocker, _catalog_records())
 
         precheck = await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
-        assert precheck.status_code == 200
+        assert precheck.status_code == 202
+        await drain_precheck(session, migration.id)
 
         response = await client.get(
             f"/v1/merchant-migrations/{migration.id}/records",
@@ -383,17 +401,6 @@ class TestRecords:
         assert json_body["pagination"]["total_count"] == 1
         assert json_body["items"][0]["source_id"] == "prod_1"
         assert json_body["items"][0]["status"] == "importable"
-
-
-async def _catalog_with_customer_extract() -> AsyncIterator[CanonicalRecord]:
-    async for record in _catalog_extract():
-        yield record
-    yield CanonicalCustomer(
-        source_id="cus_1",
-        email="alice@example.com",
-        name="Alice",
-        country="US",
-    )
 
 
 @pytest.mark.asyncio
@@ -421,54 +428,45 @@ class TestImport:
     async def test_imports_catalog(
         self,
         client: AsyncClient,
+        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
         mocker: MockerFixture,
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
-        adapter = mocker.MagicMock()
-        adapter.extract.return_value = _catalog_with_customer_extract()
-        adapter.get_source_account = mocker.AsyncMock(
-            return_value=CanonicalAccount(country="US", has_connected_accounts=False)
-        )
-        mocker.patch(
-            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
-        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        _mock_adapter(mocker, _catalog_with_customer_records())
 
         precheck = await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
-        assert precheck.status_code == 200
+        assert precheck.status_code == 202
+        await drain_precheck(session, migration.id)
 
         response = await client.post(f"/v1/merchant-migrations/{migration.id}/import")
-        assert response.status_code == 200
+        assert response.status_code == 202
         json_body = response.json()
         assert json_body["step"] == "create_catalog"
-        results = {result["entity"]: result for result in json_body["results"]}
-        assert results["products"]["imported"] == 1
-        assert results["customers"]["imported"] == 1
+        assert json_body["operation"]["status"] == "pending"
+        await drain_import(session, migration.id)
 
     @pytest.mark.auth(AuthSubjectFixture(scopes={Scope.organizations_write}))
     async def test_imports_only_selected_records(
         self,
         client: AsyncClient,
+        session: AsyncSession,
         save_fixture: SaveFixture,
         organization: Organization,
         user_organization: UserOrganization,
         mocker: MockerFixture,
     ) -> None:
         migration = await build_connected_migration(save_fixture, organization)
-        adapter = mocker.MagicMock()
-        adapter.extract.return_value = _catalog_with_customer_extract()
-        adapter.get_source_account = mocker.AsyncMock(
-            return_value=CanonicalAccount(country="US", has_connected_accounts=False)
-        )
-        mocker.patch(
-            "polar.merchant_migration.service.StripeAdapter", return_value=adapter
-        )
+        mocker.patch("polar.merchant_migration.service.enqueue_job")
+        _mock_adapter(mocker, _catalog_with_customer_records())
 
         assert (
             await client.post(f"/v1/merchant-migrations/{migration.id}/precheck")
-        ).status_code == 200
+        ).status_code == 202
+        await drain_precheck(session, migration.id)
 
         # pick the customer row's ledger id from the records listing
         records = await client.get(
@@ -482,11 +480,11 @@ class TestImport:
             f"/v1/merchant-migrations/{migration.id}/import",
             json={"record_ids": [customer_record_id]},
         )
-        assert response.status_code == 200
-        results = {r["entity"]: r for r in response.json()["results"]}
-        # only the customer was selected; the product stays pending
-        assert results["customers"]["imported"] == 1
-        assert results["products"]["imported"] == 0
+        assert response.status_code == 202
+        assert response.json()["operation"]["selection"]["record_ids"] == [
+            customer_record_id
+        ]
+        await drain_import(session, migration.id)
 
 
 def _configure_destination(mocker: MockerFixture) -> None:

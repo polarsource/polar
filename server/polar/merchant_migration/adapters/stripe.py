@@ -117,13 +117,91 @@ class StripeAdapter:
         account = await self._current_account()
         return account.id if account else None
 
+    async def extract_batch(
+        self, *, cursor: dict[str, Any] | None, limit: int
+    ) -> tuple[list[CanonicalRecord], dict[str, Any] | None]:
+        """Page products → customers → subscriptions under an opaque cursor.
+
+        Products are buffered once (catalogs are small). Customers and
+        subscriptions page with Stripe ``starting_after``.
+        """
+        phase = "products" if cursor is None else str(cursor["phase"])
+        starting_after = None if cursor is None else cursor.get("starting_after")
+
+        if phase == "products":
+            records: list[CanonicalRecord] = [
+                product async for product in self._extract_products()
+            ]
+            return records, {"phase": "customers"}
+
+        if phase == "customers":
+            records, next_after = await self._page_customers(
+                starting_after=starting_after, limit=limit
+            )
+            if next_after is not None:
+                return records, {"phase": "customers", "starting_after": next_after}
+            return records, {"phase": "subscriptions"}
+
+        if phase == "subscriptions":
+            records, next_after = await self._page_subscriptions(
+                starting_after=starting_after, limit=limit
+            )
+            if next_after is not None:
+                return records, {
+                    "phase": "subscriptions",
+                    "starting_after": next_after,
+                }
+            return records, None
+
+        raise ValueError(f"Unknown extract phase: {phase}")
+
+    async def _page_customers(
+        self, *, starting_after: str | None, limit: int
+    ) -> tuple[list[CanonicalRecord], str | None]:
+        params: dict[str, Any] = {"limit": min(limit, PAGE_SIZE)}
+        if starting_after is not None:
+            params["starting_after"] = starting_after
+        page = await self._client.v1.customers.list_async(params=params)  # type: ignore[arg-type]
+        records: list[CanonicalRecord] = [
+            self._map_customer(customer) for customer in page.data
+        ]
+        if not page.has_more or not page.data:
+            return records, None
+        return records, page.data[-1].id
+
+    async def _page_subscriptions(
+        self, *, starting_after: str | None, limit: int
+    ) -> tuple[list[CanonicalRecord], str | None]:
+        params: dict[str, Any] = {
+            "status": "all",
+            "limit": min(limit, PAGE_SIZE),
+            "expand": [f"data.{path}" for path in _SUBSCRIPTION_EXPAND],
+        }
+        if starting_after is not None:
+            params["starting_after"] = starting_after
+        page = await self._client.v1.subscriptions.list_async(params=params)  # type: ignore[arg-type]
+        records: list[CanonicalRecord] = []
+        last_id: str | None = None
+        for subscription in page.data:
+            last_id = subscription.id
+            if subscription.status in SKIPPED_SUBSCRIPTION_STATUSES:
+                continue
+            if not subscription["items"]["data"]:
+                continue
+            records.append(self._map_subscription(subscription))
+        if not page.has_more or last_id is None:
+            return records, None
+        return records, last_id
+
     async def extract(self) -> AsyncIterator[CanonicalRecord]:
-        async for product in self._extract_products():
-            yield product
-        async for customer in self._extract_customers():
-            yield customer
-        async for subscription in self._extract_subscriptions():
-            yield subscription
+        """Full extract for tests and one-shot callers; prefers ``extract_batch``."""
+        cursor: dict[str, Any] | None = None
+        while True:
+            records, cursor = await self.extract_batch(cursor=cursor, limit=PAGE_SIZE)
+            for record in records:
+                yield record
+            if cursor is None:
+                return
 
     async def _has_connected_accounts(self) -> bool:
         # Best-effort: a restricted key may lack Connect read scope. Stripe

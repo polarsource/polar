@@ -242,6 +242,60 @@ class MerchantMigrationRecordRepository(
         )
         return await self.get_all(statement)
 
+    async def list_pending_batch(
+        self,
+        migration_id: UUID,
+        record_type: MerchantMigrationRecordType,
+        *,
+        limit: int,
+        after_id: UUID | None = None,
+        record_ids: Sequence[UUID] | None = None,
+        exclude_record_ids: Sequence[UUID] | None = None,
+    ) -> Sequence[MerchantMigrationRecord]:
+        """Next pending rows for one import type, filtered by selection + cursor.
+
+        Selection is applied in SQL so an exclude-one catalog never expands into
+        a million writes. Ordered by id so ``after_id`` resumes stably.
+        """
+        statement = (
+            self.get_base_statement()
+            .where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.type == record_type,
+                MerchantMigrationRecord.status == MerchantMigrationRecordStatus.pending,
+            )
+            .order_by(MerchantMigrationRecord.id)
+            .limit(limit)
+        )
+        if after_id is not None:
+            statement = statement.where(MerchantMigrationRecord.id > after_id)
+        if record_ids is not None:
+            statement = statement.where(MerchantMigrationRecord.id.in_(record_ids))
+        elif exclude_record_ids:
+            statement = statement.where(
+                MerchantMigrationRecord.id.not_in(exclude_record_ids)
+            )
+        return await self.get_all(statement)
+
+    async def list_by_migration_and_types(
+        self,
+        migration_id: UUID,
+        types: Sequence[MerchantMigrationRecordType],
+    ) -> Sequence[MerchantMigrationRecord]:
+        statement = (
+            self.get_base_statement()
+            .where(
+                MerchantMigrationRecord.merchant_migration_id == migration_id,
+                MerchantMigrationRecord.type.in_(types),
+            )
+            .order_by(
+                MerchantMigrationRecord.type,
+                MerchantMigrationRecord.created_at,
+                MerchantMigrationRecord.id,
+            )
+        )
+        return await self.get_all(statement)
+
     async def upsert(
         self,
         merchant_migration: MerchantMigration,

@@ -68,8 +68,9 @@ class MerchantMigration(RecordModel):
     pan_transfer_steps: Mapped[list[PanTransferStep]] = mapped_column(
         PanTransferStepsType, nullable=False, default=list
     )
-    # Background precheck/import progress. Null until the first background run.
-    # Typed in a follow-up; JSONB first so the column can deploy alone.
+    # Background precheck/import operation state (status, cursor, selection,
+    # error). Unused until the jobs PR wires start_precheck / start_import;
+    # typed there as well. Nullable so this column can deploy alone.
     operation: Mapped[dict[str, Any] | None] = mapped_column(
         JSONB, nullable=True, default=None
     )

@@ -162,7 +162,7 @@ export const EditEventTypeModal = ({
           </Form>
         </div>
 
-        <div className="dark:border-polar-700 border-t border-gray-200 pt-6">
+        <div className="dark:border-polar-700 border-t border-gray-200 px-8 pt-6 pb-10">
           <div className="flex flex-col gap-y-2">
             <h3>Ingesting Events</h3>
             <p className="dark:text-polar-500 text-sm text-gray-500">

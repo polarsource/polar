@@ -724,7 +724,7 @@ def register(app: typer.Typer, prompt_setup: callable) -> None:
                 raise typer.Exit(1)
         elif monitoring:
             console.print(
-                "[yellow]Shared infra is already running; --monitoring and only take effect on first start. Run `dev docker down --all` first to apply.[/yellow]"
+                "[yellow]Shared infra is already running; --monitoring only takes effect on first start. Run `dev docker down --all` first to apply.[/yellow]"
             )
 
         env = _build_compose_env(instance)

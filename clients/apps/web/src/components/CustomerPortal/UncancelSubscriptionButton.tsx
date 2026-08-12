@@ -25,7 +25,11 @@ const UncancelSubscriptionButton = ({
   const theme = useTheme()
   const queryClient = useQueryClient()
   const uncancelSubscription = useCustomerUncancelSubscription(api)
-  const { data: paymentMethods } = useCustomerPaymentMethods(api)
+  const {
+    data: paymentMethods,
+    isPending: paymentMethodsPending,
+    isError: paymentMethodsError,
+  } = useCustomerPaymentMethods(api)
 
   const uncancel = async () => {
     const { error } = await uncancelSubscription.mutateAsync({
@@ -46,7 +50,10 @@ const UncancelSubscriptionButton = ({
   }
 
   const onClick = async () => {
-    if (paymentMethods && paymentMethods.items.length > 0) {
+    if (
+      paymentMethodsError ||
+      (paymentMethods && paymentMethods.items.length > 0)
+    ) {
       await uncancel()
       return
     }
@@ -66,8 +73,8 @@ const UncancelSubscriptionButton = ({
   return (
     <Button
       onClick={onClick}
-      loading={uncancelSubscription.isPending}
-      disabled={uncancelSubscription.isPending}
+      loading={uncancelSubscription.isPending || paymentMethodsPending}
+      disabled={uncancelSubscription.isPending || paymentMethodsPending}
     >
       Uncancel
     </Button>

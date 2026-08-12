@@ -360,6 +360,56 @@ class TestCalculateChargePreview:
 
         assert preview.base_amount == 1000
 
+    async def test_pending_interval_update_keeps_repeating_discount(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=2500,
+            duration=DiscountDuration.repeating,
+            duration_in_months=2,
+            organization=organization,
+        )
+        annual_product = await create_product(
+            save_fixture,
+            organization=organization,
+            recurring_interval=SubscriptionRecurringInterval.year,
+            prices=[(10000, "usd")],
+        )
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            discount=discount,
+            current_period_start=datetime(2024, 1, 1, tzinfo=UTC),
+            current_period_end=datetime(2024, 2, 1, tzinfo=UTC),
+        )
+
+        from polar.subscription.update import generate_subscription_update
+
+        subscription_update, _ = generate_subscription_update(
+            subscription,
+            SubscriptionProrationBehavior.next_period,
+            product=annual_product,
+        )
+        await save_fixture(subscription_update)
+        subscription.pending_update = subscription_update
+        await save_fixture(subscription)
+
+        preview = await subscription_service.calculate_charge_preview(
+            session, subscription
+        )
+
+        assert preview.base_amount == 10000
+        assert preview.discount_amount == 2500
+        assert preview.net_amount == 7500
+
 
 @pytest.mark.asyncio
 class TestCalculateChargePreviewTaxMatchesOrder:

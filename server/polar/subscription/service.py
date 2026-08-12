@@ -2388,6 +2388,8 @@ class SubscriptionService:
     async def _compute_charge_preview(
         self, session: AsyncSession, subscription: Subscription
     ) -> SubscriptionChargePreview:
+        next_period_start = subscription.current_period_end
+
         # Apply any pending subscription update (product change, seats change)
         pending_update = subscription.pending_update
         if pending_update is not None:
@@ -2455,16 +2457,13 @@ class SubscriptionService:
         items.extend(proration_items)
 
         applicable_discount = None
-        # Ensure the discount has not expired yet for the next charge (so at current_period_end)
+        # Ensure the discount has not expired yet for the next charge
         if subscription.discount is not None:
             # If discount hasn't been applied yet, it will be applied at the next cycle
-            # (current_period_end will become the new current_period_start)
-            discount_applied_at = (
-                subscription.discount_applied_at or subscription.current_period_end
-            )
+            discount_applied_at = subscription.discount_applied_at or next_period_start
             if not subscription.discount.is_repetition_expired(
                 discount_applied_at,
-                subscription.current_period_end,
+                next_period_start,
             ):
                 applicable_discount = subscription.discount
 

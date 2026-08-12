@@ -5,6 +5,7 @@ import pytest
 from pytest_mock import MockerFixture
 
 from polar.models import Account, Organization, User, UserOrganization
+from polar.models.member import MemberRole
 from polar.models.user import IdentityVerificationStatus
 from polar.models.user_organization import OrganizationRole
 from polar.user_organization.service import (
@@ -324,6 +325,95 @@ class TestSetRole:
 
         assert result.role == OrganizationRole.admin
 
+    async def test_promotion_syncs_billing_member_role(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: Any,
+        organization: Organization,
+        user_second: User,
+    ) -> None:
+        enqueue_update_member_mock = mocker.patch(
+            "polar.user_organization.service.polar_self_service.enqueue_update_member"
+        )
+        relation = UserOrganization(
+            user_id=user_second.id, organization_id=organization.id
+        )
+        await save_fixture(relation)
+
+        await user_organization_service.set_role(
+            session,
+            user_id=user_second.id,
+            organization_id=organization.id,
+            role=OrganizationRole.admin,
+        )
+
+        enqueue_update_member_mock.assert_called_once_with(
+            external_customer_id=str(organization.id),
+            external_id=str(user_second.id),
+            name=user_second.email.split("@", 1)[0],
+            role=MemberRole.billing_manager,
+        )
+
+    async def test_demotion_syncs_billing_member_role(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: Any,
+        organization: Organization,
+        user_second: User,
+    ) -> None:
+        enqueue_update_member_mock = mocker.patch(
+            "polar.user_organization.service.polar_self_service.enqueue_update_member"
+        )
+        relation = UserOrganization(
+            user_id=user_second.id,
+            organization_id=organization.id,
+            role=OrganizationRole.admin,
+        )
+        await save_fixture(relation)
+
+        await user_organization_service.set_role(
+            session,
+            user_id=user_second.id,
+            organization_id=organization.id,
+            role=OrganizationRole.member,
+        )
+
+        enqueue_update_member_mock.assert_called_once_with(
+            external_customer_id=str(organization.id),
+            external_id=str(user_second.id),
+            name=user_second.email.split("@", 1)[0],
+            role=MemberRole.member,
+        )
+
+    async def test_unchanged_role_does_not_sync(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: Any,
+        organization: Organization,
+        user_second: User,
+    ) -> None:
+        enqueue_update_member_mock = mocker.patch(
+            "polar.user_organization.service.polar_self_service.enqueue_update_member"
+        )
+        relation = UserOrganization(
+            user_id=user_second.id,
+            organization_id=organization.id,
+            role=OrganizationRole.admin,
+        )
+        await save_fixture(relation)
+
+        await user_organization_service.set_role(
+            session,
+            user_id=user_second.id,
+            organization_id=organization.id,
+            role=OrganizationRole.admin,
+        )
+
+        enqueue_update_member_mock.assert_not_called()
+
     async def test_owner_role_rejected(
         self,
         save_fixture: SaveFixture,
@@ -427,6 +517,48 @@ class TestTransferOwnership:
         assert previous.role == OrganizationRole.admin
         assert new is not None
         assert new.role == OrganizationRole.owner
+
+    async def test_syncs_billing_member_role_for_new_owner(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: Any,
+        organization: Organization,
+        user: User,
+        user_second: User,
+    ) -> None:
+        enqueue_update_member_mock = mocker.patch(
+            "polar.user_organization.service.polar_self_service.enqueue_update_member"
+        )
+        await save_fixture(
+            UserOrganization(
+                user_id=user.id,
+                organization_id=organization.id,
+                role=OrganizationRole.owner,
+            )
+        )
+        await save_fixture(
+            UserOrganization(
+                user_id=user_second.id,
+                organization_id=organization.id,
+                role=OrganizationRole.member,
+            )
+        )
+        user_second.identity_verification_status = IdentityVerificationStatus.verified
+        await save_fixture(user_second)
+
+        await user_organization_service.transfer_ownership(
+            session,
+            new_owner_user_id=user_second.id,
+            organization_id=organization.id,
+        )
+
+        enqueue_update_member_mock.assert_called_once_with(
+            external_customer_id=str(organization.id),
+            external_id=str(user_second.id),
+            name=user_second.email.split("@", 1)[0],
+            role=MemberRole.billing_manager,
+        )
 
     async def test_rejects_unverified_user(
         self,

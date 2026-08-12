@@ -7,6 +7,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from polar.exceptions import PolarError
+from polar.integrations.polar.service import billing_member_role
 from polar.integrations.polar.service import polar_self as polar_self_service
 from polar.kit.utils import utc_now
 from polar.models import User, UserOrganization
@@ -214,6 +215,13 @@ class UserOrganizationService:
             .values(role=role)
         )
         user_org.role = role
+        user = user_org.user
+        polar_self_service.enqueue_update_member(
+            external_customer_id=str(organization_id),
+            external_id=str(user_id),
+            name=user.full_name or user.email.split("@", 1)[0],
+            role=billing_member_role(role),
+        )
         log.info(
             "organization.member.role_changed",
             organization_id=organization_id,
@@ -267,6 +275,12 @@ class UserOrganizationService:
             # different user as owner. Surface as `AlreadyOwner` so the
             # caller can refresh state and retry.
             raise AlreadyOwner(new_owner_user_id, organization_id) from e
+        polar_self_service.enqueue_update_member(
+            external_customer_id=str(organization_id),
+            external_id=str(new_owner_user_id),
+            name=new_owner_user.full_name or new_owner_user.email.split("@", 1)[0],
+            role=billing_member_role(OrganizationRole.owner),
+        )
         log.info(
             "organization.ownership.transferred",
             organization_id=organization_id,

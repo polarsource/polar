@@ -24,9 +24,11 @@ from polar.v2026_04.inputs import (
     EventCreateExternalCustomer,
     EventMetadataInput,
     LLMMetadata,
+    MemberUpdate,
 )
 from polar.v2026_04.literals import (
     DiscountDuration,
+    MemberRole,
     SubscriptionProrationBehavior,
 )
 from polar.v2026_04.literals import (
@@ -452,18 +454,27 @@ class PolarSelfClient:
                 _raise_network_error(span, e, "add_member")
 
     async def update_member(
-        self, *, external_customer_id: str, external_id: str, name: str
+        self,
+        *,
+        external_customer_id: str,
+        external_id: str,
+        name: str,
+        role: str | None = None,
     ) -> None:
         with logfire.span(
             "polar.update_member",
             external_customer_id=external_customer_id,
             external_id=external_id,
+            role=role,
         ) as span:
+            member_update: MemberUpdate = {"name": name}
+            if role is not None:
+                member_update["role"] = cast(MemberRole, role)
             try:
                 await self._sdk.customers.members.update_external(
                     external_customer_id,
                     external_id,
-                    name=name,
+                    **member_update,
                 )
             except (PolarClientError, PolarServerError) as e:
                 if e.status_code == 404:

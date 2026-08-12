@@ -104,11 +104,27 @@ async def add_member(
 
 
 @actor(actor_name="polar_self.update_member", priority=TaskPriority.LOW)
-async def update_member(external_customer_id: str, external_id: str, name: str) -> None:
-    await get_client().update_member(
+async def update_member(
+    external_customer_id: str, external_id: str, name: str, role: str | None = None
+) -> None:
+    client = get_client()
+    try:
+        await client.get_member_by_external_id(
+            external_customer_id=external_customer_id,
+            external_id=external_id,
+        )
+    except PolarClientError as e:
+        if e.status_code == 404 and can_retry():
+            raise Retry(delay=1000) from e
+        if e.status_code == 404:
+            return
+        raise
+
+    await client.update_member(
         external_customer_id=external_customer_id,
         external_id=external_id,
         name=name,
+        role=role,
     )
 
 

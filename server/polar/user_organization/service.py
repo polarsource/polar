@@ -343,29 +343,27 @@ class UserOrganizationService:
         — so we re-assert here. Rejects only when the removal would
         actually reduce admin-capable count to zero; non-admin-capable
         removals from a degraded organization are still allowed (they
-        don't make the state worse).
+        don't make the state worse). The admin-capable rows are locked
+        with `FOR UPDATE` to serialize concurrent removals.
         """
-        target_role = await session.scalar(
-            sql.select(UserOrganization.role).where(
+        result = await session.scalars(
+            sql.select(UserOrganization.user_id)
+            .where(
                 UserOrganization.organization_id == organization_id,
-                UserOrganization.user_id == user_id,
-                UserOrganization.is_deleted.is_(False),
-            )
-        )
-        if target_role not in {OrganizationRole.owner, OrganizationRole.admin}:
-            return
-
-        other_admin_capable = await session.scalar(
-            sql.select(func.count(UserOrganization.user_id)).where(
-                UserOrganization.organization_id == organization_id,
-                UserOrganization.user_id != user_id,
                 UserOrganization.role.in_(
                     [OrganizationRole.owner, OrganizationRole.admin]
                 ),
                 UserOrganization.is_deleted.is_(False),
             )
+            .order_by(UserOrganization.user_id)
+            .with_for_update()
         )
-        if (other_admin_capable or 0) == 0:
+        admin_capable_ids = set(result.all())
+        if user_id not in admin_capable_ids:
+            return
+
+        other_admin_capable_ids = admin_capable_ids - {user_id}
+        if len(other_admin_capable_ids) == 0:
             raise OrganizationWouldHaveNoAdmins(organization_id)
 
     async def remove_member_safe(

@@ -1,9 +1,17 @@
+import asyncio
 from typing import Any
-from uuid import uuid4
+from uuid import UUID, uuid4
 
 import pytest
 from pytest_mock import MockerFixture
+from sqlalchemy import delete, func, select
 
+from polar.config import settings
+from polar.kit.db.postgres import (
+    AsyncSessionMaker,
+    create_async_engine,
+    create_async_sessionmaker,
+)
 from polar.models import Account, Organization, User, UserOrganization
 from polar.models.member import MemberRole
 from polar.models.user import IdentityVerificationStatus
@@ -21,7 +29,16 @@ from polar.user_organization.service import (
 from polar.user_organization.service import (
     user_organization as user_organization_service,
 )
-from tests.fixtures.database import SaveFixture
+from tests.fixtures.database import (
+    SaveFixture,
+    get_database_url,
+    save_fixture_factory,
+)
+from tests.fixtures.random_objects import (
+    create_account,
+    create_organization,
+    create_user,
+)
 
 
 @pytest.mark.asyncio
@@ -271,6 +288,99 @@ class TestRemoveMember:
             session, user_second.id, organization.id
         )
         assert user_org is None
+
+
+async def _attempt_member_removal(
+    sessionmaker: AsyncSessionMaker, user_id: UUID, organization_id: UUID
+) -> bool:
+    async with sessionmaker() as session:
+        try:
+            await user_organization_service.remove_member(
+                session,
+                user_id=user_id,
+                organization_id=organization_id,
+            )
+        except OrganizationWouldHaveNoAdmins:
+            await session.rollback()
+            return False
+        await session.commit()
+        return True
+
+
+@pytest.mark.asyncio
+class TestConcurrentRemoval:
+    async def test_admin_capability_invariant_under_concurrency(
+        self, worker_id: str
+    ) -> None:
+        engine = create_async_engine(
+            dsn=get_database_url(worker_id),
+            application_name=f"test_{worker_id}_remove_member_concurrency",
+            pool_size=4,
+            pool_recycle=settings.DATABASE_POOL_RECYCLE_SECONDS,
+        )
+        sessionmaker = create_async_sessionmaker(engine)
+
+        async with sessionmaker() as setup_session:
+            save_fixture = save_fixture_factory(setup_session)
+            owner = await create_user(save_fixture)
+            admin = await create_user(save_fixture)
+            account = await create_account(save_fixture, owner)
+            organization = await create_organization(save_fixture, account)
+            setup_session.add(
+                UserOrganization(
+                    user=owner,
+                    organization=organization,
+                    role=OrganizationRole.owner,
+                )
+            )
+            setup_session.add(
+                UserOrganization(
+                    user=admin,
+                    organization=organization,
+                    role=OrganizationRole.admin,
+                )
+            )
+            await setup_session.commit()
+
+        try:
+            results = await asyncio.gather(
+                _attempt_member_removal(sessionmaker, owner.id, organization.id),
+                _attempt_member_removal(sessionmaker, admin.id, organization.id),
+            )
+
+            async with sessionmaker() as session:
+                remaining = (
+                    await session.execute(
+                        select(func.count(UserOrganization.user_id)).where(
+                            UserOrganization.organization_id == organization.id,
+                            UserOrganization.role.in_(
+                                [OrganizationRole.owner, OrganizationRole.admin]
+                            ),
+                            UserOrganization.deleted_at.is_(None),
+                        )
+                    )
+                ).scalar_one()
+
+            assert results.count(True) == 1
+            assert remaining == 1
+        finally:
+            async with sessionmaker() as cleanup_session:
+                await cleanup_session.execute(
+                    delete(UserOrganization).where(
+                        UserOrganization.organization_id == organization.id
+                    )
+                )
+                await cleanup_session.execute(
+                    delete(Organization).where(Organization.id == organization.id)
+                )
+                await cleanup_session.execute(
+                    delete(Account).where(Account.id == account.id)
+                )
+                await cleanup_session.execute(
+                    delete(User).where(User.id.in_([owner.id, admin.id]))
+                )
+                await cleanup_session.commit()
+            await engine.dispose()
 
 
 @pytest.mark.asyncio

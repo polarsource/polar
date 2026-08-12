@@ -5,9 +5,9 @@ import typing
 
 from polar.base import deserialize
 from polar.webhooks import (
-    PolarWebhookError as PolarWebhookError,
-    PolarWebhookUnknownTypeError as PolarWebhookUnknownTypeError,
-    PolarWebhookVerificationError as PolarWebhookVerificationError,
+    PolarWebhookError,
+    PolarWebhookUnknownTypeError,
+    PolarWebhookVerificationError,
     validate_event as _validate_event,
 )
 {% if enum_imports %}

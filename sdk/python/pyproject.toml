@@ -43,6 +43,7 @@ target-version = "py311"
 
 [tool.ruff.lint]
 extend-select = ["I", "UP"]
+ignore = ["B006"]
 
 [tool.uv]
 default-groups = ["dev"]

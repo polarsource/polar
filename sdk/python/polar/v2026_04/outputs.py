@@ -748,7 +748,7 @@ class BenefitCustom:
 class BenefitCustomProperties:
     """Properties for a benefit of type `custom`."""
 
-    note: str | None | None
+    note: str | None
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -788,7 +788,7 @@ class BenefitCustomSubscriber:
 class BenefitCustomSubscriberProperties:
     """Properties available to subscribers for a benefit of type `custom`."""
 
-    note: str | None | None
+    note: str | None
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -1063,7 +1063,6 @@ class BenefitFeatureFlag:
 class BenefitFeatureFlagProperties:
     """Properties for a benefit of type `feature_flag`."""
 
-    ...
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -1103,7 +1102,6 @@ class BenefitFeatureFlagSubscriber:
 class BenefitFeatureFlagSubscriberProperties:
     """Properties available to subscribers for a benefit of type `feature_flag`."""
 
-    ...
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -2340,7 +2338,7 @@ class Checkout:
     modified_at: str | None
     """Last modification timestamp of the object."""
 
-    custom_field_data: dict[str, str | int | bool | str | None] | None = None
+    custom_field_data: dict[str, str | int | bool | None] | None = None
     """Key-value object storing custom field values."""
 
     payment_processor: PaymentProcessor
@@ -2886,7 +2884,7 @@ class CheckoutPublic:
     modified_at: str | None
     """Last modification timestamp of the object."""
 
-    custom_field_data: dict[str, str | int | bool | str | None] | None = None
+    custom_field_data: dict[str, str | int | bool | None] | None = None
     """Key-value object storing custom field values."""
 
     payment_processor: PaymentProcessor
@@ -3055,7 +3053,7 @@ class CheckoutPublicConfirmed:
     modified_at: str | None
     """Last modification timestamp of the object."""
 
-    custom_field_data: dict[str, str | int | bool | str | None] | None = None
+    custom_field_data: dict[str, str | int | bool | None] | None = None
     """Key-value object storing custom field values."""
 
     payment_processor: PaymentProcessor
@@ -4758,7 +4756,7 @@ class CustomerStateSubscription:
     modified_at: str | None
     """Last modification timestamp of the object."""
 
-    custom_field_data: dict[str, str | int | bool | str | None] | None = None
+    custom_field_data: dict[str, str | int | bool | None] | None = None
     """Key-value object storing custom field values."""
 
     metadata: MetadataOutputType
@@ -6073,13 +6071,6 @@ class HTTPValidationError:
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
-class InactiveSubscription:
-    error: typing.Literal["InactiveSubscription"]
-
-    detail: str
-
-
-@dataclasses.dataclass(kw_only=True, slots=True)
 class IntrospectTokenResponse:
     active: bool
 
@@ -6857,115 +6848,115 @@ class MetricPeriod:
     timestamp: str
     """Timestamp of this period data."""
 
-    active_subscriptions: int | float | None | None = None
+    active_subscriptions: int | float | None = None
 
-    committed_subscriptions: int | float | None | None = None
+    committed_subscriptions: int | float | None = None
 
-    monthly_recurring_revenue: int | float | None | None = None
+    monthly_recurring_revenue: int | float | None = None
 
-    trial_monthly_recurring_revenue: int | float | None | None = None
+    trial_monthly_recurring_revenue: int | float | None = None
 
-    committed_monthly_recurring_revenue: int | float | None | None = None
+    committed_monthly_recurring_revenue: int | float | None = None
 
-    trial_committed_monthly_recurring_revenue: int | float | None | None = None
+    trial_committed_monthly_recurring_revenue: int | float | None = None
 
-    average_revenue_per_user: int | float | None | None = None
+    average_revenue_per_user: int | float | None = None
 
-    checkouts: int | float | None | None = None
+    checkouts: int | float | None = None
 
-    succeeded_checkouts: int | float | None | None = None
+    succeeded_checkouts: int | float | None = None
 
-    churned_subscriptions: int | float | None | None = None
+    churned_subscriptions: int | float | None = None
 
-    churn_rate: int | float | None | None = None
+    churn_rate: int | float | None = None
 
-    seats_total: int | float | None | None = None
+    seats_total: int | float | None = None
 
-    seats_claimed: int | float | None | None = None
+    seats_claimed: int | float | None = None
 
-    seats_pending: int | float | None | None = None
+    seats_pending: int | float | None = None
 
-    seat_customers: int | float | None | None = None
+    seat_customers: int | float | None = None
 
-    new_seat_customers: int | float | None | None = None
+    new_seat_customers: int | float | None = None
 
-    churned_seat_customers: int | float | None | None = None
+    churned_seat_customers: int | float | None = None
 
-    orders: int | float | None | None = None
+    orders: int | float | None = None
 
-    revenue: int | float | None | None = None
+    revenue: int | float | None = None
 
-    net_revenue: int | float | None | None = None
+    net_revenue: int | float | None = None
 
-    cumulative_revenue: int | float | None | None = None
+    cumulative_revenue: int | float | None = None
 
-    net_cumulative_revenue: int | float | None | None = None
+    net_cumulative_revenue: int | float | None = None
 
-    costs: int | float | None | None = None
+    costs: int | float | None = None
 
-    cumulative_costs: int | float | None | None = None
+    cumulative_costs: int | float | None = None
 
-    average_order_value: int | float | None | None = None
+    average_order_value: int | float | None = None
 
-    net_average_order_value: int | float | None | None = None
+    net_average_order_value: int | float | None = None
 
-    cost_per_user: int | float | None | None = None
+    cost_per_user: int | float | None = None
 
-    active_user_by_event: int | float | None | None = None
+    active_user_by_event: int | float | None = None
 
-    one_time_products: int | float | None | None = None
+    one_time_products: int | float | None = None
 
-    one_time_products_revenue: int | float | None | None = None
+    one_time_products_revenue: int | float | None = None
 
-    one_time_products_net_revenue: int | float | None | None = None
+    one_time_products_net_revenue: int | float | None = None
 
-    new_subscriptions: int | float | None | None = None
+    new_subscriptions: int | float | None = None
 
-    new_subscriptions_revenue: int | float | None | None = None
+    new_subscriptions_revenue: int | float | None = None
 
-    new_subscriptions_net_revenue: int | float | None | None = None
+    new_subscriptions_net_revenue: int | float | None = None
 
-    renewed_subscriptions: int | float | None | None = None
+    renewed_subscriptions: int | float | None = None
 
-    renewed_subscriptions_revenue: int | float | None | None = None
+    renewed_subscriptions_revenue: int | float | None = None
 
-    renewed_subscriptions_net_revenue: int | float | None | None = None
+    renewed_subscriptions_net_revenue: int | float | None = None
 
-    canceled_subscriptions: int | float | None | None = None
+    canceled_subscriptions: int | float | None = None
 
-    canceled_subscriptions_customer_service: int | float | None | None = None
+    canceled_subscriptions_customer_service: int | float | None = None
 
-    canceled_subscriptions_low_quality: int | float | None | None = None
+    canceled_subscriptions_low_quality: int | float | None = None
 
-    canceled_subscriptions_missing_features: int | float | None | None = None
+    canceled_subscriptions_missing_features: int | float | None = None
 
-    canceled_subscriptions_switched_service: int | float | None | None = None
+    canceled_subscriptions_switched_service: int | float | None = None
 
-    canceled_subscriptions_too_complex: int | float | None | None = None
+    canceled_subscriptions_too_complex: int | float | None = None
 
-    canceled_subscriptions_too_expensive: int | float | None | None = None
+    canceled_subscriptions_too_expensive: int | float | None = None
 
-    canceled_subscriptions_unused: int | float | None | None = None
+    canceled_subscriptions_unused: int | float | None = None
 
-    canceled_subscriptions_other: int | float | None | None = None
+    canceled_subscriptions_other: int | float | None = None
 
-    annual_recurring_revenue: int | float | None | None = None
+    annual_recurring_revenue: int | float | None = None
 
-    committed_annual_recurring_revenue: int | float | None | None = None
+    committed_annual_recurring_revenue: int | float | None = None
 
-    checkouts_conversion: int | float | None | None = None
+    checkouts_conversion: int | float | None = None
 
-    ltv: int | float | None | None = None
+    ltv: int | float | None = None
 
-    gross_margin: int | float | None | None = None
+    gross_margin: int | float | None = None
 
-    gross_margin_percentage: int | float | None | None = None
+    gross_margin_percentage: int | float | None = None
 
-    cashflow: int | float | None | None = None
+    cashflow: int | float | None = None
 
-    average_seats_per_customer: int | float | None | None = None
+    average_seats_per_customer: int | float | None = None
 
-    seat_utilization_rate: int | float | None | None = None
+    seat_utilization_rate: int | float | None = None
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -7131,115 +7122,115 @@ class MetricsResponse:
 
 @dataclasses.dataclass(kw_only=True, slots=True)
 class MetricsTotals:
-    active_subscriptions: int | float | None | None = None
+    active_subscriptions: int | float | None = None
 
-    committed_subscriptions: int | float | None | None = None
+    committed_subscriptions: int | float | None = None
 
-    monthly_recurring_revenue: int | float | None | None = None
+    monthly_recurring_revenue: int | float | None = None
 
-    trial_monthly_recurring_revenue: int | float | None | None = None
+    trial_monthly_recurring_revenue: int | float | None = None
 
-    committed_monthly_recurring_revenue: int | float | None | None = None
+    committed_monthly_recurring_revenue: int | float | None = None
 
-    trial_committed_monthly_recurring_revenue: int | float | None | None = None
+    trial_committed_monthly_recurring_revenue: int | float | None = None
 
-    average_revenue_per_user: int | float | None | None = None
+    average_revenue_per_user: int | float | None = None
 
-    checkouts: int | float | None | None = None
+    checkouts: int | float | None = None
 
-    succeeded_checkouts: int | float | None | None = None
+    succeeded_checkouts: int | float | None = None
 
-    churned_subscriptions: int | float | None | None = None
+    churned_subscriptions: int | float | None = None
 
-    churn_rate: int | float | None | None = None
+    churn_rate: int | float | None = None
 
-    seats_total: int | float | None | None = None
+    seats_total: int | float | None = None
 
-    seats_claimed: int | float | None | None = None
+    seats_claimed: int | float | None = None
 
-    seats_pending: int | float | None | None = None
+    seats_pending: int | float | None = None
 
-    seat_customers: int | float | None | None = None
+    seat_customers: int | float | None = None
 
-    new_seat_customers: int | float | None | None = None
+    new_seat_customers: int | float | None = None
 
-    churned_seat_customers: int | float | None | None = None
+    churned_seat_customers: int | float | None = None
 
-    orders: int | float | None | None = None
+    orders: int | float | None = None
 
-    revenue: int | float | None | None = None
+    revenue: int | float | None = None
 
-    net_revenue: int | float | None | None = None
+    net_revenue: int | float | None = None
 
-    cumulative_revenue: int | float | None | None = None
+    cumulative_revenue: int | float | None = None
 
-    net_cumulative_revenue: int | float | None | None = None
+    net_cumulative_revenue: int | float | None = None
 
-    costs: int | float | None | None = None
+    costs: int | float | None = None
 
-    cumulative_costs: int | float | None | None = None
+    cumulative_costs: int | float | None = None
 
-    average_order_value: int | float | None | None = None
+    average_order_value: int | float | None = None
 
-    net_average_order_value: int | float | None | None = None
+    net_average_order_value: int | float | None = None
 
-    cost_per_user: int | float | None | None = None
+    cost_per_user: int | float | None = None
 
-    active_user_by_event: int | float | None | None = None
+    active_user_by_event: int | float | None = None
 
-    one_time_products: int | float | None | None = None
+    one_time_products: int | float | None = None
 
-    one_time_products_revenue: int | float | None | None = None
+    one_time_products_revenue: int | float | None = None
 
-    one_time_products_net_revenue: int | float | None | None = None
+    one_time_products_net_revenue: int | float | None = None
 
-    new_subscriptions: int | float | None | None = None
+    new_subscriptions: int | float | None = None
 
-    new_subscriptions_revenue: int | float | None | None = None
+    new_subscriptions_revenue: int | float | None = None
 
-    new_subscriptions_net_revenue: int | float | None | None = None
+    new_subscriptions_net_revenue: int | float | None = None
 
-    renewed_subscriptions: int | float | None | None = None
+    renewed_subscriptions: int | float | None = None
 
-    renewed_subscriptions_revenue: int | float | None | None = None
+    renewed_subscriptions_revenue: int | float | None = None
 
-    renewed_subscriptions_net_revenue: int | float | None | None = None
+    renewed_subscriptions_net_revenue: int | float | None = None
 
-    canceled_subscriptions: int | float | None | None = None
+    canceled_subscriptions: int | float | None = None
 
-    canceled_subscriptions_customer_service: int | float | None | None = None
+    canceled_subscriptions_customer_service: int | float | None = None
 
-    canceled_subscriptions_low_quality: int | float | None | None = None
+    canceled_subscriptions_low_quality: int | float | None = None
 
-    canceled_subscriptions_missing_features: int | float | None | None = None
+    canceled_subscriptions_missing_features: int | float | None = None
 
-    canceled_subscriptions_switched_service: int | float | None | None = None
+    canceled_subscriptions_switched_service: int | float | None = None
 
-    canceled_subscriptions_too_complex: int | float | None | None = None
+    canceled_subscriptions_too_complex: int | float | None = None
 
-    canceled_subscriptions_too_expensive: int | float | None | None = None
+    canceled_subscriptions_too_expensive: int | float | None = None
 
-    canceled_subscriptions_unused: int | float | None | None = None
+    canceled_subscriptions_unused: int | float | None = None
 
-    canceled_subscriptions_other: int | float | None | None = None
+    canceled_subscriptions_other: int | float | None = None
 
-    annual_recurring_revenue: int | float | None | None = None
+    annual_recurring_revenue: int | float | None = None
 
-    committed_annual_recurring_revenue: int | float | None | None = None
+    committed_annual_recurring_revenue: int | float | None = None
 
-    checkouts_conversion: int | float | None | None = None
+    checkouts_conversion: int | float | None = None
 
-    ltv: int | float | None | None = None
+    ltv: int | float | None = None
 
-    gross_margin: int | float | None | None = None
+    gross_margin: int | float | None = None
 
-    gross_margin_percentage: int | float | None | None = None
+    gross_margin_percentage: int | float | None = None
 
-    cashflow: int | float | None | None = None
+    cashflow: int | float | None = None
 
-    average_seats_per_customer: int | float | None | None = None
+    average_seats_per_customer: int | float | None = None
 
-    seat_utilization_rate: int | float | None | None = None
+    seat_utilization_rate: int | float | None = None
 
 
 @dataclasses.dataclass(kw_only=True, slots=True)
@@ -7370,7 +7361,7 @@ class Order:
 
     metadata: MetadataOutputType
 
-    custom_field_data: dict[str, str | int | bool | str | None] | None = None
+    custom_field_data: dict[str, str | int | bool | None] | None = None
     """Key-value object storing custom field values."""
 
     platform_fee_amount: int
@@ -8877,7 +8868,7 @@ class Subscription:
 
     metadata: MetadataOutputType
 
-    custom_field_data: dict[str, str | int | bool | str | None] | None = None
+    custom_field_data: dict[str, str | int | bool | None] | None = None
     """Key-value object storing custom field values."""
 
     customer: SubscriptionCustomer

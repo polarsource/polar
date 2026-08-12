@@ -9,14 +9,14 @@ from polar.base import (
     parse_response_none,
 )
 from polar.v2026_04.errors import (
-    CheckEmailUpdate401Error,
     CustomerNotReady,
+    CustomersCheckEmailUpdate401Error,
+    CustomersVerifyEmailUpdate401Error,
+    CustomersVerifyEmailUpdate422Error,
     HTTPValidationError,
     PaymentMethodInUseByActiveSubscription,
     PaymentMethodSetupFailed,
     ResourceNotFound,
-    VerifyEmailUpdate401Error,
-    VerifyEmailUpdate422Error,
 )
 from polar.v2026_04.inputs import (
     CustomerEmailUpdateRequest,
@@ -297,7 +297,7 @@ class CustomersSync(SyncServiceBase):
             token:
 
         Raises:
-            CheckEmailUpdate401Error: Invalid or expired verification token.
+            CustomersCheckEmailUpdate401Error: Invalid or expired verification token.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -313,7 +313,7 @@ class CustomersSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            401: CheckEmailUpdate401Error,
+            401: CustomersCheckEmailUpdate401Error,
             422: HTTPValidationError,
         }
         return parse_response_none(response, method_errors)
@@ -329,8 +329,8 @@ class CustomersSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            VerifyEmailUpdate401Error: Invalid or expired verification token.
-            VerifyEmailUpdate422Error: Email address is already in use.
+            CustomersVerifyEmailUpdate401Error: Invalid or expired verification token.
+            CustomersVerifyEmailUpdate422Error: Email address is already in use.
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
@@ -344,8 +344,8 @@ class CustomersSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            401: VerifyEmailUpdate401Error,
-            422: VerifyEmailUpdate422Error,
+            401: CustomersVerifyEmailUpdate401Error,
+            422: CustomersVerifyEmailUpdate422Error,
         }
         return parse_response_json(
             response, CustomerEmailUpdateVerifyResponse, method_errors
@@ -616,7 +616,7 @@ class CustomersAsync(AsyncServiceBase):
             token:
 
         Raises:
-            CheckEmailUpdate401Error: Invalid or expired verification token.
+            CustomersCheckEmailUpdate401Error: Invalid or expired verification token.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -632,7 +632,7 @@ class CustomersAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            401: CheckEmailUpdate401Error,
+            401: CustomersCheckEmailUpdate401Error,
             422: HTTPValidationError,
         }
         return parse_response_none(response, method_errors)
@@ -648,8 +648,8 @@ class CustomersAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            VerifyEmailUpdate401Error: Invalid or expired verification token.
-            VerifyEmailUpdate422Error: Email address is already in use.
+            CustomersVerifyEmailUpdate401Error: Invalid or expired verification token.
+            CustomersVerifyEmailUpdate422Error: Email address is already in use.
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
             PolarServerError: Raised when the server returns a 5xx error response.
@@ -663,8 +663,8 @@ class CustomersAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            401: VerifyEmailUpdate401Error,
-            422: VerifyEmailUpdate422Error,
+            401: CustomersVerifyEmailUpdate401Error,
+            422: CustomersVerifyEmailUpdate422Error,
         }
         return parse_response_json(
             response, CustomerEmailUpdateVerifyResponse, method_errors

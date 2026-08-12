@@ -15,7 +15,6 @@ from polar.v2026_04.errors import (
     PaymentFailed,
     ResourceNotFound,
     SubscriptionLocked,
-    SubscriptionsUpdate403Error,
 )
 from polar.v2026_04.inputs import (
     MetadataQuery,
@@ -419,7 +418,7 @@ class SubscriptionsSync(SyncServiceBase):
 
         Raises:
             PaymentFailed: Payment required to apply the subscription update.
-            SubscriptionsUpdate403Error: Subscription is already canceled or will be at the end of the period, or is not active.
+            AlreadyCanceledSubscription: Subscription is already canceled or will be at the end of the period.
             ResourceNotFound: Subscription not found.
             SubscriptionLocked: Subscription is pending an update.
             HTTPValidationError: Validation Error
@@ -439,7 +438,7 @@ class SubscriptionsSync(SyncServiceBase):
         response = self.client.send_request(request)
         method_errors = {
             402: PaymentFailed,
-            403: SubscriptionsUpdate403Error,
+            403: AlreadyCanceledSubscription,
             404: ResourceNotFound,
             409: SubscriptionLocked,
             422: HTTPValidationError,
@@ -826,7 +825,7 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Raises:
             PaymentFailed: Payment required to apply the subscription update.
-            SubscriptionsUpdate403Error: Subscription is already canceled or will be at the end of the period, or is not active.
+            AlreadyCanceledSubscription: Subscription is already canceled or will be at the end of the period.
             ResourceNotFound: Subscription not found.
             SubscriptionLocked: Subscription is pending an update.
             HTTPValidationError: Validation Error
@@ -846,7 +845,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         response = await self.client.send_request(request)
         method_errors = {
             402: PaymentFailed,
-            403: SubscriptionsUpdate403Error,
+            403: AlreadyCanceledSubscription,
             404: ResourceNotFound,
             409: SubscriptionLocked,
             422: HTTPValidationError,

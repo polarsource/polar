@@ -93,13 +93,13 @@ You can store up to **50 key-value pairs**."""
 class BenefitCustomCreateProperties(typing.TypedDict):
     """Properties for creating a benefit of type `custom`."""
 
-    note: typing.NotRequired[str | None | None]
+    note: typing.NotRequired[str | None]
 
 
 class BenefitCustomProperties(typing.TypedDict):
     """Properties for a benefit of type `custom`."""
 
-    note: str | None | None
+    note: str | None
 
 
 class BenefitCustomUpdate(typing.TypedDict):
@@ -278,13 +278,11 @@ You can store up to **50 key-value pairs**."""
 class BenefitFeatureFlagCreateProperties(typing.TypedDict):
     """Properties for creating a benefit of type `feature_flag`."""
 
-    ...
 
 
 class BenefitFeatureFlagProperties(typing.TypedDict):
     """Properties for a benefit of type `feature_flag`."""
 
-    ...
 
 
 class BenefitFeatureFlagUpdate(typing.TypedDict):
@@ -583,7 +581,7 @@ You can store up to **50 key-value pairs**."""
 class CheckoutConfirmStripe(typing.TypedDict):
     """Confirm a checkout session using a Stripe confirmation token."""
 
-    custom_field_data: typing.NotRequired[dict[str, str | int | bool | str | None]]
+    custom_field_data: typing.NotRequired[dict[str, str | int | bool | None]]
     """Key-value object storing custom field values."""
 
     product_id: typing.NotRequired[str | None]
@@ -650,7 +648,7 @@ The value must be either:
 
 You can store up to **50 key-value pairs**."""
 
-    custom_field_data: typing.NotRequired[dict[str, str | int | bool | str | None]]
+    custom_field_data: typing.NotRequired[dict[str, str | int | bool | None]]
     """Key-value object storing custom field values."""
 
     discount_id: typing.NotRequired[str | None]
@@ -945,7 +943,7 @@ You can store up to **50 key-value pairs**."""
 class CheckoutUpdate(typing.TypedDict):
     """Update an existing checkout session using an access token."""
 
-    custom_field_data: typing.NotRequired[dict[str, str | int | bool | str | None]]
+    custom_field_data: typing.NotRequired[dict[str, str | int | bool | None]]
     """Key-value object storing custom field values."""
 
     product_id: typing.NotRequired[str | None]
@@ -1034,7 +1032,7 @@ You can store up to **50 key-value pairs**."""
 class CheckoutUpdatePublic(typing.TypedDict):
     """Update an existing checkout session using the client secret."""
 
-    custom_field_data: typing.NotRequired[dict[str, str | int | bool | str | None]]
+    custom_field_data: typing.NotRequired[dict[str, str | int | bool | None]]
     """Key-value object storing custom field values."""
 
     product_id: typing.NotRequired[str | None]
@@ -2343,7 +2341,7 @@ class OAuth2ClientConfiguration(typing.TypedDict):
 
     grant_types: typing.NotRequired[
         list[
-            typing.Literal["authorization_code"] | typing.Literal["refresh_token"]
+            typing.Literal["authorization_code", "refresh_token"]
         ]
     ]
 
@@ -2371,7 +2369,7 @@ class OAuth2ClientConfigurationUpdate(typing.TypedDict):
 
     grant_types: typing.NotRequired[
         list[
-            typing.Literal["authorization_code"] | typing.Literal["refresh_token"]
+            typing.Literal["authorization_code", "refresh_token"]
         ]
     ]
 
@@ -2397,7 +2395,7 @@ class OAuth2ClientConfigurationUpdate(typing.TypedDict):
 class OrderCreate(typing.TypedDict):
     """Schema to create a draft order for an off-session charge."""
 
-    custom_field_data: typing.NotRequired[dict[str, str | int | bool | str | None]]
+    custom_field_data: typing.NotRequired[dict[str, str | int | bool | None]]
     """Key-value object storing custom field values."""
 
     metadata: typing.NotRequired[dict[str, str | int | float | bool]]
@@ -2584,12 +2582,7 @@ class OrganizationDetails(typing.TypedDict):
     """Switching from another platform?"""
 
     switching_from: typing.NotRequired[
-        typing.Literal["paddle"]
-        | typing.Literal["lemon_squeezy"]
-        | typing.Literal["gumroad"]
-        | typing.Literal["stripe"]
-        | typing.Literal["other"]
-        | None
+        typing.Literal["paddle", "lemon_squeezy", "gumroad", "stripe", "other"] | None
     ]
     """Which platform the organization is migrating from."""
 

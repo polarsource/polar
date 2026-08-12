@@ -1695,7 +1695,7 @@ _STRING = {"kind": "primitive", "type": "string"}
                                                 "description": "Validation error",
                                             },
                                             {
-                                                "name": "Get503Error",
+                                                "name": "ProductsGet503Error",
                                                 "status_code": 503,
                                                 "response_type": "none",
                                                 "description": "Service unavailable — no body",

@@ -7,7 +7,6 @@ import type {
   DisputeNotOpenError as DisputeNotOpenErrorModel,
   ExpiredCheckoutError as ExpiredCheckoutErrorModel,
   HTTPValidationError as HTTPValidationErrorModel,
-  InactiveSubscription as InactiveSubscriptionModel,
   ManualRetryLimitExceeded as ManualRetryLimitExceededModel,
   MissingInvoiceBillingDetails as MissingInvoiceBillingDetailsModel,
   NotPermitted as NotPermittedModel,
@@ -16,6 +15,7 @@ import type {
   OrderNotEligibleForInvoice as OrderNotEligibleForInvoiceModel,
   OrderNotEligibleForRetry as OrderNotEligibleForRetryModel,
   OrganizationNotReadyForPayments as OrganizationNotReadyForPaymentsModel,
+  PauseResumeNotAllowed as PauseResumeNotAllowedModel,
   PaymentActionRequired as PaymentActionRequiredModel,
   PaymentAlreadyInProgress as PaymentAlreadyInProgressModel,
   PaymentError as PaymentErrorModel,
@@ -127,23 +127,9 @@ export class PaymentFailed extends PolarClientError<PaymentFailedModel> {
   }
 }
 /**
- * Subscription is already canceled or will be at the end of the period, or is not active.
- */
-export class SubscriptionsUpdate403Error extends PolarClientError<
-  AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel
-> {
-  constructor(
-    public readonly statusCode: 403,
-    public readonly error: AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel,
-  ) {
-    super(statusCode, error);
-    this.name = "SubscriptionsUpdate403Error";
-  }
-}
-/**
  * The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
  */
-export class Finalize402Error extends PolarClientError<
+export class OrdersFinalize402Error extends PolarClientError<
   PaymentFailedModel | PaymentActionRequiredModel
 > {
   constructor(
@@ -151,13 +137,13 @@ export class Finalize402Error extends PolarClientError<
     public readonly error: PaymentFailedModel | PaymentActionRequiredModel,
   ) {
     super(statusCode, error);
-    this.name = "Finalize402Error";
+    this.name = "OrdersFinalize402Error";
   }
 }
 /**
  * Off-session charges are not enabled for this organization, or its account can't currently accept payments.
  */
-export class Finalize403Error extends PolarClientError<
+export class OrdersFinalize403Error extends PolarClientError<
   OffSessionChargesNotEnabledModel | OrganizationNotReadyForPaymentsModel
 > {
   constructor(
@@ -165,7 +151,7 @@ export class Finalize403Error extends PolarClientError<
     public readonly error: OffSessionChargesNotEnabledModel | OrganizationNotReadyForPaymentsModel,
   ) {
     super(statusCode, error);
-    this.name = "Finalize403Error";
+    this.name = "OrdersFinalize403Error";
   }
 }
 /**
@@ -231,13 +217,13 @@ export class DisputeNotOpenError extends PolarClientError<DisputeNotOpenErrorMod
 /**
  * The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
  */
-export class Update403Error extends PolarClientError<CheckoutForbiddenErrorModel> {
+export class CheckoutsUpdate403Error extends PolarClientError<CheckoutForbiddenErrorModel> {
   constructor(
     public readonly statusCode: 403,
     public readonly error: CheckoutForbiddenErrorModel,
   ) {
     super(statusCode, error);
-    this.name = "Update403Error";
+    this.name = "CheckoutsUpdate403Error";
   }
 }
 /**
@@ -255,13 +241,13 @@ export class ExpiredCheckoutError extends PolarClientError<ExpiredCheckoutErrorM
 /**
  * The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
  */
-export class ClientUpdate403Error extends PolarClientError<CheckoutForbiddenErrorModel> {
+export class CheckoutsClientUpdate403Error extends PolarClientError<CheckoutForbiddenErrorModel> {
   constructor(
     public readonly statusCode: 403,
     public readonly error: CheckoutForbiddenErrorModel,
   ) {
     super(statusCode, error);
-    this.name = "ClientUpdate403Error";
+    this.name = "CheckoutsClientUpdate403Error";
   }
 }
 /**
@@ -279,13 +265,13 @@ export class PaymentError extends PolarClientError<PaymentErrorModel> {
 /**
  * The checkout is expired, the customer already has an active subscription, or the organization is not ready to accept payments.
  */
-export class ClientConfirm403Error extends PolarClientError<CheckoutForbiddenErrorModel> {
+export class CheckoutsClientConfirm403Error extends PolarClientError<CheckoutForbiddenErrorModel> {
   constructor(
     public readonly statusCode: 403,
     public readonly error: CheckoutForbiddenErrorModel,
   ) {
     super(statusCode, error);
-    this.name = "ClientConfirm403Error";
+    this.name = "CheckoutsClientConfirm403Error";
   }
 }
 /**
@@ -351,373 +337,373 @@ export class PaymentMethodInUseByActiveSubscription extends PolarClientError<Pay
 /**
  * Invalid or expired verification token.
  */
-export class CheckEmailUpdate401Error extends PolarClientError<null> {
+export class CustomersCheckEmailUpdate401Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 401,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "CheckEmailUpdate401Error";
+    this.name = "CustomersCheckEmailUpdate401Error";
   }
 }
 /**
  * Invalid or expired verification token.
  */
-export class VerifyEmailUpdate401Error extends PolarClientError<null> {
+export class CustomersVerifyEmailUpdate401Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 401,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "VerifyEmailUpdate401Error";
+    this.name = "CustomersVerifyEmailUpdate401Error";
   }
 }
 /**
  * Email address is already in use.
  */
-export class VerifyEmailUpdate422Error extends PolarClientError<null> {
+export class CustomersVerifyEmailUpdate422Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 422,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "VerifyEmailUpdate422Error";
+    this.name = "CustomersVerifyEmailUpdate422Error";
   }
 }
 /**
  * Authentication required
  */
-export class ListSeats401Error extends PolarClientError<null> {
+export class SeatsListSeats401Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 401,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "ListSeats401Error";
+    this.name = "SeatsListSeats401Error";
   }
 }
 /**
  * Not permitted or seat-based pricing not enabled
  */
-export class ListSeats403Error extends PolarClientError<null> {
+export class SeatsListSeats403Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 403,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "ListSeats403Error";
+    this.name = "SeatsListSeats403Error";
   }
 }
 /**
  * Subscription or order not found
  */
-export class ListSeats404Error extends PolarClientError<null> {
+export class SeatsListSeats404Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 404,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "ListSeats404Error";
+    this.name = "SeatsListSeats404Error";
   }
 }
 /**
  * No available seats or customer already has a seat
  */
-export class AssignSeat400Error extends PolarClientError<null> {
+export class SeatsAssignSeat400Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 400,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "AssignSeat400Error";
+    this.name = "SeatsAssignSeat400Error";
   }
 }
 /**
  * Authentication required
  */
-export class AssignSeat401Error extends PolarClientError<null> {
+export class SeatsAssignSeat401Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 401,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "AssignSeat401Error";
+    this.name = "SeatsAssignSeat401Error";
   }
 }
 /**
  * Not permitted or seat-based pricing not enabled
  */
-export class AssignSeat403Error extends PolarClientError<null> {
+export class SeatsAssignSeat403Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 403,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "AssignSeat403Error";
+    this.name = "SeatsAssignSeat403Error";
   }
 }
 /**
  * Subscription, order, or customer not found
  */
-export class AssignSeat404Error extends PolarClientError<null> {
+export class SeatsAssignSeat404Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 404,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "AssignSeat404Error";
+    this.name = "SeatsAssignSeat404Error";
   }
 }
 /**
  * Authentication required
  */
-export class RevokeSeat401Error extends PolarClientError<null> {
+export class SeatsRevokeSeat401Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 401,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "RevokeSeat401Error";
+    this.name = "SeatsRevokeSeat401Error";
   }
 }
 /**
  * Not permitted or seat-based pricing not enabled
  */
-export class RevokeSeat403Error extends PolarClientError<null> {
+export class SeatsRevokeSeat403Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 403,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "RevokeSeat403Error";
+    this.name = "SeatsRevokeSeat403Error";
   }
 }
 /**
  * Seat not found
  */
-export class RevokeSeat404Error extends PolarClientError<null> {
+export class SeatsRevokeSeat404Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 404,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "RevokeSeat404Error";
+    this.name = "SeatsRevokeSeat404Error";
   }
 }
 /**
  * Seat is not pending or already claimed
  */
-export class ResendInvitation400Error extends PolarClientError<null> {
+export class SeatsResendInvitation400Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 400,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "ResendInvitation400Error";
+    this.name = "SeatsResendInvitation400Error";
   }
 }
 /**
  * Authentication required
  */
-export class ResendInvitation401Error extends PolarClientError<null> {
+export class SeatsResendInvitation401Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 401,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "ResendInvitation401Error";
+    this.name = "SeatsResendInvitation401Error";
   }
 }
 /**
  * Not permitted or seat-based pricing not enabled
  */
-export class ResendInvitation403Error extends PolarClientError<null> {
+export class SeatsResendInvitation403Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 403,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "ResendInvitation403Error";
+    this.name = "SeatsResendInvitation403Error";
   }
 }
 /**
  * Seat not found
  */
-export class ResendInvitation404Error extends PolarClientError<null> {
+export class SeatsResendInvitation404Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 404,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "ResendInvitation404Error";
+    this.name = "SeatsResendInvitation404Error";
   }
 }
 /**
  * Authentication required
  */
-export class ListClaimedSubscriptions401Error extends PolarClientError<null> {
+export class SeatsListClaimedSubscriptions401Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 401,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "ListClaimedSubscriptions401Error";
+    this.name = "SeatsListClaimedSubscriptions401Error";
   }
 }
 /**
  * Authentication required
  */
-export class ListMembers401Error extends PolarClientError<null> {
+export class MembersListMembers401Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 401,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "ListMembers401Error";
+    this.name = "MembersListMembers401Error";
   }
 }
 /**
  * Not permitted - requires owner or billing manager role
  */
-export class ListMembers403Error extends PolarClientError<null> {
+export class MembersListMembers403Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 403,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "ListMembers403Error";
+    this.name = "MembersListMembers403Error";
   }
 }
 /**
  * Invalid request or member already exists.
  */
-export class AddMember400Error extends PolarClientError<null> {
+export class MembersAddMember400Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 400,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "AddMember400Error";
+    this.name = "MembersAddMember400Error";
   }
 }
 /**
  * Authentication required
  */
-export class AddMember401Error extends PolarClientError<null> {
+export class MembersAddMember401Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 401,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "AddMember401Error";
+    this.name = "MembersAddMember401Error";
   }
 }
 /**
  * Not permitted - requires owner or billing manager role
  */
-export class AddMember403Error extends PolarClientError<null> {
+export class MembersAddMember403Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 403,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "AddMember403Error";
+    this.name = "MembersAddMember403Error";
   }
 }
 /**
  * Cannot remove the only owner.
  */
-export class RemoveMember400Error extends PolarClientError<null> {
+export class MembersRemoveMember400Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 400,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "RemoveMember400Error";
+    this.name = "MembersRemoveMember400Error";
   }
 }
 /**
  * Authentication required
  */
-export class RemoveMember401Error extends PolarClientError<null> {
+export class MembersRemoveMember401Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 401,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "RemoveMember401Error";
+    this.name = "MembersRemoveMember401Error";
   }
 }
 /**
  * Not permitted - requires owner or billing manager role
  */
-export class RemoveMember403Error extends PolarClientError<null> {
+export class MembersRemoveMember403Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 403,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "RemoveMember403Error";
+    this.name = "MembersRemoveMember403Error";
   }
 }
 /**
  * Member not found.
  */
-export class RemoveMember404Error extends PolarClientError<null> {
+export class MembersRemoveMember404Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 404,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "RemoveMember404Error";
+    this.name = "MembersRemoveMember404Error";
   }
 }
 /**
  * Invalid role change.
  */
-export class UpdateMember400Error extends PolarClientError<null> {
+export class MembersUpdateMember400Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 400,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "UpdateMember400Error";
+    this.name = "MembersUpdateMember400Error";
   }
 }
 /**
  * Authentication required
  */
-export class UpdateMember401Error extends PolarClientError<null> {
+export class MembersUpdateMember401Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 401,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "UpdateMember401Error";
+    this.name = "MembersUpdateMember401Error";
   }
 }
 /**
  * Not permitted - requires owner or billing manager role
  */
-export class UpdateMember403Error extends PolarClientError<null> {
+export class MembersUpdateMember403Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 403,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "UpdateMember403Error";
+    this.name = "MembersUpdateMember403Error";
   }
 }
 /**
  * Member not found.
  */
-export class UpdateMember404Error extends PolarClientError<null> {
+export class MembersUpdateMember404Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 404,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "UpdateMember404Error";
+    this.name = "MembersUpdateMember404Error";
   }
 }
 /**
@@ -757,74 +743,256 @@ export class ManualRetryLimitExceeded extends PolarClientError<ManualRetryLimitE
   }
 }
 /**
- * Invalid or expired invitation token
+ * Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
  */
-export class GetClaimInfo400Error extends PolarClientError<null> {
+export class SubscriptionsUpdate403Error extends PolarClientError<
+  AlreadyCanceledSubscriptionModel | PauseResumeNotAllowedModel
+> {
   constructor(
-    public readonly statusCode: 400,
-    public readonly error: null,
+    public readonly statusCode: 403,
+    public readonly error: AlreadyCanceledSubscriptionModel | PauseResumeNotAllowedModel,
   ) {
     super(statusCode, error);
-    this.name = "GetClaimInfo400Error";
+    this.name = "SubscriptionsUpdate403Error";
   }
 }
 /**
- * Seat-based pricing not enabled for organization
+ * Authentication required
  */
-export class GetClaimInfo403Error extends PolarClientError<null> {
+export class CustomerSeatsListSeats401Error extends PolarClientError<null> {
+  constructor(
+    public readonly statusCode: 401,
+    public readonly error: null,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerSeatsListSeats401Error";
+  }
+}
+/**
+ * Not permitted or seat-based pricing not enabled
+ */
+export class CustomerSeatsListSeats403Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 403,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "GetClaimInfo403Error";
+    this.name = "CustomerSeatsListSeats403Error";
+  }
+}
+/**
+ * Subscription or order not found
+ */
+export class CustomerSeatsListSeats404Error extends PolarClientError<null> {
+  constructor(
+    public readonly statusCode: 404,
+    public readonly error: null,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerSeatsListSeats404Error";
+  }
+}
+/**
+ * No available seats or customer already has a seat
+ */
+export class CustomerSeatsAssignSeat400Error extends PolarClientError<null> {
+  constructor(
+    public readonly statusCode: 400,
+    public readonly error: null,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerSeatsAssignSeat400Error";
+  }
+}
+/**
+ * Authentication required
+ */
+export class CustomerSeatsAssignSeat401Error extends PolarClientError<null> {
+  constructor(
+    public readonly statusCode: 401,
+    public readonly error: null,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerSeatsAssignSeat401Error";
+  }
+}
+/**
+ * Not permitted or seat-based pricing not enabled
+ */
+export class CustomerSeatsAssignSeat403Error extends PolarClientError<null> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: null,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerSeatsAssignSeat403Error";
+  }
+}
+/**
+ * Subscription, order, or customer not found
+ */
+export class CustomerSeatsAssignSeat404Error extends PolarClientError<null> {
+  constructor(
+    public readonly statusCode: 404,
+    public readonly error: null,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerSeatsAssignSeat404Error";
+  }
+}
+/**
+ * Authentication required
+ */
+export class CustomerSeatsRevokeSeat401Error extends PolarClientError<null> {
+  constructor(
+    public readonly statusCode: 401,
+    public readonly error: null,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerSeatsRevokeSeat401Error";
+  }
+}
+/**
+ * Not permitted or seat-based pricing not enabled
+ */
+export class CustomerSeatsRevokeSeat403Error extends PolarClientError<null> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: null,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerSeatsRevokeSeat403Error";
   }
 }
 /**
  * Seat not found
  */
-export class GetClaimInfo404Error extends PolarClientError<null> {
+export class CustomerSeatsRevokeSeat404Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 404,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "GetClaimInfo404Error";
+    this.name = "CustomerSeatsRevokeSeat404Error";
   }
 }
 /**
- * Invalid, expired, or already claimed token
+ * Seat is not pending or already claimed
  */
-export class ClaimSeat400Error extends PolarClientError<null> {
+export class CustomerSeatsResendInvitation400Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 400,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "ClaimSeat400Error";
+    this.name = "CustomerSeatsResendInvitation400Error";
   }
 }
 /**
- * Seat-based pricing not enabled for organization
+ * Authentication required
  */
-export class ClaimSeat403Error extends PolarClientError<null> {
+export class CustomerSeatsResendInvitation401Error extends PolarClientError<null> {
+  constructor(
+    public readonly statusCode: 401,
+    public readonly error: null,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerSeatsResendInvitation401Error";
+  }
+}
+/**
+ * Not permitted or seat-based pricing not enabled
+ */
+export class CustomerSeatsResendInvitation403Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 403,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "ClaimSeat403Error";
+    this.name = "CustomerSeatsResendInvitation403Error";
   }
 }
 /**
- * Not Found
+ * Seat not found
  */
-export class Update404Error extends PolarClientError<null> {
+export class CustomerSeatsResendInvitation404Error extends PolarClientError<null> {
   constructor(
     public readonly statusCode: 404,
     public readonly error: null,
   ) {
     super(statusCode, error);
-    this.name = "Update404Error";
+    this.name = "CustomerSeatsResendInvitation404Error";
+  }
+}
+/**
+ * Invalid or expired invitation token
+ */
+export class CustomerSeatsGetClaimInfo400Error extends PolarClientError<null> {
+  constructor(
+    public readonly statusCode: 400,
+    public readonly error: null,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerSeatsGetClaimInfo400Error";
+  }
+}
+/**
+ * Seat-based pricing not enabled for organization
+ */
+export class CustomerSeatsGetClaimInfo403Error extends PolarClientError<null> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: null,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerSeatsGetClaimInfo403Error";
+  }
+}
+/**
+ * Seat not found
+ */
+export class CustomerSeatsGetClaimInfo404Error extends PolarClientError<null> {
+  constructor(
+    public readonly statusCode: 404,
+    public readonly error: null,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerSeatsGetClaimInfo404Error";
+  }
+}
+/**
+ * Invalid, expired, or already claimed token
+ */
+export class CustomerSeatsClaimSeat400Error extends PolarClientError<null> {
+  constructor(
+    public readonly statusCode: 400,
+    public readonly error: null,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerSeatsClaimSeat400Error";
+  }
+}
+/**
+ * Seat-based pricing not enabled for organization
+ */
+export class CustomerSeatsClaimSeat403Error extends PolarClientError<null> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: null,
+  ) {
+    super(statusCode, error);
+    this.name = "CustomerSeatsClaimSeat403Error";
+  }
+}
+/**
+ * Not Found
+ */
+export class EventTypesUpdate404Error extends PolarClientError<null> {
+  constructor(
+    public readonly statusCode: 404,
+    public readonly error: null,
+  ) {
+    super(statusCode, error);
+    this.name = "EventTypesUpdate404Error";
   }
 }

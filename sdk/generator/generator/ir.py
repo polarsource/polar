@@ -1181,7 +1181,9 @@ def _generate_ir_version(
                     description,
                 ) in error_responses_raw:
                     type = None
-                    name = to_pascal_case(f"{method_name}_{status_code}_error")
+                    name = to_pascal_case(
+                        f"{service.name}_{method_name}_{status_code}_error"
+                    )
                     if schema_raw is not None:
                         type = _convert_typeref(
                             schema_raw,

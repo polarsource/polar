@@ -11,7 +11,7 @@ import {
   HTTPValidationError,
   PaymentFailed,
   ResourceNotFound,
-  Update403Error,
+  SubscriptionsUpdate403Error,
 } from "../../errors";
 
 export const listSubscriptions = (client: ClientBase) => {
@@ -172,7 +172,7 @@ export const updateSubscriptions = (client: ClientBase) => {
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
    * @throws {PaymentFailed} Payment required to apply the subscription update.
-   * @throws {Update403Error} Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
+   * @throws {SubscriptionsUpdate403Error} Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
    * @throws {ResourceNotFound} Customer subscription was not found.
    * @throws {HTTPValidationError} Validation Error
    */
@@ -191,7 +191,7 @@ export const updateSubscriptions = (client: ClientBase) => {
     const response = await client.sendRequest(request);
     return client.parseResponse<CustomerSubscription>(response, "json", {
       402: PaymentFailed,
-      403: Update403Error,
+      403: SubscriptionsUpdate403Error,
       404: ResourceNotFound,
       422: HTTPValidationError,
     });

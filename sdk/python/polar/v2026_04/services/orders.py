@@ -10,12 +10,12 @@ from polar.base import (
     parse_response_text,
 )
 from polar.v2026_04.errors import (
-    Finalize402Error,
-    Finalize403Error,
     HTTPValidationError,
     MissingInvoiceBillingDetails,
     OrderNotDraft,
     OrderNotEligibleForInvoice,
+    OrdersFinalize402Error,
+    OrdersFinalize403Error,
     ResourceNotFound,
 )
 from polar.v2026_04.inputs import (
@@ -334,8 +334,8 @@ class OrdersSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            Finalize402Error: The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
-            Finalize403Error: Off-session charges are not enabled for this organization, or its account can't currently accept payments.
+            OrdersFinalize402Error: The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
+            OrdersFinalize403Error: Off-session charges are not enabled for this organization, or its account can't currently accept payments.
             ResourceNotFound: Order not found.
             OrderNotDraft: The order is not in `draft` status.
             HTTPValidationError: Validation Error
@@ -354,8 +354,8 @@ class OrdersSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            402: Finalize402Error,
-            403: Finalize403Error,
+            402: OrdersFinalize402Error,
+            403: OrdersFinalize403Error,
             404: ResourceNotFound,
             412: OrderNotDraft,
             422: HTTPValidationError,
@@ -766,8 +766,8 @@ class OrdersAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            Finalize402Error: The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
-            Finalize403Error: Off-session charges are not enabled for this organization, or its account can't currently accept payments.
+            OrdersFinalize402Error: The charge failed, or requires customer authentication (e.g. a 3DS challenge) that can't be completed off-session.
+            OrdersFinalize403Error: Off-session charges are not enabled for this organization, or its account can't currently accept payments.
             ResourceNotFound: Order not found.
             OrderNotDraft: The order is not in `draft` status.
             HTTPValidationError: Validation Error
@@ -786,8 +786,8 @@ class OrdersAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            402: Finalize402Error,
-            403: Finalize403Error,
+            402: OrdersFinalize402Error,
+            403: OrdersFinalize403Error,
             404: ResourceNotFound,
             412: OrderNotDraft,
             422: HTTPValidationError,

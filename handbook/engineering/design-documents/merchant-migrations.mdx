@@ -170,13 +170,22 @@ No separate Job table. `MerchantMigration` holds a single JSONB **operation** (n
 
 | Field | Purpose |
 | --- | --- |
-| `kind` | `precheck` \| `import` |
 | `status` | `running` \| `failed` |
 | `error` | Set when `failed` |
 | `cursor` | Opaque resume point for the current chain (Stripe page cursor, or last processed record id / type phase). Persisted on the migration so a reenqueue only needs `migration_id`. |
 | `last_progress_at` | Bumped each successful batch; used to detect stalled ops |
 
-`step` stays the merchant-facing phase and **only advances when an operation succeeds**. While precheck runs, `step` remains `source_setup`; in-flight work is read from `operation`, not from new step enum values.
+**`step` names the phase; `operation` says whether that phase is still working.** Starting an operation advances `step` to that phase immediately — they stay aligned. There is no separate `kind` on the operation (it would always duplicate `step`). Clearing `operation` means the phase finished (or never started background work); `step` stays put until the merchant moves on.
+
+| Moment | `step` | `operation` |
+| --- | --- | --- |
+| Connected, not started | `source_setup` | `null` |
+| Precheck in flight | `pre_check` | `{status: running, cursor: …}` |
+| Precheck done — review records | `pre_check` | `null` |
+| Precheck failed | `pre_check` | `{status: failed, error: …, cursor: …}` |
+| Import in flight | `create_catalog` | `{status: running, cursor: …}` |
+| Import done | `create_catalog` | `null` |
+| Partial re-import | `create_catalog` | `{status: running, …}` again |
 
 Import selection (`record_ids` / `exclude_record_ids`) is applied when the import starts (mark or filter pending rows once). Workers then only process `pending` selected rows — no need to keep the full selection list on the operation.
 
@@ -186,18 +195,18 @@ One Dramatiq task = one DB transaction. Prefer one self-reenqueuing actor per ch
 
 ```mermaid
 flowchart TB
-  StartPrecheck["POST /precheck → 202"] --> Precheck["precheck batch\nextract + stage; cursor on operation"]
+  StartPrecheck["POST /precheck → 202\nstep=pre_check, operation=running"] --> Precheck["precheck batch\nextract + stage; cursor on operation"]
   Precheck -->|"more pages"| Precheck
-  Precheck -->|"done"| Classify["classify → step=pre_check\nclear operation"]
+  Precheck -->|"done"| Classify["classify\nclear operation"]
 
-  StartImport["POST /import → 202"] --> Import["import batch\nproducts → customers → subscriptions\ncursor encodes type + position"]
+  StartImport["POST /import → 202\nstep=create_catalog, operation=running"] --> Import["import batch\nproducts → customers → subscriptions\ncursor encodes type + position"]
   Import -->|"more"| Import
-  Import -->|"done"| Finalize["step=create_catalog\nclear operation"]
+  Import -->|"done"| Finalize["clear operation\nstep stays create_catalog"]
 ```
 
-**Precheck** — start endpoint locks the migration (`FOR UPDATE`), sets `operation` (`kind=precheck`, `status=running`, empty cursor), enqueues the first batch. Each batch pages `adapter.extract()`, upserts ledger rows, writes the next `cursor` + `last_progress_at`, reenqueues. When extract is exhausted, classify with `PrecheckEngine`, set `step=pre_check`, clear `operation`.
+**Precheck** — start endpoint locks the migration (`FOR UPDATE`), sets `step=pre_check` and `operation` (`status=running`, empty cursor), enqueues the first batch. Each batch pages `adapter.extract()`, upserts ledger rows, writes the next `cursor` + `last_progress_at`, reenqueues. When extract is exhausted, classify with `PrecheckEngine`, clear `operation` (step stays `pre_check` for review).
 
-**Import** — same blockers as today; apply selection; set `operation` (`kind=import`); enqueue. Each batch imports up to N pending selected records for the current type (products, then customers, then subscriptions — cursor carries which type and where). When nothing remains, set `step=create_catalog` (or leave it if already there on a partial re-import), clear `operation`.
+**Import** — same blockers as today; apply selection; set `step=create_catalog` and `operation` (`status=running`); enqueue. Each batch imports up to N pending selected records for the current type (products, then customers, then subscriptions — cursor carries which type and where). When nothing remains, clear `operation` (step stays `create_catalog`). A later partial re-import sets `operation` again without changing `step`.
 
 Actors live in `polar/merchant_migration/tasks.py`. Batch size ~25–50; tune later.
 
@@ -224,7 +233,7 @@ Drop the sync import report as the mutation response body. Progress is the ledge
 
 ### UI (high level)
 
-The dashboard should reflect that precheck/import are background work: the merchant can leave and come back. Poll the migration (and record summary) while `operation` is running; show a clear in-progress state and a retry path when `failed`. Detailed UI is out of scope for this design.
+The dashboard should reflect that precheck/import are background work: the merchant can leave and come back. Poll the migration (and record summary) while `operation` is running; within the current `step`, show in-progress vs idle vs failed + retry. Detailed UI is out of scope for this design.
 
 ### Implementation follow-up
 

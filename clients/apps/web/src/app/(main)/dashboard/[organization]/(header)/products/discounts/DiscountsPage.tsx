@@ -13,14 +13,10 @@ import {
   useDeleteDiscounts,
   useDiscounts,
 } from '@/hooks/queries'
+import { useDataTableQueryState } from '@/hooks/useDataTableQueryState'
 import { useSelection } from '@/hooks/useSelection'
 import { useDebouncedCallback } from '@/hooks/utils'
-import {
-  DataTablePaginationState,
-  DataTableSortingState,
-  getAPIParams,
-  serializeSearchParams,
-} from '@/utils/datatable'
+import { getAPIParams } from '@/utils/datatable'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { getDiscountDisplay } from '@/utils/discount'
 import AddOutlined from '@mui/icons-material/AddOutlined'
@@ -42,92 +38,35 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { useRouter } from 'next/navigation'
+import { parseAsString, useQueryStates } from 'nuqs'
 import React, { useCallback, useState } from 'react'
+
+const filterParsers = {
+  query: parseAsString,
+}
 
 const getDiscountId = (discount: schemas['Discount']) => discount.id
 
 interface ClientPageProps {
   organization: schemas['Organization']
-  pagination: DataTablePaginationState
-  sorting: DataTableSortingState
-  query: string | undefined
 }
 
-const ClientPage: React.FC<ClientPageProps> = ({
-  organization,
-  pagination,
-  sorting,
-  query: _query,
-}) => {
-  const router = useRouter()
-  const [query, setQuery] = useState(_query)
+const ClientPage: React.FC<ClientPageProps> = ({ organization }) => {
+  const { pagination, setPagination, sorting, setSorting, resetPage } =
+    useDataTableQueryState({
+      defaultSorting: [{ id: 'name', desc: false }],
+    })
 
-  const getSearchParams = (
-    pagination: DataTablePaginationState,
-    sorting: DataTableSortingState,
-    query: string | undefined,
-  ) => {
-    const params = serializeSearchParams(pagination, sorting)
+  const [{ query }, setFilters] = useQueryStates(filterParsers)
 
-    if (query) {
-      params.append('query', query)
-    }
-
-    return params
-  }
-
-  const setPagination = (
-    updaterOrValue:
-      | DataTablePaginationState
-      | ((old: DataTablePaginationState) => DataTablePaginationState),
-  ) => {
-    const updatedPagination =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(pagination)
-        : updaterOrValue
-
-    router.push(
-      `/dashboard/${organization.slug}/products/discounts?${getSearchParams(
-        updatedPagination,
-        sorting,
-        query,
-      )}`,
-    )
-  }
-
-  const setSorting = (
-    updaterOrValue:
-      | DataTableSortingState
-      | ((old: DataTableSortingState) => DataTableSortingState),
-  ) => {
-    const updatedSorting =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(sorting)
-        : updaterOrValue
-
-    router.push(
-      `/dashboard/${organization.slug}/products/discounts?${getSearchParams(
-        pagination,
-        updatedSorting,
-        query,
-      )}`,
-    )
-  }
-
-  const debouncedQueryChange = useDebouncedCallback((query: string) => {
-    router.push(
-      `/dashboard/${organization.slug}/products/discounts?${getSearchParams(
-        { ...pagination, pageIndex: 0 },
-        sorting,
-        query,
-      )}`,
-    )
+  const debouncedQueryChange = useDebouncedCallback((value: string) => {
+    setFilters({ query: value || null })
+    resetPage()
   }, 500)
 
   const discountsHook = useDiscounts(organization.id, {
     ...getAPIParams(pagination, sorting),
-    query: _query,
+    query: query ?? undefined,
   })
 
   const discounts = discountsHook.data?.items || []
@@ -137,13 +76,12 @@ const ClientPage: React.FC<ClientPageProps> = ({
   const selection = useSelection({
     items: discounts,
     getId: getDiscountId,
-    resetKey: _query ?? '',
+    resetKey: query ?? '',
   })
 
   const onQueryChange = useCallback(
-    (query: string) => {
-      setQuery(query)
-      debouncedQueryChange(query)
+    (value: string) => {
+      debouncedQueryChange(value)
       selection.clear()
     },
     [debouncedQueryChange, selection],
@@ -366,7 +304,7 @@ const ClientPage: React.FC<ClientPageProps> = ({
             className="w-full md:max-w-64"
             preSlot={<Search fontSize="small" />}
             placeholder="Search Discounts"
-            value={query}
+            defaultValue={query ?? ''}
             onChange={(e) => onQueryChange(e.target.value)}
           />
           {selection.count > 0 ? (

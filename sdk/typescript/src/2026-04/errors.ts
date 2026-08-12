@@ -7,6 +7,7 @@ import type {
   DisputeNotOpenError as DisputeNotOpenErrorModel,
   ExpiredCheckoutError as ExpiredCheckoutErrorModel,
   HTTPValidationError as HTTPValidationErrorModel,
+  InactiveSubscription as InactiveSubscriptionModel,
   ManualRetryLimitExceeded as ManualRetryLimitExceededModel,
   MissingInvoiceBillingDetails as MissingInvoiceBillingDetailsModel,
   NotPermitted as NotPermittedModel,
@@ -123,6 +124,20 @@ export class PaymentFailed extends PolarClientError<PaymentFailedModel> {
   ) {
     super(statusCode, error);
     this.name = "PaymentFailed";
+  }
+}
+/**
+ * Subscription is already canceled or will be at the end of the period, or is not active.
+ */
+export class SubscriptionsUpdate403Error extends PolarClientError<
+  AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel
+> {
+  constructor(
+    public readonly statusCode: 403,
+    public readonly error: AlreadyCanceledSubscriptionModel | InactiveSubscriptionModel,
+  ) {
+    super(statusCode, error);
+    this.name = "SubscriptionsUpdate403Error";
   }
 }
 /**

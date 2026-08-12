@@ -126,14 +126,13 @@ class BenefitSlackSharedChannelService(
         context = self._build_context(customer)
 
         existing_channel_id = grant_properties.get("channel_id")
-        if existing_channel_id:
+        if existing_channel_id and await self._unarchive_channel(
+            bot_token=bot_token,
+            channel=existing_channel_id,
+            bound_logger=bound_logger,
+        ):
             channel_id = existing_channel_id
             channel_name = grant_properties.get("channel_name", "")
-            await self._unarchive_channel(
-                bot_token=bot_token,
-                channel=channel_id,
-                bound_logger=bound_logger,
-            )
         elif sibling_channel := await self._find_sibling_channel(benefit, customer):
             channel_id, channel_name = sibling_channel
         else:

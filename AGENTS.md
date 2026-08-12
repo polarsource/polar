@@ -167,20 +167,38 @@ Standard lint/test commands live in `server/AGENTS.md` and `clients/AGENTS.md`.
 # Once per VM boot (Docker isn't managed by systemd here):
 sudo dockerd > /tmp/dockerd.log 2>&1 &
 
-dev up --skip-integrations --skip-tinybird   # deps, infra, migrations, builds
-dev start                                    # api + worker + web (+ stripe) in tmux session `polar`
+dev up --skip-integrations   # deps, infra (incl. Tinybird), migrations, builds
+dev seed                     # sample orgs/products + admin@polar.sh (NOT part of `dev up`)
+dev start                    # api + worker + web (+ stripe) in tmux session `polar`
 # Stop with:  dev stop
 # Status:     dev status
 ```
 
-`--skip-integrations` avoids interactive GitHub/Stripe prompts. `--skip-tinybird` skips the
-optional analytics stack (without it, dashboard Analytics/Overview widgets show a network error —
-expected and harmless). `dev start` ends by *attaching* to the `polar` tmux session; in a
-non-interactive agent shell, create/attach then immediately `tmux detach-client -s polar`, or
-run `dev api` / `dev worker` / `dev web` as individual detached processes. The stripe pane of
-`dev start` will prompt to install the Stripe CLI via Homebrew — decline on Linux (no Homebrew);
-checkout/payment testing needs a real Stripe sandbox later (`dev stripe`, see the
-`local-environment` skill's `payment-testing` rule).
+`--skip-integrations` avoids interactive GitHub/Stripe prompts. **Do not pass `--skip-tinybird`**
+if you need the dashboard Overview/homepage metrics — without Tinybird those widgets show a
+network error. `dev up` does **not** load sample data; run `dev seed` afterward. That creates
+`admin@polar.sh` with access to seeded orgs (notably `admin-org` with a `Pro` product, plus
+`acme-corp`, `polar`, etc.). Login OTP codes print in the API pane. If seed says "Already
+seeded" (exit 2), the DB already has `acme-corp` — use `dev seed --reset` only when you
+intentionally want a wipe.
+
+**Tinybird already-running gotcha.** Step `04_start_infrastructure` early-returns when
+Postgres/Redis/Minio are already up, and will **not** start a missing Tinybird container in
+that case. If `dev status` shows Tinybird down after `dev up`, start it explicitly:
+
+```bash
+cd server && docker compose --profile tinybird up -d
+# then wait for http://localhost:7181/tokens, write the admin_token into
+# ~/.config/polar/secrets.env as POLAR_TINYBIRD_{API,READ,CLICKHOUSE}_TOKEN,
+# run ./dev/setup-environment, and restart api/worker so they pick up the tokens.
+```
+
+`dev start` ends by *attaching* to the `polar` tmux session; in a non-interactive agent shell,
+create/attach then immediately `tmux detach-client -s polar`, or run `dev api` / `dev worker` /
+`dev web` as individual detached processes. The stripe pane of `dev start` will prompt to
+install the Stripe CLI via Homebrew — decline on Linux (no Homebrew); checkout/payment testing
+needs a real Stripe sandbox later (`dev stripe`, see the `local-environment` skill's
+`payment-testing` rule).
 
 **One-time shell wiring** (already done in this VM snapshot): `./dev/cli/install` adds the
 `dev` alias; Node 24 is installed via nvm (`clients/` requires it — `.nvmrc` is `24`); `uv` is

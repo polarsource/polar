@@ -4,6 +4,7 @@ import { DashboardBody } from '@/components/Layout/DashboardLayout'
 import Pagination from '@/components/Pagination/Pagination'
 import { ProductListItem } from '@/components/Products/ProductListItem'
 import { useProducts } from '@/hooks/queries/products'
+import { useHasPermission } from '@/hooks/permissions'
 import { useDebouncedCallback } from '@/hooks/utils'
 import {
   DataTablePaginationState,
@@ -50,6 +51,7 @@ export default function ClientPage({
 
   const router = useRouter()
   const pathname = usePathname()
+  const canManageProducts = useHasPermission(org.id, 'products:manage')
 
   const onPageChange = useCallback(
     (page: number) => {
@@ -184,19 +186,21 @@ export default function ClientPage({
               </Select>
             )}
           </div>
-          <Link
-            href={`/dashboard/${org.slug}/products/new`}
-            className="w-full md:w-fit"
-          >
-            <Button
-              role="link"
-              wrapperClassNames="gap-x-2 md:w-fit"
-              className="w-full"
+          {canManageProducts ? (
+            <Link
+              href={`/dashboard/${org.slug}/products/new`}
+              className="w-full md:w-fit"
             >
-              <AddOutlined className="h-4 w-4" />
-              <span>New Product</span>
-            </Button>
-          </Link>
+              <Button
+                role="link"
+                wrapperClassNames="gap-x-2 md:w-fit"
+                className="w-full"
+              >
+                <AddOutlined className="h-4 w-4" />
+                <span>New Product</span>
+              </Button>
+            </Link>
+          ) : null}
         </div>
         {products.data && products.data.items.length > 0 ? (
           <Pagination
@@ -208,7 +212,7 @@ export default function ClientPage({
           >
             <List size="small">
               {products.data.items
-                .sort((a, b) => {
+                .toSorted((a, b) => {
                   if (a.is_archived === b.is_archived) return 0
                   return a.is_archived ? 1 : -1
                 })
@@ -235,11 +239,13 @@ export default function ClientPage({
                   Start selling digital products today
                 </p>
               </div>
-              <Link href={`/dashboard/${org.slug}/products/new`}>
-                <Button role="link" variant="secondary">
-                  <span>Create Product</span>
-                </Button>
-              </Link>
+              {canManageProducts ? (
+                <Link href={`/dashboard/${org.slug}/products/new`}>
+                  <Button role="link" variant="secondary">
+                    <span>Create Product</span>
+                  </Button>
+                </Link>
+              ) : null}
             </div>
           </ShadowBoxOnMd>
         )}

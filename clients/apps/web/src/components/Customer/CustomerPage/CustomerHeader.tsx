@@ -9,6 +9,7 @@ import { ConfirmModal } from '@/components/Modal/ConfirmModal'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useSafeCopy } from '@/hooks/clipboard'
+import { useHasPermission } from '@/hooks/permissions'
 import { useDeleteCustomer } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { api } from '@/utils/client'
@@ -46,6 +47,10 @@ export const CustomerHeader = ({
     interval,
     setInterval,
   } = useCustomerMetricsParams(customer)
+  const canManageCustomers = useHasPermission(
+    organization.id,
+    'customers:manage',
+  )
 
   const {
     show: showEditCustomerModal,
@@ -168,19 +173,25 @@ export const CustomerHeader = ({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          <DropdownMenuItem onClick={createCustomerSession}>
-            Copy Customer Portal
-          </DropdownMenuItem>
+          {canManageCustomers ? (
+            <DropdownMenuItem onClick={createCustomerSession}>
+              Copy Customer Portal
+            </DropdownMenuItem>
+          ) : null}
           <DropdownMenuItem>
             <a href={`mailto:${customer.email ?? ''}`}>Contact Customer</a>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={showEditCustomerModal}>
-            Edit Customer
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem destructive onClick={showDeleteCustomerModal}>
-            Delete Customer
-          </DropdownMenuItem>
+          {canManageCustomers ? (
+            <>
+              <DropdownMenuItem onClick={showEditCustomerModal}>
+                Edit Customer
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem destructive onClick={showDeleteCustomerModal}>
+                Delete Customer
+              </DropdownMenuItem>
+            </>
+          ) : null}
         </DropdownMenuContent>
       </DropdownMenu>
       <InlineModal

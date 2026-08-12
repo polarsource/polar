@@ -18,7 +18,7 @@ import { useMemo, useState } from 'react'
 
 import { ROLE_LABELS, ROLE_ORDER } from './constants'
 
-type AssignableRole = 'admin' | 'member'
+type AssignableRole = schemas['OrganizationMemberRoleUpdate']['role']
 
 export function ChangeRoleModal({
   organizationId,
@@ -106,6 +106,7 @@ export function ChangeRoleModal({
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="admin">Admin</SelectItem>
+          <SelectItem value="finance">Finance</SelectItem>
           <SelectItem value="member">Member</SelectItem>
         </SelectContent>
       </Select>

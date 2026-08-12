@@ -1,4 +1,5 @@
 import { useTransactionsSummary } from '@/hooks/queries'
+import { useHasPermission } from '@/hooks/permissions'
 import { usePayoutAccountSetup } from '@/hooks/usePayoutAccountSetup'
 import { schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
@@ -24,6 +25,11 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
   organization,
   onWithdrawSuccess: _onWithdrawSuccess,
 }) => {
+  const canManageFinance = useHasPermission(organization.id, 'finance:manage')
+  const canManageOrganization = useHasPermission(
+    organization.id,
+    'organization:manage',
+  )
   const {
     data: summary,
     refetch: refetchBalance,
@@ -39,6 +45,7 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
   } = usePayoutAccountSetup(
     organization,
     `/dashboard/${organization.slug}/finance/payouts`,
+    canManageOrganization,
   )
 
   const {
@@ -77,9 +84,11 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           <Text variant="heading-xxs" as="h2">
             Available Balance
           </Text>
-          <Button className="self-start" onClick={showPayoutConfirmModal}>
-            Withdraw
-          </Button>
+          {canManageFinance ? (
+            <Button className="self-start" onClick={showPayoutConfirmModal}>
+              Withdraw
+            </Button>
+          ) : null}
         </WellHeader>
         <WellContent>
           <Text variant="heading-s" loading={isLoading}>
@@ -115,76 +124,82 @@ const AccountBalance: React.FC<AccountBalanceProps> = ({
           </Text>
         </WellFooter>
       </Well>
-      <Well className="flex-1 justify-start rounded-2xl bg-gray-50 p-6">
-        <WellHeader className="flex flex-row items-center justify-between gap-x-6">
-          <Text variant="heading-xxs" as="h2">
-            Payout Account
-          </Text>
-          {payoutAccount || hasReusableAccounts ? (
-            <Button
-              className="self-start"
-              variant="secondary"
-              onClick={openManage}
+      {canManageOrganization ? (
+        <Well className="flex-1 justify-start rounded-2xl bg-gray-50 p-6">
+          <WellHeader className="flex flex-row items-center justify-between gap-x-6">
+            <Text variant="heading-xxs" as="h2">
+              Payout Account
+            </Text>
+            {payoutAccount || hasReusableAccounts ? (
+              <Button
+                className="self-start"
+                variant="secondary"
+                onClick={openManage}
+              >
+                Manage
+              </Button>
+            ) : (
+              <Button className="self-start" onClick={openCreate}>
+                Create
+              </Button>
+            )}
+          </WellHeader>
+          <WellContent>
+            <Text
+              variant="heading-s"
+              color={payoutAccount ? 'default' : 'disabled'}
+              loading={!payoutAccount && organization.payout_account_id != null}
             >
-              Manage
-            </Button>
-          ) : (
-            <Button className="self-start" onClick={openCreate}>
-              Create
-            </Button>
-          )}
-        </WellHeader>
-        <WellContent>
-          <Text
-            variant="heading-s"
-            color={payoutAccount ? 'default' : 'disabled'}
-            loading={!payoutAccount && organization.payout_account_id != null}
-          >
-            {payoutAccount
-              ? payoutAccount.type[0].toUpperCase() +
-                payoutAccount.type.slice(1)
-              : '—'}
-          </Text>
-        </WellContent>
-        <WellFooter className="mt-auto">
-          {payoutAccount ? (
-            <Box alignItems="center" columnGap="m">
-              <Text color="muted">
-                {payoutAccount.country.toUpperCase()} ·{' '}
-                {payoutAccount.currency.toUpperCase()}
-              </Text>
-              <Box display="inline-flex" alignItems="center" columnGap="xs">
-                <Box
-                  display="block"
-                  width={6}
-                  height={6}
-                  borderRadius="full"
-                  backgroundColor={
-                    payoutAccount.is_payout_ready
-                      ? 'background-success'
-                      : 'background-warning'
-                  }
-                />
-                <Text
-                  variant="caption"
-                  color={payoutAccount.is_payout_ready ? 'success' : 'warning'}
-                >
-                  {payoutAccount.is_payout_ready ? 'Ready' : 'Setup required'}
+              {payoutAccount
+                ? payoutAccount.type[0].toUpperCase() +
+                  payoutAccount.type.slice(1)
+                : '—'}
+            </Text>
+          </WellContent>
+          <WellFooter className="mt-auto">
+            {payoutAccount ? (
+              <Box alignItems="center" columnGap="m">
+                <Text color="muted">
+                  {payoutAccount.country.toUpperCase()} ·{' '}
+                  {payoutAccount.currency.toUpperCase()}
                 </Text>
+                <Box display="inline-flex" alignItems="center" columnGap="xs">
+                  <Box
+                    display="block"
+                    width={6}
+                    height={6}
+                    borderRadius="full"
+                    backgroundColor={
+                      payoutAccount.is_payout_ready
+                        ? 'background-success'
+                        : 'background-warning'
+                    }
+                  />
+                  <Text
+                    variant="caption"
+                    color={
+                      payoutAccount.is_payout_ready ? 'success' : 'warning'
+                    }
+                  >
+                    {payoutAccount.is_payout_ready ? 'Ready' : 'Setup required'}
+                  </Text>
+                </Box>
               </Box>
-            </Box>
-          ) : (
-            <Text color="muted">No payout account configured.</Text>
-          )}
-        </WellFooter>
-      </Well>
-      <WithdrawModal
-        organization={organization}
-        account={account}
-        isShown={isPayoutConfirmModalShown}
-        hide={hidePayoutConfirmModal}
-        onSuccess={onWithdrawSuccess}
-      />
+            ) : (
+              <Text color="muted">No payout account configured.</Text>
+            )}
+          </WellFooter>
+        </Well>
+      ) : null}
+      {canManageFinance ? (
+        <WithdrawModal
+          organization={organization}
+          account={account}
+          isShown={isPayoutConfirmModalShown}
+          hide={hidePayoutConfirmModal}
+          onSuccess={onWithdrawSuccess}
+        />
+      ) : null}
       <FeeCreditGrantsModal
         isShown={isCreditGrantsModalShown}
         hide={hideCreditGrantsModal}

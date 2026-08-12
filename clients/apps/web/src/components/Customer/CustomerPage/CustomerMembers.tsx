@@ -4,6 +4,7 @@ import { MembersSection } from '@/components/Customer/CustomerPage/MembersSectio
 import { useSubscriptions } from '@/hooks/queries'
 import { useOrders } from '@/hooks/queries/orders'
 import { schemas } from '@polar-sh/client'
+import { isCustomerMembersEnabled } from './isCustomerMembersEnabled'
 
 interface CustomerMembersProps {
   organization: schemas['Organization']
@@ -14,10 +15,7 @@ export const CustomerMembers = ({
   organization,
   customer,
 }: CustomerMembersProps) => {
-  const isEnabled =
-    organization.feature_settings?.member_model_enabled &&
-    organization.feature_settings?.seat_based_pricing_enabled &&
-    customer.type === 'team'
+  const isEnabled = isCustomerMembersEnabled(organization, customer)
 
   const { data: subscriptions } = useSubscriptions(
     isEnabled ? customer.organization_id : undefined,

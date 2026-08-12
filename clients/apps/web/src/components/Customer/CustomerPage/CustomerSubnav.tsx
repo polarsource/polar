@@ -4,6 +4,7 @@ import { schemas } from '@polar-sh/client'
 import { Subnav, SubnavItem } from '@polar-sh/orbit'
 import Link from 'next/link'
 import { usePathname, useSearchParams } from 'next/navigation'
+import { isCustomerMembersEnabled } from './isCustomerMembersEnabled'
 import { CUSTOMER_METRICS_QUERY_PARAMS } from './useCustomerMetricsParams'
 
 interface CustomerSubnavProps {
@@ -17,9 +18,6 @@ export const CustomerSubnav = ({
 }: CustomerSubnavProps) => {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const isMemberModelEnabled =
-    !!organization.feature_settings?.member_model_enabled
-
   const base = `/dashboard/${organization.slug}/customers/${customer.id}`
 
   const items = [
@@ -27,7 +25,7 @@ export const CustomerSubnav = ({
     { label: 'Usage', href: `${base}/usage` },
     { label: 'Events', href: `${base}/events` },
     { label: 'Costs', href: `${base}/costs` },
-    ...(isMemberModelEnabled && customer.type === 'team'
+    ...(isCustomerMembersEnabled(organization, customer)
       ? [{ label: 'Members', href: `${base}/members` }]
       : []),
   ]

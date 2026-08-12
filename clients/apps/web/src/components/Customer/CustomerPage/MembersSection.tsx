@@ -24,6 +24,7 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useMemo, useState } from 'react'
+import { isCustomerMembersEnabled } from './isCustomerMembersEnabled'
 import { EditMemberModal } from '../EditMemberModal'
 import { seatStatusDisplayConfig } from '../../Seats/seatStatus'
 
@@ -59,10 +60,7 @@ export const MembersSection = ({
   const { data: membersData, isLoading } = useMembers(customer.id)
   const copyMemberLoginLink = useCopyMemberLoginLink(organization.slug)
 
-  const isEnabled =
-    organization?.feature_settings?.member_model_enabled &&
-    organization?.feature_settings?.seat_based_pricing_enabled &&
-    customer.type === 'team'
+  const isEnabled = isCustomerMembersEnabled(organization, customer)
 
   // Filters out non-seat subscriptions and orders to minimize no. requests.
   // Could in future be replaced with an endpoint

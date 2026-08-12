@@ -45,6 +45,7 @@ from .merchant_migration import (
     MerchantMigrationStep,
 )
 from .merchant_migration_record import (
+    MerchantMigrationCutoverStatus,
     MerchantMigrationRecord,
     MerchantMigrationRecordStatus,
     MerchantMigrationRecordType,
@@ -169,6 +170,7 @@ __all__ = [
     "MemberRole",
     "MemberSession",
     "MerchantMigration",
+    "MerchantMigrationCutoverStatus",
     "MerchantMigrationRecord",
     "MerchantMigrationRecordStatus",
     "MerchantMigrationRecordType",

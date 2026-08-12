@@ -29,6 +29,22 @@ class MerchantMigrationRecordStatus(StrEnum):
     failed = "failed"
 
 
+class MerchantMigrationCutoverStatus(StrEnum):
+    """What the cutover did with an imported subscription.
+
+    Only subscription records ever carry one, and only once the cutover has
+    looked at them: ``None`` means "not attempted", which is also what every
+    other record type keeps forever.
+    """
+
+    # Polar bills it from now on, and the source subscription is stopped.
+    moved = "moved"
+    # Deliberately left on the source, with a reason the merchant can act on.
+    skipped = "skipped"
+    # Something unexpected went wrong. Safe to retry.
+    failed = "failed"
+
+
 class MerchantMigrationRecord(RecordModel):
     """One imported thing, mapping a source object to its Polar counterpart.
 
@@ -78,6 +94,15 @@ class MerchantMigrationRecord(RecordModel):
     )
     # Why a record was skipped or failed.
     error: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
+    # Cutover outcome for an imported subscription. Null until the cutover looks
+    # at it, so the cutover can pick up exactly what it hasn't settled yet.
+    cutover_status: Mapped[MerchantMigrationCutoverStatus | None] = mapped_column(
+        StringEnum(MerchantMigrationCutoverStatus, length=32),
+        nullable=True,
+        default=None,
+    )
+    # Why the cutover skipped or failed this subscription.
+    cutover_error: Mapped[str | None] = mapped_column(Text, nullable=True, default=None)
 
     @declared_attr
     def merchant_migration(cls) -> Mapped["MerchantMigration"]:

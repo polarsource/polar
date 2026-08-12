@@ -1,23 +1,25 @@
+'use client'
+
 import { useInfiniteEvents } from '@/hooks/queries/events'
 import { schemas } from '@polar-sh/client'
 import { Button } from '@polar-sh/orbit'
-import { TabsContent } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { parseAsArrayOf, parseAsString, useQueryState } from 'nuqs'
-import { Events } from '../Events/Events'
-import EventSelect from '../Events/EventSelect'
-import MeterSelector from '../Meter/MeterSelector'
-import { EmptyState } from '../Shared/EmptyState'
+import { Events } from '../../Events/Events'
+import EventSelect from '../../Events/EventSelect'
+import MeterSelector from '../../Meter/MeterSelector'
+import { EmptyState } from '../../Shared/EmptyState'
 import ShortTextOutlined from '@mui/icons-material/ShortTextOutlined'
+import { useCustomerMetricsParams } from './useCustomerMetricsParams'
 
 export const CustomerEventsView = ({
   customer,
   organization,
-  dateRange,
 }: {
   customer: schemas['Customer']
   organization: schemas['Organization']
-  dateRange: { startDate: Date; endDate: Date }
 }) => {
+  const { dateRange } = useCustomerMetricsParams(customer)
   const [meterId, setMeterId] = useQueryState('meterId', parseAsString)
   const [eventNames, setEventNames] = useQueryState(
     'eventName',
@@ -43,8 +45,12 @@ export const CustomerEventsView = ({
   })
 
   return (
-    <TabsContent value="events" className="flex flex-col gap-y-8">
-      <div className="flex flex-col gap-y-4 md:flex-row md:gap-x-6">
+    <Box flexDirection="column" rowGap="2xl">
+      <Box
+        flexDirection={{ base: 'column', md: 'row' }}
+        rowGap="l"
+        columnGap="xl"
+      >
         <EventSelect
           className="w-auto min-w-64"
           organizationId={customer.organization_id}
@@ -58,7 +64,7 @@ export const CustomerEventsView = ({
           onChange={setMeterId}
           placeholder="All Meters"
         />
-      </div>
+      </Box>
       {events?.pages.flatMap((page) => page.items).length === 0 ? (
         <EmptyState
           icon={<ShortTextOutlined fontSize="medium" />}
@@ -82,6 +88,6 @@ export const CustomerEventsView = ({
           Load More
         </Button>
       )}
-    </TabsContent>
+    </Box>
   )
 }

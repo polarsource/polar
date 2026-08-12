@@ -1,16 +1,16 @@
-import { CustomerOverview } from '@/components/Customer/CustomerPage/CustomerOverview'
+import { CustomerEventsView } from '@/components/Customer/CustomerPage/CustomerEventsView'
 import { CustomerPageShell } from '@/components/Customer/CustomerPage/CustomerPageShell'
 import { Metadata } from 'next'
 import {
   CustomerPageParams,
   generateCustomerMetadata,
   getOrganizationAndCustomerOrNotFound,
-} from './getCustomer'
+} from '../getCustomer'
 
 export async function generateMetadata(props: {
   params: Promise<CustomerPageParams>
 }): Promise<Metadata> {
-  return generateCustomerMetadata(await props.params)
+  return generateCustomerMetadata(await props.params, 'Events')
 }
 
 export default async function Page(props: {
@@ -26,7 +26,7 @@ export default async function Page(props: {
       organization={organization}
       customer={customer}
     >
-      <CustomerOverview organization={organization} customer={customer} />
+      <CustomerEventsView organization={organization} customer={customer} />
     </CustomerPageShell>
   )
 }

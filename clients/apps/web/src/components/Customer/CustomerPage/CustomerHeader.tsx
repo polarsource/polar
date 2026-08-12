@@ -1,14 +1,11 @@
 'use client'
 
-import { CustomerPage } from '@/components/Customer/CustomerPage'
 import { EditCustomerModal } from '@/components/Customer/EditCustomerModal'
-import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import DateRangePicker from '@/components/Metrics/DateRangePicker'
 import IntervalPicker, {
   getNextValidInterval,
 } from '@/components/Metrics/IntervalPicker'
 import { ConfirmModal } from '@/components/Modal/ConfirmModal'
-import { InlineModal } from '@polar-sh/orbit'
 import { useModal } from '@/components/Modal/useModal'
 import { toast } from '@/components/Toast/use-toast'
 import { useSafeCopy } from '@/hooks/clipboard'
@@ -16,14 +13,11 @@ import { useDeleteCustomer } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { api } from '@/utils/client'
 import { CONFIG } from '@/utils/config'
-import { getCustomerActivityStart } from '@/utils/customer'
-import { useDateRange } from '@/utils/date'
 import { usePushRouteWithoutCache } from '@/utils/router'
-
 import MoreVert from '@mui/icons-material/MoreVert'
 import { schemas } from '@polar-sh/client'
-import { Avatar } from '@polar-sh/orbit'
-import { Button } from '@polar-sh/orbit'
+import { Button, InlineModal } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -31,27 +25,27 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
-import { endOfToday, startOfDay } from 'date-fns'
-import { parseAsStringLiteral, useQueryState } from 'nuqs'
-import React, { useCallback } from 'react'
+import { useCallback } from 'react'
+import { useCustomerMetricsParams } from './useCustomerMetricsParams'
 
-const CustomerHeader = ({
-  customer,
-  organization,
-  metrics,
-}: {
+interface CustomerHeaderProps {
   customer: schemas['Customer']
   organization: schemas['Organization']
-  metrics: {
-    startDate: Date
-    endDate: Date
-    setStartDate: (date: Date) => void
-    setEndDate: (date: Date) => void
-    interval: schemas['TimeInterval']
-    setInterval: (interval: schemas['TimeInterval']) => void
-  }
-}) => {
+}
+
+export const CustomerHeader = ({
+  customer,
+  organization,
+}: CustomerHeaderProps) => {
   const pushRouteWithoutCache = usePushRouteWithoutCache()
+  const {
+    startDate,
+    endDate,
+    setStartDate,
+    setEndDate,
+    interval,
+    setInterval,
+  } = useCustomerMetricsParams(customer)
 
   const {
     show: showEditCustomerModal,
@@ -142,43 +136,29 @@ const CustomerHeader = ({
 
   const onDateChange = useCallback(
     (date: { from: Date; to: Date }) => {
-      const validInterval = getNextValidInterval(
-        metrics.interval,
-        date.from,
-        date.to,
-      )
-      metrics.setStartDate(date.from)
-      metrics.setEndDate(date.to)
-      if (validInterval !== metrics.interval) {
-        metrics.setInterval(validInterval)
+      const validInterval = getNextValidInterval(interval, date.from, date.to)
+      setStartDate(date.from)
+      setEndDate(date.to)
+      if (validInterval !== interval) {
+        setInterval(validInterval)
       }
     },
-    [metrics],
-  )
-
-  const onIntervalChange = useCallback(
-    (newInterval: schemas['TimeInterval']) => {
-      metrics.setInterval(newInterval)
-    },
-    [metrics],
+    [interval, setStartDate, setEndDate, setInterval],
   )
 
   return (
-    <div className="flex flex-row gap-2">
-      <div>
+    <Box columnGap="s">
+      <Box display="block">
         <IntervalPicker
-          interval={metrics.interval}
-          onChange={onIntervalChange}
-          startDate={metrics.startDate}
-          endDate={metrics.endDate}
+          interval={interval}
+          onChange={setInterval}
+          startDate={startDate}
+          endDate={endDate}
         />
-      </div>
+      </Box>
       <DateRangePicker
-        date={
-          metrics.startDate && metrics.endDate
-            ? { from: metrics.startDate, to: metrics.endDate }
-            : undefined
-        }
+        className="shrink-0"
+        date={{ from: startDate, to: endDate }}
         onDateChange={onDateChange}
       />
       <DropdownMenu>
@@ -218,7 +198,7 @@ const CustomerHeader = ({
         hide={hideDeleteCustomerModal}
         title={`Delete Customer "${customer.email ?? customer.name ?? 'customer'}"?`}
         body={
-          <div className="dark:text-polar-400 flex flex-col gap-y-2 text-sm leading-relaxed text-gray-500">
+          <Box flexDirection="column" rowGap="s" color="text-secondary">
             <p>This action cannot be undone and will immediately:</p>
             <ol className="list-inside list-disc pl-4">
               <li>Cancel any active subscriptions for the customer</li>
@@ -230,100 +210,13 @@ const CustomerHeader = ({
               However, their information will still be retained for historic
               orders and subscriptions.
             </p>
-          </div>
+          </Box>
         }
         onConfirm={onDeleteCustomer}
         confirmPrompt={customer.email ?? customer.name ?? ''}
         destructiveText="Delete"
         destructive
       />
-    </div>
+    </Box>
   )
 }
-
-interface ClientPageProps {
-  organization: schemas['Organization']
-  customer: schemas['Customer']
-}
-
-const ClientPage: React.FC<ClientPageProps> = ({ organization, customer }) => {
-  const { startDate, endDate, setStartDate, setEndDate } = useDateRange({
-    defaultStartDate: startOfDay(getCustomerActivityStart(customer)),
-    defaultEndDate: endOfToday(),
-  })
-
-  const [intervalParam, setInterval] = useQueryState(
-    'interval',
-    parseAsStringLiteral([
-      'hour',
-      'day',
-      'week',
-      'month',
-      'year',
-    ] as schemas['TimeInterval'][]),
-  )
-
-  const interval: schemas['TimeInterval'] =
-    intervalParam ?? getNextValidInterval('day', startDate, endDate)
-
-  const hasName = (customer.name?.length ?? 0) > 0
-  const showBillingName =
-    hasName &&
-    !!customer.billing_name &&
-    customer.name?.toLocaleLowerCase() !==
-      customer.billing_name.toLocaleLowerCase()
-
-  return (
-    <MasterDetailLayoutContent
-      header={
-        <>
-          <div className="flex flex-row items-center gap-6">
-            <Avatar
-              avatar_url={customer.avatar_url}
-              name={customer.email ?? customer.name ?? '—'}
-              className="h-16 w-16"
-            />
-            <div className="flex flex-col">
-              <p className="text-lg">
-                {hasName ? customer.name : (customer.billing_name ?? '—')}
-                {showBillingName && (
-                  <span className="dark:text-polar-500 ml-1.5 text-gray-500">
-                    {customer.billing_name}
-                  </span>
-                )}
-              </p>
-              {(customer.email || customer.type === 'individual') && (
-                <div className="dark:text-polar-500 flex flex-row items-center text-base text-gray-500">
-                  <span>{customer.email ?? '—'}</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <CustomerHeader
-            organization={organization}
-            customer={customer}
-            metrics={{
-              startDate,
-              endDate,
-              setStartDate,
-              setEndDate,
-              interval,
-              setInterval,
-            }}
-          />
-        </>
-      }
-    >
-      <CustomerPage
-        key={customer.id}
-        customer={customer}
-        organization={organization}
-        dateRange={{ startDate, endDate }}
-        interval={interval}
-      />
-    </MasterDetailLayoutContent>
-  )
-}
-
-export default ClientPage

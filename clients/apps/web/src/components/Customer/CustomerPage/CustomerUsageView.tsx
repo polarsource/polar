@@ -1,3 +1,5 @@
+'use client'
+
 import { useCustomerMeters } from '@/hooks/queries/customerMeters'
 import { useMultipleMeterQuantities } from '@/hooks/queries/meters'
 import { useSubscriptions } from '@/hooks/queries/subscriptions'
@@ -6,12 +8,13 @@ import { useRouter } from 'next/navigation'
 import { formatCurrency } from '@polar-sh/currency'
 import ShadowBox from '@polar-sh/ui/components/atoms/ShadowBox'
 import { DataTable, DataTableColumnHeader } from '@polar-sh/orbit'
-import { TabsContent } from '@polar-sh/orbit'
+import { Box } from '@polar-sh/orbit/Box'
 import { useMemo } from 'react'
-import FormattedUnits from '../Meter/FormattedUnits'
-import StackedMeterChart from '../Meter/StackedMeterChart'
-import { EmptyState } from '../Shared/EmptyState'
+import FormattedUnits from '../../Meter/FormattedUnits'
+import StackedMeterChart from '../../Meter/StackedMeterChart'
+import { EmptyState } from '../../Shared/EmptyState'
 import { GaugeCircleIcon } from 'lucide-react'
+import { useCustomerMetricsParams } from './useCustomerMetricsParams'
 
 const METER_COLORS = [
   '#2563eb',
@@ -55,15 +58,12 @@ const getOverages = (cm: CustomerMeterWithSubscription) => {
 export const CustomerUsageView = ({
   customer,
   organization,
-  dateRange,
-  interval,
 }: {
   customer: schemas['Customer']
   organization: schemas['Organization']
-  dateRange: { startDate: Date; endDate: Date }
-  interval: schemas['TimeInterval']
 }) => {
   const router = useRouter()
+  const { dateRange, interval } = useCustomerMetricsParams(customer)
   const { data: customerMetersData, isLoading } = useCustomerMeters(
     customer.organization_id,
     { customer_id: customer.id, sorting: ['meter_name'] },
@@ -142,18 +142,16 @@ export const CustomerUsageView = ({
 
   if (!isLoading && customerMeters.length === 0) {
     return (
-      <TabsContent value="usage" className="flex flex-col gap-y-8">
-        <EmptyState
-          icon={<GaugeCircleIcon className="h-6 w-6" />}
-          title="No active meters"
-          description="This customer does not have any active meters"
-        />
-      </TabsContent>
+      <EmptyState
+        icon={<GaugeCircleIcon className="h-6 w-6" />}
+        title="No active meters"
+        description="This customer does not have any active meters"
+      />
     )
   }
 
   return (
-    <TabsContent value="usage" className="flex flex-col gap-y-8">
+    <Box flexDirection="column" rowGap="2xl">
       <ShadowBox className="dark:bg-polar-800 flex flex-col gap-y-4 p-2">
         <div className="dark:bg-polar-900 rounded-3xl bg-white p-4">
           <StackedMeterChart
@@ -243,6 +241,6 @@ export const CustomerUsageView = ({
           },
         ]}
       />
-    </TabsContent>
+    </Box>
   )
 }

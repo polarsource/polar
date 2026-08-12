@@ -79,7 +79,7 @@ export const MasterDetailLayoutContent = ({
   return (
     <>
       {header && (
-        <div className="flex w-full flex-col gap-y-4 py-8 md:flex-row md:items-center md:justify-between md:py-8">
+        <div className="flex w-full flex-col gap-x-8 gap-y-4 py-8 md:flex-row md:items-center md:justify-between md:py-8">
           {header}
         </div>
       )}

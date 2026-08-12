@@ -24,8 +24,8 @@ import {
   DropdownMenuTrigger,
 } from '@polar-sh/ui/components/ui/dropdown-menu'
 import { useMemo, useState } from 'react'
-import { EditMemberModal } from './EditMemberModal'
-import { seatStatusDisplayConfig } from '../Seats/seatStatus'
+import { EditMemberModal } from '../EditMemberModal'
+import { seatStatusDisplayConfig } from '../../Seats/seatStatus'
 
 const roleDisplayConfig: Record<
   'owner' | 'billing_manager' | 'member',

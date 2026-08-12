@@ -85,7 +85,9 @@ const PauseSubscriptionModal = ({
                   <DatePicker
                     value={field.value}
                     onChange={field.onChange}
-                    disabled={periodEnd ? { before: periodEnd } : undefined}
+                    disabled={
+                      periodEnd ? [{ before: periodEnd }, periodEnd] : undefined
+                    }
                   />
                   <FormDescription>
                     Leave empty to pause indefinitely until resumed manually.

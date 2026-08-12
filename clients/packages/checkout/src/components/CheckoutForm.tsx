@@ -33,7 +33,7 @@ import {
   StripeElementsOptions,
   StripePaymentElementChangeEvent,
 } from '@stripe/stripe-js'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 import { UseFormReturn, WatchObserver } from 'react-hook-form'
 import { hasProductCheckout, isLegacyRecurringProductPrice } from '../guards'
 import { useDebouncedCallback } from '../hooks/debounce'
@@ -187,17 +187,15 @@ const BaseCheckoutForm = ({
   )
   const debouncedWatcher = useDebouncedCallback(watcher, 500, [watcher])
 
-  const capturedContact = useRef<Partial<Record<ContactField, string>>>({})
   const captureContact = useCallback(
     (name: ContactField, value: string) => {
       const contact = value.trim()
-      if (!contact || capturedContact.current[name] === contact) {
+      if (!contact || checkout[name] === contact) {
         return
       }
-      capturedContact.current[name] = contact
       update({ [name]: contact }).catch(() => clearErrors(name))
     },
-    [update, clearErrors],
+    [checkout, update, clearErrors],
   )
 
   const discountCode = watch('discount_code')

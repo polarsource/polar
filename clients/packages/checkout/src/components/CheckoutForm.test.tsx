@@ -619,11 +619,11 @@ describe('CheckoutForm', () => {
   })
 
   describe('contact capture', () => {
-    const renderForm = () => {
+    const renderForm = (checkout: ProductCheckoutPublic = createCheckout()) => {
       const update = vi.fn(async () => createCheckout())
       render(
         <FormWrapper
-          checkout={createCheckout()}
+          checkout={checkout}
           {...defaultProps}
           update={update}
           themePreset={{ stripe: {} } as ThemingPresetProps}
@@ -665,13 +665,14 @@ describe('CheckoutForm', () => {
       expect(update).not.toHaveBeenCalled()
     })
 
-    it('stores an unchanged value once', () => {
-      const update = renderForm()
+    it('skips a value the checkout already holds', () => {
+      const update = renderForm(
+        createCheckout({ customer_email: 'buyer@example.com' }),
+      )
 
       fill('Email', 'buyer@example.com')
-      fireEvent.blur(screen.getByLabelText('Email'))
 
-      expect(update).toHaveBeenCalledTimes(1)
+      expect(update).not.toHaveBeenCalled()
     })
   })
 })

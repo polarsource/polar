@@ -16,8 +16,22 @@ from polar.payment_method.service import payment_method as payment_method_servic
 from polar.postgres import AsyncSession
 
 from .canonical import CanonicalPaymentMethod
+from .errors import MerchantMigrationError
 
 CARD_TYPE = "card"
+
+
+class AmbiguousCopiedCard(MerchantMigrationError):
+    """Deliberately unhandled at the top: charging the wrong card is worse than
+    not charging, and there is nothing sensible to guess. Pages so a human can
+    look at the account."""
+
+    def __init__(self, customer_id: UUID, matches: int) -> None:
+        self.customer_id = customer_id
+        super().__init__(
+            f"{matches} copied methods look like the one the source was charging "
+            f"for customer {customer_id}; can't tell which is which."
+        )
 
 
 async def link_payment_method(
@@ -54,9 +68,7 @@ async def link_payment_method(
     if not payment_methods:
         return None
 
-    preferred = _preferred(
-        payment_methods, customer.default_payment_method_id, source_method
-    )
+    preferred = _preferred(payment_methods, customer, source_method)
     # What the renewal charges when a subscription has no method of its own.
     if customer.default_payment_method_id is None:
         await CustomerRepository.from_session(session).update(
@@ -67,17 +79,23 @@ async def link_payment_method(
 
 def _preferred(
     payment_methods: Sequence[PaymentMethod],
-    default_id: UUID | None,
+    customer: Customer,
     source_method: CanonicalPaymentMethod | None,
 ) -> PaymentMethod:
     """Ordered by how much each candidate says about what to charge. Any stored
     method beats nothing: ACH and SEPA migrate too, per `requires_reentry`."""
     if source_method is not None:
-        for payment_method in payment_methods:
-            if _is_copy_of(payment_method, source_method):
-                return payment_method
+        copies = [
+            payment_method
+            for payment_method in payment_methods
+            if _is_copy_of(payment_method, source_method)
+        ]
+        if len(copies) > 1:
+            raise AmbiguousCopiedCard(customer.id, len(copies))
+        if copies:
+            return copies[0]
     for payment_method in payment_methods:
-        if payment_method.id == default_id:
+        if payment_method.id == customer.default_payment_method_id:
             return payment_method
     for payment_method in payment_methods:
         if payment_method.type == CARD_TYPE:
@@ -88,7 +106,8 @@ def _preferred(
 def _is_copy_of(
     payment_method: PaymentMethod, source_method: CanonicalPaymentMethod
 ) -> bool:
-    """A copy keeps the card but not its id, so match on what survives."""
+    """A copy keeps the card but not its id, and not its fingerprint either —
+    that is per-account. Brand, last4 and expiry are what is left."""
     details = {
         "last4": source_method.last4,
         "brand": source_method.brand,

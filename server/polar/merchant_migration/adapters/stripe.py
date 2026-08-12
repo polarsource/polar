@@ -351,7 +351,15 @@ class StripeAdapter:
             type = CanonicalPaymentMethodType(payment_method.type)
         except ValueError:
             type = CanonicalPaymentMethodType.other
-        return CanonicalPaymentMethod(source_id=payment_method.id, type=type)
+        details = payment_method.get(payment_method.type) or {}
+        return CanonicalPaymentMethod(
+            source_id=payment_method.id,
+            type=type,
+            last4=details.get("last4"),
+            brand=details.get("brand"),
+            exp_month=details.get("exp_month"),
+            exp_year=details.get("exp_year"),
+        )
 
     def _id_of(self, value: Any) -> str:
         if isinstance(value, str):

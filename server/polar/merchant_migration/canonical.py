@@ -53,6 +53,12 @@ class CanonicalPaymentMethodType(StrEnum):
 class CanonicalPaymentMethod:
     source_id: str
     type: CanonicalPaymentMethodType
+    # A copy re-mints the id but not the card, so these are the only join key
+    # left between the method the source charged and the one that lands on ours.
+    last4: str | None = None
+    brand: str | None = None
+    exp_month: int | None = None
+    exp_year: int | None = None
 
 
 @dataclass
@@ -194,6 +200,10 @@ def deserialize(
                 payment_method=CanonicalPaymentMethod(
                     source_id=payment_method["source_id"],
                     type=CanonicalPaymentMethodType(payment_method["type"]),
+                    last4=payment_method.get("last4"),
+                    brand=payment_method.get("brand"),
+                    exp_month=payment_method.get("exp_month"),
+                    exp_year=payment_method.get("exp_year"),
                 )
                 if payment_method is not None
                 else None,

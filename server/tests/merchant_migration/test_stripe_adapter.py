@@ -9,7 +9,11 @@ from polar.merchant_migration.adapters.stripe import (
     CANCELLATION_COMMENT_PREFIX,
     StripeAdapter,
 )
-from polar.merchant_migration.canonical import CanonicalSubscriptionStatus
+from polar.merchant_migration.canonical import (
+    CanonicalPaymentMethod,
+    CanonicalPaymentMethodType,
+    CanonicalSubscriptionStatus,
+)
 
 
 def _adapter(mocker: MockerFixture) -> tuple[StripeAdapter, Any]:
@@ -206,6 +210,7 @@ def _stripe_subscription(
     trial_end: int | None = None,
     cancellation_comment: str | None = None,
     items: list[dict[str, Any]] | None = None,
+    payment_method: dict[str, Any] | None = None,
 ) -> stripe_lib.Subscription:
     return stripe_lib.Subscription.construct_from(
         {
@@ -216,7 +221,7 @@ def _stripe_subscription(
             "cancel_at_period_end": cancel_at_period_end,
             "pause_collection": None,
             "trial_end": trial_end,
-            "default_payment_method": None,
+            "default_payment_method": payment_method,
             "discounts": [],
             "cancellation_details": (
                 {"comment": cancellation_comment} if cancellation_comment else None
@@ -252,6 +257,40 @@ class TestGetSubscription:
         assert subscription.status == CanonicalSubscriptionStatus.active
         assert subscription.cancel_at_period_end is True
         assert subscription.current_period_end is not None
+
+    async def test_carries_the_card_details_the_copy_keeps(
+        self, mocker: MockerFixture
+    ) -> None:
+        """A copy re-mints the `pm_…` id, so these are what identifies the card
+        the subscription was actually charging once it lands on our account."""
+        adapter, client = _adapter(mocker)
+        client.v1.subscriptions.retrieve_async = mocker.AsyncMock(
+            return_value=_stripe_subscription(
+                payment_method={
+                    "id": "pm_source",
+                    "object": "payment_method",
+                    "type": "card",
+                    "card": {
+                        "last4": "4242",
+                        "brand": "visa",
+                        "exp_month": 4,
+                        "exp_year": 2030,
+                    },
+                }
+            )
+        )
+
+        subscription = await adapter.get_subscription("sub_1")
+
+        assert subscription is not None
+        assert subscription.payment_method == CanonicalPaymentMethod(
+            source_id="pm_source",
+            type=CanonicalPaymentMethodType.card,
+            last4="4242",
+            brand="visa",
+            exp_month=4,
+            exp_year=2030,
+        )
 
     async def test_reads_a_running_trial(self, mocker: MockerFixture) -> None:
         """The cutover keeps the trial running rather than billing at once, so

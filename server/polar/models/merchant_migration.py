@@ -73,11 +73,7 @@ class MerchantMigration(RecordModel):
     pan_transfer_steps: Mapped[list[PanTransferStep]] = mapped_column(
         PanTransferStepsType, nullable=False, default=list
     )
-<<<<<<< HEAD
     # Background precheck/import state. Null until a run starts.
-=======
-    # Background precheck/import progress. Null until start_precheck / start_import.
->>>>>>> dbf365792 (feat(merchant-migration): run precheck and catalog import as background jobs)
     operation: Mapped[MerchantMigrationOperation | None] = mapped_column(
         MerchantMigrationOperationType, nullable=True, default=None
     )

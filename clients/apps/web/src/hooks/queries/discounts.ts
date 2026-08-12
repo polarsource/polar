@@ -15,7 +15,7 @@ const invalidateDiscountsQueries = ({
   const queryClient = getQueryClient()
   if (id) {
     queryClient.invalidateQueries({
-      queryKey: ['discounts', 'id', id],
+      queryKey: ['discounts', 'detail', { id }],
     })
   }
 
@@ -119,6 +119,7 @@ export const useDeleteDiscount = () =>
         return
       }
       invalidateDiscountsQueries({
+        id: variables.id,
         organizationId: variables.organization_id,
       })
     },
@@ -139,13 +140,10 @@ export const useDeleteDiscounts = () =>
           throw error
         }
       }),
-    onSuccess: (result, discounts) => {
+    onSuccess: (result) => {
       if (result.succeeded.length === 0) {
         return
       }
-      const organizationId = discounts[0]?.organization_id
-      if (organizationId) {
-        invalidateDiscountsQueries({ organizationId })
-      }
+      getQueryClient().invalidateQueries({ queryKey: ['discounts'] })
     },
   })

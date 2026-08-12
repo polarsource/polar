@@ -884,7 +884,10 @@ class SubscriptionService:
                 subscription_id=subscription.id,
                 organization_id=subscription.organization.id,
             )
-            return subscription
+            repository = SubscriptionRepository.from_session(session)
+            return await repository.update(
+                subscription, update_dict={"scheduler_locked_at": None}
+            )
 
         cycle_at = subscription.current_period_end
         revoke = subscription.cancel_at_period_end
@@ -2139,7 +2142,10 @@ class SubscriptionService:
                 subscription_id=subscription.id,
                 organization_id=subscription.organization.id,
             )
-            return subscription
+            repository = SubscriptionRepository.from_session(session)
+            return await repository.update(
+                subscription, update_dict={"scheduler_locked_at": None}
+            )
 
         now = utc_now()
         subscription.status = SubscriptionStatus.active

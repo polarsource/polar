@@ -1197,6 +1197,35 @@ class TestApplyUpdate:
 
 @pytest.mark.asyncio
 class TestCycle:
+    async def test_renewals_disabled_releases_scheduler_lock(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        organization.capabilities = {
+            **organization.capabilities,
+            "subscription_renewals": False,
+        }
+        await save_fixture(organization)
+        subscription = await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            scheduler_locked_at=utc_now(),
+        )
+        current_period_end = subscription.current_period_end
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.cycle(session, ctx, subscription)
+
+        assert updated.scheduler_locked_at is None
+        assert updated.current_period_end == current_period_end
+
     @pytest.mark.parametrize("cancel_at_period_end", [False, True])
     @freeze_time("2024-01-15 12:00:00")
     async def test_clamps_meter_reset_to_now_when_cycling_early(
@@ -3184,6 +3213,39 @@ class TestResume:
                 session, subscription, subscription_service
             ) as ctx:
                 await subscription_service.resume(session, ctx, subscription)
+
+    async def test_renewals_disabled_releases_scheduler_lock(
+        self,
+        frozen_time: datetime,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        organization.capabilities = {
+            **organization.capabilities,
+            "subscription_renewals": False,
+        }
+        await save_fixture(organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+            scheduler_locked_at=frozen_time,
+        )
+        subscription.resumes_at = frozen_time
+        await save_fixture(subscription)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.resume(session, ctx, subscription)
+
+        assert updated.scheduler_locked_at is None
+        assert updated.status == SubscriptionStatus.paused
+        assert updated.resumes_at == frozen_time
 
     async def test_valid(
         self,

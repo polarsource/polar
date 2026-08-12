@@ -1,6 +1,6 @@
 import type { schemas } from '@polar-sh/client'
 import type { ThemingPresetProps } from '@polar-sh/ui/hooks/theming'
-import { act, render, screen } from '@testing-library/react'
+import { act, fireEvent, render, screen } from '@testing-library/react'
 import { useEffect } from 'react'
 import type { UseFormReturn } from 'react-hook-form'
 import { useForm } from 'react-hook-form'
@@ -615,6 +615,102 @@ describe('CheckoutForm', () => {
       expect(lastElementsOptions()).toMatchObject({
         customerSessionClientSecret: 'cs_secret_abc',
       })
+    })
+  })
+
+  describe('contact capture', () => {
+    const rejectingUpdate = () =>
+      vi.fn(async () => {
+        throw new Error('rejected')
+      })
+
+    const renderForm = (
+      checkout: ProductCheckoutPublic = createCheckout(),
+      update: () => Promise<schemas['CheckoutPublic']> = vi.fn(async () =>
+        createCheckout(),
+      ),
+    ) => {
+      let form!: UseFormReturn<schemas['CheckoutUpdatePublic']>
+      render(
+        <FormWrapper
+          checkout={checkout}
+          {...defaultProps}
+          update={update}
+          onForm={(f) => {
+            form = f
+          }}
+          themePreset={{ stripe: {} } as ThemingPresetProps}
+          locale="en"
+        />,
+      )
+      return { update, form }
+    }
+
+    const fill = (label: string, value: string) => {
+      const input = screen.getByLabelText(label)
+      fireEvent.change(input, { target: { value } })
+      fireEvent.blur(input)
+    }
+
+    it('stores the email once the buyer leaves the field', () => {
+      const { update } = renderForm()
+
+      fill('Email', 'buyer@example.com')
+
+      expect(update).toHaveBeenCalledWith({
+        customer_email: 'buyer@example.com',
+      })
+    })
+
+    it('stores the cardholder name once the buyer leaves the field', () => {
+      const { update } = renderForm()
+
+      fill('Cardholder name', 'Buyer Example')
+
+      expect(update).toHaveBeenCalledWith({ customer_name: 'Buyer Example' })
+    })
+
+    it('waits for an address the browser reads as one', () => {
+      const { update } = renderForm()
+
+      fill('Email', 'buyer@')
+
+      expect(update).not.toHaveBeenCalled()
+    })
+
+    it('skips a value the checkout already holds', () => {
+      const { update } = renderForm(
+        createCheckout({ customer_email: 'buyer@example.com' }),
+      )
+
+      fill('Email', 'buyer@example.com')
+
+      expect(update).not.toHaveBeenCalled()
+    })
+
+    it('clears the error left by a rejected write', async () => {
+      const { form } = renderForm(createCheckout(), rejectingUpdate())
+      act(() => form.setError('customer_email', { message: 'Server said no' }))
+      expect(screen.getByText('Server said no')).toBeInTheDocument()
+
+      await act(async () => {
+        fill('Email', 'buyer@example.com')
+      })
+
+      expect(screen.queryByText('Server said no')).not.toBeInTheDocument()
+    })
+
+    it('stores the value again after a rejected write', async () => {
+      const { update } = renderForm(createCheckout(), rejectingUpdate())
+
+      await act(async () => {
+        fill('Email', 'buyer@example.com')
+      })
+      await act(async () => {
+        fireEvent.blur(screen.getByLabelText('Email'))
+      })
+
+      expect(update).toHaveBeenCalledTimes(2)
     })
   })
 })

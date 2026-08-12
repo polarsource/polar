@@ -46,6 +46,8 @@ import { CheckoutBanner } from './CheckoutBanner'
 
 const WALLET_PAYMENT_METHODS = ['apple_pay', 'google_pay', 'link']
 
+type ContactField = 'customer_email' | 'customer_name'
+
 const XIcon = ({ className }: { className?: string }) => {
   return (
     <svg
@@ -185,6 +187,17 @@ const BaseCheckoutForm = ({
   )
   const debouncedWatcher = useDebouncedCallback(watcher, 500, [watcher])
 
+  const captureContact = useCallback(
+    (name: ContactField, value: string) => {
+      const contact = value.trim()
+      if (!contact || checkout[name] === contact) {
+        return
+      }
+      update({ [name]: contact }).catch(() => clearErrors(name))
+    },
+    [checkout, update, clearErrors],
+  )
+
   const discountCode = watch('discount_code')
 
   useEffect(() => {
@@ -308,6 +321,12 @@ const BaseCheckoutForm = ({
                         autoComplete="email"
                         {...field}
                         value={field.value || ''}
+                        onBlur={(e) => {
+                          field.onBlur()
+                          if (e.target.validity.valid) {
+                            captureContact('customer_email', e.target.value)
+                          }
+                        }}
                         disabled={checkout.customer_id !== null}
                       />
                     </FormControl>
@@ -334,6 +353,10 @@ const BaseCheckoutForm = ({
                           autoComplete="name"
                           {...field}
                           value={field.value || ''}
+                          onBlur={(e) => {
+                            field.onBlur()
+                            captureContact('customer_name', e.target.value)
+                          }}
                         />
                       </FormControl>
                       <FormMessage />

@@ -389,7 +389,8 @@ class OrderRepository(
     async def stream_stale_payment_lock(self) -> AsyncGenerator[Order, None]:
         statement = (
             self.get_base_statement()
-            .where(Order.is_payment_lock_stale.is_(True))
+            # Bare, not `.is_(True)`: the `IS TRUE` wrapper defeats the partial index.
+            .where(Order.is_payment_lock_stale)
             .order_by(Order.payment_lock_acquired_at.asc())
         )
         async for order in self.stream(statement):

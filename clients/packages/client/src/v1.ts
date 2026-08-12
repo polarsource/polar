@@ -968,9 +968,9 @@ export interface paths {
      * Set Member Role
      * @description Change a member's role on an organization.
      *
-     *     Only `admin` and `member` are accepted; ownership transfers go through
-     *     a separate flow (today the backoffice `change_owner` endpoint, which
-     *     calls `user_organization_service.transfer_ownership`).
+     *     `admin`, `finance`, and `member` are accepted; ownership transfers go
+     *     through a separate flow (today the backoffice `change_owner` endpoint,
+     *     which calls `user_organization_service.transfer_ownership`).
      *
      *     **Scopes**: `members:write`
      */
@@ -28045,7 +28045,7 @@ export interface components {
        * @description The role to assign. `owner` is rejected — ownership transfers go through a separate flow.
        * @enum {string}
        */
-      role: 'admin' | 'member'
+      role: 'admin' | 'finance' | 'member'
     }
     /** OrganizationNotReadyForPayments */
     OrganizationNotReadyForPayments: {
@@ -28396,7 +28396,7 @@ export interface components {
      * OrganizationRole
      * @enum {string}
      */
-    OrganizationRole: 'owner' | 'admin' | 'member'
+    OrganizationRole: 'owner' | 'admin' | 'finance' | 'member'
     /**
      * OrganizationRoleDefinition
      * @description A role available in an organization and the permissions it grants.
@@ -66619,7 +66619,7 @@ export const organizationKYCCountryAnyOf0Values: ReadonlyArray<
 ]
 export const organizationMemberRoleUpdateRoleValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationMemberRoleUpdate']['role']
-> = ['admin', 'member']
+> = ['admin', 'finance', 'member']
 export const organizationPermissionValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationPermission']
 > = [
@@ -66686,7 +66686,7 @@ export const organizationReviewSubCheckKeyValues: ReadonlyArray<
 ]
 export const organizationRoleValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationRole']
-> = ['owner', 'admin', 'member']
+> = ['owner', 'admin', 'finance', 'member']
 export const organizationSSOConnectionTypeValues: ReadonlyArray<
   FlattenedDeepRequired<components>['schemas']['OrganizationSSOConnectionType']
 > = ['oidc']

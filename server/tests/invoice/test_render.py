@@ -1,5 +1,6 @@
 import datetime
 import os
+import subprocess
 import sys
 from collections.abc import Mapping
 
@@ -76,40 +77,29 @@ def test_build_invoice_renderer_env(monkeypatch: pytest.MonkeyPatch) -> None:
     assert "UNRELATED_RUNTIME_VAR" not in env
 
 
-class StubProcess:
-    def __init__(self, stdout: bytes, stderr: bytes, returncode: int) -> None:
-        self.stdout = stdout
-        self.stderr = stderr
-        self.returncode = returncode
-
-    async def communicate(self, input: bytes) -> tuple[bytes, bytes]:
-        self.input = input
-        return self.stdout, self.stderr
-
-
 @pytest.mark.asyncio
 async def test_render_invoice_pdf_raises_on_subprocess_failure(
     invoice: Invoice, monkeypatch: pytest.MonkeyPatch
 ) -> None:
-    process = StubProcess(b"", b"boom", 1)
     monkeypatch.setenv("POLAR_ENV", "testing")
     monkeypatch.setenv("POLAR_CUSTOM_OVERRIDE", "1")
     monkeypatch.setenv("PROMETHEUS_MULTIPROC_DIR", "/tmp/does-not-exist")
 
-    async def create_subprocess_exec(*args: object, **kwargs: object) -> StubProcess:
-        kwargs_dict = kwargs if isinstance(kwargs, Mapping) else {}
-        assert args == (sys.executable, "-m", "polar.invoice.render")
-        assert kwargs_dict["cwd"] == SERVER_DIRECTORY
-        env = kwargs_dict["env"]
+    async def run_process(
+        command: list[str], **kwargs: object
+    ) -> subprocess.CompletedProcess[bytes]:
+        assert command == [sys.executable, "-m", "polar.invoice.render"]
+        assert kwargs["input"]
+        assert kwargs["check"] is False
+        assert kwargs["cwd"] == SERVER_DIRECTORY
+        env = kwargs["env"]
         assert isinstance(env, Mapping)
         assert env["POLAR_ENV"] == "testing"
         assert env["POLAR_CUSTOM_OVERRIDE"] == "1"
         assert "PROMETHEUS_MULTIPROC_DIR" not in env
-        return process
+        return subprocess.CompletedProcess(command, 1, stdout=b"", stderr=b"boom")
 
-    monkeypatch.setattr(
-        "polar.invoice.render.asyncio.create_subprocess_exec", create_subprocess_exec
-    )
+    monkeypatch.setattr("polar.invoice.render.anyio.run_process", run_process)
 
     with pytest.raises(InvoiceRenderError, match="Invoice renderer failed: boom"):
         await render_invoice_pdf(invoice)

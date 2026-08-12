@@ -162,7 +162,7 @@ async def get_email_log(
     rendered_html: str | None = None
     if email_log.email_template is not None:
         try:
-            rendered_html = render_from_json(
+            rendered_html = await render_from_json(
                 email_log.email_template,
                 json.dumps(email_log.email_props, default=str),
             )

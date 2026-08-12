@@ -71,12 +71,12 @@ enqueue_email_template(
 )
 ```
 
-If you need to render synchronously (e.g. in scripts or workers that already run outside the event loop), you can use `render_email_template` directly:
+If you need to render a template directly, use `render_email_template` from an async context:
 
 ```python
 from polar.email.react import render_email_template
 
-body = render_email_template(email)
+body = await render_email_template(email)
 ```
 
 ## How does it work?

@@ -4,6 +4,7 @@ from uuid import UUID
 import pytest
 from dateutil.relativedelta import relativedelta
 
+from polar.benefit.grant.repository import BenefitGrantRepository
 from polar.benefit.grant.service import benefit_grant as benefit_grant_service
 from polar.benefit.strategies.license_keys.properties import (
     BenefitGrantLicenseKeysProperties,
@@ -122,7 +123,10 @@ class TestGrantExpiration:
         session.add(license_key)
         await session.flush()
 
-        loaded_grant = await benefit_grant_service.get(session, grant.id, loaded=True)
+        benefit_grant_repository = BenefitGrantRepository.from_session(session)
+        loaded_grant = await benefit_grant_repository.get_by_id(
+            grant.id, options=benefit_grant_repository.get_eager_options()
+        )
         assert loaded_grant is not None
         await benefit_grant_service.update_benefit_grant(session, redis, loaded_grant)
 

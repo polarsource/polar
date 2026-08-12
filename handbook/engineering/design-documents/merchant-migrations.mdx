@@ -3,7 +3,7 @@
 
 **Created**: 2026-06-15
 
-**Last Updated**: 2026-07-01
+**Last Updated**: 2026-08-12
 </Info>
 
 # Merchant Migrations to Polar
@@ -33,14 +33,14 @@ A migration is divided into two things:
 
 ## Migration process
 
-The migration is split into 3 phases. The **setup** phase, where the merchant creates a new migration, checks that everything is OK, and creates the catalog on the Polar side. The **migration** phase, where we copy the PAN information from the current billing provider to Polar's account, and Polar moves each subscription one by one. The **cleanup** phase: once enough subscriptions are moved, the merchant stops billing on the old provider and removes the old integration (code, keys).
+The migration is split into 3 phases. The **setup** phase, where the merchant creates a new migration, checks that everything is OK, and creates the catalog on the Polar side (precheck and catalog import run as background jobs — see *Background jobs: precheck & catalog import*). The **migration** phase, where we copy the PAN information from the current billing provider to Polar's account, and Polar moves each subscription one by one. The **cleanup** phase: once enough subscriptions are moved, the merchant stops billing on the old provider and removes the old integration (code, keys).
 
 ```mermaid
 flowchart TB
   subgraph S["Setup phase"]
-    A["Source setup<br/>Connect Stripe via the Polar Stripe App (OAuth); LS/Paddle via API key"]
-    B["Pre-check<br/>Check products, prices, discounts can be imported into Polar"]
-    C["Create catalog & subscriptions<br/>Products, discounts, customers, and subscriptions in a paused state"]
+    A["Source setup<br/>Connect Stripe via restricted key; LS/Paddle via API key"]
+    B["Pre-check<br/>Background: extract + stage + classify"]
+    C["Create catalog & subscriptions<br/>Background: batched products ∥ customers, then subscriptions (paused)"]
     A --> B --> C
   end
   subgraph M["Migration phase"]
@@ -158,6 +158,139 @@ The idea is to create a new `migration` module (I'm up for new name suggestions)
 - **`MigrationService`** the main orchestrator.
 - **`CanonicalRecord`** to have everything normalized in memory first (variants: `CanonicalProduct` / `Customer` / `Subscription`). The precheck engine reads these and returns a `PrecheckReport` (Appendix A); Appendix C shows the flow end to end.
 
+## Background jobs: precheck & catalog import
+
+Precheck and catalog import must not run inside the HTTP request. Large Stripe catalogs time out at the gateway and violate [ADR-0003](/engineering/decisions/0003-request-scoped-unit-of-work) if a single task tries to import everything in one transaction. Both pipelines run as Dramatiq background jobs, batched and re-enqueued the same way as `meter.backfill_events` (cursor + self-reenqueue under the default ~60s worker time limit).
+
+Cutover stays as specified under *Switching subscriptions*: one subscription per job, each in its own transaction, with `MerchantMigrationRecord.cutover_status` as the ledger. The operation state and failure/watchdog patterns below are what cutover orchestration should reuse when those workers are wired.
+
+### Operation state (no parallel Job table)
+
+`MerchantMigration` carries a single active **operation** (JSONB or typed columns). We do not invent a separate job table: the migration row is the job, and `MerchantMigrationRecord` remains the per-entity ledger.
+
+| Field | Purpose |
+| --- | --- |
+| `kind` | `precheck` \| `import` \| null when idle |
+| `status` | `queued` \| `running` \| `succeeded` \| `failed` |
+| `phase` | Import only: `products` \| `customers` \| `subscriptions` \| `finalize`. Null for precheck. |
+| `error` | Last fatal message when `failed` |
+| `started_at` / `finished_at` | Operation lifetime |
+| `last_progress_at` | Bumped when a batch stages/imports work or advances phase; used by the stall watchdog |
+| `selection` | Snapshot of `record_ids` / `exclude_record_ids` for an import run |
+| `cursor` | Opaque cursor for the current batching task (Stripe page / record id) |
+| `staged_count` | Optional; exposed during precheck extract so the UI can show “Reading from Stripe…” |
+
+`step` stays the merchant-facing phase (`source_setup` → `pre_check` → `create_catalog` → …) and **only advances when an operation succeeds**. While precheck runs, `step` remains `source_setup`; the UI keys off `operation`, not a new step enum value. Do not invent step values for “in progress”.
+
+Progress for the UI comes from existing record statuses and `/records/summary` — not a separate percent counter — except during Stripe extract, where `staged_count` on the operation is enough.
+
+### Task graph
+
+One Dramatiq task = one DB transaction ([ADR-0003](/engineering/decisions/0003-request-scoped-unit-of-work)). Prefer batched self-reenqueue over raising the actor time limit. Actors live in `polar/merchant_migration/tasks.py`.
+
+```mermaid
+flowchart TB
+  subgraph api [API]
+    StartPrecheck["POST /precheck → 202"]
+    StartImport["POST /import → 202"]
+  end
+
+  subgraph precheckPipe [Precheck pipeline]
+    PExtract["precheck.extract_batch\nStripe page + stage records"]
+    PClassify["precheck.classify\nPrecheckEngine; step=pre_check"]
+    PExtract -->|"more pages"| PExtract
+    PExtract -->|"done"| PClassify
+  end
+
+  subgraph importPipe [Import pipeline]
+    IStart["import.start\nvalidate blockers; set selection"]
+    IProd["import.products_batch"]
+    ICust["import.customers_batch"]
+    IWait["import.after_catalog\nbarrier when products+customers done"]
+    ISub["import.subscriptions_batch"]
+    IDone["import.finalize\nstep=create_catalog"]
+    IStart --> IProd
+    IStart --> ICust
+    IProd --> IWait
+    ICust --> IWait
+    IWait --> ISub
+    ISub -->|"more"| ISub
+    ISub -->|"done"| IDone
+  end
+
+  StartPrecheck --> PExtract
+  StartImport --> IStart
+```
+
+**Precheck**
+
+- `merchant_migration.precheck.start` — lock migration (`FOR UPDATE`), set operation, enqueue the first extract batch.
+- `merchant_migration.precheck.extract_batch` — page the source via incremental `adapter.extract()`, upsert ledger rows, bump `last_progress_at` / `staged_count`, reenqueue with cursor until exhausted.
+- `merchant_migration.precheck.classify` — run `PrecheckEngine` against the staged ledger, advance `step` → `pre_check`, mark operation `succeeded`.
+
+**Import** (products ∥ customers, then subscriptions)
+
+Products and customers are independent; subscriptions depend on both (see `CatalogImporter`).
+
+- `import.start` — same import blockers as today; snapshot selection onto the operation; mark `running`; enqueue product and customer batch roots in parallel.
+- `import.{products,customers,subscriptions}_batch` — process N pending selected records of that type (batch size ~25–50; tune later), update ledger statuses, bump `last_progress_at`, reenqueue until none left.
+- Barrier: when a products/customers batch finishes with no remaining work, enqueue `import.after_catalog`, which starts subscriptions only once **both** types have zero pending selected rows (check the DB, not in-memory counters — safe under retries).
+- `import.finalize` — set `step=create_catalog`, operation `succeeded`.
+
+Partial re-import after `create_catalog` (merchant selects remaining pending rows) starts a new import operation without regressing `step`.
+
+### Failure layers
+
+Do not conflate per-record failures with task/orchestration failures.
+
+| Layer | What happens | Aborts operation? |
+| --- | --- | --- |
+| **Record** | Mark that ledger row `failed` + `error`; the batch continues | No — finalize still runs; UI shows failed counts |
+| **Task / orchestration** | Exception in a worker (Stripe outage mid-batch, bug, killed worker) | Yes — operation → `failed` so the merchant can retry |
+
+**Discovering task-level failure** (not guessing from silence):
+
+1. **Final Dramatiq retry** — reuse `can_retry()` / `get_retries()` from `polar.worker`. On catchable failures: if `can_retry()`, re-raise so Dramatiq retries; if not, write `operation.status=failed` + `error` in the same task session, then re-raise (or return). That is the explicit “crashed repeatedly” signal — we only mark failed once retries are exhausted.
+2. **Stall watchdog** — covers the case Dramatiq never delivers a final failure (message lost, worker OOM without retry). Each successful batch bumps `operation.last_progress_at`. A low-priority `merchant_migration.watchdog` actor (or a check on `GET` of the migration) marks the operation `failed` if `status in (queued, running)` and `now - last_progress_at > stall_threshold` (15–30 minutes). Stale in-flight tasks that later wake up must no-op when they see `operation.status=failed`.
+
+Operation also fails immediately (no retries) for unrecoverable errors at start: blockers, wrong step, lost lock, concurrent operation.
+
+Idempotency: only touch `pending` selected rows. The ledger is durable progress, so retries are safe.
+
+### API contract
+
+| Endpoint | Behavior |
+| --- | --- |
+| `POST /{id}/precheck` | Enqueue; return **202** + migration (with `operation`). Reject **409** if another operation is active. |
+| `POST /{id}/import` | Same; body still takes selection (`record_ids` / `exclude_record_ids`). |
+| `GET /{id}` | Include `operation` (and derived progress fields such as `staged_count` when useful). |
+| Existing `/records` + `/records/summary` | Unchanged; the UI polls these during import. |
+
+The sync `MerchantMigrationImportReport` is no longer the import response body. The client builds the receipt from summary counts (as `ImportedHandoff` already does). Start endpoints take the migration `FOR UPDATE`; only one operation at a time. Workers re-check operation kind/status before writing; stale tasks no-op.
+
+### Frontend UX
+
+The migration detail page and stepper remain the status surface. While an operation is `queued` or `running`, replace the assessment/import CTA with a **dedicated progress panel** (same bordered `background-card` chrome as `ImportedHandoff`) — not a transient loading Alert.
+
+- Heading and body make background work obvious, e.g. “Importing your catalog” / “This runs in the background. You can leave and come back — we’ll keep going.”
+- Show phase + live counts inside the panel (products / customers / subscriptions imported vs remaining pending from summary; during precheck extract, `staged_count` + “Reading from Stripe…”).
+- Spinner or subtle motion on the panel header so it reads as active work, not a stuck empty state.
+- Poll `useMerchantMigration` and `useMerchantMigrationRecordSummary` with `refetchInterval` while the operation is in flight (same pattern as benefit-grant provisioning).
+
+On success: precheck → existing review / `PrecheckPanel`; import → existing `ImportedHandoff`. Optionally toast if the merchant left and returns after success. On failure: the same panel slot switches to danger copy + `operation.error` + **Retry** (re-POST; selection from the last operation snapshot or re-chosen). Leaving and returning resumes polling from `operation` on the migration.
+
+No SSE/WebSockets for this flow; polling matches the rest of the dashboard.
+
+### Implementation follow-up
+
+After this design is accepted, ship in roughly this order (separate PR from the doc):
+
+1. Model + schema for `operation`; Alembic migration.
+2. `tasks.py` + thin service methods to start ops; endpoints return 202.
+3. Refactor `CatalogImporter` / staging into batch APIs used by tasks.
+4. Frontend polling + dedicated progress panel; regenerate the API client.
+5. Tests: task batching, barrier, concurrent start 409, stall watchdog, UI polling states.
+
 ## Testing and rollout
 
 We can't test this on sandbox: PAN Copy and PAN Import only run on Stripe live, so we validate against live production. (love the YOLO mode with money)
@@ -240,26 +373,27 @@ The merchant walks the checklist as a guided, one-step-at-a-time wizard and can 
 
 ## Appendix C: An implementation example
 
-This shows how the classes communicate.
+This shows how the classes communicate. Extraction and import are **batched in background workers** in production (see *Background jobs: precheck & catalog import*); the snippet below is the logical flow, not the HTTP request body.
 
 ```python
-# 1. read + normalize from the source
+# 1. read + normalize from the source (incremental; each extract_batch pages + stages)
 #    Stripe: mint a short-lived access token from the stored OAuth refresh token
 token = await stripe_oauth.refresh(job.source_refresh_token)  # rotates; persist token.refresh_token
 records = [r async for r in StripeAdapter(api_key=token.access_token).extract()]
 # records = [CanonicalProduct(...), CanonicalCustomer(...), CanonicalSubscription(...)]
 
-# 2. precheck (no writes), then stage each record in the ledger
+# 2. precheck against the staged ledger, then classify (precheck.classify task)
 report = precheck.run(records, org)        # PrecheckReport(can_start=True, blockers=0, ...)
 for r in records:
     repo.upsert(MigrationRecord(job_id=job.id, source_id=r.source_id, canonical=r))
 
-# 3. import through the existing services (subscriptions created paused via the flag)
+# 3. import through the existing services in type-ordered batches
+#    (products ∥ customers, then subscriptions; each batch is its own Dramatiq task)
 await product_service.import_from_canonical(canonical_product)
 await subscription_service.import_from_canonical(canonical_subscription)
 ```
 
-Card move (PAN copy) and the subscription migration are described under *Moving cards* and *Switching subscriptions*.
+Card move (PAN copy) and the subscription migration are described under *Moving cards* and *Switching subscriptions*. Cutover workers follow the same one-entity-per-job and ledger patterns as the import batches.
 
 ## Appendix D: Stripe → Polar
 

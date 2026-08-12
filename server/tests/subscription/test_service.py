@@ -2539,6 +2539,29 @@ class TestCancel:
             ) as ctx:
                 await subscription_service.cancel(session, ctx, subscription)
 
+    async def test_clears_scheduled_pause(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        subscription = await create_active_subscription(
+            save_fixture, product=product, customer=customer
+        )
+        subscription.pause_at_period_end = True
+        subscription.resumes_at = utc_now() + timedelta(days=30)
+        await save_fixture(subscription)
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.cancel(session, ctx, subscription)
+
+        assert updated.cancel_at_period_end is True
+        assert updated.pause_at_period_end is False
+        assert updated.resumes_at is None
+
     async def test_past_due_no_grace_cancels_at_period_end(
         self,
         session: AsyncSession,

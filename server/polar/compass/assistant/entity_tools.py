@@ -904,12 +904,12 @@ async def top_customers_by_revenue(
         return f"No paid orders were found for {window}."
     rows: list[Row] = [
         {
-            "avatar": _avatar_url_for_email(email) if email else None,
-            "customer": email or name,
+            "avatar": customer.avatar_url,
+            "customer": customer.email or customer.name,
             "revenue": net_revenue,
             "orders": order_count,
         }
-        for _, email, name, order_count, net_revenue in ranked
+        for customer, order_count, net_revenue in ranked
     ]
     columns = [
         DataTableColumn(key="avatar", label="", format=ColumnFormat.avatar),

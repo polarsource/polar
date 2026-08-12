@@ -9,12 +9,14 @@ from polar.member.repository import MemberRepository
 from polar.models import (
     Benefit,
     Customer,
+    Member,
+    MemberRole,
     Organization,
     Product,
     User,
     UserOrganization,
 )
-from polar.models.customer import _avatar_url_for_email
+from polar.models.customer import CustomerType, _avatar_url_for_email
 from polar.models.subscription import SubscriptionStatus
 from polar.models.user_organization import OrganizationRole
 from polar.postgres import AsyncSession
@@ -469,6 +471,44 @@ class TestTopCustomers:
         assert json[0]["avatar_url"] == _avatar_url_for_email("best@example.com")
         assert json[1]["net_revenue"] == 4_000
         assert json[1]["order_count"] == 1
+
+    @pytest.mark.auth
+    async def test_team_customer_without_email_uses_owner_avatar(
+        self,
+        save_fixture: SaveFixture,
+        client: AsyncClient,
+        organization: Organization,
+        user_organization: UserOrganization,
+        product: Product,
+    ) -> None:
+        customer = Customer(
+            email=None,
+            name="Acme Inc.",
+            type=CustomerType.team,
+            organization=organization,
+        )
+        await save_fixture(customer)
+        owner = Member(
+            customer_id=customer.id,
+            organization_id=organization.id,
+            email="owner@polar.sh",
+            role=MemberRole.owner,
+        )
+        await save_fixture(owner)
+        await create_order(
+            save_fixture, customer=customer, product=product, subtotal_amount=10_000
+        )
+
+        response = await client.get(
+            "/v1/customers/top", params={"organization_id": str(organization.id)}
+        )
+
+        assert response.status_code == 200
+        json = response.json()
+        assert len(json) == 1
+        assert json[0]["id"] == str(customer.id)
+        assert json[0]["email"] is None
+        assert json[0]["avatar_url"] == _avatar_url_for_email("owner@polar.sh")
 
     @pytest.mark.auth
     async def test_start_filter(

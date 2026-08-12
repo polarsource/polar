@@ -299,7 +299,10 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         session: AsyncSession,
         subscription: Subscription,
     ) -> Subscription:
-        if subscription.can_resume():
+        if (
+            subscription.can_resume()
+            and subscription.organization.can_renew_subscriptions
+        ):
             await self._require_payment_method(session, subscription, "resuming")
 
         async with SubscriptionUpdateContext(

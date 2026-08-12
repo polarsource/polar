@@ -611,6 +611,41 @@ class TestUpdatePause:
 
         assert updated.status == SubscriptionStatus.active
 
+    async def test_resume_without_payment_method_renewals_disabled(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product: Product,
+        customer: Customer,
+    ) -> None:
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "subscription": {
+                **organization.customer_portal_settings["subscription"],
+                "pause": True,
+            },
+        }
+        organization.capabilities = {
+            **organization.capabilities,
+            "subscription_renewals": False,
+        }
+        await save_fixture(organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+
+        updated = await customer_subscription_service.update(
+            session,
+            subscription,
+            updates=CustomerSubscriptionResume(resume=True),
+        )
+
+        assert updated.status == SubscriptionStatus.paused
+
     async def test_resume_allowed(
         self,
         session: AsyncSession,

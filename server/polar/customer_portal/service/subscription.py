@@ -68,10 +68,10 @@ class RevokeNotAllowed(CustomerSubscriptionError):
         )
 
 
-class UncancelWithoutPaymentMethod(CustomerSubscriptionError):
-    def __init__(self) -> None:
+class PaymentMethodRequired(CustomerSubscriptionError):
+    def __init__(self, action: str) -> None:
         super().__init__(
-            "Add a payment method before uncancelling this subscription.",
+            f"Add a payment method before {action} this subscription.",
             409,
         )
 
@@ -233,10 +233,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
             if not organization.customer_portal_subscription_pause:
                 raise PauseResumeNotAllowed()
 
-            async with SubscriptionUpdateContext(
-                session, subscription, subscription_service
-            ) as ctx:
-                return await subscription_service.resume(session, ctx, subscription)
+            return await self.resume(session, subscription)
 
         cancel = updates.cancel_at_period_end is True
         uncancel = updates.cancel_at_period_end is False
@@ -303,11 +300,7 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
         subscription: Subscription,
     ) -> Subscription:
         if subscription.can_uncancel():
-            payment_method = await payment_method_service.get_customer_payment_method(
-                session, subscription.customer
-            )
-            if payment_method is None:
-                raise UncancelWithoutPaymentMethod()
+            await self._require_payment_method(session, subscription, "uncancelling")
 
         async with SubscriptionUpdateContext(
             session, subscription, subscription_service
@@ -317,6 +310,19 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                 ctx,
                 subscription,
             )
+
+    async def resume(
+        self,
+        session: AsyncSession,
+        subscription: Subscription,
+    ) -> Subscription:
+        if subscription.can_resume():
+            await self._require_payment_method(session, subscription, "resuming")
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            return await subscription_service.resume(session, ctx, subscription)
 
     async def cancel(
         self,
@@ -364,6 +370,15 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
                 customer_reason=reason,
                 customer_comment=comment,
             )
+
+    async def _require_payment_method(
+        self, session: AsyncSession, subscription: Subscription, action: str
+    ) -> None:
+        payment_method = await payment_method_service.get_customer_payment_method(
+            session, subscription.customer
+        )
+        if payment_method is None:
+            raise PaymentMethodRequired(action)
 
     def _get_readable_subscription_statement(
         self, auth_subject: AuthSubject[Customer | Member]

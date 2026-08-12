@@ -29835,6 +29835,17 @@ export interface components {
       /** Detail */
       detail: string
     }
+    /** PaymentMethodRequired */
+    PaymentMethodRequired: {
+      /**
+       * Error
+       * @example PaymentMethodRequired
+       * @constant
+       */
+      error: 'PaymentMethodRequired'
+      /** Detail */
+      detail: string
+    }
     /** PaymentMethodSetupFailed */
     PaymentMethodSetupFailed: {
       /**
@@ -35928,17 +35939,6 @@ export interface components {
        * @constant
        */
       error: 'Unauthorized'
-      /** Detail */
-      detail: string
-    }
-    /** UncancelWithoutPaymentMethod */
-    UncancelWithoutPaymentMethod: {
-      /**
-       * Error
-       * @example UncancelWithoutPaymentMethod
-       * @constant
-       */
-      error: 'UncancelWithoutPaymentMethod'
       /** Detail */
       detail: string
     }
@@ -51853,13 +51853,13 @@ export interface operations {
           'application/json': components['schemas']['ResourceNotFound']
         }
       }
-      /** @description The subscription has no payment method to renew with. */
+      /** @description The subscription has no payment method to charge. */
       409: {
         headers: {
           [name: string]: unknown
         }
         content: {
-          'application/json': components['schemas']['UncancelWithoutPaymentMethod']
+          'application/json': components['schemas']['PaymentMethodRequired']
         }
       }
       /** @description Validation Error */

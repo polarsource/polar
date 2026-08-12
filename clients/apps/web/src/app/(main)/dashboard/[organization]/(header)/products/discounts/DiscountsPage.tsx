@@ -377,7 +377,11 @@ const ClientPage: React.FC<ClientPageProps> = ({
               onPageSelectedChange={selection.setPageSelected}
               onClear={selection.clear}
             >
-              <Button variant="destructive" onClick={showBulkDeleteModal}>
+              <Button
+                variant="destructive"
+                onClick={showBulkDeleteModal}
+                loading={deleteDiscounts.isPending}
+              >
                 Delete
               </Button>
             </BulkActionBar>

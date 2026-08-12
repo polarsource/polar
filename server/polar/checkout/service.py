@@ -59,6 +59,7 @@ from polar.kit.currency import (
     get_presentment_currency,
 )
 from polar.kit.db.locking import is_lock_not_available_error
+from polar.kit.email import EmailNotValidError, validate_email_syntax
 from polar.kit.operator import attrgetter
 from polar.kit.pagination import PaginationParams
 from polar.kit.sorting import Sorting
@@ -869,7 +870,12 @@ class CheckoutService:
         if query_prefill:
             customer_email = query_prefill.get("customer_email")
             if customer_email is not None and isinstance(customer_email, str):
-                checkout.customer_email = customer_email
+                try:
+                    validate_email_syntax(customer_email)
+                except EmailNotValidError:
+                    pass
+                else:
+                    checkout.customer_email = customer_email
 
             customer_name = query_prefill.get("customer_name")
             if customer_name is not None and isinstance(customer_name, str):

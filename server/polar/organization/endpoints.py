@@ -17,6 +17,7 @@ from polar.authz.dependencies import (
     AuthorizeOrgManage,
     AuthorizeOrgManageRead,
     AuthorizeOrgManageUser,
+    AuthorizeOrgManageUserRead,
 )
 from polar.checkout.repository import CheckoutRepository
 from polar.config import settings
@@ -1180,7 +1181,7 @@ async def list_orders(
     tags=[APITag.private],
 )
 async def get_billing_details(
-    authz: AuthorizeOrgManageUser,
+    authz: AuthorizeOrgManageUserRead,
 ) -> OrganizationBillingDetails:
     """Get the billing name, address, and tax ID used on Polar invoices."""
     customer = await polar_self_service.get_billing_details(
@@ -1218,7 +1219,7 @@ async def update_billing_details(
     tags=[APITag.private],
 )
 async def list_payment_methods(
-    authz: AuthorizeOrgManageUser,
+    authz: AuthorizeOrgManageUserRead,
 ) -> ListResource[OrganizationPaymentMethod]:
     """List the saved payment methods used to pay Polar invoices."""
     methods, default_payment_method_id = await polar_self_service.list_payment_methods(
@@ -1345,7 +1346,7 @@ async def get_order_invoice(
     tags=[APITag.private],
 )
 async def list_benefit_grants(
-    authz: AuthorizeOrgManageUser,
+    authz: AuthorizeOrgManageUserRead,
 ) -> ListResource[OrganizationBenefitGrant]:
     """List Slack shared channel benefit grants attached to this org's Polar
     subscription."""

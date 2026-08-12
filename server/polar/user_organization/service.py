@@ -22,6 +22,8 @@ from .repository import UserOrganizationRepository
 
 log = structlog.get_logger()
 
+ADMIN_CAPABLE_ROLES = {OrganizationRole.owner, OrganizationRole.admin}
+
 
 class UserOrganizationError(PolarError): ...
 
@@ -205,6 +207,11 @@ class UserOrganizationService:
         if user_org.role == role:
             return user_org
 
+        if user_org.role in ADMIN_CAPABLE_ROLES and role not in ADMIN_CAPABLE_ROLES:
+            await self._assert_admin_capability_after_loss(
+                session, user_id=user_id, organization_id=organization_id
+            )
+
         previous_role = user_org.role
         await session.execute(
             sql.update(UserOrganization)
@@ -296,7 +303,7 @@ class UserOrganizationService:
         user_id: UUID,
         organization_id: UUID,
     ) -> None:
-        await self._assert_admin_capability_after_removal(
+        await self._assert_admin_capability_after_loss(
             session, user_id=user_id, organization_id=organization_id
         )
 
@@ -326,7 +333,7 @@ class UserOrganizationService:
                 external_id=str(user_id),
             )
 
-    async def _assert_admin_capability_after_removal(
+    async def _assert_admin_capability_after_loss(
         self,
         session: AsyncSession,
         *,
@@ -337,22 +344,18 @@ class UserOrganizationService:
         Defense-in-depth guard for the admin-capability invariant: an
         organization always has at least one user in `role ∈ {owner, admin}`.
 
-        The owner-non-removable invariant in `remove_member_safe` already
-        covers the common case (every org has an owner who counts as
-        admin-capable), but raw `remove_member` callers bypass that check
-        — so we re-assert here. Rejects only when the removal would
-        actually reduce admin-capable count to zero; non-admin-capable
-        removals from a degraded organization are still allowed (they
+        Called before any operation that takes `user_id` out of the
+        admin-capable set (removal or demotion). Rejects only when the
+        operation would actually reduce the admin-capable count to zero;
+        operations on non-admin-capable users are always allowed (they
         don't make the state worse). The admin-capable rows are locked
-        with `FOR UPDATE` to serialize concurrent removals.
+        with `FOR UPDATE` to serialize concurrent removals and demotions.
         """
         result = await session.scalars(
             sql.select(UserOrganization.user_id)
             .where(
                 UserOrganization.organization_id == organization_id,
-                UserOrganization.role.in_(
-                    [OrganizationRole.owner, OrganizationRole.admin]
-                ),
+                UserOrganization.role.in_(ADMIN_CAPABLE_ROLES),
                 UserOrganization.is_deleted.is_(False),
             )
             .order_by(UserOrganization.user_id)

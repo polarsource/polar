@@ -1,15 +1,15 @@
 'use client'
 
-import { MasterDetailLayoutContent } from '@/components/Layout/MasterDetailLayout'
 import { ToplistHeader } from '@/components/Shared/Toplist'
 import { useHasPermission } from '@/hooks/permissions'
-import { CHART_RANGES, ChartRange, getChartRangeParams } from '@/utils/metrics'
+import { ChartRange, getChartRangeParams } from '@/utils/metrics'
 import { schemas } from '@polar-sh/client'
-import { Grid, SegmentedControl, Text } from '@polar-sh/orbit'
+import { Grid } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import { useMemo, useState } from 'react'
 import { AtRiskList } from './AtRiskList'
 import { CustomerGrowthChart } from './CustomerGrowthChart'
+import { CustomersPageShell } from './CustomersPageShell'
 import { TopCostCustomersList } from './TopCostCustomersList'
 import { TopCustomersList } from './TopCustomersList'
 
@@ -26,21 +26,10 @@ export const CustomersOverview = ({ organization }: CustomersOverviewProps) => {
   const canReadAnalytics = useHasPermission(organization.id, 'analytics:read')
 
   return (
-    <MasterDetailLayoutContent
-      header={
-        <>
-          <Text variant="heading-xxs" as="h1">
-            Customers
-          </Text>
-          <SegmentedControl
-            options={(
-              Object.entries(CHART_RANGES) as [ChartRange, string][]
-            ).map(([value, label]) => ({ value, label }))}
-            value={range}
-            onChange={setRange}
-          />
-        </>
-      }
+    <CustomersPageShell
+      organization={organization}
+      range={range}
+      onRangeChange={setRange}
     >
       <Box flexDirection="column" rowGap="4xl">
         <CustomerGrowthChart
@@ -84,6 +73,6 @@ export const CustomersOverview = ({ organization }: CustomersOverviewProps) => {
           )}
         </Grid>
       </Box>
-    </MasterDetailLayoutContent>
+    </CustomersPageShell>
   )
 }

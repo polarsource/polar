@@ -52,6 +52,8 @@ export {
 export { Spinner, SpinnerNoMargin } from './components/Spinner'
 export { Status } from './components/Status'
 export type { StatusColor, StatusProps } from './components/Status'
+export { Subnav, SubnavItem } from './components/Subnav'
+export type { SubnavItemProps, SubnavProps } from './components/Subnav'
 export { Switch } from './components/Switch'
 export { Tabs, TabsContent, TabsList, TabsTrigger } from './components/Tabs'
 export { Text } from './components/Text'

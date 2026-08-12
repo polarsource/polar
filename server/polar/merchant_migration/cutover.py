@@ -38,7 +38,12 @@ from polar.subscription.repository import SubscriptionRepository
 from polar.subscription.service import subscription as subscription_service
 
 from .adapters import SourceAdapter
-from .canonical import CanonicalSubscription, CanonicalSubscriptionStatus, deserialize
+from .canonical import (
+    CanonicalPaymentMethod,
+    CanonicalSubscription,
+    CanonicalSubscriptionStatus,
+    deserialize,
+)
 from .cards import CARD_TYPE, link_payment_method
 from .precheck import subscription_import_reason
 
@@ -152,7 +157,9 @@ class SubscriptionCutover:
             if reason is not None:
                 return _skip(reason)
 
-        payment_method = await self._resolve_payment_method(subscription, customer)
+        payment_method = await self._resolve_payment_method(
+            subscription, customer, source.payment_method
+        )
         if payment_method is None:
             return _skip(_NO_CARD)
         card_reason = await self._card_reason(customer, payment_method)
@@ -255,12 +262,17 @@ class SubscriptionCutover:
         )
 
     async def _resolve_payment_method(
-        self, subscription: Subscription, customer: Customer
+        self,
+        subscription: Subscription,
+        customer: Customer,
+        source_method: CanonicalPaymentMethod | None,
     ) -> PaymentMethod | None:
         """The card the first Polar renewal will charge.
 
         A card linked by the `verify_cards` step wins; otherwise we look again,
-        because cards keep landing while the merchant walks the checklist.
+        because cards keep landing while the merchant walks the checklist. Read
+        from the source now, not from the staged copy: the customer may have
+        changed which card the subscription charges since the import.
         """
         if subscription.payment_method_id is not None:
             payment_method = await PaymentMethodRepository.from_session(
@@ -268,7 +280,9 @@ class SubscriptionCutover:
             ).get_by_id(subscription.payment_method_id)
             if payment_method is not None:
                 return payment_method
-        return await link_payment_method(self.session, customer)
+        return await link_payment_method(
+            self.session, customer, source_method=source_method
+        )
 
     async def _card_reason(
         self, customer: Customer, payment_method: PaymentMethod

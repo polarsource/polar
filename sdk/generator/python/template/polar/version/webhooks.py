@@ -74,3 +74,14 @@ def validate_event(
 
 def _load_payload(data: dict[str, typing.Any]) -> WebhookPayload:
     return deserialize(data, WebhookPayload)
+
+__all__ = [
+    "PolarWebhookError",
+    "PolarWebhookUnknownTypeError",
+    "PolarWebhookVerificationError",
+    "validate_event",
+    "WebhookPayload",
+    {% for model in api.webhooks %}
+    "{{ model.name }}",
+    {% endfor %}
+]

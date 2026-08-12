@@ -19,6 +19,11 @@ from polar.v2026_04.outputs import (
     Subscription,
 )
 from polar.webhooks import (
+    PolarWebhookError,
+    PolarWebhookUnknownTypeError,
+    PolarWebhookVerificationError,
+)
+from polar.webhooks import (
     validate_event as _validate_event,
 )
 
@@ -669,3 +674,49 @@ def validate_event(
 
 def _load_payload(data: dict[str, typing.Any]) -> WebhookPayload:
     return deserialize(data, WebhookPayload)
+
+
+__all__ = [
+    "PolarWebhookError",
+    "PolarWebhookUnknownTypeError",
+    "PolarWebhookVerificationError",
+    "WebhookBenefitCreatedPayload",
+    "WebhookBenefitGrantCreatedPayload",
+    "WebhookBenefitGrantCycledPayload",
+    "WebhookBenefitGrantRevokedPayload",
+    "WebhookBenefitGrantUpdatedPayload",
+    "WebhookBenefitUpdatedPayload",
+    "WebhookCheckoutCreatedPayload",
+    "WebhookCheckoutExpiredPayload",
+    "WebhookCheckoutUpdatedPayload",
+    "WebhookCustomerCreatedPayload",
+    "WebhookCustomerDeletedPayload",
+    "WebhookCustomerSeatAssignedPayload",
+    "WebhookCustomerSeatClaimedPayload",
+    "WebhookCustomerSeatRevokedPayload",
+    "WebhookCustomerStateChangedPayload",
+    "WebhookCustomerUpdatedPayload",
+    "WebhookMemberCreatedPayload",
+    "WebhookMemberDeletedPayload",
+    "WebhookMemberUpdatedPayload",
+    "WebhookOrderCreatedPayload",
+    "WebhookOrderPaidPayload",
+    "WebhookOrderRefundedPayload",
+    "WebhookOrderUpdatedPayload",
+    "WebhookOrganizationUpdatedPayload",
+    "WebhookPayload",
+    "WebhookProductCreatedPayload",
+    "WebhookProductUpdatedPayload",
+    "WebhookRefundCreatedPayload",
+    "WebhookRefundUpdatedPayload",
+    "WebhookSubscriptionActivePayload",
+    "WebhookSubscriptionCanceledPayload",
+    "WebhookSubscriptionCreatedPayload",
+    "WebhookSubscriptionPastDuePayload",
+    "WebhookSubscriptionPausedPayload",
+    "WebhookSubscriptionResumedPayload",
+    "WebhookSubscriptionRevokedPayload",
+    "WebhookSubscriptionUncanceledPayload",
+    "WebhookSubscriptionUpdatedPayload",
+    "validate_event",
+]

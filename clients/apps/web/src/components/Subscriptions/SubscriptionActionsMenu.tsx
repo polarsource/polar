@@ -10,6 +10,7 @@ import {
   useUncancelSubscription,
 } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
+import { getPauseAction } from '@/utils/subscription'
 import MoreVertOutlined from '@mui/icons-material/MoreVertOutlined'
 import { schemas } from '@polar-sh/client'
 import { Button, InlineModal } from '@polar-sh/orbit'
@@ -29,6 +30,8 @@ const SubscriptionActionsMenu = ({
 }: SubscriptionActionsMenuProps) => {
   const cancellationModal = useModal()
   const pauseModal = useModal()
+
+  const pauseAction = getPauseAction(subscription)
 
   const uncancelSubscription = useUncancelSubscription(subscription.id)
   const resumeSubscription = useResumeSubscription(subscription.id)
@@ -124,23 +127,21 @@ const SubscriptionActionsMenu = ({
                 Cancel Subscription
               </DropdownMenuItem>
             ))}
-          {subscription.ended_at ? null : subscription.status === 'paused' ? (
+          {pauseAction === 'resume' ? (
             <DropdownMenuItem
               onClick={handleResume}
               disabled={resumeSubscription.isPending}
             >
               Resume Now
             </DropdownMenuItem>
-          ) : subscription.pause_at_period_end &&
-            !subscription.cancel_at_period_end ? (
+          ) : pauseAction === 'cancel_scheduled_pause' ? (
             <DropdownMenuItem
               onClick={handleCancelScheduledPause}
               disabled={cancelScheduledPause.isPending}
             >
               Cancel Scheduled Pause
             </DropdownMenuItem>
-          ) : subscription.status === 'active' &&
-            !subscription.cancel_at_period_end ? (
+          ) : pauseAction === 'pause' ? (
             <DropdownMenuItem onClick={pauseModal.show}>
               Pause Subscription
             </DropdownMenuItem>

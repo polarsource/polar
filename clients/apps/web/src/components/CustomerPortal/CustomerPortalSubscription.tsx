@@ -11,6 +11,7 @@ import {
 } from '@/hooks/queries/customerPortal'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import { hasBillingPermission } from '@/utils/customerPortal'
+import { getPauseAction } from '@/utils/subscription'
 import { Client, schemas } from '@polar-sh/client'
 import { formatCurrency } from '@polar-sh/currency'
 import { Button } from '@polar-sh/orbit'
@@ -95,14 +96,7 @@ const CustomerPortalSubscription = ({
   const showSeatManagement = portalSettings.subscription.update_seats === true
   const showPauseResume = portalSettings.subscription.pause === true
 
-  const pauseAction: 'resume' | 'cancel_scheduled_pause' | 'pause' | null =
-    subscription.status === 'paused'
-      ? 'resume'
-      : subscription.pause_at_period_end && !isCancelled
-        ? 'cancel_scheduled_pause'
-        : !isCancelled && subscription.status === 'active'
-          ? 'pause'
-          : null
+  const pauseAction = getPauseAction(subscription)
 
   const showCancelAction = !isCancelled && canManageBilling
   const showPauseAction =

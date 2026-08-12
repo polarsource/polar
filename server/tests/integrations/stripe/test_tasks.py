@@ -382,10 +382,10 @@ class TestPaymentMethodDetached:
 
         # Then: Payment method is soft-deleted and unlinked from the customer
         pm_repo = PaymentMethodRepository.from_session(session)
-        stored = await pm_repo.get_by_processor_id(
+        stored = await pm_repo.get_all_by_processor_id(
             PaymentProcessor.stripe, "pm_detach_test"
         )
-        assert stored is None
+        assert len(stored) == 0
 
         customer_repo = CustomerRepository.from_session(session)
         refreshed_customer = await customer_repo.get_by_id(customer.id)
@@ -448,9 +448,11 @@ class TestPaymentMethodAutomaticallyUpdated:
         await payment_method_automatically_updated(uuid.uuid4())
 
         repository = PaymentMethodRepository.from_session(session)
-        payment_method = await repository.get_by_processor_id(
+        payment_methods = await repository.get_all_by_processor_id(
             PaymentProcessor.stripe, "pm_update_test"
         )
+        assert len(payment_methods) == 1
+        payment_method = payment_methods[0]
         assert payment_method is not None
         assert payment_method.method_metadata == {
             "brand": "mastercard",

@@ -407,14 +407,13 @@ async def payment_method_detached(event_id: uuid.UUID) -> None:
                 stripe_lib.PaymentMethod, event.stripe_data.data.object
             )
             repository = PaymentMethodRepository.from_session(session)
-            payment_method = await repository.get_by_processor_id(
+            payment_methods = await repository.get_all_by_processor_id(
                 PaymentProcessor.stripe,
                 stripe_payment_method.id,
                 options=repository.get_eager_options(),
             )
-            if payment_method is None:
-                return
-            await payment_method_service.delete(session, payment_method, force=True)
+            for payment_method in payment_methods:
+                await payment_method_service.delete(session, payment_method, force=True)
 
 
 @actor(
@@ -429,16 +428,15 @@ async def payment_method_automatically_updated(event_id: uuid.UUID) -> None:
                 stripe_lib.PaymentMethod, event.stripe_data.data.object
             )
             repository = PaymentMethodRepository.from_session(session)
-            payment_method = await repository.get_by_processor_id(
+            payment_methods = await repository.get_all_by_processor_id(
                 PaymentProcessor.stripe,
                 stripe_payment_method.id,
                 options=repository.get_eager_options(),
             )
-            if payment_method is None:
-                return
-            await payment_method_service.upsert_from_stripe(
-                session, payment_method.customer, stripe_payment_method
-            )
+            for payment_method in payment_methods:
+                await payment_method_service.upsert_from_stripe(
+                    session, payment_method.customer, stripe_payment_method
+                )
 
 
 @actor(

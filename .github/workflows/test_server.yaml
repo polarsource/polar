@@ -27,7 +27,7 @@ jobs:
       server_files: ${{ steps.filter.outputs.server_files }}
     steps:
       - uses: actions/checkout@v7.0.1
-      - uses: dorny/paths-filter@v4.0.2
+      - uses: dorny/paths-filter@v4.0.3
         id: filter
         with:
           list-files: json
@@ -92,7 +92,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7.0.1
 
-      - uses: pnpm/action-setup@v6.0.9
+      - uses: pnpm/action-setup@v6.0.10
         with:
           package_json_file: server/emails/package.json
 
@@ -306,7 +306,7 @@ jobs:
           POLICY_FILE: policy.json
         run: bash github.sh
 
-      - uses: pnpm/action-setup@v6.0.9
+      - uses: pnpm/action-setup@v6.0.10
         with:
           package_json_file: server/emails/package.json
 

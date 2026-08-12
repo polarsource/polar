@@ -1,12 +1,12 @@
 'use client'
 
-import { Text } from '@polar-sh/orbit'
+import CheckOutlined from '@mui/icons-material/CheckOutlined'
+import { Button, Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import { Button, Grid } from '@polar-sh/orbit'
 import Link from 'next/link'
 import GetStartedButton from '../Auth/GetStartedButton'
+import { Chapter } from './Chapter'
 import { VolumetricSlices } from './graphics/VolumetricSlices'
-import CheckOutlined from '@mui/icons-material/CheckOutlined'
 
 type Tier = {
   name: string
@@ -60,38 +60,37 @@ export const TIERS: Tier[] = [
 export const Pricing = () => (
   <>
     <span id="pricing" className="block scroll-mt-12 md:scroll-mt-28" />
-    <Box as="section" flexDirection="column" rowGap="5xl">
-      <Box flexDirection="column" rowGap="xl" alignItems="center">
-        <Text variant="heading-xl" as="h2" wrap="balance">
-          Built to scale with you
-        </Text>
-        <Box display="block" maxWidth="56rem">
-          <Text variant="heading-xs" wrap="balance" color="muted">
-            Start free. Upgrade as you grow. Enterprise needs? Let&apos;s talk.
-          </Text>
-        </Box>
-        <Box alignItems="center" columnGap="l" paddingTop="m">
+    <Chapter
+      index="04"
+      name="Scale"
+      title="Pricing that scales with you"
+      subtitle="Start free, upgrade as you grow"
+      description="No hidden fees. Enterprise needs? Let's talk."
+      cta={
+        <>
           <GetStartedButton size="default" />
           <Link href="mailto:support@polar.sh">
             <Button variant="secondary">Contact Sales</Button>
           </Link>
-        </Box>
+        </>
+      }
+    >
+      <Box flexDirection="column" rowGap="l">
+        <Grid
+          templateColumns={{
+            base: '1fr',
+            sm: 'repeat(2, 1fr)',
+            xl: 'repeat(4, 1fr)',
+          }}
+          gap="l"
+        >
+          {TIERS.map((tier) => (
+            <TierCard key={tier.name} tier={tier} />
+          ))}
+        </Grid>
+        <StartupProgramCard />
       </Box>
-
-      <Grid
-        templateColumns={{
-          base: '1fr',
-          sm: 'repeat(2, 1fr)',
-          xl: 'repeat(4, 1fr)',
-        }}
-        gap="s"
-      >
-        {TIERS.map((tier) => (
-          <TierCard key={tier.name} tier={tier} />
-        ))}
-      </Grid>
-      <StartupProgramCard />
-    </Box>
+    </Chapter>
   </>
 )
 

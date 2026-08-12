@@ -66,7 +66,7 @@ export const LandingPageDesktopNavigation = () => {
       <Box
         position="relative"
         width="100%"
-        maxWidth={{ lg: 1280 }}
+        paddingHorizontal="2xl"
         alignItems="center"
         justifyContent="between"
       >
@@ -188,7 +188,7 @@ const NavMenuPanel = ({
     >
       <Grid
         width="100%"
-        maxWidth={{ lg: 1280 }}
+        paddingHorizontal="2xl"
         templateColumns="repeat(4, 1fr)"
         gap="4xl"
       >

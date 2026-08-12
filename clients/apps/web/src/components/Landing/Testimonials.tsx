@@ -1,9 +1,8 @@
-import { Text } from '@polar-sh/orbit'
+import { Avatar, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
+import { Chapter } from './Chapter'
 import { FastAPICloud, StillaAI } from './Logos'
-import { Avatar } from '@polar-sh/orbit'
-import { SectionHeader } from './SectionHeader'
 
 const userTestimonials = [
   {
@@ -106,29 +105,29 @@ const userTestimonials = [
 ]
 
 export const Testimonials = () => (
-  <Box flexDirection="column" rowGap="3xl">
-    <SectionHeader
-      title="What industry leaders think about Polar"
-      description="From AI startups to infrastructure veterans, the teams building the future ship production billing on Polar in days, not weeks."
-    />
+  <Chapter
+    title="Trusted by the teams shipping fastest"
+    subtitle="From AI startups to infrastructure veterans"
+  >
     <Box
       display="grid"
-      gridTemplateColumns={{ base: '1fr', md: 'repeat(3, 1fr)' }}
+      gridTemplateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }}
       gap="l"
     >
       {userTestimonials.map((t) => (
-        <Link
-          key={t.name}
-          href={t.link}
-          target="_blank"
-          className="dark:bg-polar-900 dark:hover:bg-polar-900 bg-gray-50 transition-colors hover:bg-gray-100"
-        >
+        <Link key={t.name} href={t.link} target="_blank">
           <Box
             flexDirection="column"
             justifyContent="between"
             rowGap="2xl"
-            padding="2xl"
+            padding="3xl"
             height="100%"
+            backgroundColor={{
+              base: 'background-secondary',
+              hover: 'background-card',
+            }}
+            transitionProperty="colors"
+            transitionDuration="fast"
           >
             {t.logo ? (
               t.logo
@@ -161,5 +160,5 @@ export const Testimonials = () => (
         </Link>
       ))}
     </Box>
-  </Box>
+  </Chapter>
 )

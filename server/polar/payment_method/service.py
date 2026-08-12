@@ -165,11 +165,11 @@ class PaymentMethodService:
         )
 
         subscription_repository = SubscriptionRepository.from_session(session)
-        subscriptions = await subscription_repository.list_billable_by_payment_method(
+        subscriptions = await subscription_repository.list_requiring_payment_method(
             payment_method.id, options=(joinedload(Subscription.product),)
         )
         product_names = sorted({s.product.name for s in subscriptions})
-        # The card doesn't back anything billable, bail out
+        # The card doesn't back anything that will be charged, bail out
         if not product_names:
             return
 

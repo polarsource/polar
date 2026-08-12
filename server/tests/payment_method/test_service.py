@@ -552,6 +552,54 @@ class TestSendExpiringReminderEmail:
 
         enqueue_email_template_mock.assert_not_called()
 
+    async def test_skips_when_the_subscription_ends_at_period_end(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+        enqueue_email_template_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_expiring_card(save_fixture, customer)
+        await create_active_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            payment_method=payment_method,
+            cancel_at_period_end=True,
+        )
+
+        await payment_method_service.send_expiration_reminder_email(
+            session, payment_method
+        )
+
+        enqueue_email_template_mock.assert_not_called()
+
+    async def test_sends_when_the_ending_subscription_is_metered(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product_recurring_metered: Product,
+        enqueue_email_template_mock: MagicMock,
+    ) -> None:
+        payment_method = await create_expiring_card(save_fixture, customer)
+        await create_active_subscription(
+            save_fixture,
+            product=product_recurring_metered,
+            customer=customer,
+            payment_method=payment_method,
+            cancel_at_period_end=True,
+        )
+
+        await payment_method_service.send_expiration_reminder_email(
+            session, payment_method
+        )
+
+        enqueue_email_template_mock.assert_called_once()
+        email = enqueue_email_template_mock.call_args.args[0]
+        assert email.props.product_names == [product_recurring_metered.name]
+
     async def test_skips_non_card_payment_method(
         self,
         session: AsyncSession,

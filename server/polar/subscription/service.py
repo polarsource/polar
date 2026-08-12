@@ -980,17 +980,7 @@ class SubscriptionService:
                     )
                 )
 
-            # Check if discount is still applicable
-            if subscription.discount is not None:
-                # Set discount_applied_at on first use (when discount is actually applied to a cycle)
-                if subscription.discount_applied_at is None:
-                    subscription.discount_applied_at = subscription.current_period_start
-
-                if subscription.discount.is_repetition_expired(
-                    subscription.discount_applied_at,
-                    subscription.current_period_start,
-                ):
-                    subscription.discount = None
+            self._clear_expired_discount(subscription)
 
             await self._create_cycle_billing_entries(session, subscription)
 
@@ -1036,6 +1026,19 @@ class SubscriptionService:
         )
 
         return subscription
+
+    def _clear_expired_discount(self, subscription: Subscription) -> None:
+        if subscription.discount is None:
+            return
+
+        if subscription.discount_applied_at is None:
+            subscription.discount_applied_at = subscription.current_period_start
+
+        if subscription.discount.is_repetition_expired(
+            subscription.discount_applied_at,
+            subscription.current_period_start,
+        ):
+            subscription.discount = None
 
     async def _create_cycle_billing_entries(
         self, session: AsyncSession, subscription: Subscription
@@ -2156,6 +2159,8 @@ class SubscriptionService:
             )
         )
         subscription.initialize_meter_period(now)
+
+        self._clear_expired_discount(subscription)
 
         await self.reset_meters(session, subscription, reset_at=now)
         await self.enqueue_benefits_grants(session, subscription)

@@ -3233,6 +3233,55 @@ class TestResume:
         )
         assert_hooks_called_once(subscription_hooks, {"updated", "resumed"})
 
+    async def test_expired_discount_is_cleared(
+        self,
+        frozen_time: datetime,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        enqueue_job_mock: MagicMock,
+        enqueue_benefits_grants_mock: MagicMock,
+        product: Product,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        discount = await create_discount(
+            save_fixture,
+            type=DiscountType.percentage,
+            basis_points=10_000,
+            duration=DiscountDuration.once,
+            organization=organization,
+        )
+        subscription = await create_subscription(
+            save_fixture,
+            product=product,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+            discount=discount,
+        )
+        subscription.discount_applied_at = frozen_time - timedelta(days=40)
+        subscription.paused_at = frozen_time - timedelta(days=10)
+        subscription.resumes_at = frozen_time
+        await save_fixture(subscription)
+        mocker.patch.object(subscription_service, "reset_meters")
+
+        async with SubscriptionUpdateContext(
+            session, subscription, subscription_service
+        ) as ctx:
+            updated = await subscription_service.resume(session, ctx, subscription)
+
+        assert updated.discount is None
+
+        billing_entry_repository = BillingEntryRepository.from_session(session)
+        billing_entries = await billing_entry_repository.get_pending_by_subscription(
+            subscription.id
+        )
+        cycle_entries = [
+            entry for entry in billing_entries if entry.type == BillingEntryType.cycle
+        ]
+        assert len(cycle_entries) == 1
+        assert cycle_entries[0].discount is None
+
 
 async def create_event_billing_entry(
     save_fixture: SaveFixture,

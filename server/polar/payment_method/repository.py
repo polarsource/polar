@@ -104,6 +104,15 @@ class PaymentMethodRepository(
         *,
         options: Options = (),
     ) -> Sequence[PaymentMethod]:
+        """
+        Return every payment method matching `(processor, processor_id)`.
+
+        The unique constraint is on `(processor, processor_id, customer_id)`, not
+        `(processor, processor_id)`, so the same Stripe payment method can be linked to
+        several customers (e.g. one Stripe customer mapped to multiple Polar customers
+        across organizations). Callers must therefore handle all matches rather than
+        assume a single row.
+        """
         statement = (
             self.get_base_statement()
             .where(

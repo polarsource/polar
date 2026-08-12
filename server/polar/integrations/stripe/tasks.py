@@ -407,6 +407,8 @@ async def payment_method_detached(event_id: uuid.UUID) -> None:
                 stripe_lib.PaymentMethod, event.stripe_data.data.object
             )
             repository = PaymentMethodRepository.from_session(session)
+            # A Stripe payment method can map to several rows (one per customer), so
+            # detach every match rather than assuming a single row.
             payment_methods = await repository.list_by_processor_id(
                 PaymentProcessor.stripe,
                 stripe_payment_method.id,
@@ -428,6 +430,8 @@ async def payment_method_automatically_updated(event_id: uuid.UUID) -> None:
                 stripe_lib.PaymentMethod, event.stripe_data.data.object
             )
             repository = PaymentMethodRepository.from_session(session)
+            # A Stripe payment method can map to several rows (one per customer), so
+            # update every match rather than assuming a single row.
             payment_methods = await repository.list_by_processor_id(
                 PaymentProcessor.stripe,
                 stripe_payment_method.id,

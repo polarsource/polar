@@ -458,6 +458,54 @@ class TestHandleEvent:
         assert refreshed is not None
         assert (refreshed.properties or {}).get("connected_team_id") == "TCUST"
 
+    async def test_channel_shared_updates_all_grants_sharing_channel(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        benefit = await _create_benefit(save_fixture, organization)
+        await _create_integration(save_fixture, organization, benefit=benefit)
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit,
+            properties={
+                "invited_email": "a@example.com",
+                "channel_id": "C123",
+            },
+        )
+        second_grant = await create_benefit_grant(
+            save_fixture,
+            customer_second,
+            benefit,
+            properties={
+                "invited_email": "b@example.com",
+                "channel_id": "C123",
+            },
+        )
+        await session.flush()
+        service, _client = _service_with_mock(mocker)
+
+        await service.handle_event(
+            session,
+            api_app_id="A0TESTAPPID",
+            event={
+                "type": "channel_shared",
+                "channel": "C123",
+                "connected_team_id": "TCUST",
+            },
+        )
+
+        repo = BenefitGrantRepository.from_session(session)
+        for grant_id in (grant.id, second_grant.id):
+            refreshed = await repo.get_by_id(grant_id)
+            assert refreshed is not None
+            assert (refreshed.properties or {}).get("connected_team_id") == "TCUST"
+
     async def test_channel_shared_ignores_same_channel_id_for_other_benefit(
         self,
         session: AsyncSession,
@@ -539,6 +587,48 @@ class TestHandleEvent:
         refreshed_untouched = await repo.get_by_id(untouched.id)
         assert refreshed_untouched is not None
         assert (refreshed_untouched.properties or {}).get("channel_id") == "G999"
+
+    async def test_channel_id_changed_remaps_all_grants_sharing_channel(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        organization: Organization,
+        customer: Customer,
+        customer_second: Customer,
+    ) -> None:
+        benefit = await _create_benefit(save_fixture, organization)
+        await _create_integration(save_fixture, organization, benefit=benefit)
+        grant = await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit,
+            properties={"invited_email": "a@example.com", "channel_id": "G123"},
+        )
+        second_grant = await create_benefit_grant(
+            save_fixture,
+            customer_second,
+            benefit,
+            properties={"invited_email": "b@example.com", "channel_id": "G123"},
+        )
+        await session.flush()
+        service, _client = _service_with_mock(mocker)
+
+        await service.handle_event(
+            session,
+            api_app_id="A0TESTAPPID",
+            event={
+                "type": "channel_id_changed",
+                "old_channel_id": "G123",
+                "new_channel_id": "C123",
+            },
+        )
+
+        repo = BenefitGrantRepository.from_session(session)
+        for grant_id in (grant.id, second_grant.id):
+            refreshed = await repo.get_by_id(grant_id)
+            assert refreshed is not None
+            assert (refreshed.properties or {}).get("channel_id") == "C123"
 
     async def test_channel_id_changed_scopes_to_integration(
         self,

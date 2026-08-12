@@ -81,13 +81,13 @@ class PaymentMethodRepository(
     ) -> Select[tuple[PaymentMethod]]:
         return self.get_base_statement().where(PaymentMethod.customer_id == customer_id)
 
-    async def get_by_processor_id(
+    async def get_all_by_processor_id(
         self,
         processor: PaymentProcessor,
         processor_id: str,
         *,
         options: Options = (),
-    ) -> PaymentMethod | None:
+    ) -> Sequence[PaymentMethod]:
         statement = (
             self.get_base_statement()
             .where(
@@ -96,7 +96,7 @@ class PaymentMethodRepository(
             )
             .options(*options)
         )
-        return await self.get_one_or_none(statement)
+        return await self.get_all(statement)
 
     async def list_by_customer(
         self,
@@ -104,15 +104,14 @@ class PaymentMethodRepository(
         *,
         exclude_id: UUID | None = None,
         options: Options = (),
-    ) -> list[PaymentMethod]:
+    ) -> Sequence[PaymentMethod]:
         statement = self.get_base_statement().where(
             PaymentMethod.customer_id == customer_id
         )
         if exclude_id is not None:
             statement = statement.where(PaymentMethod.id != exclude_id)
         statement = statement.options(*options)
-        result = await self.session.execute(statement)
-        return list(result.scalars().all())
+        return await self.get_all(statement)
 
     async def get_cards_needing_expiration_reminder(
         self,

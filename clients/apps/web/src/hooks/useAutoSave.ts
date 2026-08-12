@@ -5,14 +5,12 @@ interface UseAutoSaveOptions<T extends FieldValues> {
   form: UseFormReturn<T>
   onSave: (data: T) => Promise<T | undefined>
   delay?: number
-  enabled?: boolean
 }
 
 export function useAutoSave<T extends FieldValues>({
   form,
   onSave,
   delay = 1000,
-  enabled = true,
 }: UseAutoSaveOptions<T>) {
   const onSaveRef = useRef(onSave)
   useEffect(() => {
@@ -25,8 +23,6 @@ export function useAutoSave<T extends FieldValues>({
   const flushRef = useRef<(() => Promise<void>) | null>(null)
 
   useEffect(() => {
-    if (!enabled) return
-
     let active = true
     const flush = async () => {
       if (isSavingRef.current || !hasPendingChangesRef.current) return
@@ -79,5 +75,5 @@ export function useAutoSave<T extends FieldValues>({
       timeoutRef.current = null
       if (flushRef.current === flush) flushRef.current = null
     }
-  }, [form, delay, enabled])
+  }, [form, delay])
 }

@@ -19,7 +19,7 @@ const UncancelSubscriptionButton = ({
 }) => {
   const uncancelSubscription = useCustomerUncancelSubscription(api)
   const { withPaymentMethod, isPending: paymentMethodsPending } =
-    useRequirePaymentMethod(api, customerSessionToken)
+    useRequirePaymentMethod(api, customerSessionToken, subscription)
 
   const uncancel = async () => {
     const { error } = await uncancelSubscription.mutateAsync({

@@ -74,7 +74,7 @@ const CustomerPortalSubscription = ({
   const pauseSubscription = useCustomerPauseSubscription(api)
   const resumeSubscription = useCustomerResumeSubscription(api)
   const { withPaymentMethod, isPending: paymentMethodsPending } =
-    useRequirePaymentMethod(api, customerSessionToken)
+    useRequirePaymentMethod(api, customerSessionToken, subscription)
 
   const pendingUpdate = subscription.pending_update
   const pendingProduct = products.find(

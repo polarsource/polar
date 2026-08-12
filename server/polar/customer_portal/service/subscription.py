@@ -374,6 +374,9 @@ class CustomerSubscriptionService(ResourceServiceReader[Subscription]):
     async def _require_payment_method(
         self, session: AsyncSession, subscription: Subscription, action: str
     ) -> None:
+        if all(price.is_free for price in subscription.prices):
+            return
+
         payment_method = await payment_method_service.get_customer_payment_method(
             session, subscription.customer
         )

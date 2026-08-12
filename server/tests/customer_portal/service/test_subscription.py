@@ -580,6 +580,37 @@ class TestUpdatePause:
                 updates=CustomerSubscriptionResume(resume=True),
             )
 
+    async def test_resume_free_subscription_without_payment_method(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        organization: Organization,
+        product_recurring_free_price: Product,
+        customer: Customer,
+    ) -> None:
+        organization.customer_portal_settings = {
+            **organization.customer_portal_settings,
+            "subscription": {
+                **organization.customer_portal_settings["subscription"],
+                "pause": True,
+            },
+        }
+        await save_fixture(organization)
+        subscription = await create_subscription(
+            save_fixture,
+            product=product_recurring_free_price,
+            customer=customer,
+            status=SubscriptionStatus.paused,
+        )
+
+        updated = await customer_subscription_service.update(
+            session,
+            subscription,
+            updates=CustomerSubscriptionResume(resume=True),
+        )
+
+        assert updated.status == SubscriptionStatus.active
+
     async def test_resume_allowed(
         self,
         session: AsyncSession,

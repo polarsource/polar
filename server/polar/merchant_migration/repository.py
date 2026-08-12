@@ -2,7 +2,7 @@ from collections.abc import Sequence
 from typing import Any
 from uuid import UUID
 
-from sqlalchemy import Select, func, select
+from sqlalchemy import ColumnElement, Select, func, select
 from sqlalchemy.orm import joinedload
 
 from polar.auth.models import AuthSubject, Organization, User, is_organization, is_user
@@ -171,17 +171,17 @@ class MerchantMigrationRecordRepository(
         return {migration_id: count for migration_id, count in result.all()}
 
     async def _list_canonicals(
-        self, migration_ids: Sequence[UUID], type: MerchantMigrationRecordType
+        self,
+        type: MerchantMigrationRecordType,
+        *scope: ColumnElement[bool],
     ) -> Sequence[CanonicalRow]:
-        if not migration_ids:
-            return []
         statement = select(
             MerchantMigrationRecord.merchant_migration_id,
             MerchantMigrationRecord.status,
             MerchantMigrationRecord.type,
             MerchantMigrationRecord.canonical,
         ).where(
-            MerchantMigrationRecord.merchant_migration_id.in_(migration_ids),
+            *scope,
             MerchantMigrationRecord.type == type,
             MerchantMigrationRecord.deleted_at.is_(None),
         )
@@ -192,12 +192,20 @@ class MerchantMigrationRecordRepository(
         ]
 
     async def list_product_canonicals(
-        self, migration_ids: Sequence[UUID]
+        self, organization_ids: Sequence[UUID]
     ) -> Sequence[CanonicalRow]:
-        """Products carry the prices subscriptions are charged at. A merchant has
-        tens of these, so they can be read across every migration at once."""
+        """Products carry the prices subscriptions are charged at.
+
+        Scoped by organization rather than migration: the ledger is keyed per
+        org, so a re-run's subscriptions are priced by product rows staged under
+        an earlier migration. A merchant has tens of products, so reading all of
+        theirs is cheap.
+        """
+        if not organization_ids:
+            return []
         return await self._list_canonicals(
-            migration_ids, MerchantMigrationRecordType.product
+            MerchantMigrationRecordType.product,
+            MerchantMigrationRecord.organization_id.in_(organization_ids),
         )
 
     async def list_subscription_canonicals(
@@ -205,8 +213,11 @@ class MerchantMigrationRecordRepository(
     ) -> Sequence[CanonicalRow]:
         """The volume side: one row per migrated subscription, so callers should
         pass only the migrations they are about to render."""
+        if not migration_ids:
+            return []
         return await self._list_canonicals(
-            migration_ids, MerchantMigrationRecordType.subscription
+            MerchantMigrationRecordType.subscription,
+            MerchantMigrationRecord.merchant_migration_id.in_(migration_ids),
         )
 
     async def list_by_migration_and_status(
@@ -225,6 +236,7 @@ class MerchantMigrationRecordRepository(
             .order_by(
                 MerchantMigrationRecord.type,
                 MerchantMigrationRecord.created_at,
+                MerchantMigrationRecord.id,
             )
             .limit(limit)
         )

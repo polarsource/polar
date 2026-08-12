@@ -196,14 +196,23 @@ def current_pan_step(migration: MerchantMigration) -> PanTransferStep | None:
 
 
 def _stale_days(step: PanTransferStep) -> int | None:
+    """How many days late a step is, or None while it is still on track.
+
+    Two independent rules, worst one wins: it is past the date Ops promised, or
+    nobody has moved it in a week. An ETA is picked as a calendar date, so the
+    step only counts as late once that whole day has gone by.
+    """
     now = utc_now()
+    late: list[int] = []
     if step.expected_at is not None:
-        overdue = now - step.expected_at
-        return overdue.days if overdue > timedelta(0) else None
-    if step.started_at is None:
-        return None
-    waiting = now - step.started_at
-    return waiting.days if waiting > STALE_AFTER else None
+        days = (now.date() - step.expected_at.date()).days
+        if days > 0:
+            late.append(days)
+    if step.started_at is not None:
+        waiting = now - step.started_at
+        if waiting > STALE_AFTER:
+            late.append(waiting.days)
+    return max(late) if late else None
 
 
 def _pan_attention(step: PanTransferStep) -> Attention:

@@ -118,14 +118,16 @@ async def _page_mrr(
 ) -> dict[UUID, MrrBreakdown]:
     """MRR for the rendered rows only.
 
-    Products are read across every migration so a subscription priced by an
+    Products are read for the whole organization so a subscription priced by an
     earlier run still resolves; subscriptions, the volume side, are read only for
-    what is on screen.
+    the migrations on screen.
     """
     repository = MerchantMigrationRecordRepository.from_session(session)
     migration_ids = [row.migration.id for row in rows]
     return mrr.breakdown(
-        await repository.list_product_canonicals(migration_ids),
+        await repository.list_product_canonicals(
+            [row.migration.organization_id for row in rows]
+        ),
         await repository.list_subscription_canonicals(migration_ids),
         migration_ids,
     )
@@ -318,7 +320,7 @@ async def get_migration(
     counts = await record_repository.count_by_type_and_status([migration.id])
     records = progress(counts, migration.id)
     breakdown = mrr.breakdown(
-        await record_repository.list_product_canonicals([migration.id]),
+        await record_repository.list_product_canonicals([migration.organization_id]),
         await record_repository.list_subscription_canonicals([migration.id]),
         [migration.id],
     )[migration.id]

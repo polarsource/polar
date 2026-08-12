@@ -199,6 +199,27 @@ class TestStaleness:
 
         assert attention(migration, NO_FAILURES).stale_days == 2
 
+    def test_an_eta_is_not_overdue_on_the_day_itself(self) -> None:
+        """The ETA is a calendar date: it only bites once the day has passed."""
+        steps = pan_transfer.annotate(
+            _advance_to("stripe_copy"), "stripe_copy", expected_at=utc_now()
+        )
+        migration = _migration(step=MerchantMigrationStep.copy_cards, steps=steps)
+
+        assert attention(migration, NO_FAILURES).stale_days is None
+
+    def test_no_movement_still_counts_when_an_eta_is_set(self) -> None:
+        """An ETA in the future must not mask a step nobody has touched."""
+        steps = pan_transfer.annotate(
+            _advance_to("stripe_copy"),
+            "stripe_copy",
+            expected_at=utc_now() + timedelta(days=30),
+        )
+        steps[3].started_at = utc_now() - timedelta(days=20)
+        migration = _migration(step=MerchantMigrationStep.copy_cards, steps=steps)
+
+        assert attention(migration, NO_FAILURES).stale_days == 20
+
     def test_an_eta_in_the_future_is_not_overdue(self) -> None:
         steps = pan_transfer.annotate(
             _advance_to("stripe_copy"),

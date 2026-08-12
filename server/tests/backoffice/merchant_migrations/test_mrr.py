@@ -61,6 +61,7 @@ def _subscription(
     *,
     source_status: CanonicalSubscriptionStatus = CanonicalSubscriptionStatus.active,
     quantity: int = 1,
+    paused_collection: bool = False,
     migration_id: UUID = MIGRATION,
 ) -> CanonicalRow:
     subscription = CanonicalSubscription(
@@ -72,7 +73,7 @@ def _subscription(
         current_period_start=None,
         current_period_end=None,
         trialing=False,
-        paused_collection=False,
+        paused_collection=paused_collection,
         line_item_count=1,
         quantity=quantity,
         payment_method=None,
@@ -224,6 +225,20 @@ class TestExclusions:
         ]
 
         assert _usd(rows)["to_move"] == 2900
+
+    def test_paused_collection_earns_nothing(self) -> None:
+        """The source isn't billing it, and the pre-check leaves it behind."""
+        rows = [
+            _product("price_1", 2900),
+            _subscription(
+                "sub_1",
+                "price_1",
+                MerchantMigrationRecordStatus.pending,
+                paused_collection=True,
+            ),
+        ]
+
+        assert _usd(rows)["to_move"] == 0
 
     def test_a_price_with_no_representable_amount_is_skipped(self) -> None:
         rows = [

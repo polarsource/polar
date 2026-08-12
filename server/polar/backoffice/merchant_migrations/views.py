@@ -71,12 +71,7 @@ def attention_badge(attention: Attention) -> None:
                 classes="badge badge-sm badge-outline whitespace-nowrap text-warning",
                 title="No movement on the current step",
             ):
-                # Under a day late has no useful number to show.
-                text(
-                    f"{attention.stale_days}d overdue"
-                    if attention.stale_days
-                    else "overdue"
-                )
+                text(f"{attention.stale_days}d overdue")
 
 
 def source_cell(migration: MerchantMigration) -> None:

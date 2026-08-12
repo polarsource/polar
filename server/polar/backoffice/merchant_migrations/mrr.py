@@ -10,6 +10,7 @@ revenue that hasn't moved yet.
 
 from collections.abc import Sequence
 from dataclasses import dataclass, field
+from typing import Any
 from uuid import UUID
 
 from polar.merchant_migration.canonical import (
@@ -94,6 +95,17 @@ class MrrBreakdown:
         return round(100 * sum(self.on_polar.amounts.values()) / total)
 
 
+def _is_earning(canonical: dict[str, Any]) -> bool:
+    """Whether the source is actually billing this subscription.
+
+    Paused collection means it isn't, and the pre-check leaves those behind, so
+    counting them would inflate the revenue a migration is said to carry.
+    """
+    if canonical.get("paused_collection"):
+        return False
+    return canonical.get("status") in EARNING_STATUSES
+
+
 def _monthly_amount(
     amount: int, quantity: int, interval: str | None, interval_count: int
 ) -> int | None:
@@ -157,7 +169,7 @@ def breakdown(
         bucket = buckets.get(migration_id)
         if bucket is None:
             continue
-        if canonical.get("status") not in EARNING_STATUSES:
+        if not _is_earning(canonical):
             continue
         price = prices.get(canonical.get("price_source_id", ""))
         if price is None:

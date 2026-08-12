@@ -1973,10 +1973,7 @@ class SubscriptionService:
         if subscription.ended_at:
             raise ResourceUnavailable()
 
-        if not (
-            subscription.status in SubscriptionStatus.billable_statuses()
-            and subscription.cancel_at_period_end
-        ):
+        if not subscription.can_uncancel():
             raise BadRequest()
 
         subscription.cancel_at_period_end = False

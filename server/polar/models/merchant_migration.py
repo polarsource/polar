@@ -68,6 +68,11 @@ class MerchantMigration(RecordModel):
     pan_transfer_steps: Mapped[list[PanTransferStep]] = mapped_column(
         PanTransferStepsType, nullable=False, default=list
     )
+    # Background precheck/import progress. Null until the first background run.
+    # Typed in a follow-up; JSONB first so the column can deploy alone.
+    operation: Mapped[dict[str, Any] | None] = mapped_column(
+        JSONB, nullable=True, default=None
+    )
 
     @declared_attr
     def organization(cls) -> Mapped["Organization"]:

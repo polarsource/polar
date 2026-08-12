@@ -153,3 +153,46 @@ Treat **Accepted** ADRs as binding:
 - **S3 / Minio**: file storage.
 - **Redis**: cache and job queue.
 - **PostgreSQL**: primary database.
+
+## Cursor Cloud specific instructions
+
+The Cloud VM is set up to run the app **natively** (the `## Setup` path above:
+`docker compose` for infra only + `uv run task api`/`worker` + `pnpm dev`), **not** the
+`dev docker` full-stack CLI from the `local-environment` skill (that builds api/worker/web
+images and is heavier). Standard lint/test/build/run commands are already documented in
+`server/AGENTS.md` and `clients/AGENTS.md` — use those. Notes below are the non-obvious bits.
+
+**Docker is not managed by systemd here.** On a fresh VM the daemon must be started
+manually once before using any container/infra: `sudo dockerd > /tmp/dockerd.log 2>&1 &`.
+The `ubuntu` user is in the `docker` group, so `docker`/`docker compose` work without `sudo`
+once the daemon is up. `/etc/docker/daemon.json` is pinned to `fuse-overlayfs` with
+`features.containerd-snapshotter: false` — required for Docker 29 in this VM; don't remove it.
+
+**Infra + migrations.** Start Postgres/Redis/Minio with `cd server && docker compose up -d`
+(this compose file only starts infra; `prometheus`/`grafana`/`tinybird`/`localstack` are behind
+profiles). Then apply migrations with `uv run task db_migrate`. `uv` lives at `~/.local/bin/uv`
+(on PATH via `~/.bashrc`).
+
+**Backend won't even import its config without two build/gen artifacts** (both persist in the
+snapshot; regenerate only if missing): the email renderer binary `server/emails/bin/react-email-pkg`
+via `uv run task emails`, and `server/.jwks.json` + `server/.env` via `./dev/setup-environment`
+(also `uv run task generate_dev_jwks`). Missing → pydantic `EMAIL_RENDERER_BINARY_PATH` / `JWKS` errors.
+
+**Tests need no manual DB setup** — the `polar_test` database is auto-created/dropped by a
+`sqlalchemy_utils` fixture. Run `uv run task test` or a subset with
+`POLAR_ENV=testing uv run python -m pytest <path>`.
+
+**Login has no external dependency.** Email OTP login codes are printed in the API log; when the
+API runs natively grab it with `grep -a "LOGIN CODE" /tmp/polar-api.log | tail -1`. `admin@polar.sh`
+is the conventional test account.
+
+**Expected-but-harmless in local dev:** dashboard Analytics/Overview widgets show
+"A network error occurred" because the Tinybird/ClickHouse analytics service isn't running
+(optional, `tinybird` compose profile). The worker logs `prometheus_remote_write` connection
+errors (optional `monitoring` profile). Stripe keys in `server/.env` are placeholders — checkout/
+payment flows need a real Stripe sandbox (`dev stripe`, see the `local-environment` skill's
+`payment-testing` rule).
+
+**Onboarding gotcha:** the org-creation wizard's "Launch Dashboard" button only submits once the
+Product step's required fields are filled (description ≥30 chars, ≥1 selling category, ≥1 pricing
+model). The AUP AI check auto-APPROVEs when `PYDANTIC_AI_GATEWAY_API_KEY` is unset.

@@ -12,11 +12,6 @@ interface Aspect {
 
 const ASPECTS: Aspect[] = [
   {
-    title: 'Automatic invoicing',
-    desc: 'Usage rolls straight into invoices and charges, with no manual billing runs.',
-    href: '/docs/features/orders',
-  },
-  {
     title: 'Payment processing',
     desc: 'Cards, wallets, and bank debits captured and settled across 100+ markets.',
     href: '/docs/features/checkout/session',
@@ -36,64 +31,16 @@ const ASPECTS: Aspect[] = [
     desc: 'Disputes, refunds, and usage reconciliation handled end to end.',
     href: '/docs/features/refunds',
   },
-  {
-    title: 'LLM usage breakdown',
-    desc: 'Every model call metered token by token, per customer, across all of your providers.',
-    href: '/docs/features/usage-based-billing/ingestion-strategies/llm-strategy',
-  },
-  {
-    title: 'Margins & cashflow metrics',
-    desc: 'Revenue minus cost in real time, per customer and across your whole business.',
-    href: '/docs/features/analytics',
-  },
-  {
-    title: 'Cost anomalies & insights',
-    desc: 'Spot runaway spend the moment costs spike, not at month end.',
-    href: '/docs/features/cost-insights/introduction',
-  },
 ]
 
 export const MerchantOfRecord = () => (
   <Chapter
     index="02"
-    name="Sell"
+    name="Sell globally"
     title="We are the merchant of record"
     subtitle="The liability lands on our name, not yours"
-    description="Raw usage goes in. Revenue comes out."
+    description="Polar is the reseller of your product in over 100 markets. Payments, sales tax, fraud, refunds and chargebacks are our responsibility, never your paperwork."
   >
-    <Grid
-      templateColumns={{
-        base: '1fr',
-        md: 'repeat(2, 1fr)',
-        xl: 'repeat(4, 1fr)',
-      }}
-      gap="l"
-    >
-      {ASPECTS.map((aspect) => (
-        <Link key={aspect.title} href={aspect.href}>
-          <Box
-            height="100%"
-            flexDirection="column"
-            padding="3xl"
-            backgroundColor={{
-              base: 'background-secondary',
-              hover: 'background-card',
-            }}
-            transitionProperty="colors"
-            transitionDuration="fast"
-          >
-            <Box flexDirection="column" rowGap="m">
-              <Text variant="heading-xxs" as="h3">
-                {aspect.title}
-              </Text>
-              <Text variant="body" color="muted" wrap="pretty">
-                {aspect.desc}
-              </Text>
-            </Box>
-          </Box>
-        </Link>
-      ))}
-    </Grid>
     <Pipeline />
   </Chapter>
 )

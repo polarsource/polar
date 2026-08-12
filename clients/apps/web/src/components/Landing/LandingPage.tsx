@@ -6,7 +6,6 @@ import { Meter } from './chapters/Meter'
 import { Platform } from './chapters/Platform'
 import { ClosingCta } from './ClosingCta'
 import { Hero } from './Hero/Hero'
-import { LogoStrip } from './LogoStrip'
 import { Pricing } from './Pricing'
 import { Testimonials } from './Testimonials'
 import { Vision } from './Vision'
@@ -16,7 +15,6 @@ export default function Page() {
     <div className="flex w-full flex-col">
       <Hero />
       <Platform />
-      <LogoStrip />
       <Meter />
       <MerchantOfRecord />
       <Margins />

@@ -74,9 +74,6 @@ export const LandingPageDesktopNavigation = () => {
               </Box>
             ))}
             <Box as="li" onMouseEnter={closeMenu}>
-              <NavLink href="/#pricing">Pricing</NavLink>
-            </Box>
-            <Box as="li" onMouseEnter={closeMenu}>
               <NavLink href="/blog">Blog</NavLink>
             </Box>
             <Box as="li" onMouseEnter={closeMenu}>

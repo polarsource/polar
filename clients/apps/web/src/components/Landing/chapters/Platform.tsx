@@ -167,7 +167,7 @@ export const Platform = () => (
     name="Platform"
     title="The brains of a finance team"
     subtitle="in the body of an API"
-    description="Ingestion to payout, one integration."
+    description="Polar meters your usage, runs your subscriptions and invoicing, and sells to your customers as merchant of record. One integration, from first event to payout."
   >
     <Grid
       templateColumns={{

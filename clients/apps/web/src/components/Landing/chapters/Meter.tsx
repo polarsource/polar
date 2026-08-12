@@ -4,10 +4,8 @@ import {
   SyntaxHighlighterClient,
   SyntaxHighlighterProvider,
 } from '@/components/SyntaxHighlighterShiki/SyntaxHighlighterClient'
-import ArrowForward from '@mui/icons-material/ArrowForward'
 import { Grid, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
-import Link from 'next/link'
 import { useState } from 'react'
 import { Chapter } from '../Chapter'
 
@@ -77,7 +75,7 @@ const { text } = await generateText({
 ]
 
 export const Meter = () => {
-  const [activeId, setActiveId] = useState(CASES[0].id)
+  const [activeId] = useState(CASES[0].id)
   const active = CASES.find((c) => c.id === activeId) ?? CASES[0]
 
   return (
@@ -93,63 +91,12 @@ export const Meter = () => {
           templateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
           gap={{ base: '3xl', lg: 'l' }}
         >
-          <Box flexDirection="column" alignItems="start" rowGap="2xl">
-            <Box as="ul" flexDirection="column" alignItems="start" rowGap="xl">
-              {CASES.map((c) => {
-                const isActive = c.id === activeId
-                return (
-                  <Box as="li" key={c.id} display="block">
-                    <button
-                      type="button"
-                      onClick={() => setActiveId(c.id)}
-                      className="cursor-pointer text-left"
-                    >
-                      <Box flexDirection="column" alignItems="start" rowGap="m">
-                        <Box
-                          color={{
-                            base: isActive ? 'text-primary' : 'text-tertiary',
-                            hover: 'text-primary',
-                          }}
-                          transitionProperty="colors"
-                          transitionDuration="fast"
-                        >
-                          <Text variant="heading-s" as="h3" color="inherit">
-                            {c.title}
-                          </Text>
-                        </Box>
-                        {isActive && (
-                          <Box display="block" maxWidth="24rem">
-                            <Text variant="body" color="muted" wrap="pretty">
-                              {c.desc}
-                            </Text>
-                          </Box>
-                        )}
-                      </Box>
-                    </button>
-                  </Box>
-                )
-              })}
-            </Box>
-            <Link href={active.docsHref}>
-              <Box
-                alignItems="center"
-                columnGap="s"
-                color={{ base: 'text-secondary', hover: 'text-primary' }}
-                transitionProperty="colors"
-                transitionDuration="fast"
-              >
-                <Text as="span" variant="title" color="inherit">
-                  Read the docs
-                </Text>
-                <ArrowForward fontSize="inherit" />
-              </Box>
-            </Link>
-          </Box>
-
           <Box
             flexDirection="column"
             rowGap="l"
             minHeight={{ base: 'auto', lg: '24rem' }}
+            backgroundColor="background-secondary"
+            padding="2xl"
           >
             <Text variant="caption" color="muted" monospace>
               {active.file}

@@ -2,6 +2,7 @@ import { Avatar, Text } from '@polar-sh/orbit'
 import { Box } from '@polar-sh/orbit/Box'
 import Link from 'next/link'
 import { Chapter } from './Chapter'
+import { LogoGrid } from './LogoGrid'
 import { FastAPICloud, StillaAI } from './Logos'
 
 const userTestimonials = [
@@ -109,56 +110,59 @@ export const Testimonials = () => (
     title="Trusted by the teams shipping fastest"
     subtitle="From AI startups to infrastructure veterans"
   >
-    <Box
-      display="grid"
-      gridTemplateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }}
-      gap="l"
-    >
-      {userTestimonials.map((t) => (
-        <Link key={t.name} href={t.link} target="_blank">
-          <Box
-            flexDirection="column"
-            justifyContent="between"
-            rowGap="2xl"
-            padding="3xl"
-            height="100%"
-            backgroundColor={{
-              base: 'background-secondary',
-              hover: 'background-card',
-            }}
-            transitionProperty="colors"
-            transitionDuration="fast"
-          >
-            {t.logo ? (
-              t.logo
-            ) : (
-              <Avatar
-                avatar_url={t.avatar ?? ''}
-                name={t.name}
-                className="size-10"
-              />
-            )}
-            <Box flexDirection="column" rowGap="m" flexGrow={1}>
-              {t.text}
-            </Box>
+    <Box flexDirection="column" rowGap="l" width="100%">
+      <LogoGrid />
+      <Box
+        display="grid"
+        gridTemplateColumns={{ base: '1fr', md: 'repeat(2, 1fr)' }}
+        gap="l"
+      >
+        {userTestimonials.map((t) => (
+          <Link key={t.name} href={t.link} target="_blank">
             <Box
-              display="block"
-              borderTopWidth={2}
-              borderStyle="solid"
-              borderColor="border-primary"
-              width="1.5rem"
-            />
-            <Box flexDirection="column">
-              <Text variant="heading-xxs" as="span">
-                {t.name}
-              </Text>
-              <Text variant="heading-xxs" as="span" color="muted">
-                {t.company}
-              </Text>
+              flexDirection="column"
+              justifyContent="between"
+              rowGap="2xl"
+              padding="3xl"
+              height="100%"
+              backgroundColor={{
+                base: 'background-secondary',
+                hover: 'background-card',
+              }}
+              transitionProperty="colors"
+              transitionDuration="fast"
+            >
+              {t.logo ? (
+                t.logo
+              ) : (
+                <Avatar
+                  avatar_url={t.avatar ?? ''}
+                  name={t.name}
+                  className="size-10"
+                />
+              )}
+              <Box flexDirection="column" rowGap="m" flexGrow={1}>
+                {t.text}
+              </Box>
+              <Box
+                display="block"
+                borderTopWidth={2}
+                borderStyle="solid"
+                borderColor="border-primary"
+                width="1.5rem"
+              />
+              <Box flexDirection="column">
+                <Text variant="heading-xxs" as="span">
+                  {t.name}
+                </Text>
+                <Text variant="heading-xxs" as="span" color="muted">
+                  {t.company}
+                </Text>
+              </Box>
             </Box>
-          </Box>
-        </Link>
-      ))}
+          </Link>
+        ))}
+      </Box>
     </Box>
   </Chapter>
 )

@@ -137,20 +137,6 @@ export const Pipeline = () => {
       gridTemplateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
       gap={{ base: '2xl', lg: 'l' }}
     >
-      <Box
-        display={{ base: 'none', lg: 'flex' }}
-        alignItems="center"
-        justifyContent="center"
-        backgroundColor="background-secondary"
-      >
-        <Box display="block" maxWidth="20rem" padding="3xl">
-          <Text variant="heading-xs" color="muted" wrap="pretty">
-            Raw usage goes in. Revenue comes out. We handle everything in
-            between.
-          </Text>
-        </Box>
-      </Box>
-
       {/* Flow */}
       <Box
         width="100%"
@@ -236,6 +222,22 @@ export const Pipeline = () => {
               <Text color="muted">SEB **** 9128</Text>
             </Box>
           </Box>
+        </Box>
+      </Box>
+      <Box
+        display={{ base: 'none', lg: 'flex' }}
+        alignItems="center"
+        justifyContent="center"
+        backgroundColor="background-secondary"
+      >
+        <Box display="block" maxWidth="32rem" padding="3xl">
+          <Text variant="heading-xs" wrap="pretty">
+            Your customer consumes usage.
+            <br />
+            Polar bills, collects and complies.
+            <br />
+            You get paid.
+          </Text>
         </Box>
       </Box>
     </Box>

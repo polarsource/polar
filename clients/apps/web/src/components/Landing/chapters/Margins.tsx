@@ -70,7 +70,7 @@ export const Margins = () => (
   >
     <Box
       display="grid"
-      gridTemplateColumns={{ base: '1fr', lg: 'repeat(4, 1fr)' }}
+      gridTemplateColumns={{ base: '1fr', lg: 'repeat(2, 1fr)' }}
       gap="l"
     >
       <Box
@@ -88,7 +88,6 @@ export const Margins = () => (
       </Box>
 
       <Box
-        gridColumn={{ base: 'auto', lg: 'span 3' }}
         overflow="hidden"
         backgroundColor="background-secondary"
         display={{ base: 'none', md: 'block' }}

@@ -19,7 +19,7 @@ interface ChapterHeadlineProps {
 }
 
 export const ChapterHeadline = ({ title, subtitle }: ChapterHeadlineProps) => (
-  <Box flexDirection="column" rowGap="xs">
+  <Box flexDirection="column">
     <Text variant="heading-l" as="h2" wrap="balance">
       {title}
     </Text>
@@ -77,10 +77,10 @@ export const Chapter = ({
       ) : (
         <Box display={{ base: 'none', lg: 'flex' }} />
       )}
-      <Box flexDirection="column" rowGap="2xl" alignItems="start">
+      <Box flexDirection="column" rowGap="4xl" alignItems="start">
         <ChapterHeadline title={title} subtitle={subtitle} />
         {description ? (
-          <Box display="block" maxWidth="32rem">
+          <Box display="block" width="100%">
             <Text variant="heading-xs" color="muted" wrap="pretty">
               {description}
             </Text>

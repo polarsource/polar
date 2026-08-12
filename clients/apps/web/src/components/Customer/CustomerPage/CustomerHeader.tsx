@@ -198,19 +198,21 @@ export const CustomerHeader = ({
         hide={hideDeleteCustomerModal}
         title={`Delete Customer "${customer.email ?? customer.name ?? 'customer'}"?`}
         body={
-          <Box flexDirection="column" rowGap="s" color="text-secondary">
-            <p>This action cannot be undone and will immediately:</p>
-            <ol className="list-inside list-disc pl-4">
-              <li>Cancel any active subscriptions for the customer</li>
-              <li>Revoke all their benefits</li>
-              <li>Clear any external_id</li>
-            </ol>
+          <div className="text-sm leading-relaxed">
+            <Box flexDirection="column" rowGap="s" color="text-secondary">
+              <p>This action cannot be undone and will immediately:</p>
+              <ol className="list-inside list-disc pl-4">
+                <li>Cancel any active subscriptions for the customer</li>
+                <li>Revoke all their benefits</li>
+                <li>Clear any external_id</li>
+              </ol>
 
-            <p>
-              However, their information will still be retained for historic
-              orders and subscriptions.
-            </p>
-          </Box>
+              <p>
+                However, their information will still be retained for historic
+                orders and subscriptions.
+              </p>
+            </Box>
+          </div>
         }
         onConfirm={onDeleteCustomer}
         confirmPrompt={customer.email ?? customer.name ?? ''}

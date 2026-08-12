@@ -35,8 +35,11 @@ export const useCustomerMetricsParams = (customer: schemas['Customer']) => {
     ] as schemas['TimeInterval'][]),
   )
 
-  const interval: schemas['TimeInterval'] =
-    intervalParam ?? getNextValidInterval('day', startDate, endDate)
+  const interval: schemas['TimeInterval'] = getNextValidInterval(
+    intervalParam ?? 'day',
+    startDate,
+    endDate,
+  )
 
   const dateRange = useMemo(
     () => ({ startDate, endDate }),

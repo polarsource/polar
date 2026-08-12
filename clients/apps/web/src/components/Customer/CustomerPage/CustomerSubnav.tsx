@@ -1,6 +1,5 @@
 'use client'
 
-import { useMemberModelEnabled } from '@/hooks/useMemberModelEnabled'
 import { schemas } from '@polar-sh/client'
 import { Subnav, SubnavItem } from '@polar-sh/orbit'
 import Link from 'next/link'
@@ -18,9 +17,8 @@ export const CustomerSubnav = ({
 }: CustomerSubnavProps) => {
   const pathname = usePathname()
   const searchParams = useSearchParams()
-  const { isEnabled: isMemberModelEnabled } = useMemberModelEnabled(
-    organization.id,
-  )
+  const isMemberModelEnabled =
+    !!organization.feature_settings?.member_model_enabled
 
   const base = `/dashboard/${organization.slug}/customers/${customer.id}`
 

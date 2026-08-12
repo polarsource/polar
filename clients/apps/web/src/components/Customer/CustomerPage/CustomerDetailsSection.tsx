@@ -42,7 +42,7 @@ export const CustomerDetailsSection = ({
       </Box>
     </Box>
     <Box flexDirection="column" rowGap="l">
-      <Text variant="title" as="h4">
+      <Text variant="title" as="h3">
         Billing Information
       </Text>
       <Box flexDirection="column" rowGap={{ base: 'm', md: 'none' }}>

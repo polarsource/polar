@@ -14,17 +14,32 @@ export const CustomerMembers = ({
   organization,
   customer,
 }: CustomerMembersProps) => {
-  const { data: subscriptions } = useSubscriptions(customer.organization_id, {
-    customer_id: customer.id,
-    limit: 999,
-    sorting: ['-started_at'],
-  })
+  const isEnabled =
+    organization.feature_settings?.member_model_enabled &&
+    organization.feature_settings?.seat_based_pricing_enabled &&
+    customer.type === 'team'
 
-  const { data: orders } = useOrders(customer.organization_id, {
-    customer_id: customer.id,
-    limit: 999,
-    sorting: ['-created_at'],
-  })
+  const { data: subscriptions } = useSubscriptions(
+    isEnabled ? customer.organization_id : undefined,
+    {
+      customer_id: customer.id,
+      limit: 999,
+      sorting: ['-started_at'],
+    },
+  )
+
+  const { data: orders } = useOrders(
+    isEnabled ? customer.organization_id : undefined,
+    {
+      customer_id: customer.id,
+      limit: 999,
+      sorting: ['-created_at'],
+    },
+  )
+
+  if (!isEnabled) {
+    return null
+  }
 
   return (
     <MembersSection

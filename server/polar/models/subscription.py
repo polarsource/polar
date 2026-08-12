@@ -467,6 +467,8 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
     @hybrid_property
     def requires_payment_method(self) -> bool:
         """Whether a payment method is still needed to bill this subscription."""
+        if self.status == SubscriptionStatus.paused:
+            return self.resumes_at is not None
         if not self.billable:
             return False
         if SubscriptionStatus.is_active(self.status) and self.cancel_at_period_end:
@@ -488,12 +490,18 @@ class Subscription(CustomFieldDataMixin, MetadataMixin, RecordModel):
             )
             .exists()
         )
+        scheduled_resume = (cls.status == SubscriptionStatus.paused) & (
+            cls.resumes_at.is_not(None)
+        )
         return type_coerce(
-            cls.status.in_(SubscriptionStatus.billable_statuses())
-            & (
-                ~cls.status.in_(SubscriptionStatus.active_statuses())
-                | cls.cancel_at_period_end.is_(False)
-                | has_metered_price
+            scheduled_resume
+            | (
+                cls.status.in_(SubscriptionStatus.billable_statuses())
+                & (
+                    ~cls.status.in_(SubscriptionStatus.active_statuses())
+                    | cls.cancel_at_period_end.is_(False)
+                    | has_metered_price
+                )
             ),
             Boolean,
         )

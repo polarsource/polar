@@ -1,3 +1,4 @@
+from datetime import timedelta
 from typing import cast
 from unittest.mock import MagicMock
 
@@ -6,6 +7,7 @@ from pytest_mock import MockerFixture
 
 from polar.enums import PaymentProcessor, SubscriptionRecurringInterval
 from polar.integrations.stripe.service import StripeService
+from polar.kit.utils import utc_now
 from polar.models import Customer, Organization, PaymentMethod, Product
 from polar.models.organization import OrganizationCustomerEmailSettings
 from polar.models.subscription import SubscriptionStatus
@@ -250,6 +252,39 @@ class TestDelete:
             cancel_at_period_end=True,
         )
         subscription.payment_method = payment_method
+        await save_fixture(subscription)
+
+        with pytest.raises(PaymentMethodInUseByActiveSubscription):
+            await payment_method_service.delete(session, payment_method)
+
+        await session.refresh(payment_method)
+        assert payment_method.deleted_at is None
+
+    async def test_delete_payment_method_with_scheduled_resume_raises_exception(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        customer: Customer,
+        product: Product,
+    ) -> None:
+        payment_method = PaymentMethod(
+            processor=PaymentProcessor.stripe,
+            processor_id="pm_test_paused",
+            type="card",
+            method_metadata={"brand": "visa", "last4": "4242"},
+            customer=customer,
+        )
+        await save_fixture(payment_method)
+
+        subscription = await create_subscription(
+            save_fixture,
+            status=SubscriptionStatus.paused,
+            product=product,
+            customer=customer,
+        )
+        subscription.payment_method = payment_method
+        subscription.paused_at = utc_now()
+        subscription.resumes_at = utc_now() + timedelta(days=30)
         await save_fixture(subscription)
 
         with pytest.raises(PaymentMethodInUseByActiveSubscription):

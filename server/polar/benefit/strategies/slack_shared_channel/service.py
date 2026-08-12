@@ -42,7 +42,7 @@ log: Logger = structlog.get_logger()
 _PROVISIONING_LOCK_TTL_SECONDS = 60
 
 _ARCHIVE_NOOP_ERRORS = {"already_archived", "channel_not_found"}
-_ARCHIVE_TRANSIENT_ERRORS = {
+_TRANSIENT_ERRORS = {
     "ratelimited",
     "internal_error",
     "fatal_error",
@@ -263,7 +263,7 @@ class BenefitSlackSharedChannelService(
                     grant_properties, keep_channel=error != "channel_not_found"
                 )
             bound_logger.warning("Slack archive returned error", error=error)
-            if error in _ARCHIVE_TRANSIENT_ERRORS:
+            if error in _TRANSIENT_ERRORS:
                 raise BenefitRetriableError()
             raise BenefitActionRequiredError(f"Slack archive error: {error}")
 
@@ -504,7 +504,7 @@ class BenefitSlackSharedChannelService(
         if result.get("ok") or error == "not_archived":
             return True
 
-        if error in _ARCHIVE_TRANSIENT_ERRORS:
+        if error in _TRANSIENT_ERRORS:
             raise BenefitRetriableError()
 
         bound_logger.info(
@@ -618,6 +618,8 @@ class BenefitSlackSharedChannelService(
 
         if not result.get("ok"):
             error = result.get("error", "")
+            if error in _TRANSIENT_ERRORS:
+                raise BenefitRetriableError()
             raise BenefitActionRequiredError(f"Slack invite error: {error}")
 
         return result

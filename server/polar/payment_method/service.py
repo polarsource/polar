@@ -48,7 +48,7 @@ class PaymentMethodInUseByActiveSubscription(PaymentMethodError):
     def __init__(self, subscription_ids: list[uuid.UUID]) -> None:
         self.subscription_ids = subscription_ids
         message = (
-            "This payment method is used by an active subscription. "
+            "This payment method is still needed to bill a subscription. "
             "Add another one or cancel the subscription first."
         )
         super().__init__(message, 400)

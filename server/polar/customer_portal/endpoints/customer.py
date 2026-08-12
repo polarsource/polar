@@ -200,7 +200,7 @@ async def confirm_payment_method(
     responses={
         204: {"description": "Payment method deleted."},
         400: {
-            "description": "Payment method is used by active subscription(s).",
+            "description": "Payment method is still needed to bill a subscription.",
             "model": PaymentMethodInUseByActiveSubscription.schema(),
         },
         404: {

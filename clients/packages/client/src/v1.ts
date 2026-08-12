@@ -50012,7 +50012,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Payment method is used by active subscription(s). */
+      /** @description Payment method is still needed to bill a subscription. */
       400: {
         headers: {
           [name: string]: unknown

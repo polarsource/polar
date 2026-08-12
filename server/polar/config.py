@@ -612,20 +612,18 @@ class Settings(BaseSettings):
                     path=database,
                 )
             )
-        return str(
-            URL.create(
-                f"postgresql+{driver}",
-                username=username,
-                password=password,
-                database=database,
-                query={
-                    "host": [
-                        f"{host}:{port}",
-                        f"{fallback_host}:{fallback_port or port}",
-                    ]
-                },
-            )
-        )
+        return URL.create(
+            f"postgresql+{driver}",
+            username=username,
+            password=password,
+            database=database,
+            query={
+                "host": [
+                    f"{host}:{port}",
+                    f"{fallback_host}:{fallback_port or port}",
+                ]
+            },
+        ).render_as_string(hide_password=False)
 
     def get_postgres_dsn(self, driver: Literal["asyncpg", "psycopg2"]) -> str:
         return self._build_postgres_dsn(

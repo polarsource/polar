@@ -14,6 +14,11 @@ from polar.merchant_migration.pan_transfer import (
     PanTransferStepsType,
 )
 
+from .merchant_migration_operation import (
+    MerchantMigrationOperation,
+    MerchantMigrationOperationType,
+)
+
 if TYPE_CHECKING:
     from polar.models.organization import Organization
 
@@ -69,10 +74,10 @@ class MerchantMigration(RecordModel):
         PanTransferStepsType, nullable=False, default=list
     )
     # Background precheck/import operation state (status, cursor, selection,
-    # error). Unused until the jobs PR wires start_precheck / start_import;
-    # typed there as well. Nullable so this column can deploy alone.
-    operation: Mapped[dict[str, Any] | None] = mapped_column(
-        JSONB, nullable=True, default=None
+    # error). Unused until the jobs PR wires start_precheck / start_import.
+    # Nullable so this column can deploy alone.
+    operation: Mapped[MerchantMigrationOperation | None] = mapped_column(
+        MerchantMigrationOperationType, nullable=True, default=None
     )
 
     @declared_attr

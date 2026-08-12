@@ -6,6 +6,11 @@ import stripe as stripe_lib
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
+from polar.enums import PaymentProcessor
+from polar.merchant_migration.canonical import (
+    CanonicalPaymentMethod,
+    CanonicalPaymentMethodType,
+)
 from polar.merchant_migration.cards import link_payment_method
 from polar.models import Customer, Organization, PaymentMethod
 from polar.postgres import AsyncSession
@@ -14,10 +19,18 @@ from tests.fixtures.random_objects import create_customer
 from tests.fixtures.stripe import build_stripe_payment_method
 
 
-def _stripe_payment_method(id: str, type: str = "card") -> stripe_lib.PaymentMethod:
-    payment_method = build_stripe_payment_method(type=type, customer="cus_1")
+def _stripe_payment_method(
+    id: str, type: str = "card", **details: object
+) -> stripe_lib.PaymentMethod:
+    payment_method = build_stripe_payment_method(
+        type=type, details=details, customer="cus_1"
+    )
     payment_method.id = id
     return payment_method
+
+
+def _card(last4: str) -> dict[str, object]:
+    return {"last4": last4, "brand": "visa", "exp_month": 4, "exp_year": 2030}
 
 
 def _listing(
@@ -178,3 +191,118 @@ class TestLinkPaymentMethod:
         assert second is not None
         assert first.id == second.id
         assert len(await _payment_methods(session, imported_customer)) == 1
+
+
+@pytest.mark.asyncio
+class TestKeepsTheCardTheSourceCharged:
+    """The customer has two cards stored but the subscription only ever charged
+    one of them. The copy re-mints both ids, so the details are what tells them
+    apart — and the one that was being charged has to keep being charged."""
+
+    async def test_picks_the_copy_of_the_source_method(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        imported_customer: Customer,
+    ) -> None:
+        _listing(
+            mocker,
+            [
+                _stripe_payment_method("pm_copy_of_c1", **_card("1111")),
+                _stripe_payment_method("pm_copy_of_c2", **_card("2222")),
+            ],
+        )
+        charged_on_the_source = CanonicalPaymentMethod(
+            source_id="pm_c2_on_the_source",
+            type=CanonicalPaymentMethodType.card,
+            **_card("2222"),  # type: ignore[arg-type]
+        )
+
+        payment_method = await link_payment_method(
+            session, imported_customer, source_method=charged_on_the_source
+        )
+
+        assert payment_method is not None
+        assert payment_method.processor_id == "pm_copy_of_c2"
+
+    async def test_beats_an_existing_default(
+        self,
+        mocker: MockerFixture,
+        save_fixture: SaveFixture,
+        session: AsyncSession,
+        imported_customer: Customer,
+    ) -> None:
+        """The default is a guess; what the subscription charged is the answer."""
+        existing = PaymentMethod(
+            processor=PaymentProcessor.stripe,
+            processor_id="pm_copy_of_c1",
+            type="card",
+            method_metadata=_card("1111"),
+            customer=imported_customer,
+        )
+        await save_fixture(existing)
+        imported_customer.default_payment_method_id = existing.id
+        await save_fixture(imported_customer)
+        _listing(
+            mocker,
+            [
+                _stripe_payment_method("pm_copy_of_c1", **_card("1111")),
+                _stripe_payment_method("pm_copy_of_c2", **_card("2222")),
+            ],
+        )
+
+        payment_method = await link_payment_method(
+            session,
+            imported_customer,
+            source_method=CanonicalPaymentMethod(
+                source_id="pm_c2_on_the_source",
+                type=CanonicalPaymentMethodType.card,
+                **_card("2222"),  # type: ignore[arg-type]
+            ),
+        )
+
+        assert payment_method is not None
+        assert payment_method.processor_id == "pm_copy_of_c2"
+
+    async def test_falls_back_when_the_card_did_not_land(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        imported_customer: Customer,
+    ) -> None:
+        """Only C1 copied. Better the card we have than nothing — the cutover's
+        SetupIntent is what decides whether it can actually be charged."""
+        _listing(mocker, [_stripe_payment_method("pm_copy_of_c1", **_card("1111"))])
+
+        payment_method = await link_payment_method(
+            session,
+            imported_customer,
+            source_method=CanonicalPaymentMethod(
+                source_id="pm_c2_on_the_source",
+                type=CanonicalPaymentMethodType.card,
+                **_card("2222"),  # type: ignore[arg-type]
+            ),
+        )
+
+        assert payment_method is not None
+        assert payment_method.processor_id == "pm_copy_of_c1"
+
+    async def test_a_source_method_with_no_details_cannot_match(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        imported_customer: Customer,
+    ) -> None:
+        """A legacy `src_` object gives us an id and nothing else."""
+        _listing(mocker, [_stripe_payment_method("pm_copied", **_card("1111"))])
+
+        payment_method = await link_payment_method(
+            session,
+            imported_customer,
+            source_method=CanonicalPaymentMethod(
+                source_id="src_legacy", type=CanonicalPaymentMethodType.card
+            ),
+        )
+
+        assert payment_method is not None
+        assert payment_method.processor_id == "pm_copied"

@@ -29,6 +29,7 @@ from polar.models.subscription_meter import SubscriptionMeter
 from polar.postgres import AsyncSession
 from polar.subscription.service import SubscriptionUpdateContext
 from polar.subscription.service import subscription as subscription_service
+from polar.subscription.update import generate_subscription_update
 from polar.tax.calculation import get_tax_behavior_from_option
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import (
@@ -338,8 +339,6 @@ class TestCalculateChargePreview:
             save_fixture, product=product, customer=customer
         )
 
-        from polar.subscription.update import generate_subscription_update
-
         subscription_update, _ = generate_subscription_update(
             subscription,
             SubscriptionProrationBehavior.prorate,
@@ -390,8 +389,6 @@ class TestCalculateChargePreview:
             current_period_start=datetime(2024, 1, 1, tzinfo=UTC),
             current_period_end=datetime(2024, 2, 1, tzinfo=UTC),
         )
-
-        from polar.subscription.update import generate_subscription_update
 
         subscription_update, _ = generate_subscription_update(
             subscription,

@@ -147,6 +147,12 @@ const components: NavItem[] = [
     description: 'Tabbed navigation between related views.',
   },
   {
+    title: 'Subnav',
+    slug: 'subnav',
+    href: '/components/subnav',
+    description: 'Horizontal link navigation between the sections of a page.',
+  },
+  {
     title: 'SegmentedControl',
     slug: 'segmented-control',
     href: '/components/segmented-control',

@@ -6,6 +6,7 @@ import pytest
 from pytest_mock import MockerFixture
 from sqlalchemy import select
 
+from polar.email.deduplication import payment_method_expiration_reminder_key
 from polar.email.react import serialize_email_props
 from polar.enums import EmailSender
 from polar.kit.utils import utc_now
@@ -123,6 +124,9 @@ async def create_sent_log(
         subject="Your card ending in 4242 expires soon",
         email_template=email_template,
         email_props=props,
+        deduplication_key=payment_method_expiration_reminder_key(
+            payment_method.id, exp_year, exp_month
+        ),
     )
     await save_fixture(email_log)
     return email_log
@@ -313,7 +317,7 @@ class TestDedupRoundTrip:
         product: Product,
         mocker: MockerFixture,
     ) -> None:
-        """The dedup query must read the props the sender actually writes."""
+        """The dedup query must match the key the sender actually writes."""
         payment_method = await create_expiring_card(save_fixture, customer, product)
         enqueue_mock = mocker.patch(
             "polar.payment_method.service.enqueue_email_template", autospec=True
@@ -335,6 +339,7 @@ class TestDedupRoundTrip:
             subject=enqueue_mock.call_args.kwargs["subject"],
             email_template=email.template,
             email_props=email_props,
+            deduplication_key=enqueue_mock.call_args.kwargs["deduplication_key"],
         )
         await save_fixture(email_log)
 

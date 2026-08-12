@@ -77,7 +77,14 @@ class TestSerialize:
         assert result["current_period_start"] == "2026-01-01T00:00:00+00:00"
         assert result["current_period_end"] == "2026-02-01T00:00:00+00:00"
         assert result["status"] == "active"
-        assert result["payment_method"] == {"source_id": "pm_1", "type": "card"}
+        assert result["payment_method"] == {
+            "source_id": "pm_1",
+            "type": "card",
+            "last4": None,
+            "brand": None,
+            "exp_month": None,
+            "exp_year": None,
+        }
 
     def test_optional_fields_stay_none(self) -> None:
         customer = CanonicalCustomer(

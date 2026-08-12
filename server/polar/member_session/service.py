@@ -37,9 +37,5 @@ class MemberSessionService(ResourceServiceReader[MemberSession]):
         repository = MemberSessionRepository.from_session(session)
         return await repository.get_by_token_hash(token_hash, expired=expired)
 
-    async def delete_expired(self, session: AsyncSession) -> None:
-        repository = MemberSessionRepository.from_session(session)
-        await repository.delete_expired()
-
 
 member_session = MemberSessionService(MemberSession)

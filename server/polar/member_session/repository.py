@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from sqlalchemy import delete, select
+from sqlalchemy import select
 from sqlalchemy.orm import contains_eager
 
 from polar.kit.repository import (
@@ -44,7 +44,3 @@ class MemberSessionRepository(
 
         result = await self.session.execute(statement)
         return result.unique().scalar_one_or_none()
-
-    async def delete_expired(self) -> None:
-        statement = delete(MemberSession).where(MemberSession.expires_at < utc_now())
-        await self.session.execute(statement)

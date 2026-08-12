@@ -8,6 +8,7 @@ from polar.worker import (
     TaskPriority,
     actor,
     enqueue_job,
+    get_message_timestamp,
 )
 
 from .repository import PaymentMethodRepository
@@ -44,10 +45,22 @@ async def send_expiration_reminder(payment_method_id: uuid.UUID) -> None:
     async with AsyncSessionMaker() as session:
         repository = PaymentMethodRepository.from_session(session)
         payment_method = await repository.get_by_id(
-            payment_method_id, options=repository.get_eager_options()
+            payment_method_id,
+            options=repository.get_eager_options(),
+            include_deleted=True,
         )
         if payment_method is None:
             raise PaymentMethodDoesNotExist(payment_method_id)
+
+        if payment_method.deleted_at is not None:
+            # If the message was enqueued after the payment method was deleted,
+            # it's a bug.
+            if get_message_timestamp() > payment_method.deleted_at:
+                raise PaymentMethodDoesNotExist(payment_method_id)
+            # Otherwise, just discard. It can happen under normal circumstances
+            # with race conditions or retries: the payment method was deleted
+            # between the scan enqueuing this task and its execution.
+            return
 
         await payment_method_service.send_expiration_reminder_email(
             session, payment_method

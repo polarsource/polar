@@ -3511,6 +3511,31 @@ class TestUpdate:
         assert checkout.customer_billing_address is not None
         assert checkout.customer_billing_address.country == "US"
 
+    async def test_disabling_business_customer_clears_tax_id(
+        self,
+        session: AsyncSession,
+        save_fixture: SaveFixture,
+        checkout_one_time_custom: Checkout,
+    ) -> None:
+        checkout_one_time_custom.is_business_customer = True
+        checkout_one_time_custom.customer_billing_name = "ACME Inc."
+        checkout_one_time_custom.customer_tax_id = (
+            "FR61954506077",
+            TaxIDFormat.eu_vat,
+        )
+        await save_fixture(checkout_one_time_custom)
+
+        checkout = await checkout_service.update(
+            session,
+            checkout_one_time_custom,
+            CheckoutUpdate(is_business_customer=False),
+        )
+
+        assert checkout.is_business_customer is False
+        assert checkout.customer_tax_id is None
+        assert checkout.customer_tax_id_number is None
+        assert checkout.customer_billing_name is None
+
     async def test_silent_calculate_tax_error(
         self,
         session: AsyncSession,

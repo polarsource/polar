@@ -181,7 +181,7 @@ class CustomerService:
         start: datetime | None = None,
         end: datetime | None = None,
         limit: int = 10,
-    ) -> Sequence[tuple[uuid.UUID, str | None, str | None, int, int]]:
+    ) -> Sequence[tuple[Customer, int, int]]:
         await assert_organization_permission(
             session,
             auth_subject,

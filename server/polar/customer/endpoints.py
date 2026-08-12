@@ -17,7 +17,6 @@ from polar.kit.pagination import ListResource, PaginationParamsQuery
 from polar.kit.schemas import MultipleQueryFilter
 from polar.kit.time_queries import TimeInterval
 from polar.models import Customer, PaymentMethod
-from polar.models.customer import _avatar_url_for_email
 from polar.openapi import APITag
 from polar.organization.schemas import OrganizationID
 from polar.payment_method.schemas import PaymentMethodTypeAdapter
@@ -246,14 +245,14 @@ async def top(
     )
     return [
         TopCustomer(
-            id=customer_id,
-            email=email,
-            name=name,
-            avatar_url=_avatar_url_for_email(email) if email else None,
+            id=customer.id,
+            email=customer.email,
+            name=customer.name,
+            avatar_url=customer.avatar_url,
             order_count=order_count,
             net_revenue=net_revenue,
         )
-        for customer_id, email, name, order_count, net_revenue in ranked
+        for customer, order_count, net_revenue in ranked
     ]
 
 

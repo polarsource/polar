@@ -61,9 +61,9 @@ class OrderRepository(
         start: datetime | None = None,
         end: datetime | None = None,
         limit: int = 10,
-    ) -> Sequence[tuple[UUID, str | None, str | None, int, int]]:
-        """Customers ranked by paid net revenue: (customer_id, email, name,
-        order count, net revenue in cents), descending.
+    ) -> Sequence[tuple[Customer, int, int]]:
+        """Customers ranked by paid net revenue: (customer, order count, net
+        revenue in cents), descending.
 
         Partially refunded orders count with the refunded portion subtracted,
         so the ranking reflects money actually kept.
@@ -77,19 +77,18 @@ class OrderRepository(
         )
         statement = (
             select(
-                Customer.id,
-                Customer.email,
-                Customer.name,
+                Customer,
                 func.count(Order.id),
                 net_revenue,
             )
+            .select_from(Order)
             .join(Customer, Customer.id == Order.customer_id)
             .where(
                 Order.organization_id == organization_id,
                 Order.status.in_(OrderStatus.paid_statuses()),
                 Order.is_deleted.is_(False),
             )
-            .group_by(Customer.id, Customer.email, Customer.name)
+            .group_by(Customer.id)
             .order_by(net_revenue.desc())
             .limit(limit)
         )
@@ -98,9 +97,7 @@ class OrderRepository(
         if end is not None:
             statement = statement.where(Order.created_at < end)
         result = await self.session.execute(statement)
-        return [
-            (row[0], row[1], row[2], int(row[3]), int(row[4])) for row in result.all()
-        ]
+        return [(row[0], int(row[1]), int(row[2])) for row in result.all()]
 
     async def get_paid_revenue_by_country(
         self,

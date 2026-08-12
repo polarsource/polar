@@ -560,17 +560,6 @@ class MemberService:
             role=role,
         )
 
-    async def list_by_customers(
-        self,
-        session: AsyncReadSession,
-        customer_ids: Sequence[UUID],
-    ) -> Sequence[Member]:
-        """
-        Get all members for multiple customers (batch loading to avoid N+1 queries).
-        """
-        repository = MemberRepository.from_session(session)
-        return await repository.list_by_customers(customer_ids)
-
     async def create(
         self,
         session: AsyncSession,

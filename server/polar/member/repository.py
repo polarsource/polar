@@ -179,22 +179,6 @@ class MemberRepository(
         )
         return await self.get_all(statement)
 
-    async def list_by_customers(
-        self,
-        customer_ids: Sequence[UUID],
-    ) -> Sequence[Member]:
-        """
-        Get all members for multiple customers (batch loading to avoid N+1 queries).
-        """
-        if not customer_ids:
-            return []
-
-        statement = select(Member).where(
-            Member.customer_id.in_(customer_ids),
-            Member.is_deleted.is_(False),
-        )
-        return await self.get_all(statement)
-
     def get_statement_by_org_ids(
         self, org_ids: set[AccessibleOrganizationID]
     ) -> Select[tuple[Member]]:

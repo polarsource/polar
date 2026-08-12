@@ -130,6 +130,7 @@ class SubscriptionRepository(
             .where(
                 Subscription.payment_method_id == payment_method_id,
                 Subscription.requires_payment_method.is_(True),
+                Subscription.ended_at.is_(None),
             )
         )
         result = await self.session.execute(statement)

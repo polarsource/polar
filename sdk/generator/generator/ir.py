@@ -1182,7 +1182,7 @@ def _generate_ir_version(
                 ) in error_responses_raw:
                     type = None
                     name = to_pascal_case(
-                        f"{service.name}_{method_name}_{status_code}_error"
+                        f"{'_'.join(service_key)}_{method_name}_{status_code}_error"
                     )
                     if schema_raw is not None:
                         type = _convert_typeref(

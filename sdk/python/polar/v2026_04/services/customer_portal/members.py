@@ -9,20 +9,20 @@ from polar.base import (
     parse_response_none,
 )
 from polar.v2026_04.errors import (
+    CustomerPortalMembersAddMember400Error,
+    CustomerPortalMembersAddMember401Error,
+    CustomerPortalMembersAddMember403Error,
+    CustomerPortalMembersListMembers401Error,
+    CustomerPortalMembersListMembers403Error,
+    CustomerPortalMembersRemoveMember400Error,
+    CustomerPortalMembersRemoveMember401Error,
+    CustomerPortalMembersRemoveMember403Error,
+    CustomerPortalMembersRemoveMember404Error,
+    CustomerPortalMembersUpdateMember400Error,
+    CustomerPortalMembersUpdateMember401Error,
+    CustomerPortalMembersUpdateMember403Error,
+    CustomerPortalMembersUpdateMember404Error,
     HTTPValidationError,
-    MembersAddMember400Error,
-    MembersAddMember401Error,
-    MembersAddMember403Error,
-    MembersListMembers401Error,
-    MembersListMembers403Error,
-    MembersRemoveMember400Error,
-    MembersRemoveMember401Error,
-    MembersRemoveMember403Error,
-    MembersRemoveMember404Error,
-    MembersUpdateMember400Error,
-    MembersUpdateMember401Error,
-    MembersUpdateMember403Error,
-    MembersUpdateMember404Error,
 )
 from polar.v2026_04.inputs import (
     CustomerPortalMemberCreate,
@@ -51,8 +51,8 @@ class MembersSync(SyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
 
         Raises:
-            MembersListMembers401Error: Authentication required
-            MembersListMembers403Error: Not permitted - requires owner or billing manager role
+            CustomerPortalMembersListMembers401Error: Authentication required
+            CustomerPortalMembersListMembers403Error: Not permitted - requires owner or billing manager role
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -69,8 +69,8 @@ class MembersSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            401: MembersListMembers401Error,
-            403: MembersListMembers403Error,
+            401: CustomerPortalMembersListMembers401Error,
+            403: CustomerPortalMembersListMembers403Error,
             422: HTTPValidationError,
         }
         return parse_response_json(
@@ -96,8 +96,8 @@ class MembersSync(SyncServiceBase):
             A generator that yields items of type CustomerPortalMember.
 
         Raises:
-            MembersListMembers401Error: Authentication required
-            MembersListMembers403Error: Not permitted - requires owner or billing manager role
+            CustomerPortalMembersListMembers401Error: Authentication required
+            CustomerPortalMembersListMembers403Error: Not permitted - requires owner or billing manager role
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -130,9 +130,9 @@ class MembersSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            MembersAddMember400Error: Invalid request or member already exists.
-            MembersAddMember401Error: Authentication required
-            MembersAddMember403Error: Not permitted - requires owner or billing manager role
+            CustomerPortalMembersAddMember400Error: Invalid request or member already exists.
+            CustomerPortalMembersAddMember401Error: Authentication required
+            CustomerPortalMembersAddMember403Error: Not permitted - requires owner or billing manager role
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -147,9 +147,9 @@ class MembersSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            400: MembersAddMember400Error,
-            401: MembersAddMember401Error,
-            403: MembersAddMember403Error,
+            400: CustomerPortalMembersAddMember400Error,
+            401: CustomerPortalMembersAddMember401Error,
+            403: CustomerPortalMembersAddMember403Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerPortalMember, method_errors)
@@ -171,10 +171,10 @@ class MembersSync(SyncServiceBase):
             id:
 
         Raises:
-            MembersRemoveMember400Error: Cannot remove the only owner.
-            MembersRemoveMember401Error: Authentication required
-            MembersRemoveMember403Error: Not permitted - requires owner or billing manager role
-            MembersRemoveMember404Error: Member not found.
+            CustomerPortalMembersRemoveMember400Error: Cannot remove the only owner.
+            CustomerPortalMembersRemoveMember401Error: Authentication required
+            CustomerPortalMembersRemoveMember403Error: Not permitted - requires owner or billing manager role
+            CustomerPortalMembersRemoveMember404Error: Member not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -190,10 +190,10 @@ class MembersSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            400: MembersRemoveMember400Error,
-            401: MembersRemoveMember401Error,
-            403: MembersRemoveMember403Error,
-            404: MembersRemoveMember404Error,
+            400: CustomerPortalMembersRemoveMember400Error,
+            401: CustomerPortalMembersRemoveMember401Error,
+            403: CustomerPortalMembersRemoveMember403Error,
+            404: CustomerPortalMembersRemoveMember404Error,
             422: HTTPValidationError,
         }
         return parse_response_none(response, method_errors)
@@ -217,10 +217,10 @@ class MembersSync(SyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            MembersUpdateMember400Error: Invalid role change.
-            MembersUpdateMember401Error: Authentication required
-            MembersUpdateMember403Error: Not permitted - requires owner or billing manager role
-            MembersUpdateMember404Error: Member not found.
+            CustomerPortalMembersUpdateMember400Error: Invalid role change.
+            CustomerPortalMembersUpdateMember401Error: Authentication required
+            CustomerPortalMembersUpdateMember403Error: Not permitted - requires owner or billing manager role
+            CustomerPortalMembersUpdateMember404Error: Member not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -237,10 +237,10 @@ class MembersSync(SyncServiceBase):
         )
         response = self.client.send_request(request)
         method_errors = {
-            400: MembersUpdateMember400Error,
-            401: MembersUpdateMember401Error,
-            403: MembersUpdateMember403Error,
-            404: MembersUpdateMember404Error,
+            400: CustomerPortalMembersUpdateMember400Error,
+            401: CustomerPortalMembersUpdateMember401Error,
+            403: CustomerPortalMembersUpdateMember403Error,
+            404: CustomerPortalMembersUpdateMember404Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerPortalMember, method_errors)
@@ -263,8 +263,8 @@ class MembersAsync(AsyncServiceBase):
             limit: Size of a page, defaults to 10. Maximum is 100.
 
         Raises:
-            MembersListMembers401Error: Authentication required
-            MembersListMembers403Error: Not permitted - requires owner or billing manager role
+            CustomerPortalMembersListMembers401Error: Authentication required
+            CustomerPortalMembersListMembers403Error: Not permitted - requires owner or billing manager role
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -281,8 +281,8 @@ class MembersAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            401: MembersListMembers401Error,
-            403: MembersListMembers403Error,
+            401: CustomerPortalMembersListMembers401Error,
+            403: CustomerPortalMembersListMembers403Error,
             422: HTTPValidationError,
         }
         return parse_response_json(
@@ -308,8 +308,8 @@ class MembersAsync(AsyncServiceBase):
             An async generator that yields items of type CustomerPortalMember.
 
         Raises:
-            MembersListMembers401Error: Authentication required
-            MembersListMembers403Error: Not permitted - requires owner or billing manager role
+            CustomerPortalMembersListMembers401Error: Authentication required
+            CustomerPortalMembersListMembers403Error: Not permitted - requires owner or billing manager role
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -343,9 +343,9 @@ class MembersAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            MembersAddMember400Error: Invalid request or member already exists.
-            MembersAddMember401Error: Authentication required
-            MembersAddMember403Error: Not permitted - requires owner or billing manager role
+            CustomerPortalMembersAddMember400Error: Invalid request or member already exists.
+            CustomerPortalMembersAddMember401Error: Authentication required
+            CustomerPortalMembersAddMember403Error: Not permitted - requires owner or billing manager role
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -360,9 +360,9 @@ class MembersAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            400: MembersAddMember400Error,
-            401: MembersAddMember401Error,
-            403: MembersAddMember403Error,
+            400: CustomerPortalMembersAddMember400Error,
+            401: CustomerPortalMembersAddMember401Error,
+            403: CustomerPortalMembersAddMember403Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerPortalMember, method_errors)
@@ -384,10 +384,10 @@ class MembersAsync(AsyncServiceBase):
             id:
 
         Raises:
-            MembersRemoveMember400Error: Cannot remove the only owner.
-            MembersRemoveMember401Error: Authentication required
-            MembersRemoveMember403Error: Not permitted - requires owner or billing manager role
-            MembersRemoveMember404Error: Member not found.
+            CustomerPortalMembersRemoveMember400Error: Cannot remove the only owner.
+            CustomerPortalMembersRemoveMember401Error: Authentication required
+            CustomerPortalMembersRemoveMember403Error: Not permitted - requires owner or billing manager role
+            CustomerPortalMembersRemoveMember404Error: Member not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -403,10 +403,10 @@ class MembersAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            400: MembersRemoveMember400Error,
-            401: MembersRemoveMember401Error,
-            403: MembersRemoveMember403Error,
-            404: MembersRemoveMember404Error,
+            400: CustomerPortalMembersRemoveMember400Error,
+            401: CustomerPortalMembersRemoveMember401Error,
+            403: CustomerPortalMembersRemoveMember403Error,
+            404: CustomerPortalMembersRemoveMember404Error,
             422: HTTPValidationError,
         }
         return parse_response_none(response, method_errors)
@@ -430,10 +430,10 @@ class MembersAsync(AsyncServiceBase):
             **kwargs: Request body parameters
 
         Raises:
-            MembersUpdateMember400Error: Invalid role change.
-            MembersUpdateMember401Error: Authentication required
-            MembersUpdateMember403Error: Not permitted - requires owner or billing manager role
-            MembersUpdateMember404Error: Member not found.
+            CustomerPortalMembersUpdateMember400Error: Invalid role change.
+            CustomerPortalMembersUpdateMember401Error: Authentication required
+            CustomerPortalMembersUpdateMember403Error: Not permitted - requires owner or billing manager role
+            CustomerPortalMembersUpdateMember404Error: Member not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
             PolarRateLimitError: Raised when the rate limit is exceeded.
@@ -450,10 +450,10 @@ class MembersAsync(AsyncServiceBase):
         )
         response = await self.client.send_request(request)
         method_errors = {
-            400: MembersUpdateMember400Error,
-            401: MembersUpdateMember401Error,
-            403: MembersUpdateMember403Error,
-            404: MembersUpdateMember404Error,
+            400: CustomerPortalMembersUpdateMember400Error,
+            401: CustomerPortalMembersUpdateMember401Error,
+            403: CustomerPortalMembersUpdateMember403Error,
+            404: CustomerPortalMembersUpdateMember404Error,
             422: HTTPValidationError,
         }
         return parse_response_json(response, CustomerPortalMember, method_errors)

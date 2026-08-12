@@ -6,10 +6,10 @@ import typing
 from polar.base import AsyncServiceBase, SyncServiceBase, parse_response_json
 from polar.v2026_04.errors import (
     AlreadyCanceledSubscription,
+    CustomerPortalSubscriptionsUpdate403Error,
     HTTPValidationError,
     PaymentFailed,
     ResourceNotFound,
-    SubscriptionsUpdate403Error,
 )
 from polar.v2026_04.inputs import (
     CustomerSubscriptionCancel,
@@ -249,7 +249,7 @@ class SubscriptionsSync(SyncServiceBase):
 
         Raises:
             PaymentFailed: Payment required to apply the subscription update.
-            SubscriptionsUpdate403Error: Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
+            CustomerPortalSubscriptionsUpdate403Error: Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
             ResourceNotFound: Customer subscription was not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -268,7 +268,7 @@ class SubscriptionsSync(SyncServiceBase):
         response = self.client.send_request(request)
         method_errors = {
             402: PaymentFailed,
-            403: SubscriptionsUpdate403Error,
+            403: CustomerPortalSubscriptionsUpdate403Error,
             404: ResourceNotFound,
             422: HTTPValidationError,
         }
@@ -497,7 +497,7 @@ class SubscriptionsAsync(AsyncServiceBase):
 
         Raises:
             PaymentFailed: Payment required to apply the subscription update.
-            SubscriptionsUpdate403Error: Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
+            CustomerPortalSubscriptionsUpdate403Error: Customer subscription is already canceled or will be at the end of the period, the user lacks billing permissions, or pausing/resuming is not enabled for the organization.
             ResourceNotFound: Customer subscription was not found.
             HTTPValidationError: Validation Error
             PolarNetworkError: Raised when a network error occurs while making the request.
@@ -516,7 +516,7 @@ class SubscriptionsAsync(AsyncServiceBase):
         response = await self.client.send_request(request)
         method_errors = {
             402: PaymentFailed,
-            403: SubscriptionsUpdate403Error,
+            403: CustomerPortalSubscriptionsUpdate403Error,
             404: ResourceNotFound,
             422: HTTPValidationError,
         }

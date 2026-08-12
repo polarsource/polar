@@ -8,22 +8,22 @@ import type {
 } from "../../models";
 
 import {
+  CustomerPortalSeatsAssignSeat400Error,
+  CustomerPortalSeatsAssignSeat401Error,
+  CustomerPortalSeatsAssignSeat403Error,
+  CustomerPortalSeatsAssignSeat404Error,
+  CustomerPortalSeatsListClaimedSubscriptions401Error,
+  CustomerPortalSeatsListSeats401Error,
+  CustomerPortalSeatsListSeats403Error,
+  CustomerPortalSeatsListSeats404Error,
+  CustomerPortalSeatsResendInvitation400Error,
+  CustomerPortalSeatsResendInvitation401Error,
+  CustomerPortalSeatsResendInvitation403Error,
+  CustomerPortalSeatsResendInvitation404Error,
+  CustomerPortalSeatsRevokeSeat401Error,
+  CustomerPortalSeatsRevokeSeat403Error,
+  CustomerPortalSeatsRevokeSeat404Error,
   HTTPValidationError,
-  SeatsAssignSeat400Error,
-  SeatsAssignSeat401Error,
-  SeatsAssignSeat403Error,
-  SeatsAssignSeat404Error,
-  SeatsListClaimedSubscriptions401Error,
-  SeatsListSeats401Error,
-  SeatsListSeats403Error,
-  SeatsListSeats404Error,
-  SeatsResendInvitation400Error,
-  SeatsResendInvitation401Error,
-  SeatsResendInvitation403Error,
-  SeatsResendInvitation404Error,
-  SeatsRevokeSeat401Error,
-  SeatsRevokeSeat403Error,
-  SeatsRevokeSeat404Error,
 } from "../../errors";
 
 export const listSeatsSeats = (client: ClientBase) => {
@@ -35,9 +35,9 @@ export const listSeatsSeats = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {SeatsListSeats401Error} Authentication required
-   * @throws {SeatsListSeats403Error} Not permitted or seat-based pricing not enabled
-   * @throws {SeatsListSeats404Error} Subscription or order not found
+   * @throws {CustomerPortalSeatsListSeats401Error} Authentication required
+   * @throws {CustomerPortalSeatsListSeats403Error} Not permitted or seat-based pricing not enabled
+   * @throws {CustomerPortalSeatsListSeats404Error} Subscription or order not found
    * @throws {HTTPValidationError} Validation Error
    */
   return async (query?: {
@@ -58,9 +58,9 @@ export const listSeatsSeats = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request);
     return client.parseResponse<SeatsList>(response, "json", {
-      401: SeatsListSeats401Error,
-      403: SeatsListSeats403Error,
-      404: SeatsListSeats404Error,
+      401: CustomerPortalSeatsListSeats401Error,
+      403: CustomerPortalSeatsListSeats403Error,
+      404: CustomerPortalSeatsListSeats404Error,
       422: HTTPValidationError,
     });
   };
@@ -73,10 +73,10 @@ export const assignSeatSeats = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {SeatsAssignSeat400Error} No available seats or customer already has a seat
-   * @throws {SeatsAssignSeat401Error} Authentication required
-   * @throws {SeatsAssignSeat403Error} Not permitted or seat-based pricing not enabled
-   * @throws {SeatsAssignSeat404Error} Subscription, order, or customer not found
+   * @throws {CustomerPortalSeatsAssignSeat400Error} No available seats or customer already has a seat
+   * @throws {CustomerPortalSeatsAssignSeat401Error} Authentication required
+   * @throws {CustomerPortalSeatsAssignSeat403Error} Not permitted or seat-based pricing not enabled
+   * @throws {CustomerPortalSeatsAssignSeat404Error} Subscription, order, or customer not found
    * @throws {HTTPValidationError} Validation Error
    */
   return async (body: CustomerSeatAssign): Promise<CustomerSeat> => {
@@ -91,10 +91,10 @@ export const assignSeatSeats = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request);
     return client.parseResponse<CustomerSeat>(response, "json", {
-      400: SeatsAssignSeat400Error,
-      401: SeatsAssignSeat401Error,
-      403: SeatsAssignSeat403Error,
-      404: SeatsAssignSeat404Error,
+      400: CustomerPortalSeatsAssignSeat400Error,
+      401: CustomerPortalSeatsAssignSeat401Error,
+      403: CustomerPortalSeatsAssignSeat403Error,
+      404: CustomerPortalSeatsAssignSeat404Error,
       422: HTTPValidationError,
     });
   };
@@ -107,9 +107,9 @@ export const revokeSeatSeats = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {SeatsRevokeSeat401Error} Authentication required
-   * @throws {SeatsRevokeSeat403Error} Not permitted or seat-based pricing not enabled
-   * @throws {SeatsRevokeSeat404Error} Seat not found
+   * @throws {CustomerPortalSeatsRevokeSeat401Error} Authentication required
+   * @throws {CustomerPortalSeatsRevokeSeat403Error} Not permitted or seat-based pricing not enabled
+   * @throws {CustomerPortalSeatsRevokeSeat404Error} Seat not found
    * @throws {HTTPValidationError} Validation Error
    */
   return async (seat_id: string): Promise<CustomerSeat> => {
@@ -126,9 +126,9 @@ export const revokeSeatSeats = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request);
     return client.parseResponse<CustomerSeat>(response, "json", {
-      401: SeatsRevokeSeat401Error,
-      403: SeatsRevokeSeat403Error,
-      404: SeatsRevokeSeat404Error,
+      401: CustomerPortalSeatsRevokeSeat401Error,
+      403: CustomerPortalSeatsRevokeSeat403Error,
+      404: CustomerPortalSeatsRevokeSeat404Error,
       422: HTTPValidationError,
     });
   };
@@ -141,10 +141,10 @@ export const resendInvitationSeats = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {SeatsResendInvitation400Error} Seat is not pending or already claimed
-   * @throws {SeatsResendInvitation401Error} Authentication required
-   * @throws {SeatsResendInvitation403Error} Not permitted or seat-based pricing not enabled
-   * @throws {SeatsResendInvitation404Error} Seat not found
+   * @throws {CustomerPortalSeatsResendInvitation400Error} Seat is not pending or already claimed
+   * @throws {CustomerPortalSeatsResendInvitation401Error} Authentication required
+   * @throws {CustomerPortalSeatsResendInvitation403Error} Not permitted or seat-based pricing not enabled
+   * @throws {CustomerPortalSeatsResendInvitation404Error} Seat not found
    * @throws {HTTPValidationError} Validation Error
    */
   return async (seat_id: string): Promise<CustomerSeat> => {
@@ -161,10 +161,10 @@ export const resendInvitationSeats = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request);
     return client.parseResponse<CustomerSeat>(response, "json", {
-      400: SeatsResendInvitation400Error,
-      401: SeatsResendInvitation401Error,
-      403: SeatsResendInvitation403Error,
-      404: SeatsResendInvitation404Error,
+      400: CustomerPortalSeatsResendInvitation400Error,
+      401: CustomerPortalSeatsResendInvitation401Error,
+      403: CustomerPortalSeatsResendInvitation403Error,
+      404: CustomerPortalSeatsResendInvitation404Error,
       422: HTTPValidationError,
     });
   };
@@ -180,7 +180,7 @@ export const listClaimedSubscriptionsSeats = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {SeatsListClaimedSubscriptions401Error} Authentication required
+   * @throws {CustomerPortalSeatsListClaimedSubscriptions401Error} Authentication required
    * @throws {HTTPValidationError} Validation Error
    */
   return async (query?: {
@@ -201,7 +201,7 @@ export const listClaimedSubscriptionsSeats = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request);
     return client.parseResponse<ListResourceCustomerSubscription>(response, "json", {
-      401: SeatsListClaimedSubscriptions401Error,
+      401: CustomerPortalSeatsListClaimedSubscriptions401Error,
       422: HTTPValidationError,
     });
   };
@@ -216,7 +216,7 @@ export const listClaimedSubscriptionsSeats = (client: ClientBase) => {
  * @throws {PolarNetworkError} When a network error occurs
  * @throws {PolarRateLimitError} When the rate limit is exceeded
  * @throws {PolarServerError} When the server returns a 5xx error
- * @throws {SeatsListClaimedSubscriptions401Error} Authentication required
+ * @throws {CustomerPortalSeatsListClaimedSubscriptions401Error} Authentication required
  * @throws {HTTPValidationError} Validation Error
  */
 export const iterListClaimedSubscriptionsSeats = (client: ClientBase) => {

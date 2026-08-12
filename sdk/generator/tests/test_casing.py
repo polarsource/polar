@@ -58,6 +58,7 @@ class TestToPascalCase:
             ("_leading", "Leading"),
             ("trailing_", "Trailing"),
             ("__double__", "Double"),
+            ("dash-separated", "DashSeparated"),
         ],
     )
     def test_to_pascal_case(self, input_str, expected):

@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, cast
 from unittest.mock import AsyncMock
 from uuid import uuid4
 
@@ -1090,6 +1090,85 @@ class TestSlackSharedChannelGrant:
         with pytest.raises(BenefitRetriableError):
             await strategy.grant(benefit, customer, existing)
 
+    @pytest.mark.parametrize(
+        "error",
+        ["ratelimited", "internal_error", "fatal_error", "service_unavailable"],
+    )
+    async def test_grant_invite_transient_error_is_retriable(
+        self,
+        error: str,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        customer.name = "Acme"
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(
+            mocker,
+            conversations_invite_shared=AsyncMock(
+                return_value={"ok": False, "error": error}
+            ),
+        )
+        strategy = _strategy(session, redis, client)
+
+        with pytest.raises(BenefitRetriableError):
+            await strategy.grant(
+                benefit,
+                customer,
+                {"invited_email": "admin@customer.example"},
+            )
+
+    async def test_grant_invite_permanent_error_raises_action_required(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        customer.name = "Acme"
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(
+            mocker,
+            conversations_invite_shared=AsyncMock(
+                return_value={"ok": False, "error": "invalid_email"}
+            ),
+        )
+        strategy = _strategy(session, redis, client)
+
+        with pytest.raises(
+            BenefitActionRequiredError, match="invalid_email"
+        ) as exc_info:
+            await strategy.grant(
+                benefit,
+                customer,
+                {"invited_email": "admin@customer.example"},
+            )
+
+        grant_properties = cast(
+            BenefitGrantSlackSharedChannelProperties | None,
+            exc_info.value.grant_properties,
+        )
+        assert grant_properties is not None
+        assert grant_properties["channel_id"] == "C123"
+        assert grant_properties["channel_name"] == "support-acme"
+
     async def test_grant_retries_on_name_taken(
         self,
         session: AsyncSession,
@@ -1128,6 +1207,134 @@ class TestSlackSharedChannelGrant:
 
         assert result["channel_id"] == "C456"
         assert client.conversations_create.await_count == 2
+
+    async def test_grant_retry_after_transient_invite_error_reuses_channel(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        customer.name = "Acme"
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(
+            mocker,
+            conversations_create=AsyncMock(
+                side_effect=[
+                    {"ok": True, "channel": {"id": "C123", "name": "support-acme"}},
+                    {"ok": False, "error": "name_taken"},
+                ]
+            ),
+            conversations_list=AsyncMock(
+                return_value={
+                    "ok": True,
+                    "channels": [
+                        {
+                            "id": "C123",
+                            "name": "support-acme",
+                            "is_private": True,
+                            "is_member": True,
+                            "is_archived": False,
+                        }
+                    ],
+                }
+            ),
+            conversations_invite_shared=AsyncMock(
+                side_effect=[
+                    {"ok": False, "error": "internal_error"},
+                    {
+                        "ok": True,
+                        "invite_id": "I123",
+                        "url": "https://slack.com/share/I123",
+                    },
+                ]
+            ),
+        )
+        strategy = _strategy(session, redis, client)
+
+        with pytest.raises(BenefitRetriableError):
+            await strategy.grant(
+                benefit,
+                customer,
+                {"invited_email": "admin@customer.example"},
+            )
+
+        result = await strategy.grant(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example"},
+        )
+
+        assert result["channel_id"] == "C123"
+        assert result["invite_id"] == "I123"
+        assert client.conversations_create.await_count == 2
+
+    async def test_grant_retry_adopts_suffixed_channel(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        customer.name = "Acme"
+        suffixed_name = f"support-acme-{customer.id.hex[:4]}"
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(
+            mocker,
+            conversations_create=AsyncMock(
+                return_value={"ok": False, "error": "name_taken"}
+            ),
+            conversations_list=AsyncMock(
+                return_value={
+                    "ok": True,
+                    "channels": [
+                        {
+                            "id": "CTAKEN",
+                            "name": "support-acme",
+                            "is_private": True,
+                            "is_member": False,
+                            "is_archived": False,
+                        },
+                        {
+                            "id": "CSUFFIXED",
+                            "name": suffixed_name,
+                            "is_private": True,
+                            "is_member": True,
+                            "is_archived": False,
+                        },
+                    ],
+                }
+            ),
+        )
+        strategy = _strategy(session, redis, client)
+
+        result = await strategy.grant(
+            benefit,
+            customer,
+            {"invited_email": "admin@customer.example"},
+        )
+
+        assert result["channel_id"] == "CSUFFIXED"
+        assert result["channel_name"] == suffixed_name
+        client.conversations_create.assert_awaited_with(
+            bot_token="xoxb-test-token", name=suffixed_name, is_private=True
+        )
 
     async def test_grant_name_taken_twice_raises(
         self,

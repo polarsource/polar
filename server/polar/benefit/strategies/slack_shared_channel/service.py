@@ -1,4 +1,3 @@
-import secrets
 from typing import Any, Unpack, cast
 from uuid import UUID
 
@@ -42,7 +41,7 @@ log: Logger = structlog.get_logger()
 _PROVISIONING_LOCK_TTL_SECONDS = 60
 
 _ARCHIVE_NOOP_ERRORS = {"already_archived", "channel_not_found"}
-_ARCHIVE_TRANSIENT_ERRORS = {
+_TRANSIENT_ERRORS = {
     "ratelimited",
     "internal_error",
     "fatal_error",
@@ -142,6 +141,7 @@ class BenefitSlackSharedChannelService(
                 template=properties["channel_name_template"],
                 context=context,
                 is_private=properties["private"],
+                suffix=customer.id.hex[:4],
                 bound_logger=bound_logger,
             )
 
@@ -263,7 +263,7 @@ class BenefitSlackSharedChannelService(
                     grant_properties, keep_channel=error != "channel_not_found"
                 )
             bound_logger.warning("Slack archive returned error", error=error)
-            if error in _ARCHIVE_TRANSIENT_ERRORS:
+            if error in _TRANSIENT_ERRORS:
                 raise BenefitRetriableError()
             raise BenefitActionRequiredError(f"Slack archive error: {error}")
 
@@ -393,12 +393,10 @@ class BenefitSlackSharedChannelService(
         self,
         *,
         bot_token: str,
-        template: str,
-        context: TemplateContext,
+        name: str,
         is_private: bool,
         bound_logger: Any,
     ) -> tuple[str, str] | None:
-        name = self._render_channel_name(template, context)
         types = ["private_channel"] if is_private else ["public_channel"]
         cursor: str | None = None
 
@@ -504,7 +502,7 @@ class BenefitSlackSharedChannelService(
         if result.get("ok") or error == "not_archived":
             return True
 
-        if error in _ARCHIVE_TRANSIENT_ERRORS:
+        if error in _TRANSIENT_ERRORS:
             raise BenefitRetriableError()
 
         bound_logger.info(
@@ -521,6 +519,7 @@ class BenefitSlackSharedChannelService(
         template: str,
         context: TemplateContext,
         is_private: bool,
+        suffix: str,
         bound_logger: Any,
     ) -> tuple[str, str, bool]:
         name = self._render_channel_name(template, context)
@@ -537,8 +536,7 @@ class BenefitSlackSharedChannelService(
 
         existing = await self._find_channel_by_name(
             bot_token=bot_token,
-            template=template,
-            context=context,
+            name=name,
             is_private=is_private,
             bound_logger=bound_logger,
         )
@@ -546,15 +544,26 @@ class BenefitSlackSharedChannelService(
             channel_id, channel_name = existing
             return channel_id, channel_name, False
 
-        name = self._render_channel_name(template, context, suffix=secrets.token_hex(2))
+        suffixed_name = self._render_channel_name(template, context, suffix=suffix)
         result = await self._create_channel_once(
-            bot_token=bot_token, name=name, is_private=is_private
+            bot_token=bot_token, name=suffixed_name, is_private=is_private
         )
         if result.get("ok"):
             channel = result.get("channel") or {}
-            return channel["id"], channel.get("name", name), True
+            return channel["id"], channel.get("name", suffixed_name), True
 
         error = result.get("error", "")
+        if error == "name_taken":
+            existing = await self._find_channel_by_name(
+                bot_token=bot_token,
+                name=suffixed_name,
+                is_private=is_private,
+                bound_logger=bound_logger,
+            )
+            if existing:
+                channel_id, channel_name = existing
+                return channel_id, channel_name, False
+
         raise BenefitActionRequiredError(f"Slack error: {error}")
 
     async def _create_channel_once(
@@ -618,6 +627,8 @@ class BenefitSlackSharedChannelService(
 
         if not result.get("ok"):
             error = result.get("error", "")
+            if error in _TRANSIENT_ERRORS:
+                raise BenefitRetriableError()
             raise BenefitActionRequiredError(f"Slack invite error: {error}")
 
         return result

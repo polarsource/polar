@@ -47,7 +47,9 @@ export const runBulk = async <T, R = void>(
   await Promise.all(Array.from({ length: limit }, worker))
 
   if (cursor < items.length) {
-    result.cancelled.push(...items.slice(cursor))
+    for (const item of items.slice(cursor)) {
+      result.cancelled.push(item)
+    }
   }
 
   return result

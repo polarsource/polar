@@ -44,7 +44,7 @@ from .canonical import (
     CanonicalSubscriptionStatus,
     deserialize,
 )
-from .cards import CARD_TYPE, link_payment_method
+from .cards import CARD_TYPE, AmbiguousCopiedCard, link_payment_method
 from .precheck import subscription_import_reason
 
 log: Logger = structlog.get_logger()
@@ -119,6 +119,17 @@ class SubscriptionCutover:
     async def run(self, record: MerchantMigrationRecord) -> CutoverOutcome:
         try:
             return await self._run(record)
+        except AmbiguousCopiedCard as e:
+            # One customer nobody can pick a card for must not stop the run for
+            # everyone else. Recorded so it surfaces, and retryable once someone
+            # has removed the duplicate.
+            log.warning(
+                "merchant_migration.cutover.ambiguous_card",
+                migration_id=self.migration.id,
+                record_id=record.id,
+                customer_id=e.customer_id,
+            )
+            return _fail(str(e))
         except stripe_lib.StripeError as e:
             # Reaching Stripe is the one thing that fails for reasons that have
             # nothing to do with this subscription, so it's recorded as failed

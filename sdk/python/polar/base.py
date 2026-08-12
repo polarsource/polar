@@ -233,4 +233,3 @@ def parse_response_none(
     errors: dict[int, type[E]] | None = None,
 ) -> None:
     _handle_errors(response, errors)
-    return None

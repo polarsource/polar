@@ -282,11 +282,7 @@ class WebhooksSync(SyncServiceBase):
         end_timestamp: str | None = None,
         succeeded: bool | None = None,
         query: str | None = None,
-        http_code_class: typing.Literal["2xx"]
-        | typing.Literal["3xx"]
-        | typing.Literal["4xx"]
-        | typing.Literal["5xx"]
-        | None = None,
+        http_code_class: typing.Literal["2xx", "3xx", "4xx", "5xx"] | None = None,
         event_type: WebhookEventType | list[WebhookEventType] | None = None,
         page: int = 1,
         limit: int = 10,
@@ -345,11 +341,7 @@ class WebhooksSync(SyncServiceBase):
         end_timestamp: str | None = None,
         succeeded: bool | None = None,
         query: str | None = None,
-        http_code_class: typing.Literal["2xx"]
-        | typing.Literal["3xx"]
-        | typing.Literal["4xx"]
-        | typing.Literal["5xx"]
-        | None = None,
+        http_code_class: typing.Literal["2xx", "3xx", "4xx", "5xx"] | None = None,
         event_type: WebhookEventType | list[WebhookEventType] | None = None,
         page: int = 1,
         limit: int = 10,
@@ -689,11 +681,7 @@ class WebhooksAsync(AsyncServiceBase):
         end_timestamp: str | None = None,
         succeeded: bool | None = None,
         query: str | None = None,
-        http_code_class: typing.Literal["2xx"]
-        | typing.Literal["3xx"]
-        | typing.Literal["4xx"]
-        | typing.Literal["5xx"]
-        | None = None,
+        http_code_class: typing.Literal["2xx", "3xx", "4xx", "5xx"] | None = None,
         event_type: WebhookEventType | list[WebhookEventType] | None = None,
         page: int = 1,
         limit: int = 10,
@@ -752,11 +740,7 @@ class WebhooksAsync(AsyncServiceBase):
         end_timestamp: str | None = None,
         succeeded: bool | None = None,
         query: str | None = None,
-        http_code_class: typing.Literal["2xx"]
-        | typing.Literal["3xx"]
-        | typing.Literal["4xx"]
-        | typing.Literal["5xx"]
-        | None = None,
+        http_code_class: typing.Literal["2xx", "3xx", "4xx", "5xx"] | None = None,
         event_type: WebhookEventType | list[WebhookEventType] | None = None,
         page: int = 1,
         limit: int = 10,

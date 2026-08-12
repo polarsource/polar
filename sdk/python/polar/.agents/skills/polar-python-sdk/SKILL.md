@@ -112,8 +112,7 @@ from polar.v2026_04.outputs import CustomerState
 
 def has_feature_access(customer_state: CustomerState, benefit_id: str) -> bool:
     return any(
-        grant.benefit_id == benefit_id
-        for grant in customer_state.granted_benefits
+        grant.benefit_id == benefit_id for grant in customer_state.granted_benefits
     )
 
 

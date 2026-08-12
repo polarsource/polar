@@ -8,7 +8,7 @@ import type {
   ListResourceEventTypeWithStats,
 } from "../models";
 
-import { HTTPValidationError, Update404Error } from "../errors";
+import { EventTypesUpdate404Error, HTTPValidationError } from "../errors";
 
 export const listEventTypes = (client: ClientBase) => {
   /**
@@ -115,7 +115,7 @@ export const updateEventTypes = (client: ClientBase) => {
    * @throws {PolarNetworkError} When a network error occurs
    * @throws {PolarRateLimitError} When the rate limit is exceeded
    * @throws {PolarServerError} When the server returns a 5xx error
-   * @throws {Update404Error} Not Found
+   * @throws {EventTypesUpdate404Error} Not Found
    * @throws {HTTPValidationError} Validation Error
    */
   return async (id: string, body: EventTypeUpdate): Promise<EventType> => {
@@ -132,7 +132,7 @@ export const updateEventTypes = (client: ClientBase) => {
     );
     const response = await client.sendRequest(request);
     return client.parseResponse<EventType>(response, "json", {
-      404: Update404Error,
+      404: EventTypesUpdate404Error,
       422: HTTPValidationError,
     });
   };

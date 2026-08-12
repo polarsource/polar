@@ -44,9 +44,7 @@ from polar.v2026_04 import PolarAsync
 
 async def main() -> None:
     polar = PolarAsync("polar_oat_xxx")
-    customer_state = await polar.customers.get_state_external(
-        "customer_external_id"
-    )
+    customer_state = await polar.customers.get_state_external("customer_external_id")
     print(customer_state)
 
 
@@ -135,7 +133,9 @@ async def polar_webhook(request: Request) -> dict[str, bool]:
             webhook_secret,
         )
     except PolarWebhookVerificationError as exc:
-        raise HTTPException(status_code=403, detail="Invalid webhook signature") from exc
+        raise HTTPException(
+            status_code=403, detail="Invalid webhook signature"
+        ) from exc
     except PolarWebhookError as exc:
         raise HTTPException(status_code=400, detail="Invalid webhook payload") from exc
 

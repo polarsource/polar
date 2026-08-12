@@ -22,11 +22,7 @@ import { Button } from '@polar-sh/orbit'
 import CopyToClipboardInput from '@polar-sh/ui/components/atoms/CopyToClipboardInput'
 import { Switch } from '@polar-sh/orbit'
 import { useParams, useRouter } from 'next/navigation'
-import {
-  parseAsArrayOf,
-  parseAsString,
-  useQueryStates,
-} from 'nuqs'
+import { parseAsArrayOf, parseAsString, useQueryStates } from 'nuqs'
 import { useCallback, useState } from 'react'
 
 const filterParsers = {
@@ -50,10 +46,8 @@ export default function ClientPage({
       defaultSorting: [{ id: 'created_at', desc: true }],
     })
 
-  const [
-    { succeeded, httpCodeClass, eventTypes, query },
-    setFilters,
-  ] = useQueryStates(filterParsers)
+  const [{ succeeded, httpCodeClass, eventTypes, query }, setFilters] =
+    useQueryStates(filterParsers)
 
   const { data: endpoint } = useWebhookEndpoint(id)
 

@@ -113,6 +113,7 @@ class DownloadableFileRead(FileReadBase):
     """File to be associated with the downloadables benefit."""
 
     service: Literal[FileServiceTypes.downloadable]
+    flagged_malicious_at: datetime | None
 
 
 class SupportCaseAttachmentFileRead(FileReadBase):

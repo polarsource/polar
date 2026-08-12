@@ -197,6 +197,7 @@ class FileService:
             File.is_uploaded.is_(True),
             File.is_enabled.is_(True),
             File.is_deleted.is_(False),
+            File.flagged_malicious_at.is_(None),
         )
         result = await session.execute(statement)
         return result.scalar_one_or_none()

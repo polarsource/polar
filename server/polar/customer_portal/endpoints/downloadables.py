@@ -49,7 +49,7 @@ async def list(
         302: {"description": "Redirected to download"},
         400: {"description": "Invalid signature"},
         404: {"description": "Downloadable not found"},
-        410: {"description": "Expired signature"},
+        410: {"description": "Expired signature or file no longer available"},
     },
     name="customer_portal.downloadables.get",
     tags=[APITag.private],

@@ -21197,6 +21197,8 @@ export interface components {
        * Format: date-time
        */
       created_at: string
+      /** Flagged Malicious At */
+      flagged_malicious_at: string | null
       /** Size Readable */
       readonly size_readable: string
     }
@@ -50689,7 +50691,7 @@ export interface operations {
         }
         content?: never
       }
-      /** @description Expired signature */
+      /** @description Expired signature or file no longer available */
       410: {
         headers: {
           [name: string]: unknown

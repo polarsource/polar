@@ -619,18 +619,31 @@ describe('CheckoutForm', () => {
   })
 
   describe('contact capture', () => {
-    const renderForm = (checkout: ProductCheckoutPublic = createCheckout()) => {
-      const update = vi.fn(async () => createCheckout())
+    const rejectingUpdate = () =>
+      vi.fn(async () => {
+        throw new Error('rejected')
+      })
+
+    const renderForm = (
+      checkout: ProductCheckoutPublic = createCheckout(),
+      update: () => Promise<schemas['CheckoutPublic']> = vi.fn(async () =>
+        createCheckout(),
+      ),
+    ) => {
+      let form!: UseFormReturn<schemas['CheckoutUpdatePublic']>
       render(
         <FormWrapper
           checkout={checkout}
           {...defaultProps}
           update={update}
+          onForm={(f) => {
+            form = f
+          }}
           themePreset={{ stripe: {} } as ThemingPresetProps}
           locale="en"
         />,
       )
-      return update
+      return { update, form }
     }
 
     const fill = (label: string, value: string) => {
@@ -640,7 +653,7 @@ describe('CheckoutForm', () => {
     }
 
     it('stores the email once the buyer leaves the field', () => {
-      const update = renderForm()
+      const { update } = renderForm()
 
       fill('Email', 'buyer@example.com')
 
@@ -650,7 +663,7 @@ describe('CheckoutForm', () => {
     })
 
     it('stores the cardholder name once the buyer leaves the field', () => {
-      const update = renderForm()
+      const { update } = renderForm()
 
       fill('Cardholder name', 'Buyer Example')
 
@@ -658,7 +671,7 @@ describe('CheckoutForm', () => {
     })
 
     it('waits for an address the browser reads as one', () => {
-      const update = renderForm()
+      const { update } = renderForm()
 
       fill('Email', 'buyer@')
 
@@ -666,13 +679,38 @@ describe('CheckoutForm', () => {
     })
 
     it('skips a value the checkout already holds', () => {
-      const update = renderForm(
+      const { update } = renderForm(
         createCheckout({ customer_email: 'buyer@example.com' }),
       )
 
       fill('Email', 'buyer@example.com')
 
       expect(update).not.toHaveBeenCalled()
+    })
+
+    it('clears the error left by a rejected write', async () => {
+      const { form } = renderForm(createCheckout(), rejectingUpdate())
+      act(() => form.setError('customer_email', { message: 'Server said no' }))
+      expect(screen.getByText('Server said no')).toBeInTheDocument()
+
+      await act(async () => {
+        fill('Email', 'buyer@example.com')
+      })
+
+      expect(screen.queryByText('Server said no')).not.toBeInTheDocument()
+    })
+
+    it('stores the value again after a rejected write', async () => {
+      const { update } = renderForm(createCheckout(), rejectingUpdate())
+
+      await act(async () => {
+        fill('Email', 'buyer@example.com')
+      })
+      await act(async () => {
+        fireEvent.blur(screen.getByLabelText('Email'))
+      })
+
+      expect(update).toHaveBeenCalledTimes(2)
     })
   })
 })

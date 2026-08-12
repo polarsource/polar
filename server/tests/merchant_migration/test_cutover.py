@@ -11,6 +11,8 @@ from polar.enums import PaymentProcessor
 from polar.kit.utils import utc_now
 from polar.merchant_migration.canonical import (
     CanonicalCollectionMethod,
+    CanonicalPaymentMethod,
+    CanonicalPaymentMethodType,
     CanonicalSubscription,
     CanonicalSubscriptionStatus,
 )
@@ -29,6 +31,7 @@ from polar.models.subscription import SubscriptionStatus
 from polar.postgres import AsyncSession
 from tests.fixtures.database import SaveFixture
 from tests.fixtures.random_objects import create_customer, create_subscription
+from tests.fixtures.stripe import build_stripe_payment_method
 from tests.merchant_migration._helpers import (
     build_connected_migration,
     canonical_subscription,
@@ -560,6 +563,45 @@ class TestFailures:
         outcome = await SubscriptionCutover(session, migration, adapter).run(record)
 
         assert outcome.status == MerchantMigrationCutoverStatus.failed
+        assert paused_subscription.status == SubscriptionStatus.paused
+
+    async def test_two_indistinguishable_cards_are_retryable(
+        self,
+        mocker: MockerFixture,
+        session: AsyncSession,
+        migration: MerchantMigration,
+        record: MerchantMigrationRecord,
+        paused_subscription: Subscription,
+    ) -> None:
+        """One customer nobody can pick a card for must not stop the run for
+        everyone else, and must never be resolved by guessing."""
+        identical = {"last4": "4242", "brand": "visa", "exp_month": 4, "exp_year": 2030}
+
+        async def _two_copies(customer: str) -> AsyncIterator[Any]:
+            for id in ("pm_copy_a", "pm_copy_b"):
+                copy = build_stripe_payment_method(details=identical, customer=customer)
+                copy.id = id
+                yield copy
+
+        mocker.patch(
+            "polar.merchant_migration.cards.stripe_service.list_payment_methods",
+            new=_two_copies,
+        )
+        adapter = _FakeSourceAdapter(
+            canonical_subscription(
+                payment_method=CanonicalPaymentMethod(
+                    source_id="pm_on_the_source",
+                    type=CanonicalPaymentMethodType.card,
+                    **identical,  # type: ignore[arg-type]
+                )
+            )
+        )
+
+        outcome = await SubscriptionCutover(session, migration, adapter).run(record)
+
+        assert outcome.status == MerchantMigrationCutoverStatus.failed
+        assert "can't tell which is which" in (outcome.reason or "")
+        assert adapter.stopped == []
         assert paused_subscription.status == SubscriptionStatus.paused
 
     async def test_missing_polar_subscription(

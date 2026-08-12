@@ -1051,6 +1051,151 @@ class TestSlackSharedChannelGrant:
             email="admin@customer.example",
         )
 
+    async def test_grant_falls_back_when_stored_channel_is_deleted(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        customer.name = "Acme"
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(
+            mocker,
+            conversations_unarchive=AsyncMock(
+                return_value={"ok": False, "error": "channel_not_found"}
+            ),
+            conversations_create=AsyncMock(
+                return_value={
+                    "ok": True,
+                    "channel": {"id": "CNEW", "name": "support-acme"},
+                }
+            ),
+        )
+        strategy = _strategy(session, redis, client)
+
+        existing: BenefitGrantSlackSharedChannelProperties = {
+            "invited_email": "admin@customer.example",
+            "channel_id": "CDELETED",
+            "channel_name": "support-acme-deleted",
+        }
+        result = await strategy.grant(benefit, customer, existing)
+
+        assert result["channel_id"] == "CNEW"
+        assert result["channel_name"] == "support-acme"
+        client.conversations_unarchive.assert_awaited_once_with(
+            bot_token="xoxb-test-token", channel="CDELETED"
+        )
+        client.conversations_create.assert_awaited_once()
+        client.conversations_invite_shared.assert_awaited_once_with(
+            bot_token="xoxb-test-token",
+            channel="CNEW",
+            email="admin@customer.example",
+        )
+
+    async def test_grant_ignores_sibling_with_deleted_channel(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        customer.name = "Acme"
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        await create_benefit_grant(
+            save_fixture,
+            customer,
+            benefit,
+            granted=True,
+            properties={
+                "invited_email": "first@customer.example",
+                "channel_id": "CDELETED",
+                "channel_name": "support-acme",
+                "invite_id": "I001",
+            },
+        )
+        client = _mock_client(
+            mocker,
+            conversations_unarchive=AsyncMock(
+                return_value={"ok": False, "error": "channel_not_found"}
+            ),
+            conversations_create=AsyncMock(
+                return_value={
+                    "ok": True,
+                    "channel": {"id": "CNEW", "name": "support-acme"},
+                }
+            ),
+        )
+        strategy = _strategy(session, redis, client)
+
+        existing: BenefitGrantSlackSharedChannelProperties = {
+            "invited_email": "admin@customer.example",
+            "channel_id": "CDELETED",
+            "channel_name": "support-acme",
+        }
+        result = await strategy.grant(benefit, customer, existing)
+
+        assert result["channel_id"] == "CNEW"
+        client.conversations_create.assert_awaited_once()
+        client.conversations_invite_shared.assert_awaited_once_with(
+            bot_token="xoxb-test-token",
+            channel="CNEW",
+            email="admin@customer.example",
+        )
+
+    async def test_grant_existing_channel_unarchive_error_raises(
+        self,
+        session: AsyncSession,
+        redis: Redis,
+        save_fixture: SaveFixture,
+        mocker: MockerFixture,
+        customer: Customer,
+        organization: Organization,
+    ) -> None:
+        customer.name = "Acme"
+        benefit = await create_benefit(
+            save_fixture,
+            organization=organization,
+            type=BenefitType.slack_shared_channel,
+            properties=_BASE_PROPERTIES,
+        )
+        await _create_integration(save_fixture, benefit)
+        client = _mock_client(
+            mocker,
+            conversations_unarchive=AsyncMock(
+                return_value={"ok": False, "error": "restricted_action"}
+            ),
+        )
+        strategy = _strategy(session, redis, client)
+
+        existing: BenefitGrantSlackSharedChannelProperties = {
+            "invited_email": "admin@customer.example",
+            "channel_id": "CARCHIVED",
+            "channel_name": "support-acme",
+        }
+
+        with pytest.raises(BenefitActionRequiredError):
+            await strategy.grant(benefit, customer, existing)
+
+        client.conversations_create.assert_not_awaited()
+        client.conversations_invite_shared.assert_not_awaited()
+
     @pytest.mark.parametrize(
         "error",
         ["ratelimited", "internal_error", "fatal_error", "service_unavailable"],

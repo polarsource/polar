@@ -125,15 +125,24 @@ class BenefitSlackSharedChannelService(
         context = self._build_context(customer)
 
         existing_channel_id = grant_properties.get("channel_id")
+        unarchive_error: str | None = None
         if existing_channel_id:
-            channel_id = existing_channel_id
-            channel_name = grant_properties.get("channel_name", "")
-            await self._unarchive_channel(
+            unarchive_error = await self._unarchive_channel(
                 bot_token=bot_token,
-                channel=channel_id,
+                channel=existing_channel_id,
                 bound_logger=bound_logger,
             )
-        elif sibling_channel := await self._find_sibling_channel(benefit, customer):
+            if unarchive_error is not None and unarchive_error != "channel_not_found":
+                raise BenefitActionRequiredError(
+                    f"Slack channel unarchive error: {unarchive_error}"
+                )
+
+        if existing_channel_id and unarchive_error is None:
+            channel_id = existing_channel_id
+            channel_name = grant_properties.get("channel_name", "")
+        elif sibling_channel := await self._find_sibling_channel(
+            benefit, customer, exclude_channel_id=existing_channel_id
+        ):
             channel_id, channel_name = sibling_channel
         else:
             channel_id, channel_name, created = await self._create_channel(
@@ -360,7 +369,11 @@ class BenefitSlackSharedChannelService(
         return integration
 
     async def _find_sibling_channel(
-        self, benefit: Benefit, customer: Customer
+        self,
+        benefit: Benefit,
+        customer: Customer,
+        *,
+        exclude_channel_id: str | None = None,
     ) -> tuple[str, str] | None:
         repository = BenefitGrantRepository.from_session(self.session)
         grants = await repository.list_granted_by_benefit_and_customer(
@@ -368,7 +381,11 @@ class BenefitSlackSharedChannelService(
         )
         for grant in grants:
             channel_id = grant.properties.get("channel_id")
-            if isinstance(channel_id, str) and channel_id:
+            if (
+                isinstance(channel_id, str)
+                and channel_id
+                and channel_id != exclude_channel_id
+            ):
                 channel_name = grant.properties.get("channel_name")
                 return channel_id, channel_name if isinstance(channel_name, str) else ""
         return None
@@ -428,12 +445,12 @@ class BenefitSlackSharedChannelService(
                     continue
 
                 if channel.get("is_archived"):
-                    unarchived = await self._unarchive_channel(
+                    unarchive_error = await self._unarchive_channel(
                         bot_token=bot_token,
                         channel=channel_id,
                         bound_logger=bound_logger,
                     )
-                    if not unarchived:
+                    if unarchive_error is not None:
                         return None
 
                 if channel.get("is_private"):
@@ -490,7 +507,7 @@ class BenefitSlackSharedChannelService(
         bot_token: str,
         channel: str,
         bound_logger: Any,
-    ) -> bool:
+    ) -> str | None:
         try:
             result = await self._client.conversations_unarchive(
                 bot_token=bot_token, channel=channel
@@ -500,7 +517,7 @@ class BenefitSlackSharedChannelService(
 
         error = result.get("error", "")
         if result.get("ok") or error == "not_archived":
-            return True
+            return None
 
         if error in _TRANSIENT_ERRORS:
             raise BenefitRetriableError()
@@ -510,7 +527,7 @@ class BenefitSlackSharedChannelService(
             channel_id=channel,
             error=error,
         )
-        return False
+        return error
 
     async def _create_channel(
         self,

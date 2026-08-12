@@ -9,10 +9,10 @@ import {
 } from '@/hooks/queries'
 import { extractApiErrorMessage } from '@/utils/api/errors'
 import {
+  DataTableOnChangeFn,
   DataTablePaginationState,
   DataTableSortingState,
   getAPIParams,
-  sortingStateToQueryParam,
 } from '@/utils/datatable'
 import KeyboardArrowDownOutlined from '@mui/icons-material/KeyboardArrowDownOutlined'
 import KeyboardArrowRightOutlined from '@mui/icons-material/KeyboardArrowRightOutlined'
@@ -25,15 +25,15 @@ import {
 } from '@polar-sh/orbit'
 import FormattedDateTime from '@polar-sh/ui/components/atoms/FormattedDateTime'
 import { CellContext } from '@tanstack/react-table'
-import { useRouter, useSearchParams } from 'next/navigation'
 import React, { useCallback } from 'react'
 import { twMerge } from 'tailwind-merge'
 
 interface DeliveriesTableProps {
-  organization: schemas['Organization']
   endpoint: schemas['WebhookEndpoint']
   pagination: DataTablePaginationState
+  onPaginationChange: DataTableOnChangeFn<DataTablePaginationState>
   sorting: DataTableSortingState
+  onSortingChange: DataTableOnChangeFn<DataTableSortingState>
   dateRange?: DateRange
   succeeded?: boolean
   httpCodeClass?: NonNullable<
@@ -50,71 +50,17 @@ type DeliveryRow = schemas['WebhookDelivery'] & {
 }
 
 const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
-  organization,
   endpoint,
   pagination,
+  onPaginationChange,
   sorting,
+  onSortingChange,
   dateRange,
   succeeded,
   httpCodeClass,
   eventTypes,
   query,
 }) => {
-  const router = useRouter()
-  const searchParams = useSearchParams()
-
-  const getSearchParams = (
-    pagination: DataTablePaginationState,
-    sorting: DataTableSortingState,
-  ) => {
-    const params = new URLSearchParams(searchParams.toString())
-    params.delete('page')
-    params.delete('limit')
-    params.delete('sorting')
-    params.set('page', (pagination.pageIndex + 1).toString())
-    params.set('limit', pagination.pageSize.toString())
-    for (const criteria of sortingStateToQueryParam(sorting)) {
-      params.append('sorting', criteria)
-    }
-    return params
-  }
-
-  const setPagination = (
-    updaterOrValue:
-      | DataTablePaginationState
-      | ((old: DataTablePaginationState) => DataTablePaginationState),
-  ) => {
-    const updatedPagination =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(pagination)
-        : updaterOrValue
-
-    router.push(
-      `/dashboard/${organization.slug}/settings/webhooks/endpoints/${endpoint.id}?${getSearchParams(
-        updatedPagination,
-        sorting,
-      )}`,
-    )
-  }
-
-  const setSorting = (
-    updaterOrValue:
-      | DataTableSortingState
-      | ((old: DataTableSortingState) => DataTableSortingState),
-  ) => {
-    const updatedSorting =
-      typeof updaterOrValue === 'function'
-        ? updaterOrValue(sorting)
-        : updaterOrValue
-
-    router.push(
-      `/dashboard/${organization.slug}/settings/webhooks/endpoints/${endpoint.id}?${getSearchParams(
-        pagination,
-        updatedSorting,
-      )}`,
-    )
-  }
-
   const deliveriesHook = useListWebhooksDeliveries({
     endpoint_id: endpoint.id,
     ...getAPIParams(pagination, sorting),
@@ -259,9 +205,9 @@ const DeliveriesTable: React.FC<DeliveriesTableProps> = ({
       rowCount={rowCount}
       pageCount={pageCount}
       pagination={pagination}
-      onPaginationChange={setPagination}
+      onPaginationChange={onPaginationChange}
       sorting={sorting}
-      onSortingChange={setSorting}
+      onSortingChange={onSortingChange}
       getRowId={(row) => row.id}
       getCellColSpan={(cell) => {
         if (cell.row.original.isSubRow) {

@@ -79,10 +79,13 @@ def _generate_product_credit_proration_billing_entries(
         seats=subscription.seats,
     )
 
+    # Product applicability gates redemption, not the subscription's lifetime: once
+    # attached, the discount applies to every charge and credit regardless of the
+    # product being billed, mirroring the recurring cycle. Gating the proration here
+    # would desync it from the charge and break conservation (credit a plan that was
+    # billed net at its gross rate, or vice versa).
     discount_amounts = [0] * len(priced_entries)
-    if subscription.discount and subscription.discount.is_applicable(
-        subscription.product, subscription.currency
-    ):
+    if subscription.discount:
         discount_amounts = subscription.discount.allocate_discount_amounts(
             [base_amount for _, base_amount in priced_entries], subscription.currency
         )
@@ -136,11 +139,11 @@ def _generate_product_debit_proration_billing_entries(
         seats=subscription.seats,
     )
 
+    # Applies regardless of whether the discount is applicable to `new_product` —
+    # see the credit path: the discount follows the subscription, not the product,
+    # so the debit stays symmetric with the recurring charge for the same plan.
     discount_amounts = [0] * len(priced_entries)
-    # All prices belong to `new_product`, so applicability is evaluated once and
-    # gates the whole allocation. Unlike the credit path, the discount may not
-    # apply to the product being switched to.
-    if new_discount and new_discount.is_applicable(new_product, subscription.currency):
+    if new_discount:
         discount_amounts = new_discount.allocate_discount_amounts(
             [base_amount for _, base_amount in priced_entries], subscription.currency
         )
@@ -249,11 +252,12 @@ def _generate_seats_subscription_update(
     # between it and the seat charge, so we allocate across [fixed, seat] and keep
     # the seat's share. Today no product combines a fixed fee with a seat price,
     # so this allocates the whole discount to the seat amount.
+    # Like the product prorations, the discount follows the subscription regardless
+    # of applicability to the current product, keeping seat changes symmetric with
+    # the recurring charge.
     old_discount_amount = 0
     new_discount_amount = 0
-    if subscription.discount and subscription.discount.is_applicable(
-        subscription.product, subscription.currency
-    ):
+    if subscription.discount:
         fixed_price = subscription.get_price_by_type(ProductPriceFixed)
         fixed_amount = fixed_price.price_amount if fixed_price is not None else None
 

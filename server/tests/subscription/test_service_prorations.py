@@ -2088,8 +2088,16 @@ async def _go_and_pro_products(
 
 
 @pytest.mark.asyncio
-class TestCreditProrationDiscountEligibility:
-    async def test_credit_proration_skips_discount_for_ineligible_product(
+class TestProrationDiscountIgnoresProductApplicability:
+    """Product applicability gates redemption, not the subscription's lifetime.
+
+    Once a discount is attached, it applies to every proration (credit and debit)
+    regardless of whether it is applicable to the product being billed, mirroring
+    the recurring cycle. This keeps credits and debits symmetric with the charge,
+    so switching plans can neither over- nor under-refund.
+    """
+
+    async def test_switch_to_ineligible_product_discounts_both_prorations(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -2132,17 +2140,18 @@ class TestCreditProrationDiscountEligibility:
         amounts = _amounts_by_price(entries)
         discounts = _discount_amounts_by_price(entries)
 
-        # Credit for the remaining Pro time: gross, no discount (Pro ineligible).
+        # Credit for the remaining Pro time keeps the discount even though the
+        # discount is restricted to Go — matching how Pro was charged.
         pro_credit = (_fixed_price_id(pro), BillingEntryDirection.credit)
-        assert amounts[pro_credit] == int(PRO_AMOUNT * 0.5)
-        assert not discounts[pro_credit]
+        assert discounts[pro_credit] == 10_00
+        assert amounts[pro_credit] == int((PRO_AMOUNT - 10_00) * 0.5)
 
-        # Debit for the new Go plan still receives the discount (Go eligible).
+        # Debit for the new Go plan also receives the discount.
         go_debit = (_fixed_price_id(go), BillingEntryDirection.debit)
-        assert amounts[go_debit] == int((GO_AMOUNT - 5_00) * 0.5)
         assert discounts[go_debit] == 5_00
+        assert amounts[go_debit] == int((GO_AMOUNT - 5_00) * 0.5)
 
-    async def test_credit_proration_applies_discount_for_eligible_product(
+    async def test_switch_from_ineligible_product_discounts_both_prorations(
         self,
         session: AsyncSession,
         save_fixture: SaveFixture,
@@ -2186,13 +2195,14 @@ class TestCreditProrationDiscountEligibility:
         discounts = _discount_amounts_by_price(entries)
 
         go_credit = (_fixed_price_id(go), BillingEntryDirection.credit)
-        assert amounts[go_credit] == int((GO_AMOUNT - 5_00) * 0.5)
         assert discounts[go_credit] == 5_00
+        assert amounts[go_credit] == int((GO_AMOUNT - 5_00) * 0.5)
 
-        # Debit for the new Pro plan gets no discount (Pro ineligible).
+        # Debit for the new Pro plan also receives the discount, even though the
+        # discount is restricted to Go.
         pro_debit = (_fixed_price_id(pro), BillingEntryDirection.debit)
-        assert amounts[pro_debit] == int(PRO_AMOUNT * 0.5)
-        assert not discounts[pro_debit]
+        assert discounts[pro_debit] == 10_00
+        assert amounts[pro_debit] == int((PRO_AMOUNT - 10_00) * 0.5)
 
     async def test_unrestricted_discount_still_applies_after_switch(
         self,

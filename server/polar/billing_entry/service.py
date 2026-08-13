@@ -74,6 +74,7 @@ class BillingEntryService:
         session: AsyncSession,
         subscription: Subscription,
         *,
+        include_metered: bool = True,
         cutoff: datetime | None = None,
     ) -> AsyncGenerator[Sequence[OrderItem]]:
         repository = BillingEntryRepository.from_session(session)
@@ -84,6 +85,7 @@ class BillingEntryService:
         async for line_item, selector in self.compute_pending_subscription_line_items(
             session,
             subscription,
+            include_metered=include_metered,
             cutoff=cutoff,
         ):
             order_item = OrderItem(
@@ -123,6 +125,7 @@ class BillingEntryService:
         session: AsyncSession,
         subscription: Subscription,
         *,
+        include_metered: bool = True,
         cutoff: datetime | None = None,
     ) -> AsyncGenerator[tuple[StaticLineItem | MeteredLineItem, BillingEntrySelector]]:
         cutoff = cutoff or utc_now()
@@ -136,6 +139,12 @@ class BillingEntryService:
                 session, static_price, entry, seats=subscription.seats
             )
             yield static_line_item, [entry.id]
+
+        if not include_metered:
+            # Metered usage and its credits belong to the whole billing period.
+            # Settling them mid-period consumes the period's credit early, so the
+            # entries stay pending and are billed on the next cycle.
+            return
 
         # 👋 Reading the code below, you might wonder:
         # "Why is this so complex?"

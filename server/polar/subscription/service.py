@@ -2709,7 +2709,7 @@ class SubscriptionService:
             line_item,
             _,
         ) in billing_entry_service.compute_pending_subscription_line_items(
-            session, subscription
+            session, subscription, include_metered=False
         ):
             if not line_item.proration:
                 continue

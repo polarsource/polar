@@ -2,7 +2,8 @@
 name = "polar"
 version = "0.0.0"
 readme = "README.md"
-requires-python = ">=3.14.6"
+# 3.14 floor: the Vercel build image ships an earlier 3.14 patch.
+requires-python = ">=3.14"
 dependencies = [
   "fastapi==0.136.3", # Don't unpin this until https://github.com/open-telemetry/opentelemetry-python-contrib/issues/4699 is resolved
   "uvicorn[standard]>=0.49.0",
@@ -201,3 +202,6 @@ exclude-newer-package = { reauth = false, polar-sdk = false } # Reauth and the P
 
 [tool.uv.sources]
 dramatiq = { git = "https://github.com/frankie567/dramatiq", rev = "memory-leak-asyncio-ter" }
+
+[tool.vercel]
+entrypoint = "polar.app:app"

@@ -77,11 +77,13 @@ export function selectionAfterSubmit(
   }
 }
 
-// Never both. Neither means everything.
-export interface SelectionPayload {
-  recordIds?: string[]
-  excludeRecordIds?: string[]
-}
+// Opt in, opt out, or neither for everything. The `never` arms are what stop a
+// caller sending both, which the server would silently resolve in favour of
+// `recordIds`.
+export type SelectionPayload =
+  | { recordIds: string[]; excludeRecordIds?: never }
+  | { recordIds?: never; excludeRecordIds: string[] }
+  | { recordIds?: never; excludeRecordIds?: never }
 
 export function selectionPayload(state: SelectionState): SelectionPayload {
   if (state.mode === 'all') {

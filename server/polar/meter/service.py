@@ -583,9 +583,13 @@ class MeterService:
         meter: Meter,
         events_statement: Select[tuple[Event]],
     ) -> float:
-        statement = events_statement.with_only_columns(
-            func.coalesce(meter.aggregation.get_sql_column(Event), 0)
-        ).order_by(None)
+        statement = (
+            events_statement.where(meter.aggregation.get_sql_clause(Event))
+            .with_only_columns(
+                func.coalesce(meter.aggregation.get_sql_column(Event), 0)
+            )
+            .order_by(None)
+        )
         result = await session.scalar(statement)
         return result or 0.0
 

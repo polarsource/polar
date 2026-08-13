@@ -109,7 +109,7 @@ class PropertyAggregation(BaseModel):
         if self.property in ("name", "source", "timestamp"):
             return True
         value = get_nested_metadata_value(event.user_metadata, self.property)
-        return isinstance(value, int | float)
+        return isinstance(value, int | float) and not isinstance(value, bool)
 
 
 class UniqueAggregation(BaseModel):

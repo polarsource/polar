@@ -43,10 +43,13 @@ interface TurnstileWindow extends Window {
 // Cloudflare's test sitekey renders a visible, always-passing widget whose
 // dummy token verifies against the paired test secret (server .env.template),
 // so local login works without the production secret or a real challenge.
+// The env override serves deployments on domains outside the production
+// sitekey's allowlist (e.g. *.vercel.app), paired with a matching secret.
 const TURNSTILE_SITE_KEY =
-  CONFIG.ENVIRONMENT === 'development'
+  process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY ??
+  (CONFIG.ENVIRONMENT === 'development'
     ? '1x00000000000000000000AA'
-    : '0x4AAAAAAD7cBrbpX3kX8K9g'
+    : '0x4AAAAAAD7cBrbpX3kX8K9g')
 const TURNSTILE_ACTION = 'turnstile-spin-v2'
 
 const EmailOTPForm = ({

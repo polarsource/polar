@@ -14,7 +14,7 @@ from polar.models.email_log import (
 log: Logger = structlog.get_logger()
 
 
-def _extract_organization_id(
+def extract_organization_id(
     email_props: dict[str, Any],
 ) -> UUID | None:
     org = email_props.get("organization")
@@ -76,6 +76,6 @@ class EmailLogRepository(RepositoryBase[EmailLog], RepositoryIDMixin[EmailLog, U
                 processor_id=processor_id,
                 error=error,
                 deduplication_key=deduplication_key,
-                organization_id=_extract_organization_id(props),
+                organization_id=extract_organization_id(props),
             )
         )

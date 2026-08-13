@@ -1,4 +1,5 @@
 import json
+from typing import Any
 
 import structlog
 
@@ -8,10 +9,20 @@ from polar.models.email_log import EmailLogStatus
 from polar.worker import AsyncSessionMaker, TaskPriority, actor
 
 from .react import render_from_json
-from .repository import EmailLogRepository
+from .repository import EmailLogRepository, extract_organization_id
 from .sender import Attachment, email_sender
 
 log: Logger = structlog.get_logger()
+
+
+def _build_tags(template: str | None, email_props: dict[str, Any]) -> dict[str, str]:
+    tags: dict[str, str] = {}
+    if template is not None:
+        tags["category"] = template
+    organization_id = extract_organization_id(email_props)
+    if organization_id is not None:
+        tags["tenant_id"] = str(organization_id)
+    return tags
 
 
 @actor(actor_name="email.send", priority=TaskPriority.HIGH)
@@ -34,6 +45,9 @@ async def email_send(
         assert props_json is not None
         html_content = await render_from_json(template, props_json)
 
+    email_props = json.loads(props_json) if props_json else {}
+    tags = _build_tags(template, email_props)
+
     processor_id: str | None = None
     status = EmailLogStatus.sent
     error: str | None = None
@@ -49,6 +63,7 @@ async def email_send(
             reply_to_name=reply_to_name,
             reply_to_email_addr=reply_to_email_addr,
             attachments=attachments,
+            tags=tags,
         )
     except Exception as e:
         status = EmailLogStatus.failed
@@ -56,8 +71,6 @@ async def email_send(
         raise
     finally:
         try:
-            email_props = json.loads(props_json) if props_json else {}
-
             async with AsyncSessionMaker() as session:
                 repository = EmailLogRepository.from_session(session)
                 await repository.create_log(
